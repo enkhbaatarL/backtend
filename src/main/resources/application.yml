@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:backend
+    driver-class-name: org.h2.Driver
+    username: root
+    password: "1234"
+    hikari:
+      maximum-pool-size: 5
+      maxLifeTime: 60000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+jwt:
+  secret-key: mi-platform-secret-key
+  access-token-expiry: 3600000  # 1?? (1000ms * 60s * 60m)
+  refresh-token-expiry: 604800000  # 7? (7? * 24?? * 1000ms * 60s * 60m)
+
