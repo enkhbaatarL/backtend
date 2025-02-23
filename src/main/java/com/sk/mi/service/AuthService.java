@@ -1,8 +1,10 @@
 package com.sk.mi.service;
 
+import com.sk.mi.entity.master.Company;
 import com.sk.mi.entity.master.Permission;
 import com.sk.mi.entity.master.Role;
 import com.sk.mi.entity.master.User;
+import com.sk.mi.repository.master.CompanyRepository;
 import com.sk.mi.repository.master.UserRepository;
 import com.sk.mi.request.AuthRequest;
 import com.sk.mi.request.SignupRequest;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
   private final UserRepository userRepository;
+  private final CompanyRepository companyRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtUtil;
 //  private final TokenService tokenService;
@@ -27,6 +30,10 @@ public class AuthService {
       throw new IllegalArgumentException("Username is already taken.");
     }
 
+    Company defaultCompany = companyRepository.findAll().stream()
+        .findFirst()
+        .orElseThrow(() -> new RuntimeException("No company found"));
+
     String encodedPassword = passwordEncoder.encode(signupRequest.getPassword());
 
     User user = User.builder()
@@ -34,6 +41,7 @@ public class AuthService {
         .password(encodedPassword)
         .role(Role.ADMIN)
         .permissions(Set.of(Permission.REFINITIV_VIEW, Permission.REFINITIV_DOWNLOAD))
+        .company(defaultCompany)
         .build();
 
     userRepository.save(user);

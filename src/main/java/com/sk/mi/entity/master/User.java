@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -23,6 +25,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 @Table(name = "users")
 @Builder
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
