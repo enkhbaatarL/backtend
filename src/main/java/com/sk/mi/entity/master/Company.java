@@ -9,10 +9,12 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.List;
 import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "companies")
 @Getter
+@Setter
 public class Company {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

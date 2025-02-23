@@ -14,13 +14,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    defer-datasource-initialization: true
   h2:
     console:
       enabled: true
       path: /h2-console
 
 jwt:
-  secret-key: mi-platform-secret-key
+  secret-key: c2VjcmV0LWtleS1mb3ItbWktcGxhdGZvcm0tc3ByaW5nLWJvb3QtYXBwbGljYXRpb24tc2VjdXJpdHktand0LXRva2VuLWF1dGhlbnRpY2F0aW9u
   access-token-expiry: 3600000  # 1?? (1000ms * 60s * 60m)
   refresh-token-expiry: 604800000  # 7? (7? * 24?? * 1000ms * 60s * 60m)
 
