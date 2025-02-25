@@ -1,5 +1,6 @@
 package com.sk.mi.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -15,7 +16,12 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+  private final CustomJwtDecoder customJwtDecoder;
+  private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
+
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
@@ -24,7 +30,10 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**", "swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
             .anyRequest().authenticated()
         )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            .oauth2ResourceServer(oauth2 -> oauth2
+                    .jwt(jwt -> jwt
+                            .decoder(customJwtDecoder)
+                            .jwtAuthenticationConverter(customJwtAuthenticationConverter)))
         // 동일한 origin 만 허용
         .headers(headers -> headers
             .frameOptions(FrameOptionsConfig::sameOrigin))

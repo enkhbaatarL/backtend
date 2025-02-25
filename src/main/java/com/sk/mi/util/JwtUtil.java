@@ -30,6 +30,7 @@ public class JwtUtil {
         .claim("tenant", user.getCompany().getName())
         .claim("role", user.getRole().name())
         .claim("permissions", user.getPermissions().stream().map(Enum::name).collect(Collectors.toList()))
+        .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry()))
         .signWith(getKey())
         .compact();
