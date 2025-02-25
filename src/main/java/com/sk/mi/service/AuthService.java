@@ -66,5 +66,16 @@ public class AuthService {
     return new AuthResponse(accessToken, refreshToken);
   }
 
+  public String refreshToken(String refreshToken) {
+    if (jwtUtil.isTokenExpired(refreshToken)) {
+      throw new IllegalArgumentException("Refresh token expired");
+    }
+
+    String username = jwtUtil.extractUsername(refreshToken);
+    User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+    return jwtUtil.generateAccessToken(user);
+  }
 
 }
