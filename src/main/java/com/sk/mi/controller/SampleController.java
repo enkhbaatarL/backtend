@@ -28,14 +28,4 @@ public class SampleController {
       return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     }
   }
-//
-//  @PostMapping("/login")
-//  public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest) {
-//    try{
-//      AuthResponse response = authService.login(authRequest);
-//      return ResponseEntity.ok(response);
-//    } catch (IllegalArgumentException e) {
-//      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-//    }
-//  }
 }

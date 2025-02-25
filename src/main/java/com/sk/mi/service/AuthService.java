@@ -39,8 +39,9 @@ public class AuthService {
     User user = User.builder()
         .username(signupRequest.getUsername())
         .password(encodedPassword)
-        .role(Role.ADMIN)
-        .permissions(Set.of(Permission.REFINITIV_VIEW, Permission.REFINITIV_DOWNLOAD))
+        .role(Role.USER)
+        .permissions(Set.of(Permission.REFINITIV_VIEW))
+//        .permissions(Set.of(Permission.REFINITIV_VIEW, Permission.REFINITIV_DOWNLOAD))
         .company(defaultCompany)
         .build();
 

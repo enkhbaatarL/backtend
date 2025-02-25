@@ -1,5 +1,7 @@
 package com.sk.mi.security;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,39 +15,15 @@ import java.util.Collection;
 import java.util.List;
 
 @Component
-public class CustomJwtAuthenticationConverter extends JwtAuthenticationConverter {
+@RequiredArgsConstructor
+public class CustomJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
+    private final CustomJwtGrantedAuthoritiesConverter customJwtGrantedAuthoritiesConverter;
 
     @Override
-    public AbstractAuthenticationToken convert(Jwt jwt){
-        List<GrantedAuthority> authorities = new ArrayList<>();
-
-        String role = jwt.getClaimAsString("role");
-        if (role != null) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-        }
-
-        List<String> permissions = jwt.getClaimAsStringList("permissions");
-        if (permissions != null) {
-            permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
-        }
+    public AbstractAuthenticationToken convert(Jwt jwt) {
+        Collection<GrantedAuthority> authorities = customJwtGrantedAuthoritiesConverter.convert(jwt);
 
         return new JwtAuthenticationToken(jwt, authorities);
     }
-
-//    @Override
-//    public Collection<GrantedAuthority> convert(Jwt jwt){
-//        List<GrantedAuthority> authorities = new ArrayList<>();
-//
-//        String role = jwt.getClaimAsString("role");
-//        if (role != null) {
-//            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-//        }
-//
-//        List<String> permissions = jwt.getClaimAsStringList("permissions");
-//        if (permissions != null) {
-//            permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
-//        }
-//
-//        return authorities;
-//    }
 }
