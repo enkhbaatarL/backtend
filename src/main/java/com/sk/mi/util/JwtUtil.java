@@ -17,7 +17,7 @@ public class JwtUtil {
   private final JwtProperties jwtProperties;
   private SecretKey key;
 
-  private SecretKey getKey() {
+  public SecretKey getKey() {
     if (key == null) {
       key = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
     }
