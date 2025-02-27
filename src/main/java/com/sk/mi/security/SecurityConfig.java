@@ -1,22 +1,22 @@
 package com.sk.mi.security;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.mi.response.ErrorResponse;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableMethodSecurity
@@ -30,9 +30,10 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
+        .securityMatcher("/**")  // OAuth2 이외의 모든 요청 매칭
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth ->  auth
-            .requestMatchers("/api/auth/**", "swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
+            .requestMatchers("/api/auth/**", "swagger-ui/**", "/v3/api-docs/**", "/h2-console/**", "/oauth2/token").permitAll()
             .anyRequest().authenticated()
         )
             .oauth2ResourceServer(oauth2 -> oauth2

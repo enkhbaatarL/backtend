@@ -19,7 +19,7 @@ public class CustomJwtDecoder implements JwtDecoder {
     @Override
     public Jwt decode(String token) throws JwtException {
         Claims claims = jwtUtil.extractClaims(token);
-
+        // tenant와 permissions 정보가 포함된 claims 처리
         return new Jwt(token, claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant(), Map.of("alg", "HS256"), claims);
     }
 }

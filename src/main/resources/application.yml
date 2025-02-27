@@ -19,9 +19,17 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret-key: ${jwt.secret-key}
 
 jwt:
   secret-key: c2VjcmV0LWtleS1mb3ItbWktcGxhdGZvcm0tc3ByaW5nLWJvb3QtYXBwbGljYXRpb24tc2VjdXJpdHktand0LXRva2VuLWF1dGhlbnRpY2F0aW9u
-  access-token-expiry: 3600000  # 1?? (1000ms * 60s * 60m)
-  refresh-token-expiry: 604800000  # 7? (7? * 24?? * 1000ms * 60s * 60m)
+  access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
+  refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
 
+logging:
+  level:
+    org.springframework.security: DEBUG
