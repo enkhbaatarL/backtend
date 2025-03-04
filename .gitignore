@@ -38,3 +38,12 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+
+### VS Code ###
+.vscode
+
+# Devcontainer
+.devcontainer
+
+# OS
+.DS_Store
