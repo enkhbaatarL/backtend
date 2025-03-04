@@ -1,35 +1,41 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:backend
-    driver-class-name: org.h2.Driver
-    username: root
-    password: "1234"
-    hikari:
-      maximum-pool-size: 5
-      maxLifeTime: 60000
+  profiles:
+    active: local
+  application:
+    name: mi
+#  flyway:
+#    enabled: false
+
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate # 변경 금지
     properties:
       hibernate:
-        format_sql: true
-    defer-datasource-initialization: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          secret-key: ${jwt.secret-key}
+        query.in_clause_parameter_padding: true
+        default_batch_fetch_size: 50
+        globally_quoted_identifiers: true
+        globally_quoted_identifiers_skip_column_definitions: true
+        format_sql: false
+        show_sql: false
+        use_sql_comments: false
+        jmx.enabled: true
+    open-in-view: false # 변경 금지
 
-jwt:
-  secret-key: c2VjcmV0LWtleS1mb3ItbWktcGxhdGZvcm0tc3ByaW5nLWJvb3QtYXBwbGljYXRpb24tc2VjdXJpdHktand0LXRva2VuLWF1dGhlbnRpY2F0aW9u
-  access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
-  refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
+server:
+  tomcat:
+    uri-encoding: UTF-8
+    threads:
+      min-spare: 10
+      max: 400
+    remoteIp:
+      protocol-header: x-forwarded-proto
+      remote-ip-header: x-forwarded-for
+  port: 8080
 
-logging:
-  level:
-    org.springframework.security: DEBUG
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method

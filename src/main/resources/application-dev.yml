@@ -1,0 +1,30 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: url
+    username: username
+    password: password
+    driver-class-name: #
+    hikari:
+      pool-name: qna-mariadb-datasource
+      auto-commit: false
+      connection-timeout: 3000
+      maximum-pool-size: 50
+      minimum-idle: 10
+      idle-timeout: 50000
+      max-lifetime: 60000
+  jpa:
+    hibernate:
+      ddl-auto: validate # 변경 금지
+
+logging:
+  config: classpath:logback-dev.xml
+
+api:
+  sample:
+    url: http://localhost:8081
+    connection-timeout: 1s
+    read-timeout: 20s
