@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master;
 
+import com.sk.domain.shared.enums.Permission;
+import com.sk.domain.shared.enums.Role;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
