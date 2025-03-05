@@ -1,6 +1,10 @@
 # user-backend
 
-IntelliJ에서 Google Java Style 적용하는 방법
+### project structure
+[README_STRUCTURE.md](docs%2FREADME_STRUCTURE.md)
+
+
+### IntelliJ에서 Google Java Style 적용하는 방법
 
 방법 1: IntelliJ 기본 설정에서 Google Java Style 적용
 
@@ -25,7 +29,7 @@ IntelliJ에서 Google Java Style 적용하는 방법
 
     1. 자동 코드 스타일 적용 (Commit 시)
         Google Java Format이 Commit 전에 자동 적용되도록 설정하려면:
-    
+
         File → Settings → Version Control → Before Commit 이동.
         "Reformat code" 체크.
         필요하면 "Optimize imports"도 체크.
@@ -33,4 +37,3 @@ IntelliJ에서 Google Java Style 적용하는 방법
     2. 코드 저장 시 자동 포맷팅
        File → Settings → Tools → Actions on Save 이동.
        "Reformat code" 체크.
-   
