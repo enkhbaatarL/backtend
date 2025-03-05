@@ -26,25 +26,25 @@ public class OAuth2Client {
     private String id;
     private String clientId;
     private String clientSecret;
-    
+
     // Client Credentials Grant 필수 정보
     @Column(length = 1000)
     @Convert(converter = StringSetConverter.class)
     private Set<String> scopes;
-    
+
     // 추가 필드
     @Column(name = "authorization_grant_types")
     private String authorizationGrantTypes = AuthorizationGrantType.CLIENT_CREDENTIALS.getValue();
-    
+
     @Column(name = "client_authentication_method")
     private String clientAuthenticationMethod = ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue();
-    
+
     // 커스텀 필드 (권한 관리용)
     @Column(name = "tenant")
     private String tenant;
-    
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "oauth2_client_permissions")
     @Column(name = "permission")
     private Set<String> permissions;
-} 
+}

@@ -3,8 +3,8 @@ spring:
     active: local
   application:
     name: mi
-#  flyway:
-#    enabled: false
+  flyway:
+    enabled: false
 
   jpa:
     hibernate:

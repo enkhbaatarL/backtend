@@ -47,7 +47,7 @@ public class ResultCode {
 
     public static boolean isSuccess(String code) {
         return Arrays.stream(Success.values())
-                .anyMatch(success -> success.getCode().equals(code));
+            .anyMatch(success -> success.getCode().equals(code));
     }
 
 }
