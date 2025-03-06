@@ -37,3 +37,7 @@
     2. 코드 저장 시 자동 포맷팅
        File → Settings → Tools → Actions on Save 이동.
        "Reformat code" 체크.
+
+# Client 토큰 발급 테스트 예시
+
+curl -X POST "http://localhost:8080/oauth2/token" -H "Content-Type: application/x-www-form-urlencoded" -u "mi-client:secret"  -d "grant_type=client_credentials&scope=read"
