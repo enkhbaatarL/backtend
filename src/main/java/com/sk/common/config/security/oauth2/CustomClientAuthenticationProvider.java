@@ -1,4 +1,4 @@
-package com.sk.common.config.oauth;
+package com.sk.common.config.security.oauth2;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;

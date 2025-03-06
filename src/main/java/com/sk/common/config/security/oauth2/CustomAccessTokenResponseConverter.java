@@ -1,4 +1,4 @@
-package com.sk.common.config.oauth;
+package com.sk.common.config.security.oauth2;
 
 import com.sk.domain.mi.dto.response.OAuth2Res;
 import org.apache.commons.lang3.ObjectUtils;

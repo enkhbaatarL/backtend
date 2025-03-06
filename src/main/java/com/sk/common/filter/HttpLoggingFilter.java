@@ -39,7 +39,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
             log.debug("Header: {}={}", headerName, headerValue);
         }
 
-        if (false) {
+        if (excludeUri.stream().anyMatch(excluded -> request.getRequestURI().startsWith(excluded))) {
 
             initializeMDC(request);
             logRequest(request);

@@ -1,4 +1,4 @@
-package com.sk.common.config.oauth;
+package com.sk.common.config.security.oauth2;
 
 import com.sk.domain.shared.entity.master.Oauth2RegisteredClient;
 import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -42,9 +43,12 @@ public class CustomCustomRegisteredClientRepository implements RegisteredClientR
             .clientAuthenticationMethod(new ClientAuthenticationMethod(client.getClientAuthenticationMethod()))
             .authorizationGrantType(new AuthorizationGrantType(client.getAuthorizationGrantTypes()))
             .scope(client.getScopes())
-            .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
+            .clientSettings(ClientSettings.builder()
+                        .setting("tenant", "skinnovation")
+                        .setting("permissions", Set.of("REFINITIV_VIEW", "REFINITIV_DOWNLOAD"))
+                        .build())
             .tokenSettings(TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofMinutes(30)) // todo properties 관리
+                .accessTokenTimeToLive(Duration.ofMinutes(600)) // todo properties 관리
                 .build())
             .build();
     }

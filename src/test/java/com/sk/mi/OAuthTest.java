@@ -8,7 +8,7 @@ public class OAuthTest {
     @Test
     void passwordEncoderTest() {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        String encodedSecret = encoder.encode("test-secret");
+        String encodedSecret = encoder.encode("secret");
         System.out.println(encodedSecret);
     }
 
