@@ -19,6 +19,7 @@ public class DefaultConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .anyRequest().authenticated()
             );
+//            .exceptionHandling(); todo 추가
         return http.build();
     }
 
