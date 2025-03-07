@@ -39,3 +39,6 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: method
+
+security:
+    enabled: false

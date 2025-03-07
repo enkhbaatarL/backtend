@@ -8,6 +8,7 @@ import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
 import com.sk.common.utils.JwtProperties;
 import com.sk.common.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -30,6 +31,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
 
+    @Value("${security.enabled:false}")
+    private boolean securityEnabled;
+
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
     private final RegisteredClientRepository registeredClientRepository;
@@ -40,32 +44,46 @@ public class AuthorizationServerConfig {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
+        if (securityEnabled) {
 
-        // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
-        authorizationServerConfigurer
-            .tokenEndpoint(tokenEndpoint ->
-                tokenEndpoint
-                    .accessTokenResponseHandler(customAccessTokenResponseHandler)
-                    .errorResponseHandler(customAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
-            );
+            OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
 
-        // Authorization Server 관련 경로 매칭
-        http
-            .securityMatcher("/oauth2/token", "/oauth2/jwks") // Authorization Server 경로 제한
-            .with(authorizationServerConfigurer, Customizer.withDefaults())
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
-                .accessDeniedHandler(new CustomAccessDeniedHandler())
-            )
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/oauth2/token", "/oauth2/jwks").permitAll()
-                .anyRequest().authenticated()
-            )
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
+            authorizationServerConfigurer
+                .tokenEndpoint(tokenEndpoint ->
+                    tokenEndpoint
+                        .accessTokenResponseHandler(customAccessTokenResponseHandler)
+                        .errorResponseHandler(customAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
+                );
 
-        return http.build();
+            // Authorization Server 관련 경로 매칭
+            http
+                .securityMatcher("/oauth2/token", "/oauth2/jwks") // Authorization Server 경로 제한
+                .with(authorizationServerConfigurer, Customizer.withDefaults())
+                .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                    .accessDeniedHandler(new CustomAccessDeniedHandler())
+                )
+                .authorizeHttpRequests(authorize -> authorize
+                    .requestMatchers("/oauth2/token", "/oauth2/jwks").permitAll()
+                    .anyRequest().authenticated()
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+            return http.build();
+
+        } else {
+
+            http
+                .securityMatcher("/oauth2/token", "/oauth2/jwks")
+                .authorizeHttpRequests(authorize -> authorize
+                    .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용
+                )
+                .csrf(AbstractHttpConfigurer::disable);
+
+            return http.build();
+        }
     }
 
     @Bean
