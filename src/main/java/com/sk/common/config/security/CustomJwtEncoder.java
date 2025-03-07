@@ -22,27 +22,24 @@ public class CustomJwtEncoder implements JwtEncoder {
     private final JwtProperties jwtProperties;
 
     @Override
-    public Jwt encode(JwtEncoderParameters parameters) throws JwtEncodingException {
+    public Jwt encode(JwtEncoderParameters parameters) {
         JwtClaimsSet claims = parameters.getClaims();
         Map<String, Object> headers = parameters.getJwsHeader().getHeaders();
 
-        // scope를 Collection으로 가져와서 문자열로 변환
-        Collection<String> scopes = claims.getClaim("scope");
-        String scope = String.join(" ", scopes);
         String clientId = claims.getSubject();
 
         // OAuth2Client에서 tenant와 permissions 정보 조회
         Oauth2RegisteredClient client = oauth2RegisteredClientRepository.findByClientId(clientId)
             .orElseThrow(() -> new JwtEncodingException("Client not found"));
 
-        // permissions를 새로운 Set으로 복사 (지연 로딩 문제 해결)
+        // permissions todo 변경
         Set<String> permissions = new HashSet<>(List.of("REFINITIV_VIEW"));
 
         Date expiryDate = new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry());
 
         String token = Jwts.builder()
             .subject(clientId)
-            .claim("scope", scope)
+            .claim("scope", client.getScopes())
             .claim("tenant", client.getTenant())
             .claim("permissions", permissions)  // 복사된 permissions 사용
             .issuedAt(new Date())

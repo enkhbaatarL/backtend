@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "00. 샘플 API", description = "샘플 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/oauth2")
+@RequestMapping("/api/v1/sample")
 @RequiredArgsConstructor
 public class TestController {
 

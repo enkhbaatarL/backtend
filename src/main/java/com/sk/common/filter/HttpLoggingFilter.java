@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Component
-public class HttpLoggingFilter extends OncePerRequestFilter {
+public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     private final List<String> excludeUri = List.of("");
     private final AtomicLong id = new AtomicLong(0);
@@ -161,6 +162,11 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
 
         log.info("res uri={}, totalTime={}", uri, System.currentTimeMillis() - startTime);
 
+    }
+
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE + 1;
     }
 
 }

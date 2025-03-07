@@ -51,6 +51,7 @@ public class JwtUtil {
         .parseSignedClaims(token)
         .getPayload();
   }
+
   public String extractUsername(String token) {
     return extractClaims(token).getSubject();
   }
@@ -60,4 +61,5 @@ public class JwtUtil {
         .getExpiration()
         .before(new Date());
   }
+
 }

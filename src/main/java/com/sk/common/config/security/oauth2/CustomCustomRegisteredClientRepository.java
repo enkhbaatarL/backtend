@@ -1,8 +1,11 @@
 package com.sk.common.config.security.oauth2;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.entity.master.Oauth2RegisteredClient;
 import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -34,8 +37,9 @@ public class CustomCustomRegisteredClientRepository implements RegisteredClientR
 
     @Override
     public RegisteredClient findByClientId(String clientId) {
+
         Oauth2RegisteredClient client = oauth2RegisteredClientRepository.findByClientId(clientId)
-            .orElseThrow(() -> new OAuth2AuthenticationException("Invalid client ID: " + clientId));
+            .orElseThrow(() -> new AuthenticationServiceException("clientId: %s".formatted(clientId)));
 
         return RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId(client.getClientId())

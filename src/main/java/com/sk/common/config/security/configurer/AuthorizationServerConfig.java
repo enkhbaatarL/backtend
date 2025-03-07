@@ -5,26 +5,25 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.sk.common.config.security.CustomAccessDeniedHandler;
+import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.CustomJwtEncoder;
-import com.sk.common.config.security.oauth2.CustomAccessTokenResponseConverter;
+import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
 import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
-import com.sk.common.config.security.oauth2.CustomCustomRegisteredClientRepository;
-import com.sk.common.utils.JsonUtil;
 import com.sk.common.utils.JwtProperties;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.mi.dto.response.OAuth2Res;
 import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
@@ -43,57 +42,46 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
 
-    private final Oauth2RegisteredClientRepository oauth2RegisteredClientRepository;
-    private final CustomAccessTokenResponseConverter customAccessTokenResponseConverter;
-    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
-    private final JwtProperties jwtProperties;
     private final JwtUtil jwtUtil;
-    private final CustomCustomRegisteredClientRepository customCustomRegisteredClientRepository;
+    private final JwtProperties jwtProperties;
+    private final Oauth2RegisteredClientRepository oauth2RegisteredClientRepository;
+    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
+    private final CustomAccessTokenResponseHandler customAccessTokenResponseHandler;
 
     @Bean
-    @Order(1) // Authorization Server가 먼저 처리되도록 우선순위 설정
+    @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
 
-        // 토큰 엔드포인트 커스터마이징 (client_credentials 지원)
+        // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
         authorizationServerConfigurer
             .tokenEndpoint(tokenEndpoint ->
                 tokenEndpoint
-                    .accessTokenResponseHandler((request, response, authentication) -> {
-                        OAuth2Res OAuth2Res = customAccessTokenResponseConverter.convert((OAuth2AccessTokenAuthenticationToken) authentication);
-                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                        response.getWriter().write(JsonUtil.getMapper().writeValueAsString(OAuth2Res));
-                    })
-                    .errorResponseHandler(customAuthenticationFailureHandler)
+                    .accessTokenResponseHandler(customAccessTokenResponseHandler)
+                    .errorResponseHandler(customAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
             );
 
-        // Authorization Server 관련 경로만 매칭
+        // Authorization Server 관련 경로 매칭
         http
             .securityMatcher("/oauth2/token", "/oauth2/jwks") // Authorization Server 경로 제한
             .with(authorizationServerConfigurer, Customizer.withDefaults())
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                .accessDeniedHandler(new CustomAccessDeniedHandler())
+            )
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/oauth2/token", "/oauth2/jwks").permitAll()
                 .anyRequest().authenticated()
             )
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(401);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.getWriter().write("{\"error\": \"authentication_failed\", \"message\": \"" + authException.getMessage() + "\"}");
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.setStatus(403);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.getWriter().write("{\"error\": \"access_denied\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
-                })
-            );;
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
 
     @Bean
-    public OAuth2TokenGenerator<?> tokenGenerator() { // 와일드카드로 수정
+    public OAuth2TokenGenerator<?> tokenGenerator() {
         CustomJwtEncoder jwtEncoder = new CustomJwtEncoder(jwtUtil, oauth2RegisteredClientRepository, jwtProperties);
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
         return new DelegatingOAuth2TokenGenerator(
