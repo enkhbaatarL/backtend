@@ -2,62 +2,95 @@ package com.sk.common.utils;
 
 import com.sk.domain.shared.entity.master.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
+
+import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+@Getter
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
-  private final JwtProperties jwtProperties;
-  private SecretKey key;
 
-  public SecretKey getKey() {
-    if (key == null) {
-      key = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
+    private SecretKey secretKey;
+    private final JwtProperties jwtProperties;
+
+    // 비밀 키 초기화
+    @PostConstruct
+    public void init() {
+        secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
     }
-    return key;
-  }
 
-  public String generateAccessToken(User user) {
-    return Jwts.builder()
-        .subject(user.getUsername())
-        .claim("tenant", user.getCompany().getName())
-        .claim("role", user.getRole().name())
-        .claim("permissions", user.getPermissions().stream().map(Enum::name).collect(Collectors.toList()))
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry()))
-        .signWith(getKey())
-        .compact();
-  }
+    // 공통 토큰 빌더 생성 메서드
+    private JwtBuilder createTokenBuilder(String subject) {
+        return Jwts.builder()
+            .subject(subject)
+            .issuedAt(new Date())
+            .signWith(secretKey, Jwts.SIG.HS256); // 명시적으로 HS256 지정
+    }
 
-  public String generateRefreshToken(String username) {
-    return Jwts.builder()
-        .subject(username)
-        .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiry()))
-        .signWith(getKey())
-        .compact();
-  }
+    // 액세스 토큰 생성
+    public String generateAccessToken(User user) {
+        return createTokenBuilder(user.getUsername())
+            .claim("tenant", user.getCompany().getName())
+            .claim("role", user.getRole().name())
+            .claim("permissions", user.getPermissions().stream()
+                .map(Enum::name)
+                .collect(Collectors.toList()))
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
+            .compact();
+    }
 
-  public Claims extractClaims(String token) {
-    return Jwts.parser()
-        .verifyWith(getKey())
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
-  }
-  public String extractUsername(String token) {
-    return extractClaims(token).getSubject();
-  }
+    // 리프레시 토큰 생성
+    public String generateRefreshToken(String username) {
+        return createTokenBuilder(username)
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getRefreshTokenExpiry())))
+            .compact();
+    }
 
-  public boolean isTokenExpired(String token) {
-    return extractClaims(token)
-        .getExpiration()
-        .before(new Date());
-  }
+    // 클레임 추출 (예외 처리 추가)
+    public Claims extractClaims(String token) {
+        try {
+            return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        } catch (JwtException e) {
+            throw new IllegalArgumentException("Invalid JWT token: " + e.getMessage(), e);
+        }
+    }
+
+    // 사용자 이름 추출
+    public String extractUsername(String token) {
+        return extractClaims(token).getSubject();
+    }
+
+    // 토큰 만료 여부 확인
+    public boolean isTokenExpired(String token) {
+        return extractClaims(token)
+            .getExpiration()
+            .before(Date.from(Instant.now()));
+    }
+
+    // 토큰 유효성 검사 (추가 유틸 메서드)
+    public boolean isTokenValid(String token) {
+        try {
+            Claims claims = extractClaims(token);
+            return !isTokenExpired(token);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
 }

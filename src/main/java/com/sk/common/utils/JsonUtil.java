@@ -57,4 +57,8 @@ public class JsonUtil {
         return objectMapper.createObjectNode();
     }
 
+    public static ObjectMapper getMapper() {
+        return objectMapper;
+    }
+
 }
