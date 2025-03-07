@@ -1,7 +1,9 @@
 package com.sk.common.handler;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponseFactory;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -93,6 +95,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
             .status(UNAUTHORIZED)
             .body(BaseResponseFactory.createDetail(ResultCode.Error.INVALID_CREDENTIAL, e.getMessage()));
+    }
+
+    @ExceptionHandler(MalformedJwtException.class)
+    private ResponseEntity<Object> handleServletException(JsonParseException e) {
+        return ResponseEntity
+            .status(BAD_REQUEST)
+            .body(BaseResponseFactory.createDetail(ResultCode.Error.INVALID_REQUEST, e.getMessage()));
     }
 
     @ExceptionHandler(RestClientException.class)
