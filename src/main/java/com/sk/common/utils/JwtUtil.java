@@ -60,15 +60,11 @@ public class JwtUtil {
 
     // 클레임 추출 (예외 처리 추가)
     public Claims extractClaims(String token) {
-        try {
-            return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        } catch (JwtException e) {
-            throw new IllegalArgumentException("Invalid JWT token: " + e.getMessage(), e);
-        }
+        return Jwts.parser()
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
     // 사용자 이름 추출
