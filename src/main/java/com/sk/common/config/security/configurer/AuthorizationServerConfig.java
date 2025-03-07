@@ -1,10 +1,5 @@
 package com.sk.common.config.security.configurer;
 
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.sk.common.config.security.CustomAccessDeniedHandler;
 import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.CustomJwtEncoder;
@@ -12,18 +7,17 @@ import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
 import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
 import com.sk.common.utils.JwtProperties;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
@@ -32,19 +26,13 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Acce
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.UUID;
-
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
 
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
-    private final Oauth2RegisteredClientRepository oauth2RegisteredClientRepository;
+    private final RegisteredClientRepository registeredClientRepository;
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
     private final CustomAccessTokenResponseHandler customAccessTokenResponseHandler;
 
@@ -82,7 +70,7 @@ public class AuthorizationServerConfig {
 
     @Bean
     public OAuth2TokenGenerator<?> tokenGenerator() {
-        CustomJwtEncoder jwtEncoder = new CustomJwtEncoder(jwtUtil, oauth2RegisteredClientRepository, jwtProperties);
+        CustomJwtEncoder jwtEncoder = new CustomJwtEncoder(jwtUtil, registeredClientRepository, jwtProperties);
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
         return new DelegatingOAuth2TokenGenerator(
             jwtGenerator,
@@ -99,23 +87,23 @@ public class AuthorizationServerConfig {
             .build();
     }
 
-    @Bean
-    public JWKSource<SecurityContext> jwkSource() throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-            .privateKey(privateKey)
-            .keyID(UUID.randomUUID().toString())
-            .build();
-
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
+//    @Bean
+//    public JWKSource<SecurityContext> jwkSource() throws Exception {
+//        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+//        keyPairGenerator.initialize(2048);
+//        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+//
+//        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+//        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+//
+//        RSAKey rsaKey = new RSAKey.Builder(publicKey)
+//            .privateKey(privateKey)
+//            .keyID(UUID.randomUUID().toString())
+//            .build();
+//
+//        JWKSet jwkSet = new JWKSet(rsaKey);
+//        return new ImmutableJWKSet<>(jwkSet);
+//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

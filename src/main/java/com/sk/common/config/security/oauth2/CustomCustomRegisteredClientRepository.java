@@ -3,6 +3,7 @@ package com.sk.common.config.security.oauth2;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.entity.master.Oauth2RegisteredClient;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -48,12 +49,9 @@ public class CustomCustomRegisteredClientRepository implements RegisteredClientR
             .authorizationGrantType(new AuthorizationGrantType(client.getAuthorizationGrantTypes()))
             .scope(client.getScopes())
             .clientSettings(ClientSettings.builder()
-                        .setting("tenant", "skinnovation")
-                        .setting("permissions", Set.of("REFINITIV_VIEW", "REFINITIV_DOWNLOAD"))
+                        .setting("tenant", client.getTenant())
+                        .setting("role", Role.CLIENT)
                         .build())
-            .tokenSettings(TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofMinutes(600)) // todo properties 관리
-                .build())
             .build();
     }
 

@@ -7,18 +7,20 @@ import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Component
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
-@Transactional
 public class CustomJwtEncoder implements JwtEncoder {
 
     private final JwtUtil jwtUtil;
-    private final Oauth2RegisteredClientRepository oauth2RegisteredClientRepository;
+    private final RegisteredClientRepository registeredClientRepository;
     private final JwtProperties jwtProperties;
 
     @Override
@@ -28,23 +30,18 @@ public class CustomJwtEncoder implements JwtEncoder {
 
         String clientId = claims.getSubject();
 
-        // OAuth2Client에서 tenant와 permissions 정보 조회
-        Oauth2RegisteredClient client = oauth2RegisteredClientRepository.findByClientId(clientId)
-            .orElseThrow(() -> new JwtEncodingException("Client not found"));
-
-        // permissions todo 변경
-        Set<String> permissions = new HashSet<>(List.of("REFINITIV_VIEW"));
+        RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
 
         Date expiryDate = new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry());
 
         String token = Jwts.builder()
             .subject(clientId)
-            .claim("scope", client.getScopes())
-            .claim("tenant", client.getTenant())
-            .claim("permissions", permissions)  // 복사된 permissions 사용
+            .claim("scope", registeredClient.getScopes())
+            .claim("tenant", registeredClient.getClientSettings().getSetting("tenant"))
+            .claim("role", registeredClient.getClientSettings().getSetting("role"))
             .issuedAt(new Date())
             .expiration(expiryDate)
-            .signWith(jwtUtil.getKey())
+            .signWith(jwtUtil.getSecretKey(), Jwts.SIG.HS256)
             .compact();
 
         return new Jwt(
