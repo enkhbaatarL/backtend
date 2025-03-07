@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.SocketTimeoutException;
 import java.util.List;
@@ -47,6 +48,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
             .status(METHOD_NOT_ALLOWED)
             .body(BaseResponseFactory.create(ResultCode.Error.METHOD_NOT_ALLOWED));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleNoResourceFoundException(NoResourceFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return ResponseEntity
+            .status(NOT_FOUND)
+            .body(BaseResponseFactory.create(ResultCode.Error.PATH_NOT_FOUND));
     }
 
     @Override
