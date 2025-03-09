@@ -5,13 +5,16 @@ import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,7 +26,20 @@ public class CustomContentCachingRequestWrapper extends ContentCachingRequestWra
 
     public CustomContentCachingRequestWrapper(HttpServletRequest request) throws IOException {
         super(request);
-        IOUtils.copy(super.getInputStream(), byteArrayOutputStream);
+
+        MediaType requestMediaType = MediaType.parseMediaType(request.getContentType());
+        if (MediaType.APPLICATION_FORM_URLENCODED.isCompatibleWith(requestMediaType)) {
+            Map<String, String[]> parameterMap = super.getParameterMap();
+            String formData = parameterMap.entrySet().stream()
+                .flatMap(entry -> {
+                    String key = entry.getKey();
+                    return java.util.Arrays.stream(entry.getValue()).map(value -> key + "=" + value);
+                }).collect(Collectors.joining("&"));
+            byteArrayOutputStream.write(formData.getBytes(StandardCharsets.UTF_8));
+        } else {
+            IOUtils.copy(super.getInputStream(), byteArrayOutputStream);
+        }
+
     }
 
     @NonNull

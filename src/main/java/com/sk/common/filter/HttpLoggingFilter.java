@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
-    private final List<String> excludeUri = List.of("");
+    private final List<String> excludeUri = List.of("/excludeUri");
     private final AtomicLong id = new AtomicLong(0);
 
     @Override
@@ -114,10 +114,10 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         if (!StringUtils.isEmpty(request.getQueryString())) uri += "?" + request.getQueryString();
 
         log.info("req uri={}, method={}, body={}, ip={}",
-                uri,
-                request.getMethod(),
-                new String(requestBody, StandardCharsets.UTF_8).replaceAll("(\r\n|\r|\n|\n\r|)", ""),
-                request.getRemoteAddr()
+            uri,
+            request.getMethod(),
+            new String(requestBody, StandardCharsets.UTF_8).replaceAll("(\r\n|\r|\n|\n\r|)", ""),
+            request.getRemoteAddr()
         );
 
     }
@@ -145,9 +145,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         if (uri.equalsIgnoreCase("/whoami")) return;
 
         log.info("res uri={}, body={}, totalTime={}",
-                uri,
-                new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
-                System.currentTimeMillis() - startTime
+            uri,
+            new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
+            System.currentTimeMillis() - startTime
         );
 
     }

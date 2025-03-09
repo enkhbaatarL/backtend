@@ -1,7 +1,6 @@
 package com.sk.common.filter;
 
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +9,6 @@ import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
-
-import java.io.IOException;
 
 @Slf4j
 @Component
@@ -24,12 +21,12 @@ public class ExceptionHandlerFilter extends OncePerRequestFilter implements Orde
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
 
         try {
             filterChain.doFilter(request, response);
         } catch (Exception e) {
-            log.error("filter error : {}", e.getMessage(), e);
+            log.error("Error occurred in filter chain : {}", e.getMessage(), e);
             handlerExceptionResolver.resolveException(request, response, null, e);
         }
 

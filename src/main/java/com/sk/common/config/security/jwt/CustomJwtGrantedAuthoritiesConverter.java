@@ -1,4 +1,4 @@
-package com.sk.common.config.security;
+package com.sk.common.config.security.jwt;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;

@@ -35,4 +35,5 @@ public class CustomAccessTokenResponseConverter implements Converter<OAuth2Acces
         return BaseResponseFactory.create(OAuth2Res.of(tokenValue, tokenType, expiresIn, issuedAtFormatted));
 
     }
+
 }

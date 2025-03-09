@@ -34,16 +34,12 @@ public class DefaultConfig {
                     .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                     .accessDeniedHandler(new CustomAccessDeniedHandler())
                 );
+
             return http.build();
 
         } else {
 
-            http
-                .authorizeHttpRequests(auth -> auth
-                    .anyRequest().permitAll()
-                );
-
-            return http.build();
+            return http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll()).build();
 
         }
     }

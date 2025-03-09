@@ -1,21 +1,20 @@
 package com.sk.common.utils;
 
+import com.sk.common.enums.AuthComponent;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.domain.shared.entity.master.User;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-
-import java.time.Instant;
-import java.util.Date;
-import java.util.stream.Collectors;
-import javax.crypto.SecretKey;
-
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.util.Date;
+import java.util.stream.Collectors;
 
 @Getter
 @Component
@@ -60,11 +59,21 @@ public class JwtUtil {
 
     // 클레임 추출 (예외 처리 추가)
     public Claims extractClaims(String token) {
-        return Jwts.parser()
-            .verifyWith(secretKey)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
+
+        try {
+            return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        } catch (ExpiredJwtException e) {
+            throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_EXPIRED, e);
+        } catch (MalformedJwtException e) {
+            throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_INVALID, e);
+        } catch (Exception e) {
+            throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_INVALID, e);
+        }
+
     }
 
     // 사용자 이름 추출
