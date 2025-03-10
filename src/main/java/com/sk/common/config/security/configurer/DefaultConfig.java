@@ -17,7 +17,7 @@ public class DefaultConfig {
     private boolean securityEnabled;
 
     @Bean
-    @Order(3)
+    @Order(5)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
         if (securityEnabled) {

@@ -20,6 +20,24 @@ spring:
       resourceserver:
         jwt:
           secret-key: ${jwt.secret-key}
+    saml2:
+      relyingparty:
+        registration:
+          skt-user:
+            entity-id: http://localhost:8080/saml2/service-provider-metadata/skt-user
+            acs:
+              location: http://localhost:8080/login/saml2/sso/skt-user
+              binding: POST
+            assertingparty:
+              metadata-uri: https://dev-25395713.okta.com/app/exknog7293gkyVoqS5d7/sso/saml/metadata
+          skt-admin:
+            entity-id: http://localhost:8080/saml2/service-provider-metadata/skt-admin
+            acs:
+              location: http://localhost:8080/login/saml2/sso/skt-admin
+              binding: POST
+            assertingparty:
+              metadata-uri: https://dev-25395713.okta.com/app/exknqq0r1bABpMTN55d7/sso/saml/metadata
+
 
 jwt:
   secret-key: mysecretmysecretmysecretmysecretmysecretmysecretmysecretmysecretmysecret
@@ -29,6 +47,8 @@ jwt:
 
 logging:
   config: classpath:logback-local.xml
+  level:
+      org.springframework.security: DEBUG
 
 api:
   sample:
