@@ -41,4 +41,4 @@ springdoc:
     operations-sorter: method
 
 security:
-    enabled: true
+    enabled: false

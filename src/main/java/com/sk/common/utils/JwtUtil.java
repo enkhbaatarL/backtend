@@ -3,7 +3,6 @@ package com.sk.common.utils;
 import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthenticationException;
-import com.sk.domain.shared.entity.master.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -39,16 +38,16 @@ public class JwtUtil {
     }
 
     // 액세스 토큰 생성
-    public String generateAccessToken(User user) {
-        return createTokenBuilder(user.getUsername())
-            .claim("tenant", user.getCompany().getName())
-            .claim("role", user.getRole().name())
-            .claim("permissions", user.getPermissions().stream()
-                .map(Enum::name)
-                .collect(Collectors.toList()))
-            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
-            .compact();
-    }
+//    public String generateAccessToken(User user) {
+//        return createTokenBuilder(user.getUsername())
+//            .claim("tenant", user.getCompanies().getName())
+//            .claim("role", user.getRole().name())
+//            .claim("permissions", user.getPermissions().stream()
+//                .map(Enum::name)
+//                .collect(Collectors.toList()))
+//            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
+//            .compact();
+//    }
 
     // 리프레시 토큰 생성
     public String generateRefreshToken(String username) {

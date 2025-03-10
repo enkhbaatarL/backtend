@@ -8,6 +8,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -34,14 +36,31 @@ import static org.springframework.http.HttpStatus.*;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException e, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
         String causeStr = fieldErrors
             .stream()
             .map(s -> String.format("[%s: %s, %s: %s, %s: %s]", "field", s.getField(), "provided value", s.getRejectedValue(), "cause", s.getDefaultMessage()))
             .collect(Collectors.joining(", "));
-        log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", e.getMessage(), e);
-        return ResponseEntity.status(BAD_REQUEST)
+        return ResponseEntity
+            .status(BAD_REQUEST)
+            .body(BaseResponseFactory.createDetail(ResultCode.Error.REQ_INVALID_PARAMETER, causeStr));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String causeStr = ex.getValueResults()
+            .stream()
+            .flatMap(result -> {
+                String fieldName = result.getMethodParameter().getParameterName();
+                Object rejectedValue = result.getArgument();
+                return result.getResolvableErrors().stream()
+                    .map(error -> String.format("[%s: %s, %s: %s, %s: %s]", "field", fieldName, "provided value", rejectedValue, "cause", error.getDefaultMessage()));
+            })
+            .collect(Collectors.joining(", "));
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
             .body(BaseResponseFactory.createDetail(ResultCode.Error.REQ_INVALID_PARAMETER, causeStr));
     }
 
