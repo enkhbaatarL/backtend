@@ -1,4 +1,4 @@
-package com.sk.common.config.security;
+package com.sk.common.config.security.jwt;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
@@ -19,7 +19,7 @@ public class CustomJwtAuthenticationConverter implements Converter<Jwt, Abstract
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Collection<GrantedAuthority> authorities = customJwtGrantedAuthoritiesConverter.convert(jwt);
-
         return new JwtAuthenticationToken(jwt, authorities);
     }
+
 }
