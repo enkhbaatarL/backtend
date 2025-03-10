@@ -27,8 +27,7 @@ public class CustomContentCachingRequestWrapper extends ContentCachingRequestWra
     public CustomContentCachingRequestWrapper(HttpServletRequest request) throws IOException {
         super(request);
 
-        MediaType requestMediaType = MediaType.parseMediaType(request.getContentType());
-        if (MediaType.APPLICATION_FORM_URLENCODED.isCompatibleWith(requestMediaType)) {
+        if (ObjectUtils.isNotEmpty(request.getContentType()) && MediaType.APPLICATION_FORM_URLENCODED.isCompatibleWith(MediaType.parseMediaType(request.getContentType()))) {
             Map<String, String[]> parameterMap = super.getParameterMap();
             String formData = parameterMap.entrySet().stream()
                 .flatMap(entry -> {

@@ -1,11 +1,12 @@
 package com.sk.domain.shared.entity.base;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,17 +20,19 @@ import java.time.LocalDateTime;
 public abstract class TimeBaseEntity {
 
     @CreatedDate
-    @Column(name = "register_dt", updatable = false, nullable = false)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
-    protected LocalDateTime registerDt;
+    @Column(name = "crt_dtm", updatable = false, nullable = false)
+    @Comment("생성일시")
+    @ColumnDefault("CURRENT_TIMESTAMP")
+    protected LocalDateTime createDt;
 
     @LastModifiedDate
-    @Column(name = "modify_dt")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
+    @Column(name = "mod_dtm")
+    @Comment("수정일시")
+    @ColumnDefault("CURRENT_TIMESTAMP")
     protected LocalDateTime modifyDt;
 
-    public TimeBaseEntity(LocalDateTime registerDt, LocalDateTime modifyDt) {
-        this.registerDt = registerDt;
+    public TimeBaseEntity(LocalDateTime createDt, LocalDateTime modifyDt) {
+        this.createDt = createDt;
         this.modifyDt = modifyDt;
     }
 
