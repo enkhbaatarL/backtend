@@ -8,11 +8,17 @@ public class BooleanToYNAttributeConverter implements AttributeConverter<Boolean
 
     @Override
     public String convertToDatabaseColumn(Boolean attribute) {
+        if (attribute == null) {
+            return "N";
+        }
         return attribute ? "Y" : "N";
     }
 
     @Override
     public Boolean convertToEntityAttribute(String yn) {
+        if (yn == null) {
+            return false;
+        }
         return "Y".equalsIgnoreCase(yn);
     }
 
