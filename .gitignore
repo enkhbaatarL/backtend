@@ -41,6 +41,8 @@ out/
 
 ### VS Code ###
 .vscode
+bin/
+
 
 # Devcontainer
 .devcontainer
