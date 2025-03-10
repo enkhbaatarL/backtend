@@ -22,18 +22,18 @@ public class ResultCode {
 
     @Getter
     public enum Error {
-        INVALID_REQUEST("E400", "Required value is invalid."),
-        UNAUTHORIZED("E401", "Unauthorized request."),
-        PATH_NOT_FOUND("E404", "Invalid path. (No URL provided)"),
-        METHOD_NOT_ALLOWED("E405", "Method not allowed."),
-        INVALID_JSON_FORMAT("E410", "The JSON format is invalid."),
-        DATA_NOT_FOUND("E450", "Data not found."),
-        INVALID_PARAMETER("E451", "Invalid parameters."),
-        TOKEN_EXPIRED("E472", "Token has expired."),
-        INVALID_CREDENTIAL("E473", "Credential is invalid."),
-        API_CALL_FAILED("E544", "Internal API call failed."),
-        DB_CONNECTION_ERROR("E550", "Database connection error."),
-        UNKNOWN("E599", "Unknown error.");
+        INVALID_REQUEST("E400", "The required value is invalid."),
+        UNAUTHORIZED("E401", "You are not authorized to make this request."),
+        PATH_NOT_FOUND("E404", "The requested path is invalid or missing."),
+        METHOD_NOT_ALLOWED("E405", "The HTTP method used is not allowed for this request."),
+        INVALID_JSON_FORMAT("E410", "The provided JSON format is incorrect."),
+        DATA_NOT_FOUND("E450", "The requested data could not be found."),
+        INVALID_PARAMETER("E451", "One or more parameters are invalid."),
+        TOKEN_EXPIRED("E472", "Your token has expired. Please log in again."),
+        INVALID_CREDENTIAL("E473", "The provided credentials are incorrect. Please try again."),
+        API_CALL_FAILED("E544", "An internal API call has failed. Please try again later."),
+        DB_CONNECTION_ERROR("E550", "A database connection error has occurred. Please contact support if the issue persists."),
+        UNKNOWN("E599", "An unknown error has occurred. Please try again later.");
 
         private final String code;
         private final String message;

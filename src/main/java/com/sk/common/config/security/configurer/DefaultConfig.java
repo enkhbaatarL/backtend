@@ -1,12 +1,14 @@
 package com.sk.common.config.security.configurer;
 
+import com.sk.common.config.security.CustomAccessDeniedHandler;
+import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
-import org.opensaml.xmlsec.signature.P;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -23,11 +25,15 @@ public class DefaultConfig {
         if (securityEnabled) {
 
             http
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .anyRequest().authenticated()
+                )
+                .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                    .accessDeniedHandler(new CustomAccessDeniedHandler())
                 );
-    //            .exceptionHandling(); todo 추가
             return http.build();
 
         } else {

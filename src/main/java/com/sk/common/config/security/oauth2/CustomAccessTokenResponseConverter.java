@@ -1,5 +1,7 @@
 package com.sk.common.config.security.oauth2;
 
+import com.sk.common.model.BaseResponse;
+import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.OAuth2Res;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.core.convert.converter.Converter;
@@ -12,10 +14,10 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
 @Component
-public class CustomAccessTokenResponseConverter implements Converter<OAuth2AccessTokenAuthenticationToken, OAuth2Res> {
+public class CustomAccessTokenResponseConverter implements Converter<OAuth2AccessTokenAuthenticationToken, BaseResponse<OAuth2Res>> {
 
     @Override
-    public OAuth2Res convert(OAuth2AccessTokenAuthenticationToken authentication) {
+    public BaseResponse<OAuth2Res> convert(OAuth2AccessTokenAuthenticationToken authentication) {
 
         OAuth2AccessToken accessToken = authentication.getAccessToken();
 
@@ -30,7 +32,7 @@ public class CustomAccessTokenResponseConverter implements Converter<OAuth2Acces
         long expiresIn = Duration.between(Instant.now(), expiresAt).getSeconds();
         String issuedAtFormatted = ObjectUtils.isNotEmpty(issuedAt) ? DateTimeFormatter.ISO_INSTANT.format(issuedAt) : null;
 
-        return OAuth2Res.of(tokenValue, tokenType, expiresIn, issuedAtFormatted);
+        return BaseResponseFactory.create(OAuth2Res.of(tokenValue, tokenType, expiresIn, issuedAtFormatted));
 
     }
 }

@@ -2,6 +2,7 @@ package com.sk.common.config.security.oauth2;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.BaseResponse;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.OAuth2Res;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,11 +27,11 @@ public class CustomAccessTokenResponseHandler implements AuthenticationSuccessHa
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
 
-        OAuth2Res oAuth2Res = customAccessTokenResponseConverter.convert((OAuth2AccessTokenAuthenticationToken) authentication);
+        BaseResponse<OAuth2Res> res = customAccessTokenResponseConverter.convert((OAuth2AccessTokenAuthenticationToken) authentication);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         try {
-            response.getWriter().write(JsonUtil.getMapper().writeValueAsString(oAuth2Res));
+            response.getWriter().write(JsonUtil.getMapper().writeValueAsString(res));
         } catch (IOException e) {
             throw AppErrorException.of(ResultCode.Error.UNKNOWN);
         }
