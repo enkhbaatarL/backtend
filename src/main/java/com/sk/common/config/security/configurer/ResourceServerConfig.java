@@ -2,19 +2,23 @@ package com.sk.common.config.security.configurer;
 
 import com.sk.common.config.security.CustomAccessDeniedHandler;
 import com.sk.common.config.security.CustomAuthenticationEntryPoint;
-import com.sk.common.config.security.CustomJwtAuthenticationConverter;
-import com.sk.common.config.security.CustomJwtDecoder;
+import com.sk.common.config.security.jwt.CustomJwtAuthenticationConverter;
+import com.sk.common.config.security.jwt.CustomJwtDecoder;
+import com.sk.common.filter.ExceptionHandlerFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 @Configuration
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class ResourceServerConfig {
 
@@ -22,6 +26,7 @@ public class ResourceServerConfig {
     private boolean securityEnabled;
 
     private final CustomJwtDecoder customJwtDecoder;
+    private final ExceptionHandlerFilter exceptionHandlerFilter;
     private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
 
     @Bean
@@ -31,12 +36,10 @@ public class ResourceServerConfig {
         if (securityEnabled) {
 
             http
+                .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/auth/**").permitAll()
-                    .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                     .jwt(jwt -> jwt
                         .decoder(customJwtDecoder)
@@ -51,14 +54,11 @@ public class ResourceServerConfig {
 
         } else {
 
-            http
+            return http
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                    .anyRequest().permitAll()
-                );
-
-            return http.build();
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .build();
         }
 
     }

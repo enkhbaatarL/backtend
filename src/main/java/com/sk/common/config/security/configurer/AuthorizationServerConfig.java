@@ -2,9 +2,10 @@ package com.sk.common.config.security.configurer;
 
 import com.sk.common.config.security.CustomAccessDeniedHandler;
 import com.sk.common.config.security.CustomAuthenticationEntryPoint;
-import com.sk.common.config.security.CustomJwtEncoder;
+import com.sk.common.config.security.jwt.CustomJwtEncoder;
 import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
 import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
+import com.sk.common.filter.ExceptionHandlerFilter;
 import com.sk.common.utils.JwtProperties;
 import com.sk.common.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtGenerat
 import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 @Configuration
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class AuthorizationServerConfig {
 
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
+    private final ExceptionHandlerFilter exceptionHandlerFilter;
     private final RegisteredClientRepository registeredClientRepository;
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
     private final CustomAccessTokenResponseHandler customAccessTokenResponseHandler;
@@ -50,6 +53,7 @@ public class AuthorizationServerConfig {
 
             // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
             authorizationServerConfigurer
+                .clientAuthentication(clientAuth -> clientAuth.errorResponseHandler(customAuthenticationFailureHandler)) // BasicAuthenticationFilter
                 .tokenEndpoint(tokenEndpoint ->
                     tokenEndpoint
                         .accessTokenResponseHandler(customAccessTokenResponseHandler)
@@ -58,14 +62,15 @@ public class AuthorizationServerConfig {
 
             // Authorization Server 관련 경로 매칭
             http
-                .securityMatcher("/oauth2/token", "/oauth2/jwks") // Authorization Server 경로 제한
+                .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
+                .securityMatcher("/oauth2/token") // Authorization Server 경로 제한
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
                 .exceptionHandling(exceptions -> exceptions
                     .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                     .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers("/oauth2/token", "/oauth2/jwks").permitAll()
+                    .requestMatchers("/oauth2/token").permitAll()
                     .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
@@ -76,7 +81,7 @@ public class AuthorizationServerConfig {
         } else {
 
             http
-                .securityMatcher("/oauth2/token", "/oauth2/jwks")
+                .securityMatcher("/oauth2/token")
                 .authorizeHttpRequests(authorize -> authorize
                     .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용
                 )
@@ -101,27 +106,8 @@ public class AuthorizationServerConfig {
         return AuthorizationServerSettings.builder()
             .issuer("http://localhost:8080")
             .tokenEndpoint("/oauth2/token")
-            .jwkSetEndpoint("/oauth2/jwks")
             .build();
     }
-
-//    @Bean
-//    public JWKSource<SecurityContext> jwkSource() throws Exception {
-//        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-//        keyPairGenerator.initialize(2048);
-//        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-//
-//        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-//        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-//
-//        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-//            .privateKey(privateKey)
-//            .keyID(UUID.randomUUID().toString())
-//            .build();
-//
-//        JWKSet jwkSet = new JWKSet(rsaKey);
-//        return new ImmutableJWKSet<>(jwkSet);
-//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

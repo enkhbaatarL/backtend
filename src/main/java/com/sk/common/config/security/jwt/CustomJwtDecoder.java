@@ -1,7 +1,8 @@
-package com.sk.common.config.security;
+package com.sk.common.config.security.jwt;
 
 import com.sk.common.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -19,7 +20,7 @@ public class CustomJwtDecoder implements JwtDecoder {
     @Override
     public Jwt decode(String token) throws JwtException {
         Claims claims = jwtUtil.extractClaims(token);
-        return new Jwt(token, claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant(), Map.of("alg", "HS256"), claims);
+        return new Jwt(token, claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant(), Map.of("alg", Jwts.SIG.HS256), claims);
     }
 
 }

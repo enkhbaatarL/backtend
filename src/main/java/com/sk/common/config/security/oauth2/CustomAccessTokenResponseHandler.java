@@ -33,7 +33,7 @@ public class CustomAccessTokenResponseHandler implements AuthenticationSuccessHa
         try {
             response.getWriter().write(JsonUtil.getMapper().writeValueAsString(res));
         } catch (IOException e) {
-            throw AppErrorException.of(ResultCode.Error.UNKNOWN);
+            throw AppErrorException.of(ResultCode.Error.SYS_UNKNOWN);
         }
 
     }

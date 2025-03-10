@@ -1,18 +1,26 @@
-package com.sk.common.config.security;
+package com.sk.common.config.security.jwt;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtProperties;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.shared.entity.master.Oauth2RegisteredClient;
-import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
 
 @Component
 @Transactional(readOnly = true)
@@ -29,8 +37,16 @@ public class CustomJwtEncoder implements JwtEncoder {
         Map<String, Object> headers = parameters.getJwsHeader().getHeaders();
 
         String clientId = claims.getSubject();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
+        RegisteredClient registeredClient;
+        if (auth instanceof OAuth2ClientAuthenticationToken clientAuth && clientAuth.isAuthenticated()) {
+            registeredClient = clientAuth.getRegisteredClient();
+        } else {
+            registeredClient = registeredClientRepository.findByClientId(clientId);
+        }
+
+        Optional.ofNullable(registeredClient).orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER));
 
         Date expiryDate = new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry());
 
@@ -51,5 +67,6 @@ public class CustomJwtEncoder implements JwtEncoder {
             headers,
             claims.getClaims()
         );
+
     }
 }
