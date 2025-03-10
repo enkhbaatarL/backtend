@@ -43,6 +43,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             .stream()
             .map(s -> String.format("[%s: %s, %s: %s, %s: %s]", "field", s.getField(), "provided value", s.getRejectedValue(), "cause", s.getDefaultMessage()))
             .collect(Collectors.joining(", "));
+        log.error("Exception Occurred. -> [Request Body Parameters Not Valid]. message : {}", e.getMessage(), e);
         return ResponseEntity
             .status(BAD_REQUEST)
             .body(BaseResponseFactory.createDetail(ResultCode.Error.REQ_INVALID_PARAMETER, causeStr));
@@ -59,6 +60,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     .map(error -> String.format("[%s: %s, %s: %s, %s: %s]", "field", fieldName, "provided value", rejectedValue, "cause", error.getDefaultMessage()));
             })
             .collect(Collectors.joining(", "));
+        log.error("Exception Occurred. -> [Parameters Not Valid]. message : {}", ex.getMessage(), ex);
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(BaseResponseFactory.createDetail(ResultCode.Error.REQ_INVALID_PARAMETER, causeStr));

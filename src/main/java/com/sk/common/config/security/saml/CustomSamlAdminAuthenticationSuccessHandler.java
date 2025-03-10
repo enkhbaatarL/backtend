@@ -14,8 +14,8 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.shared.entity.master.User;
-import com.sk.domain.shared.repository.master.UserRepository;
+//import com.sk.domain.shared.entity.master.User;
+//import com.sk.domain.shared.repository.master.UserRepository;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomSamlAdminAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+//    private final UserRepository userRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -43,18 +43,18 @@ public class CustomSamlAdminAuthenticationSuccessHandler implements Authenticati
         // TODO: User / Admin 구분 해서 데이터 조회 필요
 
         // SAML 속성에서 사용자 정보 추출
-        String username = principal.getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        // JWT 토큰 생성
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(username);
+//        String username = principal.getName();
+//        User user = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//
+//        // JWT 토큰 생성
+//        String accessToken = jwtUtil.generateAccessToken(user);
+//        String refreshToken = jwtUtil.generateRefreshToken(username);
 
         // 토큰 응답 생성
         Map<String, Object> tokenResponse = new HashMap<>();
-        tokenResponse.put("access_token", accessToken);
-        tokenResponse.put("refresh_token", refreshToken);
+//        tokenResponse.put("access_token", accessToken);
+//        tokenResponse.put("refresh_token", refreshToken);
         tokenResponse.put("token_type", "Bearer");
 
         // JSON 응답 전송

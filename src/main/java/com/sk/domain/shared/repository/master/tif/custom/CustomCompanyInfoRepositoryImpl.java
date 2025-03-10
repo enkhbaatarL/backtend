@@ -36,12 +36,14 @@ public class CustomCompanyInfoRepositoryImpl implements CustomCompanyInfoReposit
             .from(companyInfo)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
+            .where(companyInfo.isDeleted.eq(false))
             .orderBy()
             .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
             .select(companyInfo.count())
-            .from(companyInfo);
+            .from(companyInfo)
+            .where(companyInfo.isDeleted.eq(false));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
 
