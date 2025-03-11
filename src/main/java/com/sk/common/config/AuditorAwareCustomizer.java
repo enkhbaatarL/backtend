@@ -10,10 +10,8 @@ public class AuditorAwareCustomizer implements AuditorAware<String> {
 
     @Override
     public Optional<String> getCurrentAuditor() {
-
         // todo Auditing
-        return null;
-
+        return Optional.of("SYSTEM");
     }
 
 }
