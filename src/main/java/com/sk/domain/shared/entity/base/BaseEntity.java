@@ -22,13 +22,13 @@ public abstract class BaseEntity extends TimeBaseEntity {
     @CreatedBy
     @Column(name = "crt_usr_id", updatable = false, length = 50, nullable = false)
     @Comment("생성사용자ID")
-    @ColumnDefault("SYSTEM")
+    @ColumnDefault("'SYSTEM'")
     protected String createUserId;
 
     @LastModifiedBy
     @Column(name = "mod_usr_id", length = 50, nullable = false)
     @Comment("수정사용자ID")
-    @ColumnDefault("SYSTEM")
+    @ColumnDefault("'SYSTEM'")
     protected String modifyUserId;
 
     public BaseEntity(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId) {

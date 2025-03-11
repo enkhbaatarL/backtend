@@ -25,7 +25,7 @@ public class CompanyInfo extends BaseEntity {
     @Comment("회사코드")
     private String companyCd;
 
-    @Column(name = "del_yn", nullable = false, length = 1)
+    @Column(name = "del_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("삭제여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)

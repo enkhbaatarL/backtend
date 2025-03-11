@@ -22,7 +22,7 @@ public abstract class RegisterBaseEntity {
     @CreatedBy
     @Column(name = "crt_usr_id", updatable = false, length = 50)
     @Comment("생성사용자ID")
-    @ColumnDefault("SYSTEM")
+    @ColumnDefault("'SYSTEM'")
     protected String createUserId;
 
     @CreatedDate
