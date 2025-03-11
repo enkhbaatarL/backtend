@@ -160,7 +160,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleException(AppErrorException e) {
         log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", e.getMessage(), e);
         return ResponseEntity.status(BAD_REQUEST)
-            .body(BaseResponseFactory.create(e.getErrorCode(), e.getMessage()));
+            .body(BaseResponseFactory.createDetail(e.getErrorCode(), e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
