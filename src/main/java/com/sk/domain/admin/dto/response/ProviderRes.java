@@ -23,7 +23,8 @@ public record ProviderRes(
     String modifyUserId,
 
     @Schema(description = "수정일시", example = "2025-02-12 15:00:00") //
-    LocalDateTime modifyDt) {
+    LocalDateTime modifyDt
+  ) {
 
   @Builder
   public ProviderRes(String providerName, String providerDesc, String providerCode, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
