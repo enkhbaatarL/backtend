@@ -34,7 +34,7 @@ public class Goods extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "gds_no", nullable = false, columnDefinition = "mediumint unsigned")
     @Comment("상품번호")
-    private Long goodsNo;
+    private Integer goodsNo;
 
     @Column(name = "gds_nm", nullable = false, length = 100)
     @Comment("상품명")
