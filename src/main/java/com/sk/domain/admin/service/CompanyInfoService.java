@@ -1,5 +1,7 @@
 package com.sk.domain.admin.service;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.CompanyInfoReq;
 import com.sk.domain.admin.dto.response.CompanyInfoRes;
@@ -36,8 +38,14 @@ public class CompanyInfoService {
      * @return CompanyInfoRes
      */
     @Transactional
-    public CompanyInfoRes postCompany(CompanyInfoReq companyInfoReq) {
+    public CompanyInfoRes
+    postCompany(CompanyInfoReq companyInfoReq) {
+
+        companyInfoRepository.findByCompanyCd(companyInfoReq.companyCd())
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER));
+
         CompanyInfo savedEntity = companyInfoRepository.save(CompanyInfo.of(companyInfoReq));
+
         return CompanyInfoRes.of(savedEntity);
     }
 
