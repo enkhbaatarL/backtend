@@ -2,6 +2,7 @@ package com.sk.common.handler;
 
 import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.model.BaseResponseFactory;
 import io.jsonwebtoken.MalformedJwtException;
@@ -153,6 +154,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         }
         return ResponseEntity.status(INTERNAL_SERVER_ERROR)
             .body(BaseResponseFactory.createDetail(ResultCode.Error.API_CALL_FAILED, ex.getMessage()));
+    }
+
+    @ExceptionHandler(AppErrorException.class)
+    public ResponseEntity<Object> handleException(AppErrorException e) {
+        log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", e.getMessage(), e);
+        return ResponseEntity.status(BAD_REQUEST)
+            .body(BaseResponseFactory.createDetail(e.getErrorCode(), e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

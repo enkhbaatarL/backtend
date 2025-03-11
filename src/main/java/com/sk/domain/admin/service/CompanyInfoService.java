@@ -41,7 +41,9 @@ public class CompanyInfoService {
     public CompanyInfoRes postCompany(CompanyInfoReq companyInfoReq) {
 
         companyInfoRepository.findByCompanyCd(companyInfoReq.companyCd())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER));
+            .ifPresent(company -> {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "id already exists.");
+            });
 
         CompanyInfo savedEntity = companyInfoRepository.save(CompanyInfo.of(companyInfoReq));
 
