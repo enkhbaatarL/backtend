@@ -38,8 +38,7 @@ public class CompanyInfoService {
      * @return CompanyInfoRes
      */
     @Transactional
-    public CompanyInfoRes
-    postCompany(CompanyInfoReq companyInfoReq) {
+    public CompanyInfoRes postCompany(CompanyInfoReq companyInfoReq) {
 
         companyInfoRepository.findByCompanyCd(companyInfoReq.companyCd())
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER));
