@@ -20,13 +20,13 @@ import java.time.LocalDateTime;
 public abstract class BaseEntity extends TimeBaseEntity {
 
     @CreatedBy
-    @Column(name = "crt_usr_id", updatable = false, length = 50, nullable = false)
+    @Column(name = "crt_usr_logn_id", updatable = false, length = 50, nullable = false)
     @Comment("생성사용자ID")
     @ColumnDefault("SYSTEM")
     protected String createUserId;
 
     @LastModifiedBy
-    @Column(name = "mod_usr_id", length = 50, nullable = false)
+    @Column(name = "mod_usr_logn_id", length = 50, nullable = false)
     @Comment("수정사용자ID")
     @ColumnDefault("SYSTEM")
     protected String modifyUserId;
