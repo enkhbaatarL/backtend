@@ -28,7 +28,7 @@ public class Provider extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "prvd_no", nullable = false, columnDefinition = "mediumint unsigned")
     @Comment("프로바이더번호")
-    private Long providerNo;
+    private Integer providerNo;
 
     @Column(name = "prvd_nm", nullable = false, length = 100)
     @Comment("프로바이더명")
