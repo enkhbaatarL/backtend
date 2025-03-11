@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +28,16 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
 
         String apiEndpointUrl = request.getRequestURI();
         String httpMethodName = request.getMethod();
-        String errorMessageContent = String.valueOf(request.getAttribute("exception"));
+        String errorMessageContent = String.valueOf(request.getAttribute("exceptionMessage"));
 
-        ApiAccessLog accessLog = ApiAccessLog.of(apiEndpointUrl + "/" + request.getQueryString(), httpMethodName, "SYSTEM", MDCUtil.getValue(MDCUtil.REQUEST_BODY), errorMessageContent);
+        ApiAccessLog accessLog = ApiAccessLog.of(
+            StringUtils.join(apiEndpointUrl, "/", request.getQueryString()),
+            httpMethodName,
+            "SYSTEM", // todo Auditing
+            MDCUtil.getValue(MDCUtil.REQUEST_BODY),
+            errorMessageContent
+        );
+
         apiAccessLogRepository.save(accessLog);
 
     }
