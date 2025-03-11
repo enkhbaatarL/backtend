@@ -25,12 +25,6 @@ public class ApiAccessLog extends BaseEntity {
     @Comment("API접속일련번호")
     private Integer apiAccessSn;
 
-    @Column(name = "del_yn", nullable = false, length = 1, columnDefinition = "CHAR(1)")
-    @Comment("삭제여부")
-    @ColumnDefault("'N'")
-    @Convert(converter = BooleanToYNAttributeConverter.class)
-    private Boolean isDeleted;
-
     @Column(name = "usr_logn_id", nullable = false, length = 50)
     @Comment("사용자로그인ID")
     private String userLoginId;
@@ -57,9 +51,8 @@ public class ApiAccessLog extends BaseEntity {
     public ApiAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
                         Integer apiAccessSn, Boolean isDeleted, String userLoginId, String apiEndpointUrl,
                         String httpMethodNm, String requestDataContent, String errorMessageContent) {
-        super(createDt, modifyDt, createUserId, modifyUserId);
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.apiAccessSn = apiAccessSn;
-        this.isDeleted = isDeleted;
         this.userLoginId = userLoginId;
         this.apiEndpointUrl = apiEndpointUrl;
         this.httpMethodNm = httpMethodNm;
