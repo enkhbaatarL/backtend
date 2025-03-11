@@ -32,6 +32,7 @@ import lombok.NoArgsConstructor;
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends TmdBaseEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "usr_no", nullable = false, columnDefinition = "int unsigned")

@@ -1,11 +1,10 @@
 package com.sk.domain.shared.entity.master.tmd;
 
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.TmdBaseEntity;
-import com.sk.domain.shared.entity.compositeKey.UserHistoryId;
+import com.sk.domain.shared.entity.compositeKey.tmd.UserHistoryId;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -27,6 +26,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "tmd_usrh")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserHistory extends TmdBaseEntity {
+    
     @EmbeddedId
     private UserHistoryId id;
 

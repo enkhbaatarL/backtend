@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Provider extends TmdBaseEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "prvd_no", nullable = false, columnDefinition = "mediumint unsigned")

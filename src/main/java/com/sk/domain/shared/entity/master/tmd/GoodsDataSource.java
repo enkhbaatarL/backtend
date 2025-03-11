@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsDataSource extends TmdBaseEntity {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "gds_data_src_no", nullable = false, columnDefinition = "int unsigned")

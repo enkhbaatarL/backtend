@@ -1,10 +1,10 @@
-// package com.sk.domain.shared.repository.master.tmd;
+package com.sk.domain.shared.repository.master.tmd;
 
-// import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-// import com.sk.domain.shared.entity.compositeKey.UserHistoryId;
-// import com.sk.domain.shared.entity.master.tmd.UserHistory;
+import com.sk.domain.shared.entity.compositeKey.tmd.UserHistoryId;
+import com.sk.domain.shared.entity.master.tmd.UserHistory;
 
-// public interface UserHistoryRepository extends JpaRepository<UserHistory, UserHistoryId> {
+public interface UserHistoryRepository extends JpaRepository<UserHistory, UserHistoryId> {
 
-// }
+}

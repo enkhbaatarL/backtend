@@ -1,4 +1,4 @@
-package com.sk.domain.shared.entity.compositeKey;
+package com.sk.domain.shared.entity.compositeKey.tmd;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;

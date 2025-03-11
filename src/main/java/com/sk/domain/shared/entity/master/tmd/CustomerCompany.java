@@ -17,6 +17,7 @@ import lombok.Getter;
 @Comment("TMD_고객회사기본")
 @Table(name = "tmd_custcpnym")
 public class CustomerCompany extends TmdBaseEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "cust_cpny_no", nullable = false, columnDefinition = "mediumint unsigned")
