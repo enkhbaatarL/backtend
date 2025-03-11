@@ -3,7 +3,7 @@ package com.sk.domain.shared.entity.master.tam;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
+import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.compositeKey.tam.CustomerCompanyGoodsMappingId;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
@@ -29,7 +29,7 @@ import lombok.NoArgsConstructor;
 })
 @Comment("TAM_고객회사상품매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CustomerCompanyGoodsMapping extends TmdBaseEntity {
+public class CustomerCompanyGoodsMapping extends BaseEntity {
 
     @EmbeddedId
     private CustomerCompanyGoodsMappingId id;

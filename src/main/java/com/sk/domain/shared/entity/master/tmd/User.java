@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
+import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -31,8 +31,8 @@ import lombok.NoArgsConstructor;
         @Index(name = "TMD_USRM_IX02", columnList = "usr_logn_id")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User extends TmdBaseEntity {
-    
+public class User extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "usr_no", nullable = false, columnDefinition = "int unsigned")

@@ -2,7 +2,7 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
+import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,8 +16,8 @@ import lombok.Getter;
 @Entity
 @Comment("TMD_고객회사기본")
 @Table(name = "tmd_custcpnym")
-public class CustomerCompany extends TmdBaseEntity {
-    
+public class CustomerCompany extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "cust_cpny_no", nullable = false, columnDefinition = "mediumint unsigned")

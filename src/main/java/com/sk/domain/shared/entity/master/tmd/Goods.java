@@ -4,7 +4,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
+import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
         @Index(name = "TMD_GDSM_IX01", columnList = "prvd_no")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Goods extends TmdBaseEntity {
+public class Goods extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 public abstract class RegisterBaseEntity {
 
     @CreatedBy
-    @Column(name = "crt_usr_id", updatable = false, length = 50)
+    @Column(name = "crt_usr_logn_id", updatable = false, length = 50)
     @Comment("생성사용자ID")
     @ColumnDefault("'SYSTEM'")
     protected String createUserId;

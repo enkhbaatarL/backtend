@@ -2,7 +2,7 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
+import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,8 +25,8 @@ import lombok.NoArgsConstructor;
         @Index(name = "TMD_GDSDATASRCD_IX01", columnList = "gds_no")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class GoodsDataSource extends TmdBaseEntity {
-    
+public class GoodsDataSource extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "gds_data_src_no", nullable = false, columnDefinition = "int unsigned")

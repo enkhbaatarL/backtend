@@ -1,7 +1,9 @@
 package com.sk.domain.shared.entity.master.tam;
 
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
-import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
+import org.hibernate.annotations.Comment;
+
+import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.entity.master.tmd.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,24 +20,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import org.hibernate.annotations.Comment;
-
-import com.sk.domain.shared.entity.master.tmd.User;
-
-
-
 @Getter
 @Entity
-@Table(
-    name = "tam_authmnagtgdsmappl",
-    indexes = {
+@Table(name = "tam_authmnagtgdsmappl", indexes = {
         @Index(name = "TAM_AUTHMNAGTGDSMAPPL_IX01", columnList = "usr_no"),
         @Index(name = "TAM_AUTHMNAGTGDSMAPPL_IX02", columnList = "cust_cpny_no,gds_no,gds_auth_mnagt_spt_cd")
-    }
-)
+})
 @Comment("TAM_권한주체상품매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AuthManageGoodsMapping extends TmdBaseEntity {
+public class AuthManageGoodsMapping extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,9 +43,9 @@ public class AuthManageGoodsMapping extends TmdBaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
-        @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no", nullable = false),
-        @JoinColumn(name = "gds_no", referencedColumnName = "gds_no", nullable = false),
-        @JoinColumn(name = "gds_auth_mnagt_spt_cd", referencedColumnName = "gds_auth_mnagt_spt_cd", nullable = false)
+            @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no", nullable = false),
+            @JoinColumn(name = "gds_no", referencedColumnName = "gds_no", nullable = false),
+            @JoinColumn(name = "gds_auth_mnagt_spt_cd", referencedColumnName = "gds_auth_mnagt_spt_cd", nullable = false)
     })
     @Comment("고객회사상품매핑")
     private CustomerCompanyGoodsMapping customerCompanyGoodsMapping;

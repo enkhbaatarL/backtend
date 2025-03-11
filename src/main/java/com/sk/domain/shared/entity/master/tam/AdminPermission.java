@@ -2,7 +2,7 @@ package com.sk.domain.shared.entity.master.tam;
 
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.shared.entity.base.TmdBaseEntity;
+import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.compositeKey.tam.AdminPermissionId;
 import com.sk.domain.shared.entity.master.tmd.User;
 
@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Comment("TAM_관리자허용IP내역")
 @Table(name = "tam_adminpmsnl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AdminPermission extends TmdBaseEntity {
+public class AdminPermission extends BaseEntity {
     
     @EmbeddedId
     private AdminPermissionId id;
