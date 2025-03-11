@@ -20,15 +20,13 @@ import java.time.LocalDateTime;
 public abstract class TimeBaseEntity {
 
     @CreatedDate
-    @Column(name = "crt_dtm", updatable = false, nullable = false)
+    @Column(name = "crt_dtm", updatable = false, nullable = false, columnDefinition = "datetime default CURRENT_TIMESTAMP")
     @Comment("생성일시")
-    @ColumnDefault("CURRENT_TIMESTAMP")
     protected LocalDateTime createDt;
 
     @LastModifiedDate
-    @Column(name = "mod_dtm")
+    @Column(name = "mod_dtm", nullable = false, columnDefinition = "datetime default CURRENT_TIMESTAMP")
     @Comment("수정일시")
-    @ColumnDefault("CURRENT_TIMESTAMP")
     protected LocalDateTime modifyDt;
 
     public TimeBaseEntity(LocalDateTime createDt, LocalDateTime modifyDt) {
