@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tlm_apiaccsl", indexes = {
+@Table(name = "tlm_emlsendl", indexes = {
         @Index(name = "TLM_APIACCSL_IX01", columnList = "eml_rcv_usr_logn_id")
 })
 @Comment("TLM_메일발송내역")
