@@ -15,6 +15,11 @@ public class MDCUtil {
     public static final String REQUEST_SEQ_ID = "REQUEST_SEQ_ID";
 
     /**
+     * REQUEST_METHOD.
+     */
+    public static final String REQUEST_METHOD = "REQUEST_METHOD";
+
+    /**
      * Request UUID.
      */
     public static final String REQUEST_UUID = "REQUEST_UUID";
@@ -48,6 +53,11 @@ public class MDCUtil {
      * REQUEST_USER_ID.
      */
     public static final String REQUEST_USER_ID = "REQUEST_USER_ID";
+
+    /**
+     * RESPONSE_ERROR_MSG.
+     */
+    public static final String RESPONSE_ERROR_MSG = "RESPONSE_ERROR_MSG";
 
 
     /**
@@ -87,6 +97,10 @@ public class MDCUtil {
      */
     public static void clear() {
         MDC_ADAPTER.clear();
+    }
+
+    public static MDCAdapter getAdapter() {
+        return MDC_ADAPTER;
     }
 
 }

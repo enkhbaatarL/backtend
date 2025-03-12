@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 @Getter
-@Entity
+//@Entity
 @Table(name = "oauth2_client_permissions")
 public class Oauth2ClientPermission {
 

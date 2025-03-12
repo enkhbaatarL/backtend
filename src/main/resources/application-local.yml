@@ -4,17 +4,17 @@ spring:
       on-profile: local
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:mysql://ec2-52-79-111-168.ap-northeast-2.compute.amazonaws.com:3306/mi?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: admin
-    password: Admin432!
+    username: mipapp
+    password: skccmipapp11@@
     hikari:
       maximum-pool-size: 5
       maxLifeTime: 60000
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
   security:
     oauth2:
       resourceserver:
