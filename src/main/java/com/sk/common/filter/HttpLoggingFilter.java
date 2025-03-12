@@ -80,6 +80,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         long reqSeqId = id.incrementAndGet();
         long startTime = System.currentTimeMillis();
         MDCUtil.setValue(MDCUtil.REQUEST_SEQ_ID, String.valueOf(reqSeqId));
+        MDCUtil.setValue(MDCUtil.REQUEST_METHOD, request.getMethod());
         MDCUtil.setValue(MDCUtil.REQUEST_UUID, RandomStringUtils.secure().next(8, true, true));
         MDCUtil.setValue(MDCUtil.REQUEST_START_TIME, String.valueOf(startTime));
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
@@ -94,6 +95,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         long reqSeqId = id.incrementAndGet();
         long startTime = System.currentTimeMillis();
         MDCUtil.setValue(MDCUtil.REQUEST_SEQ_ID, String.valueOf(reqSeqId));
+        MDCUtil.setValue(MDCUtil.REQUEST_METHOD, request.getMethod());
         MDCUtil.setValue(MDCUtil.REQUEST_UUID, RandomStringUtils.secure().next(8, true, true));
         MDCUtil.setValue(MDCUtil.REQUEST_START_TIME, String.valueOf(startTime));
         MDCUtil.setJsonValue(MDCUtil.HEADER_MAP, request.getHeaderMap());

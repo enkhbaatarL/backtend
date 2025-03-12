@@ -3,22 +3,12 @@ package com.sk.domain.shared.entity.master.tam;
 import java.time.LocalDateTime;
 
 import com.sk.domain.shared.enums.GoodsAuthCd;
+import jakarta.persistence.*;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.User;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinColumns;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -54,6 +44,7 @@ public class AuthManageGoodsMapping extends BaseEntity {
         @Comment("고객회사상품매핑")
         private CustomerCompanyGoodsMapping customerCompanyGoodsMapping;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "gds_auth_cd", nullable = false, length = 20)
         @Comment("상품권한코드")
         private GoodsAuthCd goodsAuthCd;

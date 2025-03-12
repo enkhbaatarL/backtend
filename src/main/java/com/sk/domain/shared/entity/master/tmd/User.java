@@ -3,23 +3,13 @@ package com.sk.domain.shared.entity.master.tmd;
 import java.time.LocalDateTime;
 
 import com.sk.domain.shared.enums.UserRoleCd;
+import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -49,6 +39,7 @@ public class User extends BaseEntity {
     @Comment("사용자로그인ID")
     private String userLoginId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "usr_role_cd", length = 10)
     @Comment("사용자역할코드")
     private UserRoleCd userRoleCd;
