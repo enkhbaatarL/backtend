@@ -6,6 +6,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.MDCUtil;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,8 +47,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
-        HttpServletRequest servletRequest = ((ServletWebRequest) request).getRequest();
-        servletRequest.setAttribute("exceptionMessage", ex.getMessage());
+        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, ex.getMessage());
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
@@ -117,7 +117,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * 커스텀 예외 핸들러 공통처리 메소드
      */
     private ResponseEntity<Object> buildResponse(Exception ex, HttpStatus status, ResultCode.Error code, String additional, HttpServletRequest request) {
-        request.setAttribute("exceptionMessage", ex.getMessage());
+        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, ex.getMessage());
 
         BaseResponse<Object> body = ObjectUtils.isEmpty(additional) ?
             BaseResponseFactory.create(code) : BaseResponseFactory.createDetail(code, additional);

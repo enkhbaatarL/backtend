@@ -28,16 +28,12 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
     @Transactional
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
 
-        String apiEndpointUrl = request.getRequestURI();
-        String httpMethodName = request.getMethod();
-        String errorMessageContent = String.valueOf(request.getAttribute("exceptionMessage"));
-
         ApiAccessLog accessLog = ApiAccessLog.of(
-            StringUtils.join(apiEndpointUrl, "/", request.getQueryString()),
-            httpMethodName,
+            StringUtils.join(MDCUtil.getValue(MDCUtil.REQUEST_URI), "?", MDCUtil.getValue(MDCUtil.REQUEST_QUERY_STRING)),
+            MDCUtil.getValue(MDCUtil.REQUEST_METHOD),
             "SYSTEM", // todo Auditing
             StringUtil.stripNewlinesAndTabs(MDCUtil.getValue(MDCUtil.REQUEST_BODY)),
-            errorMessageContent
+            MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG)
         );
 
         apiAccessLogRepository.save(accessLog);
