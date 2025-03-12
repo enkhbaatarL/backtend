@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -57,4 +58,16 @@ public class GoodsDataSource extends BaseEntity {
     @JoinColumn(name = "gds_no", referencedColumnName = "gds_no", nullable = false)
     @Comment("상품번호")
     private Goods goods;
+
+    @Builder
+    public GoodsDataSource(Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
+            String queryConditionContent, String goodsDataSourceExplanation, Goods goods) {
+        this.goodsDataSourceNo = goodsDataSourceNo;
+        this.goodsDataSourceNm = goodsDataSourceNm;
+        this.targetDbNm = targetDbNm;
+        this.targetTableNm = targetTableNm;
+        this.queryConditionContent = queryConditionContent;
+        this.goodsDataSourceExplanation = goodsDataSourceExplanation;
+        this.goods = goods;
+    }
 }

@@ -23,7 +23,7 @@ public class UserHistoryId implements Serializable {
     @Comment("사용자번호")
     private Integer userNo;
 
-    @Column(name = "aply_dtm", nullable = false, columnDefinition = "datetime")
+    @Column(name = "aply_dtm", nullable = false)
     @Comment("적용일시")
     private LocalDateTime applyDt;
 

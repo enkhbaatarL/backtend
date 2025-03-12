@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master.tam;
 
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
@@ -19,6 +21,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -39,15 +42,26 @@ public class CustomerCompanyGoodsMapping extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
-    @MapsId("customerCompanyNo") // 복합 키의 customerCompanyNo와 매핑
+    @MapsId("customerCompanyNo")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cust_cpny_no", nullable = false, referencedColumnName = "cust_cpny_no")
     @Comment("고객회사")
     private CustomerCompany customerCompany;
 
-    @MapsId("goodsNo") // 복합 키의 goodsNo와 매핑
+    @MapsId("goodsNo")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gds_no", nullable = false, referencedColumnName = "gds_no")
     @Comment("상품")
     private Goods goods;
+
+    @Builder
+    public CustomerCompanyGoodsMapping(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
+            String modifyUserId, Boolean isDeleted, CustomerCompanyGoodsMappingId id, Boolean isUsed,
+            CustomerCompany customerCompany, Goods goods) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
+        this.id = id;
+        this.isUsed = isUsed;
+        this.customerCompany = customerCompany;
+        this.goods = goods;
+    }
 }

@@ -14,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -47,4 +48,14 @@ public class Provider extends BaseEntity {
     @Column(name = "prvd_expn", length = 500)
     @Comment("프로바이더설명")
     private String providerExplanation;
+
+    @Builder
+    public Provider(Integer providerNo, String providerNm, String providerCd, Boolean isUsed,
+            String providerExplanation) {
+        this.providerNo = providerNo;
+        this.providerNm = providerNm;
+        this.providerCd = providerCd;
+        this.isUsed = isUsed;
+        this.providerExplanation = providerExplanation;
+    }
 }

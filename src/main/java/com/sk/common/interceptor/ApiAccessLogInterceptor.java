@@ -2,7 +2,8 @@ package com.sk.common.interceptor;
 
 import com.sk.common.utils.MDCUtil;
 import com.sk.domain.shared.entity.master.tlm.ApiAccessLog;
-import com.sk.domain.shared.repository.master.tim.ApiAccessLogRepository;
+import com.sk.domain.shared.repository.master.tlm.ApiAccessLogRepository;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
