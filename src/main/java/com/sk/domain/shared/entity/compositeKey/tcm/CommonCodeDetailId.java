@@ -18,11 +18,11 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 public class CommonCodeDetailId implements Serializable {
 
-    @Column(name = "cd_grp_id", nullable = false, length = 50, columnDefinition = "varchar(50)")
+    @Column(name = "cd_grp_id", nullable = false, length = 50)
     @Comment("코드그룹ID")
     private String codeGroupId;
 
-    @Column(name = "cd_id", nullable = false, length = 30, columnDefinition = "varchar(30)")
+    @Column(name = "cd_id", nullable = false, length = 30)
     @Comment("코드ID")
     private String codeId;
 

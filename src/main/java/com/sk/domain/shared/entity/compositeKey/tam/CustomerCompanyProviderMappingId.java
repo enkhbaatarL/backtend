@@ -5,6 +5,7 @@ import org.hibernate.annotations.Comment;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,4 +23,10 @@ public class CustomerCompanyProviderMappingId {
     @Column(name = "prvd_no", nullable = false, columnDefinition = "mediumint unsigned")
     @Comment("프로바이더번호")
     private Integer providerNo;
+
+    @Builder
+    public CustomerCompanyProviderMappingId(Integer customerCompanyNo, Integer providerNo) {
+        this.customerCompanyNo = customerCompanyNo;
+        this.providerNo = providerNo;
+    }
 }
