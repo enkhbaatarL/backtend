@@ -25,12 +25,6 @@ public class CompanyInfo extends BaseEntity {
     @Comment("회사코드")
     private String companyCd;
 
-    @Column(name = "del_yn", nullable = false, length = 1, columnDefinition = "CHAR(1)")
-    @Comment("삭제여부")
-    @ColumnDefault("'N'")
-    @Convert(converter = BooleanToYNAttributeConverter.class)
-    private Boolean isDeleted;
-
     @Column(name = "cpny_nm", nullable = false, length = 100)
     @Comment("회사명")
     private String companyNm;
@@ -41,9 +35,8 @@ public class CompanyInfo extends BaseEntity {
 
     @Builder
     public CompanyInfo(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, String companyCd, Boolean isDeleted, String companyNm, String companyEngNm) {
-        super(createDt, modifyDt, createUserId, modifyUserId);
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.companyCd = companyCd;
-        this.isDeleted = isDeleted;
         this.companyNm = companyNm;
         this.companyEngNm = companyEngNm;
     }
