@@ -48,7 +48,7 @@ public class CommonCodeDetail extends BaseEntity {
 
     @Column(name = "cd_expn", length = 500)
     @Comment("코드설명")
-    private String codeExplanation;
+    private String codeExpn;
 
     @Column(name = "use_bgn_dt", nullable = false, length = 8)
     @Comment("사용시작일자")
@@ -66,14 +66,14 @@ public class CommonCodeDetail extends BaseEntity {
     @Builder
     public CommonCodeDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, CommonCodeDetailId id, CommonCode commonCode, String codeName,
-            Short codeOrderSeq, String codeExplanation, String useBeginDate, String useEndDate,
+            Short codeOrderSeq, String codeExpn, String useBeginDate, String useEndDate,
             Boolean isUsed) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.id = id;
         this.commonCode = commonCode;
         this.codeName = codeName;
         this.codeOrderSeq = codeOrderSeq;
-        this.codeExplanation = codeExplanation;
+        this.codeExpn = codeExpn;
         this.useBeginDate = useBeginDate;
         this.useEndDate = useEndDate;
         this.isUsed = isUsed;
