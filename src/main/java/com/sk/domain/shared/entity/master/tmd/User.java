@@ -20,6 +20,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -79,5 +80,21 @@ public class User extends BaseEntity {
     @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no", nullable = false)
     @Comment("고객회사번호")
     private CustomerCompany customerCompany;
+
+    @Builder
+    public User(Integer userNo, String userNm, String userLoginId, String userRoleCd, String occupationDesignationNm,
+            String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
+            LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany) {
+        this.userNo = userNo;
+        this.userNm = userNm;
+        this.userLoginId = userLoginId;
+        this.userRoleCd = userRoleCd;
+        this.occupationDesignationNm = occupationDesignationNm;
+        this.departmentNm = departmentNm;
+        this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
+        this.isIndividualInfoAgreement = isIndividualInfoAgreement;
+        this.individualInfoAgreementDtm = individualInfoAgreementDtm;
+        this.customerCompany = customerCompany;
+    }
 
 }

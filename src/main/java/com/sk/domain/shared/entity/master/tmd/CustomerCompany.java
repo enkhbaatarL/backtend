@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
@@ -39,4 +40,14 @@ public class CustomerCompany extends BaseEntity {
     @Column(name = "use_end_dt", length = 8)
     @Comment("사용종료일자")
     private String useEndDt;
+
+    @Builder
+    public CustomerCompany(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd,
+            String useBeginDt, String useEndDt) {
+        this.customerCompanyNo = customerCompanyNo;
+        this.customerCompanyNm = customerCompanyNm;
+        this.customerCompanyCd = customerCompanyCd;
+        this.useBeginDt = useBeginDt;
+        this.useEndDt = useEndDt;
+    }
 }

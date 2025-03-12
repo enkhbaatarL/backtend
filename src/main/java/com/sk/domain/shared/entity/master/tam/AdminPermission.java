@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master.tam;
 
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -14,6 +16,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -23,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "tam_adminpmsnl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AdminPermission extends BaseEntity {
-    
+
     @EmbeddedId
     private AdminPermissionId id;
 
@@ -32,4 +35,12 @@ public class AdminPermission extends BaseEntity {
     @JoinColumn(name = "usr_no", nullable = false, referencedColumnName = "usr_no")
     @Comment("사용자")
     private User user;
+
+    @Builder
+    public AdminPermission(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+            Boolean isDeleted, AdminPermissionId id, User user) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
+        this.id = id;
+        this.user = user;
+    }
 }

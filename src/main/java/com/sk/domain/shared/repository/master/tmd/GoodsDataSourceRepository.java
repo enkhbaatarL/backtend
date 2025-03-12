@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSource;
 
-public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource, Long> {
+public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource, Integer> {
 
 }
 
