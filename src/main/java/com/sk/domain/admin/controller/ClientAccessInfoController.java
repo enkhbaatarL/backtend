@@ -51,7 +51,7 @@ public class ClientAccessInfoController {
 
     @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근권한을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/client-access-info/{clientAccessRegNo}")
+    @DeleteMapping("/client-access-info/{clientAccessRegNo}")
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
         @PathVariable @Valid Integer clientAccessRegNo
     ) {
