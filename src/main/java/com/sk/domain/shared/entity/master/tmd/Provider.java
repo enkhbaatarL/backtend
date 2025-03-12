@@ -41,7 +41,7 @@ public class Provider extends BaseEntity {
 
     @Column(name = "prvd_expn", length = 500)
     @Comment("프로바이더설명")
-    private String providerExplanation;
+    private String providerExpn;
 
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
@@ -50,21 +50,21 @@ public class Provider extends BaseEntity {
     private Boolean isUsed;
 
     @Builder
-    public Provider(Integer providerNo, String providerNm, String providerCd, String providerExplanation,
+    public Provider(Integer providerNo, String providerNm, String providerCd, String providerExpn,
             Boolean isUsed) {
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.providerCd = providerCd;
-        this.providerExplanation = providerExplanation;
+        this.providerExpn = providerExpn;
         this.isUsed = isUsed;
     }
 
     public static Provider of(ProviderReq providerReq) {
         return Provider.builder()
-                .providerNm(providerReq.providerName())
-                .providerCd(providerReq.providerCode())
-                .providerExplanation(providerReq.providerDesc())
-                .isUsed(providerReq.providerUseYn())
+                .providerNm(providerReq.providerNm())
+                .providerCd(providerReq.providerCd())
+                .providerExplanation(providerReq.providerExpn())
+                .isUsed(providerReq.providerIsUsed())
                 .build();
     }
 }

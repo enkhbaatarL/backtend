@@ -1,6 +1,9 @@
 package com.sk.domain.admin.service;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +16,7 @@ import com.sk.domain.admin.dto.response.CompanyInfoRes;
 import com.sk.domain.admin.dto.response.ProviderRes;
 import com.sk.domain.shared.entity.master.tif.CompanyInfo;
 import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
+import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +38,9 @@ public class ProviderService {
   public PaginationRes<ProviderRes> all(int page, int size) {
     Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "crt_dtm"));
 
-    Page<ProviderRes> page = repository.findAll(pageable).map(ProviderRes::from);
+    Page<ProviderRes> providerPage = repository.findAll(pageable).map(provider -> ProviderRes.of(provider));
 
-    return PaginationRes.toRes(page);
+    return PaginationRes.toRes(providerPage);
     // Pageable pageable = PageRequest.of(pageNo, PAGE_SIZE,
     // Sort.by(Sort.Direction.DESC, criteria));
     // Page<ReviewResponseDto> page =
@@ -82,17 +86,17 @@ public class ProviderService {
    */
   public ProviderRes replaceProvider(ProviderReq providerReq, Long id) {
     Provider provider = repository.findById(id)
-    .map(provider -> {
-      provider.setProviderName(providerReq.getProviderName());
-      provider.setProviderDesc(providerReq.getProviderDesc());
-      provider.setProviderCode(providerReq.getProviderCode());
-      provider.setProviderUseYn(providerReq.isProviderUseYn());
-      return repository.save(provider);
-    })
-    // .orElseGet(() -> {
-    //   return repository.save(Provider.of(providerReq));
-    // });
-    .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
+        .map(provider -> {
+          provider.setProviderName(providerReq.getProviderName());
+          provider.setProviderDesc(providerReq.getProviderDesc());
+          provider.setProviderCode(providerReq.getProviderCode());
+          provider.setProviderUseYn(providerReq.isProviderUseYn());
+          return repository.save(provider);
+        })
+        // .orElseGet(() -> {
+        // return repository.save(Provider.of(providerReq));
+        // });
+        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
 
     return ProviderRes.from(provider);
   }
