@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ProviderService {
-  private final ProviderRepository repository;
+  private final ProviderRepository providerRepository;
 
   /**
    * 데이타 프로바이더 목록을 페이지네이션 처리하여 조회한다.
@@ -36,19 +36,11 @@ public class ProviderService {
    * @return PaginationRes<ProviderRes>
    */
   public PaginationRes<ProviderRes> all(int page, int size) {
-    Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "crt_dtm"));
+    Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "createDt"));
 
-    Page<ProviderRes> providerPage = repository.findAll(pageable).map(provider -> ProviderRes.of(provider));
+    Page<ProviderRes> providerPage = providerRepository.findAll(pageable).map(provider -> ProviderRes.of(provider));
 
     return PaginationRes.toRes(providerPage);
-    // Pageable pageable = PageRequest.of(pageNo, PAGE_SIZE,
-    // Sort.by(Sort.Direction.DESC, criteria));
-    // Page<ReviewResponseDto> page =
-    // reviewRepository.findAll(pageable).map(ReviewResponseDto::from);
-
-    // return
-    // PaginationRes.toRes(companyInfoRepository.findCompaniesInfoByConditions(page,
-    // size));
   }
 
   /**
@@ -59,7 +51,7 @@ public class ProviderService {
    */
   @Transactional
   public ProviderRes newProvider(ProviderReq providerReq) {
-    Provider provider = repository.save(Provider.of(providerReq));
+    Provider provider = providerRepository.save(Provider.of(providerReq));
 
     return ProviderRes.of(provider);
   }
@@ -71,7 +63,7 @@ public class ProviderService {
    * @return ProviderRes
    */
   public ProviderRes one(Integer id) {
-    Provider provider = repository.findById(id)
+    Provider provider = providerRepository.findById(id)
         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
 
     return ProviderRes.of(provider);
@@ -85,14 +77,10 @@ public class ProviderService {
    * @return ProviderRes
    */
   public ProviderRes replaceProvider(ProviderReq providerReq, Integer id) {
-    Provider provider = repository.findById(id)
+    Provider provider = providerRepository.findById(id)
         .map(existingProvider -> {
-          existingProvider.builder().providerNm(providerReq.providerNm())
-              .providerCd(providerReq.providerCd())
-              .providerExpn(providerReq.providerExpn())
-              .isUsed(providerReq.isUsed())
-              .build();
-          return repository.save(existingProvider);
+          // tofo
+          return providerRepository.save(existingProvider);
         })
         // .orElseGet(() -> {
         // return repository.save(Provider.of(providerReq));
@@ -109,6 +97,6 @@ public class ProviderService {
    * @return
    */
   public void deleteProvider(Integer id) {
-    repository.deleteById(id);
+    providerRepository.deleteById(id);
   }
 }

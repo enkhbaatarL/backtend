@@ -60,8 +60,8 @@ public class ProviderController {
   @Operation(summary = "수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PutMapping("/{id}")
-  public BaseResponse<ProviderRes> replaceProvider(@RequestBody ProviderReq newProvider, @PathVariable Integer id) {
-    return BaseResponseFactory.create(service.replaceProvider(newProvider, id));
+  public BaseResponse<ProviderRes> replaceProvider(@RequestBody ProviderReq replaceProvider, @PathVariable Integer id) {
+    return BaseResponseFactory.create(service.replaceProvider(replaceProvider, id));
   }
 
   @Operation(summary = "삭제", description = "데이타 프로바이더를 삭제합니다.")

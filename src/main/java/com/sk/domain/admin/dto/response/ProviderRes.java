@@ -9,6 +9,9 @@ import lombok.Builder;
 
 
 public record ProviderRes(
+  @Schema(description = "프로바이더번호", example = "5000") //
+  Integer providerNo,
+
     @Schema(description = "프로바이더명", example = "레피니티브") //
     String providerNm,
 
@@ -34,7 +37,8 @@ public record ProviderRes(
     LocalDateTime modifyDt) {
 
       @Builder
-        public ProviderRes(String providerNm, String providerCd, String providerExpn, boolean isUsed, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+        public ProviderRes(Integer providerNo, String providerNm, String providerCd, String providerExpn, boolean isUsed, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+          this.providerNo = providerNo;
     this.providerNm = providerNm;
     this.providerCd = providerCd;
     this.providerExpn = providerExpn;
@@ -51,6 +55,7 @@ public record ProviderRes(
         .createDt(savedEntity.getCreateDt())
         .modifyUserId(savedEntity.getModifyUserId())
         .modifyDt(savedEntity.getModifyDt())
+        .providerNo(savedEntity.getProviderNo())
         .providerNm(savedEntity.getProviderNm())
         .providerCd(savedEntity.getProviderCd())
         .providerExpn(savedEntity.getProviderExpn())
