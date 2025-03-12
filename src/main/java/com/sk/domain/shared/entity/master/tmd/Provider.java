@@ -4,8 +4,8 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.admin.dto.request.ProviderReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -14,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -38,13 +39,32 @@ public class Provider extends BaseEntity {
     @Comment("프로바이더코드")
     private String providerCd;
 
+    @Column(name = "prvd_expn", length = 500)
+    @Comment("프로바이더설명")
+    private String providerExplanation;
+
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
-    @Column(name = "prvd_expn", length = 500)
-    @Comment("프로바이더설명")
-    private String providerExplanation;
+    @Builder
+    public Provider(Integer providerNo, String providerNm, String providerCd, String providerExplanation,
+            Boolean isUsed) {
+        this.providerNo = providerNo;
+        this.providerNm = providerNm;
+        this.providerCd = providerCd;
+        this.providerExplanation = providerExplanation;
+        this.isUsed = isUsed;
+    }
+
+    public static Provider of(ProviderReq providerReq) {
+        return Provider.builder()
+                .providerNm(providerReq.providerName())
+                .providerCd(providerReq.providerCode())
+                .providerExplanation(providerReq.providerDesc())
+                .isUsed(providerReq.providerUseYn())
+                .build();
+    }
 }

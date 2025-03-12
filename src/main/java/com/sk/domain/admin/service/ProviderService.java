@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ProviderService {
-  // private final ProviderRepository repository;
+  private final ProviderRepository repository;
 
   /**
    * 데이타 프로바이더 목록을 페이지네이션 처리하여 조회한다.
@@ -32,7 +32,11 @@ public class ProviderService {
    * @return PaginationRes<ProviderRes>
    */
   public PaginationRes<ProviderRes> all(int page, int size) {
+    Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "crt_dtm"));
 
+    Page<ProviderRes> page = repository.findAll(pageable).map(ProviderRes::from);
+
+    return PaginationRes.toRes(page);
     // Pageable pageable = PageRequest.of(pageNo, PAGE_SIZE,
     // Sort.by(Sort.Direction.DESC, criteria));
     // Page<ReviewResponseDto> page =
@@ -51,17 +55,9 @@ public class ProviderService {
    */
   @Transactional
   public ProviderRes newProvider(ProviderReq providerReq) {
+    Provider provider = repository.save(Provider.of(providerReq));
 
-    // companyInfoRepository.findByCompanyCd(companyInfoReq.companyCd())
-    // .ifPresent(company -> {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "id already
-    // exists.");
-    // });
-
-    // CompanyInfo savedEntity =
-    // companyInfoRepository.save(CompanyInfo.of(companyInfoReq));
-
-    // return CompanyInfoRes.of(savedEntity);
+    return ProviderRes.from(provider);
   }
 
   /**
@@ -71,7 +67,10 @@ public class ProviderService {
    * @return ProviderRes
    */
   public ProviderRes one(Long id) {
-    //
+    Provider provider = repository.findById(id)
+        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
+
+    return ProviderRes.from(provider);
   }
 
   /**
@@ -82,16 +81,20 @@ public class ProviderService {
    * @return ProviderRes
    */
   public ProviderRes replaceProvider(ProviderReq providerReq, Long id) {
-
-    // return repository.findById(id)
-    // .map(employee -> {
-    // employee.setName(newEmployee.getName());
-    // employee.setRole(newEmployee.getRole());
-    // return repository.save(employee);
-    // })
+    Provider provider = repository.findById(id)
+    .map(provider -> {
+      provider.setProviderName(providerReq.getProviderName());
+      provider.setProviderDesc(providerReq.getProviderDesc());
+      provider.setProviderCode(providerReq.getProviderCode());
+      provider.setProviderUseYn(providerReq.isProviderUseYn());
+      return repository.save(provider);
+    })
     // .orElseGet(() -> {
-    // return repository.save(newEmployee);
+    //   return repository.save(Provider.of(providerReq));
     // });
+    .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
+
+    return ProviderRes.from(provider);
   }
 
   /**
