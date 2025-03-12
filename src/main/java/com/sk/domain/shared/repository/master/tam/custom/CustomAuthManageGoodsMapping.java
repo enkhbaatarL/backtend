@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface CustomAuthManageGoodsMapping {
 
-    List<AuthManageGoodsMapping> getAuthority(String userLoginId);
+    List<AuthManageGoodsMapping> getGoodsAuthoritiesByUserLoginId(String userLoginId);
 
 }

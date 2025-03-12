@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "02. 고객사 API", description = "고객사 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/admin/company-info")
 @RequiredArgsConstructor
 public class CompanyInfoController {
 

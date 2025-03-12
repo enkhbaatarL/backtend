@@ -3,7 +3,7 @@ package com.sk.domain.admin.controller;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.response.GoodsAuthorityRes;
+import com.sk.domain.mi.dto.response.GoodsAuthorityRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
@@ -14,13 +14,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "00. 샘플 API", description = "샘플 API 입니다.")
+@Tag(name = "00. 테스트 샘플 API", description = "테스트 샘플 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/sample")
@@ -42,7 +41,7 @@ public class TestController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/auth")
     public BaseResponse<List<GoodsAuthorityRes>> getAuthority(@RequestParam(value = "param") String param) {
-        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.getAuthority(param);
+        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.getGoodsAuthoritiesByUserLoginId(param);
         return BaseResponseFactory.create(goodsMappings.stream().map(GoodsAuthorityRes::of).toList());
     }
 

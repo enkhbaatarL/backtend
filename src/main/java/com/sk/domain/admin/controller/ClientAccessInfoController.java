@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "30. 클라이언트 접근권한 API", description = "클라이언트 접근권한 API 입니다.")
+@Tag(name = "10. 클라이언트 접근권한 API", description = "클라이언트 접근권한 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/admin/client-info")
 @RequiredArgsConstructor
 public class ClientAccessInfoController {
 
@@ -26,14 +26,14 @@ public class ClientAccessInfoController {
 
     @Operation(summary = "클라이언트 접근권한 목록 조회 API", description = "클라이언트 접근권한 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/client-access-infos")
+    @GetMapping("/client-access")
     public BaseResponse<List<ClientAccessInfoRes>> getClientAccessInfos() {
         return BaseResponseFactory.create(clientAccessInfoService.getClientAccessInfos());
     }
 
     @Operation(summary = "클라이언트 접근권한 등록 API", description = "클라이언트 접근권한을 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/client-access-info")
+    @PostMapping("/client-access")
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
         @RequestBody @Valid ClientAccessInfoReq.Insert dto
     ) {
@@ -42,7 +42,7 @@ public class ClientAccessInfoController {
 
     @Operation(summary = "클라이언트 접근권한 수정 API", description = "클라이언트 접근권한을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/client-access-info")
+    @PatchMapping("/client-access")
     public BaseResponse<ClientAccessInfoRes> patchClientAccessInfo(
         @RequestBody @Valid ClientAccessInfoReq.Update dto
     ) {
@@ -51,7 +51,7 @@ public class ClientAccessInfoController {
 
     @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근권한을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/client-access-info/{clientAccessRegNo}")
+    @DeleteMapping("/client-access/{clientAccessRegNo}")
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
         @PathVariable @Valid Integer clientAccessRegNo
     ) {
