@@ -14,8 +14,8 @@ import com.sk.domain.admin.dto.request.CompanyInfoReq;
 import com.sk.domain.admin.dto.request.ProviderReq;
 import com.sk.domain.admin.dto.response.CompanyInfoRes;
 import com.sk.domain.admin.dto.response.ProviderRes;
-import com.sk.domain.shared.entity.master.tif.CompanyInfo;
-import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
+
+import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -61,7 +61,7 @@ public class ProviderService {
   public ProviderRes newProvider(ProviderReq providerReq) {
     Provider provider = repository.save(Provider.of(providerReq));
 
-    return ProviderRes.from(provider);
+    return ProviderRes.of(provider);
   }
 
   /**
@@ -70,11 +70,11 @@ public class ProviderService {
    * @param id 데이타 프로바이더의 id
    * @return ProviderRes
    */
-  public ProviderRes one(Long id) {
+  public ProviderRes one(Integer id) {
     Provider provider = repository.findById(id)
         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
 
-    return ProviderRes.from(provider);
+    return ProviderRes.of(provider);
   }
 
   /**
@@ -84,21 +84,22 @@ public class ProviderService {
    * @param id          데이타 프로바이더의 id
    * @return ProviderRes
    */
-  public ProviderRes replaceProvider(ProviderReq providerReq, Long id) {
+  public ProviderRes replaceProvider(ProviderReq providerReq, Integer id) {
     Provider provider = repository.findById(id)
-        .map(provider -> {
-          provider.setProviderName(providerReq.getProviderName());
-          provider.setProviderDesc(providerReq.getProviderDesc());
-          provider.setProviderCode(providerReq.getProviderCode());
-          provider.setProviderUseYn(providerReq.isProviderUseYn());
-          return repository.save(provider);
+        .map(existingProvider -> {
+          existingProvider.builder().providerNm(providerReq.providerNm())
+              .providerCd(providerReq.providerCd())
+              .providerExpn(providerReq.providerExpn())
+              .isUsed(providerReq.isUsed())
+              .build();
+          return repository.save(existingProvider);
         })
         // .orElseGet(() -> {
         // return repository.save(Provider.of(providerReq));
         // });
         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "id not found."));
 
-    return ProviderRes.from(provider);
+    return ProviderRes.of(provider);
   }
 
   /**
@@ -107,7 +108,7 @@ public class ProviderService {
    * @param id 데이타 프로바이더의 id
    * @return
    */
-  public void deleteProvider(Long id) {
-    //
+  public void deleteProvider(Integer id) {
+    repository.deleteById(id);
   }
 }

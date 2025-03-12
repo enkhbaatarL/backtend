@@ -53,21 +53,21 @@ public class ProviderController {
   @Operation(summary = "상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping("/{id}")
-  public BaseResponse<ProviderRes> one(@PathVariable Long id) {
+  public BaseResponse<ProviderRes> one(@PathVariable Integer id) {
     return BaseResponseFactory.create(service.one(id));
   }
 
   @Operation(summary = "수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PutMapping("/{id}")
-  public BaseResponse<ProviderRes> replaceProvider(@RequestBody ProviderReq newProvider, @PathVariable Long id) {
+  public BaseResponse<ProviderRes> replaceProvider(@RequestBody ProviderReq newProvider, @PathVariable Integer id) {
     return BaseResponseFactory.create(service.replaceProvider(newProvider, id));
   }
 
   @Operation(summary = "삭제", description = "데이타 프로바이더를 삭제합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @DeleteMapping("/{id}")
-  public BaseResponse<?> deleteProvider(@PathVariable Long id) {
+  public BaseResponse<?> deleteProvider(@PathVariable Integer id) {
     service.deleteProvider(id);
 
     return new BaseResponse<>(ResultCode.Success.OK.getCode(), ResultCode.Success.OK.getMessage());

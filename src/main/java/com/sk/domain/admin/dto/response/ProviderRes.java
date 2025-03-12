@@ -7,6 +7,7 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+
 public record ProviderRes(
     @Schema(description = "프로바이더명", example = "레피니티브") //
     String providerNm,
@@ -32,17 +33,16 @@ public record ProviderRes(
     @Schema(description = "수정일시", example = "2025-02-12 15:00:00") //
     LocalDateTime modifyDt) {
 
-  @Builder
-  public ProviderRes(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
-      Boolean isDeleted, String providerNm, String providerCd, String providerExpn, boolean isUsed) {
-    this.createUserId = createUserId;
-    this.createDt = createDt;
-    this.modifyUserId = modifyUserId;
-    this.modifyDt = modifyDt;
+      @Builder
+        public ProviderRes(String providerNm, String providerCd, String providerExpn, boolean isUsed, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
     this.providerNm = providerNm;
     this.providerCd = providerCd;
     this.providerExpn = providerExpn;
     this.isUsed = isUsed;
+    this.createUserId = createUserId;
+    this.createDt = createDt;
+    this.modifyUserId = modifyUserId;
+    this.modifyDt = modifyDt;
   }
 
   public static ProviderRes of(Provider savedEntity) {
@@ -51,10 +51,10 @@ public record ProviderRes(
         .createDt(savedEntity.getCreateDt())
         .modifyUserId(savedEntity.getModifyUserId())
         .modifyDt(savedEntity.getModifyDt())
-        .providerName(savedEntity.getProviderNm())
-        .providerDesc(savedEntity.getProviderExplanation())
-        .providerCode(savedEntity.getProviderCd())
-        .providerUseYn(savedEntity.getProviderUseYn())
+        .providerNm(savedEntity.getProviderNm())
+        .providerCd(savedEntity.getProviderCd())
+        .providerExpn(savedEntity.getProviderExpn())
+        .isUsed(savedEntity.getIsUsed())
         .build();
   }
 }

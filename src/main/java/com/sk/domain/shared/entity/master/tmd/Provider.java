@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "tmd_prvdm")
 @Comment("TMD_프로바이더기본")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Provider extends BaseEntity {
 
@@ -49,7 +50,6 @@ public class Provider extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
-    @Builder
     public Provider(Integer providerNo, String providerNm, String providerCd, String providerExpn,
             Boolean isUsed) {
         this.providerNo = providerNo;
@@ -63,8 +63,8 @@ public class Provider extends BaseEntity {
         return Provider.builder()
                 .providerNm(providerReq.providerNm())
                 .providerCd(providerReq.providerCd())
-                .providerExplanation(providerReq.providerExpn())
-                .isUsed(providerReq.providerIsUsed())
+                .providerExpn(providerReq.providerExpn())
+                .isUsed(providerReq.isUsed())
                 .build();
     }
 }
