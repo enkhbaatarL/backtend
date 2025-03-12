@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -54,4 +55,13 @@ public class Goods extends BaseEntity {
     @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", nullable = false)
     @Comment("프로바이더번호")
     private Provider provider;
+
+    @Builder
+    public Goods(Integer goodsNo, String goodsNm, String goodsCd, Boolean isUsed, Provider provider) {
+        this.goodsNo = goodsNo;
+        this.goodsNm = goodsNm;
+        this.goodsCd = goodsCd;
+        this.isUsed = isUsed;
+        this.provider = provider;
+    }
 }

@@ -3,13 +3,15 @@ package com.sk.domain.shared.entity.compositeKey.tam;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.Comment;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
-import org.hibernate.annotations.Comment;
 
 @Embeddable
 @Getter
@@ -19,7 +21,7 @@ public class AdminPermissionId implements Serializable {
 
     @Column(name = "usr_no", nullable = false, columnDefinition = "int unsigned")
     @Comment("사용자번호")
-    private Integer userNo; // tmd_usrm과 일치하도록 Integer 사용
+    private Integer userNo;
 
     @Column(name = "ipadr", nullable = false, length = 15)
     @Comment("아이피주소")
@@ -28,4 +30,11 @@ public class AdminPermissionId implements Serializable {
     @Column(name = "aply_dtm", nullable = false)
     @Comment("적용일시")
     private LocalDateTime applyDt;
+
+    @Builder
+    public AdminPermissionId(Integer userNo, String ipAddress, LocalDateTime applyDt) {
+        this.userNo = userNo;
+        this.ipAddress = ipAddress;
+        this.applyDt = applyDt;
+    }
 }
