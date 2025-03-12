@@ -2,6 +2,7 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.shared.enums.UserRoleCd;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
@@ -50,7 +51,7 @@ public class User extends BaseEntity {
 
     @Column(name = "usr_role_cd", length = 10)
     @Comment("사용자역할코드")
-    private String userRoleCd;
+    private UserRoleCd userRoleCd;
 
     @Column(name = "ondt_nm", length = 100)
     @Comment("직책명")
@@ -82,7 +83,7 @@ public class User extends BaseEntity {
     private CustomerCompany customerCompany;
 
     @Builder
-    public User(Integer userNo, String userNm, String userLoginId, String userRoleCd, String occupationDesignationNm,
+    public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String occupationDesignationNm,
             String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
             LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany) {
         this.userNo = userNo;

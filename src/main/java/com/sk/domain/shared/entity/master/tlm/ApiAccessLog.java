@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Comment("TLM_API접속내역")
-@Table(name = "tlm_emlsendl")
+@Table(name = "tlm_apiaccsl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ApiAccessLog extends BaseEntity {
 
