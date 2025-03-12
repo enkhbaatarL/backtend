@@ -3,6 +3,7 @@ package com.sk.common.filter;
 import com.sk.common.filter.wrapper.CustomContentCachingRequestWrapper;
 import com.sk.common.filter.wrapper.CustomContentCachingResponseWrapper;
 import com.sk.common.utils.MDCUtil;
+import com.sk.common.utils.StringUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -116,7 +117,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         log.info("req uri={}, method={}, body={}, ip={}",
             uri,
             request.getMethod(),
-            new String(requestBody, StandardCharsets.UTF_8).replaceAll("(\r\n|\r|\n|\n\r|)", ""),
+            StringUtil.stripNewlinesAndTabs(new String(requestBody, StandardCharsets.UTF_8)),
             request.getRemoteAddr()
         );
 

@@ -2,6 +2,9 @@ package com.sk.domain.shared.entity.compositeKey.tam;
 
 import java.io.Serializable;
 
+import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import org.hibernate.annotations.Comment;
 
 import jakarta.persistence.Column;
@@ -26,12 +29,13 @@ public class CustomerCompanyGoodsMappingId implements Serializable {
     @Comment("상품번호")
     private Integer goodsNo;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "gds_auth_mnagt_spt_cd", nullable = false, length = 10)
     @Comment("상품권한주체구분코드")
-    private String goodsAuthManageSupportCd;
+    private GoodsAuthManageSupportCd goodsAuthManageSupportCd;
 
     @Builder
-    public CustomerCompanyGoodsMappingId(Integer customerCompanyNo, Integer goodsNo, String goodsAuthManageSupportCd) {
+    public CustomerCompanyGoodsMappingId(Integer customerCompanyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
         this.customerCompanyNo = customerCompanyNo;
         this.goodsNo = goodsNo;
         this.goodsAuthManageSupportCd = goodsAuthManageSupportCd;
