@@ -1,6 +1,7 @@
 package com.sk.common.interceptor;
 
 import com.sk.common.utils.MDCUtil;
+import com.sk.common.utils.StringUtil;
 import com.sk.domain.shared.entity.master.tlm.ApiAccessLog;
 import com.sk.domain.shared.repository.master.tlm.ApiAccessLogRepository;
 
@@ -35,7 +36,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
             StringUtils.join(apiEndpointUrl, "/", request.getQueryString()),
             httpMethodName,
             "SYSTEM", // todo Auditing
-            MDCUtil.getValue(MDCUtil.REQUEST_BODY),
+            StringUtil.stripNewlinesAndTabs(MDCUtil.getValue(MDCUtil.REQUEST_BODY)),
             errorMessageContent
         );
 

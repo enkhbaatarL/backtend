@@ -2,6 +2,7 @@ package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.shared.enums.GoodsAuthCd;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -55,7 +56,7 @@ public class AuthManageGoodsMapping extends BaseEntity {
 
         @Column(name = "gds_auth_cd", nullable = false, length = 20)
         @Comment("상품권한코드")
-        private String goodsAuthCode;
+        private GoodsAuthCd goodsAuthCd;
 
         @Column(name = "use_bgn_dt", nullable = false, length = 8)
         @Comment("사용시작일자")
@@ -68,13 +69,13 @@ public class AuthManageGoodsMapping extends BaseEntity {
         @Builder
         public AuthManageGoodsMapping(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
                         String modifyUserId, Boolean isDeleted, Long authManagerGoodsMappingSeq, User user,
-                        CustomerCompanyGoodsMapping customerCompanyGoodsMapping, String goodsAuthCode,
+                        CustomerCompanyGoodsMapping customerCompanyGoodsMapping, GoodsAuthCd goodsAuthCd,
                         String useBeginDate, String useEndDate) {
                 super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
                 this.authManagerGoodsMappingSeq = authManagerGoodsMappingSeq;
                 this.user = user;
                 this.customerCompanyGoodsMapping = customerCompanyGoodsMapping;
-                this.goodsAuthCode = goodsAuthCode;
+                this.goodsAuthCd = goodsAuthCd;
                 this.useBeginDate = useBeginDate;
                 this.useEndDate = useEndDate;
         }
