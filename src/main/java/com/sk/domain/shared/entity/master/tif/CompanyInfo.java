@@ -1,14 +1,16 @@
 package com.sk.domain.shared.entity.master.tif;
 
-import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.request.CompanyInfoReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnDefault;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
