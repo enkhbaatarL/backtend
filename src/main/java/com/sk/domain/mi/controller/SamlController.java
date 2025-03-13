@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "01. SAML API", description = "SAML API 입니다.")
+@Tag(name = "00. SAML API", description = "SAML API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/login/saml2")

@@ -8,7 +8,9 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.admin.dto.dataResult.UserWithCompany;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.entity.master.tif.UserInfo;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -74,7 +76,8 @@ public class User extends BaseEntity {
     private CustomerCompany customerCompany;
 
     @Builder
-    public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String occupationDesignationNm,
+    public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
+            String occupationDesignationNm,
             String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
             LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany) {
         this.userNo = userNo;
@@ -87,6 +90,20 @@ public class User extends BaseEntity {
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
         this.individualInfoAgreementDtm = individualInfoAgreementDtm;
         this.customerCompany = customerCompany;
+    }
+
+    public static User of(UserWithCompany userWithCompany) {
+        return User.builder()
+                .userNm(userWithCompany.userNm())
+                .userLoginId(userWithCompany.userLoginId())
+                .userRoleCd(UserRoleCd.USER)
+                .occupationDesignationNm(userWithCompany.occupationDesignationNm())
+                .departmentNm(userWithCompany.departmentNm())
+                .isOtherServiceAccessPossible(false)
+                .isIndividualInfoAgreement(false)
+                .individualInfoAgreementDtm(null)
+                .customerCompany(userWithCompany.customerCompany())
+                .build();
     }
 
 }
