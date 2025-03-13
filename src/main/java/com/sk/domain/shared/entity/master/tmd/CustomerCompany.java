@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -17,6 +19,7 @@ import lombok.Getter;
 @Entity
 @Comment("TMD_고객회사기본")
 @Table(name = "tmd_custcpnym")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerCompany extends BaseEntity {
 
     @Id
