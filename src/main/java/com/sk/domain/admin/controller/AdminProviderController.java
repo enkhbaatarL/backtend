@@ -46,8 +46,8 @@ public class AdminProviderController {
   @Operation(summary = "등록", description = "데이타 프로바이더를 등록합니다")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PostMapping("/")
-  public BaseResponse<ProviderRes.Insert> insert(@RequestBody ProviderReq.Insert newProvider) {
-    return BaseResponseFactory.create(providerService.insert(newProvider));
+  public BaseResponse<ProviderRes.Insert> insert(@RequestBody ProviderReq.Insert providerReq) {
+    return BaseResponseFactory.create(providerService.insert(providerReq));
   }
 
   @Operation(summary = "상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
@@ -60,9 +60,9 @@ public class AdminProviderController {
   @Operation(summary = "수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PutMapping("/{providerNo}")
-  public BaseResponse<ProviderRes.Update> update(@RequestBody ProviderReq.Update updateProvider,
+  public BaseResponse<ProviderRes.Update> update(@RequestBody ProviderReq.Update providerReq,
       @PathVariable int providerNo) {
-    return BaseResponseFactory.create(providerService.update(updateProvider, providerNo));
+    return BaseResponseFactory.create(providerService.update(providerReq, providerNo));
   }
 
   @Operation(summary = "삭제", description = "데이타 프로바이더를 삭제합니다.")

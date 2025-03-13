@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.ProviderRes;
 import com.sk.domain.shared.entity.master.tmd.Provider;
@@ -52,7 +53,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       left join User mu on p.modifyUserId = mu.userLoginId
       where p.isDeleted = false and p.providerNo = :providerNo
       """)
-  Optional<ProviderRes.One> findByProviderNoWithUser(int providerNo);
+  Optional<ProviderRes.One> findByProviderNoWithUser(@Param("providerNo") int providerNo);
 
   Optional<Provider> findByProviderNoAndIsDeletedFalse(int providerNo);
 }

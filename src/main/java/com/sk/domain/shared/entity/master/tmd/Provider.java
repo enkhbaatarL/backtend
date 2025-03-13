@@ -21,11 +21,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "tmd_prvdm")
-@Comment("TMD_프로바이더기본")
 @Getter
-@Builder
+@Entity
+@Comment("TMD_프로바이더기본")
+@Table(name = "tmd_prvdm")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Provider extends BaseEntity {
 
@@ -53,6 +52,7 @@ public class Provider extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
+    @Builder
     public Provider(Integer providerNo, String providerNm, String providerCd, String providerExpn,
             Boolean isUsed) {
         this.providerNo = providerNo;
