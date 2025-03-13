@@ -43,25 +43,28 @@ import static org.springframework.http.HttpStatus.*;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     /**
-     * 스프링 예외 핸들러 공통처리 메소드
+     * 예외 핸들러 공통처리 메소드
      */
-    @Override
-    protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+    private ResponseEntity<Object> buildResponse(Exception ex, HttpStatus status, ResultCode.Error code, String additional) {
         MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, ex.getMessage());
-        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+
+        BaseResponse<Object> body = ObjectUtils.isEmpty(additional) ?
+            BaseResponseFactory.create(code) : BaseResponseFactory.createDetail(code, additional);
+
+        return ResponseEntity
+            .status(status)
+            .body(body);
     }
 
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException e, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
         String causeStr = fieldErrors
             .stream()
             .map(s -> String.format("[%s: %s, %s: %s, %s: %s]", "field", s.getField(), "provided value", s.getRejectedValue(), "cause", s.getDefaultMessage()))
             .collect(Collectors.joining(", "));
-        log.error("Exception Occurred. -> [Request Body Parameters Not Valid]. message : {}", e.getMessage(), e);
-        return ResponseEntity
-            .status(BAD_REQUEST)
-            .body(BaseResponseFactory.createDetail(ResultCode.Error.REQ_INVALID_PARAMETER, causeStr));
+        log.error("Exception Occurred. -> [Request Body Parameters Not Valid]. message : {}", ex.getMessage(), ex);
+        return buildResponse(ex, BAD_REQUEST, ResultCode.Error.REQ_INVALID_PARAMETER, causeStr);
     }
 
     @Override
@@ -76,107 +79,83 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             })
             .collect(Collectors.joining(", "));
         log.error("Exception Occurred. -> [Parameters Not Valid]. message : {}", ex.getMessage(), ex);
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(BaseResponseFactory.createDetail(ResultCode.Error.REQ_INVALID_PARAMETER, causeStr));
+        return buildResponse(ex, BAD_REQUEST, ResultCode.Error.REQ_INVALID_PARAMETER, causeStr);
     }
 
     @Override
     protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
-        return ResponseEntity
-            .status(METHOD_NOT_ALLOWED)
-            .body(BaseResponseFactory.create(ResultCode.Error.REQ_METHOD_NOT_ALLOWED));
+        return buildResponse(ex, METHOD_NOT_ALLOWED, ResultCode.Error.REQ_METHOD_NOT_ALLOWED, null);
     }
 
     @Override
     protected ResponseEntity<Object> handleNoResourceFoundException(NoResourceFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
-        return ResponseEntity
-            .status(NOT_FOUND)
-            .body(BaseResponseFactory.create(ResultCode.Error.RSC_PATH_NOT_FOUND));
+        log.error("Exception Occurred. -> [리소스 경로 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
+        return buildResponse(ex, NOT_FOUND, ResultCode.Error.RSC_PATH_NOT_FOUND, null);
     }
 
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
-        return ResponseEntity
-            .status(NOT_FOUND)
-            .body(BaseResponseFactory.create(ResultCode.Error.RSC_PATH_NOT_FOUND));
+        log.error("Exception Occurred. -> [리소스 경로 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
+        return buildResponse(ex, NOT_FOUND, ResultCode.Error.RSC_PATH_NOT_FOUND, null);
     }
 
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
-        return ResponseEntity
-            .status(BAD_REQUEST)
-            .body(BaseResponseFactory.create(ResultCode.Error.REQ_INVALID_JSON));
-    }
-
-    /**
-     * 커스텀 예외 핸들러 공통처리 메소드
-     */
-    private ResponseEntity<Object> buildResponse(Exception ex, HttpStatus status, ResultCode.Error code, String additional, HttpServletRequest request) {
-        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, ex.getMessage());
-
-        BaseResponse<Object> body = ObjectUtils.isEmpty(additional) ?
-            BaseResponseFactory.create(code) : BaseResponseFactory.createDetail(code, additional);
-
-        return ResponseEntity
-            .status(status)
-            .body(body);
+        log.error("Exception Occurred. -> [JSON 파싱 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
+        return buildResponse(ex, BAD_REQUEST, ResultCode.Error.REQ_INVALID_JSON, null);
     }
 
     @ExceptionHandler(CustomAuthenticationException.class)
-    private ResponseEntity<Object> handleServletException(CustomAuthenticationException ex, HttpServletRequest request) {
+    private ResponseEntity<Object> handleServletException(CustomAuthenticationException ex) {
         log.error("Exception Occurred. -> [인증 에러 발생]. authComponent : [{}], message : [{}]", ex.getAuthComponent(), ex.getMessage(), ex);
-        return buildResponse(ex, UNAUTHORIZED, ex.getErrorCode(), ex.getMessage(), request);
+        return buildResponse(ex, UNAUTHORIZED, ex.getErrorCode(), ex.getMessage());
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
-    private ResponseEntity<Object> handleServletException(AuthorizationDeniedException ex, HttpServletRequest request) {
+    private ResponseEntity<Object> handleServletException(AuthorizationDeniedException ex) {
         log.error("Exception Occurred. -> [인가 에러 발생]. authComponent : [{}], message : [{}]", AuthComponent.OAUTH2_RESOURCE, ex.getMessage(), ex);
-        return buildResponse(ex, FORBIDDEN, ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, ex.getMessage(), request);
+        return buildResponse(ex, FORBIDDEN, ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, ex.getMessage());
     }
 
     @ExceptionHandler(SignatureException.class)
-    private ResponseEntity<Object> handleServletException(SignatureException ex, HttpServletRequest request) {
+    private ResponseEntity<Object> handleServletException(SignatureException ex) {
         log.error("Exception Occurred. -> [토큰 에러 발생]. authComponent : [{}], message : [{}]", AuthComponent.OAUTH2_RESOURCE, ex.getMessage(), ex);
-        return buildResponse(ex, UNAUTHORIZED, ResultCode.Error.AUTH_TOKEN_INVALID, ex.getMessage(), request);
+        return buildResponse(ex, UNAUTHORIZED, ResultCode.Error.AUTH_TOKEN_INVALID, ex.getMessage());
     }
 
     @ExceptionHandler(MalformedJwtException.class)
-    private ResponseEntity<Object> handleServletException(MalformedJwtException ex, HttpServletRequest request) {
+    private ResponseEntity<Object> handleServletException(MalformedJwtException ex) {
         log.error("Exception Occurred. -> [토큰 에러 발생]. authComponent : [{}], message : [{}]", AuthComponent.OAUTH2_RESOURCE, ex.getMessage(), ex);
-        return buildResponse(ex, BAD_REQUEST, ResultCode.Error.AUTH_TOKEN_INVALID, ex.getMessage(), request);
+        return buildResponse(ex, BAD_REQUEST, ResultCode.Error.AUTH_TOKEN_INVALID, ex.getMessage());
     }
 
     @ExceptionHandler(RestClientException.class)
-    public ResponseEntity<Object> handleRestClientException(RestClientException ex, HttpServletRequest request) {
+    public ResponseEntity<Object> handleRestClientException(RestClientException ex) {
         if (ex.getCause() instanceof SocketTimeoutException) {
-            return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_TIMEOUT, ex.getCause().getMessage(), request);
+            return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_TIMEOUT, ex.getCause().getMessage());
         }
-        return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_CALL_FAILED, ex.getMessage(), request);
+        return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_CALL_FAILED, ex.getMessage());
     }
 
     @ExceptionHandler(ResourceAccessException.class)
-    public ResponseEntity<Object> handleException(ResourceAccessException ex, HttpServletRequest request) {
+    public ResponseEntity<Object> handleException(ResourceAccessException ex) {
         if (ex.getCause() instanceof SocketTimeoutException) {
-            return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_TIMEOUT, ex.getCause().getMessage(), request);
+            return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_TIMEOUT, ex.getCause().getMessage());
         }
-        return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_CALL_FAILED, ex.getMessage(), request);
+        return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.API_CALL_FAILED, ex.getMessage());
     }
 
     @ExceptionHandler(AppErrorException.class)
-    public ResponseEntity<Object> handleException(AppErrorException ex, HttpServletRequest request) {
+    public ResponseEntity<Object> handleException(AppErrorException ex) {
         log.error("Exception Occurred. -> [클라이언트 요청 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
-        return buildResponse(ex, BAD_REQUEST, ex.getErrorCode(), ex.getAdditionalMessage(), request);
+        return buildResponse(ex, BAD_REQUEST, ex.getErrorCode(), ex.getAdditionalMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleException(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<Object> handleException(Exception ex) {
         log.error("Exception Occurred. -> [내부 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
-        return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.SYS_INTERNAL_ERROR, null, request);
+        return buildResponse(ex, INTERNAL_SERVER_ERROR, ResultCode.Error.SYS_INTERNAL_ERROR, null);
     }
 
 }

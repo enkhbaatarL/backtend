@@ -48,4 +48,8 @@ public abstract class BaseEntity extends TimeBaseEntity {
         this.isDeleted = isDeleted;
     }
 
+    public void softDelete() {
+        this.isDeleted = Boolean.TRUE;
+    }
+
 }
