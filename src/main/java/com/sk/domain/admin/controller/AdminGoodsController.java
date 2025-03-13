@@ -15,8 +15,6 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.GoodsReq;
 import com.sk.domain.admin.dto.response.GoodsRes;
 import com.sk.domain.admin.service.AdminGoodsService;
-import com.sk.domain.shared.entity.master.tmd.Goods;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;

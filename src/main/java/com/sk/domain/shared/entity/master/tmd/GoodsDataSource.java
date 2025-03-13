@@ -1,7 +1,10 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.admin.dto.request.GoodsReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -69,5 +72,9 @@ public class GoodsDataSource extends BaseEntity {
         this.queryConditionContent = queryConditionContent;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goods = goods;
+    }
+
+    public void softDelete() {
+        super.softDelete();
     }
 }
