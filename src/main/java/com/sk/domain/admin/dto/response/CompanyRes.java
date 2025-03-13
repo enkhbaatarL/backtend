@@ -9,7 +9,7 @@ import lombok.Builder;
 
 import java.time.LocalDateTime;
 
-public record CustomerCompanyRes(
+public record CompanyRes(
 
     @Schema(description = "고객회사번호", example = "159")
     Integer companyNo,
@@ -33,7 +33,7 @@ public record CustomerCompanyRes(
 ) {
 
     @Builder
-    public CustomerCompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, AuditInfo auditInfo) {
+    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, AuditInfo auditInfo) {
         this.companyNo = companyNo;
         this.companyCd = companyCd;
         this.companyNm = companyNm;
@@ -43,13 +43,13 @@ public record CustomerCompanyRes(
     }
 
     @QueryProjection
-    public CustomerCompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
         this(companyNo, companyCd, companyNm, usageBeginDate, usageEndDate,
             AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
     }
 
-    public static CustomerCompanyRes of(CustomerCompany savedEntity) {
-        return CustomerCompanyRes.builder()
+    public static CompanyRes of(CustomerCompany savedEntity) {
+        return CompanyRes.builder()
             .companyNo(savedEntity.getCustomerCompanyNo())
             .companyCd(savedEntity.getCustomerCompanyCd())
             .companyNm(savedEntity.getCustomerCompanyNm())

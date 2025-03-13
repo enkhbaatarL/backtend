@@ -1,11 +1,21 @@
 package com.sk.domain.shared.repository.master.tam;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.sk.domain.shared.entity.compositeKey.tam.CustomerCompanyProviderMappingId;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.entity.master.tmd.Provider;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface CustomerCompanyProviderMappingRepository
         extends JpaRepository<CustomerCompanyProviderMapping, CustomerCompanyProviderMappingId> {
+
+    @EntityGraph(attributePaths = {"provider"})
+    List<CustomerCompanyProviderMapping> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany company);
+
+    Optional<CustomerCompanyProviderMapping> findByCustomerCompanyAndProviderAndIsDeletedFalse(CustomerCompany company, Provider provider);
 
 }
