@@ -1,19 +1,14 @@
 package com.sk.domain.shared.entity.master.tmd;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Comment;
-
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.request.CustomerCompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
@@ -46,11 +41,21 @@ public class CustomerCompany extends BaseEntity {
 
     @Builder
     public CustomerCompany(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd,
-            String useBeginDt, String useEndDt) {
+                           String useBeginDt, String useEndDt) {
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
         this.customerCompanyCd = customerCompanyCd;
         this.useBeginDt = useBeginDt;
         this.useEndDt = useEndDt;
     }
+
+    public static CustomerCompany of(CustomerCompanyReq dto) {
+        return CustomerCompany.builder()
+            .customerCompanyCd(dto.companyCd())
+            .customerCompanyNm(dto.companyNm())
+            .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
+            .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
+            .build();
+    }
+
 }

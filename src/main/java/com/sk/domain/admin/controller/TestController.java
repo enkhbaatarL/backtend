@@ -41,7 +41,7 @@ public class TestController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/auth")
     public BaseResponse<List<GoodsAuthorityRes>> getAuthority(@RequestParam(value = "param") String param) {
-        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.getGoodsAuthoritiesByUserLoginId(param);
+        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.getUserGoodsAuthoritiesByUserLoginId(param);
         return BaseResponseFactory.create(goodsMappings.stream().map(GoodsAuthorityRes::of).toList());
     }
 
