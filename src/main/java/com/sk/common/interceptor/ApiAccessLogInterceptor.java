@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.Optional;
+
 @Slf4j
 @Component
 @Transactional(readOnly = true)
@@ -28,8 +30,14 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
     @Transactional
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
 
+        String url = Optional.ofNullable(MDCUtil.getValue(MDCUtil.REQUEST_QUERY_STRING))
+            .map(s -> StringUtils.join(MDCUtil.getValue(MDCUtil.REQUEST_URI), "?", MDCUtil.getValue(MDCUtil.REQUEST_QUERY_STRING)))
+            .orElse(MDCUtil.getValue(MDCUtil.REQUEST_URI));
+
+        log.info(MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG));
+
         ApiAccessLog accessLog = ApiAccessLog.of(
-            StringUtils.join(MDCUtil.getValue(MDCUtil.REQUEST_URI), "?", MDCUtil.getValue(MDCUtil.REQUEST_QUERY_STRING)),
+            url,
             MDCUtil.getValue(MDCUtil.REQUEST_METHOD),
             "SYSTEM", // todo Auditing
             StringUtil.stripNewlinesAndTabs(MDCUtil.getValue(MDCUtil.REQUEST_BODY)),

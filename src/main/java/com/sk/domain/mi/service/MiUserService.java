@@ -14,18 +14,18 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class GoodsAuthorityService {
+public class MiUserService {
 
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
 
     /**
-     * 사용자의 상품권한(VIEW, DOWNLOAD) 목록을 조회한다.
+     * 사용자 로그인 ID를 통해 사용자의 상품권한(VIEW, DOWNLOAD) 목록을 조회한다.
      *
      * @param userLoginId 사용자 로그인 ID
      * @return List<GoodsAuthorityRes>
      */
-    public List<GoodsAuthorityRes> getGoodsAuthorities(String userLoginId) {
-        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.getGoodsAuthoritiesByUserLoginId(userLoginId);
+    public List<GoodsAuthorityRes> getUserGoodsAuthorities(String userLoginId) {
+        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.getUserGoodsAuthoritiesByUserLoginId(userLoginId);
         return GoodsAuthorityRes.fromAuthorityMappings(goodsMappings);
     }
 

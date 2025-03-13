@@ -3,7 +3,7 @@ package com.sk.domain.mi.controller;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.GoodsAuthorityRes;
-import com.sk.domain.mi.service.GoodsAuthorityService;
+import com.sk.domain.mi.service.MiUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,17 +21,17 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/mi/user-info")
 @RequiredArgsConstructor
-public class GoodsAuthorityController {
+public class MiUserController {
 
-    private final GoodsAuthorityService goodsAuthorityService;
+    private final MiUserService miUserService;
 
-    @Operation(summary = "상품권한 목록 조회 API", description = "사용자의 상품권한 목록을 조회합니다.")
+    @Operation(summary = "사용자 상품권한 목록 조회 API", description = "사용자 로그인 ID를 통해 사용자의 상품권한 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/user/{userLoginId}/goods-authorities")
-    public BaseResponse<List<GoodsAuthorityRes>> getGoodsAuthorities(
+    public BaseResponse<List<GoodsAuthorityRes>> getUserGoodsAuthorities(
         @PathVariable(value = "userLoginId") String userLoginId
     ) {
-        return BaseResponseFactory.create(goodsAuthorityService.getGoodsAuthorities(userLoginId));
+        return BaseResponseFactory.create(miUserService.getUserGoodsAuthorities(userLoginId));
     }
 
 }
