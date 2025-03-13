@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "03. 데이타 프로바이더 API", description = "데이타 프로바이더 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/provider")
+@RequestMapping("/api/v1/admin/provider")
 @RequiredArgsConstructor
 public class ProviderController {
   private final ProviderService service;
@@ -36,7 +36,7 @@ public class ProviderController {
   @Operation(summary = "목록 조회", description = "데이타 프로바이더 목록을 조회합니다. with pagination")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping
-  public BaseResponse<PaginationRes<ProviderRes>> all(
+  public BaseResponse<PaginationRes<ProviderRes.All>> all(
       @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
       @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size) {
 
@@ -46,30 +46,29 @@ public class ProviderController {
   @Operation(summary = "등록", description = "데이타 프로바이더를 등록합니다")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PostMapping("/")
-  public BaseResponse<ProviderRes> newProvider(@RequestBody ProviderReq newProvider) {
-    return BaseResponseFactory.create(service.newProvider(newProvider));
+  public BaseResponse<ProviderRes.Insert> insert(@RequestBody ProviderReq.Insert newProvider) {
+    return BaseResponseFactory.create(service.insert(newProvider));
   }
 
   @Operation(summary = "상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @GetMapping("/{id}")
-  public BaseResponse<ProviderRes> one(@PathVariable Integer id) {
-    return BaseResponseFactory.create(service.one(id));
+  @GetMapping("/{providerNo}")
+  public BaseResponse<ProviderRes.One> one(@PathVariable Integer providerNo) {
+    return BaseResponseFactory.create(service.one(providerNo));
   }
 
   @Operation(summary = "수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @PutMapping("/{id}")
-  public BaseResponse<ProviderRes> replaceProvider(@RequestBody ProviderReq replaceProvider, @PathVariable Integer id) {
-    return BaseResponseFactory.create(service.replaceProvider(replaceProvider, id));
+  @PutMapping("/{providerNo}")
+  public BaseResponse<ProviderRes.Update> update(@RequestBody ProviderReq.Update updateProvider,
+      @PathVariable Integer providerNo) {
+    return BaseResponseFactory.create(service.update(updateProvider, providerNo));
   }
 
   @Operation(summary = "삭제", description = "데이타 프로바이더를 삭제합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @DeleteMapping("/{id}")
-  public BaseResponse<?> deleteProvider(@PathVariable Integer id) {
-    service.deleteProvider(id);
-
-    return new BaseResponse<>(ResultCode.Success.OK.getCode(), ResultCode.Success.OK.getMessage());
+  @DeleteMapping("/{providerNo}")
+  public BaseResponse<ProviderRes.Delete> delete(@PathVariable Integer providerNo) { 
+    return BaseResponseFactory.create(service.delete(providerNo));
   }
 }

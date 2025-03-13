@@ -1,11 +1,14 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.request.ProviderReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -59,12 +62,35 @@ public class Provider extends BaseEntity {
         this.isUsed = isUsed;
     }
 
-    public static Provider of(ProviderReq providerReq) {
+    public static Provider of(ProviderReq.Insert providerReq) {
         return Provider.builder()
                 .providerNm(providerReq.providerNm())
                 .providerCd(providerReq.providerCd())
                 .providerExpn(providerReq.providerExpn())
                 .isUsed(providerReq.isUsed())
                 .build();
+    }
+
+    public void update(ProviderReq.Update providerReq) {
+
+        if (StringUtils.isNotEmpty(providerReq.providerNm())) {
+            this.providerNm = providerReq.providerNm();
+        }
+
+        if (StringUtils.isNotEmpty(providerReq.providerCd())) {
+            this.providerCd = providerReq.providerCd();
+        }
+
+        if (StringUtils.isNotEmpty(providerReq.providerExpn())) {
+            this.providerExpn = providerReq.providerExpn();
+        }
+
+        if (ObjectUtils.isNotEmpty(providerReq.isUsed())) {
+            this.isUsed = providerReq.isUsed();
+        }
+    }
+
+    public void softDelete() {
+        super.softDelete();
     }
 }
