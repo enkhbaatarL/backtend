@@ -4,7 +4,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.ClientAccessInfoReq;
 import com.sk.domain.admin.dto.response.ClientAccessInfoRes;
-import com.sk.domain.admin.service.ClientAccessInfoService;
+import com.sk.domain.admin.service.AdminClientAccessInfoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,15 +20,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/client-info")
 @RequiredArgsConstructor
-public class ClientAccessInfoController {
+public class AdminClientAccessInfoController {
 
-    private final ClientAccessInfoService clientAccessInfoService;
+    private final AdminClientAccessInfoService adminClientAccessInfoService;
 
     @Operation(summary = "클라이언트 접근권한 목록 조회 API", description = "클라이언트 접근권한 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/client-access")
     public BaseResponse<List<ClientAccessInfoRes>> getClientAccessInfos() {
-        return BaseResponseFactory.create(clientAccessInfoService.getClientAccessInfos());
+        return BaseResponseFactory.create(adminClientAccessInfoService.getClientAccessInfos());
     }
 
     @Operation(summary = "클라이언트 접근권한 등록 API", description = "클라이언트 접근권한을 등록합니다.")
@@ -37,7 +37,7 @@ public class ClientAccessInfoController {
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
         @RequestBody @Valid ClientAccessInfoReq.Insert dto
     ) {
-        return BaseResponseFactory.create(clientAccessInfoService.postClientAccessInfo(dto));
+        return BaseResponseFactory.create(adminClientAccessInfoService.postClientAccessInfo(dto));
     }
 
     @Operation(summary = "클라이언트 접근권한 수정 API", description = "클라이언트 접근권한을 수정합니다.")
@@ -46,7 +46,7 @@ public class ClientAccessInfoController {
     public BaseResponse<ClientAccessInfoRes> patchClientAccessInfo(
         @RequestBody @Valid ClientAccessInfoReq.Update dto
     ) {
-        return BaseResponseFactory.create(clientAccessInfoService.patchClientAccessInfo(dto));
+        return BaseResponseFactory.create(adminClientAccessInfoService.patchClientAccessInfo(dto));
     }
 
     @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근권한을 삭제합니다.")
@@ -55,7 +55,7 @@ public class ClientAccessInfoController {
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
         @PathVariable @Valid Integer clientAccessRegNo
     ) {
-        return BaseResponseFactory.create(clientAccessInfoService.deleteClientAccessInfo(clientAccessRegNo));
+        return BaseResponseFactory.create(adminClientAccessInfoService.deleteClientAccessInfo(clientAccessRegNo));
     }
 
 }

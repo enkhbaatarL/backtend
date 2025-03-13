@@ -20,7 +20,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
     private final JPAQueryFactory queryFactory;
 
-    public List<AuthManageGoodsMapping> getGoodsAuthoritiesByUserLoginId(String userLoginId) {
+    public List<AuthManageGoodsMapping> getUserGoodsAuthoritiesByUserLoginId(String userLoginId) {
 
         // 사용자T
         QUser user = QUser.user;
