@@ -2,8 +2,6 @@ package com.sk.domain.admin.service;
 
 import org.springframework.data.domain.Pageable;
 
-import java.util.Optional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class ProviderService {
+public class AdminProviderService {
   private final ProviderRepository providerRepository;
 
   /**
@@ -47,7 +45,7 @@ public class ProviderService {
    * 데이타 프로바이더를 등록한다.
    *
    * @param ProviderReq.Insert 데이타 프로바이더 등록 데이터
-   * @return ProviderRes.WithoutGoodsCount 등록 된 데이타 프로바이더 데이터
+   * @return ProviderRes.Insert 등록 된 데이타 프로바이더 데이터
    */
   @Transactional
   public ProviderRes.Insert insert(ProviderReq.Insert providerReq) {
@@ -59,10 +57,10 @@ public class ProviderService {
   /**
    * 데이타 프로바이더를 상세 조회한다.
    *
-   * @param providerNo 데이타 프로바이더의 번호
+   * @param providerNo 데이타 프로바이더 번호
    * @return ProviderRes.One
    */
-  public ProviderRes.One one(Integer providerNo) {
+  public ProviderRes.One one(int providerNo) {
     return providerRepository.findByProviderNoWithUser(providerNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
@@ -71,15 +69,12 @@ public class ProviderService {
   /**
    * 데이타 프로바이더를 수정한다.
    *
-   * @param ProviderReq 데이타 프로바이더 등록 데이터
-   * @param providerNo  데이타 프로바이더의 번호
+   * @param ProviderReq.Update 데이타 프로바이더 등록 데이터
+   * @param providerNo         데이타 프로바이더 번호
    * @return ProviderRes.Update
    */
   @Transactional
-  public ProviderRes.Update update(ProviderReq.Update providerReq, Integer providerNo) {
-
-    log.info("providerReq: {}", providerReq);
-    log.info("providerNo: {}", providerNo);
+  public ProviderRes.Update update(ProviderReq.Update providerReq, int providerNo) {
 
     Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
         .orElseThrow(
@@ -93,10 +88,11 @@ public class ProviderService {
   /**
    * 데이타 프로바이더를 삭제한다.
    *
-   * @param providerNo 데이타 프로바이더의 번호
+   * @param providerNo 데이타 프로바이더 번호
    * @return ProviderRes.Delete
    */
-  public ProviderRes.Delete delete(Integer providerNo) {
+  @Transactional
+  public ProviderRes.Delete delete(int providerNo) {
     Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));

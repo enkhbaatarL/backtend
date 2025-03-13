@@ -52,7 +52,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       left join User mu on p.modifyUserId = mu.userLoginId
       where p.isDeleted = false and p.providerNo = :providerNo
       """)
-  Optional<ProviderRes.One> findByProviderNoWithUser(Integer providerNo);
+  Optional<ProviderRes.One> findByProviderNoWithUser(int providerNo);
 
-  Optional<Provider> findByProviderNoAndIsDeletedFalse(Integer providerNo);
+  Optional<Provider> findByProviderNoAndIsDeletedFalse(int providerNo);
 }

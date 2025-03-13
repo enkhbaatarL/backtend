@@ -1,0 +1,101 @@
+package com.sk.domain.admin.service;
+
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.request.GoodsReq;
+import com.sk.domain.admin.dto.request.ProviderReq;
+import com.sk.domain.admin.dto.response.GoodsRes;
+import com.sk.domain.admin.dto.response.ProviderRes;
+import com.sk.domain.shared.entity.master.tmd.Goods;
+import com.sk.domain.shared.entity.master.tmd.Provider;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+public class AdminGoodsService {
+  private final GoodsRepository goodsRepository;
+
+  /**
+   * 상품 목록을 페이지네이션 처리하여 조회한다.
+   *
+   * @param page    조회할 페이지 번호 (min 1)
+   * @param size    조회할 요소 사이즈 (min 1)
+   * @param keyword 검색 키워드
+   * @return PaginationRes<Goods>
+   */
+  public PaginationRes<Goods> all(int providerNo, int page, int size, String searchText) {
+
+    // todo: keyword 검색 추가
+
+    Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "createDt"));
+
+    Page<Goods> goodsPage = goodsRepository.findByProviderNoAndIsDeletedFalse(providerNo, pageable);
+
+    return PaginationRes.toRes(goodsPage);
+  }
+
+  /**
+   * 상품을 상세 조회한다.
+   *
+   * @param goodsNo 상품 번호
+   * @return GoodsRes.One
+   */
+  public GoodsRes.One one(int goodsNo) {
+    return goodsRepository.findByGoodsNoWithUser(goodsNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
+  }
+
+  /**
+   * 데이타 프로바이더를 수정한다.
+   *
+   * @param GoodsReq.Update 상품 등록 데이터
+   * @param goodsNo         데이타 프로바이더 번호
+   * @return GoodsRes.Update
+   */
+  @Transactional
+  public GoodsRes.Update update(GoodsReq.Update goodsReq, int goodsNo) {
+
+    Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
+
+    goods.update(goodsReq);
+
+    return GoodsRes.Update.of(goods);
+  }
+
+  /**
+   * 데이타 프로바이더를 삭제한다.
+   *
+   * @param goodsNo 데이타 프로바이더의 번호
+   * @return GoodsRes.Delete
+   */
+  @Transactional
+  public GoodsRes.Delete delete(int goodsNo) {
+    Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
+
+    goods.softDelete();
+
+    return GoodsRes.Delete.of(goods);
+  }
+}
