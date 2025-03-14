@@ -10,7 +10,7 @@ public record UserReq(
 
         @NotEmpty(message = "IM코드는 필수 입력 사항입니다.")
         @Schema(description = "IM코드", example = "")
-        String imCode
+        String imCd
 
     ) {
     }

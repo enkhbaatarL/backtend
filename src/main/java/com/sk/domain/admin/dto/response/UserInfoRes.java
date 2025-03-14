@@ -8,80 +8,82 @@ import lombok.Builder;
 
 public record UserInfoRes(
 
-        @Schema(description = "IM코드", example = "") String imCode,
+    @Schema(description = "IM코드", example = "") String imCd,
 
-        @Schema(description = "사용자명", example = "") String userName,
+    @Schema(description = "사용자명", example = "") String userNm,
 
-        @Schema(description = "사용자영문명", example = "") String userEnglishName,
+    @Schema(description = "사용자영문명", example = "") String userEnglishNm,
 
-        @Schema(description = "로그인ID", example = "") String loginId,
+    @Schema(description = "로그인ID", example = "") String loginId,
 
-        @Schema(description = "이메일주소", example = "") String emailAddress,
+    @Schema(description = "이메일주소", example = "") String emailAddress,
 
-        @Schema(description = "회사코드", example = "") String companyCode,
+    @Schema(description = "회사코드", example = "") String companyCd,
 
-        @Schema(description = "회사명", example = "") String companyName,
+    @Schema(description = "회사명", example = "") String companyNm,
 
-        @Schema(description = "사원번호", example = "") String employeeNumber,
+    @Schema(description = "사원번호", example = "") String employeeNo,
 
-        @Schema(description = "부서코드", example = "") String departmentCode,
+    @Schema(description = "부서코드", example = "") String departmentCd,
 
-        @Schema(description = "부서명", example = "") String departmentName,
+    @Schema(description = "부서명", example = "") String departmentNm,
 
-        @Schema(description = "직위코드", example = "") String positionCode,
+    @Schema(description = "직위코드", example = "") String positionCd,
 
-        @Schema(description = "직위명", example = "") String positionName,
+    @Schema(description = "직위명", example = "") String positionNm,
 
-        @Schema(description = "직급코드", example = "") String jobGradeCode,
+    @Schema(description = "직급코드", example = "") String jobGradeCd,
 
-        @Schema(description = "직급명", example = "") String jobGradeName,
+    @Schema(description = "직급명", example = "") String jobGradeNm,
 
-        @Schema(description = "직책코드", example = "") String onDutyCode,
+    @Schema(description = "직책코드", example = "") String onDutyCd,
 
-        @Schema(description = "직책명", example = "") String onDutyName) {
+    @Schema(description = "직책명", example = "") String onDutyNm
+
+) {
 
     @Builder
     @QueryProjection
-    public UserInfoRes(String imCode, String userName, String userEnglishName, String loginId, String emailAddress,
-            String companyCode, String companyName, String employeeNumber, String departmentCode, String departmentName,
-            String positionCode, String positionName, String jobGradeCode, String jobGradeName, String onDutyCode,
-            String onDutyName) {
-        this.imCode = imCode;
-        this.userName = userName;
-        this.userEnglishName = userEnglishName;
+    public UserInfoRes(String imCd, String userNm, String userEnglishNm, String loginId, String emailAddress,
+            String companyCd, String companyNm, String employeeNo, String departmentCd, String departmentNm,
+            String positionCd, String positionNm, String jobGradeCd, String jobGradeNm, String onDutyCd,
+            String onDutyNm) {
+        this.imCd = imCd;
+        this.userNm = userNm;
+        this.userEnglishNm = userEnglishNm;
         this.loginId = loginId;
         this.emailAddress = emailAddress;
-        this.companyCode = companyCode;
-        this.companyName = companyName;
-        this.employeeNumber = employeeNumber;
-        this.departmentCode = departmentCode;
-        this.departmentName = departmentName;
-        this.positionCode = positionCode;
-        this.positionName = positionName;
-        this.jobGradeCode = jobGradeCode;
-        this.jobGradeName = jobGradeName;
-        this.onDutyCode = onDutyCode;
-        this.onDutyName = onDutyName;
+        this.companyCd = companyCd;
+        this.companyNm = companyNm;
+        this.employeeNo = employeeNo;
+        this.departmentCd = departmentCd;
+        this.departmentNm = departmentNm;
+        this.positionCd = positionCd;
+        this.positionNm = positionNm;
+        this.jobGradeCd = jobGradeCd;
+        this.jobGradeNm = jobGradeNm;
+        this.onDutyCd = onDutyCd;
+        this.onDutyNm = onDutyNm;
     }
 
     public static UserInfoRes of(UserInfo userInfo) {
         return UserInfoRes.builder()
-                .imCode(userInfo.getImCode())
-                .userName(userInfo.getUserName())
-                .userEnglishName(userInfo.getUserEnglishName())
+                .imCd(userInfo.getImCd())
+                .userNm(userInfo.getUserNm())
+                .userEnglishNm(userInfo.getUserEnglishNm())
                 .loginId(userInfo.getLoginId())
                 .emailAddress(userInfo.getEmailAddress())
-                .companyCode(userInfo.getCompanyCode())
-                .companyName(userInfo.getCompanyName())
-                .employeeNumber(userInfo.getEmployeeNumber())
-                .departmentCode(userInfo.getDepartmentCode())
-                .departmentName(userInfo.getDepartmentName())
-                .positionCode(userInfo.getPositionCode())
-                .positionName(userInfo.getPositionName())
-                .jobGradeCode(userInfo.getJobGradeCode())
-                .jobGradeName(userInfo.getJobGradeName())
-                .onDutyCode(userInfo.getOnDutyCode())
-                .onDutyName(userInfo.getOnDutyName())
+                .companyCd(userInfo.getCompanyCd())
+                .companyNm(userInfo.getCompanyNm())
+                .employeeNo(userInfo.getEmployeeNo())
+                .departmentCd(userInfo.getDepartmentCd())
+                .departmentNm(userInfo.getDepartmentNm())
+                .positionCd(userInfo.getPositionCd())
+                .positionNm(userInfo.getPositionNm())
+                .jobGradeCd(userInfo.getJobGradeCd())
+                .jobGradeNm(userInfo.getJobGradeNm())
+                .onDutyCd(userInfo.getOnDutyCd())
+                .onDutyNm(userInfo.getOnDutyNm())
                 .build();
     }
 

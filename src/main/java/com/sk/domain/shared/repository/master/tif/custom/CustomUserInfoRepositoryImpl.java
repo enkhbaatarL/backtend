@@ -27,14 +27,15 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
     @Override
     public Page<UserInfoRes> findUserInfosByConditions(int page, int size, String companyCode, String userName,
             String emailAddress) {
+
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(userInfo.isDeleted.eq(false))
-                .and(userInfo.companyCode.eq(companyCode));
+                .and(userInfo.companyCd.eq(companyCode));
 
         if (userName != null) {
-            builder.and(userInfo.userName.contains(userName));
+            builder.and(userInfo.userNm.contains(userName));
         }
 
         if (emailAddress != null) {
@@ -42,33 +43,33 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
         }
 
         List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(
-                userInfo.imCode,
-                userInfo.userName,
-                userInfo.userEnglishName,
+                userInfo.imCd,
+                userInfo.userNm,
+                userInfo.userEnglishNm,
                 userInfo.loginId,
                 userInfo.emailAddress,
-                userInfo.companyCode,
-                userInfo.companyName,
-                userInfo.employeeNumber,
-                userInfo.departmentCode,
-                userInfo.departmentName,
-                userInfo.positionCode,
-                userInfo.positionName,
-                userInfo.jobGradeCode,
-                userInfo.jobGradeName,
-                userInfo.onDutyCode,
-                userInfo.onDutyName))
+                userInfo.companyCd,
+                userInfo.companyNm,
+                userInfo.employeeNo,
+                userInfo.departmentCd,
+                userInfo.departmentNm,
+                userInfo.positionCd,
+                userInfo.positionNm,
+                userInfo.jobGradeCd,
+                userInfo.jobGradeNm,
+                userInfo.onDutyCd,
+                userInfo.onDutyNm))
                 .from(userInfo)
-                .where(userInfo.isDeleted.eq(false))
+                .where(builder)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .where(builder)
+                .orderBy(userInfo.userNm.asc())
                 .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
                 .select(userInfo.count())
                 .from(userInfo)
-                .where(userInfo.isDeleted.eq(false));
+                .where(builder);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
