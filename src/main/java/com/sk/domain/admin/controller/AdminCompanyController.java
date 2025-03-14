@@ -7,6 +7,7 @@ import com.sk.domain.admin.dto.request.CustomerCompanyReq;
 import com.sk.domain.admin.dto.request.ProviderMappingReq;
 import com.sk.domain.admin.dto.response.*;
 import com.sk.domain.admin.service.AdminCompanyService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -68,12 +69,13 @@ public class AdminCompanyController {
 
     // todo 고객사 권한 조회 API
 
+    @Hidden
     @Operation(summary = "[미사용] 고객사 상세 구성 조회 API", description = "고객사의 상세 구성을 조회합니다. (고객사, 프로바이더 목록, 회원 목록)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/company/{companyNo}/overview")
     public BaseResponse<CompanyOverviewRes> getCompanyOverview(
-        @PathVariable(value = "companyNo") @Min(value = 1)
-        @Parameter(name = "companyNo", description = "고객회사번호") Integer companyNo
+        @Parameter(name = "companyNo", description = "고객회사번호")
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
     ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanyOverview(companyNo));
     }
@@ -94,20 +96,37 @@ public class AdminCompanyController {
         return BaseResponseFactory.create(adminCompanyService.getCompanyProviders(companyNo, page, size));
     }
 
+    @Operation(summary = "고객사-프로바이더 매핑 목록 조회 API (not using pagination)", description = "특정 고객사와 매핑된 프로바이더 목록을 조회합니다. with pagination 사용하지 않음")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/company/{companyNo}/provider-refs")
+    public BaseResponse<List<ProviderMappingRes>> getCompanyProviderRefs(
+        @Parameter(name = "companyNo", description = "고객회사번호")
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getCompanyProviderRefs(companyNo));
+    }
+
     @Operation(summary = "고객사-프로바이더 매핑 등록 API", description = "특정 고객사가 사용할 데이터 프로바이더 매핑 등록한다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/company/{companyNo}/provider")
     public BaseResponse<ProviderMappingRes> postCompanyProvider(
-        @PathVariable(value = "companyNo") @Min(value = 1)
-        @Parameter(name = "companyNo", description = "고객회사번호") Integer companyNo,
+        @Parameter(name = "companyNo", description = "고객회사번호")
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @RequestBody @Valid ProviderMappingReq providerMappingReq
     ) {
         return BaseResponseFactory.create(adminCompanyService.postCompanyProvider(companyNo, providerMappingReq));
     }
 
-    // todo 고객사-데이터 프로바이더 상세조회 API
-    // /company/{companyNo}/provider/{providerNo}/overview
-
-    //
+    @Operation(summary = "고객사-프로바이더 매핑 상세 조회 API", description = "특정 고객사와 매핑되어 있는 데이터 프로바이더 단 건을 상세 조회한다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/company/{companyNo}/provider/{providerNo}")
+    public BaseResponse<ProviderMappingDetailRes> getCompanyProvider(
+        @Parameter(name = "companyNo", description = "고객회사번호")
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @Parameter(name = "providerNo", description = "프로바이더번호")
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getCompanyProvider(companyNo, providerNo));
+    }
 
 }
