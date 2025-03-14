@@ -72,8 +72,6 @@ public class AdminCompanyController {
         return BaseResponseFactory.create(adminCompanyService.postCompany(customerCompanyReq));
     }
 
-    // todo 고객사 권한 조회 API
-
     @Hidden
     @Operation(summary = "[미사용] 고객사 상세 구성 조회 API", description = "고객사의 상세 구성을 조회합니다. (고객사, 프로바이더 목록, 회원 목록)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -162,5 +160,17 @@ public class AdminCompanyController {
     ) {
         return BaseResponseFactory.create(adminCompanyService.postCompanyProviderGoods(companyNo, providerNo, goodsMappingReq));
     }
+
+    // todo API 1. 고객사 상세 커버리지 수정일, 수정자
+    // todo API 2. 고객사 상세 > 데이터 프로바이더 상세 커버리지 수정일, 수정자
+    // todo API 3. 고객사 상세 > 데이터 프로바이더 상세 > 상품 상세 > 커버리지 수정일, 수정자
+    // todo API 4. 고객사 상세 > 데이터 프로바이더 상세 조회
+    // todo API 5. 고객사 상세 > 데이터 프로바이더 상세 - 고객사-상품 매핑 테이블 조회
+    // todo API 6. 고객사 상세 > 데이터 프로바이더 상세 - 소속된 전체 사용자 별 상세 권한 목록 조회(고객사-권한 매핑 테이블 조회)
+    // todo API 7. 고객사 상세 > 데이터 프로바이더 상세 - 상세권한 설정(회사권한, 개벌권한)
+
+    // todo Module 1. 비즈니스 로직 validation 유틸
+    // todo Refactoring 1. 패키지 구분
+    // todo Swagger ordering
 
 }
