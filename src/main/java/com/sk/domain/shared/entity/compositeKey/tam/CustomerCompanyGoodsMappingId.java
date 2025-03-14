@@ -40,4 +40,13 @@ public class CustomerCompanyGoodsMappingId implements Serializable {
         this.goodsNo = goodsNo;
         this.goodsAuthManageSupportCd = goodsAuthManageSupportCd;
     }
+
+    public static CustomerCompanyGoodsMappingId of(Integer customerCompanyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
+        return CustomerCompanyGoodsMappingId.builder()
+                .customerCompanyNo(customerCompanyNo)
+                .goodsNo(goodsNo)
+                .goodsAuthManageSupportCd(goodsAuthManageSupportCd)
+                .build();
+    }
+
 }

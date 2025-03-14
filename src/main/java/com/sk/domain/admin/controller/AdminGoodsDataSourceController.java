@@ -1,0 +1,48 @@
+package com.sk.domain.admin.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.sk.common.model.BaseResponse;
+import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.response.GoodsDataSourceRes;
+import com.sk.domain.admin.service.AdminGoodsDataSourceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Tag(name = "05. 데이타 프로바이더 데이타 API", description = "데이타 프로바이더 데이타 API 입니다.")
+@Slf4j
+@RestController
+@RequestMapping("/api/v1/admin/goodsdatasource")
+@RequiredArgsConstructor
+public class AdminGoodsDataSourceController {
+  private final AdminGoodsDataSourceService goodsDataSourceService;
+
+  @Parameters({
+      @Parameter(name = "goodsNo", description = "상품번호 (기본값: 1)"),
+      @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+      @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+      @Parameter(name = "searchText", description = "데이타명 또는 데이타설명 검색")
+  })
+  @Operation(summary = "목록 조회 - withpagination", description = "데이터셋 목록을 조회합니다.")
+  @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+  @GetMapping
+  public BaseResponse<PaginationRes<GoodsDataSourceRes>> getGoodsDataSoueces(
+      @RequestParam(value = "goodsNo", required = true, defaultValue = "1") @Min(value = 1) int goodsNo,
+      @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+      @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
+      @RequestParam(value = "searchText", required = false, defaultValue = "") String searchText) {
+
+    return BaseResponseFactory.create(goodsDataSourceService.getGoodsDataSoueces(goodsNo, page, size, searchText));
+  }
+
+}

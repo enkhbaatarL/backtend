@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.SortUtil;
+import com.sk.domain.admin.dto.request.GoodsMappingReq;
 import com.sk.domain.admin.dto.request.ProviderMappingReq;
 import com.sk.domain.admin.dto.request.CustomerCompanyReq;
 import com.sk.domain.admin.dto.response.*;
@@ -11,14 +12,17 @@ import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import com.sk.domain.shared.entity.master.tif.CompanyInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +43,7 @@ public class AdminCompanyService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
+    private final GoodsRepository goodsRepository;
 
     /**
      * 그룹사 목록을 조회한다.
@@ -130,6 +135,18 @@ public class AdminCompanyService {
     }
 
     /**
+     * 고객사가 구독중인 프로바이더 목록을 페이지네이션 처리하지 않고 조회한다.
+     *   - sort : createDt DESC
+     *
+     * @param companyNo 고객회사번호
+     * @return ProviderMappingRes
+     */
+    public List<ProviderMappingRes> getCompanyProviderRefs(Integer companyNo) {
+        List<CustomerCompanyProviderMapping> providerMappings = customerCompanyProviderMappingRepository.findById_CustomerCompanyNoAndIsDeletedFalse(companyNo);
+        return ProviderMappingRes.ofList(providerMappings);
+    }
+
+    /**
      * 고객회사와 프로바이더를 매핑시켜 등록한다.
      *
      * @param companyNo 고객회사번호
@@ -149,7 +166,7 @@ public class AdminCompanyService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "It doesn't exist in the provider. providerNo: %s".formatted(providerMappingReq.providerNo())));
 
-        // 고객사-프로바이더 유효성 체크
+        // 고객사-프로바이더 매핑 유효성 체크
         customerCompanyProviderMappingRepository.findByCustomerCompanyAndProviderAndIsDeletedFalse(company, provider)
             .ifPresent(mapping -> {
                 throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
@@ -159,6 +176,68 @@ public class AdminCompanyService {
         CustomerCompanyProviderMapping providerMapping = customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider));
 
         return ProviderMappingRes.of(providerMapping);
+
+    }
+
+    /**
+     * 고객회사와 연동된 프로바이더를 상세 조회한다.
+     *
+     * @param companyNo 고객회사번호
+     * @param providerNo 프로바이더번호
+     * @return ProviderMappingDetailRes
+     */
+    public ProviderMappingDetailRes getCompanyProvider(Integer companyNo, Integer providerNo) {
+
+        // 고객사-프로바이더 매핑 조회 및 유효성 체크
+        CustomerCompanyProviderMapping customerCompanyProviderMapping = customerCompanyProviderMappingRepository.findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the customer-provider-mapping. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo)));
+
+        return ProviderMappingDetailRes.of(customerCompanyProviderMapping);
+
+    }
+
+    /**
+     *
+     *
+     * @param companyNo 고객회사번호
+     * @param providerNo
+     * @param page 조회할 페이지 번호 (min 1)
+     * @param size 조회할 요소 사이즈 (min 1)
+     * @return PaginationRes<GoodsMappingRes>
+     */
+    public PaginationRes<GoodsMappingRes> getCompanyProviderGoods(Integer companyNo, Integer providerNo, int page, int size) {
+        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findGoodsMappingsByConditions(companyNo, providerNo, page, size));
+    }
+
+    /**
+     *
+     * @param companyNo
+     * @param providerNo
+     * @param goodsMappingReq
+     * @return
+     */
+    @Transactional
+    public CompanyGoodsMappingRes postCompanyProviderGoods(Integer companyNo, Integer providerNo, GoodsMappingReq goodsMappingReq) {
+
+        // 고객사 조회 및 유효성 체크
+        CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the company. companyNo: %s".formatted(companyNo)));
+
+        // 고객사-프로바이더 매핑 유효성 체크
+        CustomerCompanyProviderMapping companyProviderMapping = customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(company, providerNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the company-provider-mapping. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo)));
+
+        // todo 상품-매핑 테이블 이미 존재여부 체크
+
+        // 상품 조회
+        Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsMappingReq.goodsNo())
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the goods. goodsNo: %s".formatted(goodsMappingReq.goodsNo())));
+
+        return CompanyGoodsMappingRes.of(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, goodsMappingReq)));
     }
 
     /**

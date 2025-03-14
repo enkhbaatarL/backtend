@@ -19,4 +19,11 @@ public interface CustomerCompanyProviderMappingRepository
 
     Optional<CustomerCompanyProviderMapping> findByCustomerCompanyAndProviderAndIsDeletedFalse(CustomerCompany company, Provider provider);
 
+    Optional<CustomerCompanyProviderMapping> findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(Integer companyNo, Integer providerNo);
+
+    @EntityGraph(attributePaths = {"provider"})
+    List<CustomerCompanyProviderMapping> findById_CustomerCompanyNoAndIsDeletedFalse(Integer companyNo);
+
+    Optional<CustomerCompanyProviderMapping> findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(CustomerCompany company, Integer providerNo);
+
 }

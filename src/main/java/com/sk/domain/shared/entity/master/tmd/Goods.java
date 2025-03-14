@@ -1,9 +1,12 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.admin.dto.request.GoodsReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -45,6 +48,10 @@ public class Goods extends BaseEntity {
     @Comment("상품코드")
     private String goodsCd;
 
+    @Column(name = "gds_expn", length = 500)
+    @Comment("상품설명")
+    private String goodsExpn;
+
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
     @ColumnDefault("'N'")
@@ -57,11 +64,35 @@ public class Goods extends BaseEntity {
     private Provider provider;
 
     @Builder
-    public Goods(Integer goodsNo, String goodsNm, String goodsCd, Boolean isUsed, Provider provider) {
+    public Goods(Integer goodsNo, String goodsNm, String goodsCd, String goodsExpn, Boolean isUsed, Provider provider) {
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
         this.goodsCd = goodsCd;
+        this.goodsExpn = goodsExpn;
         this.isUsed = isUsed;
         this.provider = provider;
+    }
+
+    public void update(GoodsReq.Update goodsReq) {
+
+        if (StringUtils.isNotEmpty(goodsReq.goodsNm())) {
+            this.goodsNm = goodsReq.goodsNm();
+        }
+
+        if (StringUtils.isNotEmpty(goodsReq.goodsCd())) {
+            this.goodsCd = goodsReq.goodsCd();
+        }
+
+        if (StringUtils.isNotEmpty(goodsReq.goodsExpn())) {
+            this.goodsExpn = goodsReq.goodsExpn();
+        }
+
+        if (ObjectUtils.isNotEmpty(goodsReq.isUsed())) {
+            this.isUsed = goodsReq.isUsed();
+        }
+    }
+
+    public void softDelete() {
+        super.softDelete();
     }
 }

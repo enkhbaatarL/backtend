@@ -1,9 +1,12 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.admin.dto.request.ProviderReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -18,10 +21,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "tmd_prvdm")
-@Comment("TMD_프로바이더기본")
 @Getter
+@Entity
+@Comment("TMD_프로바이더기본")
+@Table(name = "tmd_prvdm")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Provider extends BaseEntity {
 
@@ -39,23 +42,51 @@ public class Provider extends BaseEntity {
     @Comment("프로바이더코드")
     private String providerCd;
 
+    @Column(name = "prvd_expn", length = 500)
+    @Comment("프로바이더설명")
+    private String providerExpn;
+
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
-    @Column(name = "prvd_expn", length = 500)
-    @Comment("프로바이더설명")
-    private String providerExpn;
-
     @Builder
-    public Provider(Integer providerNo, String providerNm, String providerCd, Boolean isUsed,
-            String providerExpn) {
+    public Provider(Integer providerNo, String providerNm, String providerCd, String providerExpn,
+            Boolean isUsed) {
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.providerCd = providerCd;
-        this.isUsed = isUsed;
         this.providerExpn = providerExpn;
+        this.isUsed = isUsed;
+    }
+
+    public static Provider of(ProviderReq.Create providerReq) {
+        return Provider.builder()
+                .providerNm(providerReq.providerNm())
+                .providerCd(providerReq.providerCd())
+                .providerExpn(providerReq.providerExpn())
+                .isUsed(providerReq.isUsed())
+                .build();
+    }
+
+    public void update(ProviderReq.Update providerReq) {
+
+        if (StringUtils.isNotEmpty(providerReq.providerNm())) {
+            this.providerNm = providerReq.providerNm();
+        }
+
+        if (StringUtils.isNotEmpty(providerReq.providerExpn())) {
+            this.providerExpn = providerReq.providerExpn();
+        }
+
+        if (ObjectUtils.isNotEmpty(providerReq.isUsed())) {
+            this.isUsed = providerReq.isUsed();
+        }
+    }
+
+    public void softDelete() {
+        super.softDelete();
     }
 }
