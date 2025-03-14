@@ -77,10 +77,6 @@ public class Provider extends BaseEntity {
             this.providerNm = providerReq.providerNm();
         }
 
-        if (StringUtils.isNotEmpty(providerReq.providerCd())) {
-            this.providerCd = providerReq.providerCd();
-        }
-
         if (StringUtils.isNotEmpty(providerReq.providerExpn())) {
             this.providerExpn = providerReq.providerExpn();
         }
