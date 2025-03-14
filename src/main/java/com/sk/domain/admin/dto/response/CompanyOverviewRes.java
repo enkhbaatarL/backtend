@@ -92,7 +92,7 @@ public record CompanyOverviewRes(
         String userRoleCd,
 
         @Schema(description = "직책명", example = "")
-        String occupationDesignationNm,
+        String onDutyNm,
 
         @Schema(description = "부서명", example = "")
         String departmentNm,
@@ -104,12 +104,12 @@ public record CompanyOverviewRes(
     ) {
 
         @Builder
-        public UserRes(Integer userNo, String userNm, String userLoginId, String userRoleCd, String occupationDesignationNm, String departmentNm, AuditInfo auditInfo) {
+        public UserRes(Integer userNo, String userNm, String userLoginId, String userRoleCd, String onDutyNm, String departmentNm, AuditInfo auditInfo) {
             this.userNo = userNo;
             this.userNm = userNm;
             this.userLoginId = userLoginId;
             this.userRoleCd = userRoleCd;
-            this.occupationDesignationNm = occupationDesignationNm;
+            this.onDutyNm = onDutyNm;
             this.departmentNm = departmentNm;
             this.auditInfo = auditInfo;
         }
@@ -120,7 +120,7 @@ public record CompanyOverviewRes(
                 .userNm(user.getUserNm())
                 .userLoginId(user.getUserLoginId())
                 .userRoleCd(user.getUserRoleCd().getCode())
-                .occupationDesignationNm(user.getOccupationDesignationNm())
+                .onDutyNm(user.getOnDutyNm())
                 .departmentNm(user.getDepartmentNm())
                 .auditInfo(AuditInfo.of(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(), user.getModifyDt()))
                 .build();

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -37,7 +38,8 @@ public class SamlUserServiceProviderConfig {
                         .loginPage("/saml2/authenticate?registrationId=skt-user")
                         .successHandler(customSamlUserAuthenticationSuccessHandler)
                         .failureHandler(customSamlAuthenticationFailureHandler))
-                .saml2Logout(withDefaults());
+                .saml2Logout(withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
 }
