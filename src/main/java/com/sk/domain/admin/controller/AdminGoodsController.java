@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminGoodsController {
   private final AdminGoodsService goodsService;
 
-  @Operation(summary = "목록 조회", description = "데이타 프로바이더 목록을 조회합니다. withpagination")
+  @Operation(summary = "목록 조회 - withpagination", description = "상품 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping
   public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(

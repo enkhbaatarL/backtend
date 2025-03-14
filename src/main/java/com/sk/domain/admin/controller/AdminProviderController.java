@@ -40,7 +40,7 @@ public class AdminProviderController {
   @Operation(summary = "목록 조회 - without pagination", description = "데이타 프로바이더 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping("/list")
-  public BaseResponse<List<Provider>> getAllProviders() {
+  public BaseResponse<List<ProviderRes.Name>> getAllProviders() {
 
     return BaseResponseFactory.create(providerService.getAllProviders());
   }
@@ -84,10 +84,10 @@ public class AdminProviderController {
     return BaseResponseFactory.create(providerService.deleteProvider(providerNo));
   }
 
-  @Operation(summary = "수정일", description = "데이타 프로바이더의 수정일을 반납합니다.")
+  @Operation(summary = "수정일, 수정자", description = "데이타 프로바이더의 수정일과 수정자를 반납합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @GetMapping("/latest-modifydt/{providerNo}")
-  public BaseResponse<ProviderRes.ModifyDt> getLatestModifyDt(@PathVariable int providerNo) {
-    return BaseResponseFactory.create(providerService.getLatestModifyDt(providerNo));
+  @GetMapping("/latest-updated/{providerNo}")
+  public BaseResponse<ProviderRes.LatestUpdated> getLatestUpdated(@PathVariable int providerNo) {
+    return BaseResponseFactory.create(providerService.getLatestUpdated(providerNo));
   }
 }

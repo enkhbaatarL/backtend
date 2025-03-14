@@ -31,8 +31,8 @@ public class AdminProviderService {
   /**
    * 데이타 프로바이더 목록을 조회한다.
    */
-  public List<Provider> getAllProviders() {
-    return providerRepository.findAllByIsDeletedFalse();
+  public List<ProviderRes.Name> getAllProviders() {
+    return providerRepository.findAllByIsDeletedFalseOrderByCreateDtDesc();
   }
 
   /**
@@ -116,10 +116,10 @@ public class AdminProviderService {
    * 프로바이더 정보 수정 업데이트 범위 : 프로바이더 정 보 등록/수정, 상품 등록/수정/삭제
    * 
    * @param providerNo 데이타 프로바이더 번호
-   * @return ProviderRes.ModifyDt
+   * @return ProviderRes.LatestUpdated
    */
-  public ProviderRes.ModifyDt getLatestModifyDt(int providerNo) {
-    return providerRepository.findByProviderNoWithGoodsLatestModifyDt(providerNo)
+  public ProviderRes.LatestUpdated getLatestUpdated(int providerNo) {
+    return providerRepository.findByProviderNoWithGoodsLatestModifyInfo(providerNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
   }
