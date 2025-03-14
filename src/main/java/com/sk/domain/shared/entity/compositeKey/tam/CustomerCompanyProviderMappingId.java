@@ -29,4 +29,12 @@ public class CustomerCompanyProviderMappingId {
         this.customerCompanyNo = customerCompanyNo;
         this.providerNo = providerNo;
     }
+
+    public static CustomerCompanyProviderMappingId of(Integer customerCompanyNo, Integer providerNo) {
+        return CustomerCompanyProviderMappingId.builder()
+            .customerCompanyNo(customerCompanyNo)
+            .providerNo(providerNo)
+            .build();
+    }
+
 }
