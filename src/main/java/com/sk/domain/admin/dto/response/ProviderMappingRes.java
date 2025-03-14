@@ -4,6 +4,9 @@ import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public record ProviderMappingRes(
 
     @Schema(description = "프로바이더번호", example = "")
@@ -35,6 +38,10 @@ public record ProviderMappingRes(
             .companyNo(providerMapping.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(providerMapping.getCustomerCompany().getCustomerCompanyNm())
             .build();
+    }
+
+    public static List<ProviderMappingRes> ofList(List<CustomerCompanyProviderMapping> providerMappings) {
+        return providerMappings.stream().map(ProviderMappingRes::of).collect(Collectors.toList());
     }
 
 }

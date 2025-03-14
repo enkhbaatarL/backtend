@@ -19,7 +19,6 @@ import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -130,6 +129,18 @@ public class AdminCompanyService {
     }
 
     /**
+     * 고객사가 구독중인 프로바이더 목록을 페이지네이션 처리하지 않고 조회한다.
+     *   - sort : createDt DESC
+     *
+     * @param companyNo 고객회사번호
+     * @return ProviderMappingRes
+     */
+    public List<ProviderMappingRes> getCompanyProviderRefs(Integer companyNo) {
+        List<CustomerCompanyProviderMapping> providerMappings = customerCompanyProviderMappingRepository.findById_CustomerCompanyNoAndIsDeletedFalse(companyNo);
+        return ProviderMappingRes.ofList(providerMappings);
+    }
+
+    /**
      * 고객회사와 프로바이더를 매핑시켜 등록한다.
      *
      * @param companyNo 고객회사번호
@@ -159,6 +170,26 @@ public class AdminCompanyService {
         CustomerCompanyProviderMapping providerMapping = customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider));
 
         return ProviderMappingRes.of(providerMapping);
+
     }
+
+    /**
+     * 고객회사와 연동된 프로바이더를 상세 조회한다.
+     *
+     * @param companyNo 고객회사번호
+     * @param providerNo 프로바이더번호
+     * @return ProviderMappingDetailRes
+     */
+    public ProviderMappingDetailRes getCompanyProvider(Integer companyNo, Integer providerNo) {
+
+        // 고객사-프로바이더 매핑 조회 및 유효성 체크
+        CustomerCompanyProviderMapping customerCompanyProviderMapping = customerCompanyProviderMappingRepository.findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the customer-provider-mapping. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo)));
+
+        return ProviderMappingDetailRes.of(customerCompanyProviderMapping);
+
+    }
+
 
 }
