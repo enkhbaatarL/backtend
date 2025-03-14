@@ -24,7 +24,10 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
       left join GoodsDataSource gds on g = gds.goods
       where g.isDeleted = false
       and g.provider.providerNo = :providerNo
-      and (g.goodsNm like concat('%', :keyword, '%') or g.goodsExpn like concat('%', :keyword, '%'))
+      and (
+          lower(g.goodsNm) like concat('%', lower(:keyword), '%') or
+          lower(g.goodsExpn) like concat('%', lower(:keyword), '%')
+      )
       group by g.goodsNo, g.goodsNm, g.goodsExpn
       order by g.goodsNm asc, g.goodsExpn asc
             """, countQuery = """
@@ -33,7 +36,10 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
       left join GoodsDataSource gds on g = gds.goods
       where g.isDeleted = false
       and g.provider.providerNo = :providerNo
-      and (g.goodsNm like concat('%', :keyword, '%') or g.goodsExpn like concat('%', :keyword, '%'))
+      and (
+          lower(g.goodsNm) like concat('%', lower(:keyword), '%') or
+          lower(g.goodsExpn) like concat('%', lower(:keyword), '%')
+      )
       """)
   Page<GoodsRes> findByProviderNoAndIsDeletedFalse(@Param("providerNo") int providerNo,
       @Param("keyword") String keyword, Pageable pageable);
