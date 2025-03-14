@@ -27,7 +27,8 @@ public record ProviderMappingGoodsRes(
 
     @QueryProjection
     public ProviderMappingGoodsRes(Integer providerNo, String providerNm, int numberOfCompanyGoods, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
-        this(providerNo, providerNm, numberOfCompanyGoods, AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
+        this(providerNo, providerNm, numberOfCompanyGoods,
+            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
     }
 
     @Builder

@@ -4,6 +4,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.CustomerCompanyReq;
+import com.sk.domain.admin.dto.request.GoodsMappingReq;
 import com.sk.domain.admin.dto.request.ProviderMappingReq;
 import com.sk.domain.admin.dto.response.*;
 import com.sk.domain.admin.service.AdminCompanyService;
@@ -27,6 +28,10 @@ import java.util.List;
 // 3. 고객사 권한 조회 API : 고객사가 사용중인 권한? 프로세스 파악 불분명 / 상품매핑내역 체크? 프로바이더매핑내역 체크? -> 영선
 // 4. 회원삭제 버튼?
 // 5. 프로바이더 목록 조회 제공 여부
+
+// 사용자 관리, 프로바이더 관리 part
+// 1. 유저 삭제
+// 2. 상품(tmd_gdsm) 목록 조회(페이지네이션 X)
 
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
 @Slf4j
@@ -127,6 +132,35 @@ public class AdminCompanyController {
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
     ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanyProvider(companyNo, providerNo));
+    }
+
+    @Parameters({
+        @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
+        @Parameter(name = "companyNo", description = "고객회사번호"),
+        @Parameter(name = "providerNo", description = "프로바이더번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 매핑 상세 조회 API", description = "특정 고객사와 매핑되어 있는 데이터 프로바이더의 상품 목록을 조회한다. with pagination (sort : 생성일 DESC)")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/company/{companyNo}/provider/{providerNo}/goods")
+    public BaseResponse<PaginationRes<GoodsMappingRes>> getCompanyProviderGoods(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getCompanyProviderGoods(companyNo, providerNo, page, size));
+    }
+
+    @Operation(summary = "고객사-프로바이더-상품 매핑 등록 API", description = "특정 고객사에게 상품을 등록한다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/company/{companyNo}/provider/{providerNo}/goods")
+    public BaseResponse<CompanyGoodsMappingRes> postCompanyProviderGoods(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @RequestBody @Valid GoodsMappingReq goodsMappingReq
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.postCompanyProviderGoods(companyNo, providerNo, goodsMappingReq));
     }
 
 }

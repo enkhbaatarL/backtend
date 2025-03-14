@@ -2,6 +2,7 @@ package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.admin.dto.request.GoodsMappingReq;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
@@ -64,4 +65,14 @@ public class CustomerCompanyGoodsMapping extends BaseEntity {
         this.customerCompany = customerCompany;
         this.goods = goods;
     }
+
+    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, GoodsMappingReq goodsMappingReq) {
+        return CustomerCompanyGoodsMapping.builder()
+                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsMappingReq.goodsAuthManageCd()))
+                .isUsed(true)
+                .customerCompany(customerCompany)
+                .goods(goods)
+                .build();
+    }
+
 }
