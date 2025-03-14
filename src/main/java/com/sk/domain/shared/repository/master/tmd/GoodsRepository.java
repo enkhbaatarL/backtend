@@ -1,15 +1,14 @@
 package com.sk.domain.shared.repository.master.tmd;
 
-import java.util.Optional;
-
+import com.sk.domain.admin.dto.response.GoodsRes;
+import com.sk.domain.shared.entity.master.tmd.Goods;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sk.domain.shared.entity.master.tmd.Goods;
-import com.sk.domain.admin.dto.response.GoodsRes;
+import java.util.Optional;
 
 public interface GoodsRepository extends JpaRepository<Goods, Integer> {
 
@@ -67,4 +66,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
   Optional<GoodsRes.Get> findByGoodsNoWithUser(@Param("goodsNo") int goodsNo);
 
   Optional<Goods> findByGoodsNoAndIsDeletedFalse(int goodsNo);
+
+  Optional<Goods> findByGoodsNoAndIsDeletedFalse(Integer goodsNo);
+
 }

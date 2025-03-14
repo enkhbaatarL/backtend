@@ -96,7 +96,18 @@ dependencies {
     annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 
+}
 
+tasks.register('generateQuerydsl', JavaCompile) {
+    source = sourceSets.main.java
+    destinationDirectory.set(file('build/generated/sources/annotationProcessor/java/main'))
+    classpath = sourceSets.main.compileClasspath
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs = [
+        '-proc:only',
+        '-processor', 'com.querydsl.apt.jpa.JPAAnnotationProcessor'
+    ]
+    outputs.upToDateWhen { false }
 }
 
 tasks.named('test') {

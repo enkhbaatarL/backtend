@@ -13,7 +13,7 @@ public record ProviderMappingDetailRes(
     ProviderMappingRes providerMappingRes,
 
     @Schema(description = "프로바이더 기본 설명")
-    String providerExplain,
+    String providerExpn,
 
     @JsonUnwrapped
     @Schema(description = "감사 정보")
@@ -22,16 +22,16 @@ public record ProviderMappingDetailRes(
 ) {
 
     @Builder
-    public ProviderMappingDetailRes(ProviderMappingRes providerMappingRes, String providerExplain, AuditInfo auditInfo) {
+    public ProviderMappingDetailRes(ProviderMappingRes providerMappingRes, String providerExpn, AuditInfo auditInfo) {
         this.providerMappingRes = providerMappingRes;
-        this.providerExplain = providerExplain;
+        this.providerExpn = providerExpn;
         this.auditInfo = auditInfo;
     }
 
     public static ProviderMappingDetailRes of(CustomerCompanyProviderMapping providerMapping) {
         return ProviderMappingDetailRes.builder()
             .providerMappingRes(ProviderMappingRes.of(providerMapping))
-            .providerExplain(providerMapping.getProvider().getProviderExpn())
+            .providerExpn(providerMapping.getProvider().getProviderExpn())
             .auditInfo(AuditInfo.of(providerMapping.getCreateUserId(), providerMapping.getCreateDt(), providerMapping.getModifyUserId(), providerMapping.getModifyDt()))
             .build();
     }
