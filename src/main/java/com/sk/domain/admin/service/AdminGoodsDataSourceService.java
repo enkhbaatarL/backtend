@@ -4,7 +4,6 @@ import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +24,17 @@ public class AdminGoodsDataSourceService {
   /**
    * 상품 목록을 페이지네이션 처리하여 조회한다.
    *
-   * @param page    조회할 페이지 번호 (min 1)
-   * @param size    조회할 요소 사이즈 (min 1)
-   * @param keyword 검색 키워드
-   * @return PaginationRes<GoodsDataSourceRes.All>
+   * @param page       조회할 페이지 번호 (min 1)
+   * @param size       조회할 요소 사이즈 (min 1)
+   * @param searchText 검색 키워드
+   * @return PaginationRes<GoodsDataSourceRes>
    */
-  public PaginationRes<GoodsDataSourceRes.All> all(int goodsNo, int page, int size, String searchText) {
+  public PaginationRes<GoodsDataSourceRes> getGoodsDataSoueces(int goodsNo, int page, int size, String searchText) {
 
-    Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "createDt"));
+    Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsDataSourceRes.All> goodsPage = goodsDataSourceRepository.findByGoodsNoAndIsDeletedFalse(goodsNo,
-        searchText, pageable);
+    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.findByGoodsNoAndIsDeletedFalse(goodsNo, searchText,
+        pageable);
 
     return PaginationRes.toRes(goodsPage);
   }

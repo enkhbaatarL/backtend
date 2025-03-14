@@ -12,7 +12,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSource;
 public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource, Integer> {
 
   @Query(value = """
-      select new com.sk.domain.admin.dto.response.GoodsDataSourceRes$All(
+      select new com.sk.domain.admin.dto.response.GoodsDataSourceRes(
       gds.goodsDataSourceNo,
       gds.goodsDataSourceNm,
       gds.targetDbNm,
@@ -27,7 +27,12 @@ public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource
       from GoodsDataSource gds
       where gds.goods.goodsNo = :goodsNo
       and (gds.goodsDataSourceNm like concat('%', :keyword, '%') or gds.goodsDataSourceExpn like concat('%', :keyword, '%'))
-            """)
-  Page<GoodsDataSourceRes.All> findByGoodsNoAndIsDeletedFalse(@Param("goodsNo") int goodsNo,
+            """, countQuery = """
+      select count(gds)
+      from GoodsDataSource gds
+      where gds.goods.goodsNo = :goodsNo
+      and (gds.goodsDataSourceNm like concat('%', :keyword, '%') or gds.goodsDataSourceExpn like concat('%', :keyword, '%'))
+      """)
+  Page<GoodsDataSourceRes> findByGoodsNoAndIsDeletedFalse(@Param("goodsNo") int goodsNo,
       @Param("keyword") String keyword, Pageable pageable);
 }

@@ -28,13 +28,13 @@ public class AdminGoodsDataSourceController {
   @Operation(summary = "목록 조회", description = "데이타 프로바이더 데이터 목록을 조회합니다. withpagination")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping
-  public BaseResponse<PaginationRes<GoodsDataSourceRes.All>> all(
+  public BaseResponse<PaginationRes<GoodsDataSourceRes>> getGoodsDataSoueces(
       @RequestParam(value = "goodsNo", required = true, defaultValue = "1") @Min(value = 1) int goodsNo,
       @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-      @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+      @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
       @RequestParam(value = "searchText", required = false, defaultValue = "") String searchText) {
 
-    return BaseResponseFactory.create(goodsDataSourceService.all(goodsNo, page, size, searchText));
+    return BaseResponseFactory.create(goodsDataSourceService.getGoodsDataSoueces(goodsNo, page, size, searchText));
   }
 
 }

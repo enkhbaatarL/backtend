@@ -62,7 +62,7 @@ public class Provider extends BaseEntity {
         this.isUsed = isUsed;
     }
 
-    public static Provider of(ProviderReq.Insert providerReq) {
+    public static Provider of(ProviderReq.Create providerReq) {
         return Provider.builder()
                 .providerNm(providerReq.providerNm())
                 .providerCd(providerReq.providerCd())

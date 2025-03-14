@@ -4,7 +4,6 @@ import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,16 +28,16 @@ public class AdminGoodsService {
   /**
    * 상품 목록을 페이지네이션 처리하여 조회한다.
    *
-   * @param page    조회할 페이지 번호 (min 1)
-   * @param size    조회할 요소 사이즈 (min 1)
-   * @param keyword 검색 키워드
-   * @return PaginationRes<GoodsRes.All>
+   * @param page       조회할 페이지 번호 (min 1)
+   * @param size       조회할 요소 사이즈 (min 1)
+   * @param searchText 검색 키워드
+   * @return PaginationRes<GoodsRes>
    */
-  public PaginationRes<GoodsRes.All> all(int providerNo, int page, int size, String searchText) {
+  public PaginationRes<GoodsRes> getAllGoods(int providerNo, int page, int size, String searchText) {
 
-    Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "createDt"));
+    Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsRes.All> goodsPage = goodsRepository.findByProviderNoAndIsDeletedFalse(providerNo, searchText, pageable);
+    Page<GoodsRes> goodsPage = goodsRepository.findByProviderNoAndIsDeletedFalse(providerNo, searchText, pageable);
 
     return PaginationRes.toRes(goodsPage);
   }
@@ -47,9 +46,9 @@ public class AdminGoodsService {
    * 상품을 상세 조회한다.
    *
    * @param goodsNo 상품 번호
-   * @return GoodsRes.One
+   * @return GoodsRes.Get
    */
-  public GoodsRes.One one(int goodsNo) {
+  public GoodsRes.Get getGoods(int goodsNo) {
     return goodsRepository.findByGoodsNoWithUser(goodsNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
@@ -64,7 +63,7 @@ public class AdminGoodsService {
    * @return GoodsRes.Update
    */
   @Transactional
-  public GoodsRes.Update update(GoodsReq.Update goodsReq, int goodsNo) {
+  public GoodsRes.Update updateGoods(GoodsReq.Update goodsReq, int goodsNo) {
 
     Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
         .orElseThrow(
@@ -82,7 +81,7 @@ public class AdminGoodsService {
    * @return GoodsRes.Delete
    */
   @Transactional
-  public GoodsRes.Delete delete(int goodsNo) {
+  public GoodsRes.Delete deleteGoods(int goodsNo) {
     Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
