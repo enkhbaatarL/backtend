@@ -11,6 +11,8 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.response.GoodsDataSourceRes;
 import com.sk.domain.admin.service.AdminGoodsDataSourceService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
@@ -25,6 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminGoodsDataSourceController {
   private final AdminGoodsDataSourceService goodsDataSourceService;
 
+  @Parameters({
+      @Parameter(name = "goodsNo", description = "상품번호 (기본값: 1)"),
+      @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+      @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+      @Parameter(name = "searchText", description = "데이타명 또는 데이타설명 검색")
+  })
   @Operation(summary = "목록 조회 - withpagination", description = "데이터셋 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping

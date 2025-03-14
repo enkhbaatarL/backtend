@@ -3,7 +3,6 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
-import org.checkerframework.checker.units.qual.g;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,8 +13,6 @@ import com.sk.domain.admin.dto.response.ProviderRes;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 
 public interface ProviderRepository extends JpaRepository<Provider, Integer> {
-
-  // List<Provider> findAllByIsDeletedFalseOrderByCreateDtDesc();
 
   Optional<Provider> findByProviderNoAndIsDeletedFalse(int providerNo);
 

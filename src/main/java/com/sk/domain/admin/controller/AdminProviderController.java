@@ -22,6 +22,8 @@ import com.sk.domain.admin.service.AdminProviderService;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -45,6 +47,10 @@ public class AdminProviderController {
     return BaseResponseFactory.create(providerService.getAllProviders());
   }
 
+  @Parameters({
+      @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+      @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+  })
   @Operation(summary = "목록 조회 - with pagination", description = "데이타 프로바이더 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping
@@ -73,6 +79,7 @@ public class AdminProviderController {
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PutMapping("/{providerNo}")
   public BaseResponse<ProviderRes.Update> update(@Valid @RequestBody ProviderReq.Update providerReq,
+      @Parameter(name = "providerNo", description = "프로바이더번호") //
       @PathVariable int providerNo) {
     return BaseResponseFactory.create(providerService.updateProvider(providerReq, providerNo));
   }
@@ -80,14 +87,18 @@ public class AdminProviderController {
   @Operation(summary = "삭제", description = "데이타 프로바이더를 삭제합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @DeleteMapping("/{providerNo}")
-  public BaseResponse<ProviderRes.Delete> delete(@PathVariable int providerNo) {
+  public BaseResponse<ProviderRes.Delete> delete(
+      @Parameter(name = "providerNo", description = "프로바이더번호") //
+      @PathVariable int providerNo) {
     return BaseResponseFactory.create(providerService.deleteProvider(providerNo));
   }
 
   @Operation(summary = "수정일, 수정자", description = "데이타 프로바이더의 수정일과 수정자를 반납합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping("/latest-updated/{providerNo}")
-  public BaseResponse<ProviderRes.LatestUpdated> getLatestUpdated(@PathVariable int providerNo) {
+  public BaseResponse<ProviderRes.LatestUpdated> getLatestUpdated(
+      @Parameter(name = "providerNo", description = "프로바이더번호") //
+      @PathVariable int providerNo) {
     return BaseResponseFactory.create(providerService.getLatestUpdated(providerNo));
   }
 }
