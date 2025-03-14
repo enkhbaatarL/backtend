@@ -2,14 +2,27 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
-import com.sk.domain.shared.enums.UserRoleCd;
-import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.admin.dto.dataResult.UserWithCompany;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.UserRoleCd;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,7 +59,7 @@ public class User extends BaseEntity {
 
     @Column(name = "ondt_nm", length = 100)
     @Comment("직책명")
-    private String occupationDesignationNm;
+    private String onDutyNm;
 
     @Column(name = "dept_nm", length = 100)
     @Comment("부서명")
@@ -74,19 +87,34 @@ public class User extends BaseEntity {
     private CustomerCompany customerCompany;
 
     @Builder
-    public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String occupationDesignationNm,
+    public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
+            String onDutyNm,
             String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
             LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
         this.userRoleCd = userRoleCd;
-        this.occupationDesignationNm = occupationDesignationNm;
+        this.onDutyNm = onDutyNm;
         this.departmentNm = departmentNm;
         this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
         this.individualInfoAgreementDtm = individualInfoAgreementDtm;
         this.customerCompany = customerCompany;
+    }
+
+    public static User of(UserWithCompany userWithCompany) {
+        return User.builder()
+                .userNm(userWithCompany.userNm())
+                .userLoginId(userWithCompany.userLoginId())
+                .userRoleCd(UserRoleCd.USER)
+                .onDutyNm(userWithCompany.onDutyNm())
+                .departmentNm(userWithCompany.departmentNm())
+                .isOtherServiceAccessPossible(false)
+                .isIndividualInfoAgreement(false)
+                .individualInfoAgreementDtm(null)
+                .customerCompany(userWithCompany.customerCompany())
+                .build();
     }
 
 }

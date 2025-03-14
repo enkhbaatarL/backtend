@@ -1,12 +1,11 @@
 package com.sk.common.config.security.configurer;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -36,7 +35,8 @@ public class SamlAdminServiceProviderConfig {
                         .loginPage("/saml2/authenticate?registrationId=skt-admin")
                         .successHandler(customSamlAdminAuthenticationSuccessHandler)
                         .failureHandler(customSamlAuthenticationFailureHandler))
-                .saml2Logout(withDefaults());
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
 }
