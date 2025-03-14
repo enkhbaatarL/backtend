@@ -2,8 +2,11 @@ package com.sk.domain.admin.controller;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,15 +14,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.TrimmedNotEmpty;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.request.AdminReq;
 import com.sk.domain.admin.dto.request.UserReq;
+import com.sk.domain.admin.dto.response.AdminRes;
 import com.sk.domain.admin.dto.response.UserInfoRes;
 import com.sk.domain.admin.dto.response.UserRes;
 import com.sk.domain.admin.dto.response.UserWithCompanyRes;
 import com.sk.domain.admin.dto.response.UserWithCreatorRes;
 import com.sk.domain.admin.service.AdminUserService;
+import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,13 +47,13 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @Operation(summary = "사용자 목록 원장테이블 조회 API", description = "사용자 목록을 원장 테이블에서 조회합니다.")
-    @GetMapping("/user-infos")
+    @GetMapping("/info-users")
     public BaseResponse<PaginationRes<UserInfoRes>> getUserInfos(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "companyCode", required = true) String companyCode,
-            @RequestParam(value = "userName", required = false) String userName,
-            @RequestParam(value = "emailAddress", required = false) String emailAddress) {
+            @RequestParam(value = "userName", required = false) @TrimmedNotEmpty String userName,
+            @RequestParam(value = "emailAddress", required = false) @TrimmedNotEmpty String emailAddress) {
         return BaseResponseFactory
                 .create(adminUserService.getUserInfos(page, size, companyCode, userName, emailAddress));
     }
@@ -63,12 +70,14 @@ public class AdminUserController {
     public BaseResponse<PaginationRes<UserWithCreatorRes>> getUsers(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+            @RequestParam(value = "userRoleCd", required = true) UserRoleCd userRoleCd,
             @RequestParam(value = "companyCode", required = false) Integer customerCompanyNo,
-            @RequestParam(value = "departmentNm", required = false) String departmentNm,
-            @RequestParam(value = "userName", required = false) String userName,
-            @RequestParam(value = "emailAddress", required = false) String emailAddress) {
+            @RequestParam(value = "departmentNm", required = false) @TrimmedNotEmpty String departmentNm,
+            @RequestParam(value = "userName", required = false) @TrimmedNotEmpty String userName,
+            @RequestParam(value = "emailAddress", required = false) @TrimmedNotEmpty String emailAddress) {
         return BaseResponseFactory
-                .create(adminUserService.getUsers(page, size, customerCompanyNo, departmentNm, userName, emailAddress));
+                .create(adminUserService.getUsers(page, size, userRoleCd, customerCompanyNo, departmentNm, userName,
+                        emailAddress));
     }
 
     @Operation(summary = "사용자 상세 조회 API", description = "사용자 상세 정보를 조회합니다.")
@@ -83,5 +92,33 @@ public class AdminUserController {
     public BaseResponse<UserRes> deleteUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.deleteUser(userNo));
+    }
+
+    @Operation(summary = "어드민 관리자 등록 API", description = "어드민 관리자 정보를 등록합니다.")
+    @PostMapping("/admin-user")
+    public BaseResponse<UserRes> postAdminUser(
+            @RequestBody @Valid AdminReq.Insert adminReq) {
+        return BaseResponseFactory.create(adminUserService.postAdminUser(adminReq));
+    }
+
+    @Operation(summary = "어드민 관리자 상세 조회 API", description = "어드민 관리자 상세 정보를 조회합니다.")
+    @GetMapping("/admin-user/{userNo}")
+    public BaseResponse<AdminRes> getAdminUser(
+            @PathVariable(value = "userNo") Integer userNo) {
+        return BaseResponseFactory.create(adminUserService.getAdminUser(userNo));
+    }
+
+    @Operation(summary = "어드민 관리자 수정 API", description = "어드민 관리자 정보를 수정합니다.")
+    @PatchMapping("/admin-user")
+    public BaseResponse<UserRes> patchAdminUser(
+            @RequestBody @Valid AdminReq.Update adminReq) {
+        return BaseResponseFactory.create(adminUserService.patchAdminUser(adminReq));
+    }
+
+    @Operation(summary = "어드민 관리자 삭제 API", description = "어드민 관리자 정보를 삭제합니다.")
+    @DeleteMapping("/admin-user/{userNo}")
+    public BaseResponse<UserRes> deleteAdminUser(
+            @PathVariable(value = "userNo") Integer userNo) {
+        return BaseResponseFactory.create(adminUserService.deleteAdminUser(userNo));
     }
 }

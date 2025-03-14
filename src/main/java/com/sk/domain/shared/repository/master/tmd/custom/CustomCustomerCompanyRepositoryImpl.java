@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmd.custom;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.CompanyRes;
 import com.sk.domain.admin.dto.response.QCompanyRes;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +58,11 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
 
     private BooleanExpression containsCompanyName(String companyNm) {
         return StringUtils.isNotEmpty(companyNm) ? customerCompany.customerCompanyNm.contains(companyNm) : null;
+    }
+
+    @Override
+    public List<CompanyDepartmentRes> findAllCompaniesAndDepartments() {
+        return null;
     }
 
 }

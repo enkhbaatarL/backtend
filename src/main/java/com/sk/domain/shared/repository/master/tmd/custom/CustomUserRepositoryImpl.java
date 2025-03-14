@@ -4,6 +4,7 @@ import static com.sk.domain.shared.entity.master.tif.QUserInfo.userInfo;
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +21,7 @@ import com.sk.domain.admin.dto.response.QUserWithCreatorRes;
 import com.sk.domain.admin.dto.response.UserWithCreatorRes;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
+import com.sk.domain.shared.enums.UserRoleCd;
 
 import lombok.RequiredArgsConstructor;
 
@@ -49,7 +51,24 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
     }
 
     @Override
-    public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, Integer customerCompanyNo, String departmentNm,
+    public Optional<UserWithCompany> findUserByInfoId(String imCd) {
+        return Optional.ofNullable(queryFactory.select(new QUserWithCompany(
+                userInfo.userNm,
+                userInfo.loginId,
+                userInfo.onDutyNm,
+                userInfo.departmentNm,
+                customerCompany,
+                customerCompany.customerCompanyNm))
+                .from(userInfo)
+                .leftJoin(customerCompany)
+                .on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
+                .where(userInfo.imCd.eq(imCd)
+                        .and(userInfo.isDeleted.eq(false)))
+                .fetchOne());
+    }
+
+    @Override
+    public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd, Integer customerCompanyNo, String departmentNm,
             String userName, String emailAddress) {
 
         QUser user = QUser.user;
@@ -61,7 +80,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(user.isDeleted.eq(false));
+        builder.and(user.isDeleted.eq(false))
+                .and(user.userRoleCd.eq(userRoleCd));
         
         if (customerCompanyNo != null) {
             builder.and(user.customerCompany.customerCompanyNo.eq(customerCompanyNo));

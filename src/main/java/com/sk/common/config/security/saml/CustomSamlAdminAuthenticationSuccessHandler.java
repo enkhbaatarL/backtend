@@ -40,6 +40,7 @@ public class CustomSamlAdminAuthenticationSuccessHandler implements Authenticati
 
         log.info("SAML 관리자 인증 성공 {}", principal.getName());
 
+        // TODO: 관리자 허용 IP 확인
         // TODO: User / Admin 구분 해서 데이터 조회 필요
 
         // SAML 속성에서 사용자 정보 추출

@@ -1,7 +1,7 @@
 package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
-
+import java.util.List;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -42,5 +42,16 @@ public class AdminPermission extends BaseEntity {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.id = id;
         this.user = user;
+    }
+
+    public static AdminPermission of(User user, String accessAllowedIpAddress) {
+        return AdminPermission.builder()
+                .id(AdminPermissionId.builder()
+                        .userNo(user.getUserNo())
+                        .ipAddress(accessAllowedIpAddress)
+                        .applyDt(LocalDateTime.now())
+                        .build())
+                .user(user)
+                .build();
     }
 }

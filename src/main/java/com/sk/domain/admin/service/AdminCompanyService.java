@@ -161,4 +161,13 @@ public class AdminCompanyService {
         return ProviderMappingRes.of(providerMapping);
     }
 
+    /**
+     * 고객사와 부서 목록을 조회한다.
+     *
+     * @return List<CompanyDepartmentRes>
+     */
+    public List<CompanyDepartmentRes> getCompaniesAndDepartments() {
+        return customerCompanyRepository.findAllCompaniesAndDepartments();
+    }
+    
 }
