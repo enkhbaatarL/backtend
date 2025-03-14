@@ -26,14 +26,20 @@ public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource
         )
       from GoodsDataSource gds
       where gds.goods.goodsNo = :goodsNo
-      and (gds.goodsDataSourceNm like concat('%', :keyword, '%') or gds.goodsDataSourceExpn like concat('%', :keyword, '%'))
+      and (
+      lower(gds.goodsDataSourceNm) like concat('%', lower(:keyword), '%') or
+      lower(gds.goodsDataSourceExpn) like concat('%', lower(:keyword), '%')
+      )
       order by gds.goodsDataSourceNm asc, gds.goodsDataSourceExpn asc
             """, countQuery = """
       select count(gds)
       from GoodsDataSource gds
       where gds.isDeleted = false
       and gds.goods.goodsNo = :goodsNo
-      and (gds.goodsDataSourceNm like concat('%', :keyword, '%') or gds.goodsDataSourceExpn like concat('%', :keyword, '%'))
+      and (
+      lower(gds.goodsDataSourceNm) like concat('%', lower(:keyword), '%') or
+      lower(gds.goodsDataSourceExpn) like concat('%', lower(:keyword), '%')
+      )
       """)
   Page<GoodsDataSourceRes> findByGoodsNoAndIsDeletedFalse(@Param("goodsNo") int goodsNo,
       @Param("keyword") String keyword, Pageable pageable);
