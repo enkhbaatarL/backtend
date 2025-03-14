@@ -1,26 +1,17 @@
 package com.sk.domain.shared.entity.master.tam;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.Comment;
-
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.compositeKey.tam.CustomerCompanyProviderMappingId;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
-
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Comment;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -55,4 +46,13 @@ public class CustomerCompanyProviderMapping extends BaseEntity {
         this.customerCompany = customerCompany;
         this.provider = provider;
     }
+
+    public static CustomerCompanyProviderMapping of(CustomerCompany company, Provider provider) {
+        return CustomerCompanyProviderMapping.builder()
+            .id(CustomerCompanyProviderMappingId.of(company.getCustomerCompanyNo(), provider.getProviderNo()))
+            .customerCompany(company)
+            .provider(provider)
+            .build();
+    }
+
 }
