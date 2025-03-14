@@ -6,10 +6,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.SortUtil;
 import com.sk.domain.admin.dto.request.ProviderMappingReq;
 import com.sk.domain.admin.dto.request.CustomerCompanyReq;
-import com.sk.domain.admin.dto.response.CompanyOverviewRes;
-import com.sk.domain.admin.dto.response.CompanyRes;
-import com.sk.domain.admin.dto.response.GroupCompanyRes;
-import com.sk.domain.admin.dto.response.ProviderMappingRes;
+import com.sk.domain.admin.dto.response.*;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import com.sk.domain.shared.entity.master.tif.CompanyInfo;
@@ -22,6 +19,7 @@ import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,7 +31,7 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class AdminCustomerCompanyService {
+public class AdminCompanyService {
 
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
@@ -94,10 +92,10 @@ public class AdminCustomerCompanyService {
     }
 
     /**
-     * 고객사 상세구성을 조회한다.
-     * 구성요소
+     * 고객사 상세 구성을 조회한다.
+     * [구성요소]
      *   - 고객사
-     *   - 프로바이더 목록(with 상품 개수)
+     *   - 프로바이더 목록(with 구독중인 상품 개수)
      *   - 회원 목록
      *
      * @param companyNo 고객회사번호
@@ -116,6 +114,19 @@ public class AdminCustomerCompanyService {
 
         return CompanyOverviewRes.of(company, users, providerMappings, goodsMappings);
 
+    }
+
+    /**
+     * 고객사가 구독중인 프로바이더 목록을 페이지네이션 처리하여 조회한다. (with 구독중인 상품 개수)
+     *   - sort : createDt DESC
+     *
+     * @param companyNo 고객회사번호
+     * @param page 조회할 페이지 번호 (min 1)
+     * @param size 조회할 요소 사이즈 (min 1)
+     * @return PaginationRes<ProviderMappingGoodsRes>
+     */
+    public PaginationRes<ProviderMappingGoodsRes> getCompanyProviders(Integer companyNo, int page, int size) {
+        return PaginationRes.toRes(customerCompanyProviderMappingRepository.findCompaniesMappingsByConditions(page, size, companyNo));
     }
 
     /**
