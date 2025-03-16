@@ -14,6 +14,7 @@ public interface UserRepository extends JpaRepository<User, Integer>, CustomUser
 
     @EntityGraph(attributePaths = { "customerCompany" })
     Optional<User> findByUserNoAndIsDeletedFalse(Integer userNo);
+
     List<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany);
 
 }

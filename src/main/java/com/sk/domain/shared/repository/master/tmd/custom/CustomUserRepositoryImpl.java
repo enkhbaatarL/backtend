@@ -44,9 +44,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                 .from(userInfo)
                 .leftJoin(customerCompany)
                 .on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
-                .fetchJoin()
                 .where(userInfo.imCd.in(imCds)
-                        .and(userInfo.isDeleted.eq(false)))
+                        .and(userInfo.isDeleted.isFalse()))
                 .fetch();
     }
 
@@ -63,7 +62,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                 .leftJoin(customerCompany)
                 .on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
                 .where(userInfo.imCd.eq(imCd)
-                        .and(userInfo.isDeleted.eq(false)))
+                        .and(userInfo.isDeleted.isFalse()))
                 .fetchOne());
     }
 
@@ -80,7 +79,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(user.isDeleted.eq(false))
+        builder.and(user.isDeleted.isFalse())
                 .and(user.userRoleCd.eq(userRoleCd));
         
         if (customerCompanyNo != null) {
@@ -96,7 +95,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         }
 
         if (emailAddress != null) {
-            builder.and(user.userLoginId.contains(emailAddress));
+            builder.and(user.userLoginId.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
         }
 
         List<UserWithCreatorRes> content = queryFactory

@@ -1,7 +1,7 @@
 package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
-import java.util.List;
+
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
