@@ -2,8 +2,8 @@ package com.sk.domain.admin.controller;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.admin.dto.request.ClientAccessInfoReq;
-import com.sk.domain.admin.dto.response.ClientAccessInfoRes;
+import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
+import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
 import com.sk.domain.admin.service.AdminClientAccessInfoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,7 +18,7 @@ import java.util.List;
 @Tag(name = "10. 클라이언트 접근권한 API", description = "클라이언트 접근권한 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/client-info")
+@RequestMapping("/api/v1/admin/client-management")
 @RequiredArgsConstructor
 public class AdminClientAccessInfoController {
 

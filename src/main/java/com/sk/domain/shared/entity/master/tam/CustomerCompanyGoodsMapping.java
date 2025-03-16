@@ -2,7 +2,8 @@ package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
 
-import com.sk.domain.admin.dto.request.GoodsMappingReq;
+import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
+import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
@@ -66,13 +67,17 @@ public class CustomerCompanyGoodsMapping extends BaseEntity {
         this.goods = goods;
     }
 
-    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, GoodsMappingReq goodsMappingReq) {
+    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, CompanyGoodsMapReq companyGoodsMapReq) {
         return CustomerCompanyGoodsMapping.builder()
-                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsMappingReq.goodsAuthManageCd()))
+                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), companyGoodsMapReq.goodsAuthManageCd()))
                 .isUsed(true)
                 .customerCompany(customerCompany)
                 .goods(goods)
                 .build();
+    }
+
+    public void update(AuthGoodsMapReq authGoodsMapReq) {
+        // todo
     }
 
 }

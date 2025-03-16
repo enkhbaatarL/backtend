@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.client;
 
 import com.sk.domain.shared.entity.master.tif.ClientAccessInfo;
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -2,8 +2,8 @@ package com.sk.domain.admin.controller;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.admin.dto.request.ClientAccessInfoReq;
-import com.sk.domain.admin.dto.response.ClientAccessInfoRes;
+import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
+import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
 import com.sk.domain.admin.service.ClientAccessInfoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -2,6 +2,7 @@ package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.shared.enums.GoodsAuthCd;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Comment;
@@ -69,6 +70,15 @@ public class AuthManageGoodsMapping extends BaseEntity {
                 this.goodsAuthCd = goodsAuthCd;
                 this.useBeginDate = useBeginDate;
                 this.useEndDate = useEndDate;
+        }
+
+        public static AuthManageGoodsMapping of(AuthGoodsMapReq dto, GoodsAuthCd goodsAuthCd, CustomerCompanyGoodsMapping ccgMappings) {
+            return AuthManageGoodsMapping.builder()
+                .customerCompanyGoodsMapping(ccgMappings)
+                .goodsAuthCd(goodsAuthCd)
+                .useBeginDate(dto.companySetting().usageBeginDate())
+                .useEndDate(dto.companySetting().usageEndDate())
+                .build();
         }
 
 }

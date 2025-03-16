@@ -5,6 +5,9 @@ spring:
     name: mi
   flyway:
     enabled: false
+  devtools:
+    restart:
+        enabled: off
 
   jpa:
     hibernate:
@@ -38,7 +41,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     tags-sorter: alpha
-    operations-sorter: alpha
 
 security:
     enabled: false

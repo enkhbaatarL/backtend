@@ -27,7 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
-    private final List<String> excludeUri = List.of("/excludeUri", "/swagger-ui", "/v3/api-docs");
+    private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
+    private final List<String> excludeUriStartsWith = List.of("/excludeUri");
     private final AtomicLong id = new AtomicLong(0);
 
     @Override
@@ -35,13 +36,18 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
         Enumeration<String> headerNames = request.getHeaderNames();
 
+        if (passUriStartsWith.stream().anyMatch(pass -> request.getRequestURI().startsWith(pass))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             String headerValue = request.getHeader(headerName);
             log.debug("Header: {}={}", headerName, headerValue);
         }
 
-        if (excludeUri.stream().anyMatch(excluded -> request.getRequestURI().startsWith(excluded))) {
+        if (excludeUriStartsWith.stream().anyMatch(excluded -> request.getRequestURI().startsWith(excluded))) {
 
             initializeMDC(request);
             logRequest(request);

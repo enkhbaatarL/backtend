@@ -3,8 +3,8 @@ package com.sk.domain.shared.repository.master.tam.custom;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.domain.admin.dto.response.GoodsMappingRes;
-import com.sk.domain.admin.dto.response.QGoodsMappingRes;
+import com.sk.domain.admin.dto.response.company.GoodsWithDataCntRes;
+import com.sk.domain.admin.dto.response.company.QGoodsWithDataCntRes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,12 +22,12 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<GoodsMappingRes> findGoodsMappingsByConditions(Integer companyNo, Integer providerNo, int page, int size) {
+    public Page<GoodsWithDataCntRes> findGoodsMappingsByConditions(int page, int size, Integer companyNo, Integer providerNo) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        List<GoodsMappingRes> content = queryFactory
-            .select(new QGoodsMappingRes(
+        List<GoodsWithDataCntRes> content = queryFactory
+            .select(new QGoodsWithDataCntRes(
                 customerCompanyGoodsMapping.goods.goodsNo,
                 customerCompanyGoodsMapping.goods.goodsNm,
                 customerCompanyGoodsMapping.goods.goodsExpn,
