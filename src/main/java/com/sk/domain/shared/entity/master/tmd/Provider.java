@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import java.time.LocalDateTime;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
@@ -53,8 +55,10 @@ public class Provider extends BaseEntity {
     private Boolean isUsed;
 
     @Builder
-    public Provider(Integer providerNo, String providerNm, String providerCd, String providerExpn,
+    public Provider(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+            Boolean isDeleted, Integer providerNo, String providerNm, String providerCd, String providerExpn,
             Boolean isUsed) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.providerCd = providerCd;
