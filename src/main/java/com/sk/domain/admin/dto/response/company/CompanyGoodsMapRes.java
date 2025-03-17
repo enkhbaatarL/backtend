@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.company;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.sk.domain.shared.dto.AuditInfo;
@@ -6,28 +6,27 @@ import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-public record CompanyGoodsMappingRes(
+public record CompanyGoodsMapRes(
 
-    @Schema(description = "회사번호", example = "")
+    @Schema(description = "회사번호", example = "2005")
     Integer companyNo,
 
-    @Schema(description = "상품번호", example = "")
+    @Schema(description = "상품번호", example = "159")
     Integer goodsNo,
 
-    @Schema(description = "사용여부", example = "")
+    @Schema(description = "사용여부", example = "true")
     boolean isUsed,
 
-    @Schema(description = "상품권한주체구분코드", example = "")
+    @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"INDIVIDUAL", "COMPANY"})
     String goodsAuthManageCd,
 
     @JsonUnwrapped
-    @Schema(description = "감사 정보")
     AuditInfo auditInfo
 
 ) {
 
     @Builder
-    public CompanyGoodsMappingRes(Integer companyNo, Integer goodsNo, boolean isUsed, String goodsAuthManageCd, AuditInfo auditInfo) {
+    public CompanyGoodsMapRes(Integer companyNo, Integer goodsNo, boolean isUsed, String goodsAuthManageCd, AuditInfo auditInfo) {
         this.companyNo = companyNo;
         this.goodsNo = goodsNo;
         this.isUsed = isUsed;
@@ -35,8 +34,8 @@ public record CompanyGoodsMappingRes(
         this.auditInfo = auditInfo;
     }
 
-    public static CompanyGoodsMappingRes of(CustomerCompanyGoodsMapping companyGoodsMapping) {
-        return CompanyGoodsMappingRes.builder()
+    public static CompanyGoodsMapRes of(CustomerCompanyGoodsMapping companyGoodsMapping) {
+        return CompanyGoodsMapRes.builder()
             .companyNo(companyGoodsMapping.getId().getCustomerCompanyNo())
             .goodsNo(companyGoodsMapping.getId().getGoodsNo())
             .isUsed(companyGoodsMapping.getIsUsed())

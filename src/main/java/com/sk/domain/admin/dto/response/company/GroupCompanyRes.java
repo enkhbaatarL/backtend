@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.company;
 
 import com.sk.domain.shared.entity.master.tif.CompanyInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,10 +12,10 @@ public record GroupCompanyRes(
     @Schema(description = "회사코드", example = "SK001")
     String companyCd,
 
-    @Schema(description = "회사명", example = "sk")
+    @Schema(description = "회사명", example = "sk이노베이션")
     String companyNm,
 
-    @Schema(description = "회사영문명", example = "sk")
+    @Schema(description = "회사영문명", example = "skinnovation")
     String companyEngNm
 
 ) {

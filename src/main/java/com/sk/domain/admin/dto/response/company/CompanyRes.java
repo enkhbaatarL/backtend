@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.company;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.querydsl.core.annotations.QueryProjection;
@@ -11,19 +11,19 @@ import java.time.LocalDateTime;
 
 public record CompanyRes(
 
-    @Schema(description = "고객회사번호", example = "159")
+    @Schema(description = "고객사 번호", example = "159")
     Integer companyNo,
 
-    @Schema(description = "고객회사코드", example = "159")
+    @Schema(description = "고객사 코드", example = "159")
     String companyCd,
 
-    @Schema(description = "고객회사명", example = "SK이노베이션")
+    @Schema(description = "고객사 명", example = "SK이노베이션")
     String companyNm,
 
-    @Schema(description = "사용시작일자", example = "20250101")
+    @Schema(description = "사용시작 일자", example = "20250101")
     String usageBeginDate,
 
-    @Schema(description = "사용종료일자", example = "20251231")
+    @Schema(description = "사용종료 일자", example = "20251231")
     String usageEndDate,
 
     @JsonUnwrapped
