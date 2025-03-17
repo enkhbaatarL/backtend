@@ -34,14 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "03. 데이타 프로바이더 API", description = "데이타 프로바이더 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/provider")
+@RequestMapping("/api/v1/admin/provider-manangement/provider")
 @RequiredArgsConstructor
 public class AdminProviderController {
   private final AdminProviderService providerService;
 
   @Operation(summary = "목록 조회 - without pagination", description = "데이타 프로바이더 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @GetMapping("/list")
+  @GetMapping("/all")
   public BaseResponse<List<ProviderRes.Name>> getAllProviders() {
 
     return BaseResponseFactory.create(providerService.getAllProviders());
@@ -95,7 +95,7 @@ public class AdminProviderController {
 
   @Operation(summary = "수정일, 수정자", description = "데이타 프로바이더의 수정일과 수정자를 반납합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @GetMapping("/latest-updated/{providerNo}")
+  @GetMapping("/{providerNo}/latest-updated/")
   public BaseResponse<ProviderRes.LatestUpdated> getLatestUpdated(
       @Parameter(name = "providerNo", description = "프로바이더번호") //
       @PathVariable int providerNo) {

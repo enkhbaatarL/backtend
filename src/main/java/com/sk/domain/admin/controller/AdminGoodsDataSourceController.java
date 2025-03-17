@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "05. 데이타 프로바이더 데이타 API", description = "데이타 프로바이더 데이타 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/goodsdatasource")
+@RequestMapping("/api/v1/admin/provider-manangement/goodsdatasource")
 @RequiredArgsConstructor
 public class AdminGoodsDataSourceController {
   private final AdminGoodsDataSourceService goodsDataSourceService;

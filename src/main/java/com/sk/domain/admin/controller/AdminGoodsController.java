@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "04. 데이타 프로바이더 상품 API", description = "데이타 프로바이더 상품 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/goods")
+@RequestMapping("/api/v1/admin/provider-manangement/goods")
 @RequiredArgsConstructor
 public class AdminGoodsController {
   private final AdminGoodsService goodsService;
