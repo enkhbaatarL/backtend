@@ -1,12 +1,15 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import java.time.LocalDateTime;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.ProviderReq;
+import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
+import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -53,8 +56,10 @@ public class Provider extends BaseEntity {
     private Boolean isUsed;
 
     @Builder
-    public Provider(Integer providerNo, String providerNm, String providerCd, String providerExpn,
+    public Provider(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+            Boolean isDeleted, Integer providerNo, String providerNm, String providerCd, String providerExpn,
             Boolean isUsed) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.providerCd = providerCd;
@@ -62,7 +67,7 @@ public class Provider extends BaseEntity {
         this.isUsed = isUsed;
     }
 
-    public static Provider of(ProviderReq.Create providerReq) {
+    public static Provider of(ProviderCreateReq providerReq) {
         return Provider.builder()
                 .providerNm(providerReq.providerNm())
                 .providerCd(providerReq.providerCd())
@@ -71,7 +76,7 @@ public class Provider extends BaseEntity {
                 .build();
     }
 
-    public void update(ProviderReq.Update providerReq) {
+    public void update(ProviderUpdateReq providerReq) {
 
         if (StringUtils.isNotEmpty(providerReq.providerNm())) {
             this.providerNm = providerReq.providerNm();
