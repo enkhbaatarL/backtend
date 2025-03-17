@@ -165,7 +165,7 @@ public class AdminCompanyController {
 
     @Operation(summary = "고객사, 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/department-list")
+    @GetMapping("/company-department/all")
     public BaseResponse<List<CompanyDepartmentRes>> getCompaniesAndDepartments() {
         return BaseResponseFactory.create(adminCompanyService.getCompaniesAndDepartments());
     }

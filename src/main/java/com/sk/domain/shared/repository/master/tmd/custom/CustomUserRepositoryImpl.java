@@ -2,6 +2,7 @@ package com.sk.domain.shared.repository.master.tmd.custom;
 
 import static com.sk.domain.shared.entity.master.tif.QUserInfo.userInfo;
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
+import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import com.sk.domain.admin.dto.response.QUserWithCreatorRes;
 import com.sk.domain.admin.dto.response.UserWithCreatorRes;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import lombok.RequiredArgsConstructor;
@@ -67,7 +69,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
     }
 
     @Override
-    public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd, Integer customerCompanyNo, String departmentNm,
+    public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd,
+            Integer customerCompanyNo, String departmentNm,
             String userName, String emailAddress) {
 
         QUser user = QUser.user;
@@ -81,7 +84,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(user.isDeleted.isFalse())
                 .and(user.userRoleCd.eq(userRoleCd));
-        
+
         if (customerCompanyNo != null) {
             builder.and(user.customerCompany.customerCompanyNo.eq(customerCompanyNo));
         }
@@ -91,7 +94,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         }
 
         if (userName != null) {
-            builder.and(user.userNm.contains(userName));
+            builder.and(user.userNm.lower().contains(userName.toLowerCase()));
         }
 
         if (emailAddress != null) {
@@ -119,8 +122,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                         user.createUserId,
                         user.createDt,
                         user.modifyUserId,
-                        user.modifyDt
-                ))
+                        user.modifyDt))
                 .from(user)
                 .leftJoin(user.customerCompany, customerCompany)
                 .leftJoin(creator).on(user.createUserId.eq(creator.userLoginId))
@@ -137,5 +139,16 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                 .where(builder);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public List<User> findByUserLoginIdsAndRoleAndNotDeleted(List<String> userLoginIds, UserRoleCd role) {
+        return queryFactory
+                .selectFrom(user)
+                .where(
+                        user.userLoginId.in(userLoginIds),
+                        user.userRoleCd.eq(role),
+                        user.isDeleted.eq(false))
+                .fetch();
     }
 }

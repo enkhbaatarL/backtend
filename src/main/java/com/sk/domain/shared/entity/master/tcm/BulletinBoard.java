@@ -45,10 +45,10 @@ public class BulletinBoard extends BaseEntity {
     @Comment("게시글유형코드")
     private String bulletinTypeCode;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no")
-    @Comment("고객회사")
-    private CustomerCompany customerCompany;
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no")
+    // @Comment("고객회사")
+    // private CustomerCompany customerCompany;
 
     @Column(name = "bbm_cntt", columnDefinition = "text")
     @Comment("게시글내용")
@@ -57,12 +57,11 @@ public class BulletinBoard extends BaseEntity {
     @Builder
     public BulletinBoard(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer bulletinNo, String bulletinTitleName, String bulletinTypeCode,
-            CustomerCompany customerCompany, String bulletinContent) {
+            String bulletinContent) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.bulletinNo = bulletinNo;
         this.bulletinTitleName = bulletinTitleName;
         this.bulletinTypeCode = bulletinTypeCode;
-        this.customerCompany = customerCompany;
         this.bulletinContent = bulletinContent;
     }
 

@@ -35,7 +35,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
                 .and(userInfo.companyCd.eq(companyCode));
 
         if (userName != null) {
-            builder.and(userInfo.userNm.contains(userName));
+            builder.and(userInfo.userNm.lower().contains(userName.toLowerCase()));
         }
 
         if (emailAddress != null) {

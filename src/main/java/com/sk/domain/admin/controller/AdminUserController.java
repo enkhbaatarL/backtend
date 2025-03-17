@@ -34,7 +34,12 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "01. 사용자 API", description = "사용자 API 입니다.")
+/**
+ * 
+ * TODO: 고객사 등록 시 사용자 목록에 모든 유저가 나와야 하는지 아니면 등록되지 않은 유저만 나와야 하는지
+ * 
+ */
+@Tag(name = "02. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/user-management")
@@ -44,8 +49,8 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
-    @Operation(summary = "사용자 목록 원장테이블 조회 API", description = "사용자 목록을 원장 테이블에서 조회합니다.")
-    @GetMapping("/info-users")
+    @Operation(summary = "그룹사 사용자 목록 원장테이블 조회 API", description = "사용자 목록을 원장 테이블에서 조회합니다.")
+    @GetMapping("/group-users")
     public BaseResponse<PaginationRes<UserInfoRes>> getUserInfos(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
@@ -79,7 +84,7 @@ public class AdminUserController {
     }
 
     @Operation(summary = "사용자 상세 조회 API", description = "사용자 상세 정보를 조회합니다.")
-    @GetMapping("/user/{userNo}")
+    @GetMapping("/users/{userNo}")
     public BaseResponse<UserWithCompanyRes> getUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.getUser(userNo));
@@ -106,7 +111,7 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.getAdminUser(userNo));
     }
 
-    @Operation(summary = "어드민 관리자 수정 API", description = "어드민 관리자 정보를 수정합니다.")
+    @Operation(summary = "어드민 관리자 수정 API", description = "어드민 관리자 정보를 수정합니다. (접근 허용 IP는 수정되는 값이 아닌 적용 되는 값 모두 필요)")
     @PatchMapping("/admin-user")
     public BaseResponse<UserRes> patchAdminUser(
             @RequestBody @Valid AdminReq.Update adminReq) {
@@ -114,7 +119,7 @@ public class AdminUserController {
     }
 
     @Operation(summary = "어드민 관리자 삭제 API", description = "어드민 관리자 정보를 삭제합니다.")
-    @DeleteMapping("/admin-user/{userNo}")
+    @DeleteMapping("/admin-users/{userNo}")
     public BaseResponse<UserRes> deleteAdminUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.deleteAdminUser(userNo));

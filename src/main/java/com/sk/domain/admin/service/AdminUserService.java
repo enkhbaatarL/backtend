@@ -75,6 +75,19 @@ public class AdminUserService {
 			throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "IM코드 목록에 데이터가 존재하지 않습니다.");
 		}
 
+		List<User> existingUsers = userRepository.findByUserLoginIdsAndRoleAndNotDeleted(
+				userWithCompanies.stream().map(UserWithCompany::userLoginId).collect(Collectors.toList()),
+				UserRoleCd.USER);
+
+		if (!existingUsers.isEmpty()) {
+			String duplicatedUserNames = existingUsers.stream()
+					.map(User::getUserNm)
+					.collect(Collectors.joining(", "));
+			throw AppErrorException.of(
+					ResultCode.Error.RSC_ALREADY_EXISTS,
+					"이미 등록된 유저가 있습니다: " + duplicatedUserNames);
+		}
+
 		List<User> users = userWithCompanies.stream()
 				.map(userWithCompany -> User.of(userWithCompany, UserRoleCd.USER))
 				.collect(Collectors.toList());
@@ -143,11 +156,16 @@ public class AdminUserService {
 		UserWithCompany userWithCompany = userRepository.findUserByInfoId(adminReq.imCd())
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "IM코드 목록에 데이터가 존재하지 않습니다."));
 
+		userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(userWithCompany.userLoginId(), UserRoleCd.ADMIN)
+				.ifPresent(u -> {
+					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, "이미 등록된 관리자입니다: " + u.getUserNm());
+				});
+
 		User user = User.of(userWithCompany, UserRoleCd.ADMIN);
 		User savedUser = userRepository.save(user);
 
 		List<AdminPermission> existingPermissions = adminPermissionRepository
-            .findByIdUserNoAndIsDeletedFalse(savedUser.getUserNo());
+				.findByIdUserNoAndIsDeletedFalse(savedUser.getUserNo());
 		Set<String> existingIpSet = existingPermissions.stream()
 				.map(permission -> permission.getId().getIpAddress())
 				.collect(Collectors.toSet());
@@ -197,7 +215,7 @@ public class AdminUserService {
 
 		// 1. DB에서 기존 IP 데이터 조회
 		List<AdminPermission> existingPermissions = adminPermissionRepository
-		.findByIdUserNoAndIsDeletedFalse(adminReq.userNo());
+				.findByIdUserNoAndIsDeletedFalse(adminReq.userNo());
 
 		// 2. DTO에서 받은 IP 목록 (null 체크 포함)
 		List<String> requestedIpAddresses = Optional.ofNullable(adminReq.accessAllowedIpAddress())
