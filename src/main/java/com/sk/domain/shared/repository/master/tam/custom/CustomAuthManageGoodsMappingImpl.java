@@ -127,40 +127,70 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         List<AuthManageGoodsMapping> authGoodsMappings = queryFactory
             .select(authManageGoodsMapping)
             .from(authManageGoodsMapping)
-            .innerJoin(authManageGoodsMapping.user, user).fetchJoin()
+            .leftJoin(authManageGoodsMapping.user, user).fetchJoin()
             .innerJoin(authManageGoodsMapping.customerCompanyGoodsMapping, customerCompanyGoodsMapping).fetchJoin()
             .innerJoin(customerCompanyGoodsMapping.customerCompany, customerCompany).fetchJoin()
             .where(authManageGoodsMapping.isDeleted.isFalse(),
                 customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo), customerCompany.customerCompanyNo.eq(companyNo))
             .fetch();
 
-        Map<Integer, Boolean[]> authGoodsMappingsMap = new HashMap<>();
+        GoodsAuthManageSupportCd authSupportCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd();
+
+        Map<Integer, Boolean[]> individualAuthMap = new HashMap<>();
+        Boolean[] companyAuth = new Boolean[]{Boolean.FALSE, Boolean.FALSE};
 
         for (AuthManageGoodsMapping mapping : authGoodsMappings) {
 
-            Integer userNo = mapping.getUser().getUserNo();
-            // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
-            Boolean[] goodsAuthBool = authGoodsMappingsMap.computeIfAbsent(userNo,
-                k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+            if (mapping.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd() == GoodsAuthManageSupportCd.INDIVIDUAL) {
 
-            // 권한 유형에 따라 해당 배열 요소 업데이트
-            if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
-                goodsAuthBool[0] = Boolean.TRUE;
-            } else if (mapping.getGoodsAuthCd() == GoodsAuthCd.DOWNLOAD) {
-                goodsAuthBool[1] = Boolean.TRUE;
+                Integer userNo = mapping.getUser().getUserNo();
+                // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
+                Boolean[] goodsAuthBool = individualAuthMap.computeIfAbsent(userNo,
+                    k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+
+                // 권한 유형에 따라 해당 배열 요소 업데이트
+                if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
+                    goodsAuthBool[0] = Boolean.TRUE;
+                } else if (mapping.getGoodsAuthCd() == GoodsAuthCd.DOWNLOAD) {
+                    goodsAuthBool[1] = Boolean.TRUE;
+                }
+
+            } else {
+
+                if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
+                    companyAuth[0] = Boolean.TRUE;
+                } else if (mapping.getGoodsAuthCd() == GoodsAuthCd.DOWNLOAD) {
+                    companyAuth[1] = Boolean.TRUE;
+                }
+
             }
 
         }
 
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
-            Boolean[] bool = authGoodsMappingsMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
-            return AuthGoodsMapRes.builder()
-                .userNo(user.getUserNo())
-                .userNm(user.getUserNm())
-                .departmentName(user.getDepartmentNm())
-                .isViewable(bool[0])
-                .isDownloadable(bool[1])
-                .build();
+
+            if (authSupportCd == GoodsAuthManageSupportCd.COMPANY) {
+
+                return AuthGoodsMapRes.builder()
+                    .userNo(user.getUserNo())
+                    .userNm(user.getUserNm())
+                    .departmentName(user.getDepartmentNm())
+                    .isViewable(companyAuth[0])
+                    .isDownloadable(companyAuth[1])
+                    .build();
+
+            } else {
+
+                Boolean[] bool = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+                return AuthGoodsMapRes.builder()
+                    .userNo(user.getUserNo())
+                    .userNm(user.getUserNm())
+                    .departmentName(user.getDepartmentNm())
+                    .isViewable(bool[0])
+                    .isDownloadable(bool[1])
+                    .build();
+            }
+
         }).toList();
 
         return PageableExecutionUtils.getPage(result, pageable, countQuery::fetchOne);
