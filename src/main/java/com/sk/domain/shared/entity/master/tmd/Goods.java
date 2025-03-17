@@ -8,7 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.GoodsReq;
+import com.sk.domain.admin.dto.request.provider.GoodsReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
