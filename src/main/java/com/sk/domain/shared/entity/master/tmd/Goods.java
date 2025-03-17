@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import java.time.LocalDateTime;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
@@ -64,7 +66,9 @@ public class Goods extends BaseEntity {
     private Provider provider;
 
     @Builder
-    public Goods(Integer goodsNo, String goodsNm, String goodsCd, String goodsExpn, Boolean isUsed, Provider provider) {
+    public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsCd, String goodsExpn, Boolean isUsed, Provider provider) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
         this.goodsCd = goodsCd;

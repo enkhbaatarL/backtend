@@ -1,5 +1,7 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import java.time.LocalDateTime;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
@@ -63,8 +65,10 @@ public class GoodsDataSource extends BaseEntity {
     private Goods goods;
 
     @Builder
-    public GoodsDataSource(Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
+    public GoodsDataSource(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+            Boolean isDeleted, Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
             String queryConditionContent, String goodsDataSourceExpn, Goods goods) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
         this.targetDbNm = targetDbNm;
