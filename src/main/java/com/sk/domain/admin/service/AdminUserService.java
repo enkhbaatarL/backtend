@@ -207,15 +207,15 @@ public class AdminUserService {
 	 * @return UserRes
 	 */
 	@Transactional
-	public UserRes patchAdminUser(AdminReq.Update adminReq) {
-		User user = userRepository.findByUserNoAndIsDeletedFalse(adminReq.userNo())
+	public UserRes patchAdminUser(Integer userNo, AdminReq.Update adminReq) {
+		User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						"사용자 정보를 찾을 수 없습니다."));
 		user.update(adminReq);
 
 		// 1. DB에서 기존 IP 데이터 조회
 		List<AdminPermission> existingPermissions = adminPermissionRepository
-				.findByIdUserNoAndIsDeletedFalse(adminReq.userNo());
+				.findByIdUserNoAndIsDeletedFalse(userNo);
 
 		// 2. DTO에서 받은 IP 목록 (null 체크 포함)
 		List<String> requestedIpAddresses = Optional.ofNullable(adminReq.accessAllowedIpAddress())

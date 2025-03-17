@@ -27,9 +27,6 @@ public record AdminReq() {
 
     @Schema(name = "adminUpdate")
     public record Update(
-        @NotNull(message = "userNo는 필수 입력 사항입니다.")
-        @Schema(description = "userNo", example = "1")
-        Integer userNo,
 
         @Schema(description = "타사서비스접근가능여부", example = "false") 
         Boolean isOtherServiceAccessPossible,

@@ -33,7 +33,7 @@ public class EmailAccessLog extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "eml_send_sn", nullable = false, columnDefinition = "int unsigned")
     @Comment("이메일발송일련번호")
-    private Integer emailSendSequence;
+    private Integer emailSendSn;
 
     @Column(name = "eml_rcv_usr_logn_id", length = 50)
     @Comment("이메일수신사용자로그인ID")
@@ -41,39 +41,39 @@ public class EmailAccessLog extends BaseEntity {
 
     @Column(name = "eml_titl_nm", nullable = false, length = 255)
     @Comment("이메일제목명")
-    private String emailTitleName;
+    private String emailTitleNm;
 
     @Lob
     @Column(name = "eml_cntt", columnDefinition = "text")
     @Comment("이메일내용")
-    private String emailContent;
+    private String emailCntt;
 
     @Column(name = "eml_send_stat_nm", length = 20)
     @Comment("이메일발송상태명")
-    private String emailSendStatusName;
+    private String emailSendStatusNm;
 
     @Lob
     @Column(name = "eml_send_err_cntt", columnDefinition = "text")
     @Comment("이메일발송오류내용")
-    private String emailSendErrorContent;
+    private String emailSendErrCntt;
 
     @Column(name = "eml_send_dtm", columnDefinition = "datetime")
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Comment("이메일발송일시")
-    private LocalDateTime emailSendDateTime;
+    private LocalDateTime emailSendDtm;
 
     @Builder
     public EmailAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer emailSendSequence, String emailReceiveUserLoginId,
-            String emailTitleName, String emailContent, String emailSendStatusName,
-            String emailSendErrorContent, LocalDateTime emailSendDateTime) {
+            Boolean isDeleted, Integer emailSendSn, String emailReceiveUserLoginId,
+            String emailTitleNm, String emailCntt, String emailSendStatusNm,
+            String emailSendErrCntt, LocalDateTime emailSendDtm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
-        this.emailSendSequence = emailSendSequence;
+        this.emailSendSn = emailSendSn;
         this.emailReceiveUserLoginId = emailReceiveUserLoginId;
-        this.emailTitleName = emailTitleName;
-        this.emailContent = emailContent;
-        this.emailSendStatusName = emailSendStatusName;
-        this.emailSendErrorContent = emailSendErrorContent;
-        this.emailSendDateTime = emailSendDateTime != null ? emailSendDateTime : LocalDateTime.now();
+        this.emailTitleNm = emailTitleNm;
+        this.emailCntt = emailCntt;
+        this.emailSendStatusNm = emailSendStatusNm;
+        this.emailSendErrCntt = emailSendErrCntt;
+        this.emailSendDtm = emailSendDtm != null ? emailSendDtm : LocalDateTime.now();
     }
 }
