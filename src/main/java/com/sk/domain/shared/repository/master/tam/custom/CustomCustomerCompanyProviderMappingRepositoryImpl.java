@@ -1,38 +1,38 @@
 package com.sk.domain.shared.repository.master.tam.custom;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPAExpressions;
-import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.domain.admin.dto.response.ProviderMappingGoodsRes;
-import com.sk.domain.admin.dto.response.QProviderMappingGoodsRes;
+import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
+import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
+import com.sk.domain.admin.dto.response.company.QProviderWithGoodsCntRes;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.support.PageableExecutionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
+import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
+import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 @RequiredArgsConstructor
+
 public class CustomCustomerCompanyProviderMappingRepositoryImpl implements CustomCustomerCompanyProviderMappingRepository {
 
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<ProviderMappingGoodsRes> findCompaniesMappingsByConditions(int page, int size, Integer companyNo) {
-
-        Pageable pageable = PageRequest.of(page - 1, size);
-
-        List<ProviderMappingGoodsRes> content = queryFactory
-            .select(new QProviderMappingGoodsRes(
+    public List<ProviderWithGoodsCntRes> findCompanyMappingsWithGoodsCntByCompanyNo(Integer companyNo) {
+        return queryFactory
+            .select(new QProviderWithGoodsCntRes(
                 customerCompanyProviderMapping.provider.providerNo,
                 customerCompanyProviderMapping.provider.providerNm,
                 JPAExpressions.select(customerCompanyGoodsMapping.count().intValue())
                     .from(customerCompanyGoodsMapping)
-                    .where(customerCompanyGoodsMapping.isDeleted.eq(false)
+                    .where(customerCompanyGoodsMapping.isDeleted.eq(false) // todo isUsed 체크 X
                         .and(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
                         .and(customerCompanyGoodsMapping.goods.provider.providerNo.eq(customerCompanyProviderMapping.provider.providerNo))),
                 customerCompanyProviderMapping.createUserId,
@@ -41,19 +41,58 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
                 customerCompanyProviderMapping.modifyDt
             ))
             .from(customerCompanyProviderMapping)
-            .offset(pageable.getOffset())
-            .limit(pageable.getPageSize())
             .where(customerCompanyProviderMapping.isDeleted.eq(false),
                 customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo))
-            .orderBy(customerCompanyProviderMapping.createDt.desc())
+            .orderBy(customerCompanyProviderMapping.provider.providerNm.asc())
             .fetch();
+    }
 
-        JPQLQuery<Long> countQuery = queryFactory
-            .select(customerCompanyProviderMapping.count())
-            .where(customerCompanyProviderMapping.isDeleted.eq(false),
-                customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo));
+    @Override
+    public LatestUpdatedRes findLatestUpdated(Integer companyNo, Integer providerNo) {
 
-        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+        // 1. 고객사-프로바이더 매핑 수정 일시(삭제 포함)
+        Tuple ccpMappings = queryFactory
+            .select(customerCompanyProviderMapping.modifyDt.max(), customerCompanyProviderMapping.modifyUserId)
+            .from(customerCompanyProviderMapping)
+            .where(customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo)
+                .and(customerCompanyProviderMapping.provider.providerNo.eq(providerNo)))
+            .fetchOne();
+
+        // 2. 고객사-상품 매핑 수정 일시(삭제 포함)
+        Tuple ccgMappings = queryFactory
+            .select(customerCompanyGoodsMapping.modifyDt.max(), customerCompanyGoodsMapping.modifyUserId)
+            .from(customerCompanyGoodsMapping)
+            .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
+            .fetchOne();
+
+        // 최신 날짜와 수정자 정보 찾기
+        LocalDateTime latestModifyDt = null;
+        String latestModifyId = null;
+        String latestModifyNm = null;
+
+        if (ObjectUtils.isNotEmpty(ccpMappings)) {
+            LocalDateTime date = ccpMappings.get(0, LocalDateTime.class);
+            latestModifyDt = date;
+            latestModifyId = ccpMappings.get(1, String.class);
+        }
+
+        if (ObjectUtils.isNotEmpty(ccgMappings)) {
+            LocalDateTime date = ccgMappings.get(0, LocalDateTime.class);
+            if (latestModifyDt == null || date.isAfter(latestModifyDt)) {
+                latestModifyDt = date;
+                latestModifyId = ccgMappings.get(1, String.class);
+            }
+        }
+
+        if (ObjectUtils.isNotEmpty(latestModifyId)) {
+            latestModifyNm = queryFactory
+                .select(user.userNm)
+                .from(user)
+                .where(user.userLoginId.eq(latestModifyId))
+                .fetchOne();
+        }
+
+        return LatestUpdatedRes.of(latestModifyId, latestModifyNm, latestModifyDt);
 
     }
 

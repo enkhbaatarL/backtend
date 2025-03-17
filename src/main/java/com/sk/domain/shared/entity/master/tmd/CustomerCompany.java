@@ -1,7 +1,7 @@
 package com.sk.domain.shared.entity.master.tmd;
 
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.admin.dto.request.CustomerCompanyReq;
+import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -49,7 +49,7 @@ public class CustomerCompany extends BaseEntity {
         this.useEndDt = useEndDt;
     }
 
-    public static CustomerCompany of(CustomerCompanyReq dto) {
+    public static CustomerCompany of(CompanyReq dto) {
         return CustomerCompany.builder()
             .customerCompanyCd(dto.companyCd())
             .customerCompanyNm(dto.companyNm())

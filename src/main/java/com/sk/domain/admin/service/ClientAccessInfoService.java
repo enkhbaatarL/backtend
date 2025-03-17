@@ -2,8 +2,8 @@ package com.sk.domain.admin.service;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.request.ClientAccessInfoReq;
-import com.sk.domain.admin.dto.response.ClientAccessInfoRes;
+import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
+import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
 import com.sk.domain.shared.entity.master.tif.ClientAccessInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.repository.master.tif.ClientAccessInfoRepository;

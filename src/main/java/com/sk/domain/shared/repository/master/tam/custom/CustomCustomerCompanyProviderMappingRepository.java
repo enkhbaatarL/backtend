@@ -1,10 +1,14 @@
 package com.sk.domain.shared.repository.master.tam.custom;
 
-import com.sk.domain.admin.dto.response.ProviderMappingGoodsRes;
-import org.springframework.data.domain.Page;
+import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
+import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
+
+import java.util.List;
 
 public interface CustomCustomerCompanyProviderMappingRepository {
 
-    Page<ProviderMappingGoodsRes> findCompaniesMappingsByConditions(int page, int size, Integer companyNo);
+    List<ProviderWithGoodsCntRes> findCompanyMappingsWithGoodsCntByCompanyNo(Integer companyNo);
+
+    LatestUpdatedRes findLatestUpdated(Integer companyNo, Integer providerNo);
 
 }

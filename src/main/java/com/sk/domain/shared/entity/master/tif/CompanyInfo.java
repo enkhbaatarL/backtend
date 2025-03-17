@@ -1,6 +1,5 @@
 package com.sk.domain.shared.entity.master.tif;
 
-import com.sk.domain.admin.dto.request.CustomerCompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +9,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.request;
+package com.sk.domain.admin.dto.request.company;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -8,7 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
-public record CustomerCompanyReq(
+public record CompanyReq(
 
     @NotEmpty
     @Schema(description = "고객회사코드", example = "159")
