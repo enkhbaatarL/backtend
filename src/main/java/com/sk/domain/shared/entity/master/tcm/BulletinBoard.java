@@ -102,4 +102,7 @@ public class BulletinBoard extends BaseEntity {
         this.isValidPerioUnrestrict = isValidPerioUnrestrict;
     }
 
+    public void softDelete() {
+        super.softDelete();
+    }
 }
