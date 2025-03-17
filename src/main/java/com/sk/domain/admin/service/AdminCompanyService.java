@@ -180,10 +180,11 @@ public class AdminCompanyService {
         ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
 
-        ValidationResult<CustomerCompanyGoodsMapping> ccgValid = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo, companyGoodsMapReq.goodsNo());
+        ValidationResult<CustomerCompanyGoodsMapping> ccgValid = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo,
+                companyGoodsMapReq.goodsNo());
         CustomerCompanyGoodsMapping ccg = ccgValid.getOrThrow();
 
-        ValidationResult<Goods> goodsValid = companyValidator.ensureGoodsExistsByGoodsNo(companyGoodsMapReq.goodsNo());
+        ValidationResult<Goods> goodsValid = companyValidator.ensureGoodsExistsByGoodsNo(providerNo, companyGoodsMapReq.goodsNo());
         Goods goods = goodsValid.getOrThrow();
 
         return CompanyGoodsMapRes.of(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq)));
@@ -206,7 +207,8 @@ public class AdminCompanyService {
         CustomerCompanyGoodsMapping ccg = ccgValid.getOrThrow();
 
         if (GoodsAuthManageSupportCd.COMPANY == ccg.getId().getGoodsAuthManageSupportCd()) {
-            List<AuthManageGoodsMapping> companyAuth = authManageGoodsMappingRepository.findByCompanyNoAndGoodsNoAndGoodsAuthCd(companyNo, goodsNo, GoodsAuthManageSupportCd.COMPANY);
+            List<AuthManageGoodsMapping> companyAuth = authManageGoodsMappingRepository.findByCompanyNoAndGoodsNoAndGoodsAuthCd(companyNo, goodsNo,
+                    GoodsAuthManageSupportCd.COMPANY);
             return CompanyGoodsMapDetailRes.of(ccg, companyAuth);
         }
 
@@ -262,7 +264,6 @@ public class AdminCompanyService {
             if (authGoodsMapReq.companySetting().isDownloadable()) {
                 authManageGoodsMappingRepository.save(AuthManageGoodsMapping.of(authGoodsMapReq, GoodsAuthCd.DOWNLOAD, ccg));
             }
-
 
         } else if (authGoodsMapReq.goodsAuthManageCd() == GoodsAuthManageSupportCd.INDIVIDUAL) {
 

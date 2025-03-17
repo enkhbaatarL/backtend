@@ -37,7 +37,7 @@ public class CompanyValidator {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [group-company]. companyCd: %s".formatted(companyCd)));
+                    "It doesn't exist in the [group-company]. companyCd: %s".formatted(companyCd)));
         }
     }
 
@@ -45,7 +45,7 @@ public class CompanyValidator {
         Optional<CustomerCompany> entity = customerCompanyRepository.findByCustomerCompanyCdAndIsDeletedFalse(companyCd);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                "companyCd : %s".formatted(companyCd)));
+                    "companyCd : %s".formatted(companyCd)));
         } else {
             return ValidationResult.success(null);
         }
@@ -57,7 +57,7 @@ public class CompanyValidator {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
+                    "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
         }
     }
 
@@ -67,62 +67,62 @@ public class CompanyValidator {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [provider]. providerNo: %s".formatted(providerNo)));
+                    "It doesn't exist in the [provider]. providerNo: %s".formatted(providerNo)));
         }
     }
 
     public ValidationResult<CustomerCompanyProviderMapping> ensureCcpmNotExistsByCompanyAndProvider(CustomerCompany company, Provider provider) {
-        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository.findByCustomerCompanyAndProviderAndIsDeletedFalse(company, provider);
+        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository
+                .findByCustomerCompanyAndProviderAndIsDeletedFalse(company, provider);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                "companyNo : %s, providerNo : %s".formatted(company.getCustomerCompanyNo(), provider.getProviderNo())));
+                    "companyNo : %s, providerNo : %s".formatted(company.getCustomerCompanyNo(), provider.getProviderNo())));
         } else {
             return ValidationResult.success(null);
         }
     }
 
     public ValidationResult<CustomerCompanyProviderMapping> ensureCcpmExistsByCompanyNoAndProviderNo(Integer companyNo, Integer providerNo) {
-        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository.findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo);
+        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository
+                .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [company-provider-mapping]. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo)));
+                    "It doesn't exist in the [company-provider-mapping]. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo)));
         }
     }
 
     public ValidationResult<CustomerCompanyGoodsMapping> ensureCcgmNotExistsByCompanyNoAndGoodsNo(Integer companyNo, Integer goodsNo) {
-        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
+        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository
+                .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                "companyNo : %s, goodsNo : %s".formatted(companyNo, goodsNo)));
+                    "companyNo : %s, goodsNo : %s".formatted(companyNo, goodsNo)));
         } else {
             return ValidationResult.success(null);
         }
     }
 
-    public ValidationResult<Goods> ensureGoodsExistsByGoodsNo(Integer goodsNo) {
-        Optional<Goods> entity = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo);
+    public ValidationResult<Goods> ensureGoodsExistsByGoodsNo(Integer providerNo, Integer goodsNo) {
+        Optional<Goods> entity = goodsRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [goods]. goodsNo: %s".formatted(goodsNo)));
+                    "It doesn't exist in the [goods]. goodsNo: %s".formatted(goodsNo)));
         }
     }
 
     public ValidationResult<CustomerCompanyGoodsMapping> ensureCcgmExistsByCompanyNoAndGoodsNo(Integer companyNo, Integer goodsNo) {
-        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
+        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository
+                .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo)));
+                    "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo)));
         }
     }
-
-
-
-
 
 }
