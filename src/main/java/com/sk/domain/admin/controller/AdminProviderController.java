@@ -16,7 +16,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.provider.GoodsReq;
+import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes;
@@ -42,7 +42,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "03. 데이타 프로바이더 API", description = "데이타 프로바이더 API 입니다.")
+@Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/provider-manangement")
@@ -170,7 +170,7 @@ public class AdminProviderController {
   @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-  public BaseResponse<GoodsUpdateRes> updateGoods(@Valid @RequestBody GoodsReq.Update goodsReq,
+  public BaseResponse<GoodsUpdateRes> updateGoods(@Valid @RequestBody GoodsUpdateReq goodsReq,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
     return BaseResponseFactory.create(providerService.updateGoods(providerNo, goodsNo, goodsReq));

@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.provider.GoodsReq;
+import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes;
@@ -178,11 +178,11 @@ public class AdminProviderService {
    *
    * @param providerNo 데이타 프로바이더 번호
    * @param goodsNo         상품 번호
-   * @param GoodsReq.Update 상품 등록 데이터
+   * @param GoodsUpdateReq 상품 등록 데이터
    * @return GoodsUpdateRes
    */
   @Transactional
-  public GoodsUpdateRes updateGoods(int providerNo, int goodsNo, GoodsReq.Update goodsReq) {
+  public GoodsUpdateRes updateGoods(int providerNo, int goodsNo, GoodsUpdateReq goodsReq) {
 
     Goods goods = goodsRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo)
         .orElseThrow(

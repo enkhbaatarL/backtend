@@ -8,7 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.provider.GoodsReq;
+import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -77,7 +77,7 @@ public class Goods extends BaseEntity {
         this.provider = provider;
     }
 
-    public void update(GoodsReq.Update goodsReq) {
+    public void update(GoodsUpdateReq goodsReq) {
 
         if (StringUtils.isNotEmpty(goodsReq.goodsNm())) {
             this.goodsNm = goodsReq.goodsNm();
