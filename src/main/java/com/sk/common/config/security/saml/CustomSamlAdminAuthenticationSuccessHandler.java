@@ -1,9 +1,12 @@
 package com.sk.common.config.security.saml;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -14,8 +17,13 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.utils.JwtUtil;
-//import com.sk.domain.shared.entity.master.User;
-//import com.sk.domain.shared.repository.master.UserRepository;
+import com.sk.domain.shared.entity.master.tam.AdminPermission;
+import com.sk.domain.shared.entity.master.tlm.UserAccessLog;
+import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
+import com.sk.domain.shared.repository.master.tlm.UserAccessLogRepository;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +37,9 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomSamlAdminAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
-//    private final UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final UserAccessLogRepository userAccessLogRepository;
+    private final AdminPermissionRepository adminPermissionRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -40,26 +50,43 @@ public class CustomSamlAdminAuthenticationSuccessHandler implements Authenticati
 
         log.info("SAML 관리자 인증 성공 {}", principal.getName());
 
-        // TODO: 관리자 허용 IP 확인
-        // TODO: User / Admin 구분 해서 데이터 조회 필요
-
         // SAML 속성에서 사용자 정보 추출
-//        String username = principal.getName();
-//        User user = userRepository.findByUsername(username)
-//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//
-//        // JWT 토큰 생성
-//        String accessToken = jwtUtil.generateAccessToken(user);
-//        String refreshToken = jwtUtil.generateRefreshToken(username);
+        String loginId = principal.getName();
+
+        User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(loginId, UserRoleCd.ADMIN)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId)));
+
+        // 클라이언트 IP 추출
+        String clientIp = request.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isEmpty()) {
+            clientIp = request.getRemoteAddr();
+        }
+        log.info("Client IP: {}", clientIp);
+
+        // 4. IP 접근 허용 여부 확인
+        List<AdminPermission> permissions = adminPermissionRepository
+                .findByIdUserNoAndIdIpAddressAndIsDeletedFalse(user.getUserNo(), clientIp);
+        if (permissions.isEmpty()) {
+            log.warn("IP {} not allowed for user {}", clientIp, loginId);
+            throw new AccessDeniedException("허용되지 않은 IP 주소입니다: " + clientIp);
+        }
+
+        // JWT 토큰 생성
+        // String accessToken = jwtUtil.generateAccessToken(user);
+        // String refreshToken = jwtUtil.generateRefreshToken(username);
 
         // 토큰 응답 생성
         Map<String, Object> tokenResponse = new HashMap<>();
-//        tokenResponse.put("access_token", accessToken);
-//        tokenResponse.put("refresh_token", refreshToken);
+        // tokenResponse.put("access_token", accessToken);
+        // tokenResponse.put("refresh_token", refreshToken);
         tokenResponse.put("token_type", "Bearer");
+
+        UserAccessLog userAccessLog = UserAccessLog.of(user.getUserLoginId());
+        userAccessLogRepository.save(userAccessLog);
 
         // JSON 응답 전송
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setStatus(HttpStatus.SC_OK);
         response.getWriter().write(new ObjectMapper().writeValueAsString(tokenResponse));
     }
 }

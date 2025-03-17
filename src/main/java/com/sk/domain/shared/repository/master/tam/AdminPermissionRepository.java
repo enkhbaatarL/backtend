@@ -10,4 +10,6 @@ import com.sk.domain.shared.entity.master.tam.AdminPermission;
 public interface AdminPermissionRepository extends JpaRepository<AdminPermission, AdminPermissionId> {
 
     List<AdminPermission> findByIdUserNoAndIsDeletedFalse(Integer userNo);
+
+    List<AdminPermission> findByIdUserNoAndIdIpAddressAndIsDeletedFalse(Integer userNo, String ipAddress);
 }
