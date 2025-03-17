@@ -17,6 +17,7 @@ import com.sk.domain.shared.entity.master.tif.CompanyInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.GoodsAuthCd;
 import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
 import com.sk.domain.shared.repository.master.tam.AuthManageGoodsMappingRepository;
@@ -24,12 +25,17 @@ import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRep
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -44,6 +50,7 @@ public class AdminCompanyService {
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
+    private final UserRepository userRepository;
 
     /**
      * 그룹사 목록을 조회한다.
@@ -187,7 +194,7 @@ public class AdminCompanyService {
         ValidationResult<Goods> goodsValid = companyValidator.ensureGoodsExistsByGoodsNo(providerNo, companyGoodsMapReq.goodsNo());
         Goods goods = goodsValid.getOrThrow();
 
-        return CompanyGoodsMapRes.of(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq)));
+        return CompanyGoodsMapRes.of(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManageCd())));
     }
 
     /**
@@ -241,35 +248,31 @@ public class AdminCompanyService {
     public AuthGoodsMapRes patchGoodsAuth(Integer companyNo, Integer providerNo, Integer goodsNo, AuthGoodsMapReq authGoodsMapReq) {
 
         ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-        CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
+        ccpValid.validOrThrow();
 
         ValidationResult<CustomerCompanyGoodsMapping> ccgValid = companyValidator.ensureCcgmExistsByCompanyNoAndGoodsNo(companyNo, goodsNo);
         CustomerCompanyGoodsMapping ccg = ccgValid.getOrThrow();
 
-        // 고객사-상품 매핑 업데이트
-        ccg.update(authGoodsMapReq);
+        List<AuthManageGoodsMapping> existingMappings = authManageGoodsMappingRepository.findByCustomerCompanyGoodsMappingAndIsDeletedFalse(ccg);
 
+//        if (ccg.getId().getGoodsAuthManageSupportCd() == authGoodsMapReq.goodsAuthManageCd()) {
+//            ccg.update(authGoodsMapReq);
+//        } else {
+//            ccg.softDelete();
+//            ccg = customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(ccg.getCustomerCompany(), ccg.getGoods(), authGoodsMapReq.goodsAuthManageCd(), authGoodsMapReq.isUsed()));
+//        }
+
+
+        // 권한 처리 - 회사 단위(COMPANY) 또는 개인 단위(INDIVIDUAL)에 따라 다르게 처리
         if (authGoodsMapReq.goodsAuthManageCd() == GoodsAuthManageSupportCd.COMPANY) {
-
-            List<AuthManageGoodsMapping> amgMappings = authManageGoodsMappingRepository.findByCustomerCompanyGoodsMappingAndIsDeletedFalse(ccg);
-            // 삭제
-            amgMappings.forEach(BaseEntity::softDelete);
-
-            // 뷰 권한
-            if (authGoodsMapReq.companySetting().isViewable()) {
-                authManageGoodsMappingRepository.save(AuthManageGoodsMapping.of(authGoodsMapReq, GoodsAuthCd.VIEW, ccg));
-            }
-
-            // 다운로드 권한
-            if (authGoodsMapReq.companySetting().isDownloadable()) {
-                authManageGoodsMappingRepository.save(AuthManageGoodsMapping.of(authGoodsMapReq, GoodsAuthCd.DOWNLOAD, ccg));
-            }
-
+            // 회사 단위 권한 관리 처리
+//            handleCompanyLevelPermissions(ccg, existingMappings, authGoodsMapReq);
         } else if (authGoodsMapReq.goodsAuthManageCd() == GoodsAuthManageSupportCd.INDIVIDUAL) {
-
-            // todo
-
+            // 개인 단위 권한 관리 처리
+//            handleIndividualLevelPermissions(ccg, existingMappings, authGoodsMapReq, true);
         }
+
+
 
         return null;
     }

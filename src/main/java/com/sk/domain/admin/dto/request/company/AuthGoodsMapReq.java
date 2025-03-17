@@ -10,7 +10,7 @@ public record AuthGoodsMapReq(
 
     @NotNull
     @Schema(description = "사용여부", example = "true")
-    boolean isUsed,
+    Boolean isUsed,
 
     @NotNull
     @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"INDIVIDUAL", "COMPANY"})
@@ -26,7 +26,7 @@ public record AuthGoodsMapReq(
 
     public record CompanySetting(
 
-        @Schema(description = "보기권한 여부", example = "ture")
+        @Schema(description = "보기권한 여부", example = "true")
         boolean isViewable,
 
         @Schema(description = "다운로드권한 여부", example = "false")
@@ -47,7 +47,7 @@ public record AuthGoodsMapReq(
         @Schema(description = "사용자 번호", example = "159")
         Integer userNo,
 
-        @Schema(description = "보기권한 여부", example = "ture")
+        @Schema(description = "보기권한 여부", example = "true")
         boolean isViewable,
 
         @Schema(description = "다운로드권한 여부", example = "false")

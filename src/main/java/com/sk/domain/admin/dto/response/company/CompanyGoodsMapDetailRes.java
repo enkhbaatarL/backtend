@@ -30,7 +30,7 @@ public record CompanyGoodsMapDetailRes(
 
     public record CompanySetting(
 
-        @Schema(description = "보기권한 여부", example = "ture")
+        @Schema(description = "보기권한 여부", example = "true")
         boolean isViewable,
 
         @Schema(description = "다운로드권한 여부", example = "false")

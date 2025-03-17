@@ -21,4 +21,6 @@ public interface UserRepository extends JpaRepository<User, Integer>, CustomUser
 
     Page<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany, Pageable pageable);
 
+    List<User> findByUserNoIn(List<Integer> ids);
+
 }
