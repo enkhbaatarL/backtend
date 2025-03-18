@@ -47,7 +47,7 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
             .limit(pageable.getPageSize())
             .where(customerCompanyGoodsMapping.isDeleted.eq(false),
                 customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
-            .orderBy(customerCompanyGoodsMapping.createDt.desc())
+            .orderBy(customerCompanyGoodsMapping.goods.goodsNm.asc())
             .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
