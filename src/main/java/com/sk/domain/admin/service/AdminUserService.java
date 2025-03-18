@@ -64,6 +64,7 @@ public class AdminUserService {
 	 * @param List<UserReq.Insert> 원장 테이블에서 사용자 ID 목록
 	 * @return List<UserRes>
 	 */
+	//TODO: 호영:사용자 이력 로그 추가
 	@Transactional
 	public List<UserRes> postUserInfo(List<UserReq.Insert> userInfoReqs) {
 		List<String> imCds = userInfoReqs.stream()
@@ -151,6 +152,7 @@ public class AdminUserService {
 	 * @param adminReq 어드민 관리자 정보
 	 * @return UserRes
 	 */
+	//TODO: 호영:사용자 이력 로그 추가
 	@Transactional
 	public UserRes postAdminUser(AdminReq.Insert adminReq) {
 		UserWithCompany userWithCompany = userRepository.findUserByInfoId(adminReq.imCd())

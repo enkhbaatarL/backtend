@@ -3,6 +3,8 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -19,5 +21,6 @@ public interface UserRepository extends JpaRepository<User, Integer>, CustomUser
     List<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany);
 
     Optional<User> findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(String userLoginId, UserRoleCd userRoleCd);
+    Page<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany, Pageable pageable);
 
 }

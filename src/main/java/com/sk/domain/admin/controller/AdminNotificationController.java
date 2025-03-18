@@ -1,12 +1,12 @@
 package com.sk.domain.admin.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -32,6 +32,7 @@ public class AdminNotificationController {
 
     private final AdminNotificationService adminNotificationService;
 
+    @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)")
@@ -44,6 +45,7 @@ public class AdminNotificationController {
         return BaseResponseFactory.create(adminNotificationService.getNotifications(page, size));
     }
 
+    @ApiOrder(2)
     @Operation(summary = "알림 발송 API", description = "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.")
     @PostMapping("/notification")
     public BaseResponse<Boolean> createNotification(

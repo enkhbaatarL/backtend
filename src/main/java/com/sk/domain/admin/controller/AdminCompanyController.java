@@ -1,14 +1,16 @@
 package com.sk.domain.admin.controller;
 
+import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.CustomerCompanyReq;
-import com.sk.domain.admin.dto.request.GoodsMappingReq;
-import com.sk.domain.admin.dto.request.ProviderMappingReq;
-import com.sk.domain.admin.dto.response.*;
+import com.sk.domain.admin.dto.request.company.CompanyReq;
+import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
+import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
+import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
+import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
+import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.service.AdminCompanyService;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -22,39 +24,46 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// todo 체크
-// 1. 고객사 목록 조회 API : 상태 파라미터 -> 확인
-// 2. 고객사 상세 구성 조회 API : 수정일 업데이트 삭제 고려 -> api 하나 딸거임
-// 3. 고객사 권한 조회 API : 고객사가 사용중인 권한? 프로세스 파악 불분명 / 상품매핑내역 체크? 프로바이더매핑내역 체크? -> 영선
-// 4. 회원삭제 버튼?
-// 5. 프로바이더 목록 조회 제공 여부
-
-// 사용자 관리, 프로바이더 관리 part
-// 1. 유저 삭제
-// 2. 상품(tmd_gdsm) 목록 조회(페이지네이션 X)
+/**
+ * todo
+ * 1. 고객사 활성화/비활성화 및 수정페이지(사용일시 수정...)
+ * 2. 고객사 및 하위 페이지 삭제 정책 정리 및 개발 필요
+ * 3. 각 페이지 수정일에 대한 정의(원장 테이블 수정까지도 필요한지 체크 필요)
+ * 4. 사용자 권한-상품 매핑 수정 비즈니스 로직 개발 API 15번
+ *
+ * check
+ * 1. 등록된 회원 목록 조회 페이지네이션 API 제공
+ * 2. 등록된 프로바이더 조회 API 제공
+ *
+ * shared
+ * 1. @ApiOrder 애노테이션
+ * 2. url 컨벤션
+ */
 
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/company-info")
+@RequestMapping("/api/v1/admin/company-management")
 @RequiredArgsConstructor
 public class AdminCompanyController {
 
     private final AdminCompanyService adminCompanyService;
 
-    @Operation(summary = "그룹사 목록 조회 API", description = "그룹사 목록을 조회합니다. (sort : number -> alphabet -> korean ASC)")
+    @ApiOrder(1)
+    @Operation(summary = "그룹사 목록 조회 API (without pagination)", description = "그룹사 목록을 조회합니다. <br>'companyNm' 필드를 기준으로 오름차순(ASC) 정렬되며, 우선순위는 숫자 > 알파벳 > 한국어 순입니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/group-companies")
     public BaseResponse<List<GroupCompanyRes>> getGroupCompanies() {
         return BaseResponseFactory.create(adminCompanyService.getGroupCompanies());
     }
 
+    @ApiOrder(2)
     @Parameters({
-        @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-        @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-        @Parameter(name = "companyNm", description = "검색할 고객사 이름 (like 검색)")
+        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+        @Parameter(name = "companyNm", description = "검색할 고객사 명 (like search)")
     })
-    @Operation(summary = "고객사 목록 조회 API", description = "고객사 목록을 조회합니다. with pagination (sort : 생성일 DESC)")
+    @Operation(summary = "고객사 목록 조회 API (with pagination)", description = "고객사 목록을 조회합니다. <br>페이지네이션 처리되어 'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies")
     public BaseResponse<PaginationRes<CompanyRes>> getCompanies(
@@ -65,107 +74,208 @@ public class AdminCompanyController {
         return BaseResponseFactory.create(adminCompanyService.getCompanies(page, size, companyNm));
     }
 
+    @ApiOrder(3)
     @Operation(summary = "고객사 등록 API", description = "고객사를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/company")
-    public BaseResponse<CompanyRes> postCompany(@RequestBody @Valid CustomerCompanyReq customerCompanyReq) {
-        return BaseResponseFactory.create(adminCompanyService.postCompany(customerCompanyReq));
+    public BaseResponse<CompanyRes> postCompany(@RequestBody @Valid CompanyReq companyReq) {
+        return BaseResponseFactory.create(adminCompanyService.postCompany(companyReq));
     }
 
-    // todo 고객사 권한 조회 API
-
-    @Hidden
-    @Operation(summary = "[미사용] 고객사 상세 구성 조회 API", description = "고객사의 상세 구성을 조회합니다. (고객사, 프로바이더 목록, 회원 목록)")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/{companyNo}/overview")
-    public BaseResponse<CompanyOverviewRes> getCompanyOverview(
-        @Parameter(name = "companyNo", description = "고객회사번호")
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
-    ) {
-        return BaseResponseFactory.create(adminCompanyService.getCompanyOverview(companyNo));
-    }
-
+    @ApiOrder(4)
     @Parameters({
-        @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-        @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-        @Parameter(name = "companyNo", description = "고객회사번호")
+        @Parameter(name = "companyNo", description = "고객회사 번호")
     })
-    @Operation(summary = "고객사-프로바이더 매핑 목록 조회 API", description = "특정 고객사와 매핑된 프로바이더 목록을 조회합니다. with pagination (sort : 생성일 DESC)")
+    @Operation(summary = "고객사 상세 조회 API", description = "고객사를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/{companyNo}/providers")
-    public BaseResponse<PaginationRes<ProviderMappingGoodsRes>> getCompanyProviders(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
-    ) {
-        return BaseResponseFactory.create(adminCompanyService.getCompanyProviders(companyNo, page, size));
-    }
-
-    @Operation(summary = "고객사-프로바이더 매핑 목록 조회 API (not using pagination)", description = "특정 고객사와 매핑된 프로바이더 목록을 조회합니다. with pagination 사용하지 않음")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/{companyNo}/provider-refs")
-    public BaseResponse<List<ProviderMappingRes>> getCompanyProviderRefs(
-        @Parameter(name = "companyNo", description = "고객회사번호")
+    @PostMapping("/companies/{companyNo}")
+    public BaseResponse<CompanyRes> getCompanyDetail(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
     ) {
-        return BaseResponseFactory.create(adminCompanyService.getCompanyProviderRefs(companyNo));
+        return BaseResponseFactory.create(adminCompanyService.getCompanyDetail(companyNo));
     }
 
-    @Operation(summary = "고객사-프로바이더 매핑 등록 API", description = "특정 고객사가 사용할 데이터 프로바이더 매핑 등록한다.")
+    @ApiOrder(5)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호")
+    })
+    @Operation(summary = "고객사 상세 최신 수정일 조회 API", description = "고객사를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/company/{companyNo}/provider")
-    public BaseResponse<ProviderMappingRes> postCompanyProvider(
-        @Parameter(name = "companyNo", description = "고객회사번호")
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @RequestBody @Valid ProviderMappingReq providerMappingReq
+    @GetMapping("/companies/{companyNo}/latest-updated")
+    public BaseResponse<LatestUpdatedRes> getCompanyLatestUpdated(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
     ) {
-        return BaseResponseFactory.create(adminCompanyService.postCompanyProvider(companyNo, providerMappingReq));
+        return BaseResponseFactory.create(adminCompanyService.getCompanyLatestUpdated(companyNo));
     }
 
-    @Operation(summary = "고객사-프로바이더 매핑 상세 조회 API", description = "특정 고객사와 매핑되어 있는 데이터 프로바이더 단 건을 상세 조회한다.")
+    @ApiOrder(6)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호")
+    })
+    @Operation(summary = "고객사-프로바이더 매핑 목록 조회 API (without pagination)", description = "고객사와 매핑된 프로바이더 목록을 조회합니다.<br>'providerNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/{companyNo}/provider/{providerNo}")
-    public BaseResponse<ProviderMappingDetailRes> getCompanyProvider(
-        @Parameter(name = "companyNo", description = "고객회사번호")
+    @GetMapping("/companies/{companyNo}/providers")
+    public BaseResponse<List<ProviderWithGoodsCntRes>> getProvidersMappedToCompany(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getProvidersMappedToCompany(companyNo));
+    }
+
+    @ApiOrder(7)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호")
+    })
+    @Operation(summary = "고객사-프로바이더 매핑 등록 API", description = "고객사와 프로바이더를 매핑하여 등록합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/companies/{companyNo}/provider")
+    public BaseResponse<CompanyProviderMapRes> postProviderMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @Parameter(name = "providerNo", description = "프로바이더번호")
+        @RequestBody @Valid CompanyProviderMapReq companyProviderMapReq
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.postProviderMappedToCompany(companyNo, companyProviderMapReq));
+    }
+
+    @ApiOrder(8)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호")
+    })
+    @Operation(summary = "고객사-프로바이더 매핑 상세 조회 API", description = "고객사와 매핑되어 있는 프로바이더를 상세 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}")
+    public BaseResponse<CompanyProviderMapDetailRes> getProviderDetail(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
     ) {
-        return BaseResponseFactory.create(adminCompanyService.getCompanyProvider(companyNo, providerNo));
+        return BaseResponseFactory.create(adminCompanyService.getProviderDetail(companyNo, providerNo));
     }
 
+    @ApiOrder(9)
     @Parameters({
-        @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-        @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-        @Parameter(name = "companyNo", description = "고객회사번호"),
-        @Parameter(name = "providerNo", description = "프로바이더번호")
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호")
     })
-    @Operation(summary = "고객사-프로바이더-상품 매핑 상세 조회 API", description = "특정 고객사와 매핑되어 있는 데이터 프로바이더의 상품 목록을 조회한다. with pagination (sort : 생성일 DESC)")
+    @Operation(summary = "고객사-프로바이더 매핑 상세 최신 수정일 조회 API", description = "고객사를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/{companyNo}/provider/{providerNo}/goods")
-    public BaseResponse<PaginationRes<GoodsMappingRes>> getCompanyProviderGoods(
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}/latest-updated")
+    public BaseResponse<LatestUpdatedRes> getProviderLatestUpdated(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
     ) {
-        return BaseResponseFactory.create(adminCompanyService.getCompanyProviderGoods(companyNo, providerNo, page, size));
+        return BaseResponseFactory.create(adminCompanyService.getProviderLatestUpdated(companyNo, providerNo));
     }
 
-    @Operation(summary = "고객사-프로바이더-상품 매핑 등록 API", description = "특정 고객사에게 상품을 등록한다.")
+    @ApiOrder(10)
+    @Parameters({
+        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 매핑 목록 조회 API (with pagination)", description = "고객사와 매핑되어있는 프로바이더의 상품 내역 중에 고객사가 등록한 상품 목록을 조회합니다.<br>'goodsNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/company/{companyNo}/provider/{providerNo}/goods")
-    public BaseResponse<CompanyGoodsMappingRes> postCompanyProviderGoods(
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods")
+    public BaseResponse<PaginationRes<GoodsWithDataCntRes>> getGoodsMappedToCompany(
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getGoodsMappedToCompany(page, size, companyNo, providerNo));
+    }
+
+    @ApiOrder(11)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 매핑 등록 API", description = "고객사와 상품을 매핑하여 등록합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/companies/{companyNo}/providers/{providerNo}/goods")
+    public BaseResponse<CompanyGoodsMapRes> postGoodsMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @RequestBody @Valid GoodsMappingReq goodsMappingReq
+        @RequestBody @Valid CompanyGoodsMapReq companyGoodsMapReq
     ) {
-        return BaseResponseFactory.create(adminCompanyService.postCompanyProviderGoods(companyNo, providerNo, goodsMappingReq));
+        return BaseResponseFactory.create(adminCompanyService.postGoodsMappedToCompany(companyNo, providerNo, companyGoodsMapReq));
+    }
+
+    @ApiOrder(12)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 매핑 상세 조회 API", description = "고객사와 매핑되어 있는 상품을 상세 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}")
+    public BaseResponse<CompanyGoodsMapDetailRes> getGoodsDetail(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getGoodsDetail(companyNo, providerNo, goodsNo));
+    }
+
+    @ApiOrder(13)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 매핑 상세 최신 수정일 조회 API", description = "고객사를 상세 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/latest-updated")
+    public BaseResponse<LatestUpdatedRes> getGoodsLatestUpdated(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getGoodsLatestUpdated(companyNo, providerNo, goodsNo));
+    }
+
+    @ApiOrder(14)
+    @Parameters({
+        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 조회 API (with pagination)", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 조회합니다.<br>'userNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/user-permissions")
+    public BaseResponse<PaginationRes<AuthGoodsMapRes>> getAuthGoods(
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.getAuthGoods(page, size, companyNo, providerNo, goodsNo));
+    }
+
+    @ApiOrder(15)
+    @Parameters({
+        @Parameter(name = "companyNo", description = "고객회사 번호"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품번호")
+    })
+    @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 수정 API", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/user-permissions")
+    public BaseResponse<AuthGoodsMapRes> patchAuthGoods(
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+        @RequestBody @Valid AuthGoodsMapReq authGoodsMapReq
+    ) {
+        return BaseResponseFactory.create(adminCompanyService.patchGoodsAuth(companyNo, providerNo, goodsNo, authGoodsMapReq));
     }
 
     @Operation(summary = "고객사, 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company-department/all")
+    @GetMapping("/company/department/all")
     public BaseResponse<List<CompanyDepartmentRes>> getCompaniesAndDepartments() {
         return BaseResponseFactory.create(adminCompanyService.getCompaniesAndDepartments());
     }

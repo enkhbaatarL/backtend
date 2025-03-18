@@ -1,7 +1,6 @@
 package com.sk.domain.shared.entity.master.tif;
 
-import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.ClientAccessInfoReq;
+import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import io.micrometer.common.util.StringUtils;

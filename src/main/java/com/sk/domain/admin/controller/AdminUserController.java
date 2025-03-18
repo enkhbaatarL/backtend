@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.TrimmedNotEmpty;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -36,11 +37,8 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * 
- * TODO: 고객사 등록 시 사용자 목록에 모든 유저가 나와야 하는지 아니면 등록되지 않은 유저만 나와야 하는지
- * 
- */
+//TODO: 호영:고객사 등록 시 사용자 목록에 모든 유저가 나와야 하는지 아니면 등록되지 않은 유저만 나와야 하는지
+
 @Tag(name = "02. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
 @RestController
@@ -51,6 +49,7 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
+    @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
@@ -70,6 +69,7 @@ public class AdminUserController {
                 .create(adminUserService.getUserInfos(page, size, companyCode, userName, emailAddress));
     }
 
+    @ApiOrder(2)
     @Operation(summary = "사용자 등록 API", description = "사용자 정보를 등록합니다.")
     @PostMapping("/user")
     public BaseResponse<List<UserRes>> postUserInfo(
@@ -77,14 +77,15 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.postUserInfo(userReq));
     }
 
+    @ApiOrder(3)
     @Parameters({
-        @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-        @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-        @Parameter(name = "userRoleCd", description = "사용자 역할 코드"),
-        @Parameter(name = "companyCode", description = "검색할 고객사 코드"),
-        @Parameter(name = "departmentNm", description = "검색할 부서 이름"),
-        @Parameter(name = "userName", description = "검색할 사용자 이름"),
-        @Parameter(name = "emailAddress", description = "검색할 이메일 주소")
+            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
+            @Parameter(name = "userRoleCd", description = "사용자 역할 코드"),
+            @Parameter(name = "companyCode", description = "검색할 고객사 코드"),
+            @Parameter(name = "departmentNm", description = "검색할 부서 이름"),
+            @Parameter(name = "userName", description = "검색할 사용자 이름"),
+            @Parameter(name = "emailAddress", description = "검색할 이메일 주소")
     })
     @Operation(summary = "사용자 목록 조회 API", description = "사용자 목록을 조회합니다.")
     @GetMapping("/users")
@@ -101,8 +102,9 @@ public class AdminUserController {
                         emailAddress));
     }
 
+    @ApiOrder(4)
     @Parameters({
-        @Parameter(name = "userNo", description = "사용자 번호")
+            @Parameter(name = "userNo", description = "사용자 번호")
     })
     @Operation(summary = "사용자 상세 조회 API", description = "사용자 상세 정보를 조회합니다.")
     @GetMapping("/users/{userNo}")
@@ -111,8 +113,9 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.getUser(userNo));
     }
 
+    @ApiOrder(5)
     @Parameters({
-        @Parameter(name = "userNo", description = "사용자 번호")
+            @Parameter(name = "userNo", description = "사용자 번호")
     })
     @Operation(summary = "사용자 등록 삭제 API", description = "사용자 정보를 삭제합니다.")
     @DeleteMapping("/users/{userNo}")
@@ -121,6 +124,7 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.deleteUser(userNo));
     }
 
+    @ApiOrder(6)
     @Operation(summary = "어드민 관리자 등록 API", description = "어드민 관리자 정보를 등록합니다.")
     @PostMapping("/admin-user")
     public BaseResponse<UserRes> postAdminUser(
@@ -128,8 +132,9 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.postAdminUser(adminReq));
     }
 
+    @ApiOrder(7)
     @Parameters({
-        @Parameter(name = "userNo", description = "사용자 번호")
+            @Parameter(name = "userNo", description = "사용자 번호")
     })
     @Operation(summary = "어드민 관리자 상세 조회 API", description = "어드민 관리자 상세 정보를 조회합니다.")
     @GetMapping("/admin-users/{userNo}")
@@ -138,8 +143,9 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.getAdminUser(userNo));
     }
 
+    @ApiOrder(8)
     @Parameters({
-        @Parameter(name = "userNo", description = "사용자 번호")
+            @Parameter(name = "userNo", description = "사용자 번호")
     })
     @Operation(summary = "어드민 관리자 수정 API", description = "어드민 관리자 정보를 수정합니다. (접근 허용 IP는 수정되는 값이 아닌 적용 되는 값 모두 필요)")
     @PatchMapping("/admin-users/{userNo}")
@@ -149,8 +155,9 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.patchAdminUser(userNo, adminReq));
     }
 
+    @ApiOrder(9)
     @Parameters({
-        @Parameter(name = "userNo", description = "사용자 번호")
+            @Parameter(name = "userNo", description = "사용자 번호")
     })
     @Operation(summary = "어드민 관리자 삭제 API", description = "어드민 관리자 정보를 삭제합니다.")
     @DeleteMapping("/admin-users/{userNo}")

@@ -1,12 +1,14 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import java.time.LocalDateTime;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.GoodsReq;
+import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -64,7 +66,9 @@ public class Goods extends BaseEntity {
     private Provider provider;
 
     @Builder
-    public Goods(Integer goodsNo, String goodsNm, String goodsCd, String goodsExpn, Boolean isUsed, Provider provider) {
+    public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsCd, String goodsExpn, Boolean isUsed, Provider provider) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
         this.goodsCd = goodsCd;
@@ -73,7 +77,7 @@ public class Goods extends BaseEntity {
         this.provider = provider;
     }
 
-    public void update(GoodsReq.Update goodsReq) {
+    public void update(GoodsUpdateReq goodsReq) {
 
         if (StringUtils.isNotEmpty(goodsReq.goodsNm())) {
             this.goodsNm = goodsReq.goodsNm();

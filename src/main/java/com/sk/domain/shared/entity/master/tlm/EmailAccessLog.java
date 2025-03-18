@@ -5,9 +5,11 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -62,11 +64,16 @@ public class EmailAccessLog extends BaseEntity {
     @Comment("이메일발송일시")
     private LocalDateTime emailSendDtm;
 
+    @Column(name = "send_succ_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("발송성공여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isSendSuccess;
+
     @Builder
     public EmailAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer emailSendSn, String emailReceiveUserLoginId,
             String emailTitleNm, String emailCntt, String emailSendStatusNm,
-            String emailSendErrCntt, LocalDateTime emailSendDtm) {
+            String emailSendErrCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.emailSendSn = emailSendSn;
         this.emailReceiveUserLoginId = emailReceiveUserLoginId;
@@ -75,5 +82,29 @@ public class EmailAccessLog extends BaseEntity {
         this.emailSendStatusNm = emailSendStatusNm;
         this.emailSendErrCntt = emailSendErrCntt;
         this.emailSendDtm = emailSendDtm != null ? emailSendDtm : LocalDateTime.now();
+        this.isSendSuccess = isSendSuccess;
+    }
+
+    public static EmailAccessLog of(String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
+            String emailSendStatusNm) {
+        return EmailAccessLog.builder()
+                .emailReceiveUserLoginId(emailReceiveUserLoginId)
+                .emailTitleNm(emailTitleNm)
+                .emailCntt(emailCntt)
+                .emailSendStatusNm(emailSendStatusNm)
+                .emailSendDtm(LocalDateTime.now())
+                .isSendSuccess(false)
+                .build();
+    }
+
+    public void successUpdate(String emailSendStatusNm) {
+        this.emailSendStatusNm = emailSendStatusNm;
+        this.isSendSuccess = true;
+    }
+
+    public void failUpdate(String emailSendStatusNm, String emailSendErrCntt) {
+        this.emailSendStatusNm = emailSendStatusNm;
+        this.emailSendErrCntt = emailSendErrCntt;
+        this.isSendSuccess = false;
     }
 }

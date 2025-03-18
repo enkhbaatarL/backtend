@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-//TODO: 관리자 인증 성공 후 토큰 발급 로직 추가
+//TODO: 호영:관리자 인증 성공 후 토큰 발급 로직 추가
 
 @Slf4j
 @Component

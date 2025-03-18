@@ -1,0 +1,88 @@
+package com.sk.domain.shared.entity.master.tcm;
+
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.Comment;
+
+import com.sk.domain.shared.entity.base.BaseEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Entity
+@Table(name = "tcm_filel", indexes = {
+    @Index(name = "TCM_FILEL_IX01", columnList = "file_rel_obj_spt_cd, file_rel_obj_dstg_no")
+})
+@Comment("TCM_파일")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class UploadedFile extends BaseEntity {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "file_no", nullable = false, columnDefinition = "bigint unsigned")
+  @Comment("파일번호")
+  private Long fileNo;
+
+  @Column(name = "org_file_nm", nullable = false, length = 100)
+  @Comment("원본파일명")
+  private String originalFileNm;
+
+  @Column(name = "strg_file_nm", nullable = false, length = 100)
+  @Comment("저장파일명")
+  private String storageFileNm;
+
+  @Column(name = "strg_path_nm", nullable = false, length = 100)
+  @Comment("저장경로명")
+  private String storagePathNm;
+
+  @Column(name = "file_size", nullable = false, columnDefinition = "int unsigned")
+  @Comment("파일사이즈")
+  private Integer fileSize;
+
+  @Column(name = "filex_nm", nullable = false, length = 20)
+  @Comment("파일확장자명")
+  private String fileExtNm;
+
+  @Column(name = "mime_type_nm", nullable = false, length = 50)
+  @Comment("MIME유형명")
+  private String mimeTypeNm;
+
+  @Column(name = "file_vald_end_dt", nullable = false, length = 8)
+  @Comment("파일유효종료일자")
+  private String fileValidEndDt;
+
+  @Column(name = "file_rel_obj_dstg_no", nullable = false, columnDefinition = "int unsigned")
+  @Comment("파일관계객체식별번호")
+  private Integer fileRelationshipObjectDistinguishNo;
+
+  @Column(name = "file_rel_obj_spt_cd", nullable = false, length = 20)
+  @Comment("파일관계객체구분코드")
+  private String fileRelationshipObjectSeparateCode;
+
+  @Builder
+  public UploadedFile(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+      Boolean isDeleted, Long fileNo, String originalFileNm, String storageFileNm, String storagePathNm, Integer fileSize,
+      String fileExtNm, String mimeTypeNm, String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo,
+      String fileRelationshipObjectSeparateCode) {
+    super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
+    this.fileNo = fileNo;
+    this.originalFileNm = originalFileNm;
+    this.storageFileNm = storageFileNm;
+    this.storagePathNm = storagePathNm;
+    this.fileSize = fileSize;
+    this.fileExtNm = fileExtNm;
+    this.mimeTypeNm = mimeTypeNm;
+    this.fileValidEndDt = fileValidEndDt;
+    this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
+    this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
+  }
+}
