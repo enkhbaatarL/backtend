@@ -3,6 +3,8 @@ package com.sk.domain.shared.repository.master.tam.custom;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.company.AuthGoodsMapRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
@@ -190,6 +192,10 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
             .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo)
                 .and(customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo)))
             .fetchOne();
+
+        if (ObjectUtils.isEmpty(ccgMappings.get(0, LocalDateTime.class))) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo));
+        }
 
         // 2. 사용자 권한-상품 매핑 수정 일시(삭제 포함)
         Tuple amgMappings = queryFactory

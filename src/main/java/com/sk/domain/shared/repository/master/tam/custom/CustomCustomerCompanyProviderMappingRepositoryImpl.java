@@ -3,6 +3,8 @@ package com.sk.domain.shared.repository.master.tam.custom;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
 import com.sk.domain.admin.dto.response.company.QProviderWithGoodsCntRes;
@@ -57,6 +59,10 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
             .where(customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo)
                 .and(customerCompanyProviderMapping.provider.providerNo.eq(providerNo)))
             .fetchOne();
+
+        if (ObjectUtils.isEmpty(ccpMappings.get(0, LocalDateTime.class))) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company-provider-mapping]. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo));
+        }
 
         // 2. 고객사-상품 매핑 수정 일시(삭제 포함)
         Tuple ccgMappings = queryFactory
