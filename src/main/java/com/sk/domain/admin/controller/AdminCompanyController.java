@@ -235,7 +235,7 @@ public class AdminCompanyController {
     })
     @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 조회 API (with pagination)", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 조회합니다.<br>'userNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/user-permissions")
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/permissions")
     public BaseResponse<PaginationRes<AuthGoodsMapRes>> getAuthGoods(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
@@ -254,8 +254,8 @@ public class AdminCompanyController {
     })
     @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 수정 API", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/user-permissions")
-    public BaseResponse<AuthGoodsMapRes> patchAuthGoods(
+    @PatchMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/permissions")
+    public BaseResponse<AuthGoodsMapSettingRes> patchAuthGoods(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
         @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,

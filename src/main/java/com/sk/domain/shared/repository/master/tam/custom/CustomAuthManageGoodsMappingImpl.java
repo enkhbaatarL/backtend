@@ -105,7 +105,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        // todo 0. 회사 - 상품 매핑 검증 / 회원명 검색 / 회원수, 조회수, 다운로드수
+        // todo 회원명 검색 / 회원수, 조회수, 다운로드수
 
         // 1. 고객사의 사용자 목록을 페이지네이션으로 조회
         List<User> users = queryFactory
@@ -145,8 +145,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
                 Integer userNo = mapping.getUser().getUserNo();
                 // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
-                Boolean[] goodsAuthBool = individualAuthMap.computeIfAbsent(userNo,
-                    k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+                Boolean[] goodsAuthBool = individualAuthMap.computeIfAbsent(userNo, k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
 
                 // 권한 유형에 따라 해당 배열 요소 업데이트
                 if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
@@ -170,25 +169,10 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
 
             if (authSupportCd == GoodsAuthManageSupportCd.COMPANY) {
-
-                return AuthGoodsMapRes.builder()
-                    .userNo(user.getUserNo())
-                    .userNm(user.getUserNm())
-                    .departmentName(user.getDepartmentNm())
-                    .isViewable(companyAuth[0])
-                    .isDownloadable(companyAuth[1])
-                    .build();
-
+                return AuthGoodsMapRes.of(user, companyAuth);
             } else {
-
-                Boolean[] bool = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
-                return AuthGoodsMapRes.builder()
-                    .userNo(user.getUserNo())
-                    .userNm(user.getUserNm())
-                    .departmentName(user.getDepartmentNm())
-                    .isViewable(bool[0])
-                    .isDownloadable(bool[1])
-                    .build();
+                Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+                return AuthGoodsMapRes.of(user, authArrays);
             }
 
         }).toList();
