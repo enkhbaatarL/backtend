@@ -56,7 +56,7 @@ public class CompanyValidator {
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {
-            return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
+            return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                     "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
         }
     }

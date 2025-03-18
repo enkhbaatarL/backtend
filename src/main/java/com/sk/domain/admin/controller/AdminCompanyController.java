@@ -29,14 +29,6 @@ import java.util.List;
  * 2. 고객사 및 하위 페이지 삭제 정책 정리 및 개발 필요
  * 3. 각 페이지 수정일에 대한 정의(원장 테이블 수정까지도 필요한지 체크 필요)
  * 4. 사용자 권한-상품 매핑 수정 비즈니스 로직 개발 API 15번
- *
- * check
- * 1. 등록된 회원 목록 조회 페이지네이션 API 제공
- * 2. 등록된 프로바이더 조회 API 제공
- *
- * shared
- * 1. @ApiOrder 애노테이션
- * 2. url 컨벤션
  */
 
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
@@ -243,7 +235,7 @@ public class AdminCompanyController {
     })
     @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 조회 API (with pagination)", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 조회합니다.<br>'userNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/user-permissions")
+    @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/permissions")
     public BaseResponse<PaginationRes<AuthGoodsMapRes>> getAuthGoods(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
@@ -262,8 +254,8 @@ public class AdminCompanyController {
     })
     @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 수정 API", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/user-permissions")
-    public BaseResponse<AuthGoodsMapRes> patchAuthGoods(
+    @PatchMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/permissions")
+    public BaseResponse<AuthGoodsMapSettingRes> patchAuthGoods(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
         @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,

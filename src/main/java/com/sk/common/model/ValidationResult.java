@@ -19,4 +19,10 @@ public record ValidationResult<T>(boolean isValid, T data, AppErrorException err
         return data;
     }
 
+    public void validOrThrow() {
+        if (!isValid) {
+            throw error;
+        }
+    }
+
 }

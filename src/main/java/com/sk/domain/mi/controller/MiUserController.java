@@ -27,7 +27,7 @@ public class MiUserController {
 
     @Operation(summary = "사용자 상품권한 목록 조회 API", description = "사용자 로그인 ID를 통해 사용자의 상품권한 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/user/{userLoginId}/goods-authorities")
+    @GetMapping("/user/{userLoginId}/permissions")
     public BaseResponse<List<GoodsAuthorityRes>> getUserGoodsAuthorities(
         @PathVariable(value = "userLoginId") String userLoginId
     ) {

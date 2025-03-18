@@ -1,5 +1,6 @@
 package com.sk.domain.admin.dto.request.company;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +11,7 @@ public record AuthGoodsMapReq(
 
     @NotNull
     @Schema(description = "사용여부", example = "true")
-    boolean isUsed,
+    Boolean isUsed,
 
     @NotNull
     @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"INDIVIDUAL", "COMPANY"})
@@ -24,9 +25,15 @@ public record AuthGoodsMapReq(
 
 ) {
 
-    public record CompanySetting(
+    public sealed interface AuthSetting permits CompanySetting, IndividualSetting {
+        boolean isViewable();
+        boolean isDownloadable();
+        String usageBeginDate();
+        String usageEndDate();
+    }
 
-        @Schema(description = "보기권한 여부", example = "ture")
+    public record CompanySetting(
+        @Schema(description = "보기권한 여부", example = "true")
         boolean isViewable,
 
         @Schema(description = "다운로드권한 여부", example = "false")
@@ -37,17 +44,13 @@ public record AuthGoodsMapReq(
 
         @Schema(description = "사용종료 일자", example = "20251231")
         String usageEndDate
-
-    ) {
-
-    }
+    ) implements AuthSetting {}
 
     public record IndividualSetting(
-
         @Schema(description = "사용자 번호", example = "159")
         Integer userNo,
 
-        @Schema(description = "보기권한 여부", example = "ture")
+        @Schema(description = "보기권한 여부", example = "true")
         boolean isViewable,
 
         @Schema(description = "다운로드권한 여부", example = "false")
@@ -58,9 +61,6 @@ public record AuthGoodsMapReq(
 
         @Schema(description = "사용종료 일자", example = "20251231")
         String usageEndDate
-
-    ) {
-
-    }
+    ) implements AuthSetting {}
 
 }
