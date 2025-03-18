@@ -88,7 +88,7 @@ public class AdminCompanyController {
     })
     @Operation(summary = "고객사 수정 API", description = "고객사를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/companies/{companyNo}")
+    @PatchMapping("/companies/{companyNo}")
     public BaseResponse<CompanyRes> patchCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @RequestBody @Valid CompanyReq.Update companyReq
