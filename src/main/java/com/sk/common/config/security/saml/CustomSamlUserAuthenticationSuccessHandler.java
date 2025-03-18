@@ -14,8 +14,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
 import com.sk.domain.shared.entity.master.tlm.UserAccessLog;
 import com.sk.domain.shared.entity.master.tmd.User;
@@ -27,6 +25,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+//TODO: 사용자 인증 성공 후 토큰 발급 로직 추가
 
 @Slf4j
 @Component

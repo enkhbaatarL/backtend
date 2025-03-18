@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.request.NotificationReq;
 import com.sk.domain.admin.dto.response.NotificationRes;
 import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
 
@@ -30,4 +31,14 @@ public class AdminNotificationService {
         return PaginationRes.toRes(emailAccessLogRepository.findNotificationsByConditions(page, size));
     }
 
+    /**
+     * 임계치를 확인하고 알림을 발송한다.
+     * 
+     * @param notificationReq 알림 요청
+     * @return 알림 발송 결과
+     */
+    public Boolean createNotification(NotificationReq notificationReq) {
+        
+        return true;
+    }
 }
