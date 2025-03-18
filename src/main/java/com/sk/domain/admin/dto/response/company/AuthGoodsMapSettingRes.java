@@ -9,10 +9,10 @@ public record AuthGoodsMapSettingRes(
     @Schema(description = "사용여부", example = "true")
     Boolean isUsed,
 
-    @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"INDIVIDUAL", "COMPANY"})
+    @Schema(description = "상품권한 주체구분 코드", example = "INDIVIDUAL", allowableValues = {"COMPANY", "INDIVIDUAL"})
     String goodsAuthManageCd,
 
-    @Schema(description = "상품권한주체구분명", example = "개인", allowableValues = {"회사", "개인"})
+    @Schema(description = "상품권한 주체구분 명", example = "개인", allowableValues = {"회사", "개인"})
     String goodsAuthManageNm
 
 ) {

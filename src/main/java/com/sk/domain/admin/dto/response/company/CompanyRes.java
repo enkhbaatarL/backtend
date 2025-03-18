@@ -26,6 +26,9 @@ public record CompanyRes(
     @Schema(description = "사용종료 일자", example = "20251231")
     String usageEndDate,
 
+    @Schema(description = "활성화 여부", example = "true")
+    Boolean isActivated,
+
     @JsonUnwrapped
     @Schema(description = "감사 정보")
     AuditInfo auditInfo
@@ -33,18 +36,19 @@ public record CompanyRes(
 ) {
 
     @Builder
-    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, AuditInfo auditInfo) {
+    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, Boolean isActivated, AuditInfo auditInfo) {
         this.companyNo = companyNo;
         this.companyCd = companyCd;
         this.companyNm = companyNm;
         this.usageBeginDate = usageBeginDate;
         this.usageEndDate = usageEndDate;
+        this.isActivated = isActivated;
         this.auditInfo = auditInfo;
     }
 
     @QueryProjection
-    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
-        this(companyNo, companyCd, companyNm, usageBeginDate, usageEndDate,
+    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, Boolean isActivated, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+        this(companyNo, companyCd, companyNm, usageBeginDate, usageEndDate, isActivated,
             AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
     }
 
@@ -61,6 +65,7 @@ public record CompanyRes(
                 savedEntity.getModifyUserId(),
                 savedEntity.getModifyDt()
             ))
+            .isActivated(savedEntity.getIsUsed())
             .build();
     }
 

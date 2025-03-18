@@ -13,11 +13,9 @@ import org.apache.commons.lang3.ObjectUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
-import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 @RequiredArgsConstructor
@@ -34,7 +32,7 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
                 customerCompanyProviderMapping.provider.providerNm,
                 JPAExpressions.select(customerCompanyGoodsMapping.count().intValue())
                     .from(customerCompanyGoodsMapping)
-                    .where(customerCompanyGoodsMapping.isDeleted.eq(false) // todo isUsed 체크 X
+                    .where(customerCompanyGoodsMapping.isDeleted.eq(false)
                         .and(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
                         .and(customerCompanyGoodsMapping.goods.provider.providerNo.eq(customerCompanyProviderMapping.provider.providerNo))),
                 customerCompanyProviderMapping.createUserId,

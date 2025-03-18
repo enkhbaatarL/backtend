@@ -45,6 +45,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 customerCompany.customerCompanyNm,
                 customerCompany.useBeginDt,
                 customerCompany.useEndDt,
+                customerCompany.isUsed,
                 customerCompany.createUserId,
                 customerCompany.createDt,
                 customerCompany.modifyUserId,
