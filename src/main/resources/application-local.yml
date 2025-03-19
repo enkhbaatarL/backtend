@@ -48,10 +48,26 @@ jwt:
 logging:
   config: classpath:logback-local.xml
   level:
-      org.springframework.security: DEBUG
+    org.springframework.security: DEBUG
 
 api:
   sample:
     url: http://localhost:8081
     connection-timeout: 1s
     read-timeout: 20s
+
+mail:
+  smtp:
+    host: smtp.worksmobile.com
+    port: 465
+    username: no-reply-manure@manure.by-works.com
+    password: WT6y1MpWNyqY
+    from: no-reply-manure@manure.by-works.com
+    properties:
+      transport-protocol: smtp
+      auth: true
+      ssl-enable: true
+      starttls-enable: false
+      ssl-protocols: TLSv1.2
+      connectiontimeout: 10000
+      debug: true

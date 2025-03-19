@@ -5,9 +5,11 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -33,7 +35,7 @@ public class EmailAccessLog extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "eml_send_sn", nullable = false, columnDefinition = "int unsigned")
     @Comment("이메일발송일련번호")
-    private Integer emailSendSequence;
+    private Integer emailSendSn;
 
     @Column(name = "eml_rcv_usr_logn_id", length = 50)
     @Comment("이메일수신사용자로그인ID")
@@ -41,39 +43,68 @@ public class EmailAccessLog extends BaseEntity {
 
     @Column(name = "eml_titl_nm", nullable = false, length = 255)
     @Comment("이메일제목명")
-    private String emailTitleName;
+    private String emailTitleNm;
 
     @Lob
     @Column(name = "eml_cntt", columnDefinition = "text")
     @Comment("이메일내용")
-    private String emailContent;
+    private String emailCntt;
 
     @Column(name = "eml_send_stat_nm", length = 20)
     @Comment("이메일발송상태명")
-    private String emailSendStatusName;
+    private String emailSendStatusNm;
 
     @Lob
     @Column(name = "eml_send_err_cntt", columnDefinition = "text")
     @Comment("이메일발송오류내용")
-    private String emailSendErrorContent;
+    private String emailSendErrCntt;
 
     @Column(name = "eml_send_dtm", columnDefinition = "datetime")
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Comment("이메일발송일시")
-    private LocalDateTime emailSendDateTime;
+    private LocalDateTime emailSendDtm;
+
+    @Column(name = "send_succ_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("발송성공여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isSendSuccess;
 
     @Builder
     public EmailAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer emailSendSequence, String emailReceiveUserLoginId,
-            String emailTitleName, String emailContent, String emailSendStatusName,
-            String emailSendErrorContent, LocalDateTime emailSendDateTime) {
+            Boolean isDeleted, Integer emailSendSn, String emailReceiveUserLoginId,
+            String emailTitleNm, String emailCntt, String emailSendStatusNm,
+            String emailSendErrCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
-        this.emailSendSequence = emailSendSequence;
+        this.emailSendSn = emailSendSn;
         this.emailReceiveUserLoginId = emailReceiveUserLoginId;
-        this.emailTitleName = emailTitleName;
-        this.emailContent = emailContent;
-        this.emailSendStatusName = emailSendStatusName;
-        this.emailSendErrorContent = emailSendErrorContent;
-        this.emailSendDateTime = emailSendDateTime != null ? emailSendDateTime : LocalDateTime.now();
+        this.emailTitleNm = emailTitleNm;
+        this.emailCntt = emailCntt;
+        this.emailSendStatusNm = emailSendStatusNm;
+        this.emailSendErrCntt = emailSendErrCntt;
+        this.emailSendDtm = emailSendDtm != null ? emailSendDtm : LocalDateTime.now();
+        this.isSendSuccess = isSendSuccess;
+    }
+
+    public static EmailAccessLog of(String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
+            String emailSendStatusNm) {
+        return EmailAccessLog.builder()
+                .emailReceiveUserLoginId(emailReceiveUserLoginId)
+                .emailTitleNm(emailTitleNm)
+                .emailCntt(emailCntt)
+                .emailSendStatusNm(emailSendStatusNm)
+                .emailSendDtm(LocalDateTime.now())
+                .isSendSuccess(false)
+                .build();
+    }
+
+    public void successUpdate(String emailSendStatusNm) {
+        this.emailSendStatusNm = emailSendStatusNm;
+        this.isSendSuccess = true;
+    }
+
+    public void failUpdate(String emailSendStatusNm, String emailSendErrCntt) {
+        this.emailSendStatusNm = emailSendStatusNm;
+        this.emailSendErrCntt = emailSendErrCntt;
+        this.isSendSuccess = false;
     }
 }

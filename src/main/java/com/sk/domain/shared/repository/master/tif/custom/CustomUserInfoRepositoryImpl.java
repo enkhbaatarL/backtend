@@ -35,11 +35,11 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
                 .and(userInfo.companyCd.eq(companyCode));
 
         if (userName != null) {
-            builder.and(userInfo.userNm.contains(userName));
+            builder.and(userInfo.userNm.lower().contains(userName.toLowerCase()));
         }
 
         if (emailAddress != null) {
-            builder.and(userInfo.emailAddress.contains(emailAddress));
+            builder.and(userInfo.emailAddress.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
         }
 
         List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(

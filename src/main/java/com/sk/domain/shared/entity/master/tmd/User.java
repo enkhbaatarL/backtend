@@ -7,6 +7,7 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.dataResult.UserWithCompany;
+import com.sk.domain.admin.dto.request.AdminReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.UserRoleCd;
 
@@ -103,11 +104,11 @@ public class User extends BaseEntity {
         this.customerCompany = customerCompany;
     }
 
-    public static User of(UserWithCompany userWithCompany) {
+    public static User of(UserWithCompany userWithCompany, UserRoleCd userRoleCd) {
         return User.builder()
                 .userNm(userWithCompany.userNm())
                 .userLoginId(userWithCompany.userLoginId())
-                .userRoleCd(UserRoleCd.USER)
+                .userRoleCd(userRoleCd)
                 .onDutyNm(userWithCompany.onDutyNm())
                 .departmentNm(userWithCompany.departmentNm())
                 .isOtherServiceAccessPossible(false)
@@ -117,4 +118,9 @@ public class User extends BaseEntity {
                 .build();
     }
 
+    public void update(AdminReq.Update dto){
+        if(dto.isOtherServiceAccessPossible() != null) {
+            this.isOtherServiceAccessPossible = dto.isOtherServiceAccessPossible();
+        }
+    }
 }

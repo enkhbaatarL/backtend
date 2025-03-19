@@ -8,6 +8,7 @@ import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
+import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.service.AdminCompanyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -290,4 +291,10 @@ public class AdminCompanyController {
         return BaseResponseFactory.create(adminCompanyService.patchGoodsAuth(companyNo, providerNo, goodsNo, authGoodsMapReq));
     }
 
+    @Operation(summary = "고객사, 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/company/department/all")
+    public BaseResponse<List<CompanyDepartmentRes>> getCompaniesAndDepartments() {
+        return BaseResponseFactory.create(adminCompanyService.getCompaniesAndDepartments());
+    }
 }

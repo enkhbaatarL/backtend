@@ -2,8 +2,10 @@ package com.sk.domain.shared.repository.master.tmd.custom;
 
 import static com.sk.domain.shared.entity.master.tif.QUserInfo.userInfo;
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
+import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +22,8 @@ import com.sk.domain.admin.dto.response.QUserWithCreatorRes;
 import com.sk.domain.admin.dto.response.UserWithCreatorRes;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
+import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.UserRoleCd;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,14 +46,31 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                 .from(userInfo)
                 .leftJoin(customerCompany)
                 .on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
-                .fetchJoin()
                 .where(userInfo.imCd.in(imCds)
-                        .and(userInfo.isDeleted.eq(false)))
+                        .and(userInfo.isDeleted.isFalse()))
                 .fetch();
     }
 
     @Override
-    public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, Integer customerCompanyNo, String departmentNm,
+    public Optional<UserWithCompany> findUserByInfoId(String imCd) {
+        return Optional.ofNullable(queryFactory.select(new QUserWithCompany(
+                userInfo.userNm,
+                userInfo.loginId,
+                userInfo.onDutyNm,
+                userInfo.departmentNm,
+                customerCompany,
+                customerCompany.customerCompanyNm))
+                .from(userInfo)
+                .leftJoin(customerCompany)
+                .on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
+                .where(userInfo.imCd.eq(imCd)
+                        .and(userInfo.isDeleted.isFalse()))
+                .fetchOne());
+    }
+
+    @Override
+    public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd,
+            Integer customerCompanyNo, String departmentNm,
             String userName, String emailAddress) {
 
         QUser user = QUser.user;
@@ -61,8 +82,9 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(user.isDeleted.eq(false));
-        
+        builder.and(user.isDeleted.isFalse())
+                .and(user.userRoleCd.eq(userRoleCd));
+
         if (customerCompanyNo != null) {
             builder.and(user.customerCompany.customerCompanyNo.eq(customerCompanyNo));
         }
@@ -72,11 +94,11 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         }
 
         if (userName != null) {
-            builder.and(user.userNm.contains(userName));
+            builder.and(user.userNm.lower().contains(userName.toLowerCase()));
         }
 
         if (emailAddress != null) {
-            builder.and(user.userLoginId.contains(emailAddress));
+            builder.and(user.userLoginId.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
         }
 
         List<UserWithCreatorRes> content = queryFactory
@@ -100,8 +122,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                         user.createUserId,
                         user.createDt,
                         user.modifyUserId,
-                        user.modifyDt
-                ))
+                        user.modifyDt))
                 .from(user)
                 .leftJoin(user.customerCompany, customerCompany)
                 .leftJoin(creator).on(user.createUserId.eq(creator.userLoginId))
@@ -118,5 +139,16 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                 .where(builder);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public List<User> findByUserLoginIdsAndRoleAndNotDeleted(List<String> userLoginIds, UserRoleCd role) {
+        return queryFactory
+                .selectFrom(user)
+                .where(
+                        user.userLoginId.in(userLoginIds),
+                        user.userRoleCd.eq(role),
+                        user.isDeleted.eq(false))
+                .fetch();
     }
 }
