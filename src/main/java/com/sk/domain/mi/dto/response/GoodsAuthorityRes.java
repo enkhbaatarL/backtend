@@ -17,7 +17,7 @@ public record GoodsAuthorityRes(
     @Schema(description = "상품코드", example = "CD159")
     String goodsCd,
 
-    @Schema(description = "보기권한 여부", example = "ture")
+    @Schema(description = "보기권한 여부", example = "true")
     boolean isViewable,
 
     @Schema(description = "다운로드권한 여부", example = "false")

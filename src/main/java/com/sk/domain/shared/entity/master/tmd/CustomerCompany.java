@@ -1,5 +1,6 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -8,7 +9,11 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -39,23 +44,51 @@ public class CustomerCompany extends BaseEntity {
     @Comment("사용종료일자")
     private String useEndDt;
 
+    @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("사용여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isUsed;
+
     @Builder
-    public CustomerCompany(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd,
-                           String useBeginDt, String useEndDt) {
+    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String useBeginDt, String useEndDt, Boolean isUsed) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
         this.customerCompanyCd = customerCompanyCd;
         this.useBeginDt = useBeginDt;
         this.useEndDt = useEndDt;
+        this.isUsed = isUsed;
     }
 
-    public static CustomerCompany of(CompanyReq dto) {
+    public static CustomerCompany of(CompanyReq.Insert dto) {
         return CustomerCompany.builder()
             .customerCompanyCd(dto.companyCd())
             .customerCompanyNm(dto.companyNm())
             .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
             .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
+            .isUsed(Boolean.TRUE)
             .build();
+    }
+
+    public void update(CompanyReq.Update companyReq) {
+
+        if (ObjectUtils.isNotEmpty(companyReq.isActivated())) {
+            this.isUsed = companyReq.isActivated();
+        }
+
+        if (ObjectUtils.isNotEmpty(companyReq.companyNm())) {
+            this.customerCompanyNm = companyReq.companyNm();
+        }
+
+        if (ObjectUtils.isNotEmpty(companyReq.usageBeginDate())) {
+            this.useBeginDt = DateUtil.toYmd(companyReq.usageBeginDate());
+        }
+
+        if (ObjectUtils.isNotEmpty(companyReq.usageEndDate())) {
+            this.useEndDt = DateUtil.toYmd(companyReq.usageEndDate());
+        }
+
     }
 
 }

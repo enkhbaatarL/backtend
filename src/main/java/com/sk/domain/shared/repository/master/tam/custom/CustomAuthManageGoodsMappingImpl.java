@@ -3,6 +3,8 @@ package com.sk.domain.shared.repository.master.tam.custom;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.company.AuthGoodsMapRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
@@ -105,7 +107,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        // todo 0. 회사 - 상품 매핑 검증 / 회원명 검색 / 회원수, 조회수, 다운로드수
+        // todo 회원명 검색 / 회원수, 조회수, 다운로드수
 
         // 1. 고객사의 사용자 목록을 페이지네이션으로 조회
         List<User> users = queryFactory
@@ -127,40 +129,54 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         List<AuthManageGoodsMapping> authGoodsMappings = queryFactory
             .select(authManageGoodsMapping)
             .from(authManageGoodsMapping)
-            .innerJoin(authManageGoodsMapping.user, user).fetchJoin()
+            .leftJoin(authManageGoodsMapping.user, user).fetchJoin()
             .innerJoin(authManageGoodsMapping.customerCompanyGoodsMapping, customerCompanyGoodsMapping).fetchJoin()
             .innerJoin(customerCompanyGoodsMapping.customerCompany, customerCompany).fetchJoin()
             .where(authManageGoodsMapping.isDeleted.isFalse(),
                 customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo), customerCompany.customerCompanyNo.eq(companyNo))
             .fetch();
 
-        Map<Integer, Boolean[]> authGoodsMappingsMap = new HashMap<>();
+        GoodsAuthManageSupportCd authSupportCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd();
+
+        Map<Integer, Boolean[]> individualAuthMap = new HashMap<>();
+        Boolean[] companyAuth = new Boolean[]{Boolean.FALSE, Boolean.FALSE};
 
         for (AuthManageGoodsMapping mapping : authGoodsMappings) {
 
-            Integer userNo = mapping.getUser().getUserNo();
-            // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
-            Boolean[] goodsAuthBool = authGoodsMappingsMap.computeIfAbsent(userNo,
-                k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+            if (mapping.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd() == GoodsAuthManageSupportCd.INDIVIDUAL) {
 
-            // 권한 유형에 따라 해당 배열 요소 업데이트
-            if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
-                goodsAuthBool[0] = Boolean.TRUE;
-            } else if (mapping.getGoodsAuthCd() == GoodsAuthCd.DOWNLOAD) {
-                goodsAuthBool[1] = Boolean.TRUE;
+                Integer userNo = mapping.getUser().getUserNo();
+                // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
+                Boolean[] goodsAuthBool = individualAuthMap.computeIfAbsent(userNo, k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+
+                // 권한 유형에 따라 해당 배열 요소 업데이트
+                if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
+                    goodsAuthBool[0] = Boolean.TRUE;
+                } else if (mapping.getGoodsAuthCd() == GoodsAuthCd.DOWNLOAD) {
+                    goodsAuthBool[1] = Boolean.TRUE;
+                }
+
+            } else {
+
+                if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
+                    companyAuth[0] = Boolean.TRUE;
+                } else if (mapping.getGoodsAuthCd() == GoodsAuthCd.DOWNLOAD) {
+                    companyAuth[1] = Boolean.TRUE;
+                }
+
             }
 
         }
 
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
-            Boolean[] bool = authGoodsMappingsMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
-            return AuthGoodsMapRes.builder()
-                .userNo(user.getUserNo())
-                .userNm(user.getUserNm())
-                .departmentName(user.getDepartmentNm())
-                .isViewable(bool[0])
-                .isDownloadable(bool[1])
-                .build();
+
+            if (authSupportCd == GoodsAuthManageSupportCd.COMPANY) {
+                return AuthGoodsMapRes.of(user, companyAuth);
+            } else {
+                Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+                return AuthGoodsMapRes.of(user, authArrays);
+            }
+
         }).toList();
 
         return PageableExecutionUtils.getPage(result, pageable, countQuery::fetchOne);
@@ -176,6 +192,10 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
             .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo)
                 .and(customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo)))
             .fetchOne();
+
+        if (ObjectUtils.isEmpty(ccgMappings.get(0, LocalDateTime.class))) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo));
+        }
 
         // 2. 사용자 권한-상품 매핑 수정 일시(삭제 포함)
         Tuple amgMappings = queryFactory

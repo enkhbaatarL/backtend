@@ -26,8 +26,11 @@ public record GoodsWithDataCntRes(
     @Schema(description = "사용여부", example = "true")
     boolean isUsed,
 
-    @Schema(description = "상품권한", example = "INDIVIDUAL", allowableValues = {"COMPANY", "INDIVIDUAL"})
+    @Schema(description = "상품권한 주체구분 코드", example = "INDIVIDUAL", allowableValues = {"COMPANY", "INDIVIDUAL"})
     String goodsAuthManageCd,
+
+    @Schema(description = "상품권한 주체구분 명", example = "개인", allowableValues = {"회사", "개인"})
+    String goodsAuthManageNm,
 
     @JsonUnwrapped
     AuditInfo auditInfo
@@ -36,18 +39,19 @@ public record GoodsWithDataCntRes(
 
     @QueryProjection
     public GoodsWithDataCntRes(Integer goodsNo, String goodsNm, String goodsExpn, Integer numberOfData, boolean isUsed, GoodsAuthManageSupportCd goodsAuthManageSupportCd, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
-        this(goodsNo, goodsNm, goodsExpn, numberOfData, isUsed, goodsAuthManageSupportCd.getCode(),
+        this(goodsNo, goodsNm, goodsExpn, numberOfData, isUsed, goodsAuthManageSupportCd.getCode(), goodsAuthManageSupportCd.getDescription(),
             new AuditInfo(createUserId, createDt, modifyUserId, modifyDt));
     }
 
     @Builder
-    public GoodsWithDataCntRes(Integer goodsNo, String goodsNm, String goodsExpn, Integer numberOfData, boolean isUsed, String goodsAuthManageCd, AuditInfo auditInfo) {
+    public GoodsWithDataCntRes(Integer goodsNo, String goodsNm, String goodsExpn, Integer numberOfData, boolean isUsed, String goodsAuthManageCd, String goodsAuthManageNm, AuditInfo auditInfo) {
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
         this.goodsExpn = goodsExpn;
         this.numberOfData = numberOfData;
         this.isUsed = isUsed;
         this.goodsAuthManageCd = goodsAuthManageCd;
+        this.goodsAuthManageNm = goodsAuthManageNm;
         this.auditInfo = auditInfo;
     }
 
