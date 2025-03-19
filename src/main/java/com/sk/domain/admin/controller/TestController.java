@@ -45,4 +45,11 @@ public class TestController {
         return BaseResponseFactory.create(goodsMappings.stream().map(GoodsAuthorityRes::of).toList());
     }
 
+
+    @Operation(summary = "테스트 메일 발송 API", description = "테스트 메일을 발송합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/mail")
+    public BaseResponse<Boolean> sendMail() {
+        return BaseResponseFactory.create(testService.sendMail());
+    }
 }

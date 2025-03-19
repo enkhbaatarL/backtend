@@ -96,6 +96,9 @@ dependencies {
     annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 
+    // 이메일
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 }
 
 tasks.register('generateQuerydsl', JavaCompile) {

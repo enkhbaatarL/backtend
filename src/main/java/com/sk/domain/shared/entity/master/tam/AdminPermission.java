@@ -43,4 +43,15 @@ public class AdminPermission extends BaseEntity {
         this.id = id;
         this.user = user;
     }
+
+    public static AdminPermission of(User user, String accessAllowedIpAddress) {
+        return AdminPermission.builder()
+                .id(AdminPermissionId.builder()
+                        .userNo(user.getUserNo())
+                        .ipAddress(accessAllowedIpAddress)
+                        .applyDt(LocalDateTime.now())
+                        .build())
+                .user(user)
+                .build();
+    }
 }

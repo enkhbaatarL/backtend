@@ -9,6 +9,7 @@ import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
+import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.validator.CompanyValidator;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -152,12 +153,14 @@ public class AdminCompanyService {
         ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = companyValid.getOrThrow();
 
-        ValidationResult<Provider> providerValid = companyValidator.ensureProviderExistsByProviderNo(companyProviderMapReq.providerNo());
+        ValidationResult<Provider> providerValid = companyValidator
+                .ensureProviderExistsByProviderNo(companyProviderMapReq.providerNo());
         Provider provider = providerValid.getOrThrow();
 
         companyValidator.ensureCcpmNotExistsByCompanyAndProvider(company, provider);
 
-        return CompanyProviderMapRes.of(customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider)));
+        return CompanyProviderMapRes.of(
+                customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider)));
 
     }
 
@@ -170,7 +173,8 @@ public class AdminCompanyService {
      */
     public CompanyProviderMapDetailRes getProviderDetail(Integer companyNo, Integer providerNo) {
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
+        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator
+                .ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
 
         return CompanyProviderMapDetailRes.of(ccp);
@@ -203,8 +207,10 @@ public class AdminCompanyService {
      * @param providerNo 프로바이더 번호
      * @return PaginationRes<GoodsWithDataCntRes>
      */
-    public PaginationRes<GoodsWithDataCntRes> getGoodsMappedToCompany(int page, int size, Integer companyNo, Integer providerNo) {
-        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findGoodsMappingsByConditions(page, size, companyNo, providerNo));
+    public PaginationRes<GoodsWithDataCntRes> getGoodsMappedToCompany(int page, int size, Integer companyNo,
+            Integer providerNo) {
+        return PaginationRes.toRes(
+                customerCompanyGoodsMappingRepository.findGoodsMappingsByConditions(page, size, companyNo, providerNo));
     }
 
     /**
@@ -216,19 +222,22 @@ public class AdminCompanyService {
      * @return GoodsMappingRes
      */
     @Transactional
-    public CompanyGoodsMapRes postGoodsMappedToCompany(Integer companyNo, Integer providerNo, CompanyGoodsMapReq companyGoodsMapReq) {
+    public CompanyGoodsMapRes postGoodsMappedToCompany(Integer companyNo, Integer providerNo,
+            CompanyGoodsMapReq companyGoodsMapReq) {
 
         ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = companyValid.getOrThrow();
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
+        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator
+                .ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
 
         ValidationResult<CustomerCompanyGoodsMapping> ccgValid = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo,
             companyGoodsMapReq.goodsNo());
         CustomerCompanyGoodsMapping ccg = ccgValid.getOrThrow();
 
-        ValidationResult<Goods> goodsValid = companyValidator.ensureGoodsExistsByGoodsNo(providerNo, companyGoodsMapReq.goodsNo());
+        ValidationResult<Goods> goodsValid = companyValidator.ensureGoodsExistsByGoodsNo(providerNo,
+                companyGoodsMapReq.goodsNo());
         Goods goods = goodsValid.getOrThrow();
 
         return CompanyGoodsMapRes.of(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManageCd())));
@@ -496,6 +505,15 @@ public class AdminCompanyService {
      */
     public LatestUpdatedRes getGoodsLatestUpdated(Integer companyNo, Integer providerNo, Integer goodsNo) {
         return authManageGoodsMappingRepository.findLatestUpdated(companyNo, providerNo, goodsNo);
+    }
+
+    /**
+     * 고객사와 부서 목록을 조회한다.
+     *
+     * @return List<CompanyDepartmentRes>
+     */
+    public List<CompanyDepartmentRes> getCompaniesAndDepartments() {
+        return customerCompanyRepository.findAllCompaniesAndDepartments();
     }
 
 }

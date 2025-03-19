@@ -1,17 +1,13 @@
 package com.sk.domain.shared.repository.master.tmd.custom;
 
-import com.querydsl.core.Tuple;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.JPQLQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.response.company.CompanyRes;
-import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
-import com.sk.domain.admin.dto.response.company.QCompanyRes;
-import com.sk.domain.shared.entity.master.tmd.QUser;
-import com.sk.domain.shared.entity.master.tmd.User;
-import lombok.RequiredArgsConstructor;
+import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
+import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
+import static com.sk.domain.shared.entity.master.tmd.QUser.user;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -19,14 +15,19 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPQLQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
+import com.sk.domain.admin.dto.response.company.CompanyRes;
+import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
+import com.sk.domain.admin.dto.response.company.QCompanyRes;
+import com.sk.domain.shared.entity.master.tmd.QUser;
 
-import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
-import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
-import static com.sk.domain.shared.entity.master.tmd.QUser.user;
-
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompanyRepository {
@@ -59,12 +60,11 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
-            .select(customerCompany.count())
-            .from(customerCompany)
-            .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm));
+                .select(customerCompany.count())
+                .from(customerCompany)
+                .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
-
     }
 
     @Override
@@ -136,6 +136,39 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
 
     private BooleanExpression containsCompanyName(String companyNm) {
         return StringUtils.isNotEmpty(companyNm) ? customerCompany.customerCompanyNm.contains(companyNm) : null;
+    }
+
+    @Override
+    public List<CompanyDepartmentRes> findAllCompaniesAndDepartments() {
+        // 1. 모든 회사 조회
+        List<Tuple> companies = queryFactory
+                .select(
+                        customerCompany.customerCompanyNo,
+                        customerCompany.customerCompanyCd,
+                        customerCompany.customerCompanyNm
+                )
+                .from(customerCompany)
+                .orderBy(customerCompany.customerCompanyNm.asc())
+                .fetch();
+
+        // 2. 회사별 부서명 조회 및 DTO 매핑
+        return companies.stream().map(tuple -> {
+            Integer companyNo = tuple.get(customerCompany.customerCompanyNo);
+            List<String> departments = queryFactory
+                    .select(user.departmentNm)
+                    .from(user)
+                    .where(user.customerCompany.customerCompanyNo.eq(companyNo))
+                    .distinct()
+                    .orderBy(user.departmentNm.asc())
+                    .fetch();
+
+            return new CompanyDepartmentRes(
+                    companyNo,
+                    tuple.get(customerCompany.customerCompanyCd),
+                    tuple.get(customerCompany.customerCompanyNm),
+                    departments.isEmpty() ? List.of() : departments // 빈 리스트 처리
+            );
+        }).collect(Collectors.toList());
     }
 
 }

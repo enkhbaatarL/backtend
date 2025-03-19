@@ -44,4 +44,10 @@ public class UserAccessLog extends BaseEntity {
         this.userAccessSequence = userAccessSequence;
         this.userLoginId = userLoginId;
     }
+
+    public static UserAccessLog of(String userLoginId) {
+        return UserAccessLog.builder()
+            .userLoginId(userLoginId)
+            .build();
+    }
 }

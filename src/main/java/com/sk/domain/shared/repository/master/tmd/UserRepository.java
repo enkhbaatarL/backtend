@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tmd.custom.CustomUserRepository;
 
 public interface UserRepository extends JpaRepository<User, Integer>, CustomUserRepository {
@@ -19,6 +20,7 @@ public interface UserRepository extends JpaRepository<User, Integer>, CustomUser
 
     List<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany);
 
+    Optional<User> findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(String userLoginId, UserRoleCd userRoleCd);
     Page<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany, Pageable pageable);
 
     List<User> findByUserNoInAndIsDeletedFalse(List<Integer> ids);
