@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface CustomAuthManageGoodsMapping {
 
-    List<AuthManageGoodsMapping> getUserGoodsAuthoritiesByUserLoginId(String userLoginId);
+    List<AuthManageGoodsMapping> findUserGoodsPermissions(Integer userNo);
 
     List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthCd(Integer companyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd);
 

@@ -4,12 +4,12 @@ import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
+import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.MDCUtil;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -110,6 +109,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<Object> handleServletException(CustomAuthenticationException ex) {
         log.error("Exception Occurred. -> [인증 에러 발생]. authComponent : [{}], message : [{}]", ex.getAuthComponent(), ex.getMessage(), ex);
         return buildResponse(ex, UNAUTHORIZED, ex.getErrorCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(CustomAuthorizationException.class)
+    private ResponseEntity<Object> handleServletException(CustomAuthorizationException ex) {
+        log.error("Exception Occurred. -> [인가 에러 발생], message : [{}]", ex.getMessage(), ex);
+        return buildResponse(ex, FORBIDDEN, ex.getErrorCode(), ex.getAdditionalMessage());
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)

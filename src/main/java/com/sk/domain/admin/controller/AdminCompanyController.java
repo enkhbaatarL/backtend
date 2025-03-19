@@ -1,6 +1,7 @@
 package com.sk.domain.admin.controller;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequirePermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -11,6 +12,7 @@ import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
 import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.service.AdminCompanyService;
+import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -66,6 +68,7 @@ public class AdminCompanyController {
     @Operation(summary = "고객사 등록 API", description = "고객사를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/company")
+    @RequirePermission(requireAdmin = true)
     public BaseResponse<CompanyRes> postCompany(@RequestBody @Valid CompanyReq.Insert companyReq) {
         return BaseResponseFactory.create(adminCompanyService.postCompany(companyReq));
     }
@@ -291,10 +294,12 @@ public class AdminCompanyController {
         return BaseResponseFactory.create(adminCompanyService.patchGoodsAuth(companyNo, providerNo, goodsNo, authGoodsMapReq));
     }
 
+    @ApiOrder(18)
     @Operation(summary = "고객사, 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/company/department/all")
     public BaseResponse<List<CompanyDepartmentRes>> getCompaniesAndDepartments() {
         return BaseResponseFactory.create(adminCompanyService.getCompaniesAndDepartments());
     }
+
 }

@@ -5,6 +5,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.company.AuthGoodsMapRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
@@ -36,39 +37,38 @@ import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 @RequiredArgsConstructor
 public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMapping {
 
+    // 사용자T
+    QUser user = QUser.user;
+    // 고객회사T
+    QCustomerCompany customerCompany = QCustomerCompany.customerCompany;
+    // 프로바이더T
+    QProvider provider = QProvider.provider;
+    // 상품T
+    QGoods goods = QGoods.goods;
+    // 고객회사-프로바이더 매핑T
+    QCustomerCompanyProviderMapping ccpMapping = QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
+    // 고객회사-상품 매핑T
+    QCustomerCompanyGoodsMapping ccgMapping = customerCompanyGoodsMapping;
+    // 권한-상품 매핑T
+    QAuthManageGoodsMapping authMapping = authManageGoodsMapping;
+
     private final JPAQueryFactory queryFactory;
 
-    public List<AuthManageGoodsMapping> getUserGoodsAuthoritiesByUserLoginId(String userLoginId) {
+    public List<AuthManageGoodsMapping> findUserGoodsPermissions(Integer userNo) {
 
-        // 사용자T
-        QUser user = QUser.user;
-        // 고객회사T
-        QCustomerCompany customerCompany = QCustomerCompany.customerCompany;
-        // 고객회사-상품 매핑T
-        QCustomerCompanyGoodsMapping ccgMapping = customerCompanyGoodsMapping;
-        // 고객회사-프로바이더 매핑T
-        QCustomerCompanyProviderMapping ccpMapping = QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
-        // 상품T
-        QGoods goods = QGoods.goods;
-        // 프로바이더T
-        QProvider provider = QProvider.provider;
-        // 권한관리-상품 매핑T
-        QAuthManageGoodsMapping authMapping = authManageGoodsMapping;
-
-        // 현재 날짜 (yyyyMMdd 형식)
-        String currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String currentDate = DateUtil.toYmd(LocalDate.now());
 
         return queryFactory
             .select(authMapping)
             .from(authMapping)
-            .join(authMapping.user, user)
+            .join(authMapping.user, user).fetchJoin()  // fetchJoin 추가
             .join(authMapping.customerCompanyGoodsMapping, ccgMapping).fetchJoin()
-            .join(ccgMapping.customerCompany, customerCompany)
+            .join(ccgMapping.customerCompany, customerCompany).fetchJoin()  // fetchJoin 추가
             .join(ccgMapping.goods, goods).fetchJoin()
-            .join(goods.provider, provider)
+            .join(goods.provider, provider).fetchJoin()  // fetchJoin 추가
             .join(ccpMapping).on(ccpMapping.customerCompany.eq(customerCompany).and(ccpMapping.provider.eq(provider)))
             .where(
-                user.userLoginId.eq(userLoginId)
+                user.userNo.eq(userNo)
                     .and(user.isDeleted.isFalse())
                     .and(customerCompany.isDeleted.isFalse())
                     .and(ccgMapping.isDeleted.isFalse())
@@ -89,9 +89,6 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
     }
 
     public List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthCd(Integer companyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
-
-        // 권한관리-상품 매핑T
-        QAuthManageGoodsMapping authMapping = authManageGoodsMapping;
 
         return queryFactory
             .selectFrom(authMapping)
