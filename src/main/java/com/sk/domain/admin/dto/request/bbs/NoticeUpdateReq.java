@@ -7,64 +7,53 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record BulletinBoardCreateReq(
+public record NoticeUpdateReq(
 
-        @NotNull //
         @Schema(description = "고정여부", example = "true") //
-        boolean isPinned,
+        boolean isTopFixed,
 
-        @NotNull //
         @Schema(description = "팝업사용여부", example = "true") //
-        boolean isPopup,
+        boolean isPopupUse,
 
-        @NotNull //
         @JsonFormat(pattern = "yyyyMMdd") //
         @DateTimeFormat(pattern = "yyyyMMdd") //
         @Schema(description = "팝업게시시작일자", example = "20250101") //
-        LocalDate popupBeginDt,
+        LocalDate popupPostBeginDt,
 
-        @NotNull //
         @JsonFormat(pattern = "yyyyMMdd") //
         @DateTimeFormat(pattern = "yyyyMMdd") //
         @Schema(description = "팝업게시종료일자", example = "20251231") //
-        LocalDate popupEndDt,
+        LocalDate popupPostEndDt,
 
-        @NotBlank //
         @Schema(description = "카테고리", example = "CAT1") //
-        String categoryCd,
+        String bulletinCategorySeparateCode,
 
-        @NotBlank //
-        @Size(min = 1, max = 50) //
-        @Schema(description = "제목", example = "게시물 제목") //
-        String title,
-
-        @NotNull //
-        @JsonFormat(pattern = "yyyyMMdd") //
-        @DateTimeFormat(pattern = "yyyyMMdd") //
-        @Schema(description = "게시글유효시작일자", example = "20250101") //
-        LocalDate beginDt,
-
-        @NotNull //
-        @JsonFormat(pattern = "yyyyMMdd") //
-        @DateTimeFormat(pattern = "yyyyMMdd") //
-        @Schema(description = "게시글유효종료일자", example = "20251231") //
-        LocalDate endDt,
-
-        // boolean isValidPerioUnrestrict; //유효기간미제한여부
-
-        @NotNull //
         @Schema(description = "게시대상(전체:true, 개별:false)", example = "true") //
         Boolean isWholePost,
 
         @Schema(description = "고객서 ID 배열- 게시대상에 따라 null 또는 고객사 ID 배열", example = "[1,2,3]") //
         List<Integer> target,
 
-        @NotBlank //
+        @JsonFormat(pattern = "yyyyMMdd") //
+        @DateTimeFormat(pattern = "yyyyMMdd") //
+        @Schema(description = "게시글유효시작일자", example = "20250101") //
+        LocalDate bulletinValidBeginDt,
+
+        @JsonFormat(pattern = "yyyyMMdd") //
+        @DateTimeFormat(pattern = "yyyyMMdd") //
+        @Schema(description = "게시글유효종료일자", example = "20251231") //
+        LocalDate bulletinValidEndDt,
+
+        @Size(min = 1, max = 50) //
+        @Schema(description = "제목", example = "게시물 제목") //
+        String bulletinTitleName,
+
         @Schema(description = "내용", example = "게시물 내용") //
-        String content) {
+        String bulletinContent,
+
+        @Schema(description = "첨부파일 ID", example = "1") //
+        Long fileId) {
 
 }

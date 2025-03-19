@@ -3,7 +3,7 @@ package com.sk.domain.admin.dto.response.bbs;
 import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public record BulletinBoardFilterRes(
+public record NoticeFilterRes(
                 @Schema(description = "카테고리", example = "") //
                 List<BulletinBoardFilterDto> category,
 
@@ -13,8 +13,8 @@ public record BulletinBoardFilterRes(
                 @Schema(description = "게시대상", example = "") //
                 List<BulletinBoardFilterDto> target) {
 
-        public static BulletinBoardFilterRes of(List<BulletinBoardFilterDto> category, List<BulletinBoardFilterDto> status,
+        public static NoticeFilterRes of(List<BulletinBoardFilterDto> category, List<BulletinBoardFilterDto> status,
                         List<BulletinBoardFilterDto> target) {
-                return new BulletinBoardFilterRes(category, status, target);
+                return new NoticeFilterRes(category, status, target);
         }
 }

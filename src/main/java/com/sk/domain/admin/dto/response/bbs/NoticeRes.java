@@ -1,5 +1,5 @@
 package com.sk.domain.admin.dto.response.bbs;
 
-public record BulletinBoardRes() {
+public record NoticeRes() {
 
 }

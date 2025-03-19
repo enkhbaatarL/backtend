@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
-    private final List<String> excludeUriStartsWith = List.of("/excludeUri", "/api/v1/admin/bulletinboard-manangement");
+    private final List<String> excludeUriStartsWith = List.of("/excludeUri", "/api/v1/admin/file-manangement");
     private final AtomicLong id = new AtomicLong(0);
 
     @Override

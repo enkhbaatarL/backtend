@@ -4,14 +4,29 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sk.domain.admin.dto.response.bbs.BulletinBoardRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 
-public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, Integer> {
+public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, Integer>, JpaSpecificationExecutor<BulletinBoard> {
+
+        /*******************************************************************
+        * 
+        * 공통
+        * 
+        *******************************************************************/
+
+        Optional<BulletinBoard> findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(Integer bulletinNo, String bulletinTypeCode);
+
+        /*******************************************************************
+        * 
+        * 공지사항
+        * 
+        *******************************************************************/
 
         // @Query(value = """
         // select new com.sk.domain.admin.dto.response.bbs.NoticeRes(
@@ -69,11 +84,19 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                         @Param("customerCompanyNo") Integer customerCompanyNo,
                         Pageable pageable);
 
-        @Query(value = """
-                        select b
-                        from BulletinBoard
-                        where b.isDeleted = false
-                        and b.bulletinNo = :bulletinNo
-                                                """)
-        Optional<BulletinBoard> findByBulletinNo(@Param("bulletinNo") Integer bulletinNo);
+        // @Query(value = """
+        // select b
+        // from BulletinBoard
+        // where b.isDeleted = false
+        // and b.bulletinNo = :bulletinNo
+        // """)
+        // Optional<BulletinBoard> findByBulletinNo(@Param("bulletinNo") Integer bulletinNo);
+
+        /*******************************************************************
+        * 
+        * FAQ
+        * 
+        *******************************************************************/
+        Page<BulletinBoard> findByBulletinTypeCodeAndIsDeletedFalse(Specification<BulletinBoard> spec, Pageable page, String bulletinTypeCode);
+
 }

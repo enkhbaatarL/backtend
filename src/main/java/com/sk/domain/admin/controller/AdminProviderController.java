@@ -78,7 +78,8 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PostMapping("/provider")
-  public BaseResponse<ProviderCreateRes> createProvider(@Valid @RequestBody ProviderCreateReq body) {
+  public BaseResponse<ProviderCreateRes> createProvider(
+      @RequestBody @Valid ProviderCreateReq body) {
     return BaseResponseFactory.create(providerService.createProvider(body));
   }
 
@@ -101,7 +102,8 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}")
-  public BaseResponse<ProviderUpdateRes> updateProvider(@Valid @RequestBody ProviderUpdateReq body,
+  public BaseResponse<ProviderUpdateRes> updateProvider(
+      @RequestBody @Valid ProviderUpdateReq body,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
     return BaseResponseFactory.create(providerService.updateProvider(body, providerNo));
   }
@@ -170,7 +172,8 @@ public class AdminProviderController {
   @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-  public BaseResponse<GoodsUpdateRes> updateGoods(@Valid @RequestBody GoodsUpdateReq body,
+  public BaseResponse<GoodsUpdateRes> updateGoods(
+      @RequestBody @Valid GoodsUpdateReq body,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
     return BaseResponseFactory.create(providerService.updateGoods(providerNo, goodsNo, body));

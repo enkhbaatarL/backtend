@@ -1,37 +1,43 @@
 package com.sk.domain.admin.service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import jakarta.persistence.criteria.Predicate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.bbs.BulletinBoardCreateReq;
-import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
-import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
+import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
+import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
+import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
+import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFilterDto;
-import com.sk.domain.admin.dto.response.bbs.BulletinBoardFilterRes;
-import com.sk.domain.admin.dto.response.bbs.BulletinBoardRes;
-import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
-import com.sk.domain.admin.dto.response.provider.ProviderDeleteRes;
-import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
-import com.sk.domain.admin.dto.response.provider.ProviderRes;
-import com.sk.domain.admin.dto.response.provider.ProviderUpdateRes;
+import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
+import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
+import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-import com.sk.domain.shared.entity.master.tmd.Provider;
-import com.sk.domain.shared.enums.FAQCategory;
+import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.enums.FaqCategory;
 import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
+import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
@@ -48,15 +54,17 @@ public class AdminBulletinBoardService {
   private final ProviderRepository providerRepository;
   private final CustomerCompanyRepository customerCompanyRepository;
 
+  private final AdminFileService adminFileService;
+
   private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
   private static final long MAX_SIZE = 20 * 1024 * 1024;
 
   /**
    * 공지사항에서 사용 할 필터를 조회한다.
    *
-   * @return BulletinBoardFilterRes
+   * @return NoticeFilterRes
    */
-  public BulletinBoardFilterRes getNoticeFilter() {
+  public NoticeFilterRes getNoticeFilter() {
     List<BulletinBoardFilterDto> category = Arrays.stream(NoticeCategory.values())
         .map(cat -> new BulletinBoardFilterDto(cat.getCode(), cat.getName()))
         .collect(Collectors.toList());
@@ -69,7 +77,7 @@ public class AdminBulletinBoardService {
         .map(provider -> new BulletinBoardFilterDto(provider.getProviderNo().toString(), provider.getProviderNm()))
         .collect(Collectors.toList());
 
-    return BulletinBoardFilterRes.of(category, status, target);
+    return NoticeFilterRes.of(category, status, target);
   }
 
   /**
@@ -77,6 +85,10 @@ public class AdminBulletinBoardService {
    *
    * @param page 조회할 페이지 번호 (min 1)
    * @param size 조회할 요소 사이즈 (min 1)
+   * @param category
+   * @param status
+   * @param target
+   * @param keyword
    * @return PaginationRes<NoticeRes>
    */
   public PaginationRes<BulletinBoard> getAllNotices(int page, int size, String category, String status, String target, String keyword) {
@@ -91,96 +103,124 @@ public class AdminBulletinBoardService {
   /**
    * 공지사항을 등록한다.
    *
-   * @param BulletinBoardCreateReq 공지사항 등록 데이터
+   * @param NoticeCreateReq 공지사항 등록 데이터
    * @return BulletinBoard
    */
   @Transactional
-  public BulletinBoard createNotice(BulletinBoardCreateReq dto, MultipartFile file) {
-    if (file != null) {
-      String fileName = file.getOriginalFilename();
-      if (fileName == null || fileName.lastIndexOf('.') == -1) {
-        throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
-      }
+  public BulletinBoard createNotice(NoticeCreateReq dto) {
 
-      String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-      if (!ALLOWED_EXTENSIONS.contains(extension)) {
-        throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
-      }
+    BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
 
-      if (file.getSize() > MAX_SIZE) {
-        throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
+    if (dto.fileId() != null) {
+      adminFileService.getFile(dto.fileId()).update(savedBulletinBoard.getBulletinNo(), "BBS");
+    }
+
+    if (dto.isWholePost()) {
+      //
+    } else {
+      if (dto.target() != null) {
+        dto.target().stream()
+            .forEach(companyNo -> {
+              customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                  .ifPresent(company -> {
+                    bulletinBoardCustomerCompanyMappingRepository.save(BulletinBoardCustomerCompanyMapping.of(savedBulletinBoard, company));
+                  });
+            });
       }
     }
 
-    // Provider provider = providerRepository.save(Provider.of(providerReq));
-
-    // bulletinBoardRepository
-
-    // return ProviderCreateRes.of(provider);
-    return BulletinBoard.builder().build();
+    return savedBulletinBoard;
   }
 
   /**
   * 공지사항을 상세 조회한다.
   *
-  * @param providerNo 데이타 프로바이더 번호
-  * @return ProviderDetailRes
+  * @param noticeNo 공지사항 번호
+  * @return NoticeDetailRes
   */
-  public ProviderDetailRes geNotice(int providerNo) {
-    return providerRepository.findByProviderNoAndIsDeletedFalseWithUser(providerNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+  public NoticeDetailRes getNotice(int noticeNo) {
+    // return providerRepository.findByProviderNoAndIsDeletedFalseWithUser(providerNo)
+    // .orElseThrow(
+    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+    return NoticeDetailRes.builder().build();
   }
 
   /**
   * 공지사항을 수정한다.
   *
-  * @param ProviderUpdateReq 데이타 프로바이더 등록 데이터
-  * @param providerNo 데이타 프로바이더 번호
-  * @return ProviderUpdateRes
+  * @param NoticeUpdateReq 공지사항 수정 데이터
+  * @param noticeNo 공지사항 번호
+  * @return BulletinBoard
   */
   @Transactional
-  public ProviderUpdateRes updateProvider(ProviderUpdateReq providerReq, int providerNo) {
+  public BulletinBoard updateNotice(NoticeUpdateReq dto, int noticeNo) {
 
-    Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+    BulletinBoard bulletinBoard = bulletinBoardRepository.findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
         .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
-    provider.update(providerReq);
+    if (dto.fileId() == null) {
+      adminFileService.deleteFile(bulletinBoard.getBulletinNo());
+    } else {
+      adminFileService.getFile(dto.fileId()).update(bulletinBoard.getBulletinNo(), "BBS");
+    }
 
-    return ProviderUpdateRes.of(provider);
+    if (dto.isWholePost() != null) {
+      if (bulletinBoard.getIsWholePost() != dto.isWholePost()) {
+        if (dto.isWholePost()) {
+          bulletinBoardCustomerCompanyMappingRepository.deleteByBulletinNo(bulletinBoard.getBulletinNo());
+        } else {
+          if (dto.target() != null) {
+            dto.target().stream()
+                .forEach(companyNo -> {
+                  customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                      .ifPresent(company -> {
+                        bulletinBoardCustomerCompanyMappingRepository.save(BulletinBoardCustomerCompanyMapping.of(bulletinBoard, company));
+                      });
+                });
+          } else {
+            AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, String.format("notice no: %d", noticeNo));
+          }
+        }
+      }
+    }
+
+    bulletinBoard.update(dto);
+
+    return bulletinBoard;
+
   }
 
   /**
   * 공지사항을 삭제한다.
   *
-  * @param bulletinNo 게시글 번호
-  * @return ProviderDeleteRes
+  * @param noticeNo 공지사항 번호
+  * @return BulletinBoard
   */
   @Transactional
-  public BulletinBoard deleteProvider(int bulletinNo) {
-    BulletinBoard bulletinBoard = bulletinBoardRepository.findByBulletinNo(bulletinNo)
+  public BulletinBoard deleteNotice(int noticeNo) {
+    BulletinBoard bulletinBoard = bulletinBoardRepository.findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
         .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("bulletin no: %d", bulletinNo)));
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
-            if bulletinBoard
+    bulletinBoardCustomerCompanyMappingRepository.deleteByBulletinNo(bulletinBoard.getBulletinNo());
 
-    provider.softDelete();
+    bulletinBoard.softDelete();
 
-    return ProviderDeleteRes.of(provider);
+    return bulletinBoard;
   }
 
   /**
    * FAQ에서 사용 할 필터를 조회한다.
    *
-   * @return BulletinBoardFilterRes
+   * @return FaqFilterRes
    */
-  public BulletinBoardFilterRes getFaqFilter() {
-    List<BulletinBoardFilterDto> category = Arrays.stream(FAQCategory.values())
+  public FaqFilterRes getFaqFilter() {
+    List<BulletinBoardFilterDto> category = Arrays.stream(FaqCategory.values())
         .map(cat -> new BulletinBoardFilterDto(cat.getCode(), cat.getName()))
         .collect(Collectors.toList());
 
-    return BulletinBoardFilterRes.of(category, null, null);
+    return FaqFilterRes.of(category);
   }
 
   /**
@@ -188,15 +228,93 @@ public class AdminBulletinBoardService {
    *
    * @param page 조회할 페이지 번호 (min 1)
    * @param size 조회할 요소 사이즈 (min 1)
-   * @return PaginationRes<NoticeRes>
+   * @param category 조회할 카테고리
+   * @param keyword 조회할 단어
+   * @return PaginationRes<BulletinBoard>
    */
-  public PaginationRes<BulletinBoard> getAllFaq(int page, int size, String category) {
+  public PaginationRes<BulletinBoard> getAllFaq(int page, int size, String category, String keyword) {
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<BulletinBoard> noticePage = bulletinBoardRepository.searchBulletinBoards("", "", null, pageable);
-    // Page<ProviderRes> providerPage = providerRepository.findByIsDeletedFalseWithGoodsCountOrderByProviderNmAsc(pageable);
+    Specification<BulletinBoard> spec = (root, query, cb) -> {
+      List<Predicate> predicates = new ArrayList<>();
 
-    return PaginationRes.toRes(noticePage);
+      // 카테고리가 "전체"가 아니면 필터 적용
+      if (StringUtils.hasText(category) && !"전체".equals(category)) {
+        predicates.add(cb.equal(root.get("bulletinCategorySeparateCode"), category));
+      }
+
+      // keyword가 있으면 제목 또는 내용으로 검색
+      if (StringUtils.hasText(keyword)) {
+        String keywordPattern = "%" + keyword + "%";
+        Predicate titleLike = cb.like(root.get("bulletinTitleName"), keywordPattern);
+        Predicate contentLike = cb.like(root.get("bulletinContent"), keywordPattern);
+        predicates.add(cb.or(titleLike, contentLike));
+      }
+
+      return cb.and(predicates.toArray(new Predicate[0]));
+    };
+
+    Page<BulletinBoard> BulletinBoardPage = bulletinBoardRepository.findByBulletinTypeCodeAndIsDeletedFalse(spec, pageable, "FAQ");
+
+    return PaginationRes.toRes(BulletinBoardPage);
   }
 
+  /**
+   * FAQ를 등록한다.
+   *
+   * @param FaqCreateReq FAQ 등록 데이터
+   * @return BulletinBoard
+   */
+  @Transactional
+  public BulletinBoard createFaq(FaqCreateReq dto) {
+    return bulletinBoardRepository.save(BulletinBoard.of(dto));
+  }
+
+  /**
+  * FAQ를 상세 조회한다.
+  *
+  * @param faqNo FAQ 번호
+  * @return BulletinBoard
+  */
+  public BulletinBoard getFaq(int faqNo) {
+    return bulletinBoardRepository.findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(faqNo, "FAQ")
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
+  }
+
+  /**
+  * FAQ를 수정한다.
+  *
+  * @param FaqUpdateReq FAQ 수정 데이터
+  * @param FAQ 번호
+  * @return BulletinBoard
+  */
+  @Transactional
+  public BulletinBoard updateFaq(FaqUpdateReq dto, int faqNo) {
+
+    BulletinBoard bulletinBoard = bulletinBoardRepository.findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(faqNo, "FAQ")
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
+
+    bulletinBoard.update(dto);
+
+    return bulletinBoard;
+  }
+
+  /**
+  * FAQ를 삭제한다.
+  *
+  * @param faqNo FAQ 번호
+  * @return BulletinBoard
+  */
+  @Transactional
+  public BulletinBoard deleteFaq(int faqNo) {
+    BulletinBoard bulletinBoard = bulletinBoardRepository.findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(faqNo, "FAQ")
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
+
+    bulletinBoard.softDelete();
+
+    return bulletinBoard;
+  }
 }
