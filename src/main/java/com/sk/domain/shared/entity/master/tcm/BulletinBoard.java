@@ -6,7 +6,12 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.request.bbs.BulletinBoardCreateReq;
+import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -101,6 +106,15 @@ public class BulletinBoard extends BaseEntity {
         this.bulletinValidEndDt = bulletinValidEndDt;
         this.isValidPerioUnrestrict = isValidPerioUnrestrict;
     }
+
+    // public static BulletinBoard of(NoticeCreateReq dto) {
+    // return BulletinBoard.builder()
+    // .customerCompanyCd(dto.companyCd())
+    // .customerCompanyNm(dto.companyNm())
+    // .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
+    // .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
+    // .build();
+    // }
 
     public void softDelete() {
         super.softDelete();

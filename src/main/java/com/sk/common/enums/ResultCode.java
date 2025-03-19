@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
+// @formatter:off
 public class ResultCode {
 
     @Getter
@@ -24,20 +25,22 @@ public class ResultCode {
     public enum Error {
 
         // AUTH: 인증/인가 관련 오류
-        AUTH_REQUIRED("AUTH-001", "Authentication is required for this request."),
-        AUTH_INVALID_CREDENTIALS("AUTH-002", "The provided credentials are incorrect."),
-        AUTH_TOKEN_EXPIRED("AUTH-003", "Token has expired."),
-        AUTH_TOKEN_INVALID("AUTH-004", "The provided token is invalid or malformed."),
-        AUTH_INSUFFICIENT_PERMISSIONS("AUTH-005", "You don't have sufficient permissions for this operation."),
-        AUTH_ACCOUNT_LOCKED("AUTH-006", "Your account has been locked. Please contact support."),
+        AUTH_REQUIRED("AUTH-001", "Authentication is required for this request."), 
+        AUTH_INVALID_CREDENTIALS("AUTH-002", "The provided credentials are incorrect."), 
+        AUTH_TOKEN_EXPIRED("AUTH-003", "Token has expired."), 
+        AUTH_TOKEN_INVALID("AUTH-004", "The provided token is invalid or malformed."), 
+        AUTH_INSUFFICIENT_PERMISSIONS("AUTH-005", "You don't have sufficient permissions for this operation."), 
+        AUTH_ACCOUNT_LOCKED("AUTH-006", "Your account has been locked. Please contact support."), 
 
         // REQ: 요청/입력 관련 오류
-        REQ_INVALID("REQ-001", "The request is invalid."),
-        REQ_MISSING_PARAMETER("REQ-002", "Required parameter is missing."),
-        REQ_INVALID_PARAMETER("REQ-003", "One or more parameters are invalid."),
+        REQ_INVALID("REQ-001", "The request is invalid."), 
+        REQ_MISSING_PARAMETER("REQ-002", "Required parameter is missing."), 
+        REQ_INVALID_PARAMETER("REQ-003", "One or more parameters are invalid."), 
         REQ_INVALID_FORMAT("REQ-004", "The request format is incorrect."),
         REQ_INVALID_JSON("REQ-005", "The provided JSON format is incorrect."),
         REQ_METHOD_NOT_ALLOWED("REQ-006", "The HTTP method used is not allowed for this request."),
+        REQ_NOT_ALLOWED_FILE_FORMAT("REQ-007", "This file format is not allowed."),
+        REQ_NOT_ALLOWED_FILE_SIZE("REQ-008", "The file size is too large. The maximum upload size is 20MB."),
 
         // RSC: 리소스 관련 오류
         RSC_NOT_FOUND("RSC-001", "The requested resource could not be found."),
@@ -83,4 +86,4 @@ public class ResultCode {
     }
 
 }
-
+// @formatter:on

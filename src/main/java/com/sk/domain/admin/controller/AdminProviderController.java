@@ -78,8 +78,8 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PostMapping("/provider")
-  public BaseResponse<ProviderCreateRes> createProvider(@Valid @RequestBody ProviderCreateReq providerReq) {
-    return BaseResponseFactory.create(providerService.createProvider(providerReq));
+  public BaseResponse<ProviderCreateRes> createProvider(@Valid @RequestBody ProviderCreateReq body) {
+    return BaseResponseFactory.create(providerService.createProvider(body));
   }
 
   @ApiOrder(4)
@@ -101,9 +101,9 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}")
-  public BaseResponse<ProviderUpdateRes> update(@Valid @RequestBody ProviderUpdateReq providerReq,
+  public BaseResponse<ProviderUpdateRes> updateProvider(@Valid @RequestBody ProviderUpdateReq body,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    return BaseResponseFactory.create(providerService.updateProvider(providerReq, providerNo));
+    return BaseResponseFactory.create(providerService.updateProvider(body, providerNo));
   }
 
   @ApiOrder(6)
@@ -113,7 +113,7 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @DeleteMapping("/providers/{providerNo}")
-  public BaseResponse<ProviderDeleteRes> delete(
+  public BaseResponse<ProviderDeleteRes> deleteProvider(
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
     return BaseResponseFactory.create(providerService.deleteProvider(providerNo));
   }
@@ -134,7 +134,7 @@ public class AdminProviderController {
   @Parameters({
       @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
       @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
-      @Parameter(name = "searchText", description = "상품명 또는 상품설명 검색"),
+      @Parameter(name = "keyword", description = "상품명 또는 상품설명 검색"),
       @Parameter(name = "providerNo", description = "프로바이더번호 (기본값: 5000)")
   })
   @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
@@ -143,9 +143,9 @@ public class AdminProviderController {
   public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
       @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
       @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-      @RequestParam(value = "searchText", required = false, defaultValue = "") String searchText,
+      @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    return BaseResponseFactory.create(providerService.getAllGoods(page, size, searchText, providerNo));
+    return BaseResponseFactory.create(providerService.getAllGoods(page, size, keyword, providerNo));
   }
 
   @ApiOrder(9)
@@ -170,10 +170,10 @@ public class AdminProviderController {
   @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-  public BaseResponse<GoodsUpdateRes> updateGoods(@Valid @RequestBody GoodsUpdateReq goodsReq,
+  public BaseResponse<GoodsUpdateRes> updateGoods(@Valid @RequestBody GoodsUpdateReq body,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-    return BaseResponseFactory.create(providerService.updateGoods(providerNo, goodsNo, goodsReq));
+    return BaseResponseFactory.create(providerService.updateGoods(providerNo, goodsNo, body));
   }
 
   @ApiOrder(11)
@@ -194,7 +194,7 @@ public class AdminProviderController {
   @Parameters({
       @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
       @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
-      @Parameter(name = "searchText", description = "데이타명 또는 데이타설명 검색"),
+      @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
       @Parameter(name = "providerNo", description = "데이타 프로바이더 번호 (기본값: 5000)"),
       @Parameter(name = "goodsNo", description = "상품번호 (기본값: 70000)")
   })
@@ -204,10 +204,10 @@ public class AdminProviderController {
   public BaseResponse<PaginationRes<GoodsDataSourceRes>> getGoodsDataSoueces(
       @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
       @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-      @RequestParam(value = "searchText", required = false, defaultValue = "") String searchText,
+      @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    return BaseResponseFactory.create(providerService.getGoodsDataSoueces(page, size, searchText, providerNo, goodsNo));
+    return BaseResponseFactory.create(providerService.getGoodsDataSoueces(page, size, keyword, providerNo, goodsNo));
   }
 }
