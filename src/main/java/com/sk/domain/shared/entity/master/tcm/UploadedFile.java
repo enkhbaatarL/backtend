@@ -2,8 +2,12 @@ package com.sk.domain.shared.entity.master.tcm;
 
 import java.time.LocalDateTime;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,33 +48,33 @@ public class UploadedFile extends BaseEntity {
   @Comment("저장경로명")
   private String storagePathNm;
 
-  @Column(name = "file_size", nullable = false, columnDefinition = "int unsigned")
+  @Column(name = "file_size", columnDefinition = "int unsigned")
   @Comment("파일사이즈")
-  private Integer fileSize;
+  private Long fileSize;
 
-  @Column(name = "filex_nm", nullable = false, length = 20)
+  @Column(name = "filex_nm", length = 20)
   @Comment("파일확장자명")
   private String fileExtNm;
 
-  @Column(name = "mime_type_nm", nullable = false, length = 50)
+  @Column(name = "mime_type_nm", length = 50)
   @Comment("MIME유형명")
   private String mimeTypeNm;
 
-  @Column(name = "file_vald_end_dt", nullable = false, length = 8)
+  @Column(name = "file_vald_end_dt", length = 8)
   @Comment("파일유효종료일자")
   private String fileValidEndDt;
 
-  @Column(name = "file_rel_obj_dstg_no", nullable = false, columnDefinition = "int unsigned")
+  @Column(name = "file_rel_obj_dstg_no", columnDefinition = "int unsigned")
   @Comment("파일관계객체식별번호")
   private Integer fileRelationshipObjectDistinguishNo;
 
-  @Column(name = "file_rel_obj_spt_cd", nullable = false, length = 20)
+  @Column(name = "file_rel_obj_spt_cd", length = 20)
   @Comment("파일관계객체구분코드")
   private String fileRelationshipObjectSeparateCode;
 
   @Builder
   public UploadedFile(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-      Boolean isDeleted, Long fileNo, String originalFileNm, String storageFileNm, String storagePathNm, Integer fileSize,
+      Boolean isDeleted, Long fileNo, String originalFileNm, String storageFileNm, String storagePathNm, Long fileSize,
       String fileExtNm, String mimeTypeNm, String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo,
       String fileRelationshipObjectSeparateCode) {
     super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
@@ -82,6 +86,25 @@ public class UploadedFile extends BaseEntity {
     this.fileExtNm = fileExtNm;
     this.mimeTypeNm = mimeTypeNm;
     this.fileValidEndDt = fileValidEndDt;
+    this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
+    this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
+  }
+
+  public static UploadedFile of(String originalFileNm, String storagePathNm, long fileSize, String fileExtNm, String mimeTypeNm,
+      String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+    return UploadedFile.builder()
+        .originalFileNm(originalFileNm)
+        .storagePathNm(storagePathNm)
+        .fileSize(fileSize)
+        .fileExtNm(fileExtNm)
+        .mimeTypeNm(mimeTypeNm)
+        .fileValidEndDt(fileValidEndDt)
+        .fileRelationshipObjectDistinguishNo(fileRelationshipObjectDistinguishNo)
+        .fileRelationshipObjectSeparateCode(fileRelationshipObjectSeparateCode)
+        .build();
+  }
+
+  public void update(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
     this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
     this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
   }

@@ -44,6 +44,6 @@ public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource
       lower(gds.goodsDataSourceExpn) like concat('%', lower(:keyword), '%')
       )
       """)
-  Page<GoodsDataSourceRes> findByProviderNoAndGoodsNoAndIsDeletedFalse(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+  Page<GoodsDataSourceRes> findByProviderNoAndGoodsNoAndIsDeletedFalse(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo,
       @Param("keyword") String keyword, Pageable pageable);
 }

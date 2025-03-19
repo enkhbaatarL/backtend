@@ -24,6 +24,11 @@ spring:
         jmx.enabled: true
     open-in-view: false # 변경 금지
 
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  
 server:
   tomcat:
     uri-encoding: UTF-8
@@ -44,3 +49,4 @@ springdoc:
 
 security:
     enabled: false
+

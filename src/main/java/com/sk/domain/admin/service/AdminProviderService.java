@@ -49,7 +49,7 @@ public class AdminProviderService {
    * 데이타 프로바이더 목록을 조회한다.
    */
   public List<ProviderNameRes> getAllProviders() {
-    return providerRepository.findByIsDeletedFalseOrderByProviderNmAsc();
+    return providerRepository.findNameByIsDeletedFalseOrderByProviderNmAsc();
   }
 
   /**
@@ -70,12 +70,12 @@ public class AdminProviderService {
   /**
    * 데이타 프로바이더를 등록한다.
    *
-   * @param ProviderReq.Insert 데이타 프로바이더 등록 데이터
+   * @param ProviderCreateReq 데이타 프로바이더 등록 데이터
    * @return ProviderCreateRes
    */
   @Transactional
-  public ProviderCreateRes createProvider(ProviderCreateReq providerReq) {
-    Provider provider = providerRepository.save(Provider.of(providerReq));
+  public ProviderCreateRes createProvider(ProviderCreateReq dto) {
+    Provider provider = providerRepository.save(Provider.of(dto));
 
     return ProviderCreateRes.of(provider);
   }
@@ -100,13 +100,13 @@ public class AdminProviderService {
    * @return ProviderUpdateRes
    */
   @Transactional
-  public ProviderUpdateRes updateProvider(ProviderUpdateReq providerReq, int providerNo) {
+  public ProviderUpdateRes updateProvider(ProviderUpdateReq dto, int providerNo) {
 
     Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
 
-    provider.update(providerReq);
+    provider.update(dto);
 
     return ProviderUpdateRes.of(provider);
   }
@@ -146,15 +146,15 @@ public class AdminProviderService {
    *
    * @param page       조회할 페이지 번호 (min 1)
    * @param size       조회할 요소 사이즈 (min 1)
-   * @param searchText 검색 키워드
+   * @param keyword 검색 키워드
    * @param providerNo 데이타 프로바이더 번호
    * @return PaginationRes<GoodsRes>
    */
-  public PaginationRes<GoodsRes> getAllGoods(int page, int size, String searchText, int providerNo) {
+  public PaginationRes<GoodsRes> getAllGoods(int page, int size, String keyword, int providerNo) {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsRes> goodsPage = goodsRepository.findByProviderNoAndIsDeletedFalseWithGoodsDataSourceCount(providerNo, searchText, pageable);
+    Page<GoodsRes> goodsPage = goodsRepository.findByProviderNoAndIsDeletedFalseWithGoodsDataSourceCount(providerNo, keyword, pageable);
 
     return PaginationRes.toRes(goodsPage);
   }
@@ -182,13 +182,13 @@ public class AdminProviderService {
    * @return GoodsUpdateRes
    */
   @Transactional
-  public GoodsUpdateRes updateGoods(int providerNo, int goodsNo, GoodsUpdateReq goodsReq) {
+  public GoodsUpdateRes updateGoods(int providerNo, int goodsNo, GoodsUpdateReq dto) {
 
     Goods goods = goodsRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d, goods no: %d", providerNo, goodsNo)));
 
-    goods.update(goodsReq);
+    goods.update(dto);
 
     return GoodsUpdateRes.of(goods);
   }
@@ -217,16 +217,16 @@ public class AdminProviderService {
    *
    * @param page       조회할 페이지 번호 (min 1)
    * @param size       조회할 요소 사이즈 (min 1)
-   * @param searchText 검색 키워드
+   * @param keyword 검색 키워드
    * @param providerNo 데이타 프로바이더 번호
    * @param goodsNo 상품 번호
    * @return PaginationRes<GoodsDataSourceRes>
    */
-  public PaginationRes<GoodsDataSourceRes> getGoodsDataSoueces(int page, int size, String searchText, int providerNo, int goodsNo) {
+  public PaginationRes<GoodsDataSourceRes> getGoodsDataSoueces(int page, int size, String keyword, int providerNo, int goodsNo) {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo, searchText,
+    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo, keyword,
         pageable);
 
     return PaginationRes.toRes(goodsPage);

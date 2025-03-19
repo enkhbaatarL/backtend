@@ -99,6 +99,10 @@ dependencies {
     // 이메일
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
+    // excel
+    implementation 'org.apache.poi:poi:5.2.4'
+    implementation 'org.apache.poi:poi-ooxml:5.2.4'
+
 }
 
 tasks.register('generateQuerydsl', JavaCompile) {
