@@ -1,6 +1,5 @@
 package com.sk.domain.admin.dto.response.company;
 
-import com.sk.domain.shared.entity.master.tmd.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 

@@ -19,6 +19,8 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.CompanyRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
@@ -44,6 +46,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 customerCompany.customerCompanyNm,
                 customerCompany.useBeginDt,
                 customerCompany.useEndDt,
+                customerCompany.isUsed,
                 customerCompany.createUserId,
                 customerCompany.createDt,
                 customerCompany.modifyUserId,
@@ -73,6 +76,10 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             .from(customerCompany)
             .where(customerCompany.customerCompanyNo.eq(companyNo))
             .fetchOne();
+
+        if (ObjectUtils.isEmpty(company.get(0, LocalDateTime.class))) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [companyNo]. companyNo: %s".formatted(companyNo));
+        }
 
         // 2. 회사-프로바이더 매핑 마지막 수정 일시(삭제 포함)
         Tuple ccpMapping = queryFactory

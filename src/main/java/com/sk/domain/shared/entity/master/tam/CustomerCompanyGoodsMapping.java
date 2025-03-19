@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
+import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
@@ -67,17 +69,30 @@ public class CustomerCompanyGoodsMapping extends BaseEntity {
         this.goods = goods;
     }
 
-    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, CompanyGoodsMapReq companyGoodsMapReq) {
+    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
         return CustomerCompanyGoodsMapping.builder()
-                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), companyGoodsMapReq.goodsAuthManageCd()))
+                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsAuthManageSupportCd))
                 .isUsed(true)
                 .customerCompany(customerCompany)
                 .goods(goods)
                 .build();
     }
 
+    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, GoodsAuthManageSupportCd goodsAuthManageSupportCd, boolean isUsed) {
+        return CustomerCompanyGoodsMapping.builder()
+            .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsAuthManageSupportCd))
+            .isUsed(isUsed)
+            .customerCompany(customerCompany)
+            .goods(goods)
+            .build();
+    }
+
     public void update(AuthGoodsMapReq authGoodsMapReq) {
-        // todo
+
+        if (ObjectUtils.isNotEmpty(authGoodsMapReq.isUsed())) {
+            this.isUsed = authGoodsMapReq.isUsed();
+        }
+
     }
 
 }

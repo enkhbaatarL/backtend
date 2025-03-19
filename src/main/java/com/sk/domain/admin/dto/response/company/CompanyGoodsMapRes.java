@@ -17,8 +17,11 @@ public record CompanyGoodsMapRes(
     @Schema(description = "사용여부", example = "true")
     boolean isUsed,
 
-    @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"INDIVIDUAL", "COMPANY"})
+    @Schema(description = "상품권한 주체구분 코드", example = "INDIVIDUAL", allowableValues = {"COMPANY", "INDIVIDUAL"})
     String goodsAuthManageCd,
+
+    @Schema(description = "상품권한 주체구분 명", example = "개인", allowableValues = {"회사", "개인"})
+    String goodsAuthManageNm,
 
     @JsonUnwrapped
     AuditInfo auditInfo
@@ -26,11 +29,12 @@ public record CompanyGoodsMapRes(
 ) {
 
     @Builder
-    public CompanyGoodsMapRes(Integer companyNo, Integer goodsNo, boolean isUsed, String goodsAuthManageCd, AuditInfo auditInfo) {
+    public CompanyGoodsMapRes(Integer companyNo, Integer goodsNo, boolean isUsed, String goodsAuthManageCd, String goodsAuthManageNm, AuditInfo auditInfo) {
         this.companyNo = companyNo;
         this.goodsNo = goodsNo;
         this.isUsed = isUsed;
         this.goodsAuthManageCd = goodsAuthManageCd;
+        this.goodsAuthManageNm = goodsAuthManageNm;
         this.auditInfo = auditInfo;
     }
 
@@ -40,6 +44,7 @@ public record CompanyGoodsMapRes(
             .goodsNo(companyGoodsMapping.getId().getGoodsNo())
             .isUsed(companyGoodsMapping.getIsUsed())
             .goodsAuthManageCd(companyGoodsMapping.getId().getGoodsAuthManageSupportCd().getCode())
+            .goodsAuthManageNm(companyGoodsMapping.getId().getGoodsAuthManageSupportCd().getDescription())
             .auditInfo(AuditInfo.of(companyGoodsMapping.getCreateUserId(), companyGoodsMapping.getCreateDt(), companyGoodsMapping.getModifyUserId(), companyGoodsMapping.getModifyDt()))
             .build();
     }
