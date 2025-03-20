@@ -1,7 +1,17 @@
 package com.sk.domain.shared.enums;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
 public enum Role {
-    USER,
-    ADMIN,
-    CLIENT
+
+    USER("USER", "사용자"),
+    ADMIN("ADMIN", "관리자"),
+    CLIENT("CLIENT", "클라이언트");
+
+    private final String code;
+    private final String description;
+
 }
