@@ -1,5 +1,8 @@
 package com.sk.domain.admin.controller;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -23,8 +28,10 @@ import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
+import com.sk.domain.admin.dto.response.bbs.NoticeFileRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
+import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -63,12 +70,16 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AdminBulletinBoardController {
   private final AdminBulletinBoardService adminBulletinBoardService;
+  private final AdminFileService adminFileService;
 
   /*******************************************************************
    * 
    * 공지사항
    * 
    *******************************************************************/
+  private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "png");
+  private static final long MAX_SIZE = 20 * 1024 * 1024;
+
   @ApiOrder(1)
   @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -148,12 +159,42 @@ public class AdminBulletinBoardController {
     return BaseResponseFactory.create(adminBulletinBoardService.deleteNotice(noticeNo));
   }
 
+  @ApiOrder(7)
+  @Operation(summary = "공지사항 첨부 파일 업로드", description = "공지사항 첨부 파일을 업로드합니다. 20MB 이하의 jpg, png")
+  @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+  @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public BaseResponse<NoticeFileRes> uploadFile(
+      @RequestPart(value = "file", required = false) MultipartFile file) {
+
+    if (file == null) {
+      throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+    }
+
+    String fileName = file.getOriginalFilename();
+    if (fileName == null || fileName.lastIndexOf('.') == -1) {
+      throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
+    }
+
+    String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.contains(extension)) {
+      throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
+    }
+
+    if (file.getSize() > MAX_SIZE) {
+      throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
+    }
+
+    Integer fileId = adminFileService.uploadFile(file);
+
+    return BaseResponseFactory.create(NoticeFileRes.of(fileId));
+  }
+
   /*******************************************************************
    * 
    * FAQ
    * 
    *******************************************************************/
-  @ApiOrder(7)
+  @ApiOrder(8)
   @Operation(summary = "FAQ 필터 조회", description = "FAQ 필터를 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping("/faq/filter")
@@ -162,7 +203,7 @@ public class AdminBulletinBoardController {
     return BaseResponseFactory.create(adminBulletinBoardService.getFaqFilter());
   }
 
-  @ApiOrder(8)
+  @ApiOrder(9)
   @Parameters({
       @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
       @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
@@ -181,7 +222,7 @@ public class AdminBulletinBoardController {
     return BaseResponseFactory.create(adminBulletinBoardService.getAllFaq(page, size, category, keyword));
   }
 
-  @ApiOrder(9)
+  @ApiOrder(10)
   @Operation(summary = "FAQ 등록", description = "FAQ를 등록합니다")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PostMapping("/faq")
@@ -191,7 +232,7 @@ public class AdminBulletinBoardController {
     return BaseResponseFactory.create(adminBulletinBoardService.createFaq(body));
   }
 
-  @ApiOrder(10)
+  @ApiOrder(11)
   @Parameters({
       @Parameter(name = "faqNo", description = "FAQ 번호 (기본값: 1)")
   })
@@ -203,7 +244,7 @@ public class AdminBulletinBoardController {
     return BaseResponseFactory.create(adminBulletinBoardService.getFaq(faqNo));
   }
 
-  @ApiOrder(11)
+  @ApiOrder(12)
   @Parameters({
       @Parameter(name = "faqNo", description = "FAQ 번호 (기본값: 1)")
   })
@@ -216,7 +257,7 @@ public class AdminBulletinBoardController {
     return BaseResponseFactory.create(adminBulletinBoardService.updateFaq(body, faqNo));
   }
 
-  @ApiOrder(12)
+  @ApiOrder(13)
   @Parameters({
       @Parameter(name = "faqNo", description = "FAQ 번호 (기본값: 1)")
   })

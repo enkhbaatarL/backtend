@@ -3,7 +3,9 @@ package com.sk.domain.admin.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.file.FileSaveRes;
@@ -18,31 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AdminFileService {
   private final UploadedFileRepository uploadedFileRepository;
+  private final AmazonS3 objectStorageClient;
 
-  public FileSaveRes saveFile(MultipartFile file) {
-    // if (file != null) {
-    // String fileName = file.getOriginalFilename();
-    // if (fileName == null || fileName.lastIndexOf('.') == -1) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
-    // }
+  @Value("${ncp.storage.bucketName}")
+  private String bucketName;
 
-    // String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-    // if (!ALLOWED_EXTENSIONS.contains(extension)) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
-    // }
+  public Integer uploadFile(MultipartFile file) {
 
-    // if (file.getSize() > MAX_SIZE) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
-    // }
-
-    // // todo: 어딘가에 파일 저장
-    // String storagePathNm = "어딘가에 파일 저장";
-
-    // UploadedFileRepository.save(UploadedFile.of(file.getOriginalFilename(), storagePathNm, file.getSize(), extension, file.getContentType(),
-    // "99991231", savedBulletinBoard.getBulletinNo(), "BBS"));
-    // }
-
-    return FileSaveRes.builder().build();
+    return 1;
   }
 
   public UploadedFile getFile(Long fileNo) {
