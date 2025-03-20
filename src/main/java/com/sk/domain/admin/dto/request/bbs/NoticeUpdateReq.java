@@ -12,10 +12,10 @@ import jakarta.validation.constraints.Size;
 public record NoticeUpdateReq(
 
         @Schema(description = "고정여부", example = "true") //
-        boolean isTopFixed,
+        Boolean isTopFixed,
 
         @Schema(description = "팝업사용여부", example = "true") //
-        boolean isPopupUse,
+        Boolean isPopupUse,
 
         @JsonFormat(pattern = "yyyyMMdd") //
         @DateTimeFormat(pattern = "yyyyMMdd") //

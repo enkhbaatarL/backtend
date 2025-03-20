@@ -22,7 +22,7 @@ public record ProviderCreateRes(
     String providerExpn,
 
     @Schema(description = "사용여부", example = "true") //
-    boolean isUsed,
+    Boolean isUsed,
 
     @Schema(description = "생성사용자로그인ID", example = "sk01234") //
     String createUserId,
