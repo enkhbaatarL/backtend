@@ -48,13 +48,4 @@ springdoc:
     tags-sorter: alpha
 
 security:
-    enabled: false
-
-ncp:
-  storage:
-    endPoint: https://kr.object.ncloudstorage.com
-    regionName: kr-standard
-    accessKey: ncp_iam_BPASKR5qxBUswjrS1Mks
-    secretKey: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
-    bucketName: skt-mi-d-osb-01
-    
+    enabled: false    
