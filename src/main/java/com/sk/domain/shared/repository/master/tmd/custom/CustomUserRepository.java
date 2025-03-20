@@ -17,7 +17,7 @@ public interface CustomUserRepository {
     Optional<UserWithCompany> findUserByInfoId(String imCd);
 
     Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd, Integer customerCompanyNo,
-            String departmentNm, String userName, String emailAddress);
+            String departmentNm, String userNm, String emailAddress);
 
     List<User> findByUserLoginIdsAndRoleAndNotDeleted(List<String> userLoginIds, UserRoleCd role);
 }

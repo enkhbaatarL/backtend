@@ -67,27 +67,27 @@ public class Provider extends BaseEntity {
         this.isUsed = isUsed;
     }
 
-    public static Provider of(ProviderCreateReq providerReq) {
+    public static Provider of(ProviderCreateReq dto) {
         return Provider.builder()
-                .providerNm(providerReq.providerNm())
-                .providerCd(providerReq.providerCd())
-                .providerExpn(providerReq.providerExpn())
-                .isUsed(providerReq.isUsed())
+                .providerNm(dto.providerNm())
+                .providerCd(dto.providerCd())
+                .providerExpn(dto.providerExpn())
+                .isUsed(dto.isUsed())
                 .build();
     }
 
-    public void update(ProviderUpdateReq providerReq) {
+    public void update(ProviderUpdateReq dto) {
 
-        if (StringUtils.isNotEmpty(providerReq.providerNm())) {
-            this.providerNm = providerReq.providerNm();
+        if (StringUtils.isNotEmpty(dto.providerNm())) {
+            this.providerNm = dto.providerNm();
         }
 
-        if (StringUtils.isNotEmpty(providerReq.providerExpn())) {
-            this.providerExpn = providerReq.providerExpn();
+        if (StringUtils.isNotEmpty(dto.providerExpn())) {
+            this.providerExpn = dto.providerExpn();
         }
 
-        if (ObjectUtils.isNotEmpty(providerReq.isUsed())) {
-            this.isUsed = providerReq.isUsed();
+        if (ObjectUtils.isNotEmpty(dto.isUsed())) {
+            this.isUsed = dto.isUsed();
         }
     }
 

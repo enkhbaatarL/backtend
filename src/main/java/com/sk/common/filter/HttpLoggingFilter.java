@@ -28,11 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
-    private final List<String> excludeUriStartsWith = List.of("/excludeUri");
+    private final List<String> excludeUriStartsWith = List.of("/excludeUri", "/api/v1/admin/file-manangement");
     private final AtomicLong id = new AtomicLong(0);
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
         Enumeration<String> headerNames = request.getHeaderNames();
 
@@ -120,14 +121,14 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         String uri = request.getRequestURI();
         byte[] requestBody = request.getContentAsByteArray();
 
-        if (!StringUtils.isEmpty(request.getQueryString())) uri += "?" + request.getQueryString();
+        if (!StringUtils.isEmpty(request.getQueryString()))
+            uri += "?" + request.getQueryString();
 
         log.info("req uri={}, method={}, body={}, ip={}",
-            uri,
-            request.getMethod(),
-            StringUtil.stripNewlinesAndTabs(new String(requestBody, StandardCharsets.UTF_8)),
-            request.getRemoteAddr()
-        );
+                uri,
+                request.getMethod(),
+                StringUtil.stripNewlinesAndTabs(new String(requestBody, StandardCharsets.UTF_8)),
+                request.getRemoteAddr());
 
     }
 
@@ -135,7 +136,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
         String uri = request.getRequestURI();
 
-        if (!StringUtils.isEmpty(request.getQueryString())) uri += "?" + request.getQueryString();
+        if (!StringUtils.isEmpty(request.getQueryString()))
+            uri += "?" + request.getQueryString();
 
         log.info("req uri={}, method={}, ip={}", uri, request.getMethod(), request.getRemoteAddr());
 
@@ -151,13 +153,13 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         String uri = MDCUtil.getValue(MDCUtil.REQUEST_URI);
         long startTime = Long.parseLong(MDCUtil.getValue(MDCUtil.REQUEST_START_TIME));
 
-        if (uri.equalsIgnoreCase("/whoami")) return;
+        if (uri.equalsIgnoreCase("/whoami"))
+            return;
 
         log.info("res uri={}, body={}, totalTime={}",
-            uri,
-            new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
-            System.currentTimeMillis() - startTime
-        );
+                uri,
+                new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
+                System.currentTimeMillis() - startTime);
 
     }
 

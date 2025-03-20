@@ -17,6 +17,8 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 
 public interface ProviderRepository extends JpaRepository<Provider, Integer> {
 
+  List<Provider> findByIsDeletedFalseOrderByProviderNmAsc();
+
   @Query(value = """
       select new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
       p.providerNo,
@@ -26,7 +28,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       where p.isDeleted = false
       order by p.providerNm asc
             """)
-  List<ProviderNameRes> findByIsDeletedFalseOrderByProviderNmAsc();
+  List<ProviderNameRes> findNameByIsDeletedFalseOrderByProviderNmAsc();
 
   @Query(value = """
       select new com.sk.domain.admin.dto.response.provider.ProviderRes(
@@ -66,9 +68,9 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       where p.isDeleted = false
       and p.providerNo = :providerNo
       """)
-  Optional<ProviderDetailRes> findByProviderNoAndIsDeletedFalseWithUser(@Param("providerNo") int providerNo);
+  Optional<ProviderDetailRes> findByProviderNoAndIsDeletedFalseWithUser(@Param("providerNo") Integer providerNo);
 
-  Optional<Provider> findByProviderNoAndIsDeletedFalse(int providerNo);
+  Optional<Provider> findByProviderNoAndIsDeletedFalse(Integer providerNo);
 
   // 프로바이더의 수정시간이 상품의 수정시간보다 최근이면 프로바이더의 수정시간과 수정자를 가져오고
   // 상품의 수정시간이 프로바이더의 수정시간보다 최근이면 상품의 수정시간과 수정자를 가져온다.
@@ -81,5 +83,5 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       where p.isDeleted = false
       and p.providerNo = :providerNo
       """)
-  Optional<ProviderLatestUpdatedRes> findByProviderNoAndIsDeletedFalseWithGoodsLatestModifyInfo(int providerNo);
+  Optional<ProviderLatestUpdatedRes> findByProviderNoAndIsDeletedFalseWithGoodsLatestModifyInfo(Integer providerNo);
 }

@@ -31,7 +31,7 @@ public class CommonCode extends BaseEntity {
 
     @Column(name = "cd_grp_nm", nullable = false, length = 100)
     @Comment("코드그룹명")
-    private String codeGroupName;
+    private String codeGroupNm;
 
     @Column(name = "cd_grp_expn", length = 500)
     @Comment("코드그룹설명")
@@ -39,11 +39,11 @@ public class CommonCode extends BaseEntity {
 
     @Column(name = "use_bgn_dt", nullable = false, length = 8)
     @Comment("사용시작일자")
-    private String useBeginDate;
+    private String useBeginDt;
 
     @Column(name = "use_end_dt", nullable = false, length = 8)
     @Comment("사용종료일자")
-    private String useEndDate;
+    private String useEndDt;
 
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Convert(converter = BooleanToYNAttributeConverter.class)
@@ -52,14 +52,14 @@ public class CommonCode extends BaseEntity {
 
     @Builder
     public CommonCode(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, String codeGroupId, String codeGroupName, String codeGroupExpn,
-            String useBeginDate, String useEndDate, Boolean isUsed) {
+            Boolean isDeleted, String codeGroupId, String codeGroupNm, String codeGroupExpn,
+            String useBeginDt, String useEndDt, Boolean isUsed) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.codeGroupId = codeGroupId;
-        this.codeGroupName = codeGroupName;
+        this.codeGroupNm = codeGroupNm;
         this.codeGroupExpn = codeGroupExpn;
-        this.useBeginDate = useBeginDate;
-        this.useEndDate = useEndDate;
+        this.useBeginDt = useBeginDt;
+        this.useEndDt = useEndDt;
         this.isUsed = isUsed;
     }
 }
