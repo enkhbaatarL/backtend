@@ -15,11 +15,11 @@ public record NoticeCreateReq(
 
         @NotNull //
         @Schema(description = "고정여부", example = "true") //
-        boolean isTopFixed,
+        Boolean isTopFixed,
 
         @NotNull //
         @Schema(description = "팝업사용여부", example = "true") //
-        boolean isPopupUse,
+        Boolean isPopupUse,
 
         @NotNull //
         @JsonFormat(pattern = "yyyyMMdd") //

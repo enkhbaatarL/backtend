@@ -50,13 +50,13 @@ public class BulletinBoard extends BaseEntity {
     @Comment("상단고정여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
-    private boolean isTopFixed;
+    private Boolean isTopFixed;
 
     @Column(name = "popup_use_yn", length = 1, columnDefinition = "char(1)")
     @Comment("팝업사용여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
-    private boolean isPopupUse;
+    private Boolean isPopupUse;
 
     @Column(name = "popup_post_bgn_dt", length = 8)
     @Comment("팝업게시시작일자")
@@ -88,7 +88,7 @@ public class BulletinBoard extends BaseEntity {
     @Comment("유효기간미제한여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
-    private boolean isValidPerioUnrestrict;
+    private Boolean isValidPerioUnrestrict;
 
     @Column(name = "bbm_titl_nm", length = 255)
     @Comment("게시글제목명")
@@ -102,15 +102,15 @@ public class BulletinBoard extends BaseEntity {
     public BulletinBoard(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer bulletinNo,
             String bulletinTypeCode,
-            boolean isTopFixed,
-            boolean isPopupUse,
+            Boolean isTopFixed,
+            Boolean isPopupUse,
             String popupPostBeginDt,
             String popupPostEndDt,
             String bulletinCategorySeparateCode,
-            boolean isWholePost,
+            Boolean isWholePost,
             String bulletinValidBeginDt,
             String bulletinValidEndDt,
-            boolean isValidPerioUnrestrict,
+            Boolean isValidPerioUnrestrict,
             String bulletinTitleName,
             String bulletinContent) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
