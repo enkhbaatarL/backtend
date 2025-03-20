@@ -1,9 +1,10 @@
 package com.sk.domain.mi.service;
 
-import com.sk.common.config.redis.Cache;
+import com.sk.common.config.redis.CacheType;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.repository.master.tam.AuthManageGoodsMappingRepository;
+import com.sk.domain.shared.service.CacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MiUserService {
 
+    private final CacheService cacheService;
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
 
     /**
@@ -26,10 +28,16 @@ public class MiUserService {
      * @param userNo 사용자 번호
      * @return List<GoodsAuthorityRes>
      */
-    @Cacheable(cacheNames = Cache.PERMISSIONS_CONSTANT, key = "#userNo")
+    @Cacheable(cacheNames = CacheType.PERMISSIONS_CONSTANT, key = "#userNo")
     public PermissionRes getUserGoodsPermissions(Integer userNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findUserGoodsPermissions(userNo);
-        return PermissionRes.fromAuthorityMappings(goodsMappings);
+
+        PermissionRes permissionRes = PermissionRes.fromAuthorityMappings(goodsMappings);
+
+        // 역방향 인덱스 업데이트 (캐시 로드 시 호출)
+        cacheService.updateReverseIndices(userNo, permissionRes);
+
+        return permissionRes;
     }
 
 }
