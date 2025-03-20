@@ -5,15 +5,23 @@ import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.GoodsAuthCd;
+import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public record PermissionRes(
+
+    @Schema(description = "권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"COMPANY", "INDIVIDUAL"})
+    String goodsAuthManageCd,
+
+    @Schema(description = "권한주체구분코드", example = "개인", allowableValues = {"회사", "개인"})
+    String goodsAuthManageNm,
 
     @Schema(description = "회사 권한 목록")
     List<CompanyAuthRes> companies
@@ -21,7 +29,9 @@ public record PermissionRes(
 ) {
 
     @Builder
-    public PermissionRes(List<CompanyAuthRes> companies) {
+    public PermissionRes(String goodsAuthManageCd, String goodsAuthManageNm, List<CompanyAuthRes> companies) {
+        this.goodsAuthManageCd = goodsAuthManageCd;
+        this.goodsAuthManageNm = goodsAuthManageNm;
         this.companies = companies;
     }
 
@@ -94,6 +104,9 @@ public record PermissionRes(
     }
 
     public static PermissionRes fromAuthorityMappings(List<AuthManageGoodsMapping> goodsMappings) {
+
+        AtomicReference<GoodsAuthManageSupportCd> goodsAuthManageSupportCd = new AtomicReference<>();
+
         // 1. 회사별로 그룹화
         Map<CustomerCompany, List<AuthManageGoodsMapping>> byCompany = goodsMappings.stream()
             .collect(Collectors.groupingBy(mapping ->
@@ -130,6 +143,7 @@ public record PermissionRes(
                                 // 첫 번째 매핑에서 공통 정보 추출
                                 String goodsCd = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsCd();
                                 String goodsNm = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsNm();
+                                goodsAuthManageSupportCd.set(goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd());
 
                                 // 권한 설정 확인
                                 boolean isView = false;
@@ -171,7 +185,7 @@ public record PermissionRes(
             .sorted(Comparator.comparing(CompanyAuthRes::companyNm))
             .collect(Collectors.toList());
 
-        return new PermissionRes(companyAuthRes);
+        return new PermissionRes(goodsAuthManageSupportCd.get().getCode(), goodsAuthManageSupportCd.get().getDescription(), companyAuthRes);
     }
 
     @JsonIgnore

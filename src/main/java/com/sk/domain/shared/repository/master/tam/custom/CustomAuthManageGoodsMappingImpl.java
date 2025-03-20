@@ -61,16 +61,15 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         return queryFactory
             .select(authMapping)
             .from(authMapping)
-            .join(authMapping.user, user).fetchJoin()  // fetchJoin 추가
+            .leftJoin(authMapping.user, user).fetchJoin()
             .join(authMapping.customerCompanyGoodsMapping, ccgMapping).fetchJoin()
-            .join(ccgMapping.customerCompany, customerCompany).fetchJoin()  // fetchJoin 추가
+            .join(ccgMapping.customerCompany, customerCompany).fetchJoin()
             .join(ccgMapping.goods, goods).fetchJoin()
-            .join(goods.provider, provider).fetchJoin()  // fetchJoin 추가
+            .join(goods.provider, provider).fetchJoin()
             .join(ccpMapping).on(ccpMapping.customerCompany.eq(customerCompany).and(ccpMapping.provider.eq(provider)))
             .where(
-                user.userNo.eq(userNo)
-                    .and(user.isDeleted.isFalse())
-                    .and(customerCompany.isDeleted.isFalse())
+                    (user.userNo.eq(userNo).and(user.isDeleted.isFalse())) // 개별 권한
+                    .or(user.userNo.isNull()) // 회사 권한
                     .and(ccgMapping.isDeleted.isFalse())
                     .and(ccgMapping.isUsed.isTrue())
                     .and(goods.isDeleted.isFalse())
@@ -78,9 +77,12 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                     .and(provider.isDeleted.isFalse())
                     .and(provider.isUsed.isTrue())
                     .and(ccpMapping.isDeleted.isFalse())
+                    .and(ccpMapping.isUsed.isTrue())
                     .and(authMapping.isDeleted.isFalse())
                     .and(authMapping.useBeginDate.loe(currentDate))
                     .and(authMapping.useEndDate.goe(currentDate))
+                    .and(customerCompany.isDeleted.isFalse())
+                    .and(customerCompany.isUsed.isTrue())
                     .and(customerCompany.useBeginDt.loe(currentDate).or(customerCompany.useBeginDt.isNull()))
                     .and(customerCompany.useEndDt.goe(currentDate).or(customerCompany.useEndDt.isNull()))
             )

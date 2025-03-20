@@ -28,7 +28,7 @@ public record AuthGoodsMapSettingRes(
         return AuthGoodsMapSettingRes.builder()
             .isUsed(authGoodsMapReq.isUsed())
             .goodsAuthManageCd(authGoodsMapReq.goodsAuthManageCd().getCode())
-            .goodsAuthManageCd(authGoodsMapReq.goodsAuthManageCd().getDescription())
+            .goodsAuthManageNm(authGoodsMapReq.goodsAuthManageCd().getDescription())
             .build();
     }
 
