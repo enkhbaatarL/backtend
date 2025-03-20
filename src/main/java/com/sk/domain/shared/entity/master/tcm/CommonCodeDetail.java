@@ -36,15 +36,15 @@ public class CommonCodeDetail extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cd_grp_id", nullable = false, referencedColumnName = "cd_grp_id")
     @Comment("공통코드")
-    private CommonCode commonCode;
+    private CommonCode commonCd;
 
     @Column(name = "cd_nm", nullable = false, length = 100)
     @Comment("코드명")
-    private String codeName;
+    private String codeNm;
 
-    @Column(name = "cd_ord_sn", nullable = false, columnDefinition = "tinyint unsigned")
-    @Comment("코드순서일련번호")
-    private Short codeOrderSeq;
+    @Column(name = "cd_rnk", nullable = false, columnDefinition = "smallint unsigned")
+    @Comment("코드순위")
+    private Short codeRnk;
 
     @Column(name = "cd_expn", length = 500)
     @Comment("코드설명")
@@ -52,11 +52,11 @@ public class CommonCodeDetail extends BaseEntity {
 
     @Column(name = "use_bgn_dt", nullable = false, length = 8)
     @Comment("사용시작일자")
-    private String useBeginDate;
+    private String useBeginDt;
 
     @Column(name = "use_end_dt", nullable = false, length = 8)
     @Comment("사용종료일자")
-    private String useEndDate;
+    private String useEndDt;
 
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Convert(converter = BooleanToYNAttributeConverter.class)
@@ -65,17 +65,17 @@ public class CommonCodeDetail extends BaseEntity {
 
     @Builder
     public CommonCodeDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, CommonCodeDetailId id, CommonCode commonCode, String codeName,
-            Short codeOrderSeq, String codeExpn, String useBeginDate, String useEndDate,
+            Boolean isDeleted, CommonCodeDetailId id, CommonCode commonCd, String codeNm,
+            Short codeRnk, String codeExpn, String useBeginDt, String useEndDt,
             Boolean isUsed) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.id = id;
-        this.commonCode = commonCode;
-        this.codeName = codeName;
-        this.codeOrderSeq = codeOrderSeq;
+        this.commonCd = commonCd;
+        this.codeNm = codeNm;
+        this.codeRnk = codeRnk;
         this.codeExpn = codeExpn;
-        this.useBeginDate = useBeginDate;
-        this.useEndDate = useEndDate;
+        this.useBeginDt = useBeginDt;
+        this.useEndDt = useEndDt;
         this.isUsed = isUsed;
     }
 }
