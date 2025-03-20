@@ -65,7 +65,7 @@ public record NoticeCreateReq(
         @Schema(description = "내용", example = "게시물 내용") //
         String bulletinContent,
 
-        @Schema(description = "첨부파일 ID", example = "1") //
-        Long fileId) {
+        @Schema(description = "파일번호", example = "1") //
+        Long fileNo) {
 
 }

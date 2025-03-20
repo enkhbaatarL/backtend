@@ -4,10 +4,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.response.file.FileSaveRes;
+import com.sk.domain.admin.dto.response.file.FileDownloadRes;
+import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCd;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,44 +24,169 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AdminFileService {
   private final UploadedFileRepository uploadedFileRepository;
+  private final AdminObjectStorageService adminObjectStorageService;
 
-  public FileSaveRes saveFile(MultipartFile file) {
-    // if (file != null) {
-    // String fileName = file.getOriginalFilename();
-    // if (fileName == null || fileName.lastIndexOf('.') == -1) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
-    // }
+  @Value("${ncp.storage.bucketName}")
+  private String bucketName;
 
-    // String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-    // if (!ALLOWED_EXTENSIONS.contains(extension)) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
-    // }
-
-    // if (file.getSize() > MAX_SIZE) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
-    // }
-
-    // // todo: 어딘가에 파일 저장
-    // String storagePathNm = "어딘가에 파일 저장";
-
-    // UploadedFileRepository.save(UploadedFile.of(file.getOriginalFilename(), storagePathNm, file.getSize(), extension, file.getContentType(),
-    // "99991231", savedBulletinBoard.getBulletinNo(), "BBS"));
-    // }
-
-    return FileSaveRes.builder().build();
-  }
-
+  /**
+    * 파일정보를 조회한다.
+    *
+    * @param fileNo 파일번호
+    * @return UploadedFile
+    */
   public UploadedFile getFile(Long fileNo) {
     return uploadedFileRepository.findByFileNo(fileNo)
         .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file id: %d", fileNo)));
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
   }
 
+  /**
+    * 파일정보를 조회한다.
+    *
+    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
+    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
+    * @return UploadedFile
+    */
+  public UploadedFile getFile(
+      Integer fileRelationshipObjectDistinguishNo,
+      FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode) {
+    return uploadedFileRepository
+        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode.toString())
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                String.format("fileRelationshipObjectInfo : %d, %s", fileRelationshipObjectDistinguishNo,
+                    fileRelationshipObjectSeparateCode.toString())));
+  }
+
+  /**
+    * 파일정보를 조회한다.
+    *
+    * @param fileNo 파일번호
+    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
+    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
+    * @return UploadedFile
+    */
+  public UploadedFile updateFile(Long fileNo, Integer fileRelationshipObjectDistinguishNo,
+      FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode) {
+    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+    uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode.toString());
+
+    return uploadedFile;
+  }
+
+  /**
+    * 파일을 업로드 한다.
+    *
+    * @param file 단일 파일 업로드
+    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
+    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
+    * @param fileValidEndDt
+    * @return FileUploadRes
+    */
+  @Transactional
+  public FileUploadRes uploadFile(
+      MultipartFile file,
+      Integer fileRelationshipObjectDistinguishNo,
+      FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode,
+      String fileValidEndDt) {
+
+    try {
+      String originalFileNm = file.getOriginalFilename();
+      String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
+      long fileSize = file.getSize();
+      String mimeTypeNm = file.getContentType();
+
+      //
+      String storagePathNm = bucketName;
+      String storageFileNm = adminObjectStorageService.uploadFile(storagePathNm, fileRelationshipObjectSeparateCode.toString(), file);
+      String fileUrl = adminObjectStorageService.getPresignedUrl(storagePathNm, storageFileNm);
+
+      //
+      UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
+          originalFileNm,
+          storageFileNm,
+          storagePathNm,
+          fileSize,
+          fileExtNm,
+          mimeTypeNm,
+          fileValidEndDt,
+          fileRelationshipObjectDistinguishNo,
+          fileRelationshipObjectSeparateCode.toString()));
+
+      return FileUploadRes.of(savedUploadedFile.getFileNo(), file.getOriginalFilename(), file.getSize(), fileUrl);
+    } catch (Exception e) {
+      throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+    }
+  }
+
+  /**
+    * 파일을 다운로드 한다.
+    *
+    * @param fileNo 파일번호
+    * @return FileDownloadRes
+    */
+  public FileDownloadRes downloadFile(Long fileNo) {
+    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+    try {
+      byte[] fileData = adminObjectStorageService.downloadFile(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm());
+
+      return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
+    } catch (Exception e) {
+      throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+    }
+  }
+
+  /**
+    * 파일을 삭제 한다.
+    *
+    * @param fileNo 파일번호
+    * @return 
+    */
+  @Transactional
   public void deleteFile(Long fileNo) {
-    // todo
+    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+    adminObjectStorageService.deleteFile(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm());
+
+    uploadedFile.softDelete();
   }
 
-  public void deleteFile(Integer fileRelationshipObjectDistinguishNo) {
-    // todo
+  /**
+    * 파일을 삭제 한다.
+    *
+    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
+    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
+    * @return 
+    */
+  @Transactional
+  public void deleteFile(Integer fileRelationshipObjectDistinguishNo, FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode) {
+    UploadedFile uploadedFile = uploadedFileRepository
+        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode.toString())
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                String.format("fileRelationshipObjectInfo : %d, %s", fileRelationshipObjectDistinguishNo,
+                    fileRelationshipObjectSeparateCode.toString())));
+
+    adminObjectStorageService.deleteFile(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm());
+
+    uploadedFile.softDelete();
   }
+
+  public String getPresignedUrl(Long fileNo) {
+    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+    return adminObjectStorageService.getPresignedUrl(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm());
+  }
+
 }
