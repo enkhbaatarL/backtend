@@ -2,12 +2,8 @@ package com.sk.domain.shared.entity.master.tcm;
 
 import java.time.LocalDateTime;
 
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
-import com.sk.common.utils.DateUtil;
-import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -90,10 +86,11 @@ public class UploadedFile extends BaseEntity {
     this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
   }
 
-  public static UploadedFile of(String originalFileNm, String storagePathNm, long fileSize, String fileExtNm, String mimeTypeNm,
+  public static UploadedFile of(String originalFileNm, String storageFileNm, String storagePathNm, long fileSize, String fileExtNm, String mimeTypeNm,
       String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
     return UploadedFile.builder()
         .originalFileNm(originalFileNm)
+        .storageFileNm(storageFileNm)
         .storagePathNm(storagePathNm)
         .fileSize(fileSize)
         .fileExtNm(fileExtNm)

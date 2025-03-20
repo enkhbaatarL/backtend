@@ -76,4 +76,11 @@ public final class DateUtil {
         return LocalDate.now().format(YYYY_MM_DD);
     }
 
+    /**
+     * 마지막 날짜를 "yyyyMMdd"로 반환
+     */
+    public static String endYmd() {
+        return "99991231";
+    }
+
 }
