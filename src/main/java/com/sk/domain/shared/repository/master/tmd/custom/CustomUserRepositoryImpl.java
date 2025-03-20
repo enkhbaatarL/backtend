@@ -71,7 +71,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
     @Override
     public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd,
             Integer customerCompanyNo, String departmentNm,
-            String userName, String emailAddress) {
+            String userNm, String emailAddress) {
 
         QUser user = QUser.user;
         QUser creator = new QUser("creator");
@@ -93,8 +93,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
             builder.and(user.departmentNm.eq(departmentNm));
         }
 
-        if (userName != null) {
-            builder.and(user.userNm.lower().contains(userName.toLowerCase()));
+        if (userNm != null) {
+            builder.and(user.userNm.lower().contains(userNm.toLowerCase()));
         }
 
         if (emailAddress != null) {

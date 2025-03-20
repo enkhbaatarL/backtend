@@ -25,17 +25,17 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<UserInfoRes> findUserInfosByConditions(int page, int size, String companyCode, String userName,
+    public Page<UserInfoRes> findUserInfosByConditions(int page, int size, String companyCd, String userNm,
             String emailAddress) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(userInfo.isDeleted.eq(false))
-                .and(userInfo.companyCd.eq(companyCode));
+                .and(userInfo.companyCd.eq(companyCd));
 
-        if (userName != null) {
-            builder.and(userInfo.userNm.lower().contains(userName.toLowerCase()));
+        if (userNm != null) {
+            builder.and(userInfo.userNm.lower().contains(userNm.toLowerCase()));
         }
 
         if (emailAddress != null) {
