@@ -53,20 +53,20 @@ public class AdminUserController {
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-            @Parameter(name = "companyCode", description = "검색할 고객사 코드"),
-            @Parameter(name = "userName", description = "검색할 사용자 이름"),
+            @Parameter(name = "companyCd", description = "검색할 고객사 코드"),
+            @Parameter(name = "userNm", description = "검색할 사용자 이름"),
             @Parameter(name = "emailAddress", description = "검색할 이메일 주소")
     })
-    @Operation(summary = "그룹사 사용자 목록 원장테이블 조회 API", description = "사용자 목록을 원장 테이블에서 조회합니다.")
+    @Operation(summary = "그룹사 사용자 목록 인터페이스 테이블 조회 API", description = "사용자 목록을 인터페이스 테이블에서 조회합니다.")
     @GetMapping("/group-users")
     public BaseResponse<PaginationRes<UserInfoRes>> getUserInfos(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-            @RequestParam(value = "companyCode", required = true) String companyCode,
-            @RequestParam(value = "userName", required = false) @TrimmedNotEmpty String userName,
+            @RequestParam(value = "companyCd", required = true) String companyCd,
+            @RequestParam(value = "userNm", required = false) @TrimmedNotEmpty String userNm,
             @RequestParam(value = "emailAddress", required = false) @TrimmedNotEmpty String emailAddress) {
         return BaseResponseFactory
-                .create(adminUserService.getUserInfos(page, size, companyCode, userName, emailAddress));
+                .create(adminUserService.getUserInfos(page, size, companyCd, userNm, emailAddress));
     }
 
     @ApiOrder(2)
@@ -82,9 +82,9 @@ public class AdminUserController {
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
             @Parameter(name = "userRoleCd", description = "사용자 역할 코드"),
-            @Parameter(name = "companyCode", description = "검색할 고객사 코드"),
+            @Parameter(name = "companyNo", description = "검색할 고객사 번호"),
             @Parameter(name = "departmentNm", description = "검색할 부서 이름"),
-            @Parameter(name = "userName", description = "검색할 사용자 이름"),
+            @Parameter(name = "userNm", description = "검색할 사용자 이름"),
             @Parameter(name = "emailAddress", description = "검색할 이메일 주소")
     })
     @Operation(summary = "사용자 목록 조회 API", description = "사용자 목록을 조회합니다.")
@@ -93,12 +93,12 @@ public class AdminUserController {
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "userRoleCd", required = true) UserRoleCd userRoleCd,
-            @RequestParam(value = "companyCode", required = false) Integer customerCompanyNo,
+            @RequestParam(value = "companyNo", required = false) Integer companyNo,
             @RequestParam(value = "departmentNm", required = false) @TrimmedNotEmpty String departmentNm,
-            @RequestParam(value = "userName", required = false) @TrimmedNotEmpty String userName,
+            @RequestParam(value = "userNm", required = false) @TrimmedNotEmpty String userNm,
             @RequestParam(value = "emailAddress", required = false) @TrimmedNotEmpty String emailAddress) {
         return BaseResponseFactory
-                .create(adminUserService.getUsers(page, size, userRoleCd, customerCompanyNo, departmentNm, userName,
+                .create(adminUserService.getUsers(page, size, userRoleCd, companyNo, departmentNm, userNm,
                         emailAddress));
     }
 

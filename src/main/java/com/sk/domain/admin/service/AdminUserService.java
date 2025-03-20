@@ -46,15 +46,15 @@ public class AdminUserService {
 	 * 
 	 * @param page         조회할 페이지 번호 (min 1)
 	 * @param size         조회할 요소 사이즈 (min 1)
-	 * @param companyCode  회사코드
-	 * @param userName     사용자명
+	 * @param companyCd  회사코드
+	 * @param userNm     사용자명
 	 * @param emailAddress 이메일주소
 	 * @return PaginationRes<UserInfoRes>
 	 */
-	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, String companyCode, String userName,
+	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, String companyCd, String userNm,
 			String emailAddress) {
 		return PaginationRes
-				.toRes(userInfoRepository.findUserInfosByConditions(page, size, companyCode, userName,
+				.toRes(userInfoRepository.findUserInfosByConditions(page, size, companyCd, userNm,
 						emailAddress));
 	}
 
@@ -106,16 +106,16 @@ public class AdminUserService {
 	 * @param userRoleCd        사용자역할코드
 	 * @param customerCompanyNo 고객회사번호
 	 * @param departmentNm      부서명
-	 * @param userName          사용자명
+	 * @param userNm            사용자명
 	 * @param emailAddress      이메일주소
 	 * @return PaginationRes<UserWithCreatorRes>
 	 */
 	public PaginationRes<UserWithCreatorRes> getUsers(int page, int size, UserRoleCd userRoleCd,
 			Integer customerCompanyNo,
-			String departmentNm, String userName, String emailAddress) {
+			String departmentNm, String userNm, String emailAddress) {
 
 		return PaginationRes.toRes(userRepository.findUsersByConditions(page, size, userRoleCd, customerCompanyNo,
-				departmentNm, userName, emailAddress));
+				departmentNm, userNm, emailAddress));
 	}
 
 	/**
