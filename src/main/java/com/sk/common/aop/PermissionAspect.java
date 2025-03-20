@@ -5,7 +5,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.service.MiUserService;
-import com.sk.domain.shared.AuthorizationService;
+import com.sk.domain.shared.service.AuthorizationService;
 import com.sk.domain.shared.enums.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

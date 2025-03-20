@@ -1,7 +1,6 @@
-package com.sk.domain.shared;
+package com.sk.domain.shared.service;
 
 import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
@@ -36,7 +35,7 @@ public class AuthorizationService {
     public Jwt getCurrentJwt() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof JwtAuthenticationToken)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED);
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_REQUIRED);
         }
         return ((JwtAuthenticationToken) authentication).getToken();
     }
@@ -104,20 +103,6 @@ public class AuthorizationService {
         return Role.ADMIN.equals(getCurrentRole());
     }
 
-    /**
-     * 현재 사용자가 특정 회사에 접근할 권한이 있는지 확인합니다.
-     * 관리자는 모든 회사에 접근 가능하고, 일반 사용자는 자신의 회사만 접근 가능합니다.
-     *
-     * @param companyNo 접근하려는 회사 번호
-     * @return 접근 가능 여부
-     */
-    public boolean hasCompanyAccess(Integer companyNo) {
-        if (isAdmin()) {
-            return true;
-        }
-        Integer currentCompanyNo = getCompanyNo();
-        return currentCompanyNo.equals(companyNo);
-    }
 
     /**
      * 현재 사용자가 특정 회사에 접근할 권한이 있는지 확인하고, 권한이 없으면 예외를 발생시킵니다.
@@ -128,7 +113,7 @@ public class AuthorizationService {
      */
     public void validateCompanyAccess(Integer companyNo, PermissionRes allowedPermissions) {
 
-        if (!allowedPermissions.getAllowedCompanyNo().contains(companyNo)) {
+        if (!allowedPermissions.getPermittedCompanies().contains(companyNo)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have permission to access company: %s".formatted(companyNo));
         }
@@ -152,11 +137,11 @@ public class AuthorizationService {
      * 관리자만 프로바이더 관리 권한이 있다고 가정합니다.
      *
      * @param providerNo 접근하려는 프로바이더 번호
-     * @throws AppErrorException 권한이 없는 경우 발생
+     * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateProviderAccess(Integer providerNo, PermissionRes allowedPermissions) {
 
-        if (!allowedPermissions.getAllowedProviderNo().contains(providerNo)) {
+        if (!allowedPermissions.getPermittedProviders().contains(providerNo)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                     "You don't have permission to access provider: %s".formatted(providerNo));
         }
@@ -184,11 +169,11 @@ public class AuthorizationService {
      * 현재 인증된 사용자가 특정 상품에 대한 VIEW 권한이 있는지 확인하고, 권한이 없으면 예외를 발생시킵니다.
      *
      * @param goodsNo 상품 번호
-     * @throws AppErrorException 권한이 없는 경우 발생
+     * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateViewPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (allowedPermissions.getGoodsAuth1().getOrDefault(goodsNo, false)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
+        if (allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have VIEW permission for goods: " + goodsNo);
         }
     }
@@ -197,11 +182,11 @@ public class AuthorizationService {
      * 현재 인증된 사용자가 특정 상품에 대한 DOWNLOAD 권한이 있는지 확인하고, 권한이 없으면 예외를 발생시킵니다.
      *
      * @param goodsNo 상품 번호
-     * @throws AppErrorException 권한이 없는 경우 발생
+     * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateDownloadPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (allowedPermissions.getGoodsAuth2().getOrDefault(goodsNo, false)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
+        if (allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have DOWNLOAD permission for goods: " + goodsNo);
         }
     }

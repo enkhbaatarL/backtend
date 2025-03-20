@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
@@ -173,20 +174,23 @@ public record PermissionRes(
         return new PermissionRes(companyAuthRes);
     }
 
-    public List<Integer> getAllowedCompanyNo() {
+    @JsonIgnore
+    public List<Integer> getPermittedCompanies() {
         return this.companies.stream()
             .map(obj -> obj.companyNo)
             .toList();
     }
 
-    public List<Integer> getAllowedProviderNo() {
+    @JsonIgnore
+    public List<Integer> getPermittedProviders() {
         return this.companies.stream()
             .flatMap(obj -> obj.providers.stream()
                 .map(obj2 -> obj2.providerNo))
             .toList();
     }
 
-    public Map<Integer, Boolean> getGoodsAuth1() {
+    @JsonIgnore
+    public Map<Integer, Boolean> getGoodsViewableMap() {
 
         return this.companies.stream()
             .flatMap(obj -> obj.providers.stream()
@@ -198,7 +202,8 @@ public record PermissionRes(
 
     }
 
-    public Map<Integer, Boolean> getGoodsAuth2() {
+    @JsonIgnore
+    public Map<Integer, Boolean> getGoodsDownloadableMap() {
 
         return this.companies.stream()
             .flatMap(obj -> obj.providers.stream()

@@ -15,6 +15,13 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: validate
+  data:
+    redis:
+      host: bold-trout-35521.upstash.io
+      port: 6379
+      password: AYrBAAIjcDEzZmM2YTBkNWNmNzU0NTRjOTQzZmZhNGJiYjFkZjYxNnAxMA
+      command-timeout: 10s
+
   security:
     oauth2:
       resourceserver:
@@ -38,6 +45,9 @@ spring:
             assertingparty:
               metadata-uri: https://dev-25395713.okta.com/app/exknqq0r1bABpMTN55d7/sso/saml/metadata
 
+cache:
+  redis:
+    time-to-live: 3600s
 
 jwt:
   secret-key: mysecretmysecretmysecretmysecretmysecretmysecretmysecretmysecretmysecret
