@@ -75,10 +75,10 @@ public class RedisConfig {
         // 캐시별 TTL 설정
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
-        cacheConfigurations.put(Cache.PERMISSIONS.getCacheName(),
+        cacheConfigurations.put(CacheType.PERMISSIONS.getCacheName(),
             defaultCacheConfig
-                .entryTtl(Duration.ofMinutes(Cache.PERMISSIONS.getTtl()))
-                .prefixCacheNameWith(Cache.PERMISSIONS.getCachePrefix()));
+                .entryTtl(Duration.ofMinutes(CacheType.PERMISSIONS.getTimeToLiveMinutes()))
+                .prefixCacheNameWith(CacheType.PERMISSIONS.getCachePrefix()));
 
         return RedisCacheManager.builder(redisConnectionFactory)
             .cacheDefaults(defaultCacheConfig)

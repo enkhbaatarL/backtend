@@ -1,18 +1,17 @@
 package com.sk.domain.shared.service;
 
+import com.sk.common.config.redis.CacheType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
-
-    private final String PREFIX = "auth:";
-    private final String NAME_SPACE = "refresh-token::";
 
     private final StringRedisTemplate redisTemplate;
 
@@ -26,9 +25,7 @@ public class RefreshTokenService {
     public void saveRefreshToken(Integer userNo, String refreshToken, long expirationUnixTime) {
         String key = generateRefreshTokenKey(userNo);
 
-        // 현재 시간 (초 단위)
-        long currentTimeSeconds = System.currentTimeMillis() / 1000;
-        long ttlSeconds = expirationUnixTime - currentTimeSeconds;
+        long ttlSeconds = expirationUnixTime - Instant.now().getEpochSecond();
 
         // 토큰 저장 및 TTL 설정
         redisTemplate.opsForValue().set(key, refreshToken, Duration.ofSeconds(ttlSeconds));
@@ -54,7 +51,7 @@ public class RefreshTokenService {
 
     // Redis 키 생성
     private String generateRefreshTokenKey(Integer userNo) {
-        return "%s%s%d".formatted(PREFIX, NAME_SPACE, userNo);
+        return "%s%s%d".formatted(CacheType.REFRESH_TOKEN.getCachePrefix(), CacheType.REFRESH_TOKEN.getCacheName(), userNo);
     }
 
 }

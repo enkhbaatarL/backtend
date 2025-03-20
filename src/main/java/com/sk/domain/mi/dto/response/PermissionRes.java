@@ -204,6 +204,15 @@ public record PermissionRes(
     }
 
     @JsonIgnore
+    public List<Integer> getPermittedGoods() {
+        return this.companies.stream()
+            .flatMap(obj -> obj.providers.stream()
+                .flatMap(obj2 -> obj2.goods.stream()))
+            .map(obj3 -> obj3.goodsNo)
+            .toList();
+    }
+
+    @JsonIgnore
     public Map<Integer, Boolean> getGoodsViewableMap() {
 
         return this.companies.stream()
