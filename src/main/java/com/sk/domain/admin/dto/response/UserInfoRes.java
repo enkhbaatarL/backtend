@@ -8,53 +8,39 @@ import lombok.Builder;
 
 public record UserInfoRes(
 
-        @Schema(description = "IM코드", example = "NO01")
-        String imCd,
+        @Schema(description = "IM코드", example = "NO01") String imCd,
 
-        @Schema(description = "사용자명", example = "홍길동")
-        String userNm,
+        @Schema(description = "사용자명", example = "홍길동") String userNm,
 
-        @Schema(description = "사용자영문명", example = "Hong Gil Dong")
-        String userEnglishNm,
+        @Schema(description = "사용자영문명", example = "Hong Gil Dong") String userEnglishNm,
 
-        @Schema(description = "로그인ID", example = "hong@sk.com")
-        String loginId,
+        @Schema(description = "로그인ID", example = "hong@sk.com") String loginId,
 
-        @Schema(description = "이메일주소", example = "hong@sk.com")
-        String emailAddress,
+        @Schema(description = "이메일주소", example = "hong@sk.com") String emailAddress,
 
-        @Schema(description = "회사코드", example = "SK")
-        String companyCd,
+        @Schema(description = "회사코드", example = "SK") String companyCd,
 
-        @Schema(description = "회사명", example = "SK하이닉스")
-        String companyNm,
+        @Schema(description = "회사명", example = "SK하이닉스") String companyNm,
 
-        @Schema(description = "사원번호", example = "1234567890")
-        String employeeNo,
+        @Schema(description = "사원번호", example = "1234567890") String employeeNo,
 
-        @Schema(description = "부서코드", example = "D0001")
-        String departmentCd,
+        @Schema(description = "부서코드", example = "D0001") String departmentCd,
 
-        @Schema(description = "부서명", example = "총무팀")
-        String departmentNm,
+        @Schema(description = "부서명", example = "총무팀") String departmentNm,
 
-        @Schema(description = "직위코드", example = "P0001")
-        String positionCd,
+        @Schema(description = "직위코드", example = "P0001") String positionCd,
 
-        @Schema(description = "직위명", example = "총무")
-        String positionNm,
+        @Schema(description = "직위명", example = "총무") String positionNm,
 
-        @Schema(description = "직급코드", example = "J0001")
-        String jobGradeCd,
+        @Schema(description = "직급코드", example = "J0001") String jobGradeCd,
 
-        @Schema(description = "직급명", example = "과장")
-        String jobGradeNm,
+        @Schema(description = "직급명", example = "과장") String jobGradeNm,
 
-        @Schema(description = "직책코드", example = "D0001")
-        String onDutyCd,
+        @Schema(description = "직책코드", example = "D0001") String onDutyCd,
 
-        @Schema(description = "직책명", example = "총무")
-        String onDutyNm
+        @Schema(description = "직책명", example = "총무") String onDutyNm,
+
+        @Schema(description = "사용자 등록 여부", example = "true") Boolean isRegistered
 
 ) {
 
@@ -63,7 +49,7 @@ public record UserInfoRes(
     public UserInfoRes(String imCd, String userNm, String userEnglishNm, String loginId, String emailAddress,
             String companyCd, String companyNm, String employeeNo, String departmentCd, String departmentNm,
             String positionCd, String positionNm, String jobGradeCd, String jobGradeNm, String onDutyCd,
-            String onDutyNm) {
+            String onDutyNm, Boolean isRegistered) {
         this.imCd = imCd;
         this.userNm = userNm;
         this.userEnglishNm = userEnglishNm;
@@ -80,6 +66,7 @@ public record UserInfoRes(
         this.jobGradeNm = jobGradeNm;
         this.onDutyCd = onDutyCd;
         this.onDutyNm = onDutyNm;
+        this.isRegistered = isRegistered;
     }
 
     public static UserInfoRes of(UserInfo userInfo) {
