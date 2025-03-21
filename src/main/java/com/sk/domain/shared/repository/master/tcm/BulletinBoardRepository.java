@@ -47,7 +47,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                     THEN '게시중'
                     ELSE '게시안함'
                 END,
-                CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm), '')
+                COALESCE(CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm), ''), '전체')
             )
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
@@ -78,6 +78,26 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.bulletinValidBeginDt,
                 b.bulletinValidEndDt
             ORDER BY b.createDt DESC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT b.bulletinNo)
+            FROM BulletinBoard b
+            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
+            LEFT JOIN m.customerCompany c
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            WHERE b.isDeleted = false
+            AND b.bulletinTypeCode = 'NOTICE'
+            AND (:category IS NULL OR b.bulletinCategorySeparateCode = :category)
+            AND (:status IS NULL OR (
+                (:status = 'ACTIVE' AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
+                OR (:status = 'INACTIVE' AND (b.bulletinValidBeginDt > FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                OR b.bulletinValidEndDt < FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')))
+            ))
+            AND (:target IS NULL OR c.customerCompanyNo = :target)
+            AND (:keyword IS NULL OR (
+                LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%')
+                OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')
+              ))
             """)
     Page<NoticeRes> searchNotice(
             @Param("category") String category,

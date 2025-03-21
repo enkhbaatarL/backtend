@@ -95,6 +95,15 @@ public class AdminBulletinBoardService {
      */
     @Transactional
     public BulletinBoard createNotice(NoticeCreateReq dto) {
+        if (dto.isWholePost() == false) {
+            if (dto.target() == null) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+            }
+
+            if (dto.target().size() == 0) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+            }
+        }
 
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
 
@@ -155,6 +164,17 @@ public class AdminBulletinBoardService {
     */
     @Transactional
     public BulletinBoard updateNotice(NoticeUpdateReq dto, int noticeNo) {
+        if (dto.isWholePost() != null) {
+            if (dto.isWholePost() == false) {
+                if (dto.target() == null) {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+                }
+
+                if (dto.target().size() == 0) {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+                }
+            }
+        }
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
                 .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
@@ -303,9 +323,5 @@ public class AdminBulletinBoardService {
         bulletinBoard.softDelete();
 
         return bulletinBoard;
-    }
-
-    public static String categotyKeyToValue(String key) {
-        return "TEST-" + key;
     }
 }
