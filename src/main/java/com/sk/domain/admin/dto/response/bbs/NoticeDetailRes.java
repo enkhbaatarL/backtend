@@ -1,84 +1,85 @@
 package com.sk.domain.admin.dto.response.bbs;
 
-import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
+// @formatter:off
 @Builder
 public record NoticeDetailRes(
-        @Schema(description = "고정여부", example = "true")
+        @Schema(description = "고정여부", example = "true") 
         Boolean isTopFixed,
 
-        @Schema(description = "팝업사용여부", example = "true")
+        @Schema(description = "팝업사용여부", example = "true") 
         Boolean isPopupUse,
 
-        @NotNull
-        @JsonFormat(pattern = "yyyyMMdd")
-        @DateTimeFormat(pattern = "yyyyMMdd")
-        @Schema(description = "팝업게시시작일자", example = "20250101")
-        LocalDate popupPostBeginDt,
+        @Schema(description = "팝업게시시작일자", example = "20250101") 
+        String popupPostBeginDt,
 
-        @NotNull
-        @JsonFormat(pattern = "yyyyMMdd")
-        @DateTimeFormat(pattern = "yyyyMMdd")
-        @Schema(description = "팝업게시종료일자", example = "20251231")
-        LocalDate popupPostEndDt,
+        @Schema(description = "팝업게시종료일자", example = "20251231") 
+        String popupPostEndDt,
 
-        @NotBlank
-        @Schema(description = "카테고리", example = "CAT1")
+        @Schema(description = "카테고리", example = "CAT1") 
         String bulletinCategorySeparateCode,
 
-        @NotNull
-        @Schema(description = "게시대상(전체:true, 개별:false)", example = "true")
+        @Schema(description = "게시대상(전체:true, 개별:false)", example = "true") 
         Boolean isWholePost,
 
-        @Schema(description = "고객서 ID 배열- 게시대상에 따라 null 또는 고객사 ID 배열", example = "[1,2,3]")
-        List<Integer> target,
+        @Schema(description = "고객사 정보 배열", example = "") 
+        List<BulletinBoardCompanyDto> targetList,
 
-        @NotNull
-        @JsonFormat(pattern = "yyyyMMdd")
-        @DateTimeFormat(pattern = "yyyyMMdd")
-        @Schema(description = "게시글유효시작일자", example = "20250101")
-        LocalDate bulletinValidBeginDt,
+        @Schema(description = "게시글유효시작일자", example = "20250101") 
+        String bulletinValidBeginDt,
 
-        @NotNull
-        @JsonFormat(pattern = "yyyyMMdd")
-        @DateTimeFormat(pattern = "yyyyMMdd")
-        @Schema(description = "게시글유효종료일자", example = "20251231")
-        LocalDate bulletinValidEndDt,
+        @Schema(description = "게시글유효종료일자", example = "20251231") 
+        String bulletinValidEndDt,
 
-        @NotBlank
-        @Size(min = 1, max = 50)
-        @Schema(description = "제목", example = "게시물 제목")
+        @Schema(description = "제목", example = "게시물 제목") 
         String bulletinTitleName,
 
-        @NotBlank
-        @Schema(description = "내용", example = "게시물 내용")
+        @Schema(description = "내용", example = "게시물 내용") 
         String bulletinContent,
 
-        @Schema(description = "파일번호", example = "1")
-        Long fileNo,
+        @Schema(description = "파일정보", example = "") 
+        List<BulletinBoardFileDto> fileList) {
 
-        @Schema(description = "파일번호", example = "1")
-        Long fileNm,
+    public NoticeDetailRes(Boolean isTopFixed, Boolean isPopupUse, String popupPostBeginDt, String popupPostEndDt,
+            String bulletinCategorySeparateCode, Boolean isWholePost, List<BulletinBoardCompanyDto> targetList,
+            String bulletinValidBeginDt, String bulletinValidEndDt, String bulletinTitleName,
+            String bulletinContent, List<BulletinBoardFileDto> fileList) {
+        this.isTopFixed = isTopFixed;
+        this.isPopupUse = isPopupUse;
+        this.popupPostBeginDt = popupPostBeginDt;
+        this.popupPostEndDt = popupPostEndDt;
+        this.bulletinCategorySeparateCode = bulletinCategorySeparateCode;
+        this.isWholePost = isWholePost;
+        this.targetList = targetList;
+        this.bulletinValidBeginDt = bulletinValidBeginDt;
+        this.bulletinValidEndDt = bulletinValidEndDt;
+        this.bulletinTitleName = bulletinTitleName;
+        this.bulletinContent = bulletinContent;
+        this.fileList = fileList;
+    }
 
-        @Schema(description = "파일번호", example = "1")
-        Long fileSize) {
-
-    public static NoticeDetailRes of(BulletinBoard bulletinBoard, List<Integer> target, UploadedFile uploadedFile) {
+    public static NoticeDetailRes of(BulletinBoard bulletinBoard, List<BulletinBoardCompanyDto> targetList, List<BulletinBoardFileDto> fileList) {
 
         return NoticeDetailRes.builder()
+                .isTopFixed(bulletinBoard.getIsTopFixed())
+                .isPopupUse(bulletinBoard.getIsPopupUse())
+                .popupPostBeginDt(bulletinBoard.getPopupPostBeginDt())
+                .popupPostEndDt(bulletinBoard.getPopupPostEndDt())
+                .bulletinCategorySeparateCode(bulletinBoard.getBulletinCategorySeparateCode())
+                .isWholePost(bulletinBoard.getIsWholePost())
+                .targetList(targetList)
+                .bulletinValidBeginDt(bulletinBoard.getBulletinValidBeginDt())
+                .bulletinValidEndDt(bulletinBoard.getBulletinValidEndDt())
+                .bulletinTitleName(bulletinBoard.getBulletinTitleName())
+                .bulletinContent(bulletinBoard.getBulletinContent())
+                .fileList(fileList)
                 .build();
     }
 }
+// @formatter:on

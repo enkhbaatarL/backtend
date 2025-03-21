@@ -20,18 +20,18 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
   List<Provider> findByIsDeletedFalseOrderByProviderNmAsc();
 
   @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
+      SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
       p.providerNo,
       p.providerNm
         )
-      from Provider p
-      where p.isDeleted = false
-      order by p.providerNm asc
+      FROM Provider p
+      WHERE p.isDeleted = false
+      ORDER BY p.providerNm ASC
             """)
   List<ProviderNameRes> findNameByIsDeletedFalseOrderByProviderNmAsc();
 
   @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.ProviderRes(
+      SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
       p.providerNo,
       p.providerNm,
       p.providerCd,
@@ -39,21 +39,21 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       count(g),
       p.createDt
       )
-      from Provider p
-      left join Goods g on p = g.provider
-      where p.isDeleted = false
-      group by p.providerNo, p.providerNm, p.providerCd, p.isUsed, p.createDt
-      order by p.providerNm asc
+      FROM Provider p
+      LEFT JOIN Goods g on p = g.provider
+      WHERE p.isDeleted = false
+      GROUP BY p.providerNo, p.providerNm, p.providerCd, p.isUsed, p.createDt
+      ORDER BY p.providerNm ASC
       """, countQuery = """
-      select count(distinct p.providerNo)
-      from Provider p
-      where p.isDeleted = false
+      SELECT COUNT(distinct p.providerNo)
+      FROM Provider p
+      WHERE p.isDeleted = false
       """)
-  Page<ProviderRes> findByIsDeletedFalseWithGoodsCountOrderByProviderNmAsc(Pageable pageable);
+  Page<ProviderRes> searchProviders(Pageable pageable);
 
   // 상세보기
   @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.ProviderDetailRes(
+      SELECT new com.sk.domain.admin.dto.response.provider.ProviderDetailRes(
       p.providerNo,
       p.providerNm,
       p.providerCd,
@@ -63,10 +63,10 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
       p.createDt,
       cu.userNm
       )
-      from Provider p
-      left join User cu on p.createUserId = cu.userLoginId
-      where p.isDeleted = false
-      and p.providerNo = :providerNo
+      FROM Provider p
+      LEFT JOIN User cu on p.createUserId = cu.userLoginId
+      WHERE p.isDeleted = false
+      AND p.providerNo = :providerNo
       """)
   Optional<ProviderDetailRes> findByProviderNoAndIsDeletedFalseWithUser(@Param("providerNo") Integer providerNo);
 
@@ -75,13 +75,13 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
   // 프로바이더의 수정시간이 상품의 수정시간보다 최근이면 프로바이더의 수정시간과 수정자를 가져오고
   // 상품의 수정시간이 프로바이더의 수정시간보다 최근이면 상품의 수정시간과 수정자를 가져온다.
   @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes(
+      SELECT new com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes(
       CASE WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt) THEN p.modifyDt ELSE (SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo) END,
       CASE WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt) THEN (SELECT u.userNm FROM User u WHERE u.userLoginId = p.modifyUserId) ELSE (SELECT u.userNm FROM User u WHERE u.userLoginId = (SELECT g.modifyUserId FROM Goods g WHERE g.modifyDt = (SELECT MAX(g2.modifyDt) FROM Goods g2 WHERE g2.provider.providerNo = :providerNo))) END
       )
-      from Provider p
-      where p.isDeleted = false
-      and p.providerNo = :providerNo
+      FROM Provider p
+      WHERE p.isDeleted = false
+      AND p.providerNo = :providerNo
       """)
   Optional<ProviderLatestUpdatedRes> findByProviderNoAndIsDeletedFalseWithGoodsLatestModifyInfo(Integer providerNo);
 }

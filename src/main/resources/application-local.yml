@@ -3,18 +3,28 @@ spring:
     activate:
       on-profile: local
   datasource:
+    datasources:
+      master:
+        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: mipapp
+        password: skccmipapp11@@
+        hikari:
+      hynix:
+        jdbc-url: jdbc:mysql://mysql:3306/mi?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: mingo
+        password: mingo
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: mipapp
-    password: skccmipapp11@@
     hikari:
       maximum-pool-size: 5
-      maxLifeTime: 60000
+      max-lifetime: 60000
+
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: validate
+      
   data:
     redis:
       host: bold-trout-35521.upstash.io
@@ -82,6 +92,12 @@ mail:
       connectiontimeout: 10000
       debug: true
 
+mybatis:
+  type-aliases-package: com.sk.domain.shared.entity
+  config-location: classpath:mybatis/mybatis-config.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    
 ncp:
   storage:
     endPoint: https://kr.object.ncloudstorage.com

@@ -3,6 +3,7 @@ package com.sk.domain.admin.dto.response.bbs;
 import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record NoticeFilterRes(
         @Schema(description = "카테고리", example = "")
         List<BulletinBoardFilterDto> category,
@@ -18,3 +19,4 @@ public record NoticeFilterRes(
         return new NoticeFilterRes(category, status, target);
     }
 }
+// @formatter:on

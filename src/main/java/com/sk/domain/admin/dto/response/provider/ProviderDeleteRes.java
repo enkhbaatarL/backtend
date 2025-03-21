@@ -7,6 +7,7 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+// @formatter:off
 @Builder
 public record ProviderDeleteRes(
         @Schema(description = "프로바이더번호", example = "5000")
@@ -50,3 +51,4 @@ public record ProviderDeleteRes(
                 .build();
     }
 }
+// @formatter:on

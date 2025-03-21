@@ -3,6 +3,7 @@ package com.sk.domain.admin.dto.response.file;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+// @formatter:off
 @Builder
 public record FileUploadRes(
         @Schema(description = "파일번호", example = "1")
@@ -26,3 +27,4 @@ public record FileUploadRes(
                 .build();
     }
 }
+// @formatter:on

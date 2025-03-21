@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+// @formatter:off
 public record FaqCreateReq(
 
         @NotBlank
@@ -20,3 +21,4 @@ public record FaqCreateReq(
         String bulletinContent) {
 
 }
+// @formatter:on

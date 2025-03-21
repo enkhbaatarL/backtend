@@ -1,20 +1,14 @@
 package com.sk.domain.admin.service;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
-import jakarta.persistence.criteria.Predicate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
@@ -22,13 +16,15 @@ import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
+import com.sk.domain.admin.dto.response.bbs.BulletinBoardCompanyDto;
+import com.sk.domain.admin.dto.response.bbs.BulletinBoardFileDto;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFilterDto;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
+import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
-import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.FaqCategory;
 import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
@@ -36,8 +32,6 @@ import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMa
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
-import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,7 +43,6 @@ public class AdminBulletinBoardService {
     private final BulletinBoardRepository bulletinBoardRepository;
     private final UploadedFileRepository uploadedFileRepository;
     private final BulletinBoardCustomerCompanyMappingRepository bulletinBoardCustomerCompanyMappingRepository;
-    private final ProviderRepository providerRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
 
     private final AdminFileService adminFileService;
@@ -68,8 +61,8 @@ public class AdminBulletinBoardService {
                 .map(cat -> new BulletinBoardFilterDto(cat.getCode(), cat.getName()))
                 .collect(Collectors.toList());
 
-        List<BulletinBoardFilterDto> target = providerRepository.findByIsDeletedFalseOrderByProviderNmAsc().stream()
-                .map(provider -> new BulletinBoardFilterDto(provider.getProviderNo().toString(), provider.getProviderNm()))
+        List<BulletinBoardFilterDto> target = customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream()
+                .map(company -> new BulletinBoardFilterDto(company.getCustomerCompanyNo().toString(), company.getCustomerCompanyNm()))
                 .collect(Collectors.toList());
 
         return NoticeFilterRes.of(category, status, target);
@@ -86,11 +79,10 @@ public class AdminBulletinBoardService {
      * @param keyword
      * @return PaginationRes<NoticeRes>
      */
-    public PaginationRes<BulletinBoard> getAllNotices(int page, int size, String category, String status, String target, String keyword) {
+    public PaginationRes<NoticeRes> getAllNotices(int page, int size, String category, String status, Integer target, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<BulletinBoard> noticePage = bulletinBoardRepository.searchBulletinBoards("", "", null, pageable);
-        // Page<ProviderRes> providerPage = providerRepository.findByIsDeletedFalseWithGoodsCountOrderByProviderNmAsc(pageable);
+        Page<NoticeRes> noticePage = bulletinBoardRepository.searchNotice(category, status, target, keyword, pageable);
 
         return PaginationRes.toRes(noticePage);
     }
@@ -103,6 +95,15 @@ public class AdminBulletinBoardService {
      */
     @Transactional
     public BulletinBoard createNotice(NoticeCreateReq dto) {
+        if (dto.isWholePost() == false) {
+            if (dto.target() == null) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+            }
+
+            if (dto.target().size() == 0) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+            }
+        }
 
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
 
@@ -140,16 +141,18 @@ public class AdminBulletinBoardService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
-        List<Integer> target = bulletinBoardCustomerCompanyMappingRepository
-                .findByBulletinBoard(bulletinBoard)
+        List<BulletinBoardCompanyDto> target = bulletinBoardCustomerCompanyMappingRepository.findCustomCompanyByBulletinBoard(bulletinBoard);
+
+        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository.findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), "BBS")
                 .stream()
-                .map(m -> m.getCustomerCompany().getCustomerCompanyNo())
+                .map(f -> new BulletinBoardFileDto(
+                        f.getFileNo(),
+                        f.getOriginalFileNm(),
+                        f.getFileSize(),
+                        adminFileService.getPresignedUrl(f.getFileNo())))
                 .toList();
 
-        UploadedFile uploadedFile = uploadedFileRepository.findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(),
-                "BBS").orElse(null);
-
-        return NoticeDetailRes.of(bulletinBoard, target, uploadedFile);
+        return NoticeDetailRes.of(bulletinBoard, target, fileInfo);
     }
 
     /**
@@ -161,6 +164,17 @@ public class AdminBulletinBoardService {
     */
     @Transactional
     public BulletinBoard updateNotice(NoticeUpdateReq dto, int noticeNo) {
+        if (dto.isWholePost() != null) {
+            if (dto.isWholePost() == false) {
+                if (dto.target() == null) {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+                }
+
+                if (dto.target().size() == 0) {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+                }
+            }
+        }
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
                 .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
@@ -168,7 +182,7 @@ public class AdminBulletinBoardService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
         if (dto.fileNo() == null) {
-            adminFileService.deleteFile(bulletinBoard.getBulletinNo(), "BBS");
+            adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), "BBS");
         } else {
             adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), "BBS");
         }
@@ -245,27 +259,7 @@ public class AdminBulletinBoardService {
     public PaginationRes<BulletinBoard> getAllFaq(int page, int size, String category, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Specification<BulletinBoard> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // 카테고리가 "전체"가 아니면 필터 적용
-            if (StringUtils.hasText(category) && !"전체".equals(category)) {
-                predicates.add(cb.equal(root.get("bulletinCategorySeparateCode"), category));
-            }
-
-            // keyword가 있으면 제목 또는 내용으로 검색
-            if (StringUtils.hasText(keyword)) {
-                String keywordPattern = "%" + keyword + "%";
-                Predicate titleLike = cb.like(root.get("bulletinTitleName"), keywordPattern);
-                Predicate contentLike = cb.like(root.get("bulletinContent"), keywordPattern);
-                predicates.add(cb.or(titleLike, contentLike));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
-
-        Page<BulletinBoard> BulletinBoardPage = bulletinBoardRepository.findByBulletinTypeCodeAndIsDeletedFalse(spec, pageable,
-                "FAQ");
+        Page<BulletinBoard> BulletinBoardPage = bulletinBoardRepository.searchFaq(category, keyword, pageable);
 
         return PaginationRes.toRes(BulletinBoardPage);
     }

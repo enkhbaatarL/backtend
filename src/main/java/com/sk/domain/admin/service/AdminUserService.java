@@ -51,10 +51,10 @@ public class AdminUserService {
 	 * @param emailAddress 이메일주소
 	 * @return PaginationRes<UserInfoRes>
 	 */
-	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, String companyCd, String userNm,
+	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, UserRoleCd userRoleCd, String companyCd, String userNm,
 			String emailAddress) {
 		return PaginationRes
-				.toRes(userInfoRepository.findUserInfosByConditions(page, size, companyCd, userNm,
+				.toRes(userInfoRepository.findUserInfosByConditions(page, size, userRoleCd, companyCd, userNm,
 						emailAddress));
 	}
 

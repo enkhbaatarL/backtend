@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record ProviderLatestUpdatedRes(
         @Schema(description = "수정일시", example = "2025-02-12 15:00:00")
         LocalDateTime modifyDt,
@@ -12,3 +13,4 @@ public record ProviderLatestUpdatedRes(
         String modifyUserName) {
 
 }
+// @formatter:on
