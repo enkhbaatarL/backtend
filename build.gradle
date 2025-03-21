@@ -103,6 +103,12 @@ dependencies {
     // excel
     implementation 'org.apache.poi:poi:5.2.4'
     implementation 'org.apache.poi:poi-ooxml:5.2.4'
+    
+    // MyBatis
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+
+    // Spring Boot Configuration Processor
+    implementation 'org.springframework.boot:spring-boot-configuration-processor'
 
     // S3
     implementation 'com.amazonaws:aws-java-sdk-s3:1.11.238'
