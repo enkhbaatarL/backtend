@@ -13,7 +13,6 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
-import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCd;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +49,9 @@ public class AdminFileService {
     */
   public UploadedFile getFile(
       Integer fileRelationshipObjectDistinguishNo,
-      FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode) {
+      String fileRelationshipObjectSeparateCode) {
     return uploadedFileRepository
-        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode.toString())
+        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 String.format("fileRelationshipObjectInfo : %d, %s", fileRelationshipObjectDistinguishNo,
@@ -67,13 +66,15 @@ public class AdminFileService {
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return UploadedFile
     */
-  public UploadedFile updateFile(Long fileNo, Integer fileRelationshipObjectDistinguishNo,
-      FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode) {
+  public UploadedFile updateFile(
+      Long fileNo,
+      Integer fileRelationshipObjectDistinguishNo,
+      String fileRelationshipObjectSeparateCode) {
     UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-    uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode.toString());
+    uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
 
     return uploadedFile;
   }
@@ -91,7 +92,7 @@ public class AdminFileService {
   public FileUploadRes uploadFile(
       MultipartFile file,
       Integer fileRelationshipObjectDistinguishNo,
-      FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode,
+      String fileRelationshipObjectSeparateCode,
       String fileValidEndDt) {
 
     try {
@@ -102,7 +103,7 @@ public class AdminFileService {
 
       //
       String storagePathNm = bucketName;
-      String storageFileNm = adminObjectStorageService.uploadFile(storagePathNm, fileRelationshipObjectSeparateCode.toString(), file);
+      String storageFileNm = adminObjectStorageService.uploadFile(storagePathNm, fileRelationshipObjectSeparateCode, file);
       String fileUrl = adminObjectStorageService.getPresignedUrl(storagePathNm, storageFileNm);
 
       //
@@ -168,9 +169,9 @@ public class AdminFileService {
     * @return 
     */
   @Transactional
-  public void deleteFile(Integer fileRelationshipObjectDistinguishNo, FileRelationshipObjectSeparateCd fileRelationshipObjectSeparateCode) {
+  public void deleteFile(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
     UploadedFile uploadedFile = uploadedFileRepository
-        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode.toString())
+        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 String.format("fileRelationshipObjectInfo : %d, %s", fileRelationshipObjectDistinguishNo,

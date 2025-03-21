@@ -12,36 +12,51 @@ import lombok.Builder;
 
 public record NotificationRes(
 
-        @Schema(description = "이메일 발송 일련번호", example = "1") Integer emailSendSn,
+        @Schema(description = "이메일 발송 일련번호", example = "1")
+        Integer emailSendSn,
 
-        @Schema(description = "이메일 수신 사용자 로그인 ID", example = "test@test.com") String emailReceiveUserLoginId,
+        @Schema(description = "이메일 수신 사용자 로그인 ID", example = "test@test.com")
+        String emailReceiveUserLoginId,
 
-        @Schema(description = "이메일 제목", example = "테스트 이메일") String emailTitleNm,
+        @Schema(description = "이메일 제목", example = "테스트 이메일")
+        String emailTitleNm,
 
-        @Schema(description = "이메일 내용", example = "테스트 이메일 내용") String emailCntt,
+        @Schema(description = "이메일 내용", example = "테스트 이메일 내용")
+        String emailCntt,
 
-        @Schema(description = "이메일 발송 상태", example = "발송완료") String emailSendStatusNm,
+        @Schema(description = "이메일 발송 상태", example = "발송완료")
+        String emailSendStatusNm,
 
-        @Schema(description = "이메일 발송 오류 내용", example = "테스트 이메일 오류 내용") String emailSendErrorCntt,
+        @Schema(description = "이메일 발송 오류 내용", example = "테스트 이메일 오류 내용")
+        String emailSendErrorCntt,
 
-        @Schema(description = "이메일 발송 일시", example = "2025-01-01 00:00:00") LocalDateTime emailSendDtm,
+        @Schema(description = "이메일 발송 일시", example = "2025-01-01 00:00:00")
+        LocalDateTime emailSendDtm,
 
-        @Schema(description = "이메일 수신 사용자명", example = "홍길동") String userNm,
+        @Schema(description = "이메일 수신 사용자명", example = "홍길동")
+        String userNm,
 
-        @Schema(description = "사용자역할코드", example = "ADMIN") UserRoleCd userRoleCd,
+        @Schema(description = "사용자역할코드", example = "ADMIN")
+        UserRoleCd userRoleCd,
 
-        @Schema(description = "직책명", example = "팀장") String onDutyNm,
+        @Schema(description = "직책명", example = "팀장")
+        String onDutyNm,
 
-        @Schema(description = "부서명", example = "개발팀") String departmentNm,
+        @Schema(description = "부서명", example = "개발팀")
+        String departmentNm,
 
-        @Schema(description = "고객사번호", example = "1") Integer customerCompanyNo,
+        @Schema(description = "고객사번호", example = "1")
+        Integer customerCompanyNo,
 
-        @Schema(description = "고객사명", example = "테스트 고객사") String customerCompanyNm,
+        @Schema(description = "고객사명", example = "테스트 고객사")
+        String customerCompanyNm,
 
-        @JsonUnwrapped @Schema(description = "감사 정보") AuditInfo auditInfo
+        @JsonUnwrapped
+        @Schema(description = "감사 정보")
+        AuditInfo auditInfo
 
 ) {
-    
+
     @QueryProjection
     public NotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
             String emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, String userNm,

@@ -39,7 +39,6 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
 import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCd;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -109,12 +108,20 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice")
     public BaseResponse<PaginationRes<BulletinBoard>> getAllNotices(
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-            @RequestParam(value = "category", required = false, defaultValue = "") String category,
-            @RequestParam(value = "status", required = false, defaultValue = "") String status,
-            @RequestParam(value = "target", required = false, defaultValue = "") String target,
-            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
+            @RequestParam(value = "page", required = false, defaultValue = "1")
+            @Min(value = 1)
+            int page,
+            @RequestParam(value = "size", required = false, defaultValue = "20")
+            @Min(value = 1)
+            int size,
+            @RequestParam(value = "category", required = false, defaultValue = "")
+            String category,
+            @RequestParam(value = "status", required = false, defaultValue = "")
+            String status,
+            @RequestParam(value = "target", required = false, defaultValue = "")
+            String target,
+            @RequestParam(value = "keyword", required = false, defaultValue = "")
+            String keyword) {
 
         return BaseResponseFactory.create(adminBulletinBoardService.getAllNotices(page, size, category, status, target, keyword));
     }
@@ -124,7 +131,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice")
     public BaseResponse<BulletinBoard> createNotice(
-            @RequestBody @Valid NoticeCreateReq body) {
+            @RequestBody
+            @Valid
+            NoticeCreateReq body) {
 
         return BaseResponseFactory.create(adminBulletinBoardService.createNotice(body));
     }
@@ -137,7 +146,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/{noticeNo}")
     public BaseResponse<NoticeDetailRes> getNotice(
-            @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
+            @PathVariable(value = "noticeNo")
+            @Min(value = 1)
+            Integer noticeNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.getNotice(noticeNo));
     }
 
@@ -149,8 +160,12 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/notices/{noticeNo}")
     public BaseResponse<BulletinBoard> updateNotice(
-            @RequestBody @Valid NoticeUpdateReq body,
-            @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
+            @RequestBody
+            @Valid
+            NoticeUpdateReq body,
+            @PathVariable(value = "noticeNo")
+            @Min(value = 1)
+            Integer noticeNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.updateNotice(body, noticeNo));
     }
 
@@ -162,7 +177,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/notices/{noticeNo}")
     public BaseResponse<BulletinBoard> deleteNotice(
-            @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
+            @PathVariable(value = "noticeNo")
+            @Min(value = 1)
+            Integer noticeNo) {
 
         return BaseResponseFactory.create(adminBulletinBoardService.deleteNotice(noticeNo));
     }
@@ -172,7 +189,8 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/notice/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
-            @RequestPart(value = "file", required = false) MultipartFile file) {
+            @RequestPart(value = "file", required = false)
+            MultipartFile file) {
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
@@ -192,7 +210,7 @@ public class AdminBulletinBoardController {
             throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, 0, FileRelationshipObjectSeparateCd.BBS, DateUtil.endYmd()));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file, 0, "BBS", DateUtil.endYmd()));
     }
 
     @ApiOrder(8)
@@ -200,7 +218,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+            @PathVariable(value = "fileNo")
+            @Min(value = 1)
+            Long fileNo) {
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
@@ -237,10 +257,16 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq")
     public BaseResponse<PaginationRes<BulletinBoard>> getAllFaq(
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-            @RequestParam(value = "category", required = false, defaultValue = "") String category,
-            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
+            @RequestParam(value = "page", required = false, defaultValue = "1")
+            @Min(value = 1)
+            int page,
+            @RequestParam(value = "size", required = false, defaultValue = "20")
+            @Min(value = 1)
+            int size,
+            @RequestParam(value = "category", required = false, defaultValue = "")
+            String category,
+            @RequestParam(value = "keyword", required = false, defaultValue = "")
+            String keyword) {
 
         return BaseResponseFactory.create(adminBulletinBoardService.getAllFaq(page, size, category, keyword));
     }
@@ -250,7 +276,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/faq")
     public BaseResponse<BulletinBoard> createFaq(
-            @RequestBody() @Valid FaqCreateReq body) {
+            @RequestBody()
+            @Valid
+            FaqCreateReq body) {
 
         return BaseResponseFactory.create(adminBulletinBoardService.createFaq(body));
     }
@@ -263,7 +291,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq/{faqNo}")
     public BaseResponse<BulletinBoard> getFaq(
-            @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
+            @PathVariable(value = "faqNo")
+            @Min(value = 1)
+            Integer faqNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.getFaq(faqNo));
     }
 
@@ -275,8 +305,12 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/faq/{faqNo}")
     public BaseResponse<BulletinBoard> updateFaq(
-            @RequestBody @Valid FaqUpdateReq body,
-            @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
+            @RequestBody
+            @Valid
+            FaqUpdateReq body,
+            @PathVariable(value = "faqNo")
+            @Min(value = 1)
+            Integer faqNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.updateFaq(body, faqNo));
     }
 
@@ -288,7 +322,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/faq/{faqNo}")
     public BaseResponse<BulletinBoard> deleteFaq(
-            @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
+            @PathVariable(value = "faqNo")
+            @Min(value = 1)
+            Integer faqNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.deleteFaq(faqNo));
     }
 }
