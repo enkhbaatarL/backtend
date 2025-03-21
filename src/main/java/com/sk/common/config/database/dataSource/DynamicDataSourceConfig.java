@@ -6,54 +6,48 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
-// import com.sk.domain.shared.entity.master.test.DataBaseSource;
-// import com.sk.domain.shared.repository.master.test.DataBaseSourceRepository;
+import com.sk.common.utils.Properties.DataSourceProperties;
 import com.zaxxer.hikari.HikariDataSource;
 
 import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableConfigurationProperties(DataSourceProperties.class)
 public class DynamicDataSourceConfig {
 
-    @Value("${spring.datasource.master.jdbc-url}")
-    private String masterJdbcUrl;
+    private final DataSourceProperties dataSourceProperties;
 
-    @Value("${spring.datasource.master.username}")
-    private String masterUsername;
+    @Value("${spring.datasource.hikari.maximum-pool-size}")
+    private int maximumPoolSize;
 
-    @Value("${spring.datasource.master.password}")
-    private String masterPassword;
-
-    @Value("${spring.datasource.master.driver-class-name}")
-    private String masterDriverClassName;
-
-    @Value("${spring.datasource.hynix.jdbc-url}")
-    private String hynixJdbcUrl;
-
-    @Value("${spring.datasource.hynix.username}")
-    private String hynixUsername;
-
-    @Value("${spring.datasource.hynix.password}")
-    private String hynixPassword;
-
-    @Value("${spring.datasource.hynix.driver-class-name}")
-    private String hynixDriverClassName;
+    @Value("${spring.datasource.hikari.max-lifetime}")
+    private int maxLifetime;
 
     @Bean
     public DataSource dynamicDataSource() {
         AbstractRoutingDataSource dynamicRoutingDataSource = new DynamicRoutingDataSource();
         Map<Object, Object> targetDataSources = new HashMap<>();
 
-        targetDataSources.put("master", createDataSource(masterJdbcUrl, masterUsername, masterPassword,
-                masterDriverClassName));
+        Map<String, DataSourceProperties.DatasourceConfig> datasources = dataSourceProperties.getDatasources();
+        if (datasources == null || datasources.isEmpty()) {
+            throw new IllegalStateException("No datasources defined in configuration");
+        }
 
-        targetDataSources.put("hynix", createDataSource(hynixJdbcUrl, hynixUsername, hynixPassword,
-                hynixDriverClassName));
+        for (Map.Entry<String, DataSourceProperties.DatasourceConfig> entry : datasources.entrySet()) {
+            String key = entry.getKey();
+            DataSourceProperties.DatasourceConfig config = entry.getValue();
+            targetDataSources.put(key, createDataSource(
+                    config.getJdbcUrl(),
+                    config.getUsername(),
+                    config.getPassword(),
+                    config.getDriverClassName()));
+        }
 
         dynamicRoutingDataSource.setTargetDataSources(targetDataSources);
         dynamicRoutingDataSource.setDefaultTargetDataSource(targetDataSources.get("master"));
@@ -66,6 +60,9 @@ public class DynamicDataSourceConfig {
         hikariDataSource.setUsername(username);
         hikariDataSource.setPassword(password);
         hikariDataSource.setDriverClassName(driverClassName);
+        // yml의 hikari 설정 반영
+        hikariDataSource.setMaximumPoolSize(maximumPoolSize);
+        hikariDataSource.setMaxLifetime(maxLifetime);
         return hikariDataSource;
     }
 }

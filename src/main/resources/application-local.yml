@@ -3,16 +3,18 @@ spring:
     activate:
       on-profile: local
   datasource:
-    master:
-      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      username: mipapp
-      password: skccmipapp11@@
-    hynix:
-      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      username: mipapp
-      password: skccmipapp11@@
+    datasources:
+      master:
+        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: mipapp
+        password: skccmipapp11@@
+        hikari:
+      hynix:
+        jdbc-url: jdbc:mysql://mysql:3306/mi?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: mingo
+        password: mingo
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 5
