@@ -9,13 +9,17 @@ import lombok.Builder;
 
 public record CompanyDepartmentRes(
 
-        @Schema(description = "고객회사번호", example = "1") Integer companyNo,
+        @Schema(description = "고객회사번호", example = "1")
+        Integer companyNo,
 
-        @Schema(description = "고객회사코드", example = "C000000001") String companyCd,
+        @Schema(description = "고객회사코드", example = "C000000001")
+        String companyCd,
 
-        @Schema(description = "고객회사명", example = "테스트 고객사") String companyNm,
+        @Schema(description = "고객회사명", example = "테스트 고객사")
+        String companyNm,
 
-        @Schema(description = "부서명", example = "[\"개발팀\", \"기획팀\"]") List<String> departmentNm) {
+        @Schema(description = "부서명", example = "[\"개발팀\", \"기획팀\"]")
+        List<String> departmentNm) {
 
     @Builder
     @QueryProjection

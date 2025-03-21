@@ -12,7 +12,6 @@ import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
-import com.sk.domain.shared.enums.BulletinTypeCd;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -132,7 +131,7 @@ public class BulletinBoard extends BaseEntity {
 
     public static BulletinBoard of(NoticeCreateReq dto) {
         return BulletinBoard.builder()
-                .bulletinTypeCode(BulletinTypeCd.NOTICE.name())
+                .bulletinTypeCode("NOTICE")
                 .isTopFixed(dto.isTopFixed())
                 .isPopupUse(dto.isPopupUse())
                 .popupPostBeginDt(DateUtil.toYmd(dto.popupPostBeginDt()))
@@ -196,7 +195,7 @@ public class BulletinBoard extends BaseEntity {
 
     public static BulletinBoard of(FaqCreateReq dto) {
         return BulletinBoard.builder()
-                .bulletinTypeCode(BulletinTypeCd.FAQ.name())
+                .bulletinTypeCode("FAQ")
                 .bulletinCategorySeparateCode(dto.bulletinCategorySeparateCode())
                 .bulletinTitleName(dto.bulletinTitleName())
                 .bulletinContent(dto.bulletinContent())

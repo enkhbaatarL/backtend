@@ -11,49 +11,49 @@ import jakarta.validation.constraints.Size;
 
 public record NoticeUpdateReq(
 
-        @Schema(description = "고정여부", example = "true") //
+        @Schema(description = "고정여부", example = "true")
         Boolean isTopFixed,
 
-        @Schema(description = "팝업사용여부", example = "true") //
+        @Schema(description = "팝업사용여부", example = "true")
         Boolean isPopupUse,
 
-        @JsonFormat(pattern = "yyyyMMdd") //
-        @DateTimeFormat(pattern = "yyyyMMdd") //
-        @Schema(description = "팝업게시시작일자", example = "20250101") //
+        @JsonFormat(pattern = "yyyyMMdd")
+        @DateTimeFormat(pattern = "yyyyMMdd")
+        @Schema(description = "팝업게시시작일자", example = "20250101")
         LocalDate popupPostBeginDt,
 
-        @JsonFormat(pattern = "yyyyMMdd") //
-        @DateTimeFormat(pattern = "yyyyMMdd") //
-        @Schema(description = "팝업게시종료일자", example = "20251231") //
+        @JsonFormat(pattern = "yyyyMMdd")
+        @DateTimeFormat(pattern = "yyyyMMdd")
+        @Schema(description = "팝업게시종료일자", example = "20251231")
         LocalDate popupPostEndDt,
 
-        @Schema(description = "카테고리", example = "CAT1") //
+        @Schema(description = "카테고리", example = "CAT1")
         String bulletinCategorySeparateCode,
 
-        @Schema(description = "게시대상(전체:true, 개별:false)", example = "true") //
+        @Schema(description = "게시대상(전체:true, 개별:false)", example = "true")
         Boolean isWholePost,
 
-        @Schema(description = "고객서 ID 배열- 게시대상에 따라 null 또는 고객사 ID 배열", example = "[1,2,3]") //
+        @Schema(description = "고객서 ID 배열- 게시대상에 따라 null 또는 고객사 ID 배열", example = "[1,2,3]")
         List<Integer> target,
 
-        @JsonFormat(pattern = "yyyyMMdd") //
-        @DateTimeFormat(pattern = "yyyyMMdd") //
-        @Schema(description = "게시글유효시작일자", example = "20250101") //
+        @JsonFormat(pattern = "yyyyMMdd")
+        @DateTimeFormat(pattern = "yyyyMMdd")
+        @Schema(description = "게시글유효시작일자", example = "20250101")
         LocalDate bulletinValidBeginDt,
 
-        @JsonFormat(pattern = "yyyyMMdd") //
-        @DateTimeFormat(pattern = "yyyyMMdd") //
-        @Schema(description = "게시글유효종료일자", example = "20251231") //
+        @JsonFormat(pattern = "yyyyMMdd")
+        @DateTimeFormat(pattern = "yyyyMMdd")
+        @Schema(description = "게시글유효종료일자", example = "20251231")
         LocalDate bulletinValidEndDt,
 
-        @Size(min = 1, max = 50) //
-        @Schema(description = "제목", example = "게시물 제목") //
+        @Size(min = 1, max = 50)
+        @Schema(description = "제목", example = "게시물 제목")
         String bulletinTitleName,
 
-        @Schema(description = "내용", example = "게시물 내용") //
+        @Schema(description = "내용", example = "게시물 내용")
         String bulletinContent,
 
-        @Schema(description = "파일번호", example = "1") //
+        @Schema(description = "파일번호", example = "1")
         Long fileNo) {
 
 }

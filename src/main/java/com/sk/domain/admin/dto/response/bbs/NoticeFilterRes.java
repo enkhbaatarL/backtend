@@ -4,17 +4,17 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record NoticeFilterRes(
-                @Schema(description = "카테고리", example = "") //
-                List<BulletinBoardFilterDto> category,
+        @Schema(description = "카테고리", example = "")
+        List<BulletinBoardFilterDto> category,
 
-                @Schema(description = "게시여부", example = "") //
-                List<BulletinBoardFilterDto> status,
+        @Schema(description = "게시여부", example = "")
+        List<BulletinBoardFilterDto> status,
 
-                @Schema(description = "게시대상", example = "") //
-                List<BulletinBoardFilterDto> target) {
+        @Schema(description = "게시대상", example = "")
+        List<BulletinBoardFilterDto> target) {
 
-        public static NoticeFilterRes of(List<BulletinBoardFilterDto> category, List<BulletinBoardFilterDto> status,
-                        List<BulletinBoardFilterDto> target) {
-                return new NoticeFilterRes(category, status, target);
-        }
+    public static NoticeFilterRes of(List<BulletinBoardFilterDto> category, List<BulletinBoardFilterDto> status,
+            List<BulletinBoardFilterDto> target) {
+        return new NoticeFilterRes(category, status, target);
+    }
 }

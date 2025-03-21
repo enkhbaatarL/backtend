@@ -20,7 +20,6 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminFileService;
-import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCd;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -42,9 +41,10 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
-            @RequestPart(value = "file", required = false) MultipartFile file) {
+            @RequestPart(value = "file", required = false)
+            MultipartFile file) {
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, 0, FileRelationshipObjectSeparateCd.UNKNOWN, DateUtil.endYmd()));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file, 0, "", DateUtil.endYmd()));
     }
 
     @ApiOrder(2)
@@ -52,7 +52,9 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+            @PathVariable(value = "fileNo")
+            @Min(value = 1)
+            Long fileNo) {
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
@@ -69,7 +71,9 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/{fileNo}")
     public BaseResponse<String> deleteFile(
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+            @PathVariable(value = "fileNo")
+            @Min(value = 1)
+            Long fileNo) {
 
         adminFileService.deleteFile(fileNo);
 
@@ -81,7 +85,9 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/presigned-url/{fileNo}")
     public BaseResponse<String> getPresignedUrl(
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+            @PathVariable(value = "fileNo")
+            @Min(value = 1)
+            Long fileNo) {
 
         return BaseResponseFactory.create(adminFileService.getPresignedUrl(fileNo));
     }
