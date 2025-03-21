@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sk.domain.shared.mapper.master.tlm.MasterEmailAccessLogMapper">
+    <resultMap id="EmailAccessLogResponseMap" type="com.sk.domain.shared.entity.master.tlm.EmailAccessLog">
+        <id property="emailSendSn" column="eml_send_sn" />
+        <result property="emailReceiveUserLoginId" column="eml_rcv_usr_logn_id" />
+        <result property="emailTitleNm" column="eml_titl_nm" />
+        <result property="emailCntt" column="eml_cntt" />
+        <result property="emailSendStatusNm" column="eml_send_stat_nm" />
+        <result property="emailSendErrCntt" column="eml_send_err_cntt" />
+        <result property="emailSendDtm" column="eml_send_dtm" />
+        <result property="createDt" column="crt_dtm" />
+        <result property="modifyDt" column="mod_dtm" />
+        <result property="createUserId" column="crt_usr_logn_id" />
+        <result property="modifyUserId" column="mod_usr_logn_id" />
+    </resultMap>
+
+    <select id="getEmailAccessLogs" resultMap="EmailAccessLogResponseMap">
+        /* com.sk.domain.shared.mapper.master.tlm.MasterEmailAccessLogMapper.getEmailAccessLogs */
+        SELECT * FROM tlm_emlsendl
+    </select>
+</mapper>

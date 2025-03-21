@@ -1,4 +1,4 @@
-package com.sk;
+package com.sk.domain.shared.service;
 
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -49,10 +49,9 @@ public class MailService {
 
             log.info("Mail sent successfully");
         } catch (Exception e) {
-            log.error("Mail sending failed", e);
-
             emailAccessLog.failUpdate(EmailSendStatusName.FAILED.getCode(), e.getMessage());
-
+            
+            log.error("Mail sending failed", e);
             throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
                     String.format("Mail sending failed: %s", e.getMessage()));
         }
