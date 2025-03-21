@@ -3,6 +3,7 @@ package com.sk.common.utils;
 import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthenticationException;
+import com.sk.domain.shared.entity.master.tmd.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -38,20 +39,19 @@ public class JwtUtil {
     }
 
     // 액세스 토큰 생성
-//    public String generateAccessToken(User user) {
-//        return createTokenBuilder(user.getUsername())
-//            .claim("tenant", user.getCompanies().getName())
-//            .claim("role", user.getRole().name())
-//            .claim("permissions", user.getPermissions().stream()
-//                .map(Enum::name)
-//                .collect(Collectors.toList()))
-//            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
-//            .compact();
-//    }
+    public String generateAccessToken(User user) {
+        return createTokenBuilder(user.getUserLoginId())
+            .claim("userNo", user.getUserNo())
+            .claim("companyNo", user.getCustomerCompany().getCustomerCompanyNo())
+            .claim("companyCd", user.getCustomerCompany().getCustomerCompanyCd())
+            .claim("role", user.getUserRoleCd().getCode())
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
+            .compact();
+    }
 
     // 리프레시 토큰 생성
-    public String generateRefreshToken(String username) {
-        return createTokenBuilder(username)
+    public String generateRefreshToken(String userLoginId) {
+        return createTokenBuilder(userLoginId)
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getRefreshTokenExpiry())))
             .compact();
     }

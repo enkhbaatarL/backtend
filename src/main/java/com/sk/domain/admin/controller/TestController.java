@@ -14,12 +14,9 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.service.TestService;
-import com.sk.domain.mi.dto.response.GoodsAuthorityRes;
-import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
-import com.sk.domain.shared.repository.master.tam.AuthManageGoodsMappingRepository;
+import com.sk.domain.shared.enums.UserRoleCd;
 
-// import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,29 +32,12 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
-    private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/user-info")
     public BaseResponse<TestRes> getUserInfo(@RequestBody @Valid TestReq testReq) {
         return BaseResponseFactory.create(testService.getUserInfo(testReq));
-    }
-
-    @Operation(summary = "사용자 권한정보 조회 API", description = "사용자 권한 정보를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/auth")
-    public BaseResponse<List<GoodsAuthorityRes>> getAuthority(@RequestParam(value = "param") String param) {
-        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository
-                .getUserGoodsAuthoritiesByUserLoginId(param);
-        return BaseResponseFactory.create(goodsMappings.stream().map(GoodsAuthorityRes::of).toList());
-    }
-
-    @Operation(summary = "테스트 메일 발송 API", description = "테스트 메일을 발송합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/mail")
-    public BaseResponse<Boolean> sendMail() {
-        return BaseResponseFactory.create(testService.sendMail());
     }
 
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
@@ -87,4 +67,11 @@ public class TestController {
     public BaseResponse<List<EmailAccessLog>> getHynixEmailAccessLogByMybatis() {
         return BaseResponseFactory.create(testService.getHynixEmailAccessLogByMybatis());
     }
+
+    @GetMapping("/token")
+    public BaseResponse<String> getToken(@RequestParam("loginUserId") String loginUserId,
+            @RequestParam("role") UserRoleCd role) {
+        return BaseResponseFactory.create(testService.getToken(loginUserId, role));
+    }
+
 }

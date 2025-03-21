@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ProviderLatestUpdatedRes(
-    @Schema(description = "수정일시", example = "2025-02-12 15:00:00") //
-    LocalDateTime modifyDt,
+        @Schema(description = "수정일시", example = "2025-02-12 15:00:00")
+        LocalDateTime modifyDt,
 
-    @Schema(description = "수정자이름", example = "홍길동") //
-    String modifyUserName) {
+        @Schema(description = "수정자이름", example = "홍길동")
+        String modifyUserName) {
 
 }
