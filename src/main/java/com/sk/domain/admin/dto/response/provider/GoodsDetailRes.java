@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record GoodsDetailRes(
 
         @Schema(description = "상품번호", example = "5000")
@@ -39,3 +40,4 @@ public record GoodsDetailRes(
         @Schema(description = "수정자이름", example = "홍길동")
         String modifyUserName) {
 }
+// @formatter:on
