@@ -13,68 +13,61 @@ import java.util.Optional;
 
 public interface GoodsRepository extends JpaRepository<Goods, Integer> {
 
-  @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.GoodsRes(
-      g.goodsNo,
-      g.goodsNm,
-      g.goodsExpn,
-      count(gds)
-        )
-      from Goods g
-      left join GoodsDataSource gds on g = gds.goods
-      where g.isDeleted = false
-      and g.provider.providerNo = :providerNo
-      and (
-          lower(g.goodsNm) like concat('%', lower(:keyword), '%') or
-          lower(g.goodsExpn) like concat('%', lower(:keyword), '%')
-      )
-      group by g.goodsNo, g.goodsNm, g.goodsExpn
-      order by g.goodsNm asc, g.goodsExpn asc
-            """, countQuery = """
-      select count(distinct g.goodsNo)
-      from Goods g
-      left join GoodsDataSource gds on g = gds.goods
-      where g.isDeleted = false
-      and g.provider.providerNo = :providerNo
-      and (
-          lower(g.goodsNm) like concat('%', lower(:keyword), '%') or
-          lower(g.goodsExpn) like concat('%', lower(:keyword), '%')
-      )
-      """)
-  Page<GoodsRes> findByProviderNoAndIsDeletedFalseWithGoodsDataSourceCount(@Param("providerNo") Integer providerNo,
-      @Param("keyword") String keyword, Pageable pageable);
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
+            g.goodsNo,
+            g.goodsNm,
+            g.goodsExpn,
+            count(gds)
+              )
+            FROM Goods g
+            LEFT JOIN GoodsDataSource gds on g = gds.goods
+            WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
+            AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            GROUP BY g.goodsNo, g.goodsNm, g.goodsExpn
+            ORDER BY g.goodsNm asc, g.goodsExpn asc
+                  """, countQuery = """
+            SELECT COUNT(distinct g.goodsNo)
+            FROM Goods g
+            LEFT JOIN GoodsDataSource gds on g = gds.goods
+            WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
+            AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            """)
+    Page<GoodsRes> searchGoods(@Param("providerNo") Integer providerNo, @Param("keyword") String keyword, Pageable pageable);
 
-  @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
-      g.goodsNo,
-      g.goodsNm,
-      g.goodsCd,
-      g.goodsExpn,
-      g.isUsed,
-      g.createUserId,
-      g.createDt,
-      cu.userNm,
-      g.modifyUserId,
-      g.modifyDt,
-      mu.userNm
-      )
-      from Goods g
-      left join User cu on g.createUserId = cu.userLoginId
-      left join User mu on g.modifyUserId = mu.userLoginId
-      where g.isDeleted = false
-      and g.provider.providerNo = :providerNo
-      and g.goodsNo = :goodsNo
-      """)
-  Optional<GoodsDetailRes> findByProviderNoAndGoodsNoAndIsDeletedFalseWithUser(@Param("providerNo") Integer providerNo,
-      @Param("goodsNo") Integer goodsNo);
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
+            g.goodsNo,
+            g.goodsNm,
+            g.goodsCd,
+            g.goodsExpn,
+            g.isUsed,
+            g.createUserId,
+            g.createDt,
+            cu.userNm,
+            g.modifyUserId,
+            g.modifyDt,
+            mu.userNm
+            )
+            FROM Goods g
+            LEFT JOIN User cu on g.createUserId = cu.userLoginId
+            LEFT JOIN User mu on g.modifyUserId = mu.userLoginId
+            WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
+            AND g.goodsNo = :goodsNo
+            """)
+    Optional<GoodsDetailRes> findByProviderNoAndGoodsNoAndIsDeletedFalseWithUser(@Param("providerNo") Integer providerNo,
+            @Param("goodsNo") Integer goodsNo);
 
-  @Query(value = """
-      select g
-      from Goods g
-      where g.isDeleted = false
-      and g.provider.providerNo = :providerNo
-      and g.goodsNo = :goodsNo
-      """)
-  Optional<Goods> findByProviderNoAndGoodsNoAndIsDeletedFalse(Integer providerNo, Integer goodsNo);
+    @Query(value = """
+            SELECT g
+            FROM Goods g
+            WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
+            AND g.goodsNo = :goodsNo
+            """)
+    Optional<Goods> findByProviderNoAndGoodsNoAndIsDeletedFalse(Integer providerNo, Integer goodsNo);
 
 }

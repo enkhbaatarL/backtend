@@ -2,6 +2,7 @@ package com.sk.domain.admin.dto.request.provider;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record GoodsUpdateReq(
 
         @Schema(description = "상품 이름", example = "제조사별 DRAM 생산량")
@@ -17,3 +18,4 @@ public record GoodsUpdateReq(
         Boolean isUsed) {
 
 }
+// @formatter:on

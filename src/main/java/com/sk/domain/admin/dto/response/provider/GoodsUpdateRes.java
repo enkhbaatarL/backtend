@@ -7,6 +7,7 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+// @formatter:off
 @Builder
 public record GoodsUpdateRes(
         @Schema(description = "상품번호", example = "5000")
@@ -50,3 +51,4 @@ public record GoodsUpdateRes(
                 .build();
     }
 }
+// @formatter:on

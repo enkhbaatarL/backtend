@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 
+// @formatter:off
 public record NoticeUpdateReq(
 
         @Schema(description = "고정여부", example = "true")
@@ -57,3 +58,4 @@ public record NoticeUpdateReq(
         Long fileNo) {
 
 }
+// @formatter:on

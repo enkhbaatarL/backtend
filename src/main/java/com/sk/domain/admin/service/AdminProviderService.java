@@ -62,7 +62,7 @@ public class AdminProviderService {
   public PaginationRes<ProviderRes> getAllProviders(int page, int size) {
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<ProviderRes> providerPage = providerRepository.findByIsDeletedFalseWithGoodsCountOrderByProviderNmAsc(pageable);
+    Page<ProviderRes> providerPage = providerRepository.searchProviders(pageable);
 
     return PaginationRes.toRes(providerPage);
   }
@@ -154,7 +154,7 @@ public class AdminProviderService {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsRes> goodsPage = goodsRepository.findByProviderNoAndIsDeletedFalseWithGoodsDataSourceCount(providerNo, keyword, pageable);
+    Page<GoodsRes> goodsPage = goodsRepository.searchGoods(providerNo, keyword, pageable);
 
     return PaginationRes.toRes(goodsPage);
   }
@@ -226,7 +226,7 @@ public class AdminProviderService {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo, keyword,
+    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
         pageable);
 
     return PaginationRes.toRes(goodsPage);

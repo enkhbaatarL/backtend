@@ -3,6 +3,7 @@ package com.sk.domain.admin.dto.request.bbs;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 
+// @formatter:off
 public record FaqUpdateReq(
 
         @Schema(description = "카테고리", example = "CAT1")
@@ -16,3 +17,4 @@ public record FaqUpdateReq(
         String bulletinContent) {
 
 }
+// @formatter:on
