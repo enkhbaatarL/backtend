@@ -9,10 +9,12 @@ import com.sk.common.utils.JwtUtil;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.mapper.hynix.tlm.HynixEmailAccessLogMapper;
 import com.sk.domain.shared.mapper.master.tlm.MasterEmailAccessLogMapper;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class TestService {
     private final MasterEmailAccessLogMapper masterEmailAccessLogMapper;
     private final HynixEmailAccessLogMapper hynixEmailAccessLogMapper;
     private final UserRepository userRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
 
     public TestRes getUserInfo(TestReq testReq) {
         return TestRes.of(testReq);
@@ -54,6 +57,12 @@ public class TestService {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(loginUserId, role)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
         return jwtUtil.generateAccessToken(user);
+    }
+
+    public String delete(Integer id) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(id).orElseThrow();
+        customerCompany.softDelete();
+        return "ok";
     }
 
 }

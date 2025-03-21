@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
+import com.sk.domain.shared.listener.CustomerCompanyGoodsMappingListener;
+import jakarta.persistence.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
@@ -14,16 +16,6 @@ import com.sk.domain.shared.entity.compositeKey.tam.CustomerCompanyGoodsMappingI
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,6 +28,7 @@ import lombok.NoArgsConstructor;
 })
 @Comment("TAM_고객회사상품매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(CustomerCompanyGoodsMappingListener.class)
 public class CustomerCompanyGoodsMapping extends BaseEntity {
 
     @EmbeddedId
