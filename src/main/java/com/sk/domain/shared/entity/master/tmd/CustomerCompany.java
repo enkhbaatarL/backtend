@@ -4,6 +4,7 @@ import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.listener.CustomerCompanyListener;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,12 +15,15 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
 @Comment("TMD_고객회사기본")
 @Table(name = "tmd_custcpnym")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(CustomerCompanyListener.class)
 public class CustomerCompany extends BaseEntity {
 
     @Id
@@ -49,6 +53,9 @@ public class CustomerCompany extends BaseEntity {
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
+
+    @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
+    private List<User> users = new ArrayList<>();
 
     @Builder
     public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String useBeginDt, String useEndDt, Boolean isUsed) {

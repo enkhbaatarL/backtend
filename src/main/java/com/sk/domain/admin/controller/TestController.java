@@ -69,4 +69,9 @@ public class TestController {
         return BaseResponseFactory.create(testService.getToken(loginUserId, role));
     }
 
+    @GetMapping("/delete/id")
+    public BaseResponse<String> delete(@RequestParam("id") Integer id) {
+        return BaseResponseFactory.create(testService.delete(id));
+    }
+
 }

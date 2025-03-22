@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.sk.domain.admin.dto.response.bbs.BulletinBoardCompanyDto;
 import com.sk.domain.shared.entity.compositeKey.tcm.BulletinBoardCustomerCompanyMappingId;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
@@ -20,8 +21,19 @@ public interface BulletinBoardCustomerCompanyMappingRepository
     @Transactional
     @Modifying
     @Query(value = """
-            delete from BulletinBoardCustomerCompanyMapping b where b.bulletinBoard.bulletinNo = :bulletinNo
+            DELETE FROM BulletinBoardCustomerCompanyMapping b where b.bulletinBoard.bulletinNo = :bulletinNo
                         """)
     void deleteByBulletinNo(@Param("bulletinNo") Integer bulletinNo);
 
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.bbs.BulletinBoardCompanyDto(
+                        c.customerCompanyNo,
+                        c.customerCompanyNm
+                                    )
+                                    FROM BulletinBoardCustomerCompanyMapping m
+                                    JOIN m.customerCompany c
+                                    WHERE c.isDeleted = false
+                                    AND m.bulletinBoard = :bulletinBoard
+                                                """)
+    List<BulletinBoardCompanyDto> findCustomCompanyByBulletinBoard(BulletinBoard bulletinBoard);
 }

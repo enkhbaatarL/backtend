@@ -11,39 +11,33 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSource;
 
 public interface GoodsDataSourceRepository extends JpaRepository<GoodsDataSource, Integer> {
 
-  @Query(value = """
-      select new com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes(
-      gds.goodsDataSourceNo,
-      gds.goodsDataSourceNm,
-      gds.targetDbNm,
-      gds.targetTableNm,
-      gds.queryConditionContent,
-      gds.goodsDataSourceExpn,
-      gds.createUserId,
-      gds.createDt,
-      gds.modifyUserId,
-      gds.modifyDt
-        )
-      from GoodsDataSource gds
-      where gds.isDeleted = false
-      and gds.goods.provider.providerNo = :providerNo
-      and gds.goods.goodsNo = :goodsNo
-      and (
-      lower(gds.goodsDataSourceNm) like concat('%', lower(:keyword), '%') or
-      lower(gds.goodsDataSourceExpn) like concat('%', lower(:keyword), '%')
-      )
-      order by gds.goodsDataSourceNm asc, gds.goodsDataSourceExpn asc
-            """, countQuery = """
-      select count(gds)
-      from GoodsDataSource gds
-      where gds.isDeleted = false
-      and gds.goods.provider.providerNo = :providerNo
-      and gds.goods.goodsNo = :goodsNo
-      and (
-      lower(gds.goodsDataSourceNm) like concat('%', lower(:keyword), '%') or
-      lower(gds.goodsDataSourceExpn) like concat('%', lower(:keyword), '%')
-      )
-      """)
-  Page<GoodsDataSourceRes> findByProviderNoAndGoodsNoAndIsDeletedFalse(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo,
-      @Param("keyword") String keyword, Pageable pageable);
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes(
+            gds.goodsDataSourceNo,
+            gds.goodsDataSourceNm,
+            gds.targetDbNm,
+            gds.targetTableNm,
+            gds.queryConditionContent,
+            gds.goodsDataSourceExpn,
+            gds.createUserId,
+            gds.createDt,
+            gds.modifyUserId,
+            gds.modifyDt
+            )
+            FROM GoodsDataSource gds
+            WHERE gds.isDeleted = false
+            AND gds.goods.provider.providerNo = :providerNo
+            AND gds.goods.goodsNo = :goodsNo
+            AND (:keyword IS NULL OR (LOWER(gds.goodsDataSourceNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(gds.goodsDataSourceExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            ORDER BY gds.goodsDataSourceNm ASC, gds.goodsDataSourceExpn ASC
+                  """, countQuery = """
+            SELECT COUNT(gds)
+            FROM GoodsDataSource gds
+            WHERE gds.isDeleted = false
+            AND gds.goods.provider.providerNo = :providerNo
+            AND gds.goods.goodsNo = :goodsNo
+            AND (:keyword IS NULL OR (LOWER(gds.goodsDataSourceNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(gds.goodsDataSourceExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            """)
+    Page<GoodsDataSourceRes> searchGoodsDataSources(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo,
+            @Param("keyword") String keyword, Pageable pageable);
 }

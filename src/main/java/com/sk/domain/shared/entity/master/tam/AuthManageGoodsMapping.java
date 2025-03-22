@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.shared.enums.GoodsAuthCd;
+import com.sk.domain.shared.listener.AuthManageGoodsMappingListener;
 import jakarta.persistence.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
@@ -24,6 +25,7 @@ import lombok.NoArgsConstructor;
 })
 @Comment("TAM_권한주체상품매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuthManageGoodsMappingListener.class)
 public class AuthManageGoodsMapping extends BaseEntity {
 
     @Id

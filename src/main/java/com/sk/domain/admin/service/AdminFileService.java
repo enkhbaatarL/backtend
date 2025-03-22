@@ -29,7 +29,7 @@ public class AdminFileService {
   private String bucketName;
 
   /**
-    * 파일정보를 조회한다.
+    * 파일를 조회한다.
     *
     * @param fileNo 파일번호
     * @return UploadedFile
@@ -41,25 +41,21 @@ public class AdminFileService {
   }
 
   /**
-    * 파일정보를 조회한다.
+    * 파일들을 조회한다.
     *
     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return UploadedFile
     */
-  public UploadedFile getFile(
+  public List<UploadedFile> getFiles(
       Integer fileRelationshipObjectDistinguishNo,
       String fileRelationshipObjectSeparateCode) {
     return uploadedFileRepository
-        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                String.format("fileRelationshipObjectInfo : %d, %s", fileRelationshipObjectDistinguishNo,
-                    fileRelationshipObjectSeparateCode.toString())));
+        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
   }
 
   /**
-    * 파일정보를 조회한다.
+    * 파일 정보를 수정한다.
     *
     * @param fileNo 파일번호
     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
@@ -162,26 +158,28 @@ public class AdminFileService {
   }
 
   /**
-    * 파일을 삭제 한다.
+    * 파일들을 삭제 한다.
     *
     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return 
     */
   @Transactional
-  public void deleteFile(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
-    UploadedFile uploadedFile = uploadedFileRepository
-        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                String.format("fileRelationshipObjectInfo : %d, %s", fileRelationshipObjectDistinguishNo,
-                    fileRelationshipObjectSeparateCode.toString())));
+  public void deleteFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+    List<UploadedFile> uploadedFile = uploadedFileRepository.findByRelationshipObjectInfo(
+        fileRelationshipObjectDistinguishNo,
+        fileRelationshipObjectSeparateCode);
 
-    adminObjectStorageService.deleteFile(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm());
-
-    uploadedFile.softDelete();
+    uploadedFile.forEach(f -> adminObjectStorageService.deleteFile(f.getStoragePathNm(), f.getStorageFileNm()));
+    uploadedFile.forEach(f -> f.softDelete());
   }
 
+  /**
+    * 파일에 대한 URL을 생성한다.
+    *
+    * @param fileNo 파일번호
+    * @return URL
+    */
   public String getPresignedUrl(Long fileNo) {
     UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
         .orElseThrow(

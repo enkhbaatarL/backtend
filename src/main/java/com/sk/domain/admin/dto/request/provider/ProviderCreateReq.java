@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record ProviderCreateReq(
         @NotBlank
         @Size(min = 1, max = 20)
@@ -29,3 +30,4 @@ public record ProviderCreateReq(
         Boolean isUsed) {
 
 }
+// @formatter:on

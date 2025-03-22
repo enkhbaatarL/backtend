@@ -16,9 +16,9 @@ public class CacheService {
     private final StringRedisTemplate redisTemplate;
 
     /**
-     * 사용자 권한에 따른 태그 캐시 업데이트
+     * 사용자 권한 목록을 기준으로 Company, Provider, Goods 태그 엔티티에 사용자를 추가한다.
      *
-     * @param userNo 사용자 번호
+     * @param userNo      사용자 번호
      * @param permissions 권한 객체
      */
     public void updateReverseIndices(Integer userNo, PermissionRes permissions) {
@@ -37,16 +37,16 @@ public class CacheService {
     }
 
     /**
-     * 태그 엔티티가 변경됨에 따라 사용자 권한 캐시 무효화
-     * todo
-     *  - 1. 적용 대상을 선정해야 함
-     *  - 2. 태그 key 삭제 여부
-     *  - 3. 회사 권한일 경우?
+     * 태그 엔티티에 포함되어 있는 사용자 목록을 대상으로 캐시를 무효화한다.
+     * todo-M
+     *  - 1. 적용 대상을 선정해야 함 -> OK
+     *  - 2. 태그 key 삭제 여부 -> 하지말자
+     *  - 3. 회사 권한일 경우? -> 회사 권한으로 자신의 권한을 알고 싶다면? companyNo를 기반으로 자신의 조회 권한을 알 수 있는 API 뚫어야 함
      *
      * @param cacheType TAG_COMPANY, TAG_PROVIDER, TAG_GOODS
-     * @param entityId companyNo, providerNo, goodsNo
+     * @param entityId  companyNo, providerNo, goodsNo
      */
-    private void invalidateUsersForEntity(CacheType cacheType, Integer entityId) {
+    public void invalidateUsersForTagEntity(CacheType cacheType, Integer entityId) {
 
         String lookupKey = "%s%s%s".formatted(cacheType.getCachePrefix(), cacheType.getCacheName(), entityId);
         Set<String> affectedUsers = redisTemplate.opsForSet().members(lookupKey);
@@ -57,9 +57,19 @@ public class CacheService {
                 // 1. 캐시에서 사용자 권한 삭제
                 redisTemplate.delete("%s%s::%s".formatted(CacheType.PERMISSIONS.getCachePrefix(), CacheType.PERMISSIONS.getCacheName(), userNo));
                 // 2. 역방향 인덱스에서 해당 사용자 제거
-                // redisTemplate.opsForSet().remove(lookupKey, userNo);
+                redisTemplate.opsForSet().remove(lookupKey, userNo);
             });
         }
+    }
+
+    /**
+     * 사용자의 권한 캐시를 무효화한다.
+     *
+     * @param userNo 사용자 번호
+     */
+    public void invalidateUsers(Integer userNo) {
+        String key = "%s%s::%s".formatted(CacheType.PERMISSIONS.getCachePrefix(), CacheType.PERMISSIONS.getCacheName(), userNo);
+        redisTemplate.delete(key);
     }
 
 }

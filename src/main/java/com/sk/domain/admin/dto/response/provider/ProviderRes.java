@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record ProviderRes(
         @Schema(description = "프로바이더번호", example = "5000")
         Integer providerNo,
@@ -24,3 +25,4 @@ public record ProviderRes(
         LocalDateTime createDt) {
 
 }
+// @formatter:on

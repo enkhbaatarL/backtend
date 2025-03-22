@@ -2,6 +2,7 @@ package com.sk.domain.admin.dto.response.provider;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+// @formatter:off
 public record GoodsRes(
         @Schema(description = "상품번호", example = "5000")
         Integer goodsNo,
@@ -16,3 +17,4 @@ public record GoodsRes(
         Long goodsDataSourceCount) {
 
 }
+// @formatter:on

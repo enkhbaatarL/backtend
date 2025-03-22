@@ -2,6 +2,8 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.shared.listener.ProviderListener;
+import jakarta.persistence.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
@@ -12,13 +14,6 @@ import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,6 +24,7 @@ import lombok.NoArgsConstructor;
 @Comment("TMD_프로바이더기본")
 @Table(name = "tmd_prvdm")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(ProviderListener.class)
 public class Provider extends BaseEntity {
 
     @Id
