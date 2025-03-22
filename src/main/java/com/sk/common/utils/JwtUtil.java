@@ -3,7 +3,10 @@ package com.sk.common.utils;
 import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthenticationException;
+import com.sk.common.utils.Properties.JwtProperties;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.service.RefreshTokenService;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 public class JwtUtil {
 
     private SecretKey secretKey;
+    private final RefreshTokenService refreshTokenService;
     private final JwtProperties jwtProperties;
 
     // 비밀 키 초기화
@@ -50,10 +54,17 @@ public class JwtUtil {
     }
 
     // 리프레시 토큰 생성
-    public String generateRefreshToken(String userLoginId) {
-        return createTokenBuilder(userLoginId)
-            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getRefreshTokenExpiry())))
+    public String generateRefreshToken(User user) {
+        Instant expirationInstant = Instant.now().plusMillis(jwtProperties.getRefreshTokenExpiry());
+        long expirationUnixTime = expirationInstant.getEpochSecond();
+
+        String refreshToken = createTokenBuilder(user.getUserLoginId())
+            .expiration(Date.from(expirationInstant))
             .compact();
+
+        // Redis 저장
+        refreshTokenService.saveRefreshToken(user.getUserNo(), refreshToken, expirationUnixTime);
+        return refreshToken;
     }
 
     // 클레임 추출 (예외 처리 추가)
@@ -73,6 +84,24 @@ public class JwtUtil {
             throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_INVALID, e);
         }
 
+    }
+
+    // 만료 여부 무시하고 Claims 추출 (새 메서드)
+    public Claims extractClaimsIgnoreExpiration(String token) {
+        try {
+            return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token) // 만료된 경우에도 Claims 반환
+                .getPayload();
+        } catch (ExpiredJwtException e) {
+            // 만료 예외를 무시하고 Claims 반환
+            return e.getClaims();
+        } catch (MalformedJwtException e) {
+            throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_INVALID, e);
+        } catch (Exception e) {
+            throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_INVALID, e);
+        }
     }
 
     // 사용자 이름 추출
@@ -97,4 +126,13 @@ public class JwtUtil {
         }
     }
 
+    // 만료 여부 무시하고 토큰 유효성 검사 (새 메서드)
+    public boolean isTokenValidIgnoreExpiration(String token) {
+        try {
+            extractClaimsIgnoreExpiration(token); // 서명과 구조만 확인
+            return true;
+        } catch (CustomAuthenticationException e) {
+            return false; // 서명 오류, 구조 오류 등
+        }
+    }
 }

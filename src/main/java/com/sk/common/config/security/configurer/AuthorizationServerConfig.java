@@ -6,8 +6,9 @@ import com.sk.common.config.security.jwt.CustomJwtEncoder;
 import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
 import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
 import com.sk.common.filter.ExceptionHandlerFilter;
-import com.sk.common.utils.JwtProperties;
 import com.sk.common.utils.JwtUtil;
+import com.sk.common.utils.Properties.JwtProperties;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
