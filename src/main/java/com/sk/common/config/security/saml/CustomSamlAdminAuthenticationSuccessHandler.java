@@ -31,8 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-//TODO: 호영:관리자 인증 성공 후 토큰 발급 로직 추가
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -74,13 +72,13 @@ public class CustomSamlAdminAuthenticationSuccessHandler implements Authenticati
         }
 
         // JWT 토큰 생성
-        // String accessToken = jwtUtil.generateAccessToken(user);
-        // String refreshToken = jwtUtil.generateRefreshToken(username);
+        String accessToken = jwtUtil.generateAccessToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
 
         // 토큰 응답 생성
         Map<String, Object> tokenResponse = new HashMap<>();
-        // tokenResponse.put("access_token", accessToken);
-        // tokenResponse.put("refresh_token", refreshToken);
+        tokenResponse.put("access_token", accessToken);
+        tokenResponse.put("refresh_token", refreshToken);
         tokenResponse.put("token_type", "Bearer");
 
         UserAccessLog userAccessLog = UserAccessLog.of(user.getUserLoginId());

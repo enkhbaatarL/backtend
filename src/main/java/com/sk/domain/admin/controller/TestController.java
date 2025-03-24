@@ -13,6 +13,8 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
+import com.sk.domain.admin.dto.request.TestLoginReq;
+import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -43,22 +45,15 @@ public class TestController {
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login")
-    public BaseResponse<Boolean> userLogin() {
-        return BaseResponseFactory.create(testService.userLogin());
-    }
-
-    @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/admin-login")
-    public BaseResponse<Boolean> adminLogin() {
-        return BaseResponseFactory.create(testService.adminLogin());
+    public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestLoginReq testLoginReq) {
+        return BaseResponseFactory.create(testService.userLogin(testLoginReq));
     }
 
     @Operation(summary = "테스트(멀티테넌시 master mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 master mybatis) 알림 기록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/master-email-access-log-mybatis")
-    public BaseResponse<List<EmailAccessLog>> getMasterEmailAccessLogByMybatis() {
-        return BaseResponseFactory.create(testService.getMasterEmailAccessLogByMybatis());
+    @GetMapping("/sktelecom-email-access-log-mybatis")
+    public BaseResponse<List<EmailAccessLog>> getSkTelecomEmailAccessLogByMybatis() {
+        return BaseResponseFactory.create(testService.getSkTelecomEmailAccessLogByMybatis());
     }
 
     @Operation(summary = "테스트(멀티테넌시 secondary mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 secondary mybatis) 알림 기록을 조회합니다.")

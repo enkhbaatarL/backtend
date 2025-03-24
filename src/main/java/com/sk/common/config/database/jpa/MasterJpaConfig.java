@@ -16,13 +16,16 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import jakarta.persistence.EntityManagerFactory;
 
+/**
+ * Master 데이터소스 JPA 설정
+ */
 @Configuration
 @EnableJpaRepositories(basePackages = "com.sk.domain.shared.repository.master", entityManagerFactoryRef = "masterEntityManagerFactory", transactionManagerRef = "masterTransactionManager")
 public class MasterJpaConfig {
     @Primary
     @Bean(name = "masterEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean masterEntityManagerFactory(
-            @Qualifier("dynamicDataSource") DataSource dataSource,
+            @Qualifier("masterDataSource") DataSource dataSource,
             EntityManagerFactoryBuilder builder) {
         return builder
                 .dataSource(dataSource)

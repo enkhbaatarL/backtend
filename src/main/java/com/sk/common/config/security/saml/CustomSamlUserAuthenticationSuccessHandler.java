@@ -26,7 +26,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-//TODO: 호영:사용자 인증 성공 후 토큰 발급 로직 추가
 //TODO: 호영:Validate Service로 분리
 
 @Slf4j
@@ -54,12 +53,12 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 				.orElseThrow(() -> new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId)));
 
 		// JWT 토큰 생성
-		// String accessToken = jwtUtil.generateAccessToken(user);
-		String refreshToken = jwtUtil.generateRefreshToken(user.getUserNm());
+		String accessToken = jwtUtil.generateAccessToken(user);
+		String refreshToken = jwtUtil.generateRefreshToken(user);
 
 		// 토큰 응답 생성
 		Map<String, Object> tokenResponse = new HashMap<>();
-		// tokenResponse.put("access_token", accessToken);
+		tokenResponse.put("access_token", accessToken);
 		tokenResponse.put("refresh_token", refreshToken);
 		tokenResponse.put("token_type", "Bearer");
 
