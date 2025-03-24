@@ -111,6 +111,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                         user.userNm,
                         user.userLoginId,
                         user.userRoleCd,
+                        user.positionNm,
+                        user.jobGradeNm,
                         user.onDutyNm,
                         user.departmentNm,
                         user.isOtherServiceAccessPossible,

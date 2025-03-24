@@ -25,7 +25,7 @@ public class MasterJpaConfig {
     @Primary
     @Bean(name = "masterEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean masterEntityManagerFactory(
-            @Qualifier("dynamicDataSource") DataSource dataSource,
+            @Qualifier("masterDataSource") DataSource dataSource,
             EntityManagerFactoryBuilder builder) {
         return builder
                 .dataSource(dataSource)

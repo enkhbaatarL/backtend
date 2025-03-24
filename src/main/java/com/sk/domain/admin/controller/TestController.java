@@ -51,9 +51,9 @@ public class TestController {
 
     @Operation(summary = "테스트(멀티테넌시 master mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 master mybatis) 알림 기록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/master-email-access-log-mybatis")
-    public BaseResponse<List<EmailAccessLog>> getMasterEmailAccessLogByMybatis() {
-        return BaseResponseFactory.create(testService.getMasterEmailAccessLogByMybatis());
+    @GetMapping("/sktelecom-email-access-log-mybatis")
+    public BaseResponse<List<EmailAccessLog>> getSkTelecomEmailAccessLogByMybatis() {
+        return BaseResponseFactory.create(testService.getSkTelecomEmailAccessLogByMybatis());
     }
 
     @Operation(summary = "테스트(멀티테넌시 secondary mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 secondary mybatis) 알림 기록을 조회합니다.")

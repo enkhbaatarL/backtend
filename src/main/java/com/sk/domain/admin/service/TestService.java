@@ -17,7 +17,7 @@ import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.mapper.hynix.tlm.HynixEmailAccessLogMapper;
-import com.sk.domain.shared.mapper.master.tlm.MasterEmailAccessLogMapper;
+import com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestService {
 
     private final JwtUtil jwtUtil;
-    private final MasterEmailAccessLogMapper masterEmailAccessLogMapper;
+    private final SkTelecomEmailAccessLogMapper skTelecomEmailAccessLogMapper;
     private final HynixEmailAccessLogMapper hynixEmailAccessLogMapper;
     private final UserRepository userRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
@@ -52,9 +52,9 @@ public class TestService {
         return TestLoginRes.of(accessToken, refreshToken);
     }
 
-    public List<EmailAccessLog> getMasterEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("master");
-        return masterEmailAccessLogMapper.getEmailAccessLogs();
+    public List<EmailAccessLog> getSkTelecomEmailAccessLogByMybatis() {
+        DataSourceContextHolder.setDataSourceKey("sktelecom");
+        return skTelecomEmailAccessLogMapper.getEmailAccessLogs();
     }
 
     public List<EmailAccessLog> getHynixEmailAccessLogByMybatis() {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.sk.domain.shared.mapper.master.tlm.MasterEmailAccessLogMapper">
+<mapper namespace="com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper">
     <resultMap id="EmailAccessLogResponseMap" type="com.sk.domain.shared.entity.master.tlm.EmailAccessLog">
         <id property="emailSendSn" column="eml_send_sn" />
         <result property="emailReceiveUserLoginId" column="eml_rcv_usr_logn_id" />
@@ -17,7 +17,7 @@
     </resultMap>
 
     <select id="getEmailAccessLogs" resultMap="EmailAccessLogResponseMap">
-        /* com.sk.domain.shared.mapper.master.tlm.MasterEmailAccessLogMapper.getEmailAccessLogs */
+        /* com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper.getEmailAccessLogs */
         SELECT * FROM tlm_emlsendl
     </select>
 </mapper>

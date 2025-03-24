@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.dto.AuditInfo;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,6 +22,12 @@ public record UserWithCreatorRes(
 
 		@Schema(description = "사용자역할코드", example = "")
 		UserRoleCd userRoleCd,
+
+		@Schema(description = "직위명", example = "")
+		String positionNm,
+
+		@Schema(description = "직급명", example = "")
+		String jobGradeNm,
 
 		@Schema(description = "직책명", example = "")
 		String onDutyNm,
@@ -67,7 +72,7 @@ public record UserWithCreatorRes(
 ) {
 
 	@Builder
-	public UserWithCreatorRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String onDutyNm,
+	public UserWithCreatorRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String positionNm, String jobGradeNm, String onDutyNm,
 			String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
 			LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, String customerCompanyNm,
 			String creatorUserNm, String creatorDepartmentNm, String creatorOnDutyNm, Integer creatorCompanyNo,
@@ -76,6 +81,8 @@ public record UserWithCreatorRes(
 		this.userNm = userNm;
 		this.userLoginId = userLoginId;
 		this.userRoleCd = userRoleCd;
+		this.positionNm = positionNm;
+		this.jobGradeNm = jobGradeNm;
 		this.onDutyNm = onDutyNm;
 		this.departmentNm = departmentNm;
 		this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
@@ -93,13 +100,13 @@ public record UserWithCreatorRes(
 
 	@QueryProjection
 	public UserWithCreatorRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
-			String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible,
+			String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible,
 			Boolean isIndividualInfoAgreement, LocalDateTime individualInfoAgreementDtm,
 			Integer customerCompanyNo, String customerCompanyNm,
 			String creatorUserNm, String creatorDepartmentNm, String creatorOnDutyNm,
 			Integer creatorCompanyNo, String creatorCompanyNm,
 			String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
-		this(userNo, userNm, userLoginId, userRoleCd, onDutyNm, departmentNm,
+		this(userNo, userNm, userLoginId, userRoleCd, jobGradeNm, positionNm, onDutyNm, departmentNm,
 				isOtherServiceAccessPossible, isIndividualInfoAgreement, individualInfoAgreementDtm,
 				customerCompanyNo, customerCompanyNm, creatorUserNm, creatorDepartmentNm,
 				creatorOnDutyNm, creatorCompanyNo, creatorCompanyNm,
