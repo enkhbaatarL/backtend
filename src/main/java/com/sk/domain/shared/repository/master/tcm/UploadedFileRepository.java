@@ -4,13 +4,12 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 
-public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long>, JpaSpecificationExecutor<UploadedFile> {
+public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long> {
 
     @Query(value = """
             SELECT u

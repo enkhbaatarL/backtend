@@ -23,7 +23,7 @@ public record NoticeDetailRes(
         String popupPostEndDt,
 
         @Schema(description = "카테고리", example = "CAT1") 
-        String bulletinCategorySeparateCode,
+        String bulletinCategorySeparateCd,
 
         @Schema(description = "게시대상(전체:true, 개별:false)", example = "true") 
         Boolean isWholePost,
@@ -38,29 +38,29 @@ public record NoticeDetailRes(
         String bulletinValidEndDt,
 
         @Schema(description = "제목", example = "게시물 제목") 
-        String bulletinTitleName,
+        String bulletinTitleNm,
 
         @Schema(description = "내용", example = "게시물 내용") 
-        String bulletinContent,
+        String bulletinCntt,
 
         @Schema(description = "파일정보", example = "") 
         List<BulletinBoardFileDto> fileList) {
 
     public NoticeDetailRes(Boolean isTopFixed, Boolean isPopupUse, String popupPostBeginDt, String popupPostEndDt,
-            String bulletinCategorySeparateCode, Boolean isWholePost, List<BulletinBoardCompanyDto> targetList,
-            String bulletinValidBeginDt, String bulletinValidEndDt, String bulletinTitleName,
-            String bulletinContent, List<BulletinBoardFileDto> fileList) {
+            String bulletinCategorySeparateCd, Boolean isWholePost, List<BulletinBoardCompanyDto> targetList,
+            String bulletinValidBeginDt, String bulletinValidEndDt, String bulletinTitleNm,
+            String bulletinCntt, List<BulletinBoardFileDto> fileList) {
         this.isTopFixed = isTopFixed;
         this.isPopupUse = isPopupUse;
         this.popupPostBeginDt = popupPostBeginDt;
         this.popupPostEndDt = popupPostEndDt;
-        this.bulletinCategorySeparateCode = bulletinCategorySeparateCode;
+        this.bulletinCategorySeparateCd = bulletinCategorySeparateCd;
         this.isWholePost = isWholePost;
         this.targetList = targetList;
         this.bulletinValidBeginDt = bulletinValidBeginDt;
         this.bulletinValidEndDt = bulletinValidEndDt;
-        this.bulletinTitleName = bulletinTitleName;
-        this.bulletinContent = bulletinContent;
+        this.bulletinTitleNm = bulletinTitleNm;
+        this.bulletinCntt = bulletinCntt;
         this.fileList = fileList;
     }
 
@@ -71,13 +71,13 @@ public record NoticeDetailRes(
                 .isPopupUse(bulletinBoard.getIsPopupUse())
                 .popupPostBeginDt(bulletinBoard.getPopupPostBeginDt())
                 .popupPostEndDt(bulletinBoard.getPopupPostEndDt())
-                .bulletinCategorySeparateCode(bulletinBoard.getBulletinCategorySeparateCode())
+                .bulletinCategorySeparateCd(bulletinBoard.getBulletinCategorySeparateCd())
                 .isWholePost(bulletinBoard.getIsWholePost())
                 .targetList(targetList)
                 .bulletinValidBeginDt(bulletinBoard.getBulletinValidBeginDt())
                 .bulletinValidEndDt(bulletinBoard.getBulletinValidEndDt())
-                .bulletinTitleName(bulletinBoard.getBulletinTitleName())
-                .bulletinContent(bulletinBoard.getBulletinContent())
+                .bulletinTitleNm(bulletinBoard.getBulletinTitleNm())
+                .bulletinCntt(bulletinBoard.getBulletinCntt())
                 .fileList(fileList)
                 .build();
     }

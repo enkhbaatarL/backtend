@@ -43,7 +43,7 @@ public class BulletinBoard extends BaseEntity {
 
     @Column(name = "bbm_type_cd", nullable = false, length = 10)
     @Comment("게시글유형코드")
-    private String bulletinTypeCode;
+    private String bulletinTypeCd;
 
     @Column(name = "ttop_fix_yn", length = 1, columnDefinition = "char(1)")
     @Comment("상단고정여부")
@@ -67,7 +67,7 @@ public class BulletinBoard extends BaseEntity {
 
     @Column(name = "bbm_ctgr_spt_cd", length = 10)
     @Comment("게시글카테고리구분코드")
-    private String bulletinCategorySeparateCode;
+    private String bulletinCategorySeparateCd;
 
     @Column(name = "twhle_post_yn", length = 1, columnDefinition = "char(1)")
     @Comment("전체게시여부")
@@ -91,57 +91,57 @@ public class BulletinBoard extends BaseEntity {
 
     @Column(name = "bbm_titl_nm", length = 255)
     @Comment("게시글제목명")
-    private String bulletinTitleName;
+    private String bulletinTitleNm;
 
     @Column(name = "bbm_cntt", columnDefinition = "text")
     @Comment("게시글내용")
-    private String bulletinContent;
+    private String bulletinCntt;
 
     @Builder
     public BulletinBoard(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer bulletinNo,
-            String bulletinTypeCode,
+            String bulletinTypeCd,
             Boolean isTopFixed,
             Boolean isPopupUse,
             String popupPostBeginDt,
             String popupPostEndDt,
-            String bulletinCategorySeparateCode,
+            String bulletinCategorySeparateCd,
             Boolean isWholePost,
             String bulletinValidBeginDt,
             String bulletinValidEndDt,
             Boolean isValidPerioUnrestrict,
-            String bulletinTitleName,
-            String bulletinContent) {
+            String bulletinTitleNm,
+            String bulletinCntt) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
 
         this.bulletinNo = bulletinNo;
-        this.bulletinTypeCode = bulletinTypeCode;
+        this.bulletinTypeCd = bulletinTypeCd;
         this.isTopFixed = isTopFixed;
         this.isPopupUse = isPopupUse;
         this.popupPostBeginDt = popupPostBeginDt;
         this.popupPostEndDt = popupPostEndDt;
-        this.bulletinCategorySeparateCode = bulletinCategorySeparateCode;
+        this.bulletinCategorySeparateCd = bulletinCategorySeparateCd;
         this.isWholePost = isWholePost;
         this.bulletinValidBeginDt = bulletinValidBeginDt;
         this.bulletinValidEndDt = bulletinValidEndDt;
         this.isValidPerioUnrestrict = isValidPerioUnrestrict;
-        this.bulletinTitleName = bulletinTitleName;
-        this.bulletinContent = bulletinContent;
+        this.bulletinTitleNm = bulletinTitleNm;
+        this.bulletinCntt = bulletinCntt;
     }
 
     public static BulletinBoard of(NoticeCreateReq dto) {
         return BulletinBoard.builder()
-                .bulletinTypeCode("NOTICE")
+                .bulletinTypeCd("NOTICE")
                 .isTopFixed(dto.isTopFixed())
                 .isPopupUse(dto.isPopupUse())
                 .popupPostBeginDt(dto.popupPostBeginDt())
                 .popupPostEndDt(dto.popupPostEndDt())
-                .bulletinCategorySeparateCode(dto.bulletinCategorySeparateCode())
+                .bulletinCategorySeparateCd(dto.bulletinCategorySeparateCd())
                 .isWholePost(dto.isWholePost())
                 .bulletinValidBeginDt(dto.bulletinValidBeginDt())
                 .bulletinValidEndDt(dto.bulletinValidEndDt())
-                .bulletinTitleName(dto.bulletinTitleName())
-                .bulletinContent(dto.bulletinContent())
+                .bulletinTitleNm(dto.bulletinTitleNm())
+                .bulletinCntt(dto.bulletinCntt())
                 .isValidPerioUnrestrict(false) // do not used
                 .build();
     }
@@ -164,8 +164,8 @@ public class BulletinBoard extends BaseEntity {
             this.popupPostEndDt = dto.popupPostEndDt();
         }
 
-        if (StringUtils.isNotEmpty(dto.bulletinCategorySeparateCode())) {
-            this.bulletinCategorySeparateCode = dto.bulletinCategorySeparateCode();
+        if (StringUtils.isNotEmpty(dto.bulletinCategorySeparateCd())) {
+            this.bulletinCategorySeparateCd = dto.bulletinCategorySeparateCd();
         }
 
         if (StringUtils.isNotEmpty(dto.popupPostEndDt())) {
@@ -184,21 +184,21 @@ public class BulletinBoard extends BaseEntity {
             this.bulletinValidEndDt = dto.bulletinValidEndDt();
         }
 
-        if (StringUtils.isNotEmpty(dto.bulletinTitleName())) {
-            this.bulletinTitleName = dto.bulletinTitleName();
+        if (StringUtils.isNotEmpty(dto.bulletinTitleNm())) {
+            this.bulletinTitleNm = dto.bulletinTitleNm();
         }
 
-        if (StringUtils.isNotEmpty(dto.bulletinContent())) {
-            this.bulletinContent = dto.bulletinContent();
+        if (StringUtils.isNotEmpty(dto.bulletinCntt())) {
+            this.bulletinCntt = dto.bulletinCntt();
         }
     }
 
     public static BulletinBoard of(FaqCreateReq dto) {
         return BulletinBoard.builder()
-                .bulletinTypeCode("FAQ")
-                .bulletinCategorySeparateCode(dto.bulletinCategorySeparateCode())
-                .bulletinTitleName(dto.bulletinTitleName())
-                .bulletinContent(dto.bulletinContent())
+                .bulletinTypeCd("FAQ")
+                .bulletinCategorySeparateCd(dto.bulletinCategorySeparateCd())
+                .bulletinTitleNm(dto.bulletinTitleNm())
+                .bulletinCntt(dto.bulletinCntt())
                 .isTopFixed(false) // do not used
                 .isPopupUse(false) // do not used
                 .popupPostBeginDt(DateUtil.endYmd()) // do not used
@@ -212,16 +212,16 @@ public class BulletinBoard extends BaseEntity {
 
     public void update(FaqUpdateReq dto) {
 
-        if (StringUtils.isNotEmpty(dto.bulletinCategorySeparateCode())) {
-            this.bulletinCategorySeparateCode = dto.bulletinCategorySeparateCode();
+        if (StringUtils.isNotEmpty(dto.bulletinCategorySeparateCd())) {
+            this.bulletinCategorySeparateCd = dto.bulletinCategorySeparateCd();
         }
 
-        if (StringUtils.isNotEmpty(dto.bulletinTitleName())) {
-            this.bulletinTitleName = dto.bulletinTitleName();
+        if (StringUtils.isNotEmpty(dto.bulletinTitleNm())) {
+            this.bulletinTitleNm = dto.bulletinTitleNm();
         }
 
-        if (StringUtils.isNotEmpty(dto.bulletinContent())) {
-            this.bulletinContent = dto.bulletinContent();
+        if (StringUtils.isNotEmpty(dto.bulletinCntt())) {
+            this.bulletinCntt = dto.bulletinCntt();
         }
     }
 

@@ -50,7 +50,7 @@ public class GoodsDataSource extends BaseEntity {
 
     @Column(name = "qry_cdtn_cntt", length = 1000)
     @Comment("쿼리조건내용")
-    private String queryConditionContent;
+    private String queryConditionCntt;
 
     @Column(name = "gds_data_src_expn", length = 500)
     @Comment("상품데이터소스설명")
@@ -64,13 +64,13 @@ public class GoodsDataSource extends BaseEntity {
     @Builder
     public GoodsDataSource(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionContent, String goodsDataSourceExpn, Goods goods) {
+            String queryConditionCntt, String goodsDataSourceExpn, Goods goods) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
         this.targetDbNm = targetDbNm;
         this.targetTableNm = targetTableNm;
-        this.queryConditionContent = queryConditionContent;
+        this.queryConditionCntt = queryConditionCntt;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goods = goods;
     }

@@ -15,42 +15,29 @@ import lombok.Builder;
 
 public record AdminRes(
 
-                @Schema(description = "사용자번호", example = "")
-                Integer userNo,
+                @Schema(description = "사용자번호", example = "") Integer userNo,
 
-                @Schema(description = "사용자명", example = "")
-                String userNm,
+                @Schema(description = "사용자명", example = "") String userNm,
 
-                @Schema(description = "사용자로그인ID", example = "")
-                String userLoginId,
+                @Schema(description = "사용자로그인ID", example = "") String userLoginId,
 
-                @Schema(description = "사용자역할코드", example = "")
-                UserRoleCd userRoleCd,
+                @Schema(description = "사용자역할코드", example = "") UserRoleCd userRoleCd,
 
-                @Schema(description = "직책명", example = "")
-                String onDutyNm,
+                @Schema(description = "직책명", example = "") String onDutyNm,
 
-                @Schema(description = "부서명", example = "")
-                String departmentNm,
+                @Schema(description = "부서명", example = "") String departmentNm,
 
-                @Schema(description = "타사서비스접근가능여부", example = "")
-                Boolean isOtherServiceAccessPossible,
+                @Schema(description = "타사서비스접근가능여부", example = "") Boolean isOtherServiceAccessPossible,
 
-                @Schema(description = "개인정보동의여부", example = "")
-                Boolean isIndividualInfoAgreement,
+                @Schema(description = "개인정보동의여부", example = "") Boolean isIndividualInfoAgreement,
 
-                @Schema(description = "개인정보동의일시", example = "")
-                LocalDateTime individualInfoAgreementDtm,
+                @Schema(description = "개인정보동의일시", example = "") LocalDateTime individualInfoAgreementDtm,
 
-                @Schema(description = "고객사번호", example = "")
-                CustomerCompany customerCompanyNo,
+                @Schema(description = "고객사번호", example = "") CustomerCompany customerCompanyNo,
 
-                @JsonUnwrapped
-                @Schema(description = "감사 정보")
-                AuditInfo auditInfo,
+                @JsonUnwrapped @Schema(description = "감사 정보") AuditInfo auditInfo,
 
-                @Schema(description = "관리자 허용 IP 주소 목록", example = "")
-                List<AdminPermission> accessAllowedIpAddressList
+                @Schema(description = "관리자 허용 IP 주소 목록", example = "") List<AdminPermission> accessAllowedIpAddressList
 
 ) {
 
