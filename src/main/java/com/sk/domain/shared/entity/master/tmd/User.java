@@ -58,6 +58,14 @@ public class User extends BaseEntity {
     @Comment("사용자역할코드")
     private UserRoleCd userRoleCd;
 
+    @Column(name = "ppstn_nm", length = 50)
+    @Comment("직위명")
+    private String positionNm;
+
+    @Column(name = "jbgrd_nm", length = 50)
+    @Comment("직급명")
+    private String jobGradeNm;
+
     @Column(name = "ondt_nm", length = 100)
     @Comment("직책명")
     private String onDutyNm;
@@ -89,13 +97,15 @@ public class User extends BaseEntity {
 
     @Builder
     public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
-            String onDutyNm,
-            String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
+            String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
+            Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
             LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
         this.userRoleCd = userRoleCd;
+        this.positionNm = positionNm;
+        this.jobGradeNm = jobGradeNm;
         this.onDutyNm = onDutyNm;
         this.departmentNm = departmentNm;
         this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
@@ -109,6 +119,8 @@ public class User extends BaseEntity {
                 .userNm(userWithCompany.userNm())
                 .userLoginId(userWithCompany.userLoginId())
                 .userRoleCd(userRoleCd)
+                .positionNm(userWithCompany.positionNm())
+                .jobGradeNm(userWithCompany.jobGradeNm())
                 .onDutyNm(userWithCompany.onDutyNm())
                 .departmentNm(userWithCompany.departmentNm())
                 .isOtherServiceAccessPossible(false)

@@ -39,6 +39,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         return queryFactory.select(new QUserWithCompany(
                 userInfo.userNm,
                 userInfo.loginId,
+                userInfo.positionNm,
+                userInfo.jobGradeNm,
                 userInfo.onDutyNm,
                 userInfo.departmentNm,
                 customerCompany,
@@ -56,6 +58,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         return Optional.ofNullable(queryFactory.select(new QUserWithCompany(
                 userInfo.userNm,
                 userInfo.loginId,
+                userInfo.positionNm,
+                userInfo.jobGradeNm,
                 userInfo.onDutyNm,
                 userInfo.departmentNm,
                 customerCompany,
