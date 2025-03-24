@@ -8,6 +8,7 @@ import jakarta.persistence.PostUpdate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -17,12 +18,14 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthManageGoodsMappingListener {
 
-    private final CacheService cacheService;
+    private ApplicationContext applicationContext;
 
     @PostUpdate
     public void checkDisabled(AuthManageGoodsMapping amgm) {
 
         if (amgm.getIsDeleted() && ObjectUtils.isNotEmpty(amgm.getUser())) {
+
+            CacheService cacheService = applicationContext.getBean(CacheService.class);
 
             log.info("The AuthManageGoodsMapping(userNo: {}, companyNo: {}, goodsNo: {}, goodsAuthCd: {}) has been disabled. Subsequently, the userNo cache will be invalidated.",
                 Optional.ofNullable(amgm.getUser()).map(User::getUserNo).orElse(null),
@@ -42,6 +45,8 @@ public class AuthManageGoodsMappingListener {
     public void checkPersisted(AuthManageGoodsMapping amgm) {
 
         if (ObjectUtils.isNotEmpty(amgm.getUser())) {
+
+            CacheService cacheService = applicationContext.getBean(CacheService.class);
 
             log.info("The AuthManageGoodsMapping(userNo: {}, companyNo: {}, goodsNo: {}, goodsAuthCd: {}) has been persisted. Subsequently, the userNo cache will be invalidated.",
                 Optional.ofNullable(amgm.getUser()).map(User::getUserNo).orElse(null),
