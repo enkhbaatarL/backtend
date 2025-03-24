@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.dataResult.UserWithCompany;
 import com.sk.domain.admin.dto.request.AdminReq;
@@ -93,6 +94,7 @@ public class User extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no", nullable = false)
     @Comment("고객회사번호")
+    @JsonBackReference
     private CustomerCompany customerCompany;
 
     @Builder
@@ -119,10 +121,10 @@ public class User extends BaseEntity {
                 .userNm(userWithCompany.userNm())
                 .userLoginId(userWithCompany.userLoginId())
                 .userRoleCd(userRoleCd)
-                .positionNm(userWithCompany.positionNm())
-                .jobGradeNm(userWithCompany.jobGradeNm())
-                .onDutyNm(userWithCompany.onDutyNm())
-                .departmentNm(userWithCompany.departmentNm())
+                .positionNm(userWithCompany.positionNm() != null ? userWithCompany.positionNm() : null)
+                .jobGradeNm(userWithCompany.jobGradeNm() != null ? userWithCompany.jobGradeNm() : null)
+                .onDutyNm(userWithCompany.onDutyNm() != null ? userWithCompany.onDutyNm() : null)
+                .departmentNm(userWithCompany.departmentNm() != null ? userWithCompany.departmentNm() : null)
                 .isOtherServiceAccessPossible(false)
                 .isIndividualInfoAgreement(false)
                 .individualInfoAgreementDtm(null)
