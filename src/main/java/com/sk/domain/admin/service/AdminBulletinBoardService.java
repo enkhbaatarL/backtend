@@ -1,5 +1,8 @@
 package com.sk.domain.admin.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +26,7 @@ import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
+import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
 import com.sk.domain.shared.enums.FaqCategory;
@@ -103,6 +107,11 @@ public class AdminBulletinBoardService {
             if (dto.target().size() == 0) {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
             }
+        }
+
+        // 팝업 1개만 유지
+        if (dto.isPopupUse()) {
+            bulletinBoardRepository.findByBulletinTypeCodeAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
         }
 
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
@@ -208,6 +217,27 @@ public class AdminBulletinBoardService {
             }
         }
 
+        // 게시중 -> 게시중단 -> 재게시 시 재게시일을 등록일로 수정
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = LocalDate.parse(bulletinBoard.getBulletinValidBeginDt(), formatter);
+        LocalDate endDate = LocalDate.parse(bulletinBoard.getBulletinValidEndDt(), formatter);
+        LocalDate newStartDate = LocalDate.parse(dto.bulletinValidBeginDt(), formatter);
+        LocalDate newEndDate = LocalDate.parse(dto.bulletinValidEndDt(), formatter);
+
+        if (today.isBefore(startDate) || today.isAfter(endDate)) { // 게시중단 인 경우
+            if (today.isAfter(newStartDate) || today.isBefore(newEndDate)) { // 재게시
+                bulletinBoard.updateCreateDt(LocalDateTime.now()); // 등록일 수정
+            }
+        }
+
+        // 팝업 1개만 유지
+        if (bulletinBoard.getIsPopupUse() != dto.isPopupUse()) {
+            if (dto.isPopupUse()) {
+                bulletinBoardRepository.findByBulletinTypeCodeAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
+            }
+        }
+
         bulletinBoard.update(dto);
 
         return bulletinBoard;
@@ -232,6 +262,30 @@ public class AdminBulletinBoardService {
         bulletinBoard.softDelete();
 
         return bulletinBoard;
+    }
+
+    /**
+    * 팝업용 공지사항을 조회한다.
+    *
+    * @param 
+    * @return PopupRes
+    */
+    public PopupRes getPopup() {
+        BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
+        if (bulletinBoard == null) {
+            return null;
+        }
+
+        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository.findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), "BBS")
+                .stream()
+                .map(f -> new BulletinBoardFileDto(
+                        f.getFileNo(),
+                        f.getOriginalFileNm(),
+                        f.getFileSize(),
+                        adminFileService.getPresignedUrl(f.getFileNo())))
+                .toList();
+
+        return PopupRes.of(bulletinBoard, fileInfo);
     }
 
     /**

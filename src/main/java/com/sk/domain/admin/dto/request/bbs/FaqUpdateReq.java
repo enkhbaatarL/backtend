@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 // @formatter:off
 public record FaqUpdateReq(
 
-        @Schema(description = "카테고리", example = "CAT1")
+        @Schema(description = "카테고리", example = "CATEGORY1")
         String bulletinCategorySeparateCode,
 
         @Size(min = 1, max = 200)

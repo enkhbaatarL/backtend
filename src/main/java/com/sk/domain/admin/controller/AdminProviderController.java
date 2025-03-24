@@ -20,17 +20,12 @@ import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDeleteRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
-import com.sk.domain.admin.dto.response.provider.GoodsUpdateRes;
-import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
-import com.sk.domain.admin.dto.response.provider.ProviderDeleteRes;
 import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
 import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
 import com.sk.domain.admin.dto.response.provider.ProviderRes;
-import com.sk.domain.admin.dto.response.provider.ProviderUpdateRes;
 import com.sk.domain.admin.service.AdminProviderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,6 +36,22 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+/**
+ * todo
+ * 
+ * 공통
+ * 1. 
+ * 2. 
+ *
+ * 공지사항
+ * 1. 
+ * 2. 
+ *
+ * FAQ
+ * 1. 
+ * 2. 
+ */
 
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
 @Slf4j
@@ -78,9 +89,12 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PostMapping("/provider")
-  public BaseResponse<ProviderCreateRes> createProvider(
+  public BaseResponse<String> createProvider(
       @RequestBody @Valid ProviderCreateReq body) {
-    return BaseResponseFactory.create(providerService.createProvider(body));
+
+    providerService.createProvider(body);
+
+    return BaseResponseFactory.create("success");
   }
 
   @ApiOrder(4)
@@ -102,10 +116,13 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 수정", description = "데이타 프로바이더를 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}")
-  public BaseResponse<ProviderUpdateRes> updateProvider(
+  public BaseResponse<String> updateProvider(
       @RequestBody @Valid ProviderUpdateReq body,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    return BaseResponseFactory.create(providerService.updateProvider(body, providerNo));
+
+    providerService.updateProvider(body, providerNo);
+
+    return BaseResponseFactory.create("success");
   }
 
   @ApiOrder(6)
@@ -115,9 +132,12 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @DeleteMapping("/providers/{providerNo}")
-  public BaseResponse<ProviderDeleteRes> deleteProvider(
+  public BaseResponse<String> deleteProvider(
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    return BaseResponseFactory.create(providerService.deleteProvider(providerNo));
+
+    providerService.deleteProvider(providerNo);
+
+    return BaseResponseFactory.create("success");
   }
 
   @ApiOrder(7)
@@ -172,11 +192,14 @@ public class AdminProviderController {
   @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-  public BaseResponse<GoodsUpdateRes> updateGoods(
+  public BaseResponse<String> updateGoods(
       @RequestBody @Valid GoodsUpdateReq body,
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-    return BaseResponseFactory.create(providerService.updateGoods(providerNo, goodsNo, body));
+
+    providerService.updateGoods(providerNo, goodsNo, body);
+
+    return BaseResponseFactory.create("success");
   }
 
   @ApiOrder(11)
@@ -187,10 +210,13 @@ public class AdminProviderController {
   @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
-  public BaseResponse<GoodsDeleteRes> deleteGoods(
+  public BaseResponse<String> deleteGoods(
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-    return BaseResponseFactory.create(providerService.deleteGoods(providerNo, goodsNo));
+
+    providerService.deleteGoods(providerNo, goodsNo);
+
+    return BaseResponseFactory.create("success");
   }
 
   @ApiOrder(12)
