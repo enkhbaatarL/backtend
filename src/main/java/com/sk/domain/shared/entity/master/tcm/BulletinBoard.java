@@ -225,8 +225,14 @@ public class BulletinBoard extends BaseEntity {
         }
     }
 
+    // 재게시 처리용
     public void updateCreateDt(LocalDateTime newCreateDt) {
         this.createDt = newCreateDt;
+    }
+
+    // 팝업 1개 유지용
+    public void updateIsPopupUse(boolean isPopupUse) {
+        this.isPopupUse = isPopupUse;
     }
 
     public void softDelete() {

@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tcm;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -104,6 +105,19 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             @Param("target") Integer target,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    List<BulletinBoard> findByBulletinTypeCodeAndIsDeletedFalse(String bulletinTypeCode);
+
+    @Query(value = """
+            SELECT b
+            FROM BulletinBoard b
+            WHERE b.isDeleted = false
+            AND b.isPopupUse = true
+            AND (b.popupPostBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+            AND b.popupPostEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+            )
+            """)
+    Optional<BulletinBoard> findByIsPopupUseTrue();
 
     /*******************************************************************
     * 

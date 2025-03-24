@@ -1,11 +1,7 @@
 package com.sk.domain.admin.dto.request.bbs;
 
-import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 
@@ -24,7 +20,7 @@ public record NoticeUpdateReq(
         @Schema(description = "팝업게시종료일자", example = "20251231")
         String popupPostEndDt,
 
-        @Schema(description = "카테고리", example = "CAT1")
+        @Schema(description = "카테고리", example = "CATEGORY1")
         String bulletinCategorySeparateCode,
 
         @Schema(description = "게시대상(전체:true, 개별:false)", example = "true")

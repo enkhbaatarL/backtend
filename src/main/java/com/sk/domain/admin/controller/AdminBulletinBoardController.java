@@ -3,7 +3,6 @@ package com.sk.domain.admin.controller;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -35,6 +34,7 @@ import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
+import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
@@ -57,13 +57,10 @@ import lombok.extern.slf4j.Slf4j;
  * 공통
  * 1. 
  * 2. 
- * 3. 
- * 4. 
  *
  * 공지사항
- * 1. 팝업용 api 만들어주기 ->
+ * 1. 
  * 2. 
- * 3. 
  *
  * FAQ
  * 1. 
@@ -123,10 +120,11 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 등록", description = "공지사항을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice")
-    public BaseResponse<BulletinBoard> createNotice(
-            @RequestBody @Valid NoticeCreateReq body) {
+    public BaseResponse<String> createNotice(@RequestBody @Valid NoticeCreateReq body) {
 
-        return BaseResponseFactory.create(adminBulletinBoardService.createNotice(body));
+        adminBulletinBoardService.createNotice(body);
+
+        return BaseResponseFactory.create("success");
     }
 
     @ApiOrder(4)
@@ -148,10 +146,13 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 수정", description = "공지사항을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/notices/{noticeNo}")
-    public BaseResponse<BulletinBoard> updateNotice(
+    public BaseResponse<String> updateNotice(
             @RequestBody @Valid NoticeUpdateReq body,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
-        return BaseResponseFactory.create(adminBulletinBoardService.updateNotice(body, noticeNo));
+
+        adminBulletinBoardService.updateNotice(body, noticeNo);
+
+        return BaseResponseFactory.create("success");
     }
 
     @ApiOrder(6)
@@ -161,10 +162,12 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 삭제", description = "공지사항을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/notices/{noticeNo}")
-    public BaseResponse<BulletinBoard> deleteNotice(
+    public BaseResponse<String> deleteNotice(
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
-        return BaseResponseFactory.create(adminBulletinBoardService.deleteNotice(noticeNo));
+        adminBulletinBoardService.deleteNotice(noticeNo);
+
+        return BaseResponseFactory.create("success");
     }
 
     @ApiOrder(7)
@@ -212,6 +215,14 @@ public class AdminBulletinBoardController {
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
     }
 
+    @ApiOrder(9)
+    @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/notices/popup")
+    public BaseResponse<PopupRes> getPopup() {
+        return BaseResponseFactory.create(adminBulletinBoardService.getPopup());
+    }
+
     /*******************************************************************
      * 
      * FAQ
@@ -249,10 +260,12 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 등록", description = "FAQ를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/faq")
-    public BaseResponse<BulletinBoard> createFaq(
+    public BaseResponse<String> createFaq(
             @RequestBody() @Valid FaqCreateReq body) {
 
-        return BaseResponseFactory.create(adminBulletinBoardService.createFaq(body));
+        adminBulletinBoardService.createFaq(body);
+
+        return BaseResponseFactory.create("success");
     }
 
     @ApiOrder(12)
@@ -274,10 +287,13 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 수정", description = "FAQ를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/faq/{faqNo}")
-    public BaseResponse<BulletinBoard> updateFaq(
+    public BaseResponse<String> updateFaq(
             @RequestBody @Valid FaqUpdateReq body,
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
-        return BaseResponseFactory.create(adminBulletinBoardService.updateFaq(body, faqNo));
+
+        adminBulletinBoardService.updateFaq(body, faqNo);
+
+        return BaseResponseFactory.create("success");
     }
 
     @ApiOrder(14)
@@ -287,8 +303,11 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 삭제", description = "FAQ를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/faq/{faqNo}")
-    public BaseResponse<BulletinBoard> deleteFaq(
+    public BaseResponse<String> deleteFaq(
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
-        return BaseResponseFactory.create(adminBulletinBoardService.deleteFaq(faqNo));
+
+        adminBulletinBoardService.deleteFaq(faqNo);
+
+        return BaseResponseFactory.create("success");
     }
 }
