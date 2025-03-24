@@ -7,6 +7,7 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostUpdate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerCompanyProviderMappingListener {
 
-    private final CacheService cacheService;
+    private ApplicationContext applicationContext;
 
     /**
      * CustomerCompanyProviderMapping Disabled 감지하여 Goods 태그 엔티티 캐싱 무효화를 요청한다.
@@ -25,6 +26,8 @@ public class CustomerCompanyProviderMappingListener {
     public void checkDisabled(CustomerCompanyProviderMapping ccpm) {
 
         if (!ccpm.getIsUsed() || ccpm.getIsDeleted()) {
+
+            CacheService cacheService = applicationContext.getBean(CacheService.class);
 
             List<User> users = ccpm.getCustomerCompany().getUsers();
             List<Integer> userNos = users.stream().map(User::getUserNo).toList();
@@ -40,6 +43,8 @@ public class CustomerCompanyProviderMappingListener {
 
     @PostPersist
     public void checkPersisted(CustomerCompanyProviderMapping ccpm) {
+
+        CacheService cacheService = applicationContext.getBean(CacheService.class);
 
         List<User> users = ccpm.getCustomerCompany().getUsers();
         List<Integer> userNos = users.stream().map(User::getUserNo).toList();

@@ -7,6 +7,7 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostUpdate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,12 +17,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerCompanyGoodsMappingListener {
 
-    private final CacheService cacheService;
+    private ApplicationContext applicationContext;
 
     @PostUpdate
     public void checkDisabled(CustomerCompanyGoodsMapping ccgm) {
 
         if (!ccgm.getIsUsed() || ccgm.getIsDeleted()) {
+
+            CacheService cacheService = applicationContext.getBean(CacheService.class);
 
             List<User> users = ccgm.getCustomerCompany().getUsers();
             List<Integer> userNos = users.stream().map(User::getUserNo).toList();
@@ -38,6 +41,8 @@ public class CustomerCompanyGoodsMappingListener {
 
     @PostPersist
     public void checkPersisted(CustomerCompanyGoodsMapping ccgm) {
+
+        CacheService cacheService = applicationContext.getBean(CacheService.class);
 
         List<User> users = ccgm.getCustomerCompany().getUsers();
         List<Integer> userNos = users.stream().map(User::getUserNo).toList();
