@@ -1,5 +1,8 @@
 package com.sk.domain.admin.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -205,6 +208,27 @@ public class AdminBulletinBoardService {
                         AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, String.format("notice no: %d", noticeNo));
                     }
                 }
+            }
+        }
+
+        // 게시중 -> 게시중단 -> 재게시 시 재게시일을 등록일로 수정
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = LocalDate.parse(bulletinBoard.getBulletinValidBeginDt(), formatter);
+        LocalDate endDate = LocalDate.parse(bulletinBoard.getBulletinValidEndDt(), formatter);
+        LocalDate newStartDate = LocalDate.parse(dto.bulletinValidBeginDt(), formatter);
+        LocalDate newEndDate = LocalDate.parse(dto.bulletinValidEndDt(), formatter);
+
+        if (today.isBefore(startDate) || today.isAfter(endDate)) { // 게시중단 인 경우
+            if (today.isAfter(newStartDate) || today.isBefore(newEndDate)) { // 재게시
+                bulletinBoard.updateCreateDt(LocalDateTime.now()); // 등록일 수정
+            }
+        }
+
+        // 팝업 1개만 유지
+        if (bulletinBoard.getIsPopupUse() != dto.isPopupUse()) {
+            if (dto.isPopupUse()) {
+                //
             }
         }
 

@@ -134,12 +134,12 @@ public class BulletinBoard extends BaseEntity {
                 .bulletinTypeCode("NOTICE")
                 .isTopFixed(dto.isTopFixed())
                 .isPopupUse(dto.isPopupUse())
-                .popupPostBeginDt(DateUtil.toYmd(dto.popupPostBeginDt()))
-                .popupPostEndDt(DateUtil.toYmd(dto.popupPostEndDt()))
+                .popupPostBeginDt(dto.popupPostBeginDt())
+                .popupPostEndDt(dto.popupPostEndDt())
                 .bulletinCategorySeparateCode(dto.bulletinCategorySeparateCode())
                 .isWholePost(dto.isWholePost())
-                .bulletinValidBeginDt(DateUtil.toYmd(dto.bulletinValidBeginDt()))
-                .bulletinValidEndDt(DateUtil.toYmd(dto.bulletinValidEndDt()))
+                .bulletinValidBeginDt(dto.bulletinValidBeginDt())
+                .bulletinValidEndDt(dto.bulletinValidEndDt())
                 .bulletinTitleName(dto.bulletinTitleName())
                 .bulletinContent(dto.bulletinContent())
                 .isValidPerioUnrestrict(false) // do not used
@@ -156,32 +156,32 @@ public class BulletinBoard extends BaseEntity {
             this.isPopupUse = dto.isPopupUse();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.popupPostBeginDt())) {
-            this.popupPostBeginDt = DateUtil.toYmd(dto.popupPostBeginDt());
+        if (StringUtils.isNotEmpty(dto.popupPostBeginDt())) {
+            this.popupPostBeginDt = dto.popupPostBeginDt();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.popupPostEndDt())) {
-            this.popupPostEndDt = DateUtil.toYmd(dto.popupPostEndDt());
+        if (StringUtils.isNotEmpty(dto.popupPostEndDt())) {
+            this.popupPostEndDt = dto.popupPostEndDt();
         }
 
         if (StringUtils.isNotEmpty(dto.bulletinCategorySeparateCode())) {
             this.bulletinCategorySeparateCode = dto.bulletinCategorySeparateCode();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.popupPostEndDt())) {
-            this.popupPostEndDt = DateUtil.toYmd(dto.popupPostEndDt());
+        if (StringUtils.isNotEmpty(dto.popupPostEndDt())) {
+            this.popupPostEndDt = dto.popupPostEndDt();
         }
 
         if (ObjectUtils.isNotEmpty(dto.isWholePost())) {
             this.isWholePost = dto.isWholePost();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.bulletinValidBeginDt())) {
-            this.bulletinValidBeginDt = DateUtil.toYmd(dto.bulletinValidBeginDt());
+        if (StringUtils.isNotEmpty(dto.bulletinValidBeginDt())) {
+            this.bulletinValidBeginDt = dto.bulletinValidBeginDt();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.bulletinValidEndDt())) {
-            this.bulletinValidEndDt = DateUtil.toYmd(dto.bulletinValidEndDt());
+        if (StringUtils.isNotEmpty(dto.bulletinValidEndDt())) {
+            this.bulletinValidEndDt = dto.bulletinValidEndDt();
         }
 
         if (StringUtils.isNotEmpty(dto.bulletinTitleName())) {
@@ -223,6 +223,10 @@ public class BulletinBoard extends BaseEntity {
         if (StringUtils.isNotEmpty(dto.bulletinContent())) {
             this.bulletinContent = dto.bulletinContent();
         }
+    }
+
+    public void updateCreateDt(LocalDateTime newCreateDt) {
+        this.createDt = newCreateDt;
     }
 
     public void softDelete() {

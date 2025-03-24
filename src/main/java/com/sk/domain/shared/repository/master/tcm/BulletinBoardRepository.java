@@ -33,26 +33,25 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.bulletinNo,
                 b.isTopFixed,
                 b.isPopupUse,
-                CASE
-                    WHEN b.bulletinCategorySeparateCode = 'CAT1' THEN '카테고리1'
-                    WHEN b.bulletinCategorySeparateCode = 'CAT2' THEN '카테고리2'
-                    WHEN b.bulletinCategorySeparateCode = 'CAT3' THEN '카테고리3'
-                END,
+                b.bulletinCategorySeparateCode,
                 b.bulletinTitleName,
+                cuc.customerCompanyNm,
+                cu.departmentNm,
                 cu.userNm,
                 b.createDt,
                 CASE
                     WHEN b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
                          AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-                    THEN '게시중'
-                    ELSE '게시안함'
+                    THEN 'ACTIVE'
+                    ELSE 'INACTIVE'
                 END,
-                COALESCE(CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm), ''), '전체')
+                COALESCE(CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm), ''), '')
             )
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
             LEFT JOIN m.customerCompany c
             LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
               AND b.bulletinTypeCode = 'NOTICE'
               AND (:category IS NULL OR b.bulletinCategorySeparateCode = :category)
@@ -112,26 +111,28 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     * 
     *******************************************************************/
     @Query(value = """
-            SELECT b
+            SELECT new com.sk.domain.admin.dto.response.bbs.FaqRes(
+                b.bulletinNo,
+                b.bulletinCategorySeparateCode,
+                b.bulletinTitleName,
+                cuc.customerCompanyNm,
+                cu.departmentNm,
+                cu.userNm,
+                b.createDt
+            )
             FROM BulletinBoard b
-            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
-            LEFT JOIN m.customerCompany c
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
-            AND b.bulletinTypeCode = 'NOTICE'
+            AND b.bulletinTypeCode = 'FAQ'
             AND (:category IS NULL OR (b.bulletinCategorySeparateCode = :category))
-            AND (:status IS NULL OR (
-            (:status = 'ACTIVE' AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d') AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
-            OR
-            (:status = 'INACTIVE' AND (b.bulletinValidBeginDt > FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d') OR b.bulletinValidEndDt < FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')))
-            ))
-            AND (:target IS NULL OR (c.customerCompanyNo = :target))
             AND (:keyword IS NULL OR (LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')))
             ORDER BY b.createDt ASC
             """, countQuery = """
             SELECT COUNT(DISTINCT b)
             FROM BulletinBoard b
-            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
-            LEFT JOIN m.customerCompany c
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
             AND b.bulletinTypeCode = 'FAQ'
             AND (:category IS NULL OR (b.bulletinCategorySeparateCode = :category))
