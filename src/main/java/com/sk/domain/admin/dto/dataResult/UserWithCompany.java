@@ -13,6 +13,12 @@ public record UserWithCompany(
         // 사용자 로그인 ID
         String userLoginId,
 
+        // 직위명
+        String positionNm,
+
+        // 직급명
+        String jobGradeNm,
+
         // 직책명
         String onDutyNm,
 
@@ -27,10 +33,12 @@ public record UserWithCompany(
 
     @Builder
     @QueryProjection
-    public UserWithCompany(String userNm, String userLoginId, String onDutyNm,
+    public UserWithCompany(String userNm, String userLoginId, String positionNm, String jobGradeNm, String onDutyNm,
             String departmentNm, CustomerCompany customerCompany, String customerCompanyNm) {
         this.userNm = userNm;
         this.userLoginId = userLoginId;
+        this.positionNm = positionNm;
+        this.jobGradeNm = jobGradeNm;
         this.onDutyNm = onDutyNm;
         this.departmentNm = departmentNm;
         this.customerCompany = customerCompany;

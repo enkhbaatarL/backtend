@@ -1,4 +1,4 @@
-package com.sk.common.utils;
+package com.sk.common.utils.Properties;
 
 import lombok.Getter;
 import lombok.Setter;

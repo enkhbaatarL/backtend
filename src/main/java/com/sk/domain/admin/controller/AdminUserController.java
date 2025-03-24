@@ -37,8 +37,6 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-//TODO: 호영:고객사 등록 시 사용자 목록에 모든 유저가 나와야 하는지 아니면 등록되지 않은 유저만 나와야 하는지
-
 @Tag(name = "02. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
 @RestController

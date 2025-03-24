@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
+/**
+ * Master를 제외한 다른 테넌트 사용하는 MyBatis 설정
+ */
 @Configuration
 @MapperScan(basePackages = "com.sk.domain.shared.mapper", sqlSessionFactoryRef = "dynamicSqlSessionFactory")
 public class DynamicMyBatisConfig {
