@@ -16,6 +16,9 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import jakarta.persistence.EntityManagerFactory;
 
+/**
+ * Master 데이터소스 JPA 설정
+ */
 @Configuration
 @EnableJpaRepositories(basePackages = "com.sk.domain.shared.repository.master", entityManagerFactoryRef = "masterEntityManagerFactory", transactionManagerRef = "masterTransactionManager")
 public class MasterJpaConfig {

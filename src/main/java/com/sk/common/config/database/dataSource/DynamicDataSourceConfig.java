@@ -16,6 +16,9 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Master를 제외한 다른 테넌트 사용하는 데이터소스 설정
+ */
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(DataSourceProperties.class)
