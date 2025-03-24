@@ -1,11 +1,7 @@
 package com.sk.domain.admin.dto.request.bbs;
 
-import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,7 +28,7 @@ public record NoticeCreateReq(
 
                 @NotBlank
                 @Schema(description = "카테고리", example = "CATEGORY1")
-                String bulletinCategorySeparateCode,
+                String bulletinCategorySeparateCd,
 
                 @NotNull
                 @Schema(description = "게시대상(전체:true, 개별:false)", example = "true")
@@ -52,11 +48,11 @@ public record NoticeCreateReq(
                 @NotBlank
                 @Size(min = 1, max = 50)
                 @Schema(description = "제목", example = "게시물 제목")
-                String bulletinTitleName,
+                String bulletinTitleNm,
 
                 @NotBlank
                 @Schema(description = "내용", example = "게시물 내용")
-                String bulletinContent,
+                String bulletinCntt,
 
                 @Schema(description = "파일번호", example = "1")
                 Long fileNo) {

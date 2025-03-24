@@ -33,8 +33,8 @@ public record PopupRes(
 
         return PopupRes.builder()
                 .bulletinNo(bulletinBoard.getBulletinNo())
-                .bulletinTitleName(bulletinBoard.getBulletinTitleName())
-                .bulletinContent(bulletinBoard.getBulletinContent())
+                .bulletinTitleName(bulletinBoard.getBulletinTitleNm())
+                .bulletinContent(bulletinBoard.getBulletinCntt())
                 .fileList(fileList)
                 .build();
     }

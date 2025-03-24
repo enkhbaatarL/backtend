@@ -66,13 +66,13 @@ public class UploadedFile extends BaseEntity {
 
   @Column(name = "file_rel_obj_spt_cd", length = 20)
   @Comment("파일관계객체구분코드")
-  private String fileRelationshipObjectSeparateCode;
+  private String fileRelationshipObjectSeparateCd;
 
   @Builder
   public UploadedFile(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
       Boolean isDeleted, Long fileNo, String originalFileNm, String storageFileNm, String storagePathNm, Long fileSize,
       String fileExtNm, String mimeTypeNm, String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo,
-      String fileRelationshipObjectSeparateCode) {
+      String fileRelationshipObjectSeparateCd) {
     super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
     this.fileNo = fileNo;
     this.originalFileNm = originalFileNm;
@@ -83,11 +83,11 @@ public class UploadedFile extends BaseEntity {
     this.mimeTypeNm = mimeTypeNm;
     this.fileValidEndDt = fileValidEndDt;
     this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
-    this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
+    this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
   }
 
   public static UploadedFile of(String originalFileNm, String storageFileNm, String storagePathNm, long fileSize, String fileExtNm, String mimeTypeNm,
-      String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+      String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCd) {
     return UploadedFile.builder()
         .originalFileNm(originalFileNm)
         .storageFileNm(storageFileNm)
@@ -97,12 +97,12 @@ public class UploadedFile extends BaseEntity {
         .mimeTypeNm(mimeTypeNm)
         .fileValidEndDt(fileValidEndDt)
         .fileRelationshipObjectDistinguishNo(fileRelationshipObjectDistinguishNo)
-        .fileRelationshipObjectSeparateCode(fileRelationshipObjectSeparateCode)
+        .fileRelationshipObjectSeparateCd(fileRelationshipObjectSeparateCd)
         .build();
   }
 
-  public void update(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+  public void update(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCd) {
     this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
-    this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
+    this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
   }
 }
