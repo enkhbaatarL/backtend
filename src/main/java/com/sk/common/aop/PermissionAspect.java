@@ -47,7 +47,6 @@ public class PermissionAspect {
             return; // todo mi 서비스의 경우 타사서비스접속가능여부(otcmp_svc_accs_psbl_yn)를 확인해야할 수 있음
         }
 
-        // todo 캐싱 여부
         PermissionRes goodsPermissions = userService.getUserGoodsPermissions(authService.getUserNo());
 
         // 2. 역할 검증

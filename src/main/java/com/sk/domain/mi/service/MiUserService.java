@@ -28,7 +28,11 @@ public class MiUserService {
      * @param userNo 사용자 번호
      * @return List<GoodsAuthorityRes>
      */
-    @Cacheable(cacheNames = CacheType.PERMISSIONS_CONSTANT, key = "#userNo")
+    @Cacheable(
+        cacheNames = CacheType.PERMISSIONS_CONSTANT,
+        key = "#userNo",
+        unless = "#result.companies == null || #result.companies.empty"
+    )
     public PermissionRes getUserGoodsPermissions(Integer userNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findUserGoodsPermissions(userNo);
 

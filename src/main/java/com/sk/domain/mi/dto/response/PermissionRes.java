@@ -12,6 +12,7 @@ import lombok.Builder;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -185,7 +186,11 @@ public record PermissionRes(
             .sorted(Comparator.comparing(CompanyAuthRes::companyNm))
             .collect(Collectors.toList());
 
-        return new PermissionRes(goodsAuthManageSupportCd.get().getCode(), goodsAuthManageSupportCd.get().getDescription(), companyAuthRes);
+        return new PermissionRes(
+            Optional.ofNullable(goodsAuthManageSupportCd.get()).map(GoodsAuthManageSupportCd::getCode).orElse(null),
+            Optional.ofNullable(goodsAuthManageSupportCd.get()).map(GoodsAuthManageSupportCd::getDescription).orElse(null),
+            companyAuthRes
+        );
     }
 
     @JsonIgnore

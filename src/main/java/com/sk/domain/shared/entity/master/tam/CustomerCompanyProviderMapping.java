@@ -6,6 +6,7 @@ import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.compositeKey.tam.CustomerCompanyProviderMappingId;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
+import com.sk.domain.shared.listener.CustomerCompanyProviderMappingListener;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 })
 @Comment("TAM_고객회사프로바이더매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(CustomerCompanyProviderMappingListener.class)
 public class CustomerCompanyProviderMapping extends BaseEntity {
 
     @EmbeddedId
