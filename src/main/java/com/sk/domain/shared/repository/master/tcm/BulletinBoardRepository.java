@@ -126,7 +126,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             ))
             AND (:target IS NULL OR (c.customerCompanyNo = :target))
             AND (:keyword IS NULL OR (LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')))
-            ORDER BY b.createDt DESC
+            ORDER BY b.createDt ASC
             """, countQuery = """
             SELECT COUNT(DISTINCT b)
             FROM BulletinBoard b
