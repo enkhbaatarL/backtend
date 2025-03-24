@@ -6,6 +6,7 @@ import com.sk.domain.shared.service.CacheService;
 import jakarta.persistence.PostUpdate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CustomerCompanyListener {
 
-    private final CacheService cacheService;
+    private ApplicationContext applicationContext;
 
     /**
      * CustomerCompany Disabled 감지하여 CustomerCompany 태그 엔티티 캐싱 무효화를 요청한다.
@@ -22,6 +23,7 @@ public class CustomerCompanyListener {
     public void checkDisabled(CustomerCompany customerCompany) {
 
         if (!customerCompany.getIsUsed() || customerCompany.getIsDeleted()) {
+            CacheService cacheService = applicationContext.getBean(CacheService.class);
             log.info("The companyNo({}) has been disabled. Subsequently, the related user cache will be invalidated", customerCompany.getCustomerCompanyNo());
             cacheService.invalidateUsersForTagEntity(CacheType.TAG_COMPANY, customerCompany.getCustomerCompanyNo());
         }
