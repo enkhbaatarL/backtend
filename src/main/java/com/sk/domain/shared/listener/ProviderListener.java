@@ -15,11 +15,11 @@ import org.springframework.stereotype.Component;
 @NoArgsConstructor
 public class ProviderListener {
 
-    private ApplicationContext applicationContext;
+    private static ApplicationContext applicationContext;
 
     @Autowired
     public void setApplicationContext(ApplicationContext applicationContext) {
-        CustomerCompanyListener.applicationContext = applicationContext;
+        ProviderListener.applicationContext = applicationContext;
     }
 
     /**
