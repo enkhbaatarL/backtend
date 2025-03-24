@@ -2,11 +2,12 @@ package com.sk.domain.admin.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.sk.domain.shared.dto.AuditInfo;
+import com.sk.domain.shared.entity.compositeKey.tam.AdminPermissionId;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 
@@ -15,81 +16,70 @@ import lombok.Builder;
 
 public record AdminRes(
 
-                @Schema(description = "사용자번호", example = "")
-                Integer userNo,
+        @Schema(description = "사용자번호", example = "1") Integer userNo,
 
-                @Schema(description = "사용자명", example = "")
-                String userNm,
+        @Schema(description = "사용자명", example = "홍길동") String userNm,
 
-                @Schema(description = "사용자로그인ID", example = "")
-                String userLoginId,
+        @Schema(description = "사용자로그인ID", example = "hong@sk.com") String userLoginId,
 
-                @Schema(description = "사용자역할코드", example = "")
-                UserRoleCd userRoleCd,
+        @Schema(description = "사용자역할코드", example = "ADMIN") UserRoleCd userRoleCd,
 
-                @Schema(description = "직책명", example = "")
-                String onDutyNm,
+        @Schema(description = "직책명", example = "사장") String onDutyNm,
 
-                @Schema(description = "부서명", example = "")
-                String departmentNm,
+        @Schema(description = "부서명", example = "총무팀") String departmentNm,
 
-                @Schema(description = "타사서비스접근가능여부", example = "")
-                Boolean isOtherServiceAccessPossible,
+        @Schema(description = "타사서비스접근가능여부", example = "Y") Boolean isOtherServiceAccessPossible,
 
-                @Schema(description = "개인정보동의여부", example = "")
-                Boolean isIndividualInfoAgreement,
+        @Schema(description = "개인정보동의여부", example = "Y") Boolean isIndividualInfoAgreement,
 
-                @Schema(description = "개인정보동의일시", example = "")
-                LocalDateTime individualInfoAgreementDtm,
+        @Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00") LocalDateTime individualInfoAgreementDtm,
 
-                @Schema(description = "고객사번호", example = "")
-                CustomerCompany customerCompanyNo,
+        @Schema(description = "고객사번호", example = "1") Integer customerCompanyNo,
 
-                @JsonUnwrapped
-                @Schema(description = "감사 정보")
-                AuditInfo auditInfo,
+        @JsonUnwrapped @Schema(description = "감사 정보") AuditInfo auditInfo,
 
-                @Schema(description = "관리자 허용 IP 주소 목록", example = "")
-                List<AdminPermission> accessAllowedIpAddressList
+        @Schema(description = "관리자 허용 IP 주소 목록", example = "[192.168.1.1, 192.168.1.2]") List<String> accessAllowedIpAddressList
 
 ) {
 
-        @Builder
-        public AdminRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
-                        String onDutyNm,
-                        String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
-                        LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompanyNo, AuditInfo auditInfo,
-                        List<AdminPermission> accessAllowedIpAddressList) {
-                this.userNo = userNo;
-                this.userNm = userNm;
-                this.userLoginId = userLoginId;
-                this.userRoleCd = userRoleCd;
-                this.onDutyNm = onDutyNm;
-                this.departmentNm = departmentNm;
-                this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
-                this.isIndividualInfoAgreement = isIndividualInfoAgreement;
-                this.individualInfoAgreementDtm = individualInfoAgreementDtm;
-                this.customerCompanyNo = customerCompanyNo;
-                this.auditInfo = auditInfo;
-                this.accessAllowedIpAddressList = accessAllowedIpAddressList;
-        }
+    @Builder
+    public AdminRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
+            String onDutyNm,
+            String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
+            LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, AuditInfo auditInfo,
+            List<String> accessAllowedIpAddressList) {
+        this.userNo = userNo;
+        this.userNm = userNm;
+        this.userLoginId = userLoginId;
+        this.userRoleCd = userRoleCd;
+        this.onDutyNm = onDutyNm;
+        this.departmentNm = departmentNm;
+        this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
+        this.isIndividualInfoAgreement = isIndividualInfoAgreement;
+        this.individualInfoAgreementDtm = individualInfoAgreementDtm;
+        this.customerCompanyNo = customerCompanyNo;
+        this.auditInfo = auditInfo;
+        this.accessAllowedIpAddressList = accessAllowedIpAddressList;
+    }
 
-        public static AdminRes of(User user, List<AdminPermission> accessAllowedIpAddressList) {
-                return AdminRes.builder()
-                                .userNo(user.getUserNo())
-                                .userNm(user.getUserNm())
-                                .userLoginId(user.getUserLoginId())
-                                .userRoleCd(user.getUserRoleCd())
-                                .onDutyNm(user.getOnDutyNm())
-                                .departmentNm(user.getDepartmentNm())
-                                .isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
-                                .isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
-                                .individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
-                                .customerCompanyNo(user.getCustomerCompany())
-                                .auditInfo(AuditInfo.of(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
-                                                user.getModifyDt()))
-                                .accessAllowedIpAddressList(accessAllowedIpAddressList)
-                                .build();
-        }
-
+    public static AdminRes of(User user, List<AdminPermission> accessAllowedIpAddressList) {
+        return AdminRes.builder()
+                .userNo(user.getUserNo())
+                .userNm(user.getUserNm())
+                .userLoginId(user.getUserLoginId())
+                .userRoleCd(user.getUserRoleCd())
+                .onDutyNm(user.getOnDutyNm())
+                .departmentNm(user.getDepartmentNm())
+                .isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
+                .isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
+                .individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
+                .customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
+                .auditInfo(AuditInfo.of(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
+                        user.getModifyDt()))
+                .accessAllowedIpAddressList(accessAllowedIpAddressList.stream()
+                        .map(AdminPermission::getId)
+                        .map(AdminPermissionId::getIpAddress)
+                        .collect(Collectors.toList()))
+                .build();
+    }
 }
