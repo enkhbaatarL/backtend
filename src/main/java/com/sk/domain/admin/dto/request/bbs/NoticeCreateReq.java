@@ -23,19 +23,15 @@ public record NoticeCreateReq(
                 Boolean isPopupUse,
 
                 @NotNull
-                @JsonFormat(pattern = "yyyyMMdd")
-                @DateTimeFormat(pattern = "yyyyMMdd")
                 @Schema(description = "팝업게시시작일자", example = "20250101")
-                LocalDate popupPostBeginDt,
+                String popupPostBeginDt,
 
                 @NotNull
-                @JsonFormat(pattern = "yyyyMMdd")
-                @DateTimeFormat(pattern = "yyyyMMdd")
                 @Schema(description = "팝업게시종료일자", example = "20251231")
-                LocalDate popupPostEndDt,
+                String popupPostEndDt,
 
                 @NotBlank
-                @Schema(description = "카테고리", example = "CAT1")
+                @Schema(description = "카테고리", example = "CATEGORY1")
                 String bulletinCategorySeparateCode,
 
                 @NotNull
@@ -46,16 +42,12 @@ public record NoticeCreateReq(
                 List<Integer> target,
 
                 @NotNull
-                @JsonFormat(pattern = "yyyyMMdd")
-                @DateTimeFormat(pattern = "yyyyMMdd")
                 @Schema(description = "게시글유효시작일자", example = "20250101")
-                LocalDate bulletinValidBeginDt,
+                String bulletinValidBeginDt,
 
                 @NotNull
-                @JsonFormat(pattern = "yyyyMMdd")
-                @DateTimeFormat(pattern = "yyyyMMdd")
                 @Schema(description = "게시글유효종료일자", example = "20251231")
-                LocalDate bulletinValidEndDt,
+                String bulletinValidEndDt,
 
                 @NotBlank
                 @Size(min = 1, max = 50)

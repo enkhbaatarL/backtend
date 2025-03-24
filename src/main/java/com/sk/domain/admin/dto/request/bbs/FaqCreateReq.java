@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 public record FaqCreateReq(
 
         @NotBlank
-        @Schema(description = "카테고리", example = "CAT1")
+        @Schema(description = "카테고리", example = "CATEGORY1")
         String bulletinCategorySeparateCode,
 
         @NotBlank
