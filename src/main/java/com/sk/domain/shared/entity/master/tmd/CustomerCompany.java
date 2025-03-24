@@ -8,7 +8,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
@@ -67,7 +66,6 @@ public class CustomerCompany extends BaseEntity {
     private Boolean isUsed;
 
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
-    @JsonManagedReference
     private List<User> users = new ArrayList<>();
 
     @Builder

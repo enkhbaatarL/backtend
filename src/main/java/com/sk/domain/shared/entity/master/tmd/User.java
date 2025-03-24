@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.dataResult.UserWithCompany;
 import com.sk.domain.admin.dto.request.AdminReq;
@@ -94,7 +93,6 @@ public class User extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no", nullable = false)
     @Comment("고객회사번호")
-    @JsonBackReference
     private CustomerCompany customerCompany;
 
     @Builder
