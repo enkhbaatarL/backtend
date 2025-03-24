@@ -18,11 +18,11 @@ import java.util.List;
 @NoArgsConstructor
 public class CustomerCompanyProviderMappingListener {
 
-    private ApplicationContext applicationContext;
+    private static ApplicationContext applicationContext;
 
     @Autowired
     public void setApplicationContext(ApplicationContext applicationContext) {
-        CustomerCompanyListener.applicationContext = applicationContext;
+        CustomerCompanyProviderMappingListener.applicationContext = applicationContext;
     }
 
     /**

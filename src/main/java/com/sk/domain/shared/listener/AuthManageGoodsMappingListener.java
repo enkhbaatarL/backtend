@@ -19,11 +19,11 @@ import java.util.Optional;
 @NoArgsConstructor
 public class AuthManageGoodsMappingListener {
 
-    private ApplicationContext applicationContext;
+    private static ApplicationContext applicationContext;
 
     @Autowired
     public void setApplicationContext(ApplicationContext applicationContext) {
-        CustomerCompanyListener.applicationContext = applicationContext;
+        AuthManageGoodsMappingListener.applicationContext = applicationContext;
     }
 
     @PostUpdate
