@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
+import com.sk.domain.shared.enums.ActivationStatus;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -35,9 +37,17 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<CompanyRes> findCompaniesByConditions(int page, int size, String companyNm) {
+    public Page<CompanyRes> findCompaniesByConditions(int page, int size, String companyNm, ActivationStatus activationSts) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
+
+        // User 테이블 별칭
+        QUser creator = new QUser("creator");
+        QUser modifier = new QUser("modifier");
+
+        // Company 테이블 별칭
+        QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany");
+        QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
 
         List<CompanyRes> content = queryFactory
             .select(new QCompanyRes(
@@ -50,19 +60,29 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 customerCompany.createUserId,
                 customerCompany.createDt,
                 customerCompany.modifyUserId,
-                customerCompany.modifyDt
+                customerCompany.modifyDt,
+                creator.userNm,
+                creator.departmentNm,
+                creatorCompany.customerCompanyNm,
+                modifier.userNm,
+                modifier.departmentNm,
+                modifierCompany.customerCompanyNm
             ))
             .from(customerCompany)
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId))
+            .leftJoin(creator.customerCompany, creatorCompany)
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId))
+            .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
-            .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm))
+            .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm), equalIsUsed(activationSts))
             .orderBy(customerCompany.customerCompanyNm.asc())
             .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
                 .select(customerCompany.count())
                 .from(customerCompany)
-                .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm));
+                .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm), equalIsUsed(activationSts));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -136,6 +156,10 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
 
     private BooleanExpression containsCompanyName(String companyNm) {
         return StringUtils.isNotEmpty(companyNm) ? customerCompany.customerCompanyNm.contains(companyNm) : null;
+    }
+
+    private BooleanExpression equalIsUsed(ActivationStatus activationSts) {
+        return ObjectUtils.isNotEmpty(activationSts) ? customerCompany.isUsed.eq(activationSts.isActive()) : null;
     }
 
     @Override

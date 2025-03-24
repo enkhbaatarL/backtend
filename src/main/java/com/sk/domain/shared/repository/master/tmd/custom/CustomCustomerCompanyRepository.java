@@ -4,13 +4,14 @@ import java.util.List;
 
 import com.sk.domain.admin.dto.response.company.CompanyRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
+import com.sk.domain.shared.enums.ActivationStatus;
 import org.springframework.data.domain.Page;
 
 import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 
 public interface CustomCustomerCompanyRepository {
 
-    Page<CompanyRes> findCompaniesByConditions(int page, int size, String companyNm);
+    Page<CompanyRes> findCompaniesByConditions(int page, int size, String companyNm, ActivationStatus activationSts);
 
     LatestUpdatedRes findLatestUpdated(Integer companyNo);
 

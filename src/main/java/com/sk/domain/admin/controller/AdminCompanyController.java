@@ -5,14 +5,14 @@ import com.sk.common.annotation.RequirePermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.company.CompanyReq;
-import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
+import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
+import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.service.AdminCompanyService;
-import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.ActivationStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -28,7 +28,8 @@ import java.util.List;
 
 /**
  * todo...
- *
+ *  1. auto compelete ? fe 처리 가능? -> 처리가능
+ *  2.
  */
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
 @Slf4j
@@ -51,7 +52,8 @@ public class AdminCompanyController {
     @Parameters({
         @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
         @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
-        @Parameter(name = "companyNm", description = "검색할 고객사 명 (like search)")
+        @Parameter(name = "companyNm", description = "검색할 고객사 명 (like search)"),
+        @Parameter(name = "activationSts", description = "검색할 활성화 옵션 (null: 전체, ACTIVE: 활성화, INACTIVE: 비활성화)")
     })
     @Operation(summary = "고객사 목록 조회 API (with pagination)", description = "고객사 목록을 조회합니다. <br>페이지네이션 처리되어 'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -59,16 +61,16 @@ public class AdminCompanyController {
     public BaseResponse<PaginationRes<CompanyRes>> getCompanies(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-        @RequestParam(value = "companyNm", required = false) String companyNm
+        @RequestParam(value = "companyNm", required = false) String companyNm,
+        @RequestParam(value = "activationSts", required = false) ActivationStatus activationSts
     ) {
-        return BaseResponseFactory.create(adminCompanyService.getCompanies(page, size, companyNm));
+        return BaseResponseFactory.create(adminCompanyService.getCompanies(page, size, companyNm, activationSts));
     }
 
     @ApiOrder(3)
     @Operation(summary = "고객사 등록 API", description = "고객사를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/company")
-    @RequirePermission(requireAdmin = true)
     public BaseResponse<CompanyRes> postCompany(@RequestBody @Valid CompanyReq.Insert companyReq) {
         return BaseResponseFactory.create(adminCompanyService.postCompany(companyReq));
     }
@@ -79,7 +81,7 @@ public class AdminCompanyController {
     })
     @Operation(summary = "고객사 상세 조회 API", description = "고객사를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/companies/{companyNo}")
+    @GetMapping("/companies/{companyNo}")
     public BaseResponse<CompanyRes> getCompanyDetail(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
     ) {

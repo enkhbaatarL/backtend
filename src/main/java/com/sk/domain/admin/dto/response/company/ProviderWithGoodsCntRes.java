@@ -26,9 +26,10 @@ public record ProviderWithGoodsCntRes(
 ) {
 
     @QueryProjection
-    public ProviderWithGoodsCntRes(Integer providerNo, String providerNm, int numberOfGoods, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+    public ProviderWithGoodsCntRes(Integer providerNo, String providerNm, int numberOfGoods, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
+                                   String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
         this(providerNo, providerNm, numberOfGoods,
-            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
+            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
     @Builder

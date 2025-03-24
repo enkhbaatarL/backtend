@@ -8,6 +8,8 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
 import com.sk.domain.admin.dto.response.company.QProviderWithGoodsCntRes;
+import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
+import com.sk.domain.shared.entity.master.tmd.QUser;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -16,6 +18,7 @@ import java.util.List;
 
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
+import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 @RequiredArgsConstructor
@@ -26,6 +29,15 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
 
     @Override
     public List<ProviderWithGoodsCntRes> findCompanyMappingsWithGoodsCntByCompanyNo(Integer companyNo) {
+
+        // User 테이블 별칭
+        QUser creator = new QUser("creator");
+        QUser modifier = new QUser("modifier");
+
+        // Company 테이블 별칭
+        QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany");
+        QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
+
         return queryFactory
             .select(new QProviderWithGoodsCntRes(
                 customerCompanyProviderMapping.provider.providerNo,
@@ -38,9 +50,19 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
                 customerCompanyProviderMapping.createUserId,
                 customerCompanyProviderMapping.createDt,
                 customerCompanyProviderMapping.modifyUserId,
-                customerCompanyProviderMapping.modifyDt
+                customerCompanyProviderMapping.modifyDt,
+                creator.userNm,
+                creator.departmentNm,
+                creatorCompany.customerCompanyNm,
+                modifier.userNm,
+                modifier.departmentNm,
+                modifierCompany.customerCompanyNm
             ))
             .from(customerCompanyProviderMapping)
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId))
+            .leftJoin(creator.customerCompany, creatorCompany)
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId))
+            .leftJoin(modifier.customerCompany, modifierCompany)
             .where(customerCompanyProviderMapping.isDeleted.eq(false),
                 customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo))
             .orderBy(customerCompanyProviderMapping.provider.providerNm.asc())

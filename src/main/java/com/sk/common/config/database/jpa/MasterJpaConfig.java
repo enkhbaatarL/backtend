@@ -1,7 +1,7 @@
 package com.sk.common.config.database.jpa;
 
-import javax.sql.DataSource;
-
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
@@ -12,9 +12,7 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
-
-import jakarta.persistence.EntityManagerFactory;
+import javax.sql.DataSource;
 
 /**
  * Master 데이터소스 JPA 설정

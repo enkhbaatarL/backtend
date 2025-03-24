@@ -40,7 +40,7 @@ public record GoodsWithDataCntRes(
     @QueryProjection
     public GoodsWithDataCntRes(Integer goodsNo, String goodsNm, String goodsExpn, Integer numberOfData, boolean isUsed, GoodsAuthManageSupportCd goodsAuthManageSupportCd, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
         this(goodsNo, goodsNm, goodsExpn, numberOfData, isUsed, goodsAuthManageSupportCd.getCode(), goodsAuthManageSupportCd.getDescription(),
-            new AuditInfo(createUserId, createDt, modifyUserId, modifyDt));
+            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
     }
 
     @Builder
