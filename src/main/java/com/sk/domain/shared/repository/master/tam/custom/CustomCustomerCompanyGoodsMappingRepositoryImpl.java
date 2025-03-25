@@ -27,33 +27,32 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
         Pageable pageable = PageRequest.of(page - 1, size);
 
         List<GoodsWithDataCntRes> content = queryFactory
-            .select(new QGoodsWithDataCntRes(
-                customerCompanyGoodsMapping.goods.goodsNo,
-                customerCompanyGoodsMapping.goods.goodsNm,
-                customerCompanyGoodsMapping.goods.goodsExpn,
-                JPAExpressions.select(goodsDataSource.count().intValue())
-                    .from(goodsDataSource)
-                    .where(goodsDataSource.isDeleted.eq(false)
-                        .and(goodsDataSource.goods.goodsNo.eq(customerCompanyGoodsMapping.goods.goodsNo))),
-                customerCompanyGoodsMapping.isUsed,
-                customerCompanyGoodsMapping.id.goodsAuthManageSupportCd,
-                customerCompanyGoodsMapping.createUserId,
-                customerCompanyGoodsMapping.createDt,
-                customerCompanyGoodsMapping.modifyUserId,
-                customerCompanyGoodsMapping.modifyDt
-            ))
-            .from(customerCompanyGoodsMapping)
-            .offset(pageable.getOffset())
-            .limit(pageable.getPageSize())
-            .where(customerCompanyGoodsMapping.isDeleted.eq(false),
-                customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
-            .orderBy(customerCompanyGoodsMapping.goods.goodsNm.asc())
-            .fetch();
+                .select(new QGoodsWithDataCntRes(
+                        customerCompanyGoodsMapping.goods.goodsNo,
+                        customerCompanyGoodsMapping.goods.goodsNm,
+                        customerCompanyGoodsMapping.goods.goodsExpn,
+                        JPAExpressions.select(goodsDataSource.count().intValue())
+                                .from(goodsDataSource)
+                                .where(goodsDataSource.isDeleted.eq(false)
+                                        .and(goodsDataSource.goods.goodsNo.eq(customerCompanyGoodsMapping.goods.goodsNo))),
+                        customerCompanyGoodsMapping.isUsed,
+                        customerCompanyGoodsMapping.id.goodsAuthManageSupportCd,
+                        customerCompanyGoodsMapping.createUserId,
+                        customerCompanyGoodsMapping.createDt,
+                        customerCompanyGoodsMapping.modifyUserId,
+                        customerCompanyGoodsMapping.modifyDt))
+                .from(customerCompanyGoodsMapping)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .where(customerCompanyGoodsMapping.isDeleted.eq(false),
+                        customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
+                .orderBy(customerCompanyGoodsMapping.goods.goodsNm.asc())
+                .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
-            .select(customerCompanyGoodsMapping.count())
-            .where(customerCompanyGoodsMapping.isDeleted.eq(false),
-                customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo));
+                .select(customerCompanyGoodsMapping.count())
+                .where(customerCompanyGoodsMapping.isDeleted.eq(false),
+                        customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
 

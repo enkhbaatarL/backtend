@@ -9,16 +9,16 @@ public record FaqCreateReq(
 
         @NotBlank
         @Schema(description = "카테고리", example = "CATEGORY1")
-        String bulletinCategorySeparateCode,
+        String bulletinCategorySeparateCd,
 
         @NotBlank
         @Size(min = 1, max = 200)
         @Schema(description = "제목", example = "게시물 제목")
-        String bulletinTitleName,
+        String bulletinTitleNm,
 
         @NotBlank
         @Schema(description = "내용", example = "게시물 내용")
-        String bulletinContent) {
+        String bulletinCntt) {
 
 }
 // @formatter:on

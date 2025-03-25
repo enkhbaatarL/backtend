@@ -21,7 +21,7 @@ public record NoticeUpdateReq(
         String popupPostEndDt,
 
         @Schema(description = "카테고리", example = "CATEGORY1")
-        String bulletinCategorySeparateCode,
+        String bulletinCategorySeparateCd,
 
         @Schema(description = "게시대상(전체:true, 개별:false)", example = "true")
         Boolean isWholePost,
@@ -37,10 +37,10 @@ public record NoticeUpdateReq(
 
         @Size(min = 1, max = 50)
         @Schema(description = "제목", example = "게시물 제목")
-        String bulletinTitleName,
+        String bulletinTitleNm,
 
         @Schema(description = "내용", example = "게시물 내용")
-        String bulletinContent,
+        String bulletinCntt,
 
         @Schema(description = "파일번호", example = "1")
         Long fileNo) {

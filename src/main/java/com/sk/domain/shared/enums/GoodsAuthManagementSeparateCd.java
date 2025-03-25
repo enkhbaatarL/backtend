@@ -5,10 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum GoodsAuthManageSupportCd {
+public enum GoodsAuthManagementSeparateCd {
 
-    COMPANY("COMPANY", "회사"),
-    INDIVIDUAL("INDIVIDUAL", "개인");
+    COMPANY("COMPANY", "회사"), INDIVIDUAL("INDIVIDUAL", "개인");
 
     private final String code;
     private final String description;

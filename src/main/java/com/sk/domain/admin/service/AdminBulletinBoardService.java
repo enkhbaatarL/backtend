@@ -241,7 +241,6 @@ public class AdminBulletinBoardService {
         bulletinBoard.update(dto);
 
         return bulletinBoard;
-
     }
 
     /**
@@ -258,6 +257,8 @@ public class AdminBulletinBoardService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
         bulletinBoardCustomerCompanyMappingRepository.deleteByBulletinNo(bulletinBoard.getBulletinNo());
+
+        adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), "BBS");
 
         bulletinBoard.softDelete();
 

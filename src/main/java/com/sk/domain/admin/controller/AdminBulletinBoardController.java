@@ -54,17 +54,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * todo
  * 
- * 공통
  * 1. 
  * 2. 
  *
- * 공지사항
- * 1. 
- * 2. 
- *
- * FAQ
- * 1. 
- * 2. 
  */
 
 @Tag(name = "04. 게시판 관리 API", description = "게시판 관리 API 입니다.")

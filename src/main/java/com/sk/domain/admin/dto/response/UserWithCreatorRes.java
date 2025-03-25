@@ -11,58 +11,58 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 public record UserWithCreatorRes(
-		@Schema(description = "사용자번호", example = "")
+		@Schema(description = "사용자번호", example = "1")
 		Integer userNo,
 
-		@Schema(description = "사용자명", example = "")
+		@Schema(description = "사용자명", example = "홍길동")
 		String userNm,
 
-		@Schema(description = "사용자로그인ID", example = "")
+		@Schema(description = "사용자로그인ID", example = "hong@sk.com")
 		String userLoginId,
 
-		@Schema(description = "사용자역할코드", example = "")
+		@Schema(description = "사용자역할코드", example = "ADMIN")
 		UserRoleCd userRoleCd,
 
-		@Schema(description = "직위명", example = "")
+		@Schema(description = "직위명", example = "사장")
 		String positionNm,
 
-		@Schema(description = "직급명", example = "")
+		@Schema(description = "직급명", example = "과장")
 		String jobGradeNm,
 
-		@Schema(description = "직책명", example = "")
+		@Schema(description = "직책명", example = "총무")
 		String onDutyNm,
 
-		@Schema(description = "부서명", example = "")
+		@Schema(description = "부서명", example = "총무팀")
 		String departmentNm,
 
-		@Schema(description = "타사서비스접근가능여부", example = "")
+		@Schema(description = "타사서비스접근가능여부", example = "Y")
 		Boolean isOtherServiceAccessPossible,
 
-		@Schema(description = "개인정보동의여부", example = "")
+		@Schema(description = "개인정보동의여부", example = "Y")
 		Boolean isIndividualInfoAgreement,
 
-		@Schema(description = "개인정보동의일시", example = "")
+		@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00")
 		LocalDateTime individualInfoAgreementDtm,
 
-		@Schema(description = "고객회사번호", example = "")
+		@Schema(description = "고객회사번호", example = "1")
 		Integer customerCompanyNo,
 
-		@Schema(description = "고객회사명", example = "")
+		@Schema(description = "고객회사명", example = "SK하이닉스")
 		String customerCompanyNm,
 
-		@Schema(description = "등록자 이름", example = "")
+		@Schema(description = "등록자 이름", example = "홍길동")
 		String creatorUserNm,
 
-		@Schema(description = "등록자 부서명", example = "")
+		@Schema(description = "등록자 부서명", example = "총무팀")
 		String creatorDepartmentNm,
 
-		@Schema(description = "등록자 직책명", example = "")
+		@Schema(description = "등록자 직책명", example = "총무")
 		String creatorOnDutyNm,
 
-		@Schema(description = "등록자 회사번호", example = "")
+		@Schema(description = "등록자 회사번호", example = "1")
 		Integer creatorCompanyNo,
 
-		@Schema(description = "등록자 회사명", example = "")
+		@Schema(description = "등록자 회사명", example = "SK하이닉스")
 		String creatorCompanyNm,
 
 		@JsonUnwrapped
