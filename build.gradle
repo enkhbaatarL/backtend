@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.2'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.hibernate.orm' version '6.6.5.Final'
 }
 
 group = 'com.sk'
@@ -16,6 +17,12 @@ java {
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
+    }
+}
+
+hibernate {
+    enhancement  {
+        enableLazyInitialization
     }
 }
 
@@ -103,7 +110,7 @@ dependencies {
     // excel
     implementation 'org.apache.poi:poi:5.2.4'
     implementation 'org.apache.poi:poi-ooxml:5.2.4'
-    
+
     // MyBatis
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
 

@@ -175,8 +175,7 @@ public class AdminCompanyService {
      */
     public CompanyProviderMapDetailRes getProviderDetail(Integer companyNo, Integer providerNo) {
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator
-                .ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
+        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
 
         return CompanyProviderMapDetailRes.of(ccp);
