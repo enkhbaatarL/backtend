@@ -47,7 +47,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", foreignKey = @ForeignKey(name = "tmd_gdscrtvlsetl_fk02"), nullable = false)
     @Comment("상품데이터소스번호")
-    private GoodsData goodsDataSource;
+    private GoodsDataSourceDetail goodsDataSourceDetail;
 
     @Column(name = "noti_crtvl_spt_cd", nullable = false, length = 10)
     @Comment("알림임계치구분코드")
@@ -64,24 +64,24 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @Builder
     public GoodsCriticalValueSetting(
             LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, User user, GoodsData goodsDataSource,
+            Boolean isDeleted, User user, GoodsDataSourceDetail goodsDataSourceDetail,
             String notificationCriticalValueSeparateCd,
             BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.user = user;
-        this.goodsDataSource = goodsDataSource;
+        this.goodsDataSourceDetail = goodsDataSourceDetail;
         this.notificationCriticalValueSeparateCd = notificationCriticalValueSeparateCd;
         this.criticalValueSettingVol = criticalValueSettingVol;
         this.criticalValueSettingUnitNm = criticalValueSettingUnitNm;
     }
 
     public static GoodsCriticalValueSetting of(
-            User user, GoodsData goodsDataSource,
+            User user, GoodsDataSourceDetail goodsDataSourceDetail,
             String notificationCriticalValueSeparateCd,
             BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
         return GoodsCriticalValueSetting.builder()
                 .user(user)
-                .goodsDataSource(goodsDataSource)
+                .goodsDataSourceDetail(goodsDataSourceDetail)
                 .notificationCriticalValueSeparateCd(notificationCriticalValueSeparateCd)
                 .criticalValueSettingVol(criticalValueSettingVol)
                 .criticalValueSettingUnitNm(criticalValueSettingUnitNm)

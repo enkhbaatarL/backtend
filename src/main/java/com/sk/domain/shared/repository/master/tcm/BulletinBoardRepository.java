@@ -16,17 +16,17 @@ import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, Integer> {
 
     /*******************************************************************
-    * 
+    *
     * 공통
-    * 
+    *
     *******************************************************************/
 
-    Optional<BulletinBoard> findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(Integer bulletinNo, String bulletinTypeCode);
+    Optional<BulletinBoard> findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(Integer bulletinNo, String bulletinTypeCode);
 
     /*******************************************************************
-    * 
+    *
     * 공지사항
-    * 
+    *
     *******************************************************************/
 
     @Query(value = """
@@ -34,8 +34,8 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.bulletinNo,
                 b.isTopFixed,
                 b.isPopupUse,
-                b.bulletinCategorySeparateCode,
-                b.bulletinTitleName,
+                b.bulletinCategorySeparateCd,
+                b.bulletinTitleNm,
                 cuc.customerCompanyNm,
                 cu.departmentNm,
                 cu.userNm,
@@ -54,8 +54,8 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             LEFT JOIN User cu ON b.createUserId = cu.userLoginId
             LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
-              AND b.bulletinTypeCode = 'NOTICE'
-              AND (:category IS NULL OR b.bulletinCategorySeparateCode = :category)
+              AND b.bulletinTypeCd = 'NOTICE'
+              AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
               AND (:status IS NULL OR (
                   (:status = 'ACTIVE' AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
                    AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
@@ -64,15 +64,15 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
               ))
               AND (:target IS NULL OR c.customerCompanyNo = :target)
               AND (:keyword IS NULL OR (
-                  LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%')
-                  OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')
+                  LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                  OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
               ))
             GROUP BY
                 b.bulletinNo,
                 b.isTopFixed,
                 b.isPopupUse,
-                b.bulletinCategorySeparateCode,
-                b.bulletinTitleName,
+                b.bulletinCategorySeparateCd,
+                b.bulletinTitleNm,
                 cu.userNm,
                 b.createDt,
                 b.bulletinValidBeginDt,
@@ -85,8 +85,8 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             LEFT JOIN m.customerCompany c
             LEFT JOIN User cu ON b.createUserId = cu.userLoginId
             WHERE b.isDeleted = false
-            AND b.bulletinTypeCode = 'NOTICE'
-            AND (:category IS NULL OR b.bulletinCategorySeparateCode = :category)
+            AND b.bulletinTypeCd = 'NOTICE'
+            AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
             AND (:status IS NULL OR (
                 (:status = 'ACTIVE' AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
                 AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
@@ -95,8 +95,8 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             ))
             AND (:target IS NULL OR c.customerCompanyNo = :target)
             AND (:keyword IS NULL OR (
-                LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%')
-                OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')
+                LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
               ))
             """)
     Page<NoticeRes> searchNotice(
@@ -106,7 +106,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             @Param("keyword") String keyword,
             Pageable pageable);
 
-    List<BulletinBoard> findByBulletinTypeCodeAndIsDeletedFalse(String bulletinTypeCode);
+    List<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(String bulletinTypeCode);
 
     @Query(value = """
             SELECT b
@@ -120,15 +120,15 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     Optional<BulletinBoard> findByIsPopupUseTrue();
 
     /*******************************************************************
-    * 
+    *
     * FAQ
-    * 
+    *
     *******************************************************************/
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.bbs.FaqRes(
                 b.bulletinNo,
-                b.bulletinCategorySeparateCode,
-                b.bulletinTitleName,
+                b.bulletinCategorySeparateCd,
+                b.bulletinTitleNm,
                 cuc.customerCompanyNm,
                 cu.departmentNm,
                 cu.userNm,
@@ -138,9 +138,9 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             LEFT JOIN User cu ON b.createUserId = cu.userLoginId
             LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
-            AND b.bulletinTypeCode = 'FAQ'
-            AND (:category IS NULL OR (b.bulletinCategorySeparateCode = :category))
-            AND (:keyword IS NULL OR (LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            AND b.bulletinTypeCd = 'FAQ'
+            AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
+            AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
             ORDER BY b.createDt ASC
             """, countQuery = """
             SELECT COUNT(DISTINCT b)
@@ -148,15 +148,15 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             LEFT JOIN User cu ON b.createUserId = cu.userLoginId
             LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
-            AND b.bulletinTypeCode = 'FAQ'
-            AND (:category IS NULL OR (b.bulletinCategorySeparateCode = :category))
-            AND (:keyword IS NULL OR (LOWER(b.bulletinTitleName) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinContent) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            AND b.bulletinTypeCd = 'FAQ'
+            AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
+            AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
                         """)
     Page<BulletinBoard> searchFaq(
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);
 
-    Page<BulletinBoard> findByBulletinTypeCodeAndIsDeletedFalse(Specification<BulletinBoard> spec, Pageable page, String bulletinTypeCode);
+    Page<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(Specification<BulletinBoard> spec, Pageable page, String bulletinTypeCode);
 
 }

@@ -45,10 +45,9 @@ public class GoodsDataUnitConvert extends BaseEntity {
     private UnitConvert unitConvert;
 
     @Builder
-    public GoodsDataUnitConvert(
-            LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
-            GoodsDataSourceDetail goodsDataSourceDetail, UnitConvert unitConvert) {
+    public GoodsDataUnitConvert(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, GoodsDataSourceDetailUnitConvertMappingId id, GoodsDataSourceDetail goodsDataSourceDetail, UnitConvert unitConvert) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
+        this.id = id;
         this.goodsDataSourceDetail = goodsDataSourceDetail;
         this.unitConvert = unitConvert;
     }

@@ -24,15 +24,12 @@ import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.sk.domain.shared.entity.master.tam.QAuthManageGoodsMapping.authManageGoodsMapping;
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
-import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
-import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 @RequiredArgsConstructor
 public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMapping {
@@ -89,8 +86,8 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
     }
 
-    public List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthCd(Integer companyNo, Integer goodsNo,
-            GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
+    @Override
+    public List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(Integer companyNo, Integer goodsNo, GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
 
         return queryFactory
                 .selectFrom(authMapping)
@@ -135,15 +132,14 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                         customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo), customerCompany.customerCompanyNo.eq(companyNo))
                 .fetch();
 
-        GoodsAuthManagementSeparateCd authSupportCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId()
-                .goodsAuthManagementSeparateCd();
+        GoodsAuthManagementSeparateCd authSeparateCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd();
 
         Map<Integer, Boolean[]> individualAuthMap = new HashMap<>();
         Boolean[] companyAuth = new Boolean[] { Boolean.FALSE, Boolean.FALSE };
 
         for (AuthManageGoodsMapping mapping : authGoodsMappings) {
 
-            if (mapping.getCustomerCompanyGoodsMapping().getId().goodsAuthManagementSeparateCd() == GoodsAuthManagementSeparateCd.INDIVIDUAL) {
+            if (mapping.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd() == GoodsAuthManagementSeparateCd.INDIVIDUAL) {
 
                 Integer userNo = mapping.getUser().getUserNo();
                 // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
@@ -170,7 +166,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
 
-            if (authSupportCd == GoodsAuthManagementSeparateCd.COMPANY) {
+            if (authSeparateCd == GoodsAuthManagementSeparateCd.COMPANY) {
                 return AuthGoodsMapRes.of(user, companyAuth);
             } else {
                 Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[] { Boolean.FALSE, Boolean.FALSE });

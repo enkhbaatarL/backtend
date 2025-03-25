@@ -21,6 +21,7 @@ import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.ActivationStatus;
 import com.sk.domain.shared.enums.GoodsAuthCd;
 import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.repository.master.tam.AuthManageGoodsMappingRepository;
@@ -78,10 +79,11 @@ public class AdminCompanyService {
      * @param page      조회할 페이지 번호 (min 1)
      * @param size      조회할 요소 사이즈 (min 1)
      * @param companyNm 고객사 명 (LIKE '%검색어%)
+     * @param activationSts 활성화 여부 (null: 전체, ACTIVE: 활성화, INACTIVE: 비활성화)
      * @return PaginationRes<CustomerCompanyRes>
      */
-    public PaginationRes<CompanyRes> getCompanies(int page, int size, String companyNm) {
-        return PaginationRes.toRes(customerCompanyRepository.findCompaniesByConditions(page, size, companyNm));
+    public PaginationRes<CompanyRes> getCompanies(int page, int size, String companyNm, ActivationStatus activationSts) {
+        return PaginationRes.toRes(customerCompanyRepository.findCompaniesByConditions(page, size, companyNm, activationSts));
     }
 
     /**
@@ -173,8 +175,7 @@ public class AdminCompanyService {
      */
     public CompanyProviderMapDetailRes getProviderDetail(Integer companyNo, Integer providerNo) {
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator
-                .ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
+        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
 
         return CompanyProviderMapDetailRes.of(ccp);

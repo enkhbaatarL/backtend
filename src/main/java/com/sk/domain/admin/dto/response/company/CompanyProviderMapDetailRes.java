@@ -30,7 +30,18 @@ public record CompanyProviderMapDetailRes(
         return CompanyProviderMapDetailRes.builder()
             .companyProviderMapRes(CompanyProviderMapRes.of(providerMapping))
             .providerExpn(providerMapping.getProvider().getProviderExpn())
-            .auditInfo(AuditInfo.of(providerMapping.getCreateUserId(), providerMapping.getCreateDt(), providerMapping.getModifyUserId(), providerMapping.getModifyDt()))
+            .auditInfo(AuditInfo.of(
+                providerMapping.getCreateUserId(),
+                providerMapping.getCreateDt(),
+                providerMapping.getModifyUserId(),
+                providerMapping.getModifyDt(),
+                providerMapping.accessCreatorNm(),
+                providerMapping.accessCreatorDeptNm(),
+                providerMapping.accessCreatorCompanyNm(),
+                providerMapping.accessModifierNm(),
+                providerMapping.accessModifierDeptNm(),
+                providerMapping.accessModifierCompanyNm()
+            ))
             .build();
     }
 

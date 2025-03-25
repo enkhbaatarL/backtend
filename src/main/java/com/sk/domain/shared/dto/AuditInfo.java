@@ -1,5 +1,6 @@
 package com.sk.domain.shared.dto;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -19,12 +20,21 @@ public record AuditInfo(
     String modifyUserId,
 
     @Schema(description = "수정일시", example = "2025-02-12 15:00:00")
-    LocalDateTime modifyDt
+    LocalDateTime modifyDt,
+
+    @JsonUnwrapped
+    @Schema(description = "감사 추가 정보")
+    AuditExtension auditExtension
 
 ) {
 
     public static AuditInfo of(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
-        return new AuditInfo(createUserId, createDt, modifyUserId, modifyDt);
+        return new AuditInfo(createUserId, createDt, modifyUserId, modifyDt, null);
+    }
+
+    public static AuditInfo of(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt, String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
+        return new AuditInfo(createUserId, createDt, modifyUserId, modifyDt,
+            new AuditExtension(createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
 }

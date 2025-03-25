@@ -47,9 +47,10 @@ public record CompanyRes(
     }
 
     @QueryProjection
-    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, Boolean isActivated, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+    public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, Boolean isActivated, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
+                      String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
         this(companyNo, companyCd, companyNm, usageBeginDate, usageEndDate, isActivated,
-            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
+            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
     public static CompanyRes of(CustomerCompany savedEntity) {
@@ -63,7 +64,13 @@ public record CompanyRes(
                 savedEntity.getCreateUserId(),
                 savedEntity.getCreateDt(),
                 savedEntity.getModifyUserId(),
-                savedEntity.getModifyDt()
+                savedEntity.getModifyDt(),
+                savedEntity.accessCreatorNm(),
+                savedEntity.accessCreatorDeptNm(),
+                savedEntity.accessCreatorCompanyNm(),
+                savedEntity.accessModifierNm(),
+                savedEntity.accessModifierDeptNm(),
+                savedEntity.accessModifierCompanyNm()
             ))
             .isActivated(savedEntity.getIsUsed())
             .build();

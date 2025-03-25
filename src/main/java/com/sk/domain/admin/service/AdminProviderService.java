@@ -131,7 +131,7 @@ public class AdminProviderService {
   /**
    * 해당 프로바이더의 최신 수정일 노출
    * 프로바이더 정보 수정 업데이트 범위 : 프로바이더 정 보 등록/수정, 상품 등록/수정/삭제
-   * 
+   *
    * @param providerNo 데이타 프로바이더 번호
    * @return ProviderLatestUpdatedRes
    */
@@ -226,9 +226,9 @@ public class AdminProviderService {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
-        pageable);
+//    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
+//        pageable);
 
-    return PaginationRes.toRes(goodsPage);
+    return null;
   }
 }
