@@ -12,18 +12,18 @@ import com.sk.domain.shared.entity.master.tcm.PrivatePolicy;
 public interface PrivatePolicyRepository extends JpaRepository<PrivatePolicy, Integer> {
 
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.privatePolicyPrivatePolicyRes(
+            SELECT new com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyRes(
             p.poltacNo,
             p.poltacVersionNm
             )
             FROM PrivatePolicy p
-            WHERE b.isDeleted = false
-            ORDER BY b.createDt ASC
+            WHERE p.isDeleted = false
+            ORDER BY p.createDt ASC
             """)
-    List<PrivatePolicyRes> findByIsDeletedFalseAndisUsedTrue();
+    List<PrivatePolicyRes> findByIsDeletedFalseAndIsUsedTrue();
 
-    Optional<PrivatePolicy> find1ByIsDeletedFalseOrderByCreateDtDesc();
+    Optional<PrivatePolicy> findTop1ByIsDeletedFalseOrderByCreateDtDesc();
 
-    Optional<PrivatePolicy> findByPoltacNoAndIsDeletedFalseAndisUsedTrue(Integer poltacNo);
+    Optional<PrivatePolicy> findByPoltacNoAndIsDeletedFalseAndIsUsedTrue(Integer poltacNo);
 
 }

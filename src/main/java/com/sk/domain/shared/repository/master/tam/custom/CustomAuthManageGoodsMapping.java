@@ -12,8 +12,7 @@ public interface CustomAuthManageGoodsMapping {
 
     List<AuthManageGoodsMapping> findUserGoodsPermissions(Integer userNo);
 
-    List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(Integer companyNo, Integer goodsNo,
-            GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd);
+    List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(Integer companyNo, Integer goodsNo, GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd);
 
     Page<AuthGoodsMapRes> findByAuthGoodsByConditions(int page, int size, Integer companyNo, Integer goodsNo);
 

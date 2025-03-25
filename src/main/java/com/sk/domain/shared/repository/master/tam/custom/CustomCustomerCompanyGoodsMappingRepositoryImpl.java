@@ -14,7 +14,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import java.util.List;
 
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
-import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSource.goodsDataSource;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
 
 @RequiredArgsConstructor
 public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCustomerCompanyGoodsMappingRepository {
@@ -31,12 +31,12 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
                         customerCompanyGoodsMapping.goods.goodsNo,
                         customerCompanyGoodsMapping.goods.goodsNm,
                         customerCompanyGoodsMapping.goods.goodsExpn,
-                        JPAExpressions.select(goodsDataSource.count().intValue())
-                                .from(goodsDataSource)
-                                .where(goodsDataSource.isDeleted.eq(false)
-                                        .and(goodsDataSource.goods.goodsNo.eq(customerCompanyGoodsMapping.goods.goodsNo))),
+                        JPAExpressions.select(goodsData.count().intValue())
+                                .from(goodsData)
+                                .where(goodsData.isDeleted.eq(false)
+                                        .and(goodsData.goods.goodsNo.eq(customerCompanyGoodsMapping.goods.goodsNo))),
                         customerCompanyGoodsMapping.isUsed,
-                        customerCompanyGoodsMapping.id.goodsAuthManageSupportCd,
+                        customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd,
                         customerCompanyGoodsMapping.createUserId,
                         customerCompanyGoodsMapping.createDt,
                         customerCompanyGoodsMapping.modifyUserId,

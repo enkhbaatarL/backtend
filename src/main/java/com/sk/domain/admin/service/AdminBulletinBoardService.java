@@ -111,7 +111,7 @@ public class AdminBulletinBoardService {
 
         // 팝업 1개만 유지
         if (dto.isPopupUse()) {
-            bulletinBoardRepository.findByBulletinTypeCodeAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
+            bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
         }
 
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
@@ -146,7 +146,7 @@ public class AdminBulletinBoardService {
     */
     public NoticeDetailRes getNotice(int noticeNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
@@ -186,7 +186,7 @@ public class AdminBulletinBoardService {
         }
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
@@ -234,7 +234,7 @@ public class AdminBulletinBoardService {
         // 팝업 1개만 유지
         if (bulletinBoard.getIsPopupUse() != dto.isPopupUse()) {
             if (dto.isPopupUse()) {
-                bulletinBoardRepository.findByBulletinTypeCodeAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
+                bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
             }
         }
 
@@ -252,7 +252,7 @@ public class AdminBulletinBoardService {
     @Transactional
     public BulletinBoard deleteNotice(int noticeNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(noticeNo, "NOTICE")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
@@ -268,7 +268,7 @@ public class AdminBulletinBoardService {
     /**
     * 팝업용 공지사항을 조회한다.
     *
-    * @param 
+    * @param
     * @return PopupRes
     */
     public PopupRes getPopup() {
@@ -337,7 +337,7 @@ public class AdminBulletinBoardService {
     * @return BulletinBoard
     */
     public BulletinBoard getFaq(int faqNo) {
-        return bulletinBoardRepository.findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(faqNo, "FAQ")
+        return bulletinBoardRepository.findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, "FAQ")
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
     }
@@ -353,7 +353,7 @@ public class AdminBulletinBoardService {
     public BulletinBoard updateFaq(FaqUpdateReq dto, int faqNo) {
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(faqNo, "FAQ")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, "FAQ")
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
 
@@ -371,7 +371,7 @@ public class AdminBulletinBoardService {
     @Transactional
     public BulletinBoard deleteFaq(int faqNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCodeAndIsDeletedFalse(faqNo, "FAQ")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, "FAQ")
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
 

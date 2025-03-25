@@ -25,7 +25,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.isDeleted = false
             AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
-            AND u.fileRelationshipObjectSeparateCode = :fileRelationshipObjectSeparateCode
+            AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
             AND u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
                 """)
     List<UploadedFile> findByRelationshipObjectInfo(

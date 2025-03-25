@@ -18,10 +18,10 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             g.goodsNo,
             g.goodsNm,
             g.goodsExpn,
-            count(gds)
+            count(gd)
               )
             FROM Goods g
-            LEFT JOIN GoodsDataSource gds on g = gds.goods
+            LEFT JOIN GoodsData gd on g = gd.goods
             WHERE g.isDeleted = false
             AND g.provider.providerNo = :providerNo
             AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
@@ -30,7 +30,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                   """, countQuery = """
             SELECT COUNT(distinct g.goodsNo)
             FROM Goods g
-            LEFT JOIN GoodsDataSource gds on g = gds.goods
+            LEFT JOIN GoodsData gd on g = gd.goods
             WHERE g.isDeleted = false
             AND g.provider.providerNo = :providerNo
             AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))

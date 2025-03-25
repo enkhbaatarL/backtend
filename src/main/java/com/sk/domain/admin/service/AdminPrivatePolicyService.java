@@ -26,11 +26,11 @@ public class AdminPrivatePolicyService {
     /**
     * 버전명 리스트
     *
-    * @param 
+    * @param
     * @return List<PrivatePolicyRes>
     */
     public List<PrivatePolicyRes> getPrivatePolicies() {
-        return policyRepository.findByIsDeletedFalseAndisUsedTrue();
+        return policyRepository.findByIsDeletedFalseAndIsUsedTrue();
     }
 
     /**
@@ -40,18 +40,18 @@ public class AdminPrivatePolicyService {
     * @return PrivatePolicy
     */
     public PrivatePolicy getPrivatePolicy(Integer poltacNo) {
-        return policyRepository.findByPoltacNoAndIsDeletedFalseAndisUsedTrue(poltacNo)
+        return policyRepository.findByPoltacNoAndIsDeletedFalseAndIsUsedTrue(poltacNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("poltac no: %d", poltacNo)));
     }
 
     /**
     * 최신 정책 약관 불러오기
     *
-    * @param 
+    * @param
     * @return PrivatePolicy
     */
     public PrivatePolicy getLatestPrivatePolicy() {
-        return policyRepository.find1ByIsDeletedFalseOrderByCreateDtDesc()
+        return policyRepository.findTop1ByIsDeletedFalseOrderByCreateDtDesc()
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND));
     }
 
