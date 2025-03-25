@@ -26,13 +26,13 @@ public class BulletinBoardCustomerCompanyMapping extends BaseEntity {
 
   @MapsId("bulletinNo")
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "bbm_no", nullable = false, referencedColumnName = "bbm_no")
+  @JoinColumn(name = "bbm_no", nullable = false, referencedColumnName = "bbm_no", foreignKey = @ForeignKey(name = "tcm_bbscpnymappl_fk02"))
   @Comment("게시판")
   private BulletinBoard bulletinBoard;
 
   @MapsId("customerCompanyNo")
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "cust_cpny_no", nullable = false, referencedColumnName = "cust_cpny_no")
+  @JoinColumn(name = "cust_cpny_no", nullable = false, referencedColumnName = "cust_cpny_no", foreignKey = @ForeignKey(name = "tcm_bbscpnymappl_fk01"))
   @Comment("고객회사")
   private CustomerCompany customerCompany;
 
