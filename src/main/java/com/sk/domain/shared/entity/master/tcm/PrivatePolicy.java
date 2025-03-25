@@ -31,27 +31,26 @@ public class PrivatePolicy extends BaseEntity {
     @Comment("정책약관번호")
     private Integer poltacNo;
 
-    @Column(name = "poltac_spt_cd", length = 2)
+    @Column(name = "poltac_spt_cd", nullable = false, length = 2)
     @Comment("정책약관구분코드")
     private String poltacSeparateCd;
 
-    @Column(name = "poltac_ver_nm", length = 20)
+    @Column(name = "poltac_ver_nm", nullable = false, length = 20)
     @Comment("정책약관버전명")
     private String poltacVersionNm;
 
-    @Column(name = "poltac_enfm_dtm", updatable = false, nullable = false)
-    @Comment("정책약관시행일시")
+    @Column(name = "poltac_enfm_dtm", nullable = false, columnDefinition = "datetime")
     @ColumnDefault("CURRENT_TIMESTAMP")
-    protected LocalDateTime poltacEnforcementDt;
+    @Comment("정책약관시행일시")
+    private LocalDateTime poltacEnforcementDt;
 
-    @Column(name = "poltac_cntt", columnDefinition = "text")
+    @Column(name = "poltac_cntt", nullable = false, columnDefinition = "text")
     @Comment("정책약관내용")
     private String poltacCntt;
 
-    @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Column(name = "use_yn", length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
-
 }

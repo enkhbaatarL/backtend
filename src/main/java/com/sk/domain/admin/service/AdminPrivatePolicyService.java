@@ -1,6 +1,7 @@
 package com.sk.domain.admin.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyRes;
+import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyVersionRes;
 import com.sk.domain.shared.entity.master.tcm.PrivatePolicy;
 import com.sk.domain.shared.repository.master.tcm.PrivatePolicyRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +31,11 @@ public class AdminPrivatePolicyService {
     * @param
     * @return List<PrivatePolicyRes>
     */
-    public List<PrivatePolicyRes> getPrivatePolicies() {
-        return policyRepository.findByIsDeletedFalseAndIsUsedTrue();
+    public List<PrivatePolicyVersionRes> getPrivatePolicies() {
+        return policyRepository.findByIsDeletedFalseAndIsUsedTrueOrderByCreateDtAsc()
+                .stream()
+                .map(PrivatePolicyVersionRes::of)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -39,9 +44,11 @@ public class AdminPrivatePolicyService {
     * @param poltacNo
     * @return PrivatePolicy
     */
-    public PrivatePolicy getPrivatePolicy(Integer poltacNo) {
-        return policyRepository.findByPoltacNoAndIsDeletedFalseAndIsUsedTrue(poltacNo)
+    public PrivatePolicyRes getPrivatePolicy(Integer poltacNo) {
+        PrivatePolicy privatePolicy = policyRepository.findByPoltacNoAndIsDeletedFalseAndIsUsedTrue(poltacNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("poltac no: %d", poltacNo)));
+
+        return PrivatePolicyRes.of(privatePolicy);
     }
 
     /**
@@ -50,9 +57,11 @@ public class AdminPrivatePolicyService {
     * @param
     * @return PrivatePolicy
     */
-    public PrivatePolicy getLatestPrivatePolicy() {
-        return policyRepository.findTop1ByIsDeletedFalseOrderByCreateDtDesc()
+    public PrivatePolicyRes getLatestPrivatePolicy() {
+        PrivatePolicy privatePolicy = policyRepository.findFirstByIsDeletedFalseAndIsUsedTrueOrderByCreateDtDesc()
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND));
+
+        return PrivatePolicyRes.of(privatePolicy);
     }
 
 }

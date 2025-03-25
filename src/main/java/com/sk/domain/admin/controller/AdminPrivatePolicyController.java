@@ -10,6 +10,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyRes;
+import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyVersionRes;
 import com.sk.domain.admin.service.AdminPrivatePolicyService;
 import com.sk.domain.shared.entity.master.tcm.PrivatePolicy;
 
@@ -42,7 +43,7 @@ public class AdminPrivatePolicyController {
     @Operation(summary = "정책약관 목록 조회", description = "정책약관 목록 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/")
-    public BaseResponse<List<PrivatePolicyRes>> getPrivatePolicies() {
+    public BaseResponse<List<PrivatePolicyVersionRes>> getPrivatePolicies() {
 
         return BaseResponseFactory.create(adminPrivatePolicyService.getPrivatePolicies());
     }
@@ -54,8 +55,9 @@ public class AdminPrivatePolicyController {
     @Operation(summary = "정책약관 조회", description = "정책약관을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/PrivatePolicies/{poltacNo}")
-    public BaseResponse<PrivatePolicy> getPrivatePolicy(
+    public BaseResponse<PrivatePolicyRes> getPrivatePolicy(
             @PathVariable(value = "poltacNo") @Min(value = 1) Integer poltacNo) {
+
         return BaseResponseFactory.create(adminPrivatePolicyService.getPrivatePolicy(poltacNo));
     }
 
@@ -63,7 +65,7 @@ public class AdminPrivatePolicyController {
     @Operation(summary = "최신 정책약관 조회", description = "최신 정책약관을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/PrivatePolicies/latest")
-    public BaseResponse<PrivatePolicy> getLatestPrivatePolicy() {
+    public BaseResponse<PrivatePolicyRes> getLatestPrivatePolicy() {
 
         return BaseResponseFactory.create(adminPrivatePolicyService.getLatestPrivatePolicy());
     }
