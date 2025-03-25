@@ -15,7 +15,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
-import com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDeleteRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminProviderService {
   private final ProviderRepository providerRepository;
   private final GoodsRepository goodsRepository;
-  private final GoodsDataRepository goodsDataSourceRepository;
+  private final GoodsDataRepository goodsDataRepository;
 
   /**
    * 데이타 프로바이더 목록을 조회한다.
@@ -213,21 +213,21 @@ public class AdminProviderService {
   }
 
   /**
-   * 상품 목록을 페이지네이션 처리하여 조회한다.
+   * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
    *
    * @param page       조회할 페이지 번호 (min 1)
    * @param size       조회할 요소 사이즈 (min 1)
    * @param keyword 검색 키워드
    * @param providerNo 데이타 프로바이더 번호
    * @param goodsNo 상품 번호
-   * @return PaginationRes<GoodsDataSourceRes>
+   * @return PaginationRes<GoodsDataRes>
    */
-  public PaginationRes<GoodsDataSourceRes> getGoodsDataSoueces(int page, int size, String keyword, int providerNo, int goodsNo) {
+  public PaginationRes<GoodsDataRes> getGoodsDataSoueces(int page, int size, String keyword, int providerNo, int goodsNo) {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-//    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
-//        pageable);
+    // Page<GoodsDataSourceRes> goodsPage = goodsDataRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
+    // pageable);
 
     return null;
   }

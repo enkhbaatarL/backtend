@@ -19,7 +19,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
-import com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
 import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
@@ -230,7 +230,7 @@ public class AdminProviderController {
   @Operation(summary = "데이타셋 목록 조회 - withpagination", description = "데이터셋 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatasource")
-  public BaseResponse<PaginationRes<GoodsDataSourceRes>> getGoodsDataSoueces(
+  public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
       @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
       @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
       @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
