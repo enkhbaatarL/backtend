@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+// @formatter:off
 public record CompanyReq(
 
 ) {
@@ -61,3 +62,4 @@ public record CompanyReq(
     }
 
 }
+// @formatter:on

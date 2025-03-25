@@ -3,6 +3,7 @@ package com.sk.domain.admin.dto.request.company;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
+// @formatter:off
 public record CompanyProviderMapReq(
 
         @NotNull
@@ -30,3 +31,4 @@ public record CompanyProviderMapReq(
     }
 
 }
+// @formatter:on
