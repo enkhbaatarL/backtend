@@ -2,7 +2,7 @@ package com.sk.domain.shared.entity.compositeKey.tam;
 
 import java.io.Serializable;
 
-import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
+import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import org.hibernate.annotations.Comment;
@@ -32,20 +32,21 @@ public class CustomerCompanyGoodsMappingId implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "gds_auth_mnagt_spt_cd", nullable = false, length = 10)
     @Comment("상품권한주체구분코드")
-    private GoodsAuthManageSupportCd goodsAuthManageSupportCd;
+    private GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd;
 
     @Builder
-    public CustomerCompanyGoodsMappingId(Integer customerCompanyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
+    public CustomerCompanyGoodsMappingId(Integer customerCompanyNo, Integer goodsNo, GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
         this.customerCompanyNo = customerCompanyNo;
         this.goodsNo = goodsNo;
-        this.goodsAuthManageSupportCd = goodsAuthManageSupportCd;
+        this.goodsAuthManagementSeparateCd = goodsAuthManagementSeparateCd;
     }
 
-    public static CustomerCompanyGoodsMappingId of(Integer customerCompanyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
+    public static CustomerCompanyGoodsMappingId of(Integer customerCompanyNo, Integer goodsNo,
+            GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
         return CustomerCompanyGoodsMappingId.builder()
                 .customerCompanyNo(customerCompanyNo)
                 .goodsNo(goodsNo)
-                .goodsAuthManageSupportCd(goodsAuthManageSupportCd)
+                .goodsAuthManagementSeparateCd(goodsAuthManagementSeparateCd)
                 .build();
     }
 

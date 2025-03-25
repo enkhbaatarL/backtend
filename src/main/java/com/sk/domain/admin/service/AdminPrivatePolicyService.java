@@ -1,8 +1,14 @@
 package com.sk.domain.admin.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyRes;
+import com.sk.domain.shared.entity.master.tcm.PrivatePolicy;
 import com.sk.domain.shared.repository.master.tcm.PrivatePolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,11 +23,36 @@ public class AdminPrivatePolicyService {
     // 버전명 리스트
     // 버전명으로 정책약관 불러오기
 
-    public String getPrivatePolicies() {
-        return "todo";
+    /**
+    * 버전명 리스트
+    *
+    * @param 
+    * @return List<PrivatePolicyRes>
+    */
+    public List<PrivatePolicyRes> getPrivatePolicies() {
+        return policyRepository.findByIsDeletedFalseAndisUsedTrue();
     }
 
-    public String getPrivatePolicy(Integer poltacNo) {
-        return "todo";
+    /**
+    * 정책약관 불러오기
+    *
+    * @param poltacNo
+    * @return PrivatePolicy
+    */
+    public PrivatePolicy getPrivatePolicy(Integer poltacNo) {
+        return policyRepository.findByPoltacNoAndIsDeletedFalseAndisUsedTrue(poltacNo)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("poltac no: %d", poltacNo)));
     }
+
+    /**
+    * 최신 정책 약관 불러오기
+    *
+    * @param 
+    * @return PrivatePolicy
+    */
+    public PrivatePolicy getLatestPrivatePolicy() {
+        return policyRepository.find1ByIsDeletedFalseOrderByCreateDtDesc()
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND));
+    }
+
 }

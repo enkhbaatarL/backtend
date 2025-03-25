@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
-import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
+import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.listener.CustomerCompanyGoodsMappingListener;
 import jakarta.persistence.*;
 import org.apache.commons.lang3.ObjectUtils;
@@ -62,22 +62,25 @@ public class CustomerCompanyGoodsMapping extends BaseEntity {
         this.goods = goods;
     }
 
-    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
+    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods,
+            GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
         return CustomerCompanyGoodsMapping.builder()
-                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsAuthManageSupportCd))
+                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsAuthManagementSeparateCd))
                 .isUsed(true)
                 .customerCompany(customerCompany)
                 .goods(goods)
                 .build();
     }
 
-    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods, GoodsAuthManageSupportCd goodsAuthManageSupportCd, boolean isUsed) {
+    public static CustomerCompanyGoodsMapping of(CustomerCompany customerCompany, Goods goods,
+            GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd,
+            boolean isUsed) {
         return CustomerCompanyGoodsMapping.builder()
-            .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsAuthManageSupportCd))
-            .isUsed(isUsed)
-            .customerCompany(customerCompany)
-            .goods(goods)
-            .build();
+                .id(CustomerCompanyGoodsMappingId.of(customerCompany.getCustomerCompanyNo(), goods.getGoodsNo(), goodsAuthManagementSeparateCd))
+                .isUsed(isUsed)
+                .customerCompany(customerCompany)
+                .goods(goods)
+                .build();
     }
 
     public void update(AuthGoodsMapReq authGoodsMapReq) {

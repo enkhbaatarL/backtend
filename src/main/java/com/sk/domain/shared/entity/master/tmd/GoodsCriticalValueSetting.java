@@ -10,6 +10,7 @@ import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -39,18 +40,18 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     private Integer userGoodsNotificationSettingNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usr_no", nullable = false)
+    @JoinColumn(name = "usr_no", referencedColumnName = "usr_no", foreignKey = @ForeignKey(name = "tmd_gdscrtvlsetl_fk01"), nullable = false)
     @Comment("사용자번호")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gds_data_src_no", nullable = false)
+    @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", foreignKey = @ForeignKey(name = "tmd_gdscrtvlsetl_fk02"), nullable = false)
     @Comment("상품데이터소스번호")
-    private GoodsDataSource goodsDataSource;
+    private GoodsData goodsDataSource;
 
     @Column(name = "noti_crtvl_spt_cd", nullable = false, length = 10)
     @Comment("알림임계치구분코드")
-    private String notificationCriticalSupportCd;
+    private String notificationCriticalValueSeparateCd;
 
     @Column(name = "crtvl_set_vol", nullable = false, precision = 20, scale = 5)
     @Comment("임계치설정량")
@@ -63,25 +64,25 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @Builder
     public GoodsCriticalValueSetting(
             LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, User user, GoodsDataSource goodsDataSource,
-            String notificationCriticalSupportCd,
+            Boolean isDeleted, User user, GoodsData goodsDataSource,
+            String notificationCriticalValueSeparateCd,
             BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.user = user;
         this.goodsDataSource = goodsDataSource;
-        this.notificationCriticalSupportCd = notificationCriticalSupportCd;
+        this.notificationCriticalValueSeparateCd = notificationCriticalValueSeparateCd;
         this.criticalValueSettingVol = criticalValueSettingVol;
         this.criticalValueSettingUnitNm = criticalValueSettingUnitNm;
     }
 
     public static GoodsCriticalValueSetting of(
-            User user, GoodsDataSource goodsDataSource,
-            String notificationCriticalSupportCd,
+            User user, GoodsData goodsDataSource,
+            String notificationCriticalValueSeparateCd,
             BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
         return GoodsCriticalValueSetting.builder()
                 .user(user)
                 .goodsDataSource(goodsDataSource)
-                .notificationCriticalSupportCd(notificationCriticalSupportCd)
+                .notificationCriticalValueSeparateCd(notificationCriticalValueSeparateCd)
                 .criticalValueSettingVol(criticalValueSettingVol)
                 .criticalValueSettingUnitNm(criticalValueSettingUnitNm)
                 .build();
