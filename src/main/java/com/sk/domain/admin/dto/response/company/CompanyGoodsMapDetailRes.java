@@ -97,7 +97,7 @@ public record CompanyGoodsMapDetailRes(
 
     public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping) {
         return CompanyGoodsMapDetailRes.builder()
-            .companyGoodsMapRes(CompanyGoodsMapRes.of(goodsMapping))
+            .companyGoodsMapRes(CompanyGoodsMapRes.ofDefault(goodsMapping))
             .goodsNm(goodsMapping.getGoods().getGoodsNm())
             .goodsExpn(goodsMapping.getGoods().getGoodsExpn())
             .build();
@@ -106,7 +106,7 @@ public record CompanyGoodsMapDetailRes(
 
     public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping, List<AuthManageGoodsMapping> userAuthMapping) {
         return CompanyGoodsMapDetailRes.builder()
-            .companyGoodsMapRes(CompanyGoodsMapRes.of(goodsMapping))
+            .companyGoodsMapRes(CompanyGoodsMapRes.ofDefault(goodsMapping))
             .goodsNm(goodsMapping.getGoods().getGoodsNm())
             .goodsExpn(goodsMapping.getGoods().getGoodsExpn())
             .companySetting(CompanySetting.of(userAuthMapping))

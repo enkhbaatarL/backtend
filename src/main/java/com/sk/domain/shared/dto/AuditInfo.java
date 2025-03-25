@@ -28,11 +28,11 @@ public record AuditInfo(
 
 ) {
 
-    public static AuditInfo of(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
+    public static AuditInfo ofSimple(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt) {
         return new AuditInfo(createUserId, createDt, modifyUserId, modifyDt, null);
     }
 
-    public static AuditInfo of(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt, String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
+    public static AuditInfo ofDetail(String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt, String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
         return new AuditInfo(createUserId, createDt, modifyUserId, modifyDt,
             new AuditExtension(createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }

@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.enums.ActivationStatus;
+import com.sk.domain.shared.enums.UserRoleCd;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -69,9 +70,9 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 modifierCompany.customerCompanyNm
             ))
             .from(customerCompany)
-            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId))
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId))
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())

@@ -103,8 +103,6 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        // todo 회원명 검색 / 회원수, 조회수, 다운로드수
-
         // 1. 고객사의 사용자 목록을 페이지네이션으로 조회
         List<User> users = queryFactory
                 .selectFrom(user)

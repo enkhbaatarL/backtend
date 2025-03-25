@@ -17,41 +17,41 @@ import lombok.Builder;
 // @formatter:off
 public record AdminRes(
 
-@Schema(description = "사용자번호", example = "1") 
+@Schema(description = "사용자번호", example = "1")
 Integer userNo,
 
-@Schema(description = "사용자명", example = "홍길동") 
+@Schema(description = "사용자명", example = "홍길동")
 String userNm,
 
-@Schema(description = "사용자로그인ID", example = "hong@sk.com") 
+@Schema(description = "사용자로그인ID", example = "hong@sk.com")
 String userLoginId,
 
-@Schema(description = "사용자역할코드", example = "ADMIN") 
+@Schema(description = "사용자역할코드", example = "ADMIN")
 UserRoleCd userRoleCd,
 
-@Schema(description = "직책명", example = "사장") 
+@Schema(description = "직책명", example = "사장")
 String onDutyNm,
 
-@Schema(description = "부서명", example = "총무팀") 
+@Schema(description = "부서명", example = "총무팀")
 String departmentNm,
 
-@Schema(description = "타사서비스접근가능여부", example = "Y") 
+@Schema(description = "타사서비스접근가능여부", example = "Y")
 Boolean isOtherServiceAccessPossible,
 
-@Schema(description = "개인정보동의여부", example = "Y") 
+@Schema(description = "개인정보동의여부", example = "Y")
 Boolean isIndividualInfoAgreement,
 
-@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00") 
+@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00")
 LocalDateTime individualInfoAgreementDtm,
 
-@Schema(description = "고객사번호", example = "1") 
+@Schema(description = "고객사번호", example = "1")
 Integer customerCompanyNo,
 
-@JsonUnwrapped 
-@Schema(description = "감사 정보") 
+@JsonUnwrapped
+@Schema(description = "감사 정보")
 AuditInfo auditInfo,
 
-@Schema(description = "관리자 허용 IP 주소 목록", example = "[192.168.1.1, 192.168.1.2]") 
+@Schema(description = "관리자 허용 IP 주소 목록", example = "[192.168.1.1, 192.168.1.2]")
 List<String> accessAllowedIpAddressList) {
 
     @Builder
@@ -86,7 +86,7 @@ List<String> accessAllowedIpAddressList) {
                 .isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
                 .individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
                 .customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
-                .auditInfo(AuditInfo.of(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
+                .auditInfo(AuditInfo.ofSimple(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
                         user.getModifyDt()))
                 .accessAllowedIpAddressList(accessAllowedIpAddressList.stream()
                         .map(AdminPermission::getId)

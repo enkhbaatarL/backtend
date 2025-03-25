@@ -10,6 +10,7 @@ import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
 import com.sk.domain.admin.dto.response.company.QProviderWithGoodsCntRes;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
+import com.sk.domain.shared.enums.UserRoleCd;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -59,9 +60,9 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
                 modifierCompany.customerCompanyNm
             ))
             .from(customerCompanyProviderMapping)
-            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId))
+            .leftJoin(creator).on(customerCompanyProviderMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId))
+            .leftJoin(modifier).on(customerCompanyProviderMapping.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .where(customerCompanyProviderMapping.isDeleted.eq(false),
                 customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo))
