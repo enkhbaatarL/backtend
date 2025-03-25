@@ -110,6 +110,6 @@ public record UserWithCreatorRes(
 				isOtherServiceAccessPossible, isIndividualInfoAgreement, individualInfoAgreementDtm,
 				customerCompanyNo, customerCompanyNm, creatorUserNm, creatorDepartmentNm,
 				creatorOnDutyNm, creatorCompanyNo, creatorCompanyNm,
-				AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
+				AuditInfo.ofSimple(createUserId, createDt, modifyUserId, modifyDt));
 	}
 }

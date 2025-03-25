@@ -78,7 +78,7 @@ public record UserRes(
 				.isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
 				.individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
 				.customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
-				.auditInfo(AuditInfo.of(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
+				.auditInfo(AuditInfo.ofSimple(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
 						user.getModifyDt()))
 				.build();
 	}

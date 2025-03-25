@@ -1,6 +1,5 @@
 package com.sk.domain.admin.dto.response.company;
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.dto.AuditInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,7 +18,6 @@ public record ProviderWithGoodsCntRes(
     @Schema(description = "회사가 구독중인 상품 개수", example = "12")
     int numberOfGoods,
 
-    @JsonUnwrapped
     @Schema(description = "감사 정보")
     AuditInfo auditInfo
 
@@ -29,7 +27,7 @@ public record ProviderWithGoodsCntRes(
     public ProviderWithGoodsCntRes(Integer providerNo, String providerNm, int numberOfGoods, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
                                    String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
         this(providerNo, providerNm, numberOfGoods,
-            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
+            AuditInfo.ofDetail(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
     @Builder

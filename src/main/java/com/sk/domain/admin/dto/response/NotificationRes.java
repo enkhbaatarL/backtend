@@ -65,7 +65,7 @@ public record NotificationRes(
             LocalDateTime modifyDt) {
         this(emailSendSn, emailReceiveUserLoginId, emailTitleNm, emailCntt, emailSendStatusNm, emailSendErrorCntt,
                 emailSendDtm, userNm, userRoleCd, onDutyNm, departmentNm, customerCompanyNo, customerCompanyNm,
-                AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt));
+                AuditInfo.ofSimple(createUserId, createDt, modifyUserId, modifyDt));
     }
 
     @Builder
