@@ -2,6 +2,8 @@ package com.sk.domain.admin.dto.response.provider;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.shared.dto.AuditInfo;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 // @formatter:off
@@ -21,14 +23,8 @@ public record ProviderDetailRes(
 
         @Schema(description = "사용여부", example = "true")
         Boolean isUsed,
-
-        @Schema(description = "생성사용자로그인ID", example = "sk01234")
-        String createUserId,
-
-        @Schema(description = "생성일시", example = "2025-02-12 15:00:00")
-        LocalDateTime createDt,
-
-        @Schema(description = "생성사이름", example = "홍길동")
-        String createUserName) {
+        
+        @Schema(description = "감사 정보")
+        AuditInfo auditInfo) {
 }
 // @formatter:on

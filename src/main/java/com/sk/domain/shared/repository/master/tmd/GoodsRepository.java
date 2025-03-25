@@ -44,16 +44,22 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             g.goodsCd,
             g.goodsExpn,
             g.isUsed,
-            g.createUserId,
-            g.createDt,
-            cu.userNm,
-            g.modifyUserId,
-            g.modifyDt,
-            mu.userNm
+            new com.sk.domain.shared.dto.AuditInfo(
+                    g.createUserId,
+                    g.createDt,
+                    g.modifyUserId,
+                    g.modifyDt,
+                    new com.sk.domain.shared.dto.AuditExtension(
+                        g.creator.userNm,
+                        g.creator.departmentNm,
+                        g.creator.customerCompany.customerCompanyNm,
+                        g.modifier.userNm,
+                        g.modifier.departmentNm,
+                        g.modifier.customerCompany.customerCompanyNm
+                    )
+                )
             )
             FROM Goods g
-            LEFT JOIN User cu on g.createUserId = cu.userLoginId
-            LEFT JOIN User mu on g.modifyUserId = mu.userLoginId
             WHERE g.isDeleted = false
             AND g.provider.providerNo = :providerNo
             AND g.goodsNo = :goodsNo
