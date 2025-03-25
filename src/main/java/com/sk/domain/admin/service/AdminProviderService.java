@@ -29,7 +29,7 @@ import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.admin.dto.response.provider.ProviderUpdateRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
-import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminProviderService {
   private final ProviderRepository providerRepository;
   private final GoodsRepository goodsRepository;
-  private final GoodsDataSourceRepository goodsDataSourceRepository;
+  private final GoodsDataRepository goodsDataSourceRepository;
 
   /**
    * 데이타 프로바이더 목록을 조회한다.

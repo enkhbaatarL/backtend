@@ -14,7 +14,7 @@ import com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping;
 import com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping;
 import com.sk.domain.shared.entity.master.tmd.*;
 import com.sk.domain.shared.enums.GoodsAuthCd;
-import com.sk.domain.shared.enums.GoodsAuthManageSupportCd;
+import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.domain.Page;
@@ -59,46 +59,46 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         String currentDate = DateUtil.toYmd(LocalDate.now());
 
         return queryFactory
-            .select(authMapping)
-            .from(authMapping)
-            .leftJoin(authMapping.user, user).fetchJoin()
-            .join(authMapping.customerCompanyGoodsMapping, ccgMapping).fetchJoin()
-            .join(ccgMapping.customerCompany, customerCompany).fetchJoin()
-            .join(ccgMapping.goods, goods).fetchJoin()
-            .join(goods.provider, provider).fetchJoin()
-            .join(ccpMapping).on(ccpMapping.customerCompany.eq(customerCompany).and(ccpMapping.provider.eq(provider)))
-            .where(
-                    (user.userNo.eq(userNo).and(user.isDeleted.isFalse())) // 개별 권한
-                    .or(user.userNo.isNull()) // 회사 권한
-                    .and(ccgMapping.isDeleted.isFalse())
-                    .and(ccgMapping.isUsed.isTrue())
-                    .and(goods.isDeleted.isFalse())
-                    .and(goods.isUsed.isTrue())
-                    .and(provider.isDeleted.isFalse())
-                    .and(provider.isUsed.isTrue())
-                    .and(ccpMapping.isDeleted.isFalse())
-                    .and(ccpMapping.isUsed.isTrue())
-                    .and(authMapping.isDeleted.isFalse())
-                    .and(authMapping.useBeginDate.loe(currentDate))
-                    .and(authMapping.useEndDate.goe(currentDate))
-                    .and(customerCompany.isDeleted.isFalse())
-                    .and(customerCompany.isUsed.isTrue())
-                    .and(customerCompany.useBeginDt.loe(currentDate).or(customerCompany.useBeginDt.isNull()))
-                    .and(customerCompany.useEndDt.goe(currentDate).or(customerCompany.useEndDt.isNull()))
-            )
-            .fetch();
+                .select(authMapping)
+                .from(authMapping)
+                .leftJoin(authMapping.user, user).fetchJoin()
+                .join(authMapping.customerCompanyGoodsMapping, ccgMapping).fetchJoin()
+                .join(ccgMapping.customerCompany, customerCompany).fetchJoin()
+                .join(ccgMapping.goods, goods).fetchJoin()
+                .join(goods.provider, provider).fetchJoin()
+                .join(ccpMapping).on(ccpMapping.customerCompany.eq(customerCompany).and(ccpMapping.provider.eq(provider)))
+                .where(
+                        (user.userNo.eq(userNo).and(user.isDeleted.isFalse())) // 개별 권한
+                                .or(user.userNo.isNull()) // 회사 권한
+                                .and(ccgMapping.isDeleted.isFalse())
+                                .and(ccgMapping.isUsed.isTrue())
+                                .and(goods.isDeleted.isFalse())
+                                .and(goods.isUsed.isTrue())
+                                .and(provider.isDeleted.isFalse())
+                                .and(provider.isUsed.isTrue())
+                                .and(ccpMapping.isDeleted.isFalse())
+                                .and(ccpMapping.isUsed.isTrue())
+                                .and(authMapping.isDeleted.isFalse())
+                                .and(authMapping.useBeginDate.loe(currentDate))
+                                .and(authMapping.useEndDate.goe(currentDate))
+                                .and(customerCompany.isDeleted.isFalse())
+                                .and(customerCompany.isUsed.isTrue())
+                                .and(customerCompany.useBeginDt.loe(currentDate).or(customerCompany.useBeginDt.isNull()))
+                                .and(customerCompany.useEndDt.goe(currentDate).or(customerCompany.useEndDt.isNull())))
+                .fetch();
 
     }
 
-    public List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthCd(Integer companyNo, Integer goodsNo, GoodsAuthManageSupportCd goodsAuthManageSupportCd) {
+    public List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthCd(Integer companyNo, Integer goodsNo,
+            GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
 
         return queryFactory
-            .selectFrom(authMapping)
-            .where(authMapping.isDeleted.isFalse()
-                .and(authMapping.customerCompanyGoodsMapping.id.customerCompanyNo.eq(companyNo))
-                .and(authMapping.customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo))
-                .and(authMapping.customerCompanyGoodsMapping.id.goodsAuthManageSupportCd.eq(goodsAuthManageSupportCd)))
-            .fetch();
+                .selectFrom(authMapping)
+                .where(authMapping.isDeleted.isFalse()
+                        .and(authMapping.customerCompanyGoodsMapping.id.customerCompanyNo.eq(companyNo))
+                        .and(authMapping.customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo))
+                        .and(authMapping.customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd.eq(goodsAuthManagementSeparateCd)))
+                .fetch();
     }
 
     @Override
@@ -110,43 +110,44 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         // 1. 고객사의 사용자 목록을 페이지네이션으로 조회
         List<User> users = queryFactory
-            .selectFrom(user)
-            .offset(pageable.getOffset())
-            .limit(pageable.getPageSize())
-            .where(user.isDeleted.isFalse(),
-                user.customerCompany.customerCompanyNo.eq(companyNo))
-            .orderBy(user.userNm.asc())
-            .fetch();
+                .selectFrom(user)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .where(user.isDeleted.isFalse(),
+                        user.customerCompany.customerCompanyNo.eq(companyNo))
+                .orderBy(user.userNm.asc())
+                .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
-            .select(user.count())
-            .from(user)
-            .where(user.isDeleted.isFalse(),
-                user.customerCompany.customerCompanyNo.eq(companyNo));
+                .select(user.count())
+                .from(user)
+                .where(user.isDeleted.isFalse(),
+                        user.customerCompany.customerCompanyNo.eq(companyNo));
 
         // 2. 해당 상품에 대한 권한 매핑 정보를 모두 조회
         List<AuthManageGoodsMapping> authGoodsMappings = queryFactory
-            .select(authManageGoodsMapping)
-            .from(authManageGoodsMapping)
-            .leftJoin(authManageGoodsMapping.user, user).fetchJoin()
-            .innerJoin(authManageGoodsMapping.customerCompanyGoodsMapping, customerCompanyGoodsMapping).fetchJoin()
-            .innerJoin(customerCompanyGoodsMapping.customerCompany, customerCompany).fetchJoin()
-            .where(authManageGoodsMapping.isDeleted.isFalse(),
-                customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo), customerCompany.customerCompanyNo.eq(companyNo))
-            .fetch();
+                .select(authManageGoodsMapping)
+                .from(authManageGoodsMapping)
+                .leftJoin(authManageGoodsMapping.user, user).fetchJoin()
+                .innerJoin(authManageGoodsMapping.customerCompanyGoodsMapping, customerCompanyGoodsMapping).fetchJoin()
+                .innerJoin(customerCompanyGoodsMapping.customerCompany, customerCompany).fetchJoin()
+                .where(authManageGoodsMapping.isDeleted.isFalse(),
+                        customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo), customerCompany.customerCompanyNo.eq(companyNo))
+                .fetch();
 
-        GoodsAuthManageSupportCd authSupportCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd();
+        GoodsAuthManagementSeparateCd authSupportCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId()
+                .goodsAuthManagementSeparateCd();
 
         Map<Integer, Boolean[]> individualAuthMap = new HashMap<>();
-        Boolean[] companyAuth = new Boolean[]{Boolean.FALSE, Boolean.FALSE};
+        Boolean[] companyAuth = new Boolean[] { Boolean.FALSE, Boolean.FALSE };
 
         for (AuthManageGoodsMapping mapping : authGoodsMappings) {
 
-            if (mapping.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManageSupportCd() == GoodsAuthManageSupportCd.INDIVIDUAL) {
+            if (mapping.getCustomerCompanyGoodsMapping().getId().goodsAuthManagementSeparateCd() == GoodsAuthManagementSeparateCd.INDIVIDUAL) {
 
                 Integer userNo = mapping.getUser().getUserNo();
                 // 해당 사용자의 권한 배열 가져오기 (없으면 [false, false] 생성)
-                Boolean[] goodsAuthBool = individualAuthMap.computeIfAbsent(userNo, k -> new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+                Boolean[] goodsAuthBool = individualAuthMap.computeIfAbsent(userNo, k -> new Boolean[] { Boolean.FALSE, Boolean.FALSE });
 
                 // 권한 유형에 따라 해당 배열 요소 업데이트
                 if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
@@ -169,10 +170,10 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
 
-            if (authSupportCd == GoodsAuthManageSupportCd.COMPANY) {
+            if (authSupportCd == GoodsAuthManagementSeparateCd.COMPANY) {
                 return AuthGoodsMapRes.of(user, companyAuth);
             } else {
-                Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[]{Boolean.FALSE, Boolean.FALSE});
+                Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[] { Boolean.FALSE, Boolean.FALSE });
                 return AuthGoodsMapRes.of(user, authArrays);
             }
 
@@ -186,23 +187,24 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         // 1. 고객사-상품 매핑 수정 일시(삭제 포함)
         Tuple ccgMappings = queryFactory
-            .select(customerCompanyGoodsMapping.modifyDt.max(), customerCompanyGoodsMapping.modifyUserId)
-            .from(customerCompanyGoodsMapping)
-            .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo)
-                .and(customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo)))
-            .fetchOne();
+                .select(customerCompanyGoodsMapping.modifyDt.max(), customerCompanyGoodsMapping.modifyUserId)
+                .from(customerCompanyGoodsMapping)
+                .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo)
+                        .and(customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo)))
+                .fetchOne();
 
         if (ObjectUtils.isEmpty(ccgMappings.get(0, LocalDateTime.class))) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo));
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                    "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo));
         }
 
         // 2. 사용자 권한-상품 매핑 수정 일시(삭제 포함)
         Tuple amgMappings = queryFactory
-            .select(authManageGoodsMapping.modifyDt.max(), authManageGoodsMapping.modifyUserId)
-            .from(authManageGoodsMapping)
-            .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.customerCompanyNo.eq(companyNo)
-                .and(authManageGoodsMapping.customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo)))
-            .fetchOne();
+                .select(authManageGoodsMapping.modifyDt.max(), authManageGoodsMapping.modifyUserId)
+                .from(authManageGoodsMapping)
+                .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.customerCompanyNo.eq(companyNo)
+                        .and(authManageGoodsMapping.customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo)))
+                .fetchOne();
 
         // 최신 날짜와 수정자 정보 찾기
         LocalDateTime latestModifyDt = null;
@@ -225,10 +227,10 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         if (ObjectUtils.isNotEmpty(latestModifyId)) {
             latestModifyNm = queryFactory
-                .select(user.userNm)
-                .from(user)
-                .where(user.userLoginId.eq(latestModifyId))
-                .fetchOne();
+                    .select(user.userNm)
+                    .from(user)
+                    .where(user.userLoginId.eq(latestModifyId))
+                    .fetchOne();
         }
 
         return LatestUpdatedRes.of(latestModifyId, latestModifyNm, latestModifyDt);

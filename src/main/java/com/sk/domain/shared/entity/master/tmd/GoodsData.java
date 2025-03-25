@@ -1,0 +1,79 @@
+package com.sk.domain.shared.entity.master.tmd;
+
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.Comment;
+
+import com.sk.domain.shared.entity.base.BaseEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Entity
+@Comment("TMD_상품데이터기본")
+@Table(name = "tmd_gdsdatam", indexes = {
+        @Index(name = "TMD_GDSDATAM_IX01", columnList = "gds_no")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "TMD_GDSDATAM_UX01", columnNames = { "gds_data_dstg_id" })
+})
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class GoodsData extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "gds_data_no", nullable = false, columnDefinition = "int unsigned")
+    @Comment("상품데이터번호")
+    private Integer goodsDataNo;
+
+    @Column(name = "gds_data_dstg_id", length = 50)
+    @Comment("상품데이터식별ID")
+    private String goodsDataDistinguishId;
+
+    @Column(name = "gds_data_nm", length = 100)
+    @Comment("상품데이터명")
+    private String goodsDataNm;
+
+    @Column(name = "gds_data_expn", length = 500)
+    @Comment("상품데이터설명")
+    private String goodsDataExpn;
+
+    @Column(name = "gds_data_smry_cntt", columnDefinition = "text")
+    @Comment("상품데이터베이스명")
+    private String goodsDataSummaryCntt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gds_no", referencedColumnName = "gds_no", foreignKey = @ForeignKey(name = "tmd_gdsdatam_ibfk_1"), nullable = false)
+    @Comment("상품번호")
+    private Goods goods;
+
+    @Builder
+    public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
+            Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods) {
+        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
+        this.goodsDataNo = goodsDataNo;
+        this.goodsDataDistinguishId = goodsDataDistinguishId;
+        this.goodsDataNm = goodsDataNm;
+        this.goodsDataExpn = goodsDataExpn;
+        this.goodsDataSummaryCntt = goodsDataSummaryCntt;
+        this.goods = goods;
+    }
+
+    public void softDelete() {
+        super.softDelete();
+    }
+}

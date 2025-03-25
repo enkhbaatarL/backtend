@@ -53,7 +53,7 @@ public class Goods extends BaseEntity {
     private Boolean isUsed;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", nullable = false)
+    @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", foreignKey = @ForeignKey(name = "tmd_gdsm_fk01"), nullable = false)
     @Comment("프로바이더번호")
     private Provider provider;
 
