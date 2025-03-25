@@ -5,6 +5,6 @@ import org.springframework.data.domain.Page;
 
 public interface CustomCustomerCompanyGoodsMappingRepository {
 
-    Page<GoodsWithDataCntRes> findGoodsMappingsByConditions(int page, int size, Integer companyNo, Integer providerNo);
+    Page<GoodsWithDataCntRes> findGoodsMappingsByConditions(int page, int size, Integer companyNo, Integer providerNo, String search);
 
 }

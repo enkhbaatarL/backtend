@@ -2,6 +2,7 @@ package com.sk.domain.admin.service;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.PaginationExtensionRes;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.SortUtil;
@@ -30,11 +31,9 @@ import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMapping
 import com.sk.domain.shared.repository.master.tif.CompanyInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,9 +75,9 @@ public class AdminCompanyService {
      * 고객사 목록을 조회한다. (with pagination)
      * - Sort : companyNm ASC
      *
-     * @param page      조회할 페이지 번호 (min 1)
-     * @param size      조회할 요소 사이즈 (min 1)
-     * @param companyNm 고객사 명 (LIKE '%검색어%)
+     * @param page          조회할 페이지 번호 (min 1)
+     * @param size          조회할 요소 사이즈 (min 1)
+     * @param companyNm     고객사 명 (LIKE '%검색어%)
      * @param activationSts 활성화 여부 (null: 전체, ACTIVE: 활성화, INACTIVE: 비활성화)
      * @return PaginationRes<CustomerCompanyRes>
      */
@@ -100,7 +99,7 @@ public class AdminCompanyService {
 
         CustomerCompany savedEntity = customerCompanyRepository.save(CustomerCompany.of(companyReq));
 
-        return CompanyRes.of(savedEntity);
+        return CompanyRes.ofDefault(savedEntity);
 
     }
 
@@ -113,7 +112,7 @@ public class AdminCompanyService {
     public CompanyRes getCompanyDetail(Integer companyNo) {
         ValidationResult<CustomerCompany> valid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = valid.getOrThrow();
-        return CompanyRes.of(company);
+        return CompanyRes.ofDefault(company);
     }
 
     /**
@@ -128,7 +127,7 @@ public class AdminCompanyService {
         ValidationResult<CustomerCompany> companyResult = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = companyResult.getOrThrow();
         company.update(companyReq);
-        return CompanyRes.of(company);
+        return CompanyRes.ofDefault(company);
     }
 
     /**
@@ -155,14 +154,13 @@ public class AdminCompanyService {
         ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = companyValid.getOrThrow();
 
-        ValidationResult<Provider> providerValid = companyValidator
-                .ensureProviderExistsByProviderNo(companyProviderMapReq.providerNo());
+        ValidationResult<Provider> providerValid = companyValidator.ensureProviderExistsByProviderNo(companyProviderMapReq.providerNo());
         Provider provider = providerValid.getOrThrow();
 
-        companyValidator.ensureCcpmNotExistsByCompanyAndProvider(company, provider);
+        ValidationResult<CustomerCompanyProviderMapping> ccpmValid = companyValidator.ensureCcpmNotExistsByCompanyAndProvider(company, provider);
+        ccpmValid.validOrThrow();
 
-        return CompanyProviderMapRes.of(
-                customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider)));
+        return CompanyProviderMapRes.ofDefault(customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider)));
 
     }
 
@@ -191,12 +189,11 @@ public class AdminCompanyService {
      * @return CompanyProviderMapRes
      */
     @Transactional
-    public CompanyProviderMapRes patchProviderMappedToCompany(Integer companyNo, Integer providerNo,
-            CompanyProviderMapReq.Update companyProviderMapReq) {
+    public CompanyProviderMapRes patchProviderMappedToCompany(Integer companyNo, Integer providerNo, CompanyProviderMapReq.Update companyProviderMapReq) {
         ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
         ccp.update(companyProviderMapReq);
-        return CompanyProviderMapRes.of(ccp);
+        return CompanyProviderMapRes.ofDefault(ccp);
     }
 
     /**
@@ -207,12 +204,11 @@ public class AdminCompanyService {
      * @param size       조회할 요소 사이즈 (min 1)
      * @param companyNo  고객회사 번호
      * @param providerNo 프로바이더 번호
+     * @param search     상품명 또는 상품설명
      * @return PaginationRes<GoodsWithDataCntRes>
      */
-    public PaginationRes<GoodsWithDataCntRes> getGoodsMappedToCompany(int page, int size, Integer companyNo,
-            Integer providerNo) {
-        return PaginationRes.toRes(
-                customerCompanyGoodsMappingRepository.findGoodsMappingsByConditions(page, size, companyNo, providerNo));
+    public PaginationRes<GoodsWithDataCntRes> getGoodsMappedToCompany(int page, int size, Integer companyNo, Integer providerNo, String search) {
+        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findGoodsMappingsByConditions(page, size, companyNo, providerNo, search));
     }
 
     /**
@@ -224,27 +220,21 @@ public class AdminCompanyService {
      * @return GoodsMappingRes
      */
     @Transactional
-    public CompanyGoodsMapRes postGoodsMappedToCompany(Integer companyNo, Integer providerNo,
-            CompanyGoodsMapReq companyGoodsMapReq) {
+    public CompanyGoodsMapRes postGoodsMappedToCompany(Integer companyNo, Integer providerNo, CompanyGoodsMapReq companyGoodsMapReq) {
 
-        ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
-        CustomerCompany company = companyValid.getOrThrow();
+        ValidationResult<CustomerCompany> companyResult = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
+        CustomerCompany company = companyResult.getOrThrow();
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator
-                .ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-        CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
+        ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
+        ccpResult.validOrThrow();
 
-        ValidationResult<CustomerCompanyGoodsMapping> ccgValid = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo,
-                companyGoodsMapReq.goodsNo());
-        CustomerCompanyGoodsMapping ccg = ccgValid.getOrThrow();
+        ValidationResult<CustomerCompanyGoodsMapping> ccgResult = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo, companyGoodsMapReq.goodsNo());
+        ccgResult.validOrThrow();
 
-        ValidationResult<Goods> goodsValid = companyValidator.ensureGoodsExistsByGoodsNo(providerNo,
-                companyGoodsMapReq.goodsNo());
-        Goods goods = goodsValid.getOrThrow();
+        ValidationResult<Goods> goodsResult = companyValidator.ensureGoodsExistsByGoodsNo(providerNo, companyGoodsMapReq.goodsNo());
+        Goods goods = goodsResult.getOrThrow();
 
-        return CompanyGoodsMapRes.of(
-                customerCompanyGoodsMappingRepository
-                        .save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManagementSeparateCd())));
+        return CompanyGoodsMapRes.ofDefault(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManagementSeparateCd())));
     }
 
     /**
@@ -265,8 +255,8 @@ public class AdminCompanyService {
 
         if (GoodsAuthManagementSeparateCd.COMPANY == ccg.getId().getGoodsAuthManagementSeparateCd()) {
             List<AuthManageGoodsMapping> companyAuth = authManageGoodsMappingRepository.findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(
-                    companyNo, goodsNo,
-                    GoodsAuthManagementSeparateCd.COMPANY);
+                companyNo, goodsNo,
+                GoodsAuthManagementSeparateCd.COMPANY);
             return CompanyGoodsMapDetailRes.of(ccg, companyAuth);
         }
 
@@ -280,14 +270,16 @@ public class AdminCompanyService {
      * @param companyNo  고객회사 번호
      * @param providerNo 프로바이더 번호
      * @param goodsNo    상품 번호
-     * @return PaginationRes<AuthGoodsMappingRes>
+     * @return PaginationExtensionRes<AuthGoodsMappingRes>
      */
-    public PaginationRes<AuthGoodsMapRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo, Integer goodsNo) {
+    public PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo, Integer goodsNo) {
 
         ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         ccpResult.validOrThrow();
 
-        return PaginationRes.toRes(authManageGoodsMappingRepository.findByAuthGoodsByConditions(page, size, companyNo, goodsNo));
+        Page<AuthGoodsMapRes> paged = authManageGoodsMappingRepository.findByAuthGoodsByConditions(page, size, companyNo, goodsNo);
+
+        return PaginationExtensionRes.toRes(paged, AuthGoodsMapCntRes.of(paged.getContent()));
 
     }
 
@@ -326,8 +318,8 @@ public class AdminCompanyService {
             // 권한 구분 코드가 변경된 경우 기존 매핑을 삭제하고 새로 생성
             ccg.softDelete();
             return customerCompanyGoodsMappingRepository
-                    .save(CustomerCompanyGoodsMapping.of(ccg.getCustomerCompany(), ccg.getGoods(), req.goodsAuthManagementSeparateCd(),
-                            req.isUsed()));
+                .save(CustomerCompanyGoodsMapping.of(ccg.getCustomerCompany(), ccg.getGoods(), req.goodsAuthManagementSeparateCd(),
+                    req.isUsed()));
         } else {
             // 권한 구분 코드가 동일한 경우 기존 매핑 업데이트
             ccg.update(req);
@@ -339,12 +331,12 @@ public class AdminCompanyService {
      * 권한 매핑 처리
      */
     private void processAuthMappings(CustomerCompanyGoodsMapping ccg, List<AuthManageGoodsMapping> existingMappings, AuthGoodsMapReq req,
-            boolean hasChangedSupportCd) {
+                                     boolean hasChangedSupportCd) {
         switch (req.goodsAuthManagementSeparateCd()) {
             case COMPANY -> handleCompanyLevelPermissions(ccg, existingMappings, req, hasChangedSupportCd);
             case INDIVIDUAL -> handleIndividualLevelPermissions(ccg, existingMappings, req, hasChangedSupportCd);
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
-                    "goodsAuthManageCd value is invalid: %s".formatted(req.goodsAuthManagementSeparateCd()));
+                "goodsAuthManageCd value is invalid: %s".formatted(req.goodsAuthManagementSeparateCd()));
         }
     }
 
@@ -352,7 +344,7 @@ public class AdminCompanyService {
      * 회사 단위 권한 처리
      */
     private void handleCompanyLevelPermissions(CustomerCompanyGoodsMapping ccg, List<AuthManageGoodsMapping> existingMappings, AuthGoodsMapReq req,
-            boolean hasChangedSupportCd) {
+                                               boolean hasChangedSupportCd) {
 
         // 권한 구분 코드 변경 시 기존 권한-상품 매핑 삭제
         if (hasChangedSupportCd) {
@@ -366,16 +358,16 @@ public class AdminCompanyService {
 
         // 현재 활성 권한 맵 구성
         Map<GoodsAuthCd, AuthManageGoodsMapping> currentAuthMap = existingMappings.stream()
-                .filter(s -> !s.getIsDeleted())
-                .collect(Collectors.toMap(AuthManageGoodsMapping::getGoodsAuthCd, Function.identity()));
+            .filter(s -> !s.getIsDeleted())
+            .collect(Collectors.toMap(AuthManageGoodsMapping::getGoodsAuthCd, Function.identity()));
 
         // 조회 권한 처리
         processPermission(currentAuthMap, GoodsAuthCd.VIEW, companySetting.isViewable(),
-                () -> AuthManageGoodsMapping.of(companySetting, GoodsAuthCd.VIEW, ccg));
+            () -> AuthManageGoodsMapping.of(companySetting, GoodsAuthCd.VIEW, ccg));
 
         // 다운로드 권한 처리
         processPermission(currentAuthMap, GoodsAuthCd.DOWNLOAD, companySetting.isDownloadable(),
-                () -> AuthManageGoodsMapping.of(companySetting, GoodsAuthCd.DOWNLOAD, ccg));
+            () -> AuthManageGoodsMapping.of(companySetting, GoodsAuthCd.DOWNLOAD, ccg));
 
         // 기간 변경 시 업데이트
         updatePermissionPeriodIfChanged(existingMappings, companySetting);
@@ -385,7 +377,7 @@ public class AdminCompanyService {
      * 개인 단위 권한 처리
      */
     private void handleIndividualLevelPermissions(CustomerCompanyGoodsMapping ccg, List<AuthManageGoodsMapping> existingMappings, AuthGoodsMapReq req,
-            boolean hasChangedSupportCd) {
+                                                  boolean hasChangedSupportCd) {
         // 권한 구분 코드 변경 시 기존 권한 소프트 삭제
         if (hasChangedSupportCd) {
             existingMappings.forEach(BaseEntity::softDelete);
@@ -398,17 +390,17 @@ public class AdminCompanyService {
 
         // 사용자 정보 조회 및 매핑
         List<Integer> userIds = individualSettings.stream()
-                .map(AuthGoodsMapReq.IndividualSetting::userNo)
-                .collect(Collectors.toList());
+            .map(AuthGoodsMapReq.IndividualSetting::userNo)
+            .collect(Collectors.toList());
 
         List<User> users = userRepository.findByUserNoInAndIsDeletedFalse(userIds);
         Map<Integer, User> userMap = users.stream()
-                .collect(Collectors.toMap(User::getUserNo, Function.identity()));
+            .collect(Collectors.toMap(User::getUserNo, Function.identity()));
 
         // 기존 권한 맵 구성
         Map<Integer, List<AuthManageGoodsMapping>> userAuthMap = existingMappings.stream()
-                .filter(mapping -> mapping.getUser() != null)
-                .collect(Collectors.groupingBy(mapping -> mapping.getUser().getUserNo()));
+            .filter(mapping -> mapping.getUser() != null)
+            .collect(Collectors.groupingBy(mapping -> mapping.getUser().getUserNo()));
 
         // 개별 사용자 권한 처리
         individualSettings.forEach(setting -> {
@@ -425,21 +417,21 @@ public class AdminCompanyService {
      * 개별 사용자 권한 처리
      */
     private void processIndividualUserPermissions(CustomerCompanyGoodsMapping ccg, Map<Integer, List<AuthManageGoodsMapping>> userAuthMap,
-            User user, AuthGoodsMapReq.IndividualSetting setting) {
+                                                  User user, AuthGoodsMapReq.IndividualSetting setting) {
         // 현재 사용자의 권한 매핑
         List<AuthManageGoodsMapping> userMappings = userAuthMap.getOrDefault(user.getUserNo(), Collections.emptyList());
 
         // 현재 활성 권한 맵 구성
         Map<GoodsAuthCd, AuthManageGoodsMapping> currentAuthMap = userMappings.stream()
-                .filter(s -> !s.getIsDeleted())
-                .collect(Collectors.toMap(AuthManageGoodsMapping::getGoodsAuthCd, Function.identity()));
+            .filter(s -> !s.getIsDeleted())
+            .collect(Collectors.toMap(AuthManageGoodsMapping::getGoodsAuthCd, Function.identity()));
 
         // 권한 처리 (조회/다운로드)
         processPermission(currentAuthMap, GoodsAuthCd.VIEW, setting.isViewable(),
-                () -> AuthManageGoodsMapping.of(user, setting, GoodsAuthCd.VIEW, ccg));
+            () -> AuthManageGoodsMapping.of(user, setting, GoodsAuthCd.VIEW, ccg));
 
         processPermission(currentAuthMap, GoodsAuthCd.DOWNLOAD, setting.isDownloadable(),
-                () -> AuthManageGoodsMapping.of(user, setting, GoodsAuthCd.DOWNLOAD, ccg));
+            () -> AuthManageGoodsMapping.of(user, setting, GoodsAuthCd.DOWNLOAD, ccg));
 
         // 기간 변경 시 업데이트
         updatePermissionPeriodIfChanged(userMappings, setting);
@@ -449,7 +441,7 @@ public class AdminCompanyService {
      * 특정 권한 처리 (생성/삭제)
      */
     private void processPermission(Map<GoodsAuthCd, AuthManageGoodsMapping> currentAuthMap, GoodsAuthCd authCd, boolean isEnabled,
-            Supplier<AuthManageGoodsMapping> mappingCreator) {
+                                   Supplier<AuthManageGoodsMapping> mappingCreator) {
         if (isEnabled && !currentAuthMap.containsKey(authCd)) {
             AuthManageGoodsMapping newMapping = mappingCreator.get();
             AuthManageGoodsMapping savedMapping = authManageGoodsMappingRepository.save(newMapping);

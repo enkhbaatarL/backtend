@@ -1,5 +1,6 @@
 package com.sk.domain.admin.dto.response.company;
 
+import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -19,29 +20,35 @@ public record CompanyProviderMapRes(
     Integer companyNo,
 
     @Schema(description = "고객회사 명", example = "sk이노베이션")
-    String companyNm
+    String companyNm,
+
+    @Schema(description = "감사 정보")
+    AuditInfo auditInfo
 
 ) {
 
     @Builder
-    public CompanyProviderMapRes(Integer providerNo, String providerNm, Integer companyNo, String companyNm) {
+    public CompanyProviderMapRes(Integer providerNo, String providerNm, Integer companyNo, String companyNm, AuditInfo auditInfo) {
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.companyNo = companyNo;
         this.companyNm = companyNm;
+        this.auditInfo = auditInfo;
     }
 
-    public static CompanyProviderMapRes of(CustomerCompanyProviderMapping providerMapping) {
+    public static CompanyProviderMapRes ofDefault(CustomerCompanyProviderMapping entity) {
         return CompanyProviderMapRes.builder()
-            .providerNo(providerMapping.getProvider().getProviderNo())
-            .providerNm(providerMapping.getProvider().getProviderNm())
-            .companyNo(providerMapping.getCustomerCompany().getCustomerCompanyNo())
-            .companyNm(providerMapping.getCustomerCompany().getCustomerCompanyNm())
+            .providerNo(entity.getProvider().getProviderNo())
+            .providerNm(entity.getProvider().getProviderNm())
+            .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
+            .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
+            .auditInfo(AuditInfo.ofSimple(
+                entity.getCreateUserId(),
+                entity.getCreateDt(),
+                entity.getModifyUserId(),
+                entity.getModifyDt()
+            ))
             .build();
-    }
-
-    public static List<CompanyProviderMapRes> ofList(List<CustomerCompanyProviderMapping> providerMappings) {
-        return providerMappings.stream().map(CompanyProviderMapRes::of).collect(Collectors.toList());
     }
 
 }

@@ -29,7 +29,7 @@ public record CompanyRes(
     @Schema(description = "활성화 여부", example = "true")
     Boolean isActivated,
 
-    @JsonUnwrapped
+//    @JsonUnwrapped
     @Schema(description = "감사 정보")
     AuditInfo auditInfo
 
@@ -50,29 +50,46 @@ public record CompanyRes(
     public CompanyRes(Integer companyNo, String companyCd, String companyNm, String usageBeginDate, String usageEndDate, Boolean isActivated, String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
                       String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
         this(companyNo, companyCd, companyNm, usageBeginDate, usageEndDate, isActivated,
-            AuditInfo.of(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
+            AuditInfo.ofDetail(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
-    public static CompanyRes of(CustomerCompany savedEntity) {
+    public static CompanyRes ofDefault(CustomerCompany entity) {
         return CompanyRes.builder()
-            .companyNo(savedEntity.getCustomerCompanyNo())
-            .companyCd(savedEntity.getCustomerCompanyCd())
-            .companyNm(savedEntity.getCustomerCompanyNm())
-            .usageBeginDate(savedEntity.getUseBeginDt())
-            .usageEndDate(savedEntity.getUseEndDt())
-            .auditInfo(AuditInfo.of(
-                savedEntity.getCreateUserId(),
-                savedEntity.getCreateDt(),
-                savedEntity.getModifyUserId(),
-                savedEntity.getModifyDt(),
-                savedEntity.accessCreatorNm(),
-                savedEntity.accessCreatorDeptNm(),
-                savedEntity.accessCreatorCompanyNm(),
-                savedEntity.accessModifierNm(),
-                savedEntity.accessModifierDeptNm(),
-                savedEntity.accessModifierCompanyNm()
+            .companyNo(entity.getCustomerCompanyNo())
+            .companyCd(entity.getCustomerCompanyCd())
+            .companyNm(entity.getCustomerCompanyNm())
+            .usageBeginDate(entity.getUseBeginDt())
+            .usageEndDate(entity.getUseEndDt())
+            .auditInfo(AuditInfo.ofSimple(
+                entity.getCreateUserId(),
+                entity.getCreateDt(),
+                entity.getModifyUserId(),
+                entity.getModifyDt()
             ))
-            .isActivated(savedEntity.getIsUsed())
+            .isActivated(entity.getIsUsed())
+            .build();
+    }
+
+    public static CompanyRes of(CustomerCompany entity) {
+        return CompanyRes.builder()
+            .companyNo(entity.getCustomerCompanyNo())
+            .companyCd(entity.getCustomerCompanyCd())
+            .companyNm(entity.getCustomerCompanyNm())
+            .usageBeginDate(entity.getUseBeginDt())
+            .usageEndDate(entity.getUseEndDt())
+            .auditInfo(AuditInfo.ofDetail(
+                entity.getCreateUserId(),
+                entity.getCreateDt(),
+                entity.getModifyUserId(),
+                entity.getModifyDt(),
+                entity.accessCreatorNm(),
+                entity.accessCreatorDeptNm(),
+                entity.accessCreatorCompanyNm(),
+                entity.accessModifierNm(),
+                entity.accessModifierDeptNm(),
+                entity.accessModifierCompanyNm()
+            ))
+            .isActivated(entity.getIsUsed())
             .build();
     }
 
