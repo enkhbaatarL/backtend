@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 
@@ -36,23 +37,31 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.isPopupUse,
                 b.bulletinCategorySeparateCd,
                 b.bulletinTitleNm,
-                cuc.customerCompanyNm,
-                cu.departmentNm,
-                cu.userNm,
-                b.createDt,
                 CASE
                     WHEN b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
                          AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
                     THEN 'ACTIVE'
                     ELSE 'INACTIVE'
                 END,
-                COALESCE(CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm), ''), '')
+                COALESCE(CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm), ''), '전체'),
+                new com.sk.domain.shared.dto.AuditInfo(
+                    b.createUserId,
+                    b.createDt,
+                    b.modifyUserId,
+                    b.modifyDt,
+                    new com.sk.domain.shared.dto.AuditExtension(
+                        b.creator.userNm,
+                        b.creator.departmentNm,
+                        b.creator.customerCompany.customerCompanyNm,
+                        b.modifier.userNm,
+                        b.modifier.departmentNm,
+                        b.modifier.customerCompany.customerCompanyNm
+                    )
+                )
             )
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
             LEFT JOIN m.customerCompany c
-            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
-            LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
               AND b.bulletinTypeCd = 'NOTICE'
               AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
@@ -72,18 +81,13 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.isTopFixed,
                 b.isPopupUse,
                 b.bulletinCategorySeparateCd,
-                b.bulletinTitleNm,
-                cu.userNm,
-                b.createDt,
-                b.bulletinValidBeginDt,
-                b.bulletinValidEndDt
+                b.bulletinTitleNm
             ORDER BY b.createDt DESC
             """, countQuery = """
             SELECT COUNT(DISTINCT b.bulletinNo)
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
             LEFT JOIN m.customerCompany c
-            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
             WHERE b.isDeleted = false
             AND b.bulletinTypeCd = 'NOTICE'
             AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
@@ -129,14 +133,22 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.bulletinNo,
                 b.bulletinCategorySeparateCd,
                 b.bulletinTitleNm,
-                cuc.customerCompanyNm,
-                cu.departmentNm,
-                cu.userNm,
-                b.createDt
+                new com.sk.domain.shared.dto.AuditInfo(
+                    b.createUserId,
+                    b.createDt,
+                    b.modifyUserId,
+                    b.modifyDt,
+                    new com.sk.domain.shared.dto.AuditExtension(
+                        b.creator.userNm,
+                        b.creator.departmentNm,
+                        b.creator.customerCompany.customerCompanyNm,
+                        b.modifier.userNm,
+                        b.modifier.departmentNm,
+                        b.modifier.customerCompany.customerCompanyNm
+                    )
+                )
             )
             FROM BulletinBoard b
-            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
-            LEFT JOIN cu.customerCompany cuc
             WHERE b.isDeleted = false
             AND b.bulletinTypeCd = 'FAQ'
             AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
@@ -152,7 +164,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
             AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
                         """)
-    Page<BulletinBoard> searchFaq(
+    Page<FaqRes> searchFaq(
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);

@@ -31,6 +31,7 @@ import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
+import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
@@ -239,7 +240,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 목록 조회 - with pagination", description = "FAQ 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq")
-    public BaseResponse<PaginationRes<BulletinBoard>> getAllFaq(
+    public BaseResponse<PaginationRes<FaqRes>> getAllFaq(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
             @RequestParam(value = "category", required = false, defaultValue = "") String category,

@@ -23,6 +23,7 @@ import com.sk.domain.admin.dto.response.bbs.BulletinBoardCompanyDto;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFileDto;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFilterDto;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
+import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
@@ -311,10 +312,10 @@ public class AdminBulletinBoardService {
      * @param keyword 조회할 단어
      * @return PaginationRes<BulletinBoard>
      */
-    public PaginationRes<BulletinBoard> getAllFaq(int page, int size, String category, String keyword) {
+    public PaginationRes<FaqRes> getAllFaq(int page, int size, String category, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<BulletinBoard> BulletinBoardPage = bulletinBoardRepository.searchFaq(category, keyword, pageable);
+        Page<FaqRes> BulletinBoardPage = bulletinBoardRepository.searchFaq(category, keyword, pageable);
 
         return PaginationRes.toRes(BulletinBoardPage);
     }
