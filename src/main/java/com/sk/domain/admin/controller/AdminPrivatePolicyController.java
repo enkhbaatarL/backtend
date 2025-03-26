@@ -21,14 +21,6 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * todo
- * 
- * 1.
- * 2.
- *
- */
-
 @Tag(name = "08. 정책약관 관리 API", description = "정책약관 관리 API 입니다.")
 @Slf4j
 @RestController
