@@ -1,5 +1,7 @@
 package com.sk.domain.admin.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.admin.dto.request.file.FileUploadReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminFileService;
@@ -41,11 +42,9 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
-            @RequestPart(value = "body") FileUploadReq body,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, body.fileRelationshipObjectDistinguishNo(),
-                body.fileRelationshipObjectSeparateCode(), body.fileValidEndDt()));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file));
     }
 
     @ApiOrder(2)
@@ -77,6 +76,16 @@ public class AdminFileController {
         return BaseResponseFactory.create("success");
     }
 
+    public BaseResponse<String> updateFile(
+            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo,
+            @PathVariable(value = "fileRelationshipObjectDistinguishNo") @Min(value = 1) Integer fileRelationshipObjectDistinguishNo,
+            @PathVariable(value = "fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode) {
+
+        adminFileService.updateFile(fileNo, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
+
+        return BaseResponseFactory.create("success");
+    }
+
     @ApiOrder(4)
     @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -85,5 +94,14 @@ public class AdminFileController {
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
         return BaseResponseFactory.create(adminFileService.getPresignedUrl(fileNo));
+    }
+
+    @ApiOrder(5)
+    @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/all")
+    public BaseResponse<List<String>> getAll() {
+
+        return BaseResponseFactory.create(adminFileService.getAll());
     }
 }

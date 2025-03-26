@@ -102,6 +102,7 @@ public class UploadedFile extends BaseEntity {
   }
 
   public void update(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCd) {
+    this.storagePathNm = fileRelationshipObjectSeparateCd;
     this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
     this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
   }

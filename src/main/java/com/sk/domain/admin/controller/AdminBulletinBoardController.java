@@ -188,7 +188,7 @@ public class AdminBulletinBoardController {
             throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, 0, "BBS", DateUtil.endYmd()));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file));
     }
 
     @ApiOrder(8)
