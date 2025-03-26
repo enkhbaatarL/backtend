@@ -1,26 +1,34 @@
 package com.sk.domain.admin.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.UUID;
-
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.HttpMethod;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,22 +43,103 @@ public class AdminObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
 
+    @Value("${ncp.storage.bucketName}")
+    private String bucketName;
+
+    // TODO: 파일관계객체구분코드가 추가 될 때마다 폴더를 생성 해준다.
+    private final String[] DIR_LIST = { "TEMP", "BBS", "GDATS", "GUDAT" };
+
+    @PostConstruct
+    public void init() {
+        for (int i = 0; i < DIR_LIST.length; i++) {
+            objectStorageClient.putObject(bucketName, DIR_LIST[i] + "/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+        }
+    }
+
+    /**
+    * 파일 목록을 조회한다.
+    *
+    * @return List<String>
+    */
+    public List<String> getAll() {
+        List<String> list = new ArrayList<>();
+
+        // list all in the bucket
+        try {
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                    .withBucketName(bucketName)
+                    .withMaxKeys(300);
+
+            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+
+            System.out.println("Object List:");
+            while (true) {
+                for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                    for (String dir : DIR_LIST) {
+                        if (objectSummary.getKey().contains(dir)) {
+                            System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
+                                    + objectSummary.getOwner().getId());
+
+                            list.add(objectSummary.getKey());
+                        }
+                    }
+
+                }
+
+                if (objectListing.isTruncated()) {
+                    objectListing = objectStorageClient.listNextBatchOfObjects(objectListing);
+                } else {
+                    break;
+                }
+            }
+        } catch (AmazonS3Exception e) {
+            System.err.println(e.getErrorMessage());
+            System.exit(1);
+        }
+
+        // top level folders and files in the bucket
+        try {
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                    .withBucketName(bucketName)
+                    .withDelimiter("/")
+                    .withMaxKeys(300);
+
+            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+
+            System.out.println("Folder List:");
+            for (String commonPrefixes : objectListing.getCommonPrefixes()) {
+                System.out.println("    name=" + commonPrefixes);
+            }
+
+            System.out.println("File List:");
+            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                System.out.println(
+                        "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
+            }
+
+            return list;
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch (SdkClientException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
     /**
     * 파일을 업로드 한다.
     *
+    * @param fileName 파일 Full Path
     * @param MultipartFile 단일 파일 업로드
-    * @param prefix 파일 이름 접두어
     * @return String 실제 저장 된 파일명
     */
-    public String uploadFile(String bucketName, String prefix, MultipartFile file) throws IOException {
+    public String uploadFile(String fileName, MultipartFile file) throws IOException {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(file.getContentType());
         objectMetadata.setContentLength(file.getSize());
 
-        String fileName = createFileName(prefix, file.getOriginalFilename());
-
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, file.getInputStream(), objectMetadata);
-
         objectStorageClient.putObject(putObjectRequest);
 
         return fileName;
@@ -59,11 +148,10 @@ public class AdminObjectStorageService {
     /**
     * 파일을 다운로드 한다.
     *
-    * @param bucketName 버킷명
-    * @param fileName 파일이름
+    * @param fileName 파일 Full Path
     * @return byte[] 파일 데이타
     */
-    public byte[] downloadFile(String bucketName, String fileName) throws IOException {
+    public byte[] downloadFile(String fileName) throws IOException {
         S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
 
         S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
@@ -74,22 +162,43 @@ public class AdminObjectStorageService {
     /**
     * 파일을 삭제 한다.
     *
-    * @param bucketName 버킷명
-    * @param fileName 파일이름
+    * @param fileName 파일 Full Path
     * @return 
     */
-    public void deleteFile(String bucketName, String fileName) {
+    public void deleteFile(String fileName) {
         objectStorageClient.deleteObject(new DeleteObjectRequest(bucketName, fileName));
+    }
+
+    /**
+    * 파일을 복사 한다.
+    *
+    * @param oldPath 기존 위치
+    * @param newPath 새 위치
+    * @return 
+    */
+    public void copyFile(String oldPath, String newPath) {
+        objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
+    }
+
+    /**
+    * 파일을 이동 한다.
+    *
+    * @param oldPath 기존 위치
+    * @param newPath 새 위치
+    * @return 
+    */
+    public void moveFile(String oldPath, String newPath) {
+        this.copyFile(oldPath, newPath);
+        this.deleteFile(oldPath);
     }
 
     /**
     * 파일의 URL을 생성한다.
     *
-    * @param bucketName 버킷명
-    * @param fileName 파일이름
+    * @param fileName 파일 Full Path
     * @return 
     */
-    public String getPresignedUrl(String bucketName, String fileName) {
+    public String getPresignedUrl(String fileName) {
         // presigned URL 만료 시간 설정 (예: 1시간 후 만료)
         Date expiration = new Date();
         long expTimeMillis = expiration.getTime() + (1000 * 60 * 60);
@@ -107,15 +216,4 @@ public class AdminObjectStorageService {
         return url.toString();
     }
 
-    public String createFileName(String prefix, String fileName) {
-        if (prefix.isEmpty()) {
-            return UUID.randomUUID().toString().concat(getFileExtension(fileName));
-        } else {
-            return prefix.toLowerCase() + "-" + UUID.randomUUID().toString().concat(getFileExtension(fileName));
-        }
-    }
-
-    private String getFileExtension(String fileName) {
-        return fileName.substring(fileName.lastIndexOf("."));
-    }
 }

@@ -15,9 +15,10 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
-import com.sk.domain.admin.dto.response.provider.GoodsDataSourceRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDeleteRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
+import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
 import com.sk.domain.admin.dto.response.provider.GoodsUpdateRes;
 import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
@@ -43,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminProviderService {
   private final ProviderRepository providerRepository;
   private final GoodsRepository goodsRepository;
-  private final GoodsDataRepository goodsDataSourceRepository;
+  private final GoodsDataRepository goodsDataRepository;
 
   /**
    * 데이타 프로바이더 목록을 조회한다.
@@ -135,7 +136,7 @@ public class AdminProviderService {
    * @param providerNo 데이타 프로바이더 번호
    * @return ProviderLatestUpdatedRes
    */
-  public ProviderLatestUpdatedRes getLatestUpdated(int providerNo) {
+  public ProviderLatestUpdatedRes getProviderLatestUpdated(int providerNo) {
     return providerRepository.findByProviderNoAndIsDeletedFalseWithGoodsLatestModifyInfo(providerNo)
         .orElseThrow(
             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
@@ -213,21 +214,35 @@ public class AdminProviderService {
   }
 
   /**
-   * 상품 목록을 페이지네이션 처리하여 조회한다.
+   * 해당 상품의 최신 수정일 노출
+   * 상품 정보 수정 업데이트 범위 : 
+   *
+   * @param providerNo 데이타 프로바이더 번호
+   * @param goodsNo 상품 번호
+   * @return GoodsLatestUpdatedRes
+   */
+  public GoodsLatestUpdatedRes getGoodsLatestUpdated(int providerNo, int goodsNo) {
+    return goodsRepository.findByProviderNoAndGoodsNoAndIsDeletedFalseWithLatestModifyInfo(providerNo, goodsNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d, goods no: %d", providerNo, goodsNo)));
+  }
+
+  /**
+   * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
    *
    * @param page       조회할 페이지 번호 (min 1)
    * @param size       조회할 요소 사이즈 (min 1)
    * @param keyword 검색 키워드
    * @param providerNo 데이타 프로바이더 번호
    * @param goodsNo 상품 번호
-   * @return PaginationRes<GoodsDataSourceRes>
+   * @return PaginationRes<GoodsDataRes>
    */
-  public PaginationRes<GoodsDataSourceRes> getGoodsDataSoueces(int page, int size, String keyword, int providerNo, int goodsNo) {
+  public PaginationRes<GoodsDataRes> getAllGoodsData(int page, int size, String keyword, int providerNo, int goodsNo) {
 
     Pageable pageable = PageRequest.of(page - 1, size);
 
-//    Page<GoodsDataSourceRes> goodsPage = goodsDataSourceRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
-//        pageable);
+    // Page<GoodsDataSourceRes> goodsPage = goodsDataRepository.searchGoodsDataSources(providerNo, goodsNo, keyword,
+    // pageable);
 
     return null;
   }
