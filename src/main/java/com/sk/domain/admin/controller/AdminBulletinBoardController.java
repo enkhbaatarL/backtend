@@ -181,11 +181,11 @@ public class AdminBulletinBoardController {
 
         String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
         if (file.getSize() > MAX_SIZE) {
-            throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
         return BaseResponseFactory.create(adminFileService.uploadFile(file));
