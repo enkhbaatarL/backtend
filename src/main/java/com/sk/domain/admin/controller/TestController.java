@@ -11,10 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.request.TestLoginReq;
+import com.sk.domain.admin.dto.request.TestReq;
+import com.sk.domain.admin.dto.request.TestVerifyTokenReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
+import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -44,9 +45,23 @@ public class TestController {
 
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/login")
+    @PostMapping("/login-user")
     public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestLoginReq testLoginReq) {
         return BaseResponseFactory.create(testService.userLogin(testLoginReq));
+    }
+
+    @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/login-admin")
+    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestLoginReq testLoginReq) {
+        return BaseResponseFactory.create(testService.adminLogin(testLoginReq));
+    }
+
+    @Operation(summary = "토큰 검증", description = "토큰 검증을 진행합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/verify-token")
+    public BaseResponse<Boolean> verifyToken(@RequestBody @Valid TestVerifyTokenReq testVerifyTokenReq) {
+        return BaseResponseFactory.create(testService.checkToken(testVerifyTokenReq));
     }
 
     @Operation(summary = "테스트(멀티테넌시 master mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 master mybatis) 알림 기록을 조회합니다.")

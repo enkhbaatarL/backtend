@@ -1,9 +1,7 @@
 package com.sk.common.config.security.saml;
 
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.hc.core5.http.HttpStatus;
@@ -16,8 +14,9 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tlm.UserAccessLog;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -57,19 +56,16 @@ public class CustomSamlAdminAuthenticationSuccessHandler implements Authenticati
                 .orElseThrow(() -> new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId)));
 
         // 클라이언트 IP 추출
-        String clientIp = request.getHeader("X-Forwarded-For");
-        if (clientIp == null || clientIp.isEmpty()) {
-            clientIp = request.getRemoteAddr();
-        }
+        final String clientIp = request.getHeader("X-Forwarded-For") != null && !request.getHeader("X-Forwarded-For").isEmpty() 
+                ? request.getHeader("X-Forwarded-For") 
+                : request.getRemoteAddr();
         log.info("Client IP: {}", clientIp);
 
-        // 4. IP 접근 허용 여부 확인
-        List<AdminPermission> permissions = adminPermissionRepository
-                .findByIdUserNoAndIdIpAddressAndIsDeletedFalse(user.getUserNo(), clientIp);
-        if (permissions.isEmpty()) {
-            log.warn("IP {} not allowed for user {}", clientIp, loginId);
-            throw new AccessDeniedException("허용되지 않은 IP 주소입니다: " + clientIp);
-        }
+
+        adminPermissionRepository.findByIdUserNoAndIdIpAddressAndIsDeletedFalse(user.getUserNo(), clientIp)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "허용되지 않은 IP 주소입니다: " + clientIp));
 
         // JWT 토큰 생성
         String accessToken = jwtUtil.generateAccessToken(user);

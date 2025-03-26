@@ -3,6 +3,10 @@ package com.sk.domain.shared.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sk.common.enums.AuthComponent;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.utils.JwtUtil;
 import com.sk.domain.shared.dto.response.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tmd.User;
@@ -36,13 +40,14 @@ public class AuthService {
 		Claims accessTokenClaims = jwtUtil.extractClaimsIgnoreExpiration(accessToken);
 
 		// refreshToken 검증
-		if (jwtUtil.isTokenExpired(refreshToken)) {
-			throw new IllegalArgumentException("Refresh token expired");
+		if (jwtUtil.isTokenValid(refreshToken)) {
+			if (!refreshTokenService.validateRefreshToken(accessTokenClaims.get("userNo", Integer.class), refreshToken)) {
+				throw CustomAuthenticationException.of(AuthComponent.TOKEN_VALIDATION, ResultCode.Error.AUTH_TOKEN_INVALID);
+			}
 		}
-		refreshTokenService.validateRefreshToken(accessTokenClaims.get("userNo", Integer.class), refreshToken);
 
 		User user = userRepository.findById(accessTokenClaims.get("userNo", Integer.class))
-				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "사용자 정보가 없습니다."));
 
 		// 토큰 생성
 		String renewedAccessToken = jwtUtil.generateAccessToken(user);
