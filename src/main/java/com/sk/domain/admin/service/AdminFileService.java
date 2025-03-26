@@ -27,6 +27,15 @@ public class AdminFileService {
   private final AdminObjectStorageService adminObjectStorageService;
 
   /**
+    * 전체 파일를 조회한다.
+    *
+    * @return List<String>
+    */
+  public List<String> getAll() {
+    return adminObjectStorageService.getAll();
+  }
+
+  /**
     * 파일를 조회한다.
     *
     * @param fileNo 파일번호
@@ -45,51 +54,18 @@ public class AdminFileService {
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return UploadedFile
     */
-  public List<UploadedFile> getFiles(
-      Integer fileRelationshipObjectDistinguishNo,
-      String fileRelationshipObjectSeparateCode) {
-    return uploadedFileRepository
-        .findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
-  }
-
-  /**
-    * 파일 정보를 수정한다.
-    *
-    * @param fileNo 파일번호
-    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
-    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
-    * @return UploadedFile
-    */
-  public UploadedFile updateFile(
-      Long fileNo,
-      Integer fileRelationshipObjectDistinguishNo,
-      String fileRelationshipObjectSeparateCode) {
-    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
-
-    uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
-
-    String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-    String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
-    adminObjectStorageService.moveFile(oldPath, newPath);
-
-    return uploadedFile;
+  public List<UploadedFile> getFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+    return uploadedFileRepository.findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
   }
 
   /**
     * 파일을 업로드 한다.
     *
     * @param file 단일 파일 업로드
-    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
-    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
-    * @param fileValidEndDt
     * @return FileUploadRes
     */
   @Transactional
-  public FileUploadRes uploadFile(
-      MultipartFile file) {
-
+  public FileUploadRes uploadFile(MultipartFile file) {
     try {
       String originalFileNm = file.getOriginalFilename();
       String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
@@ -102,7 +78,7 @@ public class AdminFileService {
       String fileName = Paths.get(storagePathNm, storageFileNm).toString();
 
       adminObjectStorageService.uploadFile(fileName, file);
-      String fileUrl = adminObjectStorageService.getPresignedUrl(storageFileNm);
+      String fileUrl = adminObjectStorageService.getPresignedUrl(fileName);
 
       // DB 에 저장
       UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -179,6 +155,33 @@ public class AdminFileService {
   }
 
   /**
+    * 파일 정보를 수정한다.
+    *
+    * @param fileNo 파일번호
+    * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
+    * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
+    * @return UploadedFile
+    */
+  @Transactional
+  public UploadedFile updateFile(
+      Long fileNo,
+      Integer fileRelationshipObjectDistinguishNo,
+      String fileRelationshipObjectSeparateCode,
+      String fileValidEndDt) {
+    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+        .orElseThrow(
+            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+    String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+    String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
+    adminObjectStorageService.moveFile(oldPath, newPath);
+
+    uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
+
+    return uploadedFile;
+  }
+
+  /**
     * 파일에 대한 URL을 생성한다.
     *
     * @param fileNo 파일번호
@@ -191,10 +194,6 @@ public class AdminFileService {
 
     String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
     return adminObjectStorageService.getPresignedUrl(fileName);
-  }
-
-  public List<String> getAll() {
-    return adminObjectStorageService.getAll();
   }
 
   private String getFileExtension(String fileName) {

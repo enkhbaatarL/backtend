@@ -46,13 +46,85 @@ public class AdminObjectStorageService {
     @Value("${ncp.storage.bucketName}")
     private String bucketName;
 
+    // TODO: 파일관계객체구분코드가 추가 될 때마다 폴더를 생성 해준다.
+    private final String[] DIR_LIST = { "TEMP", "BBS", "GDATS", "GUDAT" };
+
     @PostConstruct
     public void init() {
-        // TODO: 파일관계객체구분코드가 추가 될 때마다 폴더를 생성 해준다.
-        objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
-        objectStorageClient.putObject(bucketName, "BBS/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
-        objectStorageClient.putObject(bucketName, "GDATS/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
-        objectStorageClient.putObject(bucketName, "GUDAT/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+        for (int i = 0; i < DIR_LIST.length; i++) {
+            objectStorageClient.putObject(bucketName, DIR_LIST[i] + "/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+        }
+    }
+
+    /**
+    * 파일 목록을 조회한다.
+    *
+    * @return List<String>
+    */
+    public List<String> getAll() {
+        List<String> list = new ArrayList<>();
+
+        // list all in the bucket
+        try {
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                    .withBucketName(bucketName)
+                    .withMaxKeys(300);
+
+            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+
+            System.out.println("Object List:");
+            while (true) {
+                for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                    for (String dir : DIR_LIST) {
+                        if (objectSummary.getKey().contains(dir)) {
+                            System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
+                                    + objectSummary.getOwner().getId());
+
+                            list.add(objectSummary.getKey());
+                        }
+                    }
+
+                }
+
+                if (objectListing.isTruncated()) {
+                    objectListing = objectStorageClient.listNextBatchOfObjects(objectListing);
+                } else {
+                    break;
+                }
+            }
+        } catch (AmazonS3Exception e) {
+            System.err.println(e.getErrorMessage());
+            System.exit(1);
+        }
+
+        // top level folders and files in the bucket
+        try {
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                    .withBucketName(bucketName)
+                    .withDelimiter("/")
+                    .withMaxKeys(300);
+
+            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+
+            System.out.println("Folder List:");
+            for (String commonPrefixes : objectListing.getCommonPrefixes()) {
+                System.out.println("    name=" + commonPrefixes);
+            }
+
+            System.out.println("File List:");
+            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                System.out.println(
+                        "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
+            }
+
+            return list;
+        } catch (AmazonS3Exception e) {
+            e.printStackTrace();
+        } catch (SdkClientException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     /**
@@ -144,68 +216,4 @@ public class AdminObjectStorageService {
         return url.toString();
     }
 
-    /**
-    * 파일 목록을 조회한다.
-    *
-    * @return List<String>
-    */
-    public List<String> getAll() {
-        List<String> list = new ArrayList<>();
-
-        // list all in the bucket
-        try {
-            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                    .withBucketName(bucketName)
-                    .withMaxKeys(300);
-
-            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
-
-            System.out.println("Object List:");
-            while (true) {
-                for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                    System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
-                            + objectSummary.getOwner().getId());
-                }
-
-                if (objectListing.isTruncated()) {
-                    objectListing = objectStorageClient.listNextBatchOfObjects(objectListing);
-                } else {
-                    break;
-                }
-            }
-        } catch (AmazonS3Exception e) {
-            System.err.println(e.getErrorMessage());
-            System.exit(1);
-        }
-
-        // top level folders and files in the bucket
-        try {
-            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                    .withBucketName(bucketName)
-                    .withDelimiter("/")
-                    .withMaxKeys(300);
-
-            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
-
-            System.out.println("Folder List:");
-            for (String commonPrefixes : objectListing.getCommonPrefixes()) {
-                System.out.println("    name=" + commonPrefixes);
-            }
-
-            System.out.println("File List:");
-            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                list.add(objectSummary.getKey());
-                System.out.println(
-                        "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
-            }
-
-            return list;
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
 }

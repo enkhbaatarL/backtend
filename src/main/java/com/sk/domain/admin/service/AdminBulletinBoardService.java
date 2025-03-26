@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
@@ -118,7 +119,7 @@ public class AdminBulletinBoardService {
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
 
         if (dto.fileNo() != null) {
-            adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), "BBS");
+            adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), "BBS", DateUtil.endYmd());
         }
 
         if (dto.isWholePost()) {
@@ -194,7 +195,7 @@ public class AdminBulletinBoardService {
         if (dto.fileNo() == null) {
             adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), "BBS");
         } else {
-            adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), "BBS");
+            adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), "BBS", DateUtil.endYmd());
         }
 
         if (dto.isWholePost() != null) {

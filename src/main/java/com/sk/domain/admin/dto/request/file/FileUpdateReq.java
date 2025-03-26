@@ -5,7 +5,7 @@ import lombok.Builder;
 
 // @formatter:off
 @Builder
-public record FileUploadReq(
+public record FileUpdateReq(
     @Schema(description = "파일관계객체식별번호", example = "1")
     Integer fileRelationshipObjectDistinguishNo,
 
@@ -15,8 +15,8 @@ public record FileUploadReq(
     @Schema(description = "파일관계객체구분코드", example = "99991231")
     String fileValidEndDt) {
 
-    public static FileUploadReq of(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode, String fileValidEndDt) {
-        return FileUploadReq.builder()
+    public static FileUpdateReq of(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode, String fileValidEndDt) {
+        return FileUpdateReq.builder()
                 .fileRelationshipObjectDistinguishNo(fileRelationshipObjectDistinguishNo)
                 .fileRelationshipObjectSeparateCode(fileRelationshipObjectSeparateCode)
                 .fileValidEndDt(fileValidEndDt)

@@ -8,8 +8,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.admin.dto.request.file.FileUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminFileService;
@@ -25,6 +28,7 @@ import com.sk.domain.admin.service.AdminFileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +42,15 @@ public class AdminFileController {
     private final AdminFileService adminFileService;
 
     @ApiOrder(1)
+    @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/all")
+    public BaseResponse<List<String>> getAll() {
+
+        return BaseResponseFactory.create(adminFileService.getAll());
+    }
+
+    @ApiOrder(2)
     @Operation(summary = "파일 업로드", description = "파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -47,7 +60,7 @@ public class AdminFileController {
         return BaseResponseFactory.create(adminFileService.uploadFile(file));
     }
 
-    @ApiOrder(2)
+    @ApiOrder(3)
     @Operation(summary = "파일 다운로드", description = "파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{fileNo}")
@@ -64,7 +77,7 @@ public class AdminFileController {
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
     }
 
-    @ApiOrder(3)
+    @ApiOrder(4)
     @Operation(summary = "파일 삭제", description = "파일을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/{fileNo}")
@@ -76,17 +89,21 @@ public class AdminFileController {
         return BaseResponseFactory.create("success");
     }
 
+    @ApiOrder(5)
+    @Operation(summary = "파일 수정", description = "파일을 수정합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/{fileNo}")
     public BaseResponse<String> updateFile(
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo,
-            @PathVariable(value = "fileRelationshipObjectDistinguishNo") @Min(value = 1) Integer fileRelationshipObjectDistinguishNo,
-            @PathVariable(value = "fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode) {
+            @RequestBody @Valid FileUpdateReq body) {
 
-        adminFileService.updateFile(fileNo, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
+        adminFileService.updateFile(fileNo, body.fileRelationshipObjectDistinguishNo(), body.fileRelationshipObjectSeparateCode(),
+                body.fileValidEndDt());
 
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(4)
+    @ApiOrder(6)
     @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/presigned-url/{fileNo}")
@@ -96,12 +113,4 @@ public class AdminFileController {
         return BaseResponseFactory.create(adminFileService.getPresignedUrl(fileNo));
     }
 
-    @ApiOrder(5)
-    @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/all")
-    public BaseResponse<List<String>> getAll() {
-
-        return BaseResponseFactory.create(adminFileService.getAll());
-    }
 }
