@@ -1,7 +1,9 @@
 package com.sk.domain.shared.repository.master.tmd;
 
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
+import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
+import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,16 +52,20 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                     g.modifyUserId,
                     g.modifyDt,
                     new com.sk.domain.shared.dto.AuditExtension(
-                        g.creator.userNm,
-                        g.creator.departmentNm,
-                        g.creator.customerCompany.customerCompanyNm,
-                        g.modifier.userNm,
-                        g.modifier.departmentNm,
-                        g.modifier.customerCompany.customerCompanyNm
+                        cu.userNm,
+                        cu.departmentNm,
+                        cuc.customerCompanyNm,
+                        mu.userNm,
+                        mu.departmentNm,
+                        muc.customerCompanyNm
                     )
                 )
             )
             FROM Goods g
+            LEFT JOIN User cu ON g.createUserId = cu.userLoginId
+            LEFT JOIN cu.customerCompany cuc
+            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId
+            LEFT JOIN mu.customerCompany muc
             WHERE g.isDeleted = false
             AND g.provider.providerNo = :providerNo
             AND g.goodsNo = :goodsNo
@@ -75,5 +81,18 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             AND g.goodsNo = :goodsNo
             """)
     Optional<Goods> findByProviderNoAndGoodsNoAndIsDeletedFalse(Integer providerNo, Integer goodsNo);
+
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes(
+            g.modifyDt,
+            u.userNm
+            )
+            FROM Goods g
+            LEFT JOIN User u ON u.userLoginId = g.modifyUserId
+            WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
+            AND g.goodsNo = :goodsNo
+            """)
+    Optional<GoodsLatestUpdatedRes> findByProviderNoAndGoodsNoAndIsDeletedFalseWithLatestModifyInfo(Integer providerNo, Integer goodsNo);
 
 }

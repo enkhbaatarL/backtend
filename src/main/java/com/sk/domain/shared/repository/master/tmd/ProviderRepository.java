@@ -65,16 +65,20 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                     p.modifyUserId,
                     p.modifyDt,
                     new com.sk.domain.shared.dto.AuditExtension(
-                        p.creator.userNm,
-                        p.creator.departmentNm,
-                        p.creator.customerCompany.customerCompanyNm,
-                        p.modifier.userNm,
-                        p.modifier.departmentNm,
-                        p.modifier.customerCompany.customerCompanyNm
+                        cu.userNm,
+                        cu.departmentNm,
+                        cuc.customerCompanyNm,
+                        mu.userNm,
+                        mu.departmentNm,
+                        muc.customerCompanyNm
                     )
                 )
       )
       FROM Provider p
+      LEFT JOIN User cu ON p.createUserId = cu.userLoginId
+      LEFT JOIN cu.customerCompany cuc
+      LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId
+      LEFT JOIN mu.customerCompany muc
       WHERE p.isDeleted = false
       AND p.providerNo = :providerNo
       """)

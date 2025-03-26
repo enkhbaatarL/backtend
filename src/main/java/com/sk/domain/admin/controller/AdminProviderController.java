@@ -21,6 +21,7 @@ import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
+import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
 import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
 import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
@@ -147,9 +148,9 @@ public class AdminProviderController {
   @Operation(summary = "데이타 프로바이더 최신 수정일, 수정자", description = "데이타 프로바이더의 최신 수정일과 수정자를 반납합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
   @GetMapping("/providers/{providerNo}/latest-updated/")
-  public BaseResponse<ProviderLatestUpdatedRes> getLatestUpdated(
+  public BaseResponse<ProviderLatestUpdatedRes> getProviderLatestUpdated(
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    return BaseResponseFactory.create(providerService.getLatestUpdated(providerNo));
+    return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
   }
 
   @ApiOrder(8)
@@ -221,15 +222,29 @@ public class AdminProviderController {
 
   @ApiOrder(12)
   @Parameters({
+      @Parameter(name = "providerNo", description = "데이타 프로바이더 번호 (기본값: 5000)"),
+      @Parameter(name = "goodsNo", description = "상품 번호 (기본값: 70000)")
+  })
+  @Operation(summary = "상품 최신 수정일, 수정자", description = "상품의 최신 수정일과 수정자를 반납합니다.")
+  @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+  @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated/")
+  public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
+      @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+      @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+    return BaseResponseFactory.create(providerService.getGoodsLatestUpdated(providerNo, goodsNo));
+  }
+
+  @ApiOrder(13)
+  @Parameters({
       @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
       @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
       @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
       @Parameter(name = "providerNo", description = "데이타 프로바이더 번호 (기본값: 5000)"),
       @Parameter(name = "goodsNo", description = "상품번호 (기본값: 70000)")
   })
-  @Operation(summary = "데이타셋 목록 조회 - withpagination", description = "데이터셋 목록을 조회합니다.")
+  @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
   @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-  @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatasource")
+  @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
   public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
       @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
       @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -237,6 +252,6 @@ public class AdminProviderController {
       @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
       @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    return BaseResponseFactory.create(providerService.getGoodsDataSoueces(page, size, keyword, providerNo, goodsNo));
+    return BaseResponseFactory.create(providerService.getAllGoodsData(page, size, keyword, providerNo, goodsNo));
   }
 }

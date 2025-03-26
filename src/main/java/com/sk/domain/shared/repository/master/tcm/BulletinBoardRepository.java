@@ -50,18 +50,22 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                     b.modifyUserId,
                     b.modifyDt,
                     new com.sk.domain.shared.dto.AuditExtension(
-                        b.creator.userNm,
-                        b.creator.departmentNm,
-                        b.creator.customerCompany.customerCompanyNm,
-                        b.modifier.userNm,
-                        b.modifier.departmentNm,
-                        b.modifier.customerCompany.customerCompanyNm
+                        cu.userNm,
+                        cu.departmentNm,
+                        cuc.customerCompanyNm,
+                        mu.userNm,
+                        mu.departmentNm,
+                        muc.customerCompanyNm
                     )
                 )
             )
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
             LEFT JOIN m.customerCompany c
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN cu.customerCompany cuc
+            LEFT JOIN User mu ON b.modifyUserId = mu.userLoginId
+            LEFT JOIN mu.customerCompany muc
             WHERE b.isDeleted = false
               AND b.bulletinTypeCd = 'NOTICE'
               AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
@@ -139,16 +143,20 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                     b.modifyUserId,
                     b.modifyDt,
                     new com.sk.domain.shared.dto.AuditExtension(
-                        b.creator.userNm,
-                        b.creator.departmentNm,
-                        b.creator.customerCompany.customerCompanyNm,
-                        b.modifier.userNm,
-                        b.modifier.departmentNm,
-                        b.modifier.customerCompany.customerCompanyNm
+                        cu.userNm,
+                        cu.departmentNm,
+                        cuc.customerCompanyNm,
+                        mu.userNm,
+                        mu.departmentNm,
+                        muc.customerCompanyNm
                     )
                 )
             )
             FROM BulletinBoard b
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN cu.customerCompany cuc
+            LEFT JOIN User mu ON b.modifyUserId = mu.userLoginId
+            LEFT JOIN mu.customerCompany muc
             WHERE b.isDeleted = false
             AND b.bulletinTypeCd = 'FAQ'
             AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
