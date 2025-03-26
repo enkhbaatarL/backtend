@@ -25,7 +25,6 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;

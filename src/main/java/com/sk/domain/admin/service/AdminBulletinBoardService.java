@@ -31,7 +31,9 @@ import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
+import com.sk.domain.shared.enums.BulletinBoardType;
 import com.sk.domain.shared.enums.FaqCategory;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
@@ -113,13 +115,15 @@ public class AdminBulletinBoardService {
 
         // 팝업 1개만 유지
         if (dto.isPopupUse()) {
-            bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
+            bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse(BulletinBoardType.NOTICE.getCode()).stream()
+                    .forEach(b -> b.updateIsPopupUse(false));
         }
 
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
 
         if (dto.fileNo() != null) {
-            adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), "BBS", DateUtil.endYmd());
+            adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+                    DateUtil.endYmd());
         }
 
         if (dto.isWholePost()) {
@@ -154,7 +158,8 @@ public class AdminBulletinBoardService {
 
         List<BulletinBoardCompanyDto> target = bulletinBoardCustomerCompanyMappingRepository.findCustomCompanyByBulletinBoard(bulletinBoard);
 
-        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository.findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), "BBS")
+        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository
+                .findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())
                 .stream()
                 .map(f -> new BulletinBoardFileDto(
                         f.getFileNo(),
@@ -193,9 +198,10 @@ public class AdminBulletinBoardService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
         if (dto.fileNo() == null) {
-            adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), "BBS");
+            adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
         } else {
-            adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), "BBS", DateUtil.endYmd());
+            adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+                    DateUtil.endYmd());
         }
 
         if (dto.isWholePost() != null) {
@@ -236,7 +242,8 @@ public class AdminBulletinBoardService {
         // 팝업 1개만 유지
         if (bulletinBoard.getIsPopupUse() != dto.isPopupUse()) {
             if (dto.isPopupUse()) {
-                bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse("NOTICE").stream().forEach(b -> b.updateIsPopupUse(false));
+                bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse(BulletinBoardType.NOTICE.getCode()).stream()
+                        .forEach(b -> b.updateIsPopupUse(false));
             }
         }
 
@@ -254,13 +261,13 @@ public class AdminBulletinBoardService {
     @Transactional
     public BulletinBoard deleteNotice(int noticeNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, BulletinBoardType.NOTICE.getCode())
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
         bulletinBoardCustomerCompanyMappingRepository.deleteByBulletinNo(bulletinBoard.getBulletinNo());
 
-        adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), "BBS");
+        adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
 
         bulletinBoard.softDelete();
 
@@ -279,7 +286,8 @@ public class AdminBulletinBoardService {
             return null;
         }
 
-        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository.findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), "BBS")
+        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository
+                .findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())
                 .stream()
                 .map(f -> new BulletinBoardFileDto(
                         f.getFileNo(),
@@ -339,7 +347,7 @@ public class AdminBulletinBoardService {
     * @return BulletinBoard
     */
     public BulletinBoard getFaq(int faqNo) {
-        return bulletinBoardRepository.findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, "FAQ")
+        return bulletinBoardRepository.findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, BulletinBoardType.FAQ.getCode())
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
     }
@@ -355,7 +363,7 @@ public class AdminBulletinBoardService {
     public BulletinBoard updateFaq(FaqUpdateReq dto, int faqNo) {
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, "FAQ")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, BulletinBoardType.FAQ.getCode())
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
 
@@ -373,7 +381,7 @@ public class AdminBulletinBoardService {
     @Transactional
     public BulletinBoard deleteFaq(int faqNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, "FAQ")
+                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(faqNo, BulletinBoardType.FAQ.getCode())
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
 

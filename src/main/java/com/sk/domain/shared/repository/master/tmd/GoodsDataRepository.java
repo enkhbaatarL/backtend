@@ -26,7 +26,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             ORDER BY gd.goodsDataNm ASC
             """, countQuery = """
             SELECT COUNT(gd)
-            FROM GoodsDataSource gd
+            FROM GoodsData gd
             WHERE gd.isDeleted = false
             AND gd.goods.provider.providerNo = :providerNo
             AND gd.goods.goodsNo = :goodsNo
