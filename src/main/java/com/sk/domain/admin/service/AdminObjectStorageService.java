@@ -27,6 +27,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -46,13 +47,11 @@ public class AdminObjectStorageService {
     @Value("${ncp.storage.bucketName}")
     private String bucketName;
 
-    // TODO: 파일관계객체구분코드가 추가 될 때마다 폴더를 생성 해준다.
-    private final String[] DIR_LIST = { "TEMP", "BBS", "GDATS", "GUDAT" };
-
     @PostConstruct
     public void init() {
-        for (int i = 0; i < DIR_LIST.length; i++) {
-            objectStorageClient.putObject(bucketName, DIR_LIST[i] + "/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+        objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+        for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
+            objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
         }
     }
 
@@ -75,8 +74,8 @@ public class AdminObjectStorageService {
             System.out.println("Object List:");
             while (true) {
                 for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                    for (String dir : DIR_LIST) {
-                        if (objectSummary.getKey().contains(dir)) {
+                    for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
+                        if (objectSummary.getKey().contains(value.getCode())) {
                             System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
                                     + objectSummary.getOwner().getId());
 

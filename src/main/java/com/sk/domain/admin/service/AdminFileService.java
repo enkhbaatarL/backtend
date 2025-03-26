@@ -23,138 +23,146 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminFileService {
-  private final UploadedFileRepository uploadedFileRepository;
-  private final AdminObjectStorageService adminObjectStorageService;
+    private final UploadedFileRepository uploadedFileRepository;
+    private final AdminObjectStorageService adminObjectStorageService;
 
-  /**
+    /**
     * 전체 파일를 조회한다.
     *
     * @return List<String>
     */
-  public List<String> getAll() {
-    return adminObjectStorageService.getAll();
-  }
+    public List<String> getAll() {
+        return adminObjectStorageService.getAll();
+    }
 
-  /**
+    /**
     * 파일를 조회한다.
     *
     * @param fileNo 파일번호
     * @return UploadedFile
     */
-  public UploadedFile getFile(Long fileNo) {
-    return uploadedFileRepository.findByFileNo(fileNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
-  }
+    public UploadedFile getFile(Long fileNo) {
+        return uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+    }
 
-  /**
+    /**
     * 파일들을 조회한다.
     *
     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return UploadedFile
     */
-  public List<UploadedFile> getFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
-    return uploadedFileRepository.findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
-  }
+    public List<UploadedFile> getFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+        return uploadedFileRepository.findByRelationshipObjectInfo(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode);
+    }
 
-  /**
+    /**
     * 파일을 업로드 한다.
     *
     * @param file 단일 파일 업로드
     * @return FileUploadRes
     */
-  @Transactional
-  public FileUploadRes uploadFile(MultipartFile file) {
-    try {
-      String originalFileNm = file.getOriginalFilename();
-      String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
-      long fileSize = file.getSize();
-      String mimeTypeNm = file.getContentType();
+    @Transactional
+    public FileUploadRes uploadFile(MultipartFile file) {
+        if (file == null) {
+            throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
+        }
 
-      // Object Storage 저장
-      String storagePathNm = "TEMP";
-      String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
-      String fileName = Paths.get(storagePathNm, storageFileNm).toString();
+        if (file.getSize() <= 0) {
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
+        }
 
-      adminObjectStorageService.uploadFile(fileName, file);
-      String fileUrl = adminObjectStorageService.getPresignedUrl(fileName);
+        try {
+            String originalFileNm = file.getOriginalFilename();
+            String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
+            long fileSize = file.getSize();
+            String mimeTypeNm = file.getContentType();
 
-      // DB 에 저장
-      UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
-          originalFileNm,
-          storageFileNm,
-          storagePathNm,
-          fileSize,
-          fileExtNm,
-          mimeTypeNm,
-          DateUtil.endYmd(),
-          0,
-          storagePathNm));
+            // Object Storage 저장
+            String storagePathNm = "TEMP";
+            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
+            String fileName = Paths.get(storagePathNm, storageFileNm).toString();
 
-      return FileUploadRes.of(savedUploadedFile.getFileNo(), file.getOriginalFilename(), file.getSize(), fileUrl);
-    } catch (Exception e) {
-      throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            adminObjectStorageService.uploadFile(fileName, file);
+            String fileUrl = adminObjectStorageService.getPresignedUrl(fileName);
+
+            // DB 에 저장
+            UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
+                    originalFileNm,
+                    storageFileNm,
+                    storagePathNm,
+                    fileSize,
+                    fileExtNm,
+                    mimeTypeNm,
+                    DateUtil.endYmd(),
+                    0,
+                    storagePathNm));
+
+            return FileUploadRes.of(savedUploadedFile.getFileNo(), file.getOriginalFilename(), file.getSize(), fileUrl);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
     }
-  }
 
-  /**
+    /**
     * 파일을 다운로드 한다.
     *
     * @param fileNo 파일번호
     * @return FileDownloadRes
     */
-  public FileDownloadRes downloadFile(Long fileNo) {
-    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+    public FileDownloadRes downloadFile(Long fileNo) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-    try {
-      String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-      byte[] fileData = adminObjectStorageService.downloadFile(fileName);
+        try {
+            String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+            byte[] fileData = adminObjectStorageService.downloadFile(fileName);
 
-      return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
-    } catch (Exception e) {
-      throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
     }
-  }
 
-  /**
+    /**
     * 파일을 삭제 한다.
     *
     * @param fileNo 파일번호
     * @return 
     */
-  @Transactional
-  public void deleteFile(Long fileNo) {
-    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+    @Transactional
+    public void deleteFile(Long fileNo) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-    String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-    adminObjectStorageService.deleteFile(fileName);
+        String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+        adminObjectStorageService.deleteFile(fileName);
 
-    uploadedFile.softDelete();
-  }
+        uploadedFile.softDelete();
+    }
 
-  /**
+    /**
     * 파일들을 삭제 한다.
     *
     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return 
     */
-  @Transactional
-  public void deleteFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
-    List<UploadedFile> fileList = uploadedFileRepository.findByRelationshipObjectInfo(
-        fileRelationshipObjectDistinguishNo,
-        fileRelationshipObjectSeparateCode);
+    @Transactional
+    public void deleteFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+        List<UploadedFile> fileList = uploadedFileRepository.findByRelationshipObjectInfo(
+                fileRelationshipObjectDistinguishNo,
+                fileRelationshipObjectSeparateCode);
 
-    fileList.forEach(f -> adminObjectStorageService.deleteFile(Paths.get(f.getStoragePathNm(), f.getStorageFileNm()).toString()));
-    fileList.forEach(f -> f.softDelete());
-  }
+        fileList.forEach(f -> adminObjectStorageService.deleteFile(Paths.get(f.getStoragePathNm(), f.getStorageFileNm()).toString()));
+        fileList.forEach(f -> f.softDelete());
+    }
 
-  /**
+    /**
     * 파일 정보를 수정한다.
     *
     * @param fileNo 파일번호
@@ -162,41 +170,41 @@ public class AdminFileService {
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
     * @return UploadedFile
     */
-  @Transactional
-  public UploadedFile updateFile(
-      Long fileNo,
-      Integer fileRelationshipObjectDistinguishNo,
-      String fileRelationshipObjectSeparateCode,
-      String fileValidEndDt) {
-    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+    @Transactional
+    public UploadedFile updateFile(
+            Long fileNo,
+            Integer fileRelationshipObjectDistinguishNo,
+            String fileRelationshipObjectSeparateCode,
+            String fileValidEndDt) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-    String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-    String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
-    adminObjectStorageService.moveFile(oldPath, newPath);
+        String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+        String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
+        adminObjectStorageService.moveFile(oldPath, newPath);
 
-    uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
+        uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
 
-    return uploadedFile;
-  }
+        return uploadedFile;
+    }
 
-  /**
+    /**
     * 파일에 대한 URL을 생성한다.
     *
     * @param fileNo 파일번호
     * @return URL
     */
-  public String getPresignedUrl(Long fileNo) {
-    UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-        .orElseThrow(
-            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+    public String getPresignedUrl(Long fileNo) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-    String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-    return adminObjectStorageService.getPresignedUrl(fileName);
-  }
+        String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+        return adminObjectStorageService.getPresignedUrl(fileName);
+    }
 
-  private String getFileExtension(String fileName) {
-    return fileName.substring(fileName.lastIndexOf("."));
-  }
+    private String getFileExtension(String fileName) {
+        return fileName.substring(fileName.lastIndexOf("."));
+    }
 }

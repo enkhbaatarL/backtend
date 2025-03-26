@@ -25,7 +25,6 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
@@ -181,11 +180,11 @@ public class AdminBulletinBoardController {
 
         String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
         if (file.getSize() > MAX_SIZE) {
-            throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
         return BaseResponseFactory.create(adminFileService.uploadFile(file));
