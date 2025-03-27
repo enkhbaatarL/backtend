@@ -12,9 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
+import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
+import com.sk.domain.admin.dto.response.provider.GoodsDataCatgoryRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDeleteRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
@@ -30,6 +34,7 @@ import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.admin.dto.response.provider.ProviderUpdateRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
@@ -45,6 +50,7 @@ public class AdminProviderService {
     private final ProviderRepository providerRepository;
     private final GoodsRepository goodsRepository;
     private final GoodsDataRepository goodsDataRepository;
+    private final CommonCodeDetailRepository commonCodeDetailRepository;
 
     /**
      * 데이타 프로바이더 목록을 조회한다.
@@ -249,4 +255,55 @@ public class AdminProviderService {
 
         return PaginationRes.toRes(goodsDataPage);
     }
+
+    /**
+     * 데이터 카테고리 대분류 목록을 조회한다.
+     *
+     * @return List<GoodsDataCatgoryRes>
+     */
+    public List<GoodsDataCatgoryRes> getGoodsDataMainCategorys() {
+        return commonCodeDetailRepository.getGoodsDataMainCategorys();
+    }
+
+    /**
+    * 데이터 카테고리 중분류 목록을 조회한다.
+    *
+    * @param codeId
+    * @return List<GoodsDataCatgoryRes> 
+    */
+    public List<GoodsDataCatgoryRes> getGoodsDataSubCategorys(String codeId) {
+        return commonCodeDetailRepository.getGoodsDataSubCategorys(codeId);
+    }
+
+    /**
+    * 데이터 등록: 신규등록
+    *
+    * @param 
+    * @return 
+    */
+    public String createGoodsData(Integer providerNo, Integer goodsNo, GoodsDataCreateReq dto) {
+        return "todo";
+    }
+
+    /**
+    * 데이터 등록: 기존 데이타 업데이트
+    *
+    * @param 
+    * @return 
+    */
+    public String updateGoodsData(Integer providerNo, Integer goodsNo, GoodsDataUpdateReq dto) {
+        return "todo";
+    }
+
+    /**
+    * 데이터명 목록을 조회합니다.
+    *
+    * @param providerNo 데이타 프로바이더 번호
+    * @param goodsNo 상품 번호
+    * @return List<GoodsDataNameRes>
+    */
+    public List<GoodsDataNameRes> getAllGoodsDataNm(Integer providerNo, Integer goodsNo) {
+        return goodsDataRepository.getAllGoodsDataNm(providerNo, goodsNo);
+    }
+
 }
