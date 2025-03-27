@@ -1,6 +1,6 @@
-package com.sk.domain.mi.service.conversion_on_demand;
+package com.sk.domain.mi.conversion_initialize;
 
-import com.sk.domain.mi.service.conversion_on_demand.strategy.ConversionStrategy;
+import com.sk.domain.mi.conversion_initialize.strategy.ConversionStrategy;
 import com.sk.domain.shared.enums.UnitType;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import jakarta.annotation.PostConstruct;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-@Service("unitConversionService_on_demand")
+@Service("unitConversionService_initialize")
 @RequiredArgsConstructor
 public class UnitConversionService {
 

@@ -1,4 +1,4 @@
-package com.sk.domain.mi.service.conversion_on_demand.strategy;
+package com.sk.domain.mi.conversion_initialize.strategy;
 
 import com.sk.domain.shared.enums.UnitType;
 

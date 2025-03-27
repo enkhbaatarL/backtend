@@ -1,8 +1,8 @@
-package com.sk.domain.mi.service.conversion_initialize;
+package com.sk.domain.mi.conversion_on_demand;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.mi.service.conversion_initialize.strategy.ConversionStrategy;
+import com.sk.domain.mi.conversion_on_demand.strategy.ConversionStrategy;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +15,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UnitConversionService {
 
-    private final UnitConvertRepository unitConvertRepository;
     private final ConversionContext conversionContext;
+    private final UnitConvertRepository unitConvertRepository;
 
     /**
      * 단위 변환

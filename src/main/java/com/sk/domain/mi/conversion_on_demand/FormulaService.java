@@ -1,4 +1,4 @@
-package com.sk.domain.mi.service.conversion_initialize;
+package com.sk.domain.mi.conversion_on_demand;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

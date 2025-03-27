@@ -1,7 +1,7 @@
-package com.sk.domain.mi.service.conversion_initialize;
+package com.sk.domain.mi.conversion_on_demand;
 
-import com.sk.domain.mi.service.conversion_initialize.strategy.ConversionStrategy;
-import com.sk.domain.mi.service.conversion_initialize.strategy.WaferToChipEaConversion;
+import com.sk.domain.mi.conversion_on_demand.strategy.ConversionStrategy;
+import com.sk.domain.mi.conversion_on_demand.strategy.WaferToChipEaConversion;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 

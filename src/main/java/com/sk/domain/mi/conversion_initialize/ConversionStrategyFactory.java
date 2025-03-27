@@ -1,8 +1,8 @@
-package com.sk.domain.mi.service.conversion_on_demand;
+package com.sk.domain.mi.conversion_initialize;
 
-import com.sk.domain.mi.service.conversion_on_demand.strategy.ConversionStrategy;
-import com.sk.domain.mi.service.conversion_on_demand.strategy.FactorBasedConversion;
-import com.sk.domain.mi.service.conversion_on_demand.strategy.WaferToChipEaConversion;
+import com.sk.domain.mi.conversion_initialize.strategy.ConversionStrategy;
+import com.sk.domain.mi.conversion_initialize.strategy.FactorBasedConversion;
+import com.sk.domain.mi.conversion_initialize.strategy.WaferToChipEaConversion;
 import com.sk.domain.shared.enums.UnitType;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component("conversionStrategyFactory_on_demand")
+@Component("conversionStrategyFactory_initialize")
 public class ConversionStrategyFactory {
 
     public ConversionStrategy createFactorStrategy(UnitType fromUnit, UnitType toUnit, BigDecimal factor) {

@@ -1,12 +1,12 @@
-package com.sk.domain.mi.service.conversion_initialize.strategy;
+package com.sk.domain.mi.conversion_initialize.strategy;
 
-import com.sk.domain.mi.service.conversion_initialize.FormulaService;
+import com.sk.domain.shared.enums.UnitType;
 
 import java.math.BigDecimal;
 
 public interface ConversionStrategy {
 
-    FormulaService getFormulaService();
+    String getFormulaServiceNm();
 
     BigDecimal convert(BigDecimal value);
 
@@ -17,6 +17,6 @@ public interface ConversionStrategy {
         throw new UnsupportedOperationException("This strategy doesn't support multiple parameters");
     }
 
-    boolean supports(FormulaService formulaService);
+    boolean supports(UnitType fromUnit, UnitType toUnit);
 
 }
