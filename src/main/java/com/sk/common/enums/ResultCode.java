@@ -39,9 +39,7 @@ public class ResultCode {
         REQ_INVALID_FORMAT("REQ-004", "The request format is incorrect."),
         REQ_INVALID_JSON("REQ-005", "The provided JSON format is incorrect."),
         REQ_METHOD_NOT_ALLOWED("REQ-006", "The HTTP method used is not allowed for this request."),
-        REQ_NOT_ALLOWED_FILE_FORMAT("REQ-007", "This file format is not allowed."),
-        REQ_NOT_ALLOWED_FILE_SIZE("REQ-008", "The file size is too large. The maximum upload size is 20MB."),
-
+        
         // RSC: 리소스 관련 오류
         RSC_NOT_FOUND("RSC-001", "The requested resource could not be found."),
         RSC_PATH_NOT_FOUND("RSC-002", "The requested path is invalid or missing."),
@@ -68,7 +66,12 @@ public class ResultCode {
         // SYS: 서버 및 시스템 관련 오류
         SYS_INTERNAL_ERROR("SYS-001", "An internal server error has occurred."),
         SYS_MAINTENANCE("SYS-002", "The system is currently under maintenance."),
-        SYS_UNKNOWN("SYS-999", "An unknown error has occurred. Please try again later.");
+        SYS_UNKNOWN("SYS-999", "An unknown error has occurred. Please try again later."),
+
+        // FILE: 파일 관련 오류
+        FILE_INVALID("FILE-001", "The file is invalid."), 
+        FILE_FORMAT_ERROR("REQ-007", "This file format is not allowed."),
+        FILE_SIZE_ERROR("REQ-008", "File size exceeds the maximum limit");
 
         private final String code;
         private final String message;

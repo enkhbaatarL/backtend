@@ -12,8 +12,6 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyRes;
 import com.sk.domain.admin.dto.response.privatePolicy.PrivatePolicyVersionRes;
 import com.sk.domain.admin.service.AdminPrivatePolicyService;
-import com.sk.domain.shared.entity.master.tcm.PrivatePolicy;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -26,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * todo
  * 
- * 1. 버전명 리스트
- * 2. 버전명으로 정책약관 불러오기
+ * 1.
+ * 2.
  *
  */
 

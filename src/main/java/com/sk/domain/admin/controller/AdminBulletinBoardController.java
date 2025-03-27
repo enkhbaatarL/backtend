@@ -25,12 +25,12 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
+import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
@@ -180,14 +180,14 @@ public class AdminBulletinBoardController {
 
         String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_FORMAT);
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
         if (file.getSize() > MAX_SIZE) {
-            throw AppErrorException.of(ResultCode.Error.REQ_NOT_ALLOWED_FILE_SIZE);
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, 0, "BBS", DateUtil.endYmd()));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file));
     }
 
     @ApiOrder(8)
@@ -239,7 +239,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 목록 조회 - with pagination", description = "FAQ 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq")
-    public BaseResponse<PaginationRes<BulletinBoard>> getAllFaq(
+    public BaseResponse<PaginationRes<FaqRes>> getAllFaq(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
             @RequestParam(value = "category", required = false, defaultValue = "") String category,
