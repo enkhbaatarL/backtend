@@ -193,9 +193,9 @@ public class AdminCompanyController {
     @Parameters({
         @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
         @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+        @Parameter(name = "search", description = "검색어 (상품명 또는 상품 설명)"),
         @Parameter(name = "companyNo", description = "고객회사 번호"),
         @Parameter(name = "providerNo", description = "프로바이더 번호"),
-        @Parameter(name = "search", description = "검색어 (상품명 또는 상품 설명)"),
     })
     @Operation(summary = "고객사-프로바이더-상품 매핑 목록 조회 API (with pagination)", description = "고객사와 매핑되어있는 프로바이더의 상품 내역 중에 고객사가 등록한 상품 목록을 조회합니다.<br>'goodsNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -203,9 +203,9 @@ public class AdminCompanyController {
     public BaseResponse<PaginationRes<GoodsWithDataCntRes>> getGoodsMappedToCompany(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+        @RequestParam(value = "search", required = false) String search,
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "providerNo", required = false) String search
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
     ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsMappedToCompany(page, size, companyNo, providerNo, search));
     }

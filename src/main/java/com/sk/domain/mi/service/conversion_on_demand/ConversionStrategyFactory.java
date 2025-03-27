@@ -1,8 +1,8 @@
-package com.sk.domain.mi.service.conversion;
+package com.sk.domain.mi.service.conversion_on_demand;
 
-import com.sk.domain.mi.service.conversion.strategy.AltitudeToBarometerConversion;
-import com.sk.domain.mi.service.conversion.strategy.ConversionStrategy;
-import com.sk.domain.mi.service.conversion.strategy.FactorBasedConversion;
+import com.sk.domain.mi.service.conversion_on_demand.strategy.ConversionStrategy;
+import com.sk.domain.mi.service.conversion_on_demand.strategy.FactorBasedConversion;
+import com.sk.domain.mi.service.conversion_on_demand.strategy.WaferToChipEaConversion;
 import com.sk.domain.shared.enums.UnitType;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+@Component("conversionStrategyFactory_on_demand")
 public class ConversionStrategyFactory {
 
     public ConversionStrategy createFactorStrategy(UnitType fromUnit, UnitType toUnit, BigDecimal factor) {
@@ -19,7 +19,7 @@ public class ConversionStrategyFactory {
 
     public List<ConversionStrategy> createComplexStrategies() {
         List<ConversionStrategy> strategies = new ArrayList<>();
-        strategies.add(new AltitudeToBarometerConversion());
+        strategies.add(new WaferToChipEaConversion());
         return strategies;
     }
 

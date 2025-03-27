@@ -9,30 +9,23 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public enum UnitType {
 
-    TON("TON", "톤"),
-    BARREL("BARREL", "배럴"),
-    METER("METER", "미터"),
-    HPA("HPA", "헥토파스칼");
+    BARREL("barrel", "배럴"),
+    TON("ton", "톤"),
+    GALLON("gallon", "갤런"),
+    LITER("liter", "리터"),
+    INCH("inch", "인치"),
+    CM("cm", "센티미터"),
+    WAFER("wafer", "웨이퍼"),
+    EA("ea", "개");
 
     private final String code;
     private final String description;
 
-    public static UnitType fromCode(String code) {
-        return Arrays.stream(values())
+    public static UnitType getUnitTypeByCode(String code) {
+        return Arrays.stream(UnitType.values())
             .filter(unitType -> unitType.getCode().equals(code))
             .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Unknown unit code: " + code));
-    }
-
-    public static UnitType getUnitTypeByName(String name) {
-        return Arrays.stream(UnitType.values())
-            .filter(unitType -> unitType.getCode().equals(name))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Unknown unit name: " + name));
-    }
-
-    public static String generateConversionKey(UnitType fromUnit, UnitType toUnit) {
-        return fromUnit.name() + "_TO_" + toUnit.name();
+            .orElseThrow(() -> new IllegalArgumentException("Unknown unit name: " + code));
     }
 
 }

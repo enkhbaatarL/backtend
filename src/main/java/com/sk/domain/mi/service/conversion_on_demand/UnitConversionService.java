@@ -1,6 +1,6 @@
-package com.sk.domain.mi.service.conversion;
+package com.sk.domain.mi.service.conversion_on_demand;
 
-import com.sk.domain.mi.service.conversion.strategy.ConversionStrategy;
+import com.sk.domain.mi.service.conversion_on_demand.strategy.ConversionStrategy;
 import com.sk.domain.shared.enums.UnitType;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import jakarta.annotation.PostConstruct;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-@Service
+@Service("unitConversionService_on_demand")
 @RequiredArgsConstructor
 public class UnitConversionService {
 
@@ -20,21 +20,22 @@ public class UnitConversionService {
 
     @PostConstruct
     public void init() {
+
         strategyFactory.createComplexStrategies().forEach(conversionContext::registerStrategy);
 
-        unitConvertRepository.findAll().forEach(entity -> {
+        unitConvertRepository.findByIsDeletedFalse().forEach(entity -> {
             if (StringUtils.isNoneEmpty(entity.getConvertPreviousUnitNm(), entity.getConvertAfterUnitNm())) {
-                UnitType fromUnit = UnitType.getUnitTypeByName(entity.getConvertPreviousUnitNm());
-                UnitType toUnit = UnitType.getUnitTypeByName(entity.getConvertAfterUnitNm());
+                UnitType fromUnit = UnitType.getUnitTypeByCode(entity.getConvertPreviousUnitNm());
+                UnitType toUnit = UnitType.getUnitTypeByCode(entity.getConvertAfterUnitNm());
                 ConversionStrategy strategy = strategyFactory.createFactorStrategy(fromUnit, toUnit, entity.getConvertCoef());
                 conversionContext.registerStrategy(strategy);
             }
         });
     }
 
-    public BigDecimal convert(String fromUnitName, String toUnitName, BigDecimal value) {
-        UnitType fromUnit = UnitType.getUnitTypeByName(fromUnitName);
-        UnitType toUnit = UnitType.getUnitTypeByName(toUnitName);
+    public BigDecimal convert(String fromUnitName, String toUnitName, BigDecimal... value) {
+        UnitType fromUnit = UnitType.getUnitTypeByCode(fromUnitName);
+        UnitType toUnit = UnitType.getUnitTypeByCode(toUnitName);
         return conversionContext.convert(fromUnit, toUnit, value);
     }
 

@@ -1,6 +1,6 @@
-package com.sk.domain.mi.service.conversion;
+package com.sk.domain.mi.service.conversion_on_demand;
 
-import com.sk.domain.mi.service.conversion.strategy.ConversionStrategy;
+import com.sk.domain.mi.service.conversion_on_demand.strategy.ConversionStrategy;
 import com.sk.domain.shared.enums.UnitType;
 import org.springframework.stereotype.Component;
 
@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+@Component("conversionContext_on_demand")
 public class ConversionContext {
 
     private final List<ConversionStrategy> strategies = new ArrayList<>();
@@ -17,7 +17,7 @@ public class ConversionContext {
         strategies.add(strategy);
     }
 
-    public BigDecimal convert(UnitType fromUnit, UnitType toUnit, BigDecimal value) {
+    public BigDecimal convert(UnitType fromUnit, UnitType toUnit, BigDecimal... value) {
         return strategies.stream()
             .filter(strategy -> strategy.supports(fromUnit, toUnit))
             .findFirst()
