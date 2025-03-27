@@ -47,7 +47,7 @@ public class AuthService {
 		}
 
 		User user = userRepository.findById(accessTokenClaims.get("userNo", Integer.class))
-				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "사용자 정보가 없습니다."));
+				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("User information could not be found. userNo: %s", accessTokenClaims.get("userNo", Integer.class))));
 
 		// 토큰 생성
 		String renewedAccessToken = jwtUtil.generateAccessToken(user);

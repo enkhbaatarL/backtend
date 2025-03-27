@@ -154,11 +154,11 @@ public class AdminUserService {
 	@Transactional
 	public UserRes postAdminUser(AdminReq.Insert adminReq) {
 		UserWithCompany userWithCompany = userRepository.findUserByInfoId(adminReq.imCd())
-				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "IM코드 목록에 데이터가 존재하지 않습니다."));
+				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The data does not exist in the IM code list. imCd: %s", adminReq.imCd())));
 
 		userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(userWithCompany.userLoginId(), UserRoleCd.ADMIN)
 				.ifPresent(u -> {
-					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, "이미 등록된 관리자입니다: " + u.getUserNm());
+					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, String.format("The administrator is already registered: %s", u.getUserNm()));
 				});
 
 		User user = User.of(userWithCompany, UserRoleCd.ADMIN);

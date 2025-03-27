@@ -65,7 +65,7 @@ public class CustomSamlAdminAuthenticationSuccessHandler implements Authenticati
         adminPermissionRepository.findByIdUserNoAndIdIpAddressAndIsDeletedFalse(user.getUserNo(), clientIp)
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "허용되지 않은 IP 주소입니다: " + clientIp));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The IP address is not allowed: %s", clientIp)));
 
         // JWT 토큰 생성
         String accessToken = jwtUtil.generateAccessToken(user);
