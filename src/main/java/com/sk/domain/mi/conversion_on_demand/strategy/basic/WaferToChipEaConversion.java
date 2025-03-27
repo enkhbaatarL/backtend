@@ -1,6 +1,7 @@
-package com.sk.domain.mi.conversion_on_demand.strategy;
+package com.sk.domain.mi.conversion_on_demand.strategy.basic;
 
 import com.sk.domain.mi.conversion_on_demand.FormulaService;
+import com.sk.domain.mi.conversion_on_demand.strategy.ConversionStrategy;
 
 import java.math.BigDecimal;
 import java.math.MathContext;

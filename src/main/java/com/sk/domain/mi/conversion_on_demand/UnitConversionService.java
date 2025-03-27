@@ -11,6 +11,13 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+/**
+ * todo
+ *  1. 조합(합성함수) / 위임 구분 인터페이스 ?
+ *  2. 명시적인 분류 필요
+ *  3. 예외 정리
+ *  4. 패키지 구조 리팩토링 필요
+ */
 @Service
 @RequiredArgsConstructor
 public class UnitConversionService {

@@ -1,7 +1,8 @@
 package com.sk.domain.mi.conversion_on_demand;
 
 import com.sk.domain.mi.conversion_on_demand.strategy.ConversionStrategy;
-import com.sk.domain.mi.conversion_on_demand.strategy.WaferToChipEaConversion;
+import com.sk.domain.mi.conversion_on_demand.strategy.basic.MovingAverageConversion;
+import com.sk.domain.mi.conversion_on_demand.strategy.basic.WaferToChipEaConversion;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ public class ConversionContext {
     @PostConstruct
     public void init() {
         registerStrategy(new WaferToChipEaConversion());
+        registerStrategy(new MovingAverageConversion());
     }
 
     public void registerStrategy(ConversionStrategy strategy) {
@@ -30,6 +32,14 @@ public class ConversionContext {
             .findFirst()
             .orElseThrow(IllegalArgumentException::new)
             .convert(value);
+    }
+
+    public List<BigDecimal> convertTimeSeries(FormulaService formulaService, List<BigDecimal> timeSeries, int windowSize) {
+        return complexStrategies.stream()
+            .filter(strategy -> strategy.supports(formulaService))
+            .findFirst()
+            .orElseThrow(IllegalArgumentException::new)
+            .convertTimeSeries(timeSeries, windowSize);
     }
 
     public Optional<ConversionStrategy> findComplexStrategy(FormulaService formulaService) {
