@@ -24,10 +24,10 @@ public class AuditorAwareCustomizer implements AuditorAware<String> {
 
         // JWT 환경에서는 Jwt.getSubject() 이외에는 getName() 사용
         if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            return Optional.of(jwtToken.getToken().getSubject()); // "sub" 클레임
-        } else {
-            return Optional.of(authentication.getName());
+            String subject = jwtToken.getToken().getSubject();
+            return Optional.of(subject != null ? subject : "SYSTEM");
         }
+        String name = authentication.getName();
+        return Optional.of(name != null ? name : "SYSTEM");
     }
-
 }
