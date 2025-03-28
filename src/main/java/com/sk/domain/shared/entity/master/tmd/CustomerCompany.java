@@ -51,6 +51,10 @@ public class CustomerCompany extends BaseEntity {
     @Comment("고객회사코드")
     private String customerCompanyCd;
 
+    @Column(name = "cpny_sbcm_spt_cd", length = 20)
+    @Comment("회사분과구분코드")
+    private String companySubcommitteeSeparateCd;
+
     @Column(name = "use_bgn_dt", length = 8)
     @Comment("사용시작일자")
     private String useBeginDt;
@@ -69,7 +73,8 @@ public class CustomerCompany extends BaseEntity {
     private List<User> users = new ArrayList<>();
 
     @Builder
-    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String useBeginDt, String useEndDt, Boolean isUsed) {
+    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
+            Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String useBeginDt, String useEndDt, Boolean isUsed) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
@@ -81,12 +86,12 @@ public class CustomerCompany extends BaseEntity {
 
     public static CustomerCompany of(CompanyReq.Insert dto) {
         return CustomerCompany.builder()
-            .customerCompanyCd(dto.companyCd())
-            .customerCompanyNm(dto.companyNm())
-            .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
-            .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
-            .isUsed(Boolean.TRUE)
-            .build();
+                .customerCompanyCd(dto.companyCd())
+                .customerCompanyNm(dto.companyNm())
+                .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
+                .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
+                .isUsed(Boolean.TRUE)
+                .build();
     }
 
     public void update(CompanyReq.Update companyReq) {

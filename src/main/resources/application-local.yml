@@ -5,7 +5,7 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     master:
-      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: mipapp
       password: skccmipapp11@@
@@ -14,7 +14,7 @@ spring:
         max-lifetime: 60000
     tenant-datasources:
       hynix:
-        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: mipapp
         password: skccmipapp11@@
@@ -22,7 +22,7 @@ spring:
           maximum-pool-size: 5
           max-lifetime: 60000
       sktelecom:
-        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/platform?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: mipapp
         password: skccmipapp11@@
