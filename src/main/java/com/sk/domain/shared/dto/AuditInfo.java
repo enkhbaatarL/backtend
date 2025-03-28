@@ -23,7 +23,6 @@ public record AuditInfo(
     LocalDateTime modifyDt,
 
     @JsonUnwrapped
-    @Schema(description = "감사 추가 정보")
     AuditExtension auditExtension
 
 ) {

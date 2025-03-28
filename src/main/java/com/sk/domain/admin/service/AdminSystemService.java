@@ -20,7 +20,7 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class ClientAccessInfoService {
+public class AdminSystemService {
 
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ClientAccessInfoRepository clientAccessInfoRepository;
