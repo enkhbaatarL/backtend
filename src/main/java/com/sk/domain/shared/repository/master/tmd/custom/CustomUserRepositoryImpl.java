@@ -79,9 +79,11 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 
         QUser user = QUser.user;
         QUser creator = new QUser("creator");
+        QUser modifier = new QUser("modifier");
 
         QCustomerCompany customerCompany = QCustomerCompany.customerCompany;
         QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany");
+        QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
@@ -120,19 +122,22 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
                         user.individualInfoAgreementDtm,
                         user.customerCompany.customerCompanyNo,
                         user.customerCompany.customerCompanyNm,
+                        creator.userLoginId,
+                        creator.createDt,
+                        modifier.userLoginId,
+                        modifier.modifyDt,
                         creator.userNm,
                         creator.departmentNm,
-                        creator.onDutyNm,
-                        creator.customerCompany.customerCompanyNo,
-                        creator.customerCompany.customerCompanyNm,
-                        user.createUserId,
-                        user.createDt,
-                        user.modifyUserId,
-                        user.modifyDt))
+                        creatorCompany.customerCompanyNm,
+                        modifier.userNm,
+                        modifier.departmentNm,
+                        modifierCompany.customerCompanyNm))
                 .from(user)
                 .leftJoin(user.customerCompany, customerCompany)
                 .leftJoin(creator).on(user.createUserId.eq(creator.userLoginId))
                 .leftJoin(creator.customerCompany, creatorCompany)
+                .leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId))
+                .leftJoin(modifier.customerCompany, modifierCompany)
                 .where(builder)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())

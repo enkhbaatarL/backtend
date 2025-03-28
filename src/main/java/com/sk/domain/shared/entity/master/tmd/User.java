@@ -124,8 +124,8 @@ public class User extends BaseEntity {
                 .onDutyNm(userWithCompany.onDutyNm() != null ? userWithCompany.onDutyNm() : null)
                 .departmentNm(userWithCompany.departmentNm() != null ? userWithCompany.departmentNm() : null)
                 .isOtherServiceAccessPossible(false)
-                .isIndividualInfoAgreement(false)
-                .individualInfoAgreementDtm(null)
+                .isIndividualInfoAgreement(true)
+                .individualInfoAgreementDtm(LocalDateTime.now())
                 .customerCompany(userWithCompany.customerCompany())
                 .build();
     }

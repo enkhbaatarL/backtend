@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sk.domain.shared.mapper.dynamic.DynamicMapper">
+
+    <!-- 동적 SELECT 쿼리 -->
+    <!-- SQL 인젝션 처리 필요 -->
+    <select id="selectDynamic" parameterType="map" resultType="map">
+        SELECT
+        <if test="columns != null and columns != ''">
+            ${columns}
+        </if>
+        <if test="columns == null or columns == ''">
+            *
+        </if>
+        FROM ${tableName}
+        <if test="whereClause != null and whereClause != ''">
+            WHERE ${whereClause}
+        </if>
+    </select>
+</mapper>

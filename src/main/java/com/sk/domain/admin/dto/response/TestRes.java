@@ -16,7 +16,7 @@ public record TestRes(
         this.email = email;
     }
 
-    public static TestRes of(TestReq testReq) {
+    public static TestRes of(TestReq.getUserInfo testReq) {
         return TestRes.builder()
                 .name(testReq.name())
                 .email(testReq.email())
