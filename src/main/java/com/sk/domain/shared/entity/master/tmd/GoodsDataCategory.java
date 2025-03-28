@@ -1,10 +1,15 @@
 package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
-
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
+import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -68,6 +73,36 @@ public class GoodsDataCategory extends BaseEntity {
         this.goodsDataManagementSeparateCd = goodsDataManagementSeparateCd;
         this.goodsDataManagementNo = goodsDataManagementNo;
         this.goodsData = goodsData;
+    }
+
+    public static GoodsDataCategory of(GoodsData goodsData, CategoryDataReq dto) {
+        return GoodsDataCategory.builder()
+                .goodsDataCategoryCd(dto.CodeId())
+                .goodsDataKeywordNm("")
+                .goodsDataManagementSeparateCd(GoodsDataManagementSeparateCode.GDAT.getCode())
+                .goodsData(goodsData)
+                .goodsDataManagementNo(null)
+                .build();
+    }
+
+    public static GoodsDataCategory of(GoodsData goodsData, StructuredDataReq dto) {
+        return GoodsDataCategory.builder()
+                .goodsDataCategoryCd("")
+                .goodsDataKeywordNm("")
+                .goodsDataManagementSeparateCd(GoodsDataManagementSeparateCode.GDATS.getCode())
+                .goodsData(goodsData)
+                .goodsDataManagementNo(null)
+                .build();
+    }
+
+    public static GoodsDataCategory of(GoodsData goodsData, UnstructuredDataReq dto) {
+        return GoodsDataCategory.builder()
+                .goodsDataCategoryCd("PUBDATE")
+                .goodsDataKeywordNm(dto.criteriaDt())
+                .goodsDataManagementSeparateCd(GoodsDataManagementSeparateCode.GUDAT.getCode())
+                .goodsData(goodsData)
+                .goodsDataManagementNo(dto.fileNo())
+                .build();
     }
 
     public void softDelete() {

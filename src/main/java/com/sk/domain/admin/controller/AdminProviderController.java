@@ -32,7 +32,8 @@ import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataCatgoryRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
@@ -263,7 +264,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category")
-    public BaseResponse<List<GoodsDataCatgoryRes>> getGoodsDataMainCategorys() {
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
         return BaseResponseFactory.create(providerService.getGoodsDataMainCategorys());
     }
@@ -275,41 +276,13 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category/{codeId}")
-    public BaseResponse<List<GoodsDataCatgoryRes>> getGoodsDataSubCategorys(
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
             @PathVariable(value = "codeId") String codeId) {
 
         return BaseResponseFactory.create(providerService.getGoodsDataSubCategorys(codeId));
     }
 
     @ApiOrder(16)
-    @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    public BaseResponse<String> createGoodsData(
-            @RequestBody @Valid GoodsDataCreateReq body,
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-
-        providerService.createGoodsData(providerNo, goodsNo, body);
-
-        return BaseResponseFactory.create("success");
-    }
-
-    @ApiOrder(17)
-    @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    public BaseResponse<String> updateGoodsData(
-            @RequestBody @Valid GoodsDataUpdateReq body,
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-
-        providerService.updateGoodsData(providerNo, goodsNo, body);
-
-        return BaseResponseFactory.create("success");
-    }
-
-    @ApiOrder(18)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호")
@@ -324,12 +297,89 @@ public class AdminProviderController {
         return BaseResponseFactory.create(providerService.getAllGoodsDataNm(providerNo, goodsNo));
     }
 
-    @ApiOrder(98)
-    @Operation(summary = "데이타의 정형, 비정형 데이타 파일 업로드", description = "데이타의 정형, 비정형 데이타 파일을 업로드합니다.")
+    @ApiOrder(17)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품번호"),
+            @Parameter(name = "goodDataNo", description = "상품데이타번호")
+    })
+    @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BaseResponse<FileUploadRes> uploadFile(
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodDataNo}")
+    public BaseResponse<GoodsDataDetailRes> getGoodsData(
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+            @PathVariable(value = "goodDataNo") @Min(value = 1) Integer goodDataNo) {
+
+        return BaseResponseFactory.create(providerService.getGoodsData(providerNo, goodsNo, goodDataNo));
+    }
+
+    @ApiOrder(18)
+    @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    public BaseResponse<String> createGoodsData(
+            @RequestBody @Valid GoodsDataCreateReq body,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+
+        providerService.createGoodsData(providerNo, goodsNo, body);
+
+        return BaseResponseFactory.create("success");
+    }
+
+    @ApiOrder(19)
+    @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    public BaseResponse<String> updateGoodsData(
+            @RequestBody @Valid GoodsDataUpdateReq body,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+
+        providerService.updateGoodsData(providerNo, goodsNo, body);
+
+        return BaseResponseFactory.create("success");
+    }
+
+    @ApiOrder(97)
+    @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<FileUploadRes> uploadStructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
+
+        // todo: 데이타 검증
+
+        if (file == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
+
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.lastIndexOf('.') == -1) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
+        }
+
+        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        }
+
+        if (file.getSize() > MAX_SIZE) {
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
+        }
+
+        return BaseResponseFactory.create(adminFileService.uploadFile(file));
+    }
+
+    @ApiOrder(98)
+    @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<FileUploadRes> uploadUnStructuredDataFile(
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+
+        // todo
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);

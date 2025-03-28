@@ -6,14 +6,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sk.domain.admin.dto.response.provider.GoodsDataCatgoryRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.shared.entity.compositeKey.tcm.CommonCodeDetailId;
 import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 
 public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDetail, CommonCodeDetailId> {
 
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCatgoryRes(
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(
             ccd.id.codeId,
             ccd.codeNm,
             ccd.codeExpn
@@ -33,10 +33,10 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
                 GROUP BY sub.highCodeId)
             ORDER BY ccd.codeRnk
             """)
-    List<GoodsDataCatgoryRes> getGoodsDataMainCategorys();
+    List<GoodsDataCategoryRes> getGoodsDataMainCategorys();
 
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCatgoryRes(
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(
             ccd.id.codeId,
             ccd.codeNm,
             ccd.codeExpn
@@ -50,5 +50,5 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             AND ccd.highCodeId = :codeId
             ORDER BY ccd.codeRnk
             """)
-    List<GoodsDataCatgoryRes> getGoodsDataSubCategorys(@Param("codeId") String codeId);
+    List<GoodsDataCategoryRes> getGoodsDataSubCategorys(@Param("codeId") String codeId);
 }
