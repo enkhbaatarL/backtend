@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "00. Auth API", description = "Auth API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/api/auth")
 @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 @RequiredArgsConstructor
 public class AuthController {
