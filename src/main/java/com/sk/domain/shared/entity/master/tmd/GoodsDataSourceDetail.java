@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -74,6 +75,19 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.queryConditionCntt = queryConditionCntt;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
+    }
+
+    public static GoodsDataSourceDetail of(Integer goodsDataNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm) {
+        return GoodsDataSourceDetail.builder()
+                .goodsDataNo(goodsDataNo)
+                .goodsDataSourceNm(goodsDataSourceNm)
+                .targetDbNm(targetDbNm)
+                .targetTableNm(targetTableNm)
+                .queryConditionCntt(queryConditionCntt)
+                .goodsDataSourceExpn(goodsDataSourceExpn)
+                .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
+                .build();
     }
 
     public void softDelete() {
