@@ -51,14 +51,6 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * todo
- * 
- * 1. 
- * 2. 
- *
- */
-
 @Tag(name = "04. 게시판 관리 API", description = "게시판 관리 API 입니다.")
 @Slf4j
 @RestController

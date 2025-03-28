@@ -11,8 +11,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,8 +21,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품데이터소스상세")
-@Table(name = "tmd_gdsdatasrcd", uniqueConstraints = {
-        @UniqueConstraint(name = "TMD_GDSDATASRCD_IX01", columnNames = { "gds_data_no" })
+@Table(name = "tmd_gdsdatasrcd", indexes = {
+        @Index(name = "TMD_GDSDATASRCD_IX01", columnList = "gds_data_no")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsDataSourceDetail extends BaseEntity {
