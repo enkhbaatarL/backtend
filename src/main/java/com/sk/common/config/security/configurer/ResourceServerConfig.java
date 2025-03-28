@@ -39,7 +39,10 @@ public class ResourceServerConfig {
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/api/v1/test/login/**").permitAll()
+                    .anyRequest().authenticated()
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2
                     .jwt(jwt -> jwt
                         .decoder(customJwtDecoder)

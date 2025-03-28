@@ -2,7 +2,6 @@ package com.sk.domain.admin.dto.response;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -42,7 +41,6 @@ public record UserRes(
 		@Schema(description = "고객사번호", example = "1")
 		Integer customerCompanyNo,
 
-		@JsonUnwrapped
 		@Schema(description = "감사 정보")
 		AuditInfo auditInfo
 
