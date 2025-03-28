@@ -1,21 +1,26 @@
 package com.sk.common.interceptor;
 
+import java.util.Optional;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.HandlerInterceptor;
+
 import com.sk.common.utils.MDCUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.shared.entity.master.tlm.ApiAccessLog;
+import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tlm.ApiAccessLogRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -36,12 +41,21 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
 
         log.info(MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG));
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userRoleCd = null;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            if (authentication instanceof JwtAuthenticationToken jwtToken) {
+                userRoleCd = jwtToken.getToken().getClaimAsString("role"); // "role" 클레임
+            } 
+        }
+
         ApiAccessLog accessLog = ApiAccessLog.of(
             url,
             MDCUtil.getValue(MDCUtil.REQUEST_METHOD),
-            "SYSTEM", // todo Auditing
             StringUtil.stripNewlinesAndTabs(MDCUtil.getValue(MDCUtil.REQUEST_BODY)),
-            MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG)
+            MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG),
+            MDCUtil.getValue(MDCUtil.ACCESS_IP_ADDRESS),
+            userRoleCd != null ? UserRoleCd.valueOf(userRoleCd) : null
         );
 
         apiAccessLogRepository.save(accessLog);

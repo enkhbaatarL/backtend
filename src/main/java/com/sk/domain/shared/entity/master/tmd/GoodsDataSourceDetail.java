@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -11,8 +12,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,8 +22,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품데이터소스상세")
-@Table(name = "tmd_gdsdatasrcd", uniqueConstraints = {
-        @UniqueConstraint(name = "TMD_GDSDATASRCD_IX01", columnNames = { "gds_data_no" })
+@Table(name = "tmd_gdsdatasrcd", indexes = {
+        @Index(name = "TMD_GDSDATASRCD_IX01", columnList = "gds_data_no")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsDataSourceDetail extends BaseEntity {
@@ -74,6 +75,19 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.queryConditionCntt = queryConditionCntt;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
+    }
+
+    public static GoodsDataSourceDetail of(Integer goodsDataNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm) {
+        return GoodsDataSourceDetail.builder()
+                .goodsDataNo(goodsDataNo)
+                .goodsDataSourceNm(goodsDataSourceNm)
+                .targetDbNm(targetDbNm)
+                .targetTableNm(targetTableNm)
+                .queryConditionCntt(queryConditionCntt)
+                .goodsDataSourceExpn(goodsDataSourceExpn)
+                .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
+                .build();
     }
 
     public void softDelete() {

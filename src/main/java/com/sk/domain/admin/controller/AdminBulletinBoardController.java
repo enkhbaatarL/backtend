@@ -51,14 +51,6 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * todo
- * 
- * 1. 
- * 2. 
- *
- */
-
 @Tag(name = "04. 게시판 관리 API", description = "게시판 관리 API 입니다.")
 @Slf4j
 @RestController
@@ -74,7 +66,7 @@ public class AdminBulletinBoardController {
      * 
      *******************************************************************/
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "png");
-    private static final long MAX_SIZE = 20 * 1024 * 1024;
+    private static final long MAX_SIZE = 10 * 1024 * 1024;
 
     @ApiOrder(1)
     @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
+import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -71,6 +73,15 @@ public class GoodsData extends BaseEntity {
         this.goodsDataExpn = goodsDataExpn;
         this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         this.goods = goods;
+    }
+
+    public static GoodsData of(Goods goods, GoodsDataCreateReq dto) {
+        return GoodsData.builder()
+                .goodsDataNm(dto.goodsDataNm())
+                .goodsDataExpn(dto.goodsDataExpn())
+                .goodsDataSummaryCntt(dto.goodsDataSummaryCntt())
+                .goods(goods)
+                .build();
     }
 
     public void softDelete() {

@@ -3,12 +3,13 @@ package com.sk.domain.admin.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.admin.dto.request.TestLoginReq;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
@@ -18,9 +19,11 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.mapper.hynix.tlm.HynixEmailAccessLogMapper;
 import com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper;
+import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,16 +38,23 @@ public class TestService {
     private final HynixEmailAccessLogMapper hynixEmailAccessLogMapper;
     private final UserRepository userRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
+    private final AdminPermissionRepository adminPermissionRepository;
 
-    public TestRes getUserInfo(TestReq testReq) {
+    public TestRes getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.of(testReq);
     }
 
+    /**
+     * 사용자 로그인
+     * 
+     * @param testLoginReq
+     * @return
+     */
     @Transactional
-    public TestLoginRes userLogin(TestLoginReq testLoginReq) {
+    public TestLoginRes userLogin(TestReq.userLogin testLoginReq) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
-                testLoginReq.userRoleCd())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "사용자 정보가 없습니다."));
+                UserRoleCd.USER)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User information could not be found. userLoginId: " + testLoginReq.loginUserId()));
 
         String accessToken = jwtUtil.generateAccessToken(user);
         String refreshToken = jwtUtil.generateRefreshToken(user);
@@ -52,13 +62,53 @@ public class TestService {
         return TestLoginRes.of(accessToken, refreshToken);
     }
 
+    /**
+     * 관리자 로그인
+     * 
+     * @param testLoginReq
+     * @return
+     */
+    @Transactional
+    public TestLoginRes adminLogin(TestReq.userLogin testLoginReq) {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = attributes.getRequest();
+        String clientIp = request.getRemoteAddr();
+
+        log.info("clientIp: {}", clientIp);
+
+        User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
+                UserRoleCd.ADMIN)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("User information could not be found. userLoginId: %s, userRoleCd: %s", testLoginReq.loginUserId(), UserRoleCd.ADMIN)));
+
+        adminPermissionRepository.findByIdUserNoAndIdIpAddressAndIsDeletedFalse(user.getUserNo(), clientIp)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The IP address is not allowed: %s", clientIp)));
+
+        String accessToken = jwtUtil.generateAccessToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
+
+        return TestLoginRes.of(accessToken, refreshToken);
+    }
+
+    /**
+     * 토큰 검증
+     * 
+     * @param token
+     * @return
+     */
+    public Boolean checkToken(TestReq.verifyToken testVerifyTokenReq) {
+        return jwtUtil.isTokenValid(testVerifyTokenReq.token());
+    }
+
+
     public List<EmailAccessLog> getSkTelecomEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("sktelecom");
+        DataSourceContextHolder.setDataSourceKey("SKT");
         return skTelecomEmailAccessLogMapper.getEmailAccessLogs();
     }
 
     public List<EmailAccessLog> getHynixEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("hynix");
+        DataSourceContextHolder.setDataSourceKey("SKCC");
         return hynixEmailAccessLogMapper.getHynixEmailAccessLogs();
     }
 
@@ -69,7 +119,8 @@ public class TestService {
     }
 
     public String delete(Integer id) {
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(id).orElseThrow();
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(id)
+                .orElseThrow();
         customerCompany.softDelete();
         return "ok";
     }

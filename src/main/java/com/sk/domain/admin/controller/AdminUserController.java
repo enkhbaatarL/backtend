@@ -72,9 +72,9 @@ public class AdminUserController {
     @ApiOrder(2)
     @Operation(summary = "사용자 등록 API", description = "사용자 정보를 등록합니다.")
     @PostMapping("/user")
-    public BaseResponse<List<UserRes>> postUserInfo(
-            @RequestBody @Valid List<UserReq.Insert> userReq) {
-        return BaseResponseFactory.create(adminUserService.postUserInfo(userReq));
+    public BaseResponse<List<UserRes>> saveUserInfo(
+            @RequestBody @Valid UserReq.Insert userReq) {
+        return BaseResponseFactory.create(adminUserService.saveUserInfo(userReq));
     }
 
     @ApiOrder(3)
@@ -127,9 +127,9 @@ public class AdminUserController {
     @ApiOrder(6)
     @Operation(summary = "어드민 관리자 등록 API", description = "어드민 관리자 정보를 등록합니다.")
     @PostMapping("/admin-user")
-    public BaseResponse<UserRes> postAdminUser(
+    public BaseResponse<UserRes> saveAdminUser(
             @RequestBody @Valid AdminReq.Insert adminReq) {
-        return BaseResponseFactory.create(adminUserService.postAdminUser(adminReq));
+        return BaseResponseFactory.create(adminUserService.saveAdminUser(adminReq));
     }
 
     @ApiOrder(7)

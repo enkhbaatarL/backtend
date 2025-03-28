@@ -59,6 +59,10 @@ public class MDCUtil {
      */
     public static final String RESPONSE_ERROR_MSG = "RESPONSE_ERROR_MSG";
 
+    /**
+     * ACCESS_IP_ADDRESS.
+     */
+    public static final String ACCESS_IP_ADDRESS = "ACCESS_IP_ADDRESS";
 
     /**
      * Set Value.

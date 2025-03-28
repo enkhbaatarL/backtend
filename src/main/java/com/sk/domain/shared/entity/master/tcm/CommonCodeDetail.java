@@ -13,6 +13,7 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -31,12 +32,6 @@ public class CommonCodeDetail extends BaseEntity {
 
     @EmbeddedId
     private CommonCodeDetailId id;
-
-    @MapsId("codeGroupId")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cd_grp_id", nullable = false, referencedColumnName = "cd_grp_id")
-    @Comment("공통코드")
-    private CommonCode commonCd;
 
     @Column(name = "cd_nm", nullable = false, length = 100)
     @Comment("코드명")
@@ -62,6 +57,20 @@ public class CommonCodeDetail extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     @Comment("사용여부")
     private Boolean isUsed;
+
+    @Column(name = "high_cd_grp_id", length = 50)
+    @Comment("상위코드그룹ID")
+    private String highCodeGroupId;
+
+    @Column(name = "high_cd_id", length = 30)
+    @Comment("상위코드ID")
+    private String highCodeId;
+
+    @MapsId("codeGroupId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cd_grp_id", nullable = false, referencedColumnName = "cd_grp_id", foreignKey = @ForeignKey(name = "tcm_commcdd_fk01"))
+    @Comment("공통코드")
+    private CommonCode commonCd;
 
     @Builder
     public CommonCodeDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,

@@ -12,9 +12,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
+import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
+import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
+import com.sk.domain.admin.dto.response.provider.CategoryDataRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDeleteRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
@@ -28,9 +37,17 @@ import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
 import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.admin.dto.response.provider.ProviderUpdateRes;
+import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.Provider;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
@@ -42,9 +59,13 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminProviderService {
+    private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final ProviderRepository providerRepository;
     private final GoodsRepository goodsRepository;
     private final GoodsDataRepository goodsDataRepository;
+    private final GoodsDataCategoryRepository goodsDataCategoryRepository;
+    private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final AdminFileService adminFileService;
 
     /**
      * 데이타 프로바이더 목록을 조회한다.
@@ -249,4 +270,120 @@ public class AdminProviderService {
 
         return PaginationRes.toRes(goodsDataPage);
     }
+
+    /**
+     * 데이터 카테고리 대분류 목록을 조회한다.
+     *
+     * @return List<GoodsDataCatgoryRes>
+     */
+    public List<GoodsDataCategoryRes> getGoodsDataMainCategorys() {
+        return commonCodeDetailRepository.getGoodsDataMainCategorys();
+    }
+
+    /**
+    * 데이터 카테고리 중분류 목록을 조회한다.
+    *
+    * @param codeId
+    * @return List<GoodsDataCatgoryRes> 
+    */
+    public List<GoodsDataCategoryRes> getGoodsDataSubCategorys(String codeId) {
+        return commonCodeDetailRepository.getGoodsDataSubCategorys(codeId);
+    }
+
+    /**
+    * 데이터명 목록을 조회합니다.
+    *
+    * @param providerNo 데이타 프로바이더 번호
+    * @param goodsNo 상품 번호
+    * @return List<GoodsDataNameRes>
+    */
+    public List<GoodsDataNameRes> getAllGoodsDataNm(Integer providerNo, Integer goodsNo) {
+        return goodsDataRepository.getAllGoodsDataNm(providerNo, goodsNo);
+    }
+
+    public GoodsDataDetailRes getGoodsData(Integer providerNo, Integer goodsNo, Integer goodsDataNo) {
+        GoodsData goodsData = goodsDataRepository.getGoodsData(providerNo, goodsNo, goodsDataNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                String.format("provider no: %d, goods no: %d, goodsdata no: %d", providerNo, goodsNo, goodsDataNo)));
+
+        List<CategoryDataRes> goodsDataCategoryList = null; // goodsDataCategoryRepository.findGDAT(goodsData.getGoodsDataNo());
+
+        List<StructuredDataRes> StructuredDataList = null; // goodsDataCategoryRepository.findGDATS(goodsData.getGoodsDataNo());
+
+        List<UnStructuredDataRes> unStructuredDataList = null; // goodsDataCategoryRepository.findGUDAT(goodsData.getGoodsDataNo());
+
+        return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, StructuredDataList, unStructuredDataList);
+    }
+
+    /**
+    * 데이터 등록: 신규등록
+    *
+    * @param 
+    * @return 
+    */
+    @Transactional
+    public void createGoodsData(Integer providerNo, Integer goodsNo, GoodsDataCreateReq dto) {
+        Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+
+        Goods goods = goodsRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                String.format("provider no: %d, goods no: %d", providerNo, goodsNo)));
+
+        GoodsData savedGoodsData = goodsDataRepository.save(GoodsData.of(goods, dto));
+
+        // 카테고리 저장
+        List<GoodsDataCategory> goodsDataCategoryList = dto.categoryCodeIdList().stream()
+                .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId))
+                .toList();
+        goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
+
+        // 정형 데이타 저장
+        if (dto.structuredDataList() != null) {
+            for (StructuredDataReq structuredData : dto.structuredDataList()) {
+
+                adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
+
+                // todo : 정형 데이타는 카테고리를 생성하지 않는다(3/28 승호님과 결정)
+
+                goodsDataSourceDetailRepository.save(GoodsDataSourceDetail.of(savedGoodsData.getGoodsDataNo(), structuredData.dataNm(), "targetDbNm",
+                        "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm"));
+            }
+        }
+        // 비정형 데이타 저장
+        if (dto.unStructuredDataList() != null) {
+            for (UnstructuredDataReq unStructuredData : dto.unStructuredDataList()) {
+                adminFileService.updateFile(unStructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
+
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, unStructuredData));
+            }
+        }
+
+        return;
+    }
+
+    /**
+    * 데이터 등록: 기존 데이타 업데이트
+    *
+    * @param 
+    * @return 
+    */
+    @Transactional
+    public void updateGoodsData(Integer providerNo, Integer goodsNo, GoodsDataUpdateReq dto) {
+
+        // if (dto.fileNo() == null) {
+        // adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
+        // } else {
+        // adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+        // DateUtil.endYmd());
+        // }
+
+        return;
+    }
+
 }

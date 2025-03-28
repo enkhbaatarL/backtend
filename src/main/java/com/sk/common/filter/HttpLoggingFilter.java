@@ -92,6 +92,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_UUID, RandomStringUtils.secure().next(8, true, true));
         MDCUtil.setValue(MDCUtil.REQUEST_START_TIME, String.valueOf(startTime));
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
+        MDCUtil.setValue(MDCUtil.ACCESS_IP_ADDRESS, request.getRemoteAddr());
     }
 
     /**
@@ -110,6 +111,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_BODY, new String(request.getContentAsByteArray(), StandardCharsets.UTF_8));
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
         MDCUtil.setValue(MDCUtil.REQUEST_QUERY_STRING, request.getQueryString());
+        MDCUtil.setValue(MDCUtil.ACCESS_IP_ADDRESS, request.getRemoteAddr());
     }
 
     /**
