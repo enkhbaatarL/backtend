@@ -1,6 +1,7 @@
 package com.sk.domain.admin.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.admin.dto.request.TestLoginReq;
+import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.request.TestVerifyTokenReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
+import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -35,32 +36,33 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
+    private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/user-info")
-    public BaseResponse<TestRes> getUserInfo(@RequestBody @Valid TestReq testReq) {
+    public BaseResponse<TestRes> getUserInfo(@RequestBody @Valid TestReq.getUserInfo testReq) {
         return BaseResponseFactory.create(testService.getUserInfo(testReq));
     }
 
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/login-user")
-    public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestLoginReq testLoginReq) {
+    @PostMapping("/login/user")
+    public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq) {
         return BaseResponseFactory.create(testService.userLogin(testLoginReq));
     }
 
     @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/login-admin")
-    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestLoginReq testLoginReq) {
+    @PostMapping("/login/admin")
+    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.userLogin testLoginReq) {
         return BaseResponseFactory.create(testService.adminLogin(testLoginReq));
     }
 
     @Operation(summary = "토큰 검증", description = "토큰 검증을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/verify-token")
-    public BaseResponse<Boolean> verifyToken(@RequestBody @Valid TestVerifyTokenReq testVerifyTokenReq) {
+    public BaseResponse<Boolean> verifyToken(@RequestBody @Valid TestReq.verifyToken testVerifyTokenReq) {
         return BaseResponseFactory.create(testService.checkToken(testVerifyTokenReq));
     }
 
@@ -87,6 +89,12 @@ public class TestController {
     @GetMapping("/delete/id")
     public BaseResponse<String> delete(@RequestParam("id") Integer id) {
         return BaseResponseFactory.create(testService.delete(id));
+    }
+
+    @PostMapping("/dynamic-query")
+    public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
+            @RequestBody @Valid DynamicDataReq testReq) {
+        return BaseResponseFactory.create(mybatisDynamicQueryService.getDynamicData(testReq));
     }
 
 }

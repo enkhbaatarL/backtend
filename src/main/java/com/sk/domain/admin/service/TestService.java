@@ -2,7 +2,6 @@ package com.sk.domain.admin.service;
 
 import java.util.List;
 
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -11,9 +10,7 @@ import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.admin.dto.request.TestLoginReq;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.request.TestVerifyTokenReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
@@ -43,7 +40,7 @@ public class TestService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final AdminPermissionRepository adminPermissionRepository;
 
-    public TestRes getUserInfo(TestReq testReq) {
+    public TestRes getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.of(testReq);
     }
 
@@ -54,7 +51,7 @@ public class TestService {
      * @return
      */
     @Transactional
-    public TestLoginRes userLogin(TestLoginReq testLoginReq) {
+    public TestLoginRes userLogin(TestReq.userLogin testLoginReq) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
                 UserRoleCd.USER)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User information could not be found. userLoginId: " + testLoginReq.loginUserId()));
@@ -72,7 +69,7 @@ public class TestService {
      * @return
      */
     @Transactional
-    public TestLoginRes adminLogin(TestLoginReq testLoginReq) {
+    public TestLoginRes adminLogin(TestReq.userLogin testLoginReq) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes.getRequest();
         String clientIp = request.getRemoteAddr();
@@ -100,18 +97,18 @@ public class TestService {
      * @param token
      * @return
      */
-    public Boolean checkToken(TestVerifyTokenReq testVerifyTokenReq) {
+    public Boolean checkToken(TestReq.verifyToken testVerifyTokenReq) {
         return jwtUtil.isTokenValid(testVerifyTokenReq.token());
     }
 
 
     public List<EmailAccessLog> getSkTelecomEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("sktelecom");
+        DataSourceContextHolder.setDataSourceKey("SKT");
         return skTelecomEmailAccessLogMapper.getEmailAccessLogs();
     }
 
     public List<EmailAccessLog> getHynixEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("hynix");
+        DataSourceContextHolder.setDataSourceKey("SKCC");
         return hynixEmailAccessLogMapper.getHynixEmailAccessLogs();
     }
 

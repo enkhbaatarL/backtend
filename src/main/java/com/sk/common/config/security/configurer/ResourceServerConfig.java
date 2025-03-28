@@ -40,7 +40,7 @@ public class ResourceServerConfig {
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v1/test/**").permitAll()
+                    .requestMatchers("/api/v1/test/login/**").permitAll()
                     .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
