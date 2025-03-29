@@ -49,7 +49,7 @@ public class AdminNotificationService {
         List<GoodsCriticalValueSetting> goodsCriticalValueSettings = goodsCriticalValueSettingRepository
                 .findAllByIsDeletedFalse();
 
-        for (GoodsCriticalValueSetting goodsCriticalValueSetting : goodsCriticalValueSettings) {
+        for (GoodsCriticalValueSetting goodsCriticalValueSettingData : goodsCriticalValueSettings) {
             //TODO: 호영: 임계치에 따른 이메일 발송 로직 추가, 성공한 메일, 실패한 메일 나눠서 Response 작성
 
             // Integer goodsDataSourceNo = goodsCriticalValueSetting.getGoodsDataSource().getGoodsDataSourceNo();
