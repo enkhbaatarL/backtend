@@ -9,6 +9,6 @@ import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 
 public interface GoodsCriticalValueSettingRepository extends JpaRepository<GoodsCriticalValueSetting, Integer> {
 
-    @EntityGraph(attributePaths = { "goodsDataSource" })
+    @EntityGraph(attributePaths = { "goodsDataSourceDetail", "user" })
     List<GoodsCriticalValueSetting> findAllByIsDeletedFalse();
 }
