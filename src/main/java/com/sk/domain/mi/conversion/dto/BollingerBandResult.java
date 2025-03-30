@@ -1,4 +1,4 @@
-package com.sk.domain.mi.conversion_on_demand.dto;
+package com.sk.domain.mi.conversion.dto;
 
 import lombok.Builder;
 
@@ -10,7 +10,7 @@ public record BollingerBandResult(
     BigDecimal upper,
     BigDecimal lower
 
-) {
+) implements ConversionResult {
 
     @Builder
     public BollingerBandResult(BigDecimal middle, BigDecimal upper, BigDecimal lower) {

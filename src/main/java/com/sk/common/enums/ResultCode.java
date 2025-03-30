@@ -25,26 +25,27 @@ public class ResultCode {
     public enum Error {
 
         // AUTH: 인증/인가 관련 오류
-        AUTH_REQUIRED("AUTH-001", "Authentication is required for this request."), 
-        AUTH_INVALID_CREDENTIALS("AUTH-002", "The provided credentials are incorrect."), 
-        AUTH_TOKEN_EXPIRED("AUTH-003", "Token has expired."), 
-        AUTH_TOKEN_INVALID("AUTH-004", "The provided token is invalid or malformed."), 
-        AUTH_INSUFFICIENT_PERMISSIONS("AUTH-005", "You don't have sufficient permissions for this operation."), 
-        AUTH_ACCOUNT_LOCKED("AUTH-006", "Your account has been locked. Please contact support."), 
+        AUTH_REQUIRED("AUTH-001", "Authentication is required for this request."),
+        AUTH_INVALID_CREDENTIALS("AUTH-002", "The provided credentials are incorrect."),
+        AUTH_TOKEN_EXPIRED("AUTH-003", "Token has expired."),
+        AUTH_TOKEN_INVALID("AUTH-004", "The provided token is invalid or malformed."),
+        AUTH_INSUFFICIENT_PERMISSIONS("AUTH-005", "You don't have sufficient permissions for this operation."),
+        AUTH_ACCOUNT_LOCKED("AUTH-006", "Your account has been locked. Please contact support."),
 
         // REQ: 요청/입력 관련 오류
-        REQ_INVALID("REQ-001", "The request is invalid."), 
-        REQ_MISSING_PARAMETER("REQ-002", "Required parameter is missing."), 
-        REQ_INVALID_PARAMETER("REQ-003", "One or more parameters are invalid."), 
+        REQ_INVALID("REQ-001", "The request is invalid."),
+        REQ_MISSING_PARAMETER("REQ-002", "Required parameter is missing."),
+        REQ_INVALID_PARAMETER("REQ-003", "One or more parameters are invalid."),
         REQ_INVALID_FORMAT("REQ-004", "The request format is incorrect."),
         REQ_INVALID_JSON("REQ-005", "The provided JSON format is incorrect."),
         REQ_METHOD_NOT_ALLOWED("REQ-006", "The HTTP method used is not allowed for this request."),
-        
+
         // RSC: 리소스 관련 오류
         RSC_NOT_FOUND("RSC-001", "The requested resource could not be found."),
         RSC_PATH_NOT_FOUND("RSC-002", "The requested path is invalid or missing."),
         RSC_ALREADY_EXISTS("RSC-003", "The resource already exists."),
         RSC_DATA_NOT_FOUND("RSC-004", "The requested data could not be found."),
+        RSC_COMPONENT_NOT_FOUND("RSC-005", "The required system component could not be found."),
 
         // BIZ: 비즈니스 로직 관련 오류
         BIZ_RULE_VIOLATION("BIZ-001", "The operation violates a business rule."),
@@ -69,7 +70,7 @@ public class ResultCode {
         SYS_UNKNOWN("SYS-999", "An unknown error has occurred. Please try again later."),
 
         // FILE: 파일 관련 오류
-        FILE_INVALID("FILE-001", "The file is invalid."), 
+        FILE_INVALID("FILE-001", "The file is invalid."),
         FILE_FORMAT_ERROR("REQ-007", "This file format is not allowed."),
         FILE_SIZE_ERROR("REQ-008", "File size exceeds the maximum limit");
 

@@ -1,11 +1,13 @@
 package com.sk.domain.mi.conversion.strategy.basic;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.MathUtil;
+import com.sk.domain.mi.conversion.FormulaService;
 import com.sk.domain.mi.conversion.strategy.ConversionStrategy;
-import com.sk.domain.mi.conversion_on_demand.FormulaService;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,9 +15,8 @@ import java.util.List;
 /**
  * 표준편차 계산을 위한 전략 클래스
  */
+@Component
 public class StandardDeviationConversion implements ConversionStrategy {
-
-    private static final MathContext MC = new MathContext(20, RoundingMode.HALF_UP);
 
     @Override
     public FormulaService getFormulaService() {
@@ -24,7 +25,7 @@ public class StandardDeviationConversion implements ConversionStrategy {
 
     @Override
     public BigDecimal convert(BigDecimal value) {
-        throw new UnsupportedOperationException("Standard deviation requires a time series data");
+        throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "STANDARD_DEVIATION requires a time series data");
     }
 
     /**
@@ -32,8 +33,16 @@ public class StandardDeviationConversion implements ConversionStrategy {
      */
     @Override
     public List<BigDecimal> convertTimeSeries(List<BigDecimal> timeSeriesData, int windowSize) {
+
         if (timeSeriesData == null) {
-            throw new IllegalArgumentException("Time series data cannot be null");
+            throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Time series data cannot be null");
+        }
+
+        // 윈도우 크기가 1인 경우 표준편차는 항상 0
+        if (windowSize == 1) {
+            return timeSeriesData.stream()
+                .map(value -> BigDecimal.ZERO)
+                .toList();
         }
 
         // 결과 리스트 초기화 (null로 채워진 동일한 크기의 리스트)
@@ -50,23 +59,29 @@ public class StandardDeviationConversion implements ConversionStrategy {
             // 평균 계산
             BigDecimal sum = BigDecimal.ZERO;
             for (BigDecimal dataPoint : windowData) {
-                sum = sum.add(dataPoint, MC);
+                sum = sum.add(dataPoint, MathUtil.MC);
             }
-            BigDecimal mean = sum.divide(new BigDecimal(windowSize), MC);
+            BigDecimal mean = sum.divide(new BigDecimal(windowSize), MathUtil.MC);
 
             // 각 데이터 포인트와 평균 간의 차이의 제곱의 합 계산
             BigDecimal sumOfSquaredDifferences = BigDecimal.ZERO;
             for (BigDecimal dataPoint : windowData) {
-                BigDecimal difference = dataPoint.subtract(mean, MC);
-                BigDecimal squaredDifference = difference.multiply(difference, MC);
-                sumOfSquaredDifferences = sumOfSquaredDifferences.add(squaredDifference, MC);
+                BigDecimal difference = dataPoint.subtract(mean, MathUtil.MC);
+                BigDecimal squaredDifference = difference.multiply(difference, MathUtil.MC);
+                sumOfSquaredDifferences = sumOfSquaredDifferences.add(squaredDifference, MathUtil.MC);
+            }
+
+            // 모든 값이 동일한 경우(분산이 0) 표준편차도 0
+            if (sumOfSquaredDifferences.compareTo(BigDecimal.ZERO) == 0) {
+                results.set(i, BigDecimal.ZERO);
+                continue;
             }
 
             // 분산 계산 (차이 제곱의 평균)
-            BigDecimal variance = sumOfSquaredDifferences.divide(new BigDecimal(windowSize), MC);
+            BigDecimal variance = sumOfSquaredDifferences.divide(new BigDecimal(windowSize), MathUtil.MC);
 
             // 표준편차 계산 (분산의 제곱근)
-            results.set(i, sqrt(variance, MC));
+            results.set(i, MathUtil.sqrt(variance, MathUtil.MC));
         }
 
         return results;
@@ -75,21 +90,6 @@ public class StandardDeviationConversion implements ConversionStrategy {
     @Override
     public boolean supports(FormulaService formulaService) {
         return formulaService == getFormulaService();
-    }
-
-    /**
-     * BigDecimal용 sqrt 함수
-     */
-    public static BigDecimal sqrt(BigDecimal value, MathContext mc) {
-        BigDecimal x = BigDecimal.valueOf(Math.sqrt(value.doubleValue()));
-        BigDecimal last;
-
-        do {
-            last = x;
-            x = value.divide(x, mc).add(x).divide(BigDecimal.valueOf(2), mc);
-        } while (!x.equals(last));
-
-        return x;
     }
 
 }
