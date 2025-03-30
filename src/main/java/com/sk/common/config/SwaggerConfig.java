@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -40,7 +41,7 @@ public class SwaggerConfig {
     }
 
     @Bean
-    public GroupedOpenApi miApi(OpenApiCustomizer sortPathsOpenApiCustomizer, OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi miApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
             .group("MI API")
             .displayName("MI 서비스 API")
@@ -51,7 +52,7 @@ public class SwaggerConfig {
     }
 
     @Bean
-    public GroupedOpenApi adminApi(OpenApiCustomizer sortPathsOpenApiCustomizer, OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi adminApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
             .group("ADMIN API")
             .displayName("관리자 API")
@@ -62,7 +63,7 @@ public class SwaggerConfig {
     }
 
     @Bean
-    public GroupedOpenApi etcApi(OpenApiCustomizer sortPathsOpenApiCustomizer, OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi etcApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
             .group("ETC API")
             .displayName("기타 API")

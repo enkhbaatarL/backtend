@@ -1,7 +1,11 @@
 package com.sk.domain.mi.conversion.strategy.basic;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.MathUtil;
+import com.sk.domain.mi.conversion.FormulaService;
 import com.sk.domain.mi.conversion.strategy.ConversionStrategy;
-import com.sk.domain.mi.conversion_on_demand.FormulaService;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -13,9 +17,8 @@ import java.util.List;
 /**
  * 이동 평균 계산을 위한 전략 클래스
  */
+@Component
 public class MovingAverageConversion implements ConversionStrategy {
-
-    private static final MathContext MC = new MathContext(20, RoundingMode.HALF_UP);
 
     @Override
     public FormulaService getFormulaService() {
@@ -24,7 +27,7 @@ public class MovingAverageConversion implements ConversionStrategy {
 
     @Override
     public BigDecimal convert(BigDecimal value) {
-        throw new UnsupportedOperationException("Moving average requires a time series data");
+        throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "MOVING_AVERAGE requires a time series data");
     }
 
     /**
@@ -34,7 +37,7 @@ public class MovingAverageConversion implements ConversionStrategy {
     public List<BigDecimal> convertTimeSeries(List<BigDecimal> timeSeriesData, int windowSize) {
 
         if (timeSeriesData == null) {
-            throw new IllegalArgumentException("Time series data cannot be null");
+            throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Time series data cannot be null");
         }
 
         // 결과 리스트 초기화 (null로 채워진 동일한 크기의 리스트)
@@ -46,11 +49,11 @@ public class MovingAverageConversion implements ConversionStrategy {
 
             // 현재 윈도우의 데이터 합계 계산
             for (int j = 0; j < windowSize; j++) {
-                sum = sum.add(timeSeriesData.get(i - j), MC);
+                sum = sum.add(timeSeriesData.get(i - j), MathUtil.MC);
             }
 
             // 평균 계산 및 결과 저장
-            results.set(i, sum.divide(new BigDecimal(windowSize), MC));
+            results.set(i, sum.divide(new BigDecimal(windowSize), MathUtil.MC));
         }
 
         return results;
