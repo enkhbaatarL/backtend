@@ -9,6 +9,9 @@ import lombok.Builder;
 @Builder
 public record CategoryDataRes(
         @Schema(description = "코드ID", example = "")
-        String codeId) {
+        String codeId,
+        
+        @Schema(description = "코드명", example = "")
+        String codeNm) {
 }
 // @formatter:on

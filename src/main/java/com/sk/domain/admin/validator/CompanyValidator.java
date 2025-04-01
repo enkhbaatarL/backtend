@@ -104,8 +104,8 @@ public class CompanyValidator {
         }
     }
 
-    public ValidationResult<Goods> ensureGoodsExistsByGoodsNo(Integer providerNo, Integer goodsNo) {
-        Optional<Goods> entity = goodsRepository.findByProviderNoAndGoodsNoAndIsDeletedFalse(providerNo, goodsNo);
+    public ValidationResult<Goods> ensureGoodsExistsByGoodsNo(Integer goodsNo) {
+        Optional<Goods> entity = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {
