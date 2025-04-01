@@ -62,6 +62,10 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("상품데이터소스단위명")
     private String goodsDataSourceUnitNm;
 
+    @Column(name = "tbl_colm_list_nm", length = 255)
+    @Comment("테이블컬럼목록명")
+    private String tableColumnListNm;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gds_data_no", referencedColumnName = "gds_data_no", foreignKey = @ForeignKey(name = "tmd_gdsdatactgrl_ibfk_1"), nullable = false)
     @Comment("상품데이타번호")
@@ -70,7 +74,7 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, GoodsData goodsData) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm, GoodsData goodsData) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -79,11 +83,12 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.queryConditionCntt = queryConditionCntt;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
+        this.tableColumnListNm = tableColumnListNm;
         this.goodsData = goodsData;
     }
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm) {
         return GoodsDataSourceDetail.builder()
                 .goodsDataSourceNm(goodsDataSourceNm)
                 .targetDbNm(targetDbNm)
@@ -91,6 +96,7 @@ public class GoodsDataSourceDetail extends BaseEntity {
                 .queryConditionCntt(queryConditionCntt)
                 .goodsDataSourceExpn(goodsDataSourceExpn)
                 .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
+                .tableColumnListNm(tableColumnListNm)
                 .goodsData(goodsData)
                 .build();
     }

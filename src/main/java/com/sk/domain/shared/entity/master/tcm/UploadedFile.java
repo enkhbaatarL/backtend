@@ -55,7 +55,7 @@ public class UploadedFile extends BaseEntity {
     @Comment("파일확장자명")
     private String fileExtNm;
 
-    @Column(name = "mime_type_nm", length = 50)
+    @Column(name = "mime_type_nm", length = 100)
     @Comment("MIME유형명")
     private String mimeTypeNm;
 

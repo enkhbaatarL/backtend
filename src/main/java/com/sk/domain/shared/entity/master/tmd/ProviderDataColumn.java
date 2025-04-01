@@ -19,7 +19,6 @@ import lombok.NoArgsConstructor;
 @Comment("TMD_프로바이더데이터컬럼내역")
 @Table(name = "tmd_prvddatacolml")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(ProviderListener.class)
 public class ProviderDataColumn extends BaseEntity {
 
     @EmbeddedId
@@ -30,7 +29,8 @@ public class ProviderDataColumn extends BaseEntity {
     private String dataColumnExpn;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", foreignKey = @ForeignKey(name = "TMD_PRVDDATACOLML_FK01"), nullable = false)
+    @MapsId("providerNo") // 복합키의 providerNo와 연관관계를 연결합니다.
+    @JoinColumn(name = "prvd_no", nullable = false, referencedColumnName = "prvd_no", foreignKey = @ForeignKey(name = "TMD_PRVDDATACOLML_FK01"))
     @Comment("프로바이더번호")
     private Provider provider;
 

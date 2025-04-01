@@ -27,12 +27,15 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.CategoryDataRes(
-            gdc.goodsDataCategoryCd
+            gdc.goodsDataCategoryCd,
+            ccd.codeNm
             )
             FROM GoodsDataCategory gdc
+            LEFT JOIN CommonCodeDetail ccd ON ccd.id.codeId = gdc.goodsDataCategoryCd
             WHERE gdc.isDeleted = false
             AND gdc.goodsDataManagementSeparateCd = 'GDAT'
             AND gdc.goodsData.goodsDataNo = :goodsDataNo
+            AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
             """)
     List<CategoryDataRes> findGDAT(@Param("goodsDataNo") Integer goodsDataNo);
 
@@ -46,6 +49,7 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             FROM GoodsDataCategory gdc
             LEFT JOIN UploadedFile uf ON uf.fileNo = gdc.goodsDataManagementNo
             WHERE gdc.isDeleted = false
+            AND gdc.goodsDataCategoryCd = 'PUBDATE'
             AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
             AND gdc.goodsData.goodsDataNo = :goodsDataNo
             """)
