@@ -2,9 +2,12 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
+import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
@@ -52,7 +55,7 @@ public class GoodsData extends BaseEntity {
 
     @Column(name = "gds_data_expn", length = 500)
     @Comment("상품데이터설명")
-    private String goodsDataExpn;
+    private String goodsDataExpn; // 사용 안 함
 
     @Column(name = "gds_data_smry_cntt", columnDefinition = "text")
     @Comment("상품데이터베이스명")
@@ -70,7 +73,7 @@ public class GoodsData extends BaseEntity {
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
         this.goodsDataNm = goodsDataNm;
-        this.goodsDataExpn = goodsDataExpn;
+        this.goodsDataExpn = "";
         this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         this.goods = goods;
     }
@@ -78,10 +81,16 @@ public class GoodsData extends BaseEntity {
     public static GoodsData of(Goods goods, GoodsDataCreateReq dto) {
         return GoodsData.builder()
                 .goodsDataNm(dto.goodsDataNm())
-                .goodsDataExpn(dto.goodsDataExpn())
+                .goodsDataExpn("")
                 .goodsDataSummaryCntt(dto.goodsDataSummaryCntt())
                 .goods(goods)
                 .build();
+    }
+
+    public void update(GoodsDataUpdateReq dto) {
+        if (StringUtils.isNotEmpty(dto.goodsDataSummaryCntt())) {
+            this.goodsDataSummaryCntt = dto.goodsDataSummaryCntt();
+        }
     }
 
     public void softDelete() {

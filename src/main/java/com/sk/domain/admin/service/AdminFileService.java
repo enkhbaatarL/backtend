@@ -65,7 +65,7 @@ public class AdminFileService {
     * @return FileUploadRes
     */
     @Transactional
-    public FileUploadRes uploadFile(MultipartFile file) {
+    public FileUploadRes uploadFile(MultipartFile file, boolean isPublic) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -85,10 +85,7 @@ public class AdminFileService {
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
             String fileName = Paths.get(storagePathNm, storageFileNm).toString();
 
-            adminObjectStorageService.uploadFile(fileName, file);
-            String fileUrl = adminObjectStorageService.getPresignedUrl(fileName);
-
-            adminObjectStorageService.setACL(fileName);
+            String fileUrl = adminObjectStorageService.uploadFile(file, fileName, isPublic);
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -102,7 +99,7 @@ public class AdminFileService {
                     0,
                     storagePathNm));
 
-            return FileUploadRes.of(savedUploadedFile.getFileNo(), file.getOriginalFilename(), file.getSize(), fileUrl);
+            return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }

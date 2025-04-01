@@ -57,7 +57,7 @@ public class AdminFileController {
     public BaseResponse<FileUploadRes> uploadFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file, true));
     }
 
     @ApiOrder(3)

@@ -9,10 +9,14 @@ import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,10 +37,6 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Column(name = "gds_data_src_no", nullable = false, columnDefinition = "int unsigned")
     @Comment("상품데이터소스번호")
     private Integer goodsDataSourceNo;
-
-    @Column(name = "gds_data_no", nullable = false, columnDefinition = "int unsigned")
-    @Comment("상품데이터번호")
-    private Integer goodsDataNo;
 
     @Column(name = "gds_data_src_nm", nullable = false, length = 100)
     @Comment("상품데이터소스명")
@@ -62,31 +62,36 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("상품데이터소스단위명")
     private String goodsDataSourceUnitNm;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gds_data_no", referencedColumnName = "gds_data_no", foreignKey = @ForeignKey(name = "tmd_gdsdatactgrl_ibfk_1"), nullable = false)
+    @Comment("상품데이타번호")
+    private GoodsData goodsData;
+
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
-            Integer goodsDataSourceNo, Integer goodsDataNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm) {
+            Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, GoodsData goodsData) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
-        this.goodsDataNo = goodsDataNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
         this.targetDbNm = targetDbNm;
         this.targetTableNm = targetTableNm;
         this.queryConditionCntt = queryConditionCntt;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
+        this.goodsData = goodsData;
     }
 
-    public static GoodsDataSourceDetail of(Integer goodsDataNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
+    public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
             String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm) {
         return GoodsDataSourceDetail.builder()
-                .goodsDataNo(goodsDataNo)
                 .goodsDataSourceNm(goodsDataSourceNm)
                 .targetDbNm(targetDbNm)
                 .targetTableNm(targetTableNm)
                 .queryConditionCntt(queryConditionCntt)
                 .goodsDataSourceExpn(goodsDataSourceExpn)
                 .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
+                .goodsData(goodsData)
                 .build();
     }
 

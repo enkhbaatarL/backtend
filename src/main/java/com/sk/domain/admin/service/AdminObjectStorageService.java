@@ -3,6 +3,7 @@ package com.sk.domain.admin.service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -48,8 +49,13 @@ public class AdminObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
 
+    @Value("${ncp.storage.endPoint}")
+    private String endPoint;
+
     @Value("${ncp.storage.bucketName}")
     private String bucketName;
+
+    private List<String> folderList = new ArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -58,8 +64,11 @@ public class AdminObjectStorageService {
         objectMetadata.setContentType("application/x-directory");
 
         objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), objectMetadata);
+        folderList.add("TEMP/");
         for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
             objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), objectMetadata);
+
+            folderList.add(value.getCode() + "/");
         }
     }
 
@@ -82,8 +91,8 @@ public class AdminObjectStorageService {
             System.out.println("Object List:");
             while (true) {
                 for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                    for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
-                        if (objectSummary.getKey().contains(value.getCode()) || objectSummary.getKey().contains("TEMP")) {
+                    for (String folder : folderList) {
+                        if (objectSummary.getKey().contains(folder)) {
                             System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
                                     + objectSummary.getOwner().getId());
 
@@ -113,12 +122,12 @@ public class AdminObjectStorageService {
 
             ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
 
-            System.out.println("Folder List:");
+            // System.out.println("Folder List:");
             for (String commonPrefixes : objectListing.getCommonPrefixes()) {
                 System.out.println("    name=" + commonPrefixes);
             }
 
-            System.out.println("File List:");
+            // System.out.println("File List:");
             for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                 System.out.println(
                         "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
@@ -139,9 +148,9 @@ public class AdminObjectStorageService {
     *
     * @param fileName 파일 Full Path
     * @param MultipartFile 단일 파일 업로드
-    * @return String 실제 저장 된 파일명
+    * @return String 접근할 수 있는 URL 리턴
     */
-    public String uploadFile(String fileName, MultipartFile file) throws IOException {
+    public String uploadFile(MultipartFile file, String fileName, boolean isPublic) throws IOException {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(file.getContentType());
         objectMetadata.setContentLength(file.getSize());
@@ -149,7 +158,12 @@ public class AdminObjectStorageService {
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, file.getInputStream(), objectMetadata);
         objectStorageClient.putObject(putObjectRequest);
 
-        return fileName;
+        if (isPublic) {
+            this.setACL(fileName);
+            return Paths.get(endPoint, bucketName, fileName).toString();
+        }
+
+        return this.getPresignedUrl(fileName);
     }
 
     /**

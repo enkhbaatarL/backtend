@@ -16,22 +16,18 @@ public record GoodsDataCreateReq(
     String goodsDataNm,
 
     @NotBlank
-    @Schema(description = "Summary", example = "")
-    String goodsDataExpn,
-
-    @NotBlank
-    @Schema(description = "상품데이터요약내용", example = "") 
+    @Schema(description = "Summary", example = "") 
     String goodsDataSummaryCntt,
 
     @NotNull
-    @Schema(description = "데이타 Category Code Id", example = "")
-    List<CategoryDataReq> categoryCodeIdList,
+    @Schema(description = "카테고리 데이타 리스트", example = "")
+    List<CategoryDataReq> categoryDataList,
 
     @Schema(description = "정형 데이타 리스트", example = "")
     List<StructuredDataReq> structuredDataList,
 
     @Schema(description = "비정형 데이타 리스트", example = "")
-    List<UnstructuredDataReq> unStructuredDataList) {
+    List<UnstructuredDataReq> unstructuredDataList) {
 
 }
 // @formatter:on

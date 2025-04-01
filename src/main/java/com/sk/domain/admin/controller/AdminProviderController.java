@@ -68,12 +68,12 @@ public class AdminProviderController {
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
     @ApiOrder(1)
-    @Operation(summary = "데이타 프로바이더 목록 조회 - without pagination", description = "데이타 프로바이더 목록을 조회합니다.")
+    @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/provider/all")
-    public BaseResponse<List<ProviderNameRes>> getAllProviders() {
+    @GetMapping("/provider/name")
+    public BaseResponse<List<ProviderNameRes>> getAllProviderNm() {
 
-        return BaseResponseFactory.create(providerService.getAllProviders());
+        return BaseResponseFactory.create(providerService.getAllProviderNm());
     }
 
     @ApiOrder(2)
@@ -126,7 +126,7 @@ public class AdminProviderController {
             @RequestBody @Valid ProviderUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-        providerService.updateProvider(body, providerNo);
+        providerService.updateProvider(providerNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -184,10 +184,10 @@ public class AdminProviderController {
     @Operation(summary = "상품 상세 조회", description = "상품 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}")
-    public BaseResponse<GoodsDetailRes> getGoods(
+    public BaseResponse<GoodsDetailRes> getGoodsDetail(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-        return BaseResponseFactory.create(providerService.getGoods(providerNo, goodsNo));
+        return BaseResponseFactory.create(providerService.getGoodsDetail(goodsNo));
     }
 
     @ApiOrder(10)
@@ -203,7 +203,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        providerService.updateGoods(providerNo, goodsNo, body);
+        providerService.updateGoods(goodsNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -220,7 +220,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        providerService.deleteGoods(providerNo, goodsNo);
+        providerService.deleteGoods(goodsNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -236,7 +236,7 @@ public class AdminProviderController {
     public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-        return BaseResponseFactory.create(providerService.getGoodsLatestUpdated(providerNo, goodsNo));
+        return BaseResponseFactory.create(providerService.getGoodsLatestUpdated(goodsNo));
     }
 
     @ApiOrder(13)
@@ -301,17 +301,17 @@ public class AdminProviderController {
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호"),
-            @Parameter(name = "goodDataNo", description = "상품데이타번호")
+            @Parameter(name = "goodsDataNo", description = "상품데이타번호")
     })
     @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodDataNo}")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
     public BaseResponse<GoodsDataDetailRes> getGoodsData(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
-            @PathVariable(value = "goodDataNo") @Min(value = 1) Integer goodDataNo) {
+            @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
 
-        return BaseResponseFactory.create(providerService.getGoodsData(providerNo, goodsNo, goodDataNo));
+        return BaseResponseFactory.create(providerService.getGoodsData(goodsDataNo));
     }
 
     @ApiOrder(18)
@@ -323,7 +323,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        providerService.createGoodsData(providerNo, goodsNo, body);
+        providerService.createGoodsData(goodsNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -331,13 +331,14 @@ public class AdminProviderController {
     @ApiOrder(19)
     @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
     public BaseResponse<String> updateGoodsData(
             @RequestBody @Valid GoodsDataUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+            @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
 
-        providerService.updateGoodsData(providerNo, goodsNo, body);
+        providerService.updateGoodsData(goodsDataNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -345,7 +346,7 @@ public class AdminProviderController {
     @ApiOrder(97)
     @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadStructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
@@ -369,13 +370,13 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file, false));
     }
 
     @ApiOrder(98)
     @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadUnStructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
@@ -399,13 +400,13 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file, false));
     }
 
     @ApiOrder(99)
     @Operation(summary = "첨부 파일 다운로드", description = "첨부 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/download-file/{fileNo}")
+    @PostMapping("/goodsdatas/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
