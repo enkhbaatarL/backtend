@@ -36,14 +36,18 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
             NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
 
+        String userNo = null;
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null
+                || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "User is not authenticated");
         }
 
-        JwtAuthenticationToken jwtToken = (JwtAuthenticationToken) authentication.getPrincipal();
-        String userNo = jwtToken.getToken().getClaimAsString("userNo");
+        if (authentication instanceof JwtAuthenticationToken jwtToken) {
+            userNo = jwtToken.getToken().getClaimAsString("userNo");
 
+        }
 
         if (userNo == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "User is not authenticated");

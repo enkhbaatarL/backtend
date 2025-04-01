@@ -38,17 +38,19 @@ public class MiNotificationController {
 
     private final MiNotificationService miNotificationService;
 
-    @ApiOrder(1)
-    @Operation(summary = "알림 생성", description = "알림을 생성합니다.")
-    @ApiResponse(responseCode = "200", description = "알림 생성 성공")
-    @PostMapping("/notification/goodsdata/{goodsDataSourceNo}")
-    public BaseResponse<List<NotificationRes>> createNotification(
-            @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
-            @RequestBody @Valid NotificationReq.Insert notifications,
-            @UserResolve User user) {
-        return BaseResponseFactory
-                .create(miNotificationService.createNotification(notifications, goodsDataSourceNo, user));
-    }
+    //TODO: 호영 알림 기획 정리 후 수정 필요
+    
+//     @ApiOrder(1)
+//     @Operation(summary = "알림 생성", description = "알림을 생성합니다.")
+//     @ApiResponse(responseCode = "200", description = "알림 생성 성공")
+//     @PostMapping("/notification/goodsdata/{goodsDataSourceNo}")
+//     public BaseResponse<List<NotificationRes>> createNotification(
+//             @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
+//             @RequestBody @Valid NotificationReq.Insert notifications,
+//             @UserResolve User user) {
+//         return BaseResponseFactory
+//                 .create(miNotificationService.createNotification(notifications, goodsDataSourceNo, user));
+//     }
 
     @ApiOrder(2)
     @Operation(summary = "알림 조회", description = "알림을 조회합니다.")
@@ -62,7 +64,7 @@ public class MiNotificationController {
     }
 
     @ApiOrder(3)
-    @Operation(summary = "알림 수정", description = "알림을 수정합니다. (Update/Delete 일괄 처리)")
+    @Operation(summary = "알림 등록/수정/삭제", description = "알림을 등록/수정/삭제합니다. (Insert/Update/Delete 일괄 처리)")
     @ApiResponse(responseCode = "200", description = "알림 수정 성공")
     @PutMapping("/notification/goodsdata/{goodsDataSourceNo}")
     public BaseResponse<List<NotificationRes>> updateNotification(
@@ -73,15 +75,15 @@ public class MiNotificationController {
                 .create(miNotificationService.updateNotification(notifications, goodsDataSourceNo, user));
     }
 
-    @ApiOrder(4)
-    @Operation(summary = "알림 삭제", description = "알림을 삭제합니다. (미사용)")
-    @ApiResponse(responseCode = "200", description = "알림 삭제 성공")
-    @DeleteMapping("/notification/goodsdata/{goodsDataSourceNo}")
-    public BaseResponse<List<NotificationRes>> deleteNotification(
-            @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
-            @RequestBody @Valid NotificationReq.Delete notifications,
-            @UserResolve User user) {
-        return BaseResponseFactory
-                .create(miNotificationService.deleteNotification(notifications, goodsDataSourceNo, user));
-    }
+//     @ApiOrder(4)
+//     @Operation(summary = "알림 삭제", description = "알림을 삭제합니다. (미사용)")
+//     @ApiResponse(responseCode = "200", description = "알림 삭제 성공")
+//     @DeleteMapping("/notification/goodsdata/{goodsDataSourceNo}")
+//     public BaseResponse<List<NotificationRes>> deleteNotification(
+//             @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
+//             @RequestBody @Valid NotificationReq.Delete notifications,
+//             @UserResolve User user) {
+//         return BaseResponseFactory
+//                 .create(miNotificationService.deleteNotification(notifications, goodsDataSourceNo, user));
+//     }
 }

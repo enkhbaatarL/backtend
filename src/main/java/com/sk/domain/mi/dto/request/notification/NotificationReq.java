@@ -28,7 +28,6 @@ public record NotificationReq() {
     ) {}
 
     public record UpdateSetting(
-        @NotNull
         @Schema(name = "userGoodsNotificationSettingNo", description = "사용자상품알림설정번호", example = "1")
         Integer userGoodsNotificationSettingNo,
 
@@ -47,14 +46,14 @@ public record NotificationReq() {
     public record Insert(
         @NotEmpty(message = "설정 목록은 비어있을 수 없습니다.")
         @Valid
-        @Schema(name = "settings", description = "알림 설정 목록", example = "[{notiCrtvlSptCd: UPPER, crtvlSetVol: 100.0, crtvlSetUnitNm: USD}]")
+        @Schema(name = "settings", description = "알림 설정 목록", example = "[{\"notiCrtvlSptCd\": \"UPPER\", \"crtvlSetVol\": 100.0, \"crtvlSetUnitNm\": \"USD\"}]")
         List<Setting> settings
     ) {}
 
     public record Update(
         @NotEmpty(message = "설정 목록은 비어있을 수 없습니다.")
         @Valid
-        @Schema(name = "settings", description = "알림 설정 목록", example = "[{notiCrtvlSptCd: UPPER, crtvlSetVol: 100.0, crtvlSetUnitNm: USD}]")
+        @Schema(name = "settings", description = "알림 설정 목록", example = "[{\"notiCrtvlSptCd\": \"UPPER\", \"crtvlSetVol\": 100.0, \"crtvlSetUnitNm\": \"USD\"}]")
         List<UpdateSetting> settings
     ) {}
 

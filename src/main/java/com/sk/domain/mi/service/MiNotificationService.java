@@ -3,6 +3,7 @@ package com.sk.domain.mi.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class MiNotificationService {
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
 
     /**
-     * 알림 등록
+     * 알림 등록 (미사용)
      * 
      * @param notification
      * @param goodsDataSourceNo
@@ -75,13 +76,12 @@ public class MiNotificationService {
         List<GoodsCriticalValueSetting> goodsCriticalValueSettings = goodsCriticalValueSettingRepository
                 .findByGoodsDataSourceDetailAndUserAndIsDeletedFalse(goodsDataSourceDetail, user);
 
-        return goodsCriticalValueSettings.stream()
-                .map(NotificationRes::of)
-                .collect(Collectors.toList());
+        return NotificationRes.ofList(goodsCriticalValueSettings);
     }
 
     /**
-     * 알림 수정 (Update/Delete 일괄 처리)
+     * 알림 수정 (Insert/Update/Delete 일괄 처리)
+     * PK값이 없는 경우:
      * 
      * @param notifications
      * @param goodsDataSourceNo
@@ -110,33 +110,63 @@ public class MiNotificationService {
                         GoodsCriticalValueSetting::getUserGoodsNotificationSettingNo,
                         setting -> setting));
 
-        Map<Integer, NotificationReq.UpdateSetting> requestedSettingsMap = requestedSettings.stream()
-                .collect(Collectors.toMap(
-                        NotificationReq.UpdateSetting::userGoodsNotificationSettingNo,
-                        setting -> setting));
+        // Map<Integer, NotificationReq.UpdateSetting> requestedSettingsMap =
+        // requestedSettings.stream()
+        // .collect(Collectors.toMap(
+        // NotificationReq.UpdateSetting::userGoodsNotificationSettingNo,
+        // setting -> setting));
 
-        // 5. 삭제 처리: DB에 있는데 DTO에 없는 경우
+        // 5. 삭제 처리: DB에 있는데 DTO에 없는 경우, => 안할 가능성이 높아졌음
         List<GoodsCriticalValueSetting> toDelete = existingSettings.stream()
-                .filter(setting -> !requestedSettingsMap.containsKey(setting.getUserGoodsNotificationSettingNo()))
+                .filter(setting -> requestedSettings.stream()
+                        .noneMatch(requested -> Objects.equals(requested.userGoodsNotificationSettingNo(),
+                                setting.getUserGoodsNotificationSettingNo())))
                 .toList();
         toDelete.forEach(GoodsCriticalValueSetting::softDelete);
+
+        // 5. 삭제 처리: DB에 있는데 DTO에 없는 경우
+        // List<GoodsCriticalValueSetting> toDelete = existingSettings.stream()
+        // .filter(setting ->
+        // !requestedSettingsMap.containsKey(setting.getUserGoodsNotificationSettingNo()))
+        // .toList();
+        // toDelete.forEach(GoodsCriticalValueSetting::softDelete);
 
         // 6. 삽입 및 업데이트 처리
         List<GoodsCriticalValueSetting> toSave = new ArrayList<>();
         for (NotificationReq.UpdateSetting requested : requestedSettings) {
             Integer settingNo = requested.userGoodsNotificationSettingNo();
-            GoodsCriticalValueSetting existing = existingSettingsMap.get(settingNo);
 
-            if (existing == null) {
-                // DB에 없음 -> 삽입
-                GoodsCriticalValueSetting newSetting = GoodsCriticalValueSetting.of(
-                        requested, goodsDataSourceDetail, user);
+            if (settingNo == null) {
+                // DTO에 ID 없음 -> 삽입
+                GoodsCriticalValueSetting newSetting = GoodsCriticalValueSetting.of(requested, goodsDataSourceDetail, user);
                 toSave.add(newSetting);
             } else {
-                // DB에 있음 -> 업데이트
+                // DTO에 ID 있음 -> 업데이트 (DB에 없으면 예외)
+                GoodsCriticalValueSetting existing = existingSettingsMap.get(settingNo);
+                if (existing == null) {
+                    throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "Notification setting with ID " + settingNo + " not found for update");
+                }
                 existing.update(requested);
                 toSave.add(existing);
             }
+
+
+            //TODO : 엔티티에서 No도 Builder로 받아야 하나???? => 고민
+
+
+
+
+            //  if (existing == null) {
+            //     // DB에 없음 -> 삽입
+            //     GoodsCriticalValueSetting newSetting = GoodsCriticalValueSetting.of(
+            //             requested, goodsDataSourceDetail, user);
+            //     toSave.add(newSetting);
+            // } else {
+            //     // DB에 있음 -> 업데이트
+            //     existing.update(requested);
+            //     toSave.add(existing);
+            // }
         }
 
         // 7. 변경 사항 저장

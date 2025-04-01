@@ -44,7 +44,6 @@ public class TenantInterceptor implements HandlerInterceptor {
                         throw AppErrorException.of(ResultCode.Error.SYS_UNKNOWN,
                                 String.format("Failed to set tenant datasource. companyNo: %s", companyNo));
                     }
-
                 }
             }
         }
