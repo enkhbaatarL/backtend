@@ -88,6 +88,8 @@ public class AdminFileService {
             adminObjectStorageService.uploadFile(fileName, file);
             String fileUrl = adminObjectStorageService.getPresignedUrl(fileName);
 
+            adminObjectStorageService.setACL(fileName);
+
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
                     originalFileNm,

@@ -5,6 +5,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.exception.CustomAuthorizationException;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.MDCUtil;
@@ -155,6 +156,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleException(AppErrorException ex) {
         log.error("Exception Occurred. -> [클라이언트 요청 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
         return buildResponse(ex, BAD_REQUEST, ex.getErrorCode(), ex.getAdditionalMessage());
+    }
+
+    @ExceptionHandler(SystemErrorException.class)
+    public ResponseEntity<Object> handleException(SystemErrorException ex) {
+        log.error("Exception Occurred. -> [시스템 에러 발생(Exception)]. message : {}", ex.getMessage(), ex);
+        return buildResponse(ex, INTERNAL_SERVER_ERROR, ex.getErrorCode(), ex.getAdditionalMessage());
     }
 
     @ExceptionHandler(Exception.class)

@@ -15,13 +15,17 @@ import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.GroupGrantee;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
@@ -49,9 +53,13 @@ public class AdminObjectStorageService {
 
     @PostConstruct
     public void init() {
-        objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(0L);
+        objectMetadata.setContentType("application/x-directory");
+
+        objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), objectMetadata);
         for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
-            objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+            objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), objectMetadata);
         }
     }
 
@@ -75,7 +83,7 @@ public class AdminObjectStorageService {
             while (true) {
                 for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                     for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
-                        if (objectSummary.getKey().contains(value.getCode())) {
+                        if (objectSummary.getKey().contains(value.getCode()) || objectSummary.getKey().contains("TEMP")) {
                             System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
                                     + objectSummary.getOwner().getId());
 
@@ -213,6 +221,22 @@ public class AdminObjectStorageService {
 
         URL url = objectStorageClient.generatePresignedUrl(generatePresignedUrlRequest);
         return url.toString();
+    }
+
+    /**
+    * 파일의 ACL을 설정한다.
+    *
+    * @param fileName 파일 Full Path
+    * @return 
+    */
+    public void setACL(String fileName) {
+        // get the current ACL
+        AccessControlList accessControlList = objectStorageClient.getObjectAcl(bucketName, fileName);
+
+        // add read permission to user by ID
+        accessControlList.grantPermission(GroupGrantee.AllUsers, Permission.Read);
+
+        objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
     }
 
 }
