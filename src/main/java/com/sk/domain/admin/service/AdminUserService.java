@@ -238,6 +238,7 @@ public class AdminUserService {
 		List<String> toInsert = requestedIpAddresses.stream()
 				.filter(ip -> !existingIpSet.contains(ip))
 				.toList();
+				
 		List<AdminPermission> newPermissions = toInsert.stream()
 				.map(ip -> AdminPermission.of(user, ip))
 				.toList();

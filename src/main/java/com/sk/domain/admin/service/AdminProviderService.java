@@ -1,14 +1,14 @@
 package com.sk.domain.admin.service;
 
-import org.springframework.data.domain.Pageable;
-
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +50,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
+import com.sk.domain.shared.enums.StructuredDataType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
@@ -303,6 +304,19 @@ public class AdminProviderService {
     public List<GoodsDataNameRes> getAllGoodsDataNm(Integer providerNo, Integer goodsNo) {
         return goodsDataRepository.getAllGoodsDataNm(providerNo, goodsNo);
     }
+
+    /**
+    * 정형 데이터 타입 목록을 조회합니다.
+    *
+    * @return List<StructuredDataType>
+    */
+   //TODO: 호영: 정형 데이터 타입 DB로 동적 처리 필요
+   public List<StructuredDataType> getAllStructuredDataTypes() {
+       return Arrays.stream(StructuredDataType.values())
+               .collect(Collectors.toList());
+   }
+   
+   //TODO: 호영: 정형 데이터 검증
 
     /**
     * 데이터 상세 조회합니다.

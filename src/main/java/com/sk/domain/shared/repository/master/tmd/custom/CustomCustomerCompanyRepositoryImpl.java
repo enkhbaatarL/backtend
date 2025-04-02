@@ -173,6 +173,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                         customerCompany.customerCompanyNm
                 )
                 .from(customerCompany)
+                .where(customerCompany.isDeleted.isFalse())
                 .orderBy(customerCompany.customerCompanyNm.asc())
                 .fetch();
 
