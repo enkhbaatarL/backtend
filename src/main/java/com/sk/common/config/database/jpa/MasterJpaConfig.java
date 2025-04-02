@@ -1,7 +1,7 @@
 package com.sk.common.config.database.jpa;
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import jakarta.persistence.EntityManagerFactory;
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
@@ -12,19 +12,25 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+
+import jakarta.persistence.EntityManagerFactory;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Master 데이터소스 JPA 설정
  */
 @Configuration
+@RequiredArgsConstructor
 @EnableJpaRepositories(basePackages = "com.sk.domain.shared.repository.master", entityManagerFactoryRef = "masterEntityManagerFactory", transactionManagerRef = "masterTransactionManager")
 public class MasterJpaConfig {
+
+    private final EntityManagerFactoryBuilder builder;
+
     @Primary
     @Bean(name = "masterEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean masterEntityManagerFactory(
-            @Qualifier("masterDataSource") DataSource dataSource,
-            EntityManagerFactoryBuilder builder) {
+            @Qualifier("masterDataSource") DataSource dataSource) {
         return builder
                 .dataSource(dataSource)
                 .packages("com.sk.domain.shared.entity.master")
