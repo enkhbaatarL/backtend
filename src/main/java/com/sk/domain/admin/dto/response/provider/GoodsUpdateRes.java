@@ -16,8 +16,8 @@ public record GoodsUpdateRes(
         @Schema(description = "상품명", example = "제조사별 DRAM 생산량")
         String goodsNm,
 
-        @Schema(description = "상품코드", example = "DRAM")
-        String goodsCd,
+        @Schema(description = "상품ID", example = "DRAM")
+        String goodsId,
 
         @Schema(description = "상품설명", example = "상품 설명")
         String goodsExpn,
@@ -41,7 +41,7 @@ public record GoodsUpdateRes(
         return GoodsUpdateRes.builder()
                 .goodsNo(goods.getGoodsNo())
                 .goodsNm(goods.getGoodsNm())
-                .goodsCd(goods.getGoodsCd())
+                .goodsId(goods.getGoodsId())
                 .goodsExpn(goods.getGoodsExpn())
                 .isUsed(goods.getIsUsed())
                 .createUserId(goods.getCreateUserId())

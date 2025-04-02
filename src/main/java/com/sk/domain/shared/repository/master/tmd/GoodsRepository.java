@@ -45,7 +45,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
             g.goodsNo,
             g.goodsNm,
-            g.goodsCd,
+            g.goodsId,
             g.goodsExpn,
             g.isUsed,
             new com.sk.domain.shared.dto.AuditInfo(

@@ -37,7 +37,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
               AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsDataRes> search(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo,
+    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNo(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo,
             @Param("keyword") String keyword, Pageable pageable);
 
     @Query(value = """
@@ -50,19 +50,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             AND gd.goods.provider.providerNo = :providerNo
             AND gd.goods.goodsNo = :goodsNo
                         """)
-    List<GoodsDataNameRes> getAllGoodsDataNm(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo);
-
-    // @Query(value = """
-    // SELECT gd
-    // FROM GoodsData gd
-    // WHERE gd.isDeleted = false
-    // AND gd.goods.provider.providerNo = :providerNo
-    // AND gd.goods.goodsNo = :goodsNo
-    // AND gd.goodsDataNo = :goodsDataNo
-    // """)
-    // Optional<GoodsData> findGoodsData(@Param("providerNo") Integer providerNo,
-    // @Param("goodsNo") Integer goodsNo,
-    // @Param("goodsDataNo") Integer goodsDataNo);
+    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo);
 
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") Integer goodsDataNo);
 }

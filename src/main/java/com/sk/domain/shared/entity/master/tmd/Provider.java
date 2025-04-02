@@ -38,8 +38,8 @@ public class Provider extends BaseEntity {
     private String providerNm;
 
     @Column(name = "prvd_cd", nullable = false, length = 20)
-    @Comment("프로바이더코드")
-    private String providerCd;
+    @Comment("프로바이더ID")
+    private String providerId;
 
     @Column(name = "prvd_expn", length = 500)
     @Comment("프로바이더설명")
@@ -53,12 +53,12 @@ public class Provider extends BaseEntity {
 
     @Builder
     public Provider(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer providerNo, String providerNm, String providerCd, String providerExpn,
+            Boolean isDeleted, Integer providerNo, String providerNm, String providerId, String providerExpn,
             Boolean isUsed) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.providerNo = providerNo;
         this.providerNm = providerNm;
-        this.providerCd = providerCd;
+        this.providerId = providerId;
         this.providerExpn = providerExpn;
         this.isUsed = isUsed;
     }
@@ -66,7 +66,7 @@ public class Provider extends BaseEntity {
     public static Provider of(ProviderCreateReq dto) {
         return Provider.builder()
                 .providerNm(dto.providerNm())
-                .providerCd(dto.providerCd())
+                .providerId(dto.providerId())
                 .providerExpn(dto.providerExpn())
                 .isUsed(dto.isUsed())
                 .build();

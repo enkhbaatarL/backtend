@@ -21,7 +21,7 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             AND gdc.goodsDataManagementSeparateCd = :goodsDataManagementSeparateCd
             AND gdc.goodsDataManagementNo = :goodsDataManagementNo
             """)
-    Optional<GoodsDataCategory> getGoodsDataCategory(@Param("goodsDataNo") Integer goodsDataNo,
+    Optional<GoodsDataCategory> findGoodsDataCategoryByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo,
             @Param("goodsDataManagementSeparateCd") String goodsDataManagementSeparateCd,
             @Param("goodsDataManagementNo") Long goodsDataManagementNo);
 
@@ -37,7 +37,7 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             AND gdc.goodsData.goodsDataNo = :goodsDataNo
             AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
             """)
-    List<CategoryDataRes> findGDAT(@Param("goodsDataNo") Integer goodsDataNo);
+    List<CategoryDataRes> findCategoryDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.UnstructuredDataRes(
@@ -53,7 +53,7 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
             AND gdc.goodsData.goodsDataNo = :goodsDataNo
             """)
-    List<UnstructuredDataRes> findGUDAT(@Param("goodsDataNo") Integer goodsDataNo);
+    List<UnstructuredDataRes> findUnstructuredDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
     @Query(value = """
             SELECT gdc

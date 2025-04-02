@@ -32,7 +32,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
             p.providerNo,
             p.providerNm,
-            p.providerCd,
+            p.providerId,
             p.isUsed,
             count(g),
             p.createDt
@@ -40,7 +40,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             FROM Provider p
             LEFT JOIN Goods g on p = g.provider
             WHERE p.isDeleted = false
-            GROUP BY p.providerNo, p.providerNm, p.providerCd, p.isUsed, p.createDt
+            GROUP BY p.providerNo, p.providerNm, p.providerId, p.isUsed, p.createDt
             ORDER BY p.providerNm ASC
             """, countQuery = """
             SELECT COUNT(distinct p.providerNo)
@@ -56,7 +56,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderDetailRes(
             p.providerNo,
             p.providerNm,
-            p.providerCd,
+            p.providerId,
             p.providerExpn,
             p.isUsed,
             new com.sk.domain.shared.dto.AuditInfo(

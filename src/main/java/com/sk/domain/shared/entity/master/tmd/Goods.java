@@ -38,9 +38,9 @@ public class Goods extends BaseEntity {
     @Comment("상품명")
     private String goodsNm;
 
-    @Column(name = "gds_cd", nullable = false, length = 20)
-    @Comment("상품코드")
-    private String goodsCd;
+    @Column(name = "gds_id", nullable = false, length = 20)
+    @Comment("상품ID")
+    private String goodsId;
 
     @Column(name = "gds_expn", length = 500)
     @Comment("상품설명")
@@ -59,11 +59,11 @@ public class Goods extends BaseEntity {
 
     @Builder
     public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsCd, String goodsExpn, Boolean isUsed, Provider provider) {
+            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Provider provider) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
-        this.goodsCd = goodsCd;
+        this.goodsId = goodsId;
         this.goodsExpn = goodsExpn;
         this.isUsed = isUsed;
         this.provider = provider;
@@ -75,8 +75,8 @@ public class Goods extends BaseEntity {
             this.goodsNm = goodsReq.goodsNm();
         }
 
-        if (StringUtils.isNotEmpty(goodsReq.goodsCd())) {
-            this.goodsCd = goodsReq.goodsCd();
+        if (StringUtils.isNotEmpty(goodsReq.goodsId())) {
+            this.goodsId = goodsReq.goodsId();
         }
 
         if (StringUtils.isNotEmpty(goodsReq.goodsExpn())) {

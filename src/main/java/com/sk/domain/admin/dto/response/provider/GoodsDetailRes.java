@@ -15,8 +15,8 @@ public record GoodsDetailRes(
         @Schema(description = "상품명", example = "제조사별 DRAM 생산량")
         String goodsNm,
 
-        @Schema(description = "상품코드", example = "DRAM")
-        String goodsCd,
+        @Schema(description = "상품ID", example = "DRAM")
+        String goodsId,
 
         @Schema(description = "상품설명", example = "상품 설명")
         String goodsExpn,
