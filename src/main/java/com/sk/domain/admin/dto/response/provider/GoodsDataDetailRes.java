@@ -2,9 +2,6 @@ package com.sk.domain.admin.dto.response.provider;
 
 import java.util.List;
 
-import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
-import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
-import com.sk.domain.admin.service.UnStructuredDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,16 +23,23 @@ public record GoodsDataDetailRes(
         String goodsDataSummaryCntt,
 
         @Schema(description = "데이타 Category Code Id", example = "") 
-        List<String> categoryCodeIdList,
+        List<CategoryDataRes> categoryCodeList,
 
         @Schema(description = "정형 데이타 리스트", example = "") 
-        List<StructuredDataReq> structuredDataList,
+        List<StructuredDataRes> structuredDataList,
 
         @Schema(description = "비정형 데이타 리스트", example = "") 
-        List<UnstructuredDataReq> StructuredDataList) {
+        List<UnstructuredDataRes> unstructuredDataList) {
 
-            public static GoodsDataDetailRes of(GoodsData goodsData, List<CategoryDataRes> goodsDataCategoryList, List<StructuredDataRes> StructuredDataList, List<UnStructuredDataRes> unStructuredDataList){
+            public static GoodsDataDetailRes of(GoodsData goodsData, List<CategoryDataRes> goodsDataCategoryList, List<StructuredDataRes> structuredDataList, List<UnstructuredDataRes> unstructuredDataList){
                 return GoodsDataDetailRes.builder()
+                .goodsDataNo(goodsData.getGoodsDataNo())
+                .goodsDataNm(goodsData.getGoodsDataNm())
+                .goodsDataExpn("")
+                .goodsDataSummaryCntt(goodsData.getGoodsDataSummaryCntt())
+                .categoryCodeList(goodsDataCategoryList)
+                .structuredDataList(structuredDataList)
+                .unstructuredDataList(unstructuredDataList)
                 .build();
             }
 }

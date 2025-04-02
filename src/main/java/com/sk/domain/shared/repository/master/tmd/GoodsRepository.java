@@ -37,7 +37,9 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             AND g.provider.providerNo = :providerNo
             AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsRes> searchGoods(@Param("providerNo") Integer providerNo, @Param("keyword") String keyword, Pageable pageable);
+    Page<GoodsRes> search(@Param("providerNo") Integer providerNo, @Param("keyword") String keyword, Pageable pageable);
+
+    Optional<Goods> findByGoodsNoAndIsDeletedFalse(Integer goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
@@ -67,20 +69,9 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId
             LEFT JOIN mu.customerCompany muc
             WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsDetailRes> findByProviderNoAndGoodsNoAndIsDeletedFalseWithUser(@Param("providerNo") Integer providerNo,
-            @Param("goodsNo") Integer goodsNo);
-
-    @Query(value = """
-            SELECT g
-            FROM Goods g
-            WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
-            AND g.goodsNo = :goodsNo
-            """)
-    Optional<Goods> findByProviderNoAndGoodsNoAndIsDeletedFalse(Integer providerNo, Integer goodsNo);
+    Optional<GoodsDetailRes> getGoodsDetail(@Param("goodsNo") Integer goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes(
@@ -90,9 +81,8 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             FROM Goods g
             LEFT JOIN User u ON u.userLoginId = g.modifyUserId
             WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsLatestUpdatedRes> findByProviderNoAndGoodsNoAndIsDeletedFalseWithLatestModifyInfo(Integer providerNo, Integer goodsNo);
+    Optional<GoodsLatestUpdatedRes> getGoodsLatestUpdated(@Param("goodsNo") Integer goodsNo);
 
 }

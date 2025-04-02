@@ -179,7 +179,7 @@ public class AdminBulletinBoardController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file));
+        return BaseResponseFactory.create(adminFileService.uploadFile(file, true));
     }
 
     @ApiOrder(8)

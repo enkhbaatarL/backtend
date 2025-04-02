@@ -15,6 +15,10 @@ public record StructuredDataReq(
         @Schema(description = "데이타명", example = "") 
         String dataNm,
 
+        // @NotNull
+        // @Schema(description = "상품데이터소스번호", example = "1") 
+        // Integer goodsDataSourceNo,
+
         @NotNull
         @Schema(description = "파일번호", example = "1") 
         Long fileNo) {

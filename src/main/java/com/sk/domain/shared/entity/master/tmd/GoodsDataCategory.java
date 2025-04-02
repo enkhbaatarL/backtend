@@ -75,33 +75,14 @@ public class GoodsDataCategory extends BaseEntity {
         this.goodsData = goodsData;
     }
 
-    public static GoodsDataCategory of(GoodsData goodsData, CategoryDataReq dto) {
+    public static GoodsDataCategory of(GoodsData goodsData, String goodsDataCategoryCd, String goodsDataKeywordNm,
+            String goodsDataManagementSeparateCd, Long goodsDataManagementNo) {
         return GoodsDataCategory.builder()
-                .goodsDataCategoryCd(dto.CodeId())
-                .goodsDataKeywordNm("")
-                .goodsDataManagementSeparateCd(GoodsDataManagementSeparateCode.GDAT.getCode())
+                .goodsDataCategoryCd(goodsDataCategoryCd)
+                .goodsDataKeywordNm(goodsDataKeywordNm)
+                .goodsDataManagementSeparateCd(goodsDataManagementSeparateCd)
                 .goodsData(goodsData)
-                .goodsDataManagementNo(null)
-                .build();
-    }
-
-    public static GoodsDataCategory of(GoodsData goodsData, StructuredDataReq dto) {
-        return GoodsDataCategory.builder()
-                .goodsDataCategoryCd("")
-                .goodsDataKeywordNm("")
-                .goodsDataManagementSeparateCd(GoodsDataManagementSeparateCode.GDATS.getCode())
-                .goodsData(goodsData)
-                .goodsDataManagementNo(null)
-                .build();
-    }
-
-    public static GoodsDataCategory of(GoodsData goodsData, UnstructuredDataReq dto) {
-        return GoodsDataCategory.builder()
-                .goodsDataCategoryCd("PUBDATE")
-                .goodsDataKeywordNm(dto.criteriaDt())
-                .goodsDataManagementSeparateCd(GoodsDataManagementSeparateCode.GUDAT.getCode())
-                .goodsData(goodsData)
-                .goodsDataManagementNo(dto.fileNo())
+                .goodsDataManagementNo(goodsDataManagementNo)
                 .build();
     }
 
