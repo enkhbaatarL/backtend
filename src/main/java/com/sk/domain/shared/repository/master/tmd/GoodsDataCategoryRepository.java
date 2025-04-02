@@ -61,6 +61,7 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             WHERE gdc.isDeleted = false
             AND gdc.goodsDataManagementSeparateCd = 'GDAT'
             AND gdc.goodsData.goodsDataNo = :goodsDataNo
+             AND gdc.goodsDataManagementSeparateCd = :codeId
             """)
-    Optional<GoodsDataCategory> findByCategoryCode(@Param("goodsDataNo") Integer goodsDataNo);
+    Optional<GoodsDataCategory> findByCategoryCode(@Param("goodsDataNo") Integer goodsDataNo, @Param("codeId") String codeId);
 }

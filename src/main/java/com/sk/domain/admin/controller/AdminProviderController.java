@@ -110,9 +110,9 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
-    public BaseResponse<ProviderDetailRes> getPrivider(
+    public BaseResponse<ProviderDetailRes> getProvider(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-        return BaseResponseFactory.create(providerService.getPrivider(providerNo));
+        return BaseResponseFactory.create(providerService.getProvider(providerNo));
     }
 
     @ApiOrder(5)
@@ -187,7 +187,7 @@ public class AdminProviderController {
     public BaseResponse<GoodsDetailRes> getGoodsDetail(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-        return BaseResponseFactory.create(providerService.getGoodsDetail(goodsNo));
+        return BaseResponseFactory.create(providerService.getGoods(goodsNo));
     }
 
     @ApiOrder(10)
