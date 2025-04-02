@@ -1,10 +1,12 @@
 package com.sk.domain.shared.entity.master.tcm;
 
 import java.time.LocalDateTime;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
+
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
@@ -20,7 +22,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -29,9 +30,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tcm_bbsm", indexes = {
-        @Index(name = "TCM_BBSM_IX01", columnList = "cust_cpny_no")
-})
+@Table(name = "tcm_bbsm")
 @Comment("TCM_게시판기본")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BulletinBoard extends BaseEntity {

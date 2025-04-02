@@ -14,7 +14,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -24,9 +23,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tlm_emlsendl", indexes = {
-        @Index(name = "TLM_APIACCSL_IX01", columnList = "eml_rcv_usr_logn_id")
-})
+@Table(name = "tlm_emlsendl")
 @Comment("TLM_메일발송내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EmailAccessLog extends BaseEntity {

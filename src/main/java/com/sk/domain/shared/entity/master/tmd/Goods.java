@@ -2,8 +2,6 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
-import com.sk.domain.shared.listener.GoodsListener;
-import jakarta.persistence.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
@@ -12,7 +10,19 @@ import org.hibernate.annotations.Comment;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.listener.GoodsListener;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,9 +31,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품기본")
-@Table(name = "tmd_gdsm", indexes = {
-        @Index(name = "TMD_GDSM_IX01", columnList = "prvd_no")
-})
+@Table(name = "tmd_gdsm")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(GoodsListener.class)
 public class Goods extends BaseEntity {
@@ -53,7 +61,7 @@ public class Goods extends BaseEntity {
     private Boolean isUsed;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", foreignKey = @ForeignKey(name = "tmd_gdsm_fk01"), nullable = false)
+    @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", nullable = false)
     @Comment("프로바이더번호")
     private Provider provider;
 

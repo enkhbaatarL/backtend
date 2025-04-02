@@ -30,7 +30,7 @@ public class ProviderDataColumn extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("providerNo") // 복합키의 providerNo와 연관관계를 연결합니다.
-    @JoinColumn(name = "prvd_no", nullable = false, referencedColumnName = "prvd_no", foreignKey = @ForeignKey(name = "TMD_PRVDDATACOLML_FK01"))
+    @JoinColumn(name = "prvd_no", nullable = false, referencedColumnName = "prvd_no")
     @Comment("프로바이더번호")
     private Provider provider;
 

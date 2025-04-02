@@ -19,10 +19,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tam_authmnagtgdsmappl", indexes = {
-    @Index(name = "TAM_AUTHMNAGTGDSMAPPL_IX01", columnList = "usr_no"),
-    @Index(name = "TAM_AUTHMNAGTGDSMAPPL_IX02", columnList = "cust_cpny_no,gds_no,gds_auth_mnagt_spt_cd")
-})
+@Table(name = "tam_authmnagtgdsmappl")
 @Comment("TAM_권한주체상품매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuthManageGoodsMappingListener.class)
