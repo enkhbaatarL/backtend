@@ -19,9 +19,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "tam_custcpnyprvdmappl", indexes = {
-        @Index(name = "TAM_CUSTCPNYPRVDMAPPL_FK02", columnList = "prvd_no")
-})
+@Table(name = "tam_custcpnyprvdmappl")
 @Comment("TAM_고객회사프로바이더매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(CustomerCompanyProviderMappingListener.class)

@@ -20,7 +20,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -32,10 +31,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_사용자기본")
-@Table(name = "tmd_usrm", indexes = {
-        @Index(name = "TMD_USRM_IX01", columnList = "cust_cpny_no"),
-        @Index(name = "TMD_USRM_IX02", columnList = "usr_logn_id")
-})
+@Table(name = "tmd_usrm")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 

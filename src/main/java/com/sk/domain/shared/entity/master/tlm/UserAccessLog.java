@@ -11,7 +11,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -20,9 +19,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tlm_usraccsl", indexes = {
-        @Index(name = "TLM_USRACCSL_IX01", columnList = "usr_logn_id")
-})
+@Table(name = "tlm_usraccsl")
 @Comment("TLM_사용자접속내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserAccessLog extends BaseEntity {

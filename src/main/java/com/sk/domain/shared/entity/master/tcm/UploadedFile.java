@@ -5,14 +5,13 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,11 +19,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tcm_filel", indexes = {
-        @Index(name = "TCM_FILEL_IX01", columnList = "file_rel_obj_spt_cd, file_rel_obj_dstg_no")
-}, uniqueConstraints = {
-        @UniqueConstraint(name = "TCM_FILEL_UX01", columnNames = { "org_file_nm", "strg_file_nm" })
-})
+@Table(name = "tcm_filel")
 @Comment("TCM_파일")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UploadedFile extends BaseEntity {

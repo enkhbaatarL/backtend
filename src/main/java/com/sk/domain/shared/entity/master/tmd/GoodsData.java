@@ -2,27 +2,22 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
-import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,11 +26,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품데이터기본")
-@Table(name = "tmd_gdsdatam", indexes = {
-        @Index(name = "TMD_GDSDATAM_IX01", columnList = "gds_no")
-}, uniqueConstraints = {
-        @UniqueConstraint(name = "TMD_GDSDATAM_UX01", columnNames = { "gds_data_dstg_id" })
-})
+@Table(name = "tmd_gdsdatam")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsData extends BaseEntity {
 
@@ -62,7 +53,7 @@ public class GoodsData extends BaseEntity {
     private String goodsDataSummaryCntt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gds_no", referencedColumnName = "gds_no", foreignKey = @ForeignKey(name = "tmd_gdsdatam_ibfk_1"), nullable = false)
+    @JoinColumn(name = "gds_no", referencedColumnName = "gds_no", nullable = false)
     @Comment("상품번호")
     private Goods goods;
 

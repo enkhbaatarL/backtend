@@ -23,9 +23,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tam_custcpnygdsmappl", indexes = {
-        @Index(name = "TAM_CUSTCPNYGDSMAPPL_FK02", columnList = "gds_no")
-})
+@Table(name = "tam_custcpnygdsmappl")
 @Comment("TAM_고객회사상품매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(CustomerCompanyGoodsMappingListener.class)
