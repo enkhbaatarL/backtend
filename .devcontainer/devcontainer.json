@@ -1,0 +1,24 @@
+{
+  "name": "Java 17",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ],
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["vscjava.vscode-java-pack"],
+      "settings": {
+        "editor.defaultFormatter": "redhat.java",
+        "editor.formatOnSave": true,
+        "editor.rulers": [150],
+        "editor.wordWrap": "on",
+        "editor.wordWrapColumn": 150,
+        "java.format.settings.url": "vscode-formatter.xml"
+      }
+    }
+  },
+  "forwardPorts": [8080]
+}
