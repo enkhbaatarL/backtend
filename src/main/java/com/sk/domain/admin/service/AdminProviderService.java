@@ -75,7 +75,7 @@ public class AdminProviderService {
      * @return ProviderDetailRes
      */
     public ProviderDetailRes getProvider(int providerNo) {
-        return providerRepository.getProviderDetail(providerNo)
+        return providerRepository.findProviderDetailByProviderNo(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
     }
@@ -124,7 +124,7 @@ public class AdminProviderService {
      * @return ProviderLatestUpdatedRes
      */
     public ProviderLatestUpdatedRes getProviderLatestUpdated(int providerNo) {
-        return providerRepository.getProviderLatestUpdated(providerNo)
+        return providerRepository.findProviderLatestUpdatedByProviderNo(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
     }

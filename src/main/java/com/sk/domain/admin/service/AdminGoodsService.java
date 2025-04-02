@@ -41,7 +41,7 @@ public class AdminGoodsService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<GoodsRes> goodsPage = goodsRepository.search(providerNo, keyword, pageable);
+        Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNo(providerNo, keyword, pageable);
 
         return PaginationRes.toRes(goodsPage);
     }

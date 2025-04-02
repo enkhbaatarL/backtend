@@ -37,7 +37,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             AND g.provider.providerNo = :providerNo
             AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsRes> search(@Param("providerNo") Integer providerNo, @Param("keyword") String keyword, Pageable pageable);
+    Page<GoodsRes> findGoodsByProviderNo(@Param("providerNo") Integer providerNo, @Param("keyword") String keyword, Pageable pageable);
 
     Optional<Goods> findByGoodsNoAndIsDeletedFalse(Integer goodsNo);
 

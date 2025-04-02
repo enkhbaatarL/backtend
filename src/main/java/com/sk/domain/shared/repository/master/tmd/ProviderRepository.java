@@ -82,7 +82,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             WHERE p.isDeleted = false
             AND p.providerNo = :providerNo
             """)
-    Optional<ProviderDetailRes> getProviderDetail(@Param("providerNo") Integer providerNo);
+    Optional<ProviderDetailRes> findProviderDetailByProviderNo(@Param("providerNo") Integer providerNo);
 
     // 프로바이더의 수정시간이 상품의 수정시간보다 최근이면 프로바이더의 수정시간과 수정자를 가져오고
     // 상품의 수정시간이 프로바이더의 수정시간보다 최근이면 상품의 수정시간과 수정자를 가져온다.
@@ -95,5 +95,5 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             WHERE p.isDeleted = false
             AND p.providerNo = :providerNo
             """)
-    Optional<ProviderLatestUpdatedRes> getProviderLatestUpdated(@Param("providerNo") Integer providerNo);
+    Optional<ProviderLatestUpdatedRes> findProviderLatestUpdatedByProviderNo(@Param("providerNo") Integer providerNo);
 }
