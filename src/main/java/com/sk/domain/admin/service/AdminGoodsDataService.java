@@ -113,11 +113,11 @@ public class AdminGoodsDataService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
 
-        List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findGDAT(goodsData.getGoodsDataNo());
+        List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-        List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findGDATS(goodsData.getGoodsDataNo());
+        List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findGUDAT(goodsData.getGoodsDataNo());
+        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
         return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
     }
@@ -195,7 +195,7 @@ public class AdminGoodsDataService {
 
         // 카테고리 수정
         if (dto.categoryDataList() != null) {
-            List<String> oldCategoryCodes = goodsDataCategoryRepository.findGDAT(goodsData.getGoodsDataNo()).stream()
+            List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
                     .map(category -> category.codeId())
                     .toList();
 

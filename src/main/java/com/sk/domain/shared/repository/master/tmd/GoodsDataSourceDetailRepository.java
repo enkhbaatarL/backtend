@@ -23,7 +23,7 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             WHERE gdsd.isDeleted = false
             AND gdsd.goodsData.goodsDataNo = :goodsDataNo
             """)
-    List<StructuredDataRes> findGDATS(@Param("goodsDataNo") Integer goodsDataNo);
+    List<StructuredDataRes> findStructuredDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
 }
