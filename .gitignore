@@ -43,9 +43,5 @@ out/
 .vscode
 bin/
 
-
-# Devcontainer
-.devcontainer
-
 # OS
 .DS_Store
