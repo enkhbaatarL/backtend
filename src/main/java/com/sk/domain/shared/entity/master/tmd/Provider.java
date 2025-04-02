@@ -37,7 +37,7 @@ public class Provider extends BaseEntity {
     @Comment("프로바이더명")
     private String providerNm;
 
-    @Column(name = "prvd_cd", nullable = false, length = 20)
+    @Column(name = "prvd_id", nullable = false, length = 20)
     @Comment("프로바이더ID")
     private String providerId;
 

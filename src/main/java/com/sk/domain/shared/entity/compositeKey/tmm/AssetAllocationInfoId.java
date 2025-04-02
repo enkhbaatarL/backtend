@@ -19,9 +19,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 public class AssetAllocationInfoId implements Serializable {
 
-    @Column(name = "cust_cpny_nm", nullable = false, length = 100)
-    @Comment("고객회사명")
-    private String customerCompanyName;
+    @Column(name = "cpny_sbcm_spt_cd", nullable = false, length = 20)
+    @Comment("회사분과구분코드")
+    private String companySubcommitteeSeparateCd;
 
     @Column(name = "crtr_dt", nullable = false, length = 8)
     @Comment("기준일자")
@@ -45,9 +45,9 @@ public class AssetAllocationInfoId implements Serializable {
     private String assetGroupName;
 
     @Builder
-    public AssetAllocationInfoId(String customerCompanyName, String criteriaDate, String strategyId,
+    public AssetAllocationInfoId(String companySubcommitteeSeparateCd, String criteriaDate, String strategyId,
             String modelId, Integer regularRebalancingCycle, String assetGroupName) {
-        this.customerCompanyName = customerCompanyName;
+        this.companySubcommitteeSeparateCd = companySubcommitteeSeparateCd;
         this.criteriaDate = criteriaDate;
         this.strategyId = strategyId;
         this.modelId = modelId;

@@ -14,7 +14,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -23,10 +22,8 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "tmm_phphdinfom", indexes = {
-        @Index(name = "TMM_PHPHDINFOM_IX01", columnList = "cust_cpny_nm, stg_id, rglr_rbln_cyc, crtr_dt")
-})
-@Comment("TMM_포트폴리오종목정보기준")
+@Table(name = "tmm_ptfhdinfom")
+@Comment("TMM_포트폴리오종목정보기본")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PortfolioHoldingInfo extends BaseEntity {
 

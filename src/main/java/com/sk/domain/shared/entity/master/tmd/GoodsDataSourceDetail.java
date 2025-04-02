@@ -4,17 +4,15 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -26,9 +24,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품데이터소스상세")
-@Table(name = "tmd_gdsdatasrcd", indexes = {
-        @Index(name = "TMD_GDSDATASRCD_IX01", columnList = "gds_data_no")
-})
+@Table(name = "tmd_gdsdatasrcd")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsDataSourceDetail extends BaseEntity {
 
@@ -67,9 +63,13 @@ public class GoodsDataSourceDetail extends BaseEntity {
     private String tableColumnListNm;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gds_data_no", referencedColumnName = "gds_data_no", foreignKey = @ForeignKey(name = "tmd_gdsdatactgrl_ibfk_1"), nullable = false)
+    @JoinColumn(name = "gds_data_no", referencedColumnName = "gds_data_no", nullable = false)
     @Comment("상품데이타번호")
     private GoodsData goodsData;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cmpnt_type_id", referencedColumnName = "cmpnt_type_id")
+    private ComponentInfo componentInfo;
 
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,

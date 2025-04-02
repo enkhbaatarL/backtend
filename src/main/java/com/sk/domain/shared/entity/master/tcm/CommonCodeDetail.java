@@ -68,7 +68,7 @@ public class CommonCodeDetail extends BaseEntity {
 
     @MapsId("codeGroupId")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cd_grp_id", nullable = false, referencedColumnName = "cd_grp_id", foreignKey = @ForeignKey(name = "tcm_commcdd_fk01"))
+    @JoinColumn(name = "cd_grp_id", nullable = false, referencedColumnName = "cd_grp_id")
     @Comment("공통코드")
     private CommonCode commonCd;
 

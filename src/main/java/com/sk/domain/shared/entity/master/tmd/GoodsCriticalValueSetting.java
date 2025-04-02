@@ -3,8 +3,8 @@ package com.sk.domain.shared.entity.master.tmd;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.Comment;
 import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.Comment;
 
 import com.sk.domain.mi.dto.request.notification.NotificationReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -15,11 +15,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -31,10 +29,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품임계치설정")
-@Table(name = "tmd_gdscrtvlsetl", indexes = {
-        @Index(name = "tmd_gdscrtvlsetl_fk01", columnList = "usr_no"),
-        @Index(name = "tmd_gdscrtvlsetl_fk02", columnList = "gds_data_src_no")
-})
+@Table(name = "tmd_gdscrtvlsetl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsCriticalValueSetting extends BaseEntity {
 
@@ -45,12 +40,12 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     private Integer userGoodsNotificationSettingNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usr_no", referencedColumnName = "usr_no", foreignKey = @ForeignKey(name = "tmd_gdscrtvlsetl_fk01"), nullable = false)
+    @JoinColumn(name = "usr_no", referencedColumnName = "usr_no", nullable = false)
     @Comment("사용자번호")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", foreignKey = @ForeignKey(name = "tmd_gdscrtvlsetl_fk02"), nullable = false)
+    @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", nullable = false)
     @Comment("상품데이터소스번호")
     private GoodsDataSourceDetail goodsDataSourceDetail;
 

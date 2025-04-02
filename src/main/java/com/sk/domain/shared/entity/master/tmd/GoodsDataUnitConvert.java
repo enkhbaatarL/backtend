@@ -6,11 +6,10 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.compositeKey.tmd.GoodsDataSourceDetailUnitConvertMappingId;
+
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -23,9 +22,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Comment("TMD_상품데이터단위변환내역")
-@Table(name = "tmd_gdsdataunitconvl", indexes = {
-        @Index(name = "tmd_gdsdataunitconvl_fk02", columnList = "unit_conv_no")
-})
+@Table(name = "tmd_gdsdataunitconvl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GoodsDataUnitConvert extends BaseEntity {
 
@@ -34,13 +31,13 @@ public class GoodsDataUnitConvert extends BaseEntity {
 
     @MapsId("goodsDataSourceNo")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", foreignKey = @ForeignKey(name = "tmd_gdsdataunitconvl_fk01"), nullable = false)
+    @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", nullable = false)
     @Comment("상품데이터소스상세")
     private GoodsDataSourceDetail goodsDataSourceDetail;
 
     @MapsId("customerCompanyNo")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_conv_no", referencedColumnName = "unit_conv_no", foreignKey = @ForeignKey(name = "tmd_gdsdataunitconvl_fk02"), nullable = false)
+    @JoinColumn(name = "unit_conv_no", referencedColumnName = "unit_conv_no", nullable = false)
     @Comment("단위변환기본")
     private UnitConvert unitConvert;
 
