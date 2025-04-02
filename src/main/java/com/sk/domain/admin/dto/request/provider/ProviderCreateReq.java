@@ -17,8 +17,8 @@ public record ProviderCreateReq(
         @NotBlank
         @Size(min = 1, max = 20)
         @Pattern(regexp = "^[A-Z]+$", message = "영어 대문자만 입력 가능합니다. 소문자와 띄어쓰기는 허용되지 않습니다.")
-        @Schema(description = "프로바이더 코드", example = "REF")
-        String providerCd,
+        @Schema(description = "프로바이더 ID", example = "REF")
+        String providerId,
 
         @NotBlank
         @Size(min = 1, max = 100)

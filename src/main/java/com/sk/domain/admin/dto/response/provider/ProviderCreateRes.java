@@ -16,8 +16,8 @@ public record ProviderCreateRes(
         @Schema(description = "프로바이더명", example = "레피니티브")
         String providerNm,
 
-        @Schema(description = "프로바이더코드", example = "REF")
-        String providerCd,
+        @Schema(description = "프로바이더ID", example = "REF")
+        String providerId,
 
         @Schema(description = "프로바이더설명", example = "레피니티브 설명")
         String providerExpn,
@@ -41,7 +41,7 @@ public record ProviderCreateRes(
         return ProviderCreateRes.builder()
                 .providerNo(provider.getProviderNo())
                 .providerNm(provider.getProviderNm())
-                .providerCd(provider.getProviderCd())
+                .providerId(provider.getProviderId())
                 .providerExpn(provider.getProviderExpn())
                 .isUsed(provider.getIsUsed())
                 .createUserId(provider.getCreateUserId())

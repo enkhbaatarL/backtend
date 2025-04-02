@@ -7,14 +7,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 // @formatter:off
 public record ProviderRes(
-        @Schema(description = "데이터 프로바이더번호", example = "5000") 
+        @Schema(description = "프로바이더번호", example = "5000") 
         Integer providerNo,
 
-        @Schema(description = "데이터 프로바이더명", example = "레피니티브") 
+        @Schema(description = "프로바이더명", example = "레피니티브") 
         String providerNm,
 
-        @Schema(description = "고유 코드", example = "REF") 
-        String providerCd,
+        @Schema(description = "프로바이더ID", example = "REF") 
+        String providerId,
 
         @Schema(description = "사용상태", example = "true") 
         Boolean isUsed,
@@ -25,11 +25,11 @@ public record ProviderRes(
         @Schema(description = "등록일", example = "2025-02-12") 
         String createDt) {
 
-    public ProviderRes(Integer providerNo, String providerNm, String providerCd, Boolean isUsed, Long goodsCount, LocalDateTime createDateTime) {
+    public ProviderRes(Integer providerNo, String providerNm, String providerId, Boolean isUsed, Long goodsCount, LocalDateTime createDateTime) {
         this(
                 providerNo,
                 providerNm,
-                providerCd,
+                providerId,
                 isUsed,
                 goodsCount,
                 createDateTime != null

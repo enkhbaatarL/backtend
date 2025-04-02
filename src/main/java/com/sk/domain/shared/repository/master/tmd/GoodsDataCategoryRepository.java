@@ -21,7 +21,7 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             AND gdc.goodsDataManagementSeparateCd = :goodsDataManagementSeparateCd
             AND gdc.goodsDataManagementNo = :goodsDataManagementNo
             """)
-    Optional<GoodsDataCategory> getGoodsDataCategory(@Param("goodsDataNo") Integer goodsDataNo,
+    Optional<GoodsDataCategory> findGoodsDataCategoryByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo,
             @Param("goodsDataManagementSeparateCd") String goodsDataManagementSeparateCd,
             @Param("goodsDataManagementNo") Long goodsDataManagementNo);
 

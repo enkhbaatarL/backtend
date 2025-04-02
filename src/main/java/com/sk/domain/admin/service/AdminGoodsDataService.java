@@ -67,7 +67,7 @@ public class AdminGoodsDataService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<GoodsDataRes> goodsDataPage = goodsDataRepository.search(providerNo, goodsNo, keyword, pageable);
+        Page<GoodsDataRes> goodsDataPage = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(providerNo, goodsNo, keyword, pageable);
 
         return PaginationRes.toRes(goodsDataPage);
     }
@@ -99,7 +99,7 @@ public class AdminGoodsDataService {
     * @return List<GoodsDataNameRes>
     */
     public List<GoodsDataNameRes> getAllGoodsDataNm(Integer providerNo, Integer goodsNo) {
-        return goodsDataRepository.getAllGoodsDataNm(providerNo, goodsNo);
+        return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
     }
 
     /**
@@ -125,7 +125,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터 등록: 신규등록
     *
-    * @param 
+    * @param goodsNo 상품 번호
+    * @param GoodsDataCreateReq
     * @return 
     */
     @Transactional
@@ -180,7 +181,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터 등록: 기존 데이타 업데이트
     *
-    * @param 
+    * @param goodsNo 상품 번호
+    * @param GoodsDataUpdateReq
     * @return 
     */
     @Transactional
@@ -241,7 +243,7 @@ public class AdminGoodsDataService {
 
                 adminFileService.deleteFile(fileNo);
 
-                goodsDataCategoryRepository.getGoodsDataCategory(
+                goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
                         goodsData.getGoodsDataNo(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
                         .ifPresent(category -> category.softDelete());

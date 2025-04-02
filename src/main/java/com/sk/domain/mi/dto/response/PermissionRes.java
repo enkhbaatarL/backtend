@@ -72,7 +72,7 @@ public record PermissionRes(
 
             @Schema(description = "상품번호", example = "12") Integer goodsNo,
 
-            @Schema(description = "상품코드", example = "CD159") String goodsCd,
+            @Schema(description = "상품ID", example = "CD159") String goodsId,
 
             @Schema(description = "상품명", example = "제조사별 DRAM 생산량") String goodsNm,
 
@@ -82,9 +82,9 @@ public record PermissionRes(
 
     ) {
         @Builder
-        public GoodsAuthRes(Integer goodsNo, String goodsCd, String goodsNm, boolean isViewable, boolean isDownloadable) {
+        public GoodsAuthRes(Integer goodsNo, String goodsId, String goodsNm, boolean isViewable, boolean isDownloadable) {
             this.goodsNo = goodsNo;
-            this.goodsCd = goodsCd;
+            this.goodsId = goodsId;
             this.goodsNm = goodsNm;
             this.isViewable = isViewable;
             this.isDownloadable = isDownloadable;
@@ -126,7 +126,7 @@ public record PermissionRes(
                                             List<AuthManageGoodsMapping> goodsMappingList = goodsEntry.getValue();
 
                                             // 첫 번째 매핑에서 공통 정보 추출
-                                            String goodsCd = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsCd();
+                                            String goodsId = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsId();
                                             String goodsNm = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsNm();
                                             goodsAuthManagementSeparateCd.set(goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getId()
                                                     .getGoodsAuthManagementSeparateCd());
@@ -147,7 +147,7 @@ public record PermissionRes(
 
                                             return GoodsAuthRes.builder()
                                                     .goodsNo(goodsNo)
-                                                    .goodsCd(goodsCd)
+                                                    .goodsId(goodsId)
                                                     .goodsNm(goodsNm)
                                                     .isViewable(isView)
                                                     .isDownloadable(isDownload)
