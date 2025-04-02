@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmd;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,4 +24,6 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             AND gdsd.goodsData.goodsDataNo = :goodsDataNo
             """)
     List<StructuredDataRes> findGDATS(@Param("goodsDataNo") Integer goodsDataNo);
+
+    Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
 }

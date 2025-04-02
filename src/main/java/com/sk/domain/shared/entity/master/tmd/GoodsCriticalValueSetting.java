@@ -4,11 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
+import org.apache.commons.lang3.ObjectUtils;
 
+import com.sk.domain.mi.dto.request.notification.NotificationReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.NotiCrtvlSptCd;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -49,9 +54,10 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @Comment("상품데이터소스번호")
     private GoodsDataSourceDetail goodsDataSourceDetail;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "noti_crtvl_spt_cd", nullable = false, length = 10)
     @Comment("알림임계치구분코드")
-    private String notificationCriticalValueSeparateCd;
+    private NotiCrtvlSptCd notificationCriticalValueSeparateCd;
 
     @Column(name = "crtvl_set_vol", nullable = false, precision = 20, scale = 5)
     @Comment("임계치설정량")
@@ -65,7 +71,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     public GoodsCriticalValueSetting(
             LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, User user, GoodsDataSourceDetail goodsDataSourceDetail,
-            String notificationCriticalValueSeparateCd,
+            NotiCrtvlSptCd notificationCriticalValueSeparateCd,
             BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.user = user;
@@ -76,15 +82,42 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     }
 
     public static GoodsCriticalValueSetting of(
-            User user, GoodsDataSourceDetail goodsDataSourceDetail,
-            String notificationCriticalValueSeparateCd,
-            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
+            NotificationReq.Setting dto,
+            GoodsDataSourceDetail goodsDataSourceDetail,
+            User user) {
         return GoodsCriticalValueSetting.builder()
-                .user(user)
+                .notificationCriticalValueSeparateCd(dto.notificationCriticalValueSeparateCd())
+                .criticalValueSettingVol(dto.criticalValueSettingVol())
+                .criticalValueSettingUnitNm(dto.criticalValueSettingUnitNm())
                 .goodsDataSourceDetail(goodsDataSourceDetail)
-                .notificationCriticalValueSeparateCd(notificationCriticalValueSeparateCd)
-                .criticalValueSettingVol(criticalValueSettingVol)
-                .criticalValueSettingUnitNm(criticalValueSettingUnitNm)
+                .user(user)
                 .build();
+    }
+
+    public static GoodsCriticalValueSetting of(
+            NotificationReq.UpdateSetting dto,
+            GoodsDataSourceDetail goodsDataSourceDetail,
+            User user) {
+        return GoodsCriticalValueSetting.builder()
+                .notificationCriticalValueSeparateCd(dto.notificationCriticalValueSeparateCd())
+                .criticalValueSettingVol(dto.criticalValueSettingVol())
+                .criticalValueSettingUnitNm(dto.criticalValueSettingUnitNm())
+                .goodsDataSourceDetail(goodsDataSourceDetail)
+                .user(user)
+                .build();
+    }
+
+    public void update(NotificationReq.UpdateSetting dto) {
+        if (ObjectUtils.isNotEmpty(dto.notificationCriticalValueSeparateCd())) {
+            this.notificationCriticalValueSeparateCd = dto.notificationCriticalValueSeparateCd();
+        }
+
+        if (ObjectUtils.isNotEmpty(dto.criticalValueSettingVol())) {
+            this.criticalValueSettingVol = dto.criticalValueSettingVol();
+        }
+
+        if (ObjectUtils.isNotEmpty(dto.criticalValueSettingUnitNm())) {
+            this.criticalValueSettingUnitNm = dto.criticalValueSettingUnitNm();
+        }
     }
 }

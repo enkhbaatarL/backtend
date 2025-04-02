@@ -6,9 +6,13 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.entity.master.tmd.User;
 
 public interface GoodsCriticalValueSettingRepository extends JpaRepository<GoodsCriticalValueSetting, Integer> {
 
-    @EntityGraph(attributePaths = { "goodsDataSource" })
+    @EntityGraph(attributePaths = { "goodsDataSourceDetail", "user" })
     List<GoodsCriticalValueSetting> findAllByIsDeletedFalse();
+
+    List<GoodsCriticalValueSetting> findByGoodsDataSourceDetailAndUserAndIsDeletedFalse(GoodsDataSourceDetail goodsDataSourceDetail, User user);
 }
