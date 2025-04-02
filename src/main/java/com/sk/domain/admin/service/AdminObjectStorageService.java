@@ -19,7 +19,6 @@ import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.GroupGrantee;
@@ -33,6 +32,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +49,8 @@ public class AdminObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
 
+    private final CustomerCompanyRepository customerCompanyRepository;
+
     @Value("${ncp.storage.endPoint}")
     private String endPoint;
 
@@ -62,6 +64,13 @@ public class AdminObjectStorageService {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(0L);
         objectMetadata.setContentType("application/x-directory");
+
+        customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream().forEach(
+                company -> {
+                    // todo
+                    // bucketName + company.getCustomerCompanyCd().toLowerCase()
+                    log.info("========>> {}", company.getCustomerCompanyCd().toLowerCase());
+                });
 
         objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), objectMetadata);
         folderList.add("TEMP/");

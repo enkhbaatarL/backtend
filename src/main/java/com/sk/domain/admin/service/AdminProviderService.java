@@ -5,8 +5,6 @@ import org.springframework.data.domain.Pageable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Optional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -115,7 +113,7 @@ public class AdminProviderService {
      * @param providerNo 데이타 프로바이더 번호
      * @return ProviderDetailRes
      */
-    public ProviderDetailRes getPrivider(int providerNo) {
+    public ProviderDetailRes getProvider(int providerNo) {
         return providerRepository.getProviderDetail(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
@@ -194,7 +192,7 @@ public class AdminProviderService {
      * @param goodsNo 상품 번호
      * @return GoodsDetailRes
      */
-    public GoodsDetailRes getGoodsDetail(int goodsNo) {
+    public GoodsDetailRes getGoods(int goodsNo) {
 
         return goodsRepository.getGoodsDetail(goodsNo)
                 .orElseThrow(
@@ -307,9 +305,8 @@ public class AdminProviderService {
     /**
     * 데이터 상세 조회합니다.
     *
-    * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
-    * @return List<GoodsDataNameRes>
+    * @return GoodsDataDetailRes
     */
     public GoodsDataDetailRes getGoodsData(Integer goodsDataNo) {
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
@@ -346,8 +343,6 @@ public class AdminProviderService {
                             GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                     .toList();
             goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
-        } else {
-            // todo error
         }
 
         // 정형 데이타 저장
@@ -357,6 +352,7 @@ public class AdminProviderService {
                 adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
+                // todo
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, structuredData.dataNm(), "targetDbNm",
                                 "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
@@ -395,7 +391,7 @@ public class AdminProviderService {
 
         goodsData.update(dto);
 
-        // 기존 카테고리와 비교해서 정리
+        // 카테고리 수정
         if (dto.categoryDataList() != null) {
             List<String> oldCategoryCodes = goodsDataCategoryRepository.findGDAT(goodsData.getGoodsDataNo()).stream()
                     .map(category -> category.codeId())
@@ -403,87 +399,71 @@ public class AdminProviderService {
 
             List<String> newCategoryCodes = dto.categoryDataList().stream().map(CategoryDataReq::CodeId).toList();
 
-            log.info("==================> OLD: {}", oldCategoryCodes);
-            log.info("==================> NEW: {}", newCategoryCodes);
-
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);
             for (String codeId : codesToDelete) {
-                log.info("==================> DEL: {}", codeId);
-
-                // goodsDataCategoryRepository.f
+                goodsDataCategoryRepository.findByCategoryCode(goodsData.getGoodsDataNo(), codeId).ifPresent(category -> category.softDelete());
             }
 
-            // 추가할 파일: 새 리스트 중 기존 파일에 없는 파일들
             Set<String> codesToAdd = new HashSet<>(newCategoryCodes);
             codesToAdd.removeAll(oldCategoryCodes);
             for (String codeId : codesToAdd) {
-                log.info("==================> ADD: {}", codeId);
-
-                //
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, codeId, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
             }
         }
 
-        // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
+        // 정형 데이타 수정
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
                 log.info("==================> {}", structuredData);
+                // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
             }
         }
 
-        // todo 기존 비정형 데이타 비교해서 삭제 및 추가
+        // 비정형데이타 수정
         if (dto.unstructuredDataList() != null) {
-            // 기존 파일 번호 리스트 추출
             List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                     .stream()
                     .map(file -> file.getFileNo())
                     .toList();
-            // 전달받은 새 파일 번호 리스트 추출
             List<Long> newFileNos = dto.unstructuredDataList()
                     .stream()
                     .map(UnstructuredDataReq::fileNo)
                     .toList();
 
-            log.info("==================> OLD: {}", oldFileNos);
-            log.info("==================> NEW: {}", newFileNos);
-
             Set<Long> oldFileSet = new HashSet<>(oldFileNos);
             Set<Long> newFileSet = new HashSet<>(newFileNos);
 
-            // 삭제할 파일: 기존 파일 중 새 리스트에 없는 파일들
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-                log.info("==================> DEL: {}", fileNo);
 
-                // adminFileService.deleteFile(fileNo);
+                adminFileService.deleteFile(fileNo);
 
-                // goodsDataCategoryRepository.getGoodsDataCategory(
-                // goodsData.getGoodsDataNo(),
-                // GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
-                // .ifPresent(category -> category.softDelete());
+                goodsDataCategoryRepository.getGoodsDataCategory(
+                        goodsData.getGoodsDataNo(),
+                        GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
+                        .ifPresent(category -> category.softDelete());
             }
 
-            // 추가할 파일: 새 리스트 중 기존 파일에 없는 파일들
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-                log.info("==================> ADD: {}", fileNo);
 
-                // adminFileService.updateFile(
-                // fileNo,
-                // goodsData.getGoodsDataNo(),
-                // FileRelationshipObjectSeparateCode.GUDAT.getCode(),
-                // DateUtil.endYmd());
+                adminFileService.updateFile(
+                        fileNo,
+                        goodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GUDAT.getCode(),
+                        DateUtil.endYmd());
 
-                // // 새로 추가할 비정형 데이터와 매칭
-                // dto.unstructuredDataList()
-                // .stream()
-                // .filter(data -> fileNo.equals(data.fileNo()))
-                // .findFirst()
-                // .ifPresent(data -> goodsDataCategoryRepository.save(
-                // GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
-                // GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
+                dto.unstructuredDataList()
+                        .stream()
+                        .filter(data -> fileNo.equals(data.fileNo()))
+                        .findFirst()
+                        .ifPresent(data -> goodsDataCategoryRepository.save(
+                                GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
+                                        GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
             }
         }
 
