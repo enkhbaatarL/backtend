@@ -44,6 +44,8 @@ import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
 import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.admin.service.AdminFileService;
+import com.sk.domain.admin.service.AdminGoodsDataService;
+import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,6 +64,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AdminProviderController {
     private final AdminProviderService providerService;
+    private final AdminGoodsService goodsService;
+    private final AdminGoodsDataService goodsDataService;
     private final AdminFileService adminFileService;
 
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
@@ -110,9 +114,9 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
-    public BaseResponse<ProviderDetailRes> getPrivider(
+    public BaseResponse<ProviderDetailRes> getProvider(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-        return BaseResponseFactory.create(providerService.getPrivider(providerNo));
+        return BaseResponseFactory.create(providerService.getProvider(providerNo));
     }
 
     @ApiOrder(5)
@@ -173,7 +177,7 @@ public class AdminProviderController {
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-        return BaseResponseFactory.create(providerService.getAllGoods(page, size, keyword, providerNo));
+        return BaseResponseFactory.create(goodsService.getAllGoods(page, size, keyword, providerNo));
     }
 
     @ApiOrder(9)
@@ -187,7 +191,7 @@ public class AdminProviderController {
     public BaseResponse<GoodsDetailRes> getGoodsDetail(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-        return BaseResponseFactory.create(providerService.getGoodsDetail(goodsNo));
+        return BaseResponseFactory.create(goodsService.getGoods(goodsNo));
     }
 
     @ApiOrder(10)
@@ -203,7 +207,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        providerService.updateGoods(goodsNo, body);
+        goodsService.updateGoods(goodsNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -220,7 +224,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        providerService.deleteGoods(goodsNo);
+        goodsService.deleteGoods(goodsNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -236,7 +240,7 @@ public class AdminProviderController {
     public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-        return BaseResponseFactory.create(providerService.getGoodsLatestUpdated(goodsNo));
+        return BaseResponseFactory.create(goodsService.getGoodsLatestUpdated(goodsNo));
     }
 
     @ApiOrder(13)
@@ -257,7 +261,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        return BaseResponseFactory.create(providerService.getAllGoodsData(page, size, keyword, providerNo, goodsNo));
+        return BaseResponseFactory.create(goodsDataService.getAllGoodsData(page, size, keyword, providerNo, goodsNo));
     }
 
     @ApiOrder(14)
@@ -266,7 +270,7 @@ public class AdminProviderController {
     @GetMapping("/goodsdata/category")
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
-        return BaseResponseFactory.create(providerService.getGoodsDataMainCategorys());
+        return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
     }
 
     @ApiOrder(15)
@@ -279,7 +283,7 @@ public class AdminProviderController {
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
             @PathVariable(value = "codeId") String codeId) {
 
-        return BaseResponseFactory.create(providerService.getGoodsDataSubCategorys(codeId));
+        return BaseResponseFactory.create(goodsDataService.getGoodsDataSubCategorys(codeId));
     }
 
     @ApiOrder(16)
@@ -294,7 +298,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        return BaseResponseFactory.create(providerService.getAllGoodsDataNm(providerNo, goodsNo));
+        return BaseResponseFactory.create(goodsDataService.getAllGoodsDataNm(providerNo, goodsNo));
     }
 
     @ApiOrder(17)
@@ -311,7 +315,7 @@ public class AdminProviderController {
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
             @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
 
-        return BaseResponseFactory.create(providerService.getGoodsData(goodsDataNo));
+        return BaseResponseFactory.create(goodsDataService.getGoodsData(goodsDataNo));
     }
 
     @ApiOrder(18)
@@ -323,7 +327,7 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        providerService.createGoodsData(goodsNo, body);
+        goodsDataService.createGoodsData(goodsNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -338,7 +342,7 @@ public class AdminProviderController {
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
             @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
 
-        providerService.updateGoodsData(goodsDataNo, body);
+        goodsDataService.updateGoodsData(goodsDataNo, body);
 
         return BaseResponseFactory.create("success");
     }
