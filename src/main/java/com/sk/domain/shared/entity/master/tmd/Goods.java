@@ -60,6 +60,12 @@ public class Goods extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
+    @Column(name = "cpny_comm_use_psbl_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("회사공통사용가능여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isCompanyCommonUsePossible;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", nullable = false)
     @Comment("프로바이더번호")
@@ -67,13 +73,15 @@ public class Goods extends BaseEntity {
 
     @Builder
     public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Provider provider) {
+            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isCompanyCommonUsePossible,
+            Provider provider) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
         this.goodsId = goodsId;
         this.goodsExpn = goodsExpn;
         this.isUsed = isUsed;
+        this.isCompanyCommonUsePossible = isCompanyCommonUsePossible;
         this.provider = provider;
     }
 
