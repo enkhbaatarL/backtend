@@ -13,11 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.HttpMethod;
-import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
@@ -54,30 +54,45 @@ public class AdminObjectStorageService {
     @Value("${ncp.storage.endPoint}")
     private String endPoint;
 
-    @Value("${ncp.storage.bucketName}")
-    private String bucketName;
+    @Value("${ncp.storage.prefix}")
+    private String prefix;
 
     private List<String> folderList = new ArrayList<>();
 
     @PostConstruct
     public void init() {
-        ObjectMetadata objectMetadata = new ObjectMetadata();
-        objectMetadata.setContentLength(0L);
-        objectMetadata.setContentType("application/x-directory");
 
         customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream().forEach(
                 company -> {
-                    // todo
-                    // bucketName + company.getCustomerCompanyCd().toLowerCase()
-                    log.info("========>> {}", company.getCustomerCompanyCd().toLowerCase());
+                    String customerCompanyCd = company.getCustomerCompanyCd().toLowerCase();
+                    String bucketName = this.getBucketName(customerCompanyCd);
+
+                    // create bucket
+                    if (!objectStorageClient.doesBucketExistV2(bucketName)) {
+                        objectStorageClient.createBucket(bucketName);
+                    }
+
+                    // create folder
+                    ObjectMetadata objectMetadata = new ObjectMetadata();
+                    objectMetadata.setContentLength(0L);
+                    objectMetadata.setContentType("application/x-directory");
+
+                    objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), objectMetadata);
+                    folderList.add("TEMP/");
+                    for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
+                        objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), objectMetadata);
+
+                        folderList.add(value.getCode() + "/");
+                    }
                 });
+    }
 
-        objectStorageClient.putObject(bucketName, "TEMP/", new ByteArrayInputStream(new byte[0]), objectMetadata);
-        folderList.add("TEMP/");
-        for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
-            objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), objectMetadata);
-
-            folderList.add(value.getCode() + "/");
+    public void getBucketList() {
+        List<Bucket> buckets = objectStorageClient.listBuckets();
+        System.out.println("Bucket List: ");
+        for (Bucket bucket : buckets) {
+            System.out.println("    name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
+                    + bucket.getOwner().getId());
         }
     }
 
@@ -86,8 +101,10 @@ public class AdminObjectStorageService {
     *
     * @return List<String>
     */
-    public List<String> getAll() {
-        List<String> list = new ArrayList<>();
+    public void getFolderAndFileList(String customerCompanyCd) {
+        String bucketName = this.getBucketName(customerCompanyCd);
+
+        // List<String> list = new ArrayList<>();
 
         // list all in the bucket
         try {
@@ -105,7 +122,7 @@ public class AdminObjectStorageService {
                             System.out.println("    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
                                     + objectSummary.getOwner().getId());
 
-                            list.add(objectSummary.getKey());
+                            // list.add(objectSummary.getKey());
                         }
                     }
 
@@ -123,33 +140,33 @@ public class AdminObjectStorageService {
         }
 
         // top level folders and files in the bucket
-        try {
-            ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                    .withBucketName(bucketName)
-                    .withDelimiter("/")
-                    .withMaxKeys(300);
+        // try {
+        // ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+        // .withBucketName(bucketName)
+        // .withDelimiter("/")
+        // .withMaxKeys(300);
 
-            ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+        // ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
 
-            // System.out.println("Folder List:");
-            for (String commonPrefixes : objectListing.getCommonPrefixes()) {
-                System.out.println("    name=" + commonPrefixes);
-            }
+        // System.out.println("Folder List:");
+        // for (String commonPrefixes : objectListing.getCommonPrefixes()) {
+        // System.out.println(" name=" + commonPrefixes);
+        // }
 
-            // System.out.println("File List:");
-            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                System.out.println(
-                        "    name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
-            }
+        // System.out.println("File List:");
+        // for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+        // System.out.println(
+        // " name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner=" + objectSummary.getOwner().getId());
+        // }
 
-            return list;
-        } catch (AmazonS3Exception e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
+        // return list;
+        // } catch (AmazonS3Exception e) {
+        // e.printStackTrace();
+        // } catch (SdkClientException e) {
+        // e.printStackTrace();
+        // }
 
-        return null;
+        // return null;
     }
 
     /**
@@ -159,7 +176,9 @@ public class AdminObjectStorageService {
     * @param MultipartFile 단일 파일 업로드
     * @return String 접근할 수 있는 URL 리턴
     */
-    public String uploadFile(MultipartFile file, String fileName, boolean isPublic) throws IOException {
+    public String uploadFile(String customerCompanyCd, MultipartFile file, String fileName, boolean isPublic) throws IOException {
+        String bucketName = this.getBucketName(customerCompanyCd);
+
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(file.getContentType());
         objectMetadata.setContentLength(file.getSize());
@@ -168,11 +187,11 @@ public class AdminObjectStorageService {
         objectStorageClient.putObject(putObjectRequest);
 
         if (isPublic) {
-            this.setACL(fileName);
+            this.setACL(customerCompanyCd, fileName);
             return Paths.get(endPoint, bucketName, fileName).toString();
         }
 
-        return this.getPresignedUrl(fileName);
+        return this.getPresignedUrl(customerCompanyCd, fileName);
     }
 
     /**
@@ -181,7 +200,9 @@ public class AdminObjectStorageService {
     * @param fileName 파일 Full Path
     * @return byte[] 파일 데이타
     */
-    public byte[] downloadFile(String fileName) throws IOException {
+    public byte[] downloadFile(String customerCompanyCd, String fileName) throws IOException {
+        String bucketName = this.getBucketName(customerCompanyCd);
+
         S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
 
         S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
@@ -195,7 +216,9 @@ public class AdminObjectStorageService {
     * @param fileName 파일 Full Path
     * @return 
     */
-    public void deleteFile(String fileName) {
+    public void deleteFile(String customerCompanyCd, String fileName) {
+        String bucketName = this.getBucketName(customerCompanyCd);
+
         objectStorageClient.deleteObject(new DeleteObjectRequest(bucketName, fileName));
     }
 
@@ -206,7 +229,9 @@ public class AdminObjectStorageService {
     * @param newPath 새 위치
     * @return 
     */
-    public void copyFile(String oldPath, String newPath) {
+    public void copyFile(String customerCompanyCd, String oldPath, String newPath) {
+        String bucketName = this.getBucketName(customerCompanyCd);
+
         objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
     }
 
@@ -217,9 +242,9 @@ public class AdminObjectStorageService {
     * @param newPath 새 위치
     * @return 
     */
-    public void moveFile(String oldPath, String newPath) {
-        this.copyFile(oldPath, newPath);
-        this.deleteFile(oldPath);
+    public void moveFile(String customerCompanyCd, String oldPath, String newPath) {
+        this.copyFile(customerCompanyCd, oldPath, newPath);
+        this.deleteFile(customerCompanyCd, oldPath);
     }
 
     /**
@@ -228,7 +253,9 @@ public class AdminObjectStorageService {
     * @param fileName 파일 Full Path
     * @return 
     */
-    public String getPresignedUrl(String fileName) {
+    public String getPresignedUrl(String customerCompanyCd, String fileName) {
+        String bucketName = this.getBucketName(customerCompanyCd);
+
         // presigned URL 만료 시간 설정 (예: 1시간 후 만료)
         Date expiration = new Date();
         long expTimeMillis = expiration.getTime() + (1000 * 60 * 60);
@@ -252,7 +279,8 @@ public class AdminObjectStorageService {
     * @param fileName 파일 Full Path
     * @return 
     */
-    public void setACL(String fileName) {
+    public void setACL(String customerCompanyCd, String fileName) {
+        String bucketName = this.getBucketName(customerCompanyCd);
         // get the current ACL
         AccessControlList accessControlList = objectStorageClient.getObjectAcl(bucketName, fileName);
 
@@ -262,4 +290,7 @@ public class AdminObjectStorageService {
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
     }
 
+    public String getBucketName(String customerCompanyCd) {
+        return prefix + customerCompanyCd;
+    }
 }
