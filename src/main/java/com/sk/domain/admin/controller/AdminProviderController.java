@@ -287,6 +287,16 @@ public class AdminProviderController {
     }
 
     @ApiOrder(16)
+    @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goodsdata/structureddatatype")
+    public BaseResponse<String> getstructuredDataType() {
+        // todo: 데이타 타입 리스트 전달
+
+        return BaseResponseFactory.create("todo");
+    }
+
+    @ApiOrder(17)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호")
@@ -301,7 +311,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getAllGoodsDataNm(providerNo, goodsNo));
     }
 
-    @ApiOrder(17)
+    @ApiOrder(18)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호"),
@@ -318,7 +328,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getGoodsData(goodsDataNo));
     }
 
-    @ApiOrder(18)
+    @ApiOrder(19)
     @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
@@ -332,7 +342,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(19)
+    @ApiOrder(20)
     @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
@@ -381,7 +391,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BaseResponse<FileUploadRes> uploadUnStructuredDataFile(
+    public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         // todo
