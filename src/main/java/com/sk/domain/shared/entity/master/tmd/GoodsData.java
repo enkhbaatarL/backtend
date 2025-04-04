@@ -40,7 +40,7 @@ public class GoodsData extends BaseEntity {
     @Comment("상품데이터식별ID")
     private String goodsDataDistinguishId;
 
-    @Column(name = "gds_data_nm", length = 100)
+    @Column(name = "gds_data_nm", length = 500)
     @Comment("상품데이터명")
     private String goodsDataNm;
 
