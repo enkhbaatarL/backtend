@@ -86,7 +86,8 @@ public class AuthorizationServerConfig {
                 .authorizeHttpRequests(authorize -> authorize
                     .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용
                 )
-                .csrf(AbstractHttpConfigurer::disable);
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
             return http.build();
         }
