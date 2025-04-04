@@ -62,8 +62,8 @@ public class BollingerBandsConversion implements ResultWrapperConversionStrategy
             BigDecimal sd = sdList.get(i);
 
             if (ma != null && sd != null) {
-                BigDecimal upper = ma.add(sd.multiply(DEFAULT_K, MathUtil.MC), MathUtil.MC);
-                BigDecimal lower = ma.subtract(sd.multiply(DEFAULT_K, MathUtil.MC), MathUtil.MC);
+                BigDecimal upper = MathUtil.add(ma, MathUtil.multiply(sd, DEFAULT_K));
+                BigDecimal lower = MathUtil.subtract(ma, MathUtil.multiply(sd, DEFAULT_K));
                 results.add(BollingerBandResult.of(ma, upper, lower));
             } else {
                 results.add(null);
