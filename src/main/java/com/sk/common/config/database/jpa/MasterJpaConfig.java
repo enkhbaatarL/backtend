@@ -2,6 +2,7 @@ package com.sk.common.config.database.jpa;
 
 import javax.sql.DataSource;
 
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
@@ -46,7 +47,7 @@ public class MasterJpaConfig {
     }
 
     @Bean
-    public JPAQueryFactory jpaQueryFactory(@Qualifier("masterEntityManagerFactory") EntityManagerFactory emf) {
-        return new JPAQueryFactory(emf.createEntityManager());
+    public JPAQueryFactory jpaQueryFactory(EntityManager em) {
+        return new JPAQueryFactory(em);
     }
 }
