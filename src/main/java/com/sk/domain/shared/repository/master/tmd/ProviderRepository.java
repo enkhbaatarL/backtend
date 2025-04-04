@@ -39,9 +39,6 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             AND cp.isDeleted = false
             AND cp.isUsed = true
             AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
-            AND cp.customerCompany.isDeleted = false
-            AND cp.customerCompany.useBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-            AND cp.customerCompany.useEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
             ORDER BY p.providerNm ASC
                   """)
     List<ProviderNameRes> findProviderNmForOperator(@Param("customerCompanyNo") Integer customerCompanyNo);
@@ -65,7 +62,6 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             SELECT COUNT(distinct p.providerNo)
             FROM Provider p
             WHERE p.isDeleted = false
-            AND g.isDeleted = false
             """)
     Page<ProviderRes> findAllForAdmin(Pageable pageable);
 
@@ -86,24 +82,16 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             AND cp.isDeleted = false
             AND cp.isUsed = true
             AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
-            AND cp.customerCompany.isDeleted = false
-            AND cp.customerCompany.useBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-            AND cp.customerCompany.useEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
             GROUP BY p.providerNo, p.providerNm, p.providerId, p.isUsed, p.createDt
             ORDER BY p.providerNm ASC
             """, countQuery = """
             SELECT COUNT(distinct p.providerNo)
             FROM Provider p
-            LEFT JOIN Goods g on p = g.provider
             JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
             WHERE p.isDeleted = false
-            AND g.isDeleted = false
             AND cp.isDeleted = false
             AND cp.isUsed = true
             AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
-            AND cp.customerCompany.isDeleted = false
-            AND cp.customerCompany.useBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-            AND cp.customerCompany.useEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
             """)
     Page<ProviderRes> findAllForOperator(@Param("customerCompanyNo") Integer customerCompanyNo, Pageable pageable);
 
