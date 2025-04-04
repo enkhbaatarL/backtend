@@ -18,6 +18,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
             g.goodsNo,
+            g.isPublic,
             g.goodsNm,
             g.goodsExpn,
             count(gd)
@@ -48,6 +49,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             g.goodsId,
             g.goodsExpn,
             g.isUsed,
+            g.isPublic,
             new com.sk.domain.shared.dto.AuditInfo(
                     g.createUserId,
                     g.createDt,

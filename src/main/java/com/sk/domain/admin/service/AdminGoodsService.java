@@ -75,7 +75,7 @@ public class AdminGoodsService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                                 String.format("goods no: %d", goodsNo)));
 
-        goods.update(dto);
+        goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed());
 
         return GoodsUpdateRes.of(goods);
     }

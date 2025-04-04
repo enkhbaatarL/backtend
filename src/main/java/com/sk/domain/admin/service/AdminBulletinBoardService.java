@@ -119,7 +119,17 @@ public class AdminBulletinBoardService {
                     .forEach(b -> b.updateIsPopupUse(false));
         }
 
-        BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
+        BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.ofNotice(
+                dto.isTopFixed(),
+                dto.isPopupUse(),
+                dto.popupPostBeginDt(),
+                dto.popupPostEndDt(),
+                dto.bulletinCategorySeparateCd(),
+                dto.isWholePost(),
+                dto.bulletinValidBeginDt(),
+                dto.bulletinValidEndDt(),
+                dto.bulletinTitleNm(),
+                dto.bulletinCntt()));
 
         if (dto.fileNo() != null) {
             adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
@@ -247,7 +257,8 @@ public class AdminBulletinBoardService {
             }
         }
 
-        bulletinBoard.update(dto);
+        bulletinBoard.updateNotice(dto.isTopFixed(), dto.isPopupUse(), dto.popupPostBeginDt(), dto.popupPostEndDt(), dto.bulletinCategorySeparateCd(),
+                dto.isWholePost(), dto.bulletinValidBeginDt(), dto.bulletinValidEndDt(), dto.bulletinTitleNm(), dto.bulletinCntt());
 
         return bulletinBoard;
     }
@@ -337,7 +348,7 @@ public class AdminBulletinBoardService {
      */
     @Transactional
     public BulletinBoard createFaq(FaqCreateReq dto) {
-        return bulletinBoardRepository.save(BulletinBoard.of(dto));
+        return bulletinBoardRepository.save(BulletinBoard.ofFaq(dto.bulletinCategorySeparateCd(), dto.bulletinTitleNm(), dto.bulletinCntt()));
     }
 
     /**
@@ -367,7 +378,7 @@ public class AdminBulletinBoardService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
 
-        bulletinBoard.update(dto);
+        bulletinBoard.updateFaq(dto.bulletinCategorySeparateCd(), dto.bulletinTitleNm(), dto.bulletinCntt());
 
         return bulletinBoard;
     }

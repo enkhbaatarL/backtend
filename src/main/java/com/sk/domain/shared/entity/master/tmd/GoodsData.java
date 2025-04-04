@@ -86,9 +86,9 @@ public class GoodsData extends BaseEntity {
                 .build();
     }
 
-    public void update(GoodsDataUpdateReq dto) {
-        if (StringUtils.isNotEmpty(dto.goodsDataSummaryCntt())) {
-            this.goodsDataSummaryCntt = dto.goodsDataSummaryCntt();
+    public void update(String goodsDataSummaryCntt) {
+        if (StringUtils.isNotEmpty(goodsDataSummaryCntt)) {
+            this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         }
     }
 

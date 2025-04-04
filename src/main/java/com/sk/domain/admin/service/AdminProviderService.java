@@ -94,7 +94,7 @@ public class AdminProviderService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
 
-        provider.update(dto);
+        provider.update(dto.providerNm(), dto.providerExpn(), dto.isUsed());
 
         return ProviderUpdateRes.of(provider);
     }

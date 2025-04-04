@@ -31,9 +31,9 @@ public class AdminFileService {
     *
     * @return List<String>
     */
-    public List<String> getAll() {
-        return adminObjectStorageService.getAll();
-    }
+    // public List<String> getAll() {
+    // return adminObjectStorageService.getAll();
+    // }
 
     /**
     * 파일를 조회한다.

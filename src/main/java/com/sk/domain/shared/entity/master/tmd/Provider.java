@@ -72,18 +72,18 @@ public class Provider extends BaseEntity {
                 .build();
     }
 
-    public void update(ProviderUpdateReq dto) {
+    public void update(String providerNm, String providerExpn, Boolean isUsed) {
 
-        if (StringUtils.isNotEmpty(dto.providerNm())) {
-            this.providerNm = dto.providerNm();
+        if (StringUtils.isNotEmpty(providerNm)) {
+            this.providerNm = providerNm;
         }
 
-        if (StringUtils.isNotEmpty(dto.providerExpn())) {
-            this.providerExpn = dto.providerExpn();
+        if (StringUtils.isNotEmpty(providerExpn)) {
+            this.providerExpn = providerExpn;
         }
 
-        if (ObjectUtils.isNotEmpty(dto.isUsed())) {
-            this.isUsed = dto.isUsed();
+        if (ObjectUtils.isNotEmpty(isUsed)) {
+            this.isUsed = isUsed;
         }
     }
 

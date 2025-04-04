@@ -191,7 +191,7 @@ public class AdminGoodsDataService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
 
-        goodsData.update(dto);
+        goodsData.update(dto.goodsDataSummaryCntt());
 
         // 카테고리 수정
         if (dto.categoryDataList() != null) {
