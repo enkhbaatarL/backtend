@@ -28,7 +28,6 @@ public class MasterJpaConfig {
 
     private final EntityManagerFactoryBuilder builder;
 
-    @Primary
     @Bean(name = "masterEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean masterEntityManagerFactory(
             @Qualifier("masterDataSource") DataSource dataSource) {
@@ -39,7 +38,6 @@ public class MasterJpaConfig {
                 .build();
     }
 
-    @Primary
     @Bean(name = "masterTransactionManager")
     public PlatformTransactionManager masterTransactionManager(
             @Qualifier("masterEntityManagerFactory") EntityManagerFactory emf) {
