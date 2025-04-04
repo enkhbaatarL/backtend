@@ -28,89 +28,89 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminGoodsService {
     private final GoodsRepository goodsRepository;
 
-    /**
-     * 상품 목록을 페이지네이션 처리하여 조회한다.
-     *
-     * @param page       조회할 페이지 번호 (min 1)
-     * @param size       조회할 요소 사이즈 (min 1)
-     * @param keyword 검색 키워드
-     * @param providerNo 데이타 프로바이더 번호
-     * @return PaginationRes<GoodsRes>
-     */
-    public PaginationRes<GoodsRes> getAllGoods(int page, int size, String keyword, int providerNo) {
+    // /**
+    // * 상품 목록을 페이지네이션 처리하여 조회한다.
+    // *
+    // * @param page 조회할 페이지 번호 (min 1)
+    // * @param size 조회할 요소 사이즈 (min 1)
+    // * @param keyword 검색 키워드
+    // * @param providerNo 데이타 프로바이더 번호
+    // * @return PaginationRes<GoodsRes>
+    // */
+    // public PaginationRes<GoodsRes> getAllGoods(int page, int size, String keyword, int providerNo) {
 
-        Pageable pageable = PageRequest.of(page - 1, size);
+    // Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNo(providerNo, keyword, pageable);
+    // Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNo(providerNo, keyword, pageable);
 
-        return PaginationRes.toRes(goodsPage);
-    }
+    // return PaginationRes.toRes(goodsPage);
+    // }
 
-    /**
-     * 상품을 상세 조회한다.
-     *
-     * @param goodsNo 상품 번호
-     * @return GoodsDetailRes
-     */
-    public GoodsDetailRes getGoods(int goodsNo) {
+    // /**
+    // * 상품을 상세 조회한다.
+    // *
+    // * @param goodsNo 상품 번호
+    // * @return GoodsDetailRes
+    // */
+    // public GoodsDetailRes getGoods(int goodsNo) {
 
-        return goodsRepository.getGoodsDetail(goodsNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
-    }
+    // return goodsRepository.getGoodsDetail(goodsNo)
+    // .orElseThrow(
+    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    // String.format("goods no: %d", goodsNo)));
+    // }
 
-    /**
-     * 상품을 수정한다.
-     *
-     * @param goodsNo         상품 번호
-     * @param GoodsUpdateReq 상품 등록 데이터
-     * @return GoodsUpdateRes
-     */
-    @Transactional
-    public GoodsUpdateRes updateGoods(int goodsNo, GoodsUpdateReq dto) {
+    // /**
+    // * 상품을 수정한다.
+    // *
+    // * @param goodsNo 상품 번호
+    // * @param GoodsUpdateReq 상품 등록 데이터
+    // * @return GoodsUpdateRes
+    // */
+    // @Transactional
+    // public GoodsUpdateRes updateGoods(int goodsNo, GoodsUpdateReq dto) {
 
-        Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
+    // Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
+    // .orElseThrow(
+    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    // String.format("goods no: %d", goodsNo)));
 
-        goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed());
+    // goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed());
 
-        return GoodsUpdateRes.of(goods);
-    }
+    // return GoodsUpdateRes.of(goods);
+    // }
 
-    /**
-     * 상품을 삭제한다.
-     *
-     * @param goodsNo 상품 번호
-     * @return GoodsDeleteRes
-     */
-    @Transactional
-    public GoodsDeleteRes deleteGoods(int goodsNo) {
+    // /**
+    // * 상품을 삭제한다.
+    // *
+    // * @param goodsNo 상품 번호
+    // * @return GoodsDeleteRes
+    // */
+    // @Transactional
+    // public GoodsDeleteRes deleteGoods(int goodsNo) {
 
-        Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
+    // Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
+    // .orElseThrow(
+    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    // String.format("goods no: %d", goodsNo)));
 
-        goods.softDelete();
+    // goods.softDelete();
 
-        return GoodsDeleteRes.of(goods);
-    }
+    // return GoodsDeleteRes.of(goods);
+    // }
 
-    /**
-     * 해당 상품의 최신 수정일 노출
-     * 상품 정보 수정 업데이트 범위 : 
-     *
-     * @param goodsNo 상품 번호
-     * @return GoodsLatestUpdatedRes
-     */
-    public GoodsLatestUpdatedRes getGoodsLatestUpdated(int goodsNo) {
-        return goodsRepository.getGoodsLatestUpdated(goodsNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
-    }
+    // /**
+    // * 해당 상품의 최신 수정일 노출
+    // * 상품 정보 수정 업데이트 범위 :
+    // *
+    // * @param goodsNo 상품 번호
+    // * @return GoodsLatestUpdatedRes
+    // */
+    // public GoodsLatestUpdatedRes getGoodsLatestUpdated(int goodsNo) {
+    // return goodsRepository.getGoodsLatestUpdated(goodsNo)
+    // .orElseThrow(
+    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    // String.format("goods no: %d", goodsNo)));
+    // }
 
 }

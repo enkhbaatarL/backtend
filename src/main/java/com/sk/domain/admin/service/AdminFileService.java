@@ -85,7 +85,8 @@ public class AdminFileService {
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
             String fileName = Paths.get(storagePathNm, storageFileNm).toString();
 
-            String fileUrl = adminObjectStorageService.uploadFile(file, fileName, isPublic);
+            // todo-companyCd
+            String fileUrl = "";// adminObjectStorageService.uploadFile(file, fileName, isPublic);
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -118,7 +119,9 @@ public class AdminFileService {
 
         try {
             String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-            byte[] fileData = adminObjectStorageService.downloadFile(fileName);
+
+            // todo-companyCd
+            byte[] fileData = null; // adminObjectStorageService.downloadFile(fileName);
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
@@ -139,7 +142,9 @@ public class AdminFileService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
         String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-        adminObjectStorageService.deleteFile(fileName);
+
+        // todo-companyCd
+        // adminObjectStorageService.deleteFile(fileName);
 
         uploadedFile.softDelete();
     }
@@ -157,7 +162,8 @@ public class AdminFileService {
                 fileRelationshipObjectDistinguishNo,
                 fileRelationshipObjectSeparateCode);
 
-        fileList.forEach(f -> adminObjectStorageService.deleteFile(Paths.get(f.getStoragePathNm(), f.getStorageFileNm()).toString()));
+        // todo-companyCd
+        // fileList.forEach(f -> adminObjectStorageService.deleteFile(Paths.get(f.getStoragePathNm(), f.getStorageFileNm()).toString()));
         fileList.forEach(f -> f.softDelete());
     }
 
@@ -181,7 +187,9 @@ public class AdminFileService {
 
         String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
         String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
-        adminObjectStorageService.moveFile(oldPath, newPath);
+
+        // todo-companyCd
+        // adminObjectStorageService.moveFile(oldPath, newPath);
 
         uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
 
@@ -200,7 +208,9 @@ public class AdminFileService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
         String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-        return adminObjectStorageService.getPresignedUrl(fileName);
+        // todo-companyCd
+        // return adminObjectStorageService.getPresignedUrl(fileName);
+        return null;
     }
 
     private String getFileExtension(String fileName) {

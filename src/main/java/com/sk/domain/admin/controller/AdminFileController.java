@@ -18,12 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.file.FileUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminFileService;
+import com.sk.domain.shared.entity.master.tmd.User;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,14 +43,14 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminFileController {
     private final AdminFileService adminFileService;
 
-    @ApiOrder(1)
-    @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/all")
-    public BaseResponse<List<String>> getAll() {
+    // @ApiOrder(1)
+    // @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/all")
+    // public BaseResponse<List<String>> getAll(@UserResolve User user) {
 
-        return BaseResponseFactory.create(adminFileService.getAll());
-    }
+    // return BaseResponseFactory.create(adminFileService.getAll());
+    // }
 
     @ApiOrder(2)
     @Operation(summary = "파일 업로드", description = "파일을 업로드합니다.")

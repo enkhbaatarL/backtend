@@ -20,7 +20,10 @@ import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
 import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.admin.dto.response.provider.ProviderUpdateRes;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
+import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -36,8 +39,13 @@ public class AdminProviderService {
     /**
      * 데이타 프로바이더 목록을 조회한다.
      */
-    public List<ProviderNameRes> getAllProviderNm() {
-        return providerRepository.getAllProviderNm();
+    public List<ProviderNameRes> getAllProviderNm(User user) {
+
+        if (this.isAdmin(user)) {
+            return providerRepository.findProviderNmForAdmin();
+        }
+
+        return providerRepository.findProviderNmForOperator(user.getCustomerCompany().getCustomerCompanyNo());
     }
 
     /**
@@ -47,12 +55,14 @@ public class AdminProviderService {
      * @param size 조회할 요소 사이즈 (min 1)
      * @return PaginationRes<ProviderRes>
      */
-    public PaginationRes<ProviderRes> getAllProviders(int page, int size) {
+    public PaginationRes<ProviderRes> getAllProviders(User user, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<ProviderRes> providerPage = providerRepository.search(pageable);
+        if (this.isAdmin(user)) {
+            return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
+        }
 
-        return PaginationRes.toRes(providerPage);
+        return PaginationRes.toRes(providerRepository.findAllForOperator(user.getCustomerCompany().getCustomerCompanyNo(), pageable));
     }
 
     /**
@@ -127,5 +137,17 @@ public class AdminProviderService {
         return providerRepository.findProviderLatestUpdatedByProviderNo(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+    }
+
+    private Boolean isAdmin(User user) {
+        return user.getUserRoleCd().getCode() == UserRoleCd.ADMIN.getCode();
+    }
+
+    private CustomerCompany getCustomerCompany(User user) {
+        CustomerCompany customerCompany = user.getCustomerCompany();
+        if (customerCompany == null) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company not found");
+        }
+        return customerCompany;
     }
 }

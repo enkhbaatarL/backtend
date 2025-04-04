@@ -76,11 +76,11 @@ public class GoodsData extends BaseEntity {
         this.customerCompany = customerCompany;
     }
 
-    public static GoodsData of(Goods goods, CustomerCompany customerCompany, GoodsDataCreateReq dto) {
+    public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataSummaryCntt) {
         return GoodsData.builder()
-                .goodsDataNm(dto.goodsDataNm())
+                .goodsDataNm(goodsDataNm)
                 .goodsDataExpn("")
-                .goodsDataSummaryCntt(dto.goodsDataSummaryCntt())
+                .goodsDataSummaryCntt(goodsDataSummaryCntt)
                 .goods(goods)
                 .customerCompany(customerCompany)
                 .build();
