@@ -49,7 +49,7 @@ public class SchedulerService {
         }
 
         return true;
-    }
+}
 
     /**
      * 임계치를 확인하고 알림을 발송한다.

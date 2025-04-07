@@ -1,12 +1,10 @@
 package com.sk.domain.shared.repository.master.tmd.custom;
 
-import static com.sk.domain.shared.entity.master.tif.QUserInfo.userInfo;
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,10 +15,8 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.domain.admin.dto.dataResult.QUserWithCompany;
-import com.sk.domain.admin.dto.dataResult.UserWithCompany;
-import com.sk.domain.admin.dto.response.QUserWithCreatorRes;
-import com.sk.domain.admin.dto.response.UserWithCreatorRes;
+import com.sk.domain.admin.dto.response.QUserDetailRes;
+import com.sk.domain.admin.dto.response.UserDetailRes;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
@@ -36,46 +32,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public List<UserWithCompany> findAllUserByInfoIds(List<String> imCds) {
-
-		return queryFactory.select(new QUserWithCompany(
-				userInfo.userNm,
-				userInfo.loginId,
-				userInfo.positionNm,
-				userInfo.jobGradeNm,
-				userInfo.onDutyNm,
-				userInfo.departmentNm,
-				customerCompany,
-				customerCompany.customerCompanyNm))
-				.from(userInfo)
-				.leftJoin(customerCompany)
-				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
-				.where(userInfo.imCd.in(imCds)
-						.and(userInfo.isDeleted.isFalse()))
-				.fetch();
-	}
-
-	@Override
-	public Optional<UserWithCompany> findUserByInfoId(String imCd) {
-		return Optional.ofNullable(queryFactory.select(new QUserWithCompany(
-				userInfo.userNm,
-				userInfo.loginId,
-				userInfo.positionNm,
-				userInfo.jobGradeNm,
-				userInfo.onDutyNm,
-				userInfo.departmentNm,
-				customerCompany,
-				customerCompany.customerCompanyNm))
-				.from(userInfo)
-				.leftJoin(customerCompany)
-				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd))
-				.where(userInfo.imCd.eq(imCd)
-						.and(userInfo.isDeleted.isFalse()))
-				.fetchOne());
-	}
-
-	@Override
-	public Page<UserWithCreatorRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd,
+	public Page<UserDetailRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd,
 			Integer customerCompanyNo, String departmentNm,
 			String userNm, String emailAddress) {
 
@@ -109,8 +66,8 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 			builder.and(user.userLoginId.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
 		}
 
-		List<UserWithCreatorRes> content = queryFactory
-				.select(new QUserWithCreatorRes(
+		List<UserDetailRes> content = queryFactory
+				.select(new QUserDetailRes(
 						user.userNo,
 						user.userNm,
 						user.userLoginId,

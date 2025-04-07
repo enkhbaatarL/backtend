@@ -15,7 +15,7 @@ import com.sk.domain.shared.repository.master.tmd.custom.CustomUserRepository;
 
 public interface UserRepository extends JpaRepository<User, Integer>, CustomUserRepository {
 
-    @EntityGraph(attributePaths = { "customerCompany" })
+    @EntityGraph(attributePaths = { "customerCompany", "creator", "modifier" })
     Optional<User> findByUserNoAndIsDeletedFalse(Integer userNo);
 
     List<User> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany);

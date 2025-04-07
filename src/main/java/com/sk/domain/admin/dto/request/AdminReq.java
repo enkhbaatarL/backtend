@@ -32,6 +32,8 @@ public record AdminReq() {
 
     @Schema(name = "adminUpdate")
     public record Update(
+        @Schema(description = "사용자 역할 코드", example = "ADMIN or OPERATOR")
+        UserRoleCd userRoleCd,
 
         @Schema(description = "타사서비스접근가능여부", example = "false") 
         Boolean isOtherServiceAccessPossible,
