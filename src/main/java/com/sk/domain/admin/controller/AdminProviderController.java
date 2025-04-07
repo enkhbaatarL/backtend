@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -77,16 +78,12 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
-    private static final Integer TEST_USER_NO = 1000001;
-
     @ApiOrder(1)
     @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider/name")
     public BaseResponse<List<ProviderNameRes>> getAllProviderNm(
-    // @UserResolve User user
-    ) {
-        User user = this.getUser();
+            @UserResolve User user) {
 
         return BaseResponseFactory.create(providerService.getAllProviderNm(user));
     }
@@ -100,11 +97,9 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider")
     public BaseResponse<PaginationRes<ProviderRes>> getAllProviders(
-            // @UserResolve User user,
+            @UserResolve User user,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
-
-        User user = this.getUser();
 
         return BaseResponseFactory.create(providerService.getAllProviders(user, page, size));
     }
@@ -113,6 +108,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public BaseResponse<String> createProvider(
             // @UserResolve User user,
             @RequestBody @Valid ProviderCreateReq body) {
@@ -130,9 +126,9 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
     public BaseResponse<ProviderDetailRes> getProvider(
-            // @UserResolve User user,
+            @UserResolve User user,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-        return BaseResponseFactory.create(providerService.getProvider(providerNo));
+        return BaseResponseFactory.create(providerService.getProvider(user, providerNo));
     }
 
     @ApiOrder(5)
@@ -142,8 +138,9 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 수정", description = "데이타 프로바이더를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public BaseResponse<String> updateProvider(
-            // @UserResolve User user,
+            @UserResolve User user,
             @RequestBody @Valid ProviderUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -159,8 +156,9 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/providers/{providerNo}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public BaseResponse<String> deleteProvider(
-            // @UserResolve User user,
+            @UserResolve User user,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
         providerService.deleteProvider(providerNo);

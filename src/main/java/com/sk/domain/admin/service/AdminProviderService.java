@@ -24,6 +24,7 @@ import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AdminProviderService {
     private final ProviderRepository providerRepository;
+    private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
 
     /**
      * 데이타 프로바이더 목록을 조회한다.
@@ -45,7 +47,12 @@ public class AdminProviderService {
             return providerRepository.findProviderNmForAdmin();
         }
 
-        return providerRepository.findProviderNmForOperator(user.getCustomerCompany().getCustomerCompanyNo());
+        if (this.isOperator(user)) {
+            CustomerCompany customerCompany = this.getCustomerCompany(user);
+            return providerRepository.findProviderNmForOperator(customerCompany.getCustomerCompanyNo());
+        }
+
+        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "user role not found");
     }
 
     /**
@@ -62,7 +69,12 @@ public class AdminProviderService {
             return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
         }
 
-        return PaginationRes.toRes(providerRepository.findAllForOperator(user.getCustomerCompany().getCustomerCompanyNo(), pageable));
+        if (this.isOperator(user)) {
+            CustomerCompany customerCompany = this.getCustomerCompany(user);
+            return PaginationRes.toRes(providerRepository.findAllForOperator(customerCompany.getCustomerCompanyNo(), pageable));
+        }
+
+        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "user role not found");
     }
 
     /**
@@ -84,7 +96,18 @@ public class AdminProviderService {
      * @param providerNo 데이타 프로바이더 번호
      * @return ProviderDetailRes
      */
-    public ProviderDetailRes getProvider(int providerNo) {
+    public ProviderDetailRes getProvider(User user, int providerNo) {
+        if (this.isAdmin(user)) {
+            //
+        }
+
+        if (this.isOperator(user)) {
+            CustomerCompany customerCompany = this.getCustomerCompany(user);
+            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(customerCompany, providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
+        }
+
         return providerRepository.findProviderDetailByProviderNo(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
@@ -141,6 +164,10 @@ public class AdminProviderService {
 
     private Boolean isAdmin(User user) {
         return user.getUserRoleCd().getCode() == UserRoleCd.ADMIN.getCode();
+    }
+
+    private Boolean isOperator(User user) {
+        return user.getUserRoleCd().getCode() == UserRoleCd.OPERATOR.getCode();
     }
 
     private CustomerCompany getCustomerCompany(User user) {
