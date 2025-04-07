@@ -53,4 +53,5 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo);
 
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") Integer goodsDataNo);
+
 }

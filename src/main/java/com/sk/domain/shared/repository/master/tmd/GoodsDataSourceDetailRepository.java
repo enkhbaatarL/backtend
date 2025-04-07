@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +27,7 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
     List<StructuredDataRes> findStructuredDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
+
+    List<GoodsDataSourceDetail> findByGoodsDataAndIsDeletedFalse(GoodsData goodsData);
+
 }
