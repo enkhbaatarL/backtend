@@ -1,20 +1,21 @@
 package com.sk.domain.admin.service;
 
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.PaginationRes;
+import com.sk.common.model.ValidationResult;
+import com.sk.common.utils.AESUtil;
 import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
 import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
+import com.sk.domain.admin.dto.response.client.ClientAccessSecretRes;
+import com.sk.domain.admin.validator.ClientAccessInfoValidator;
+import com.sk.domain.admin.validator.CompanyValidator;
 import com.sk.domain.shared.entity.master.tif.ClientAccessInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.repository.master.tif.ClientAccessInfoRepository;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -22,18 +23,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminSystemService {
 
-    private final CustomerCompanyRepository customerCompanyRepository;
+    @Value("${aes.secret-key}")
+    private String secretKey;
+
+    private final CompanyValidator companyValidator;
     private final ClientAccessInfoRepository clientAccessInfoRepository;
+    private final ClientAccessInfoValidator clientAccessInfoValidator;
 
     /**
      * 클라이언트 접근권한 목록을 조회한다.
-     *   - filter : isDeleted false
+     * - Sort : createDt DESC
      *
+     * @param page          조회할 페이지 번호 (min 1)
+     * @param size          조회할 요소 사이즈 (min 1)
      * @return List<ClientAccessInfoRes>
      */
-    public List<ClientAccessInfoRes> getClientAccessInfos() {
-        List<ClientAccessInfo> clientAccessInfos = clientAccessInfoRepository.findByIsDeletedFalse();
-        return clientAccessInfos.stream().map(ClientAccessInfoRes::of).toList();
+    public PaginationRes<ClientAccessInfoRes> getClientAccessInfos(int page, int size) {
+        return PaginationRes.toRes(clientAccessInfoRepository.findClientInfoByConditions(page, size));
     }
 
     /**
@@ -42,38 +48,42 @@ public class AdminSystemService {
      * @param dto ClientAccessInfoReq.Insert
      * @return ClientAccessInfoRes
      */
+    @Transactional
     public ClientAccessInfoRes postClientAccessInfo(ClientAccessInfoReq.Insert dto) {
 
-        // customerCompany 검증
-        customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(dto.customerCompanyNo())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER, String.format("requested id: %s", dto.customerCompanyNo())));
+        ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyExistsByCompanyNo(dto.customerCompanyNo());
+        CustomerCompany customerCompany = companyValid.getOrThrow();
 
-        return ClientAccessInfoRes.of(clientAccessInfoRepository.save(ClientAccessInfo.of(dto)));
+        String clientSecret = AESUtil.generateSecret();
+        String encryptedClientSecret = AESUtil.encrypt(clientSecret, secretKey);
+
+        ClientAccessInfo clientAccessInfo = clientAccessInfoRepository.save(ClientAccessInfo.of(dto, encryptedClientSecret, customerCompany));
+
+        return ClientAccessInfoRes.of(clientAccessInfo, customerCompany, secretKey);
 
     }
 
     /**
-     * 클라이언트 접근권한을 수정합니다.
+     * 클라이언트 Secret-Key 재발급 합니다.
      *
-     * @param dto ClientAccessInfoReq.Update
+     * @param clientAccessRegNo 클라이언트 접속 등록 번호
      * @return ClientAccessInfoRes
      */
-    public ClientAccessInfoRes patchClientAccessInfo(ClientAccessInfoReq.Update dto) {
+    @Transactional
+    public ClientAccessInfoRes patchClientAccessInfo(Integer clientAccessRegNo) {
 
-        ClientAccessInfo clientAccessInfo = clientAccessInfoRepository.findByClientAccessRegNoAndIsDeletedFalse(dto.clientAccessRegNo())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER, String.format("requested id: %s", dto.clientAccessRegNo())));
+        ValidationResult<ClientAccessInfo> clientAccessInfoValid = clientAccessInfoValidator.ensureExists(clientAccessRegNo);
+        ClientAccessInfo clientAccessInfo = clientAccessInfoValid.getOrThrow();
 
-        CustomerCompany customerCompany = null;
-        if (ObjectUtils.isNotEmpty(dto.customerCompanyNo())) {
-            customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(dto.customerCompanyNo())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER, String.format("requested id: %s", dto.customerCompanyNo())));
-        }
+        String clientSecret = AESUtil.generateSecret();
+        String encryptedClientSecret = AESUtil.encrypt(clientSecret, secretKey);
 
-        clientAccessInfo.update(dto, customerCompany);
+        clientAccessInfo.update(encryptedClientSecret);
 
-        return ClientAccessInfoRes.of(clientAccessInfo);
+        return ClientAccessInfoRes.of(clientAccessInfo, clientAccessInfo.getCustomerCompany(), secretKey);
 
     }
+
 
     /**
      * 클라이언트 접근권한을 삭제합니다.
@@ -81,14 +91,30 @@ public class AdminSystemService {
      * @param clientAccessRegNo 클라이언트 접속 등록번호
      * @return ClientAccessInfoRes
      */
+    @Transactional
     public ClientAccessInfoRes deleteClientAccessInfo(Integer clientAccessRegNo) {
 
-        ClientAccessInfo clientAccessInfo = clientAccessInfoRepository.findByClientAccessRegNoAndIsDeletedFalse(clientAccessRegNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER, String.format("requested id: %s", clientAccessRegNo)));
+        ValidationResult<ClientAccessInfo> clientAccessInfoValid = clientAccessInfoValidator.ensureExists(clientAccessRegNo);
+        ClientAccessInfo clientAccessInfo = clientAccessInfoValid.getOrThrow();
 
         clientAccessInfo.softDelete();
 
-        return ClientAccessInfoRes.of(clientAccessInfo);
+        return ClientAccessInfoRes.of(clientAccessInfo, clientAccessInfo.getCustomerCompany(), secretKey);
+
+    }
+
+    /**
+     * 복호화된 클라이언트 Secret-Key를 조회
+     *
+     * @param clientAccessRegNo 클라이언트 접속 등록 번호
+     * @return String
+     */
+    public ClientAccessSecretRes getClientAccessInfoSecret(Integer clientAccessRegNo) {
+
+        ValidationResult<ClientAccessInfo> clientAccessInfoValid = clientAccessInfoValidator.ensureExists(clientAccessRegNo);
+        ClientAccessInfo clientAccessInfo = clientAccessInfoValid.getOrThrow();
+
+        return ClientAccessSecretRes.of(AESUtil.decrypt(clientAccessInfo.getClientSecretKey(), secretKey));
 
     }
 

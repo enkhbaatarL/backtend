@@ -9,6 +9,7 @@ public enum Role {
 
     USER("USER", "사용자"),
     ADMIN("ADMIN", "관리자"),
+    OPERATOR("OPERATOR", "운영자"),
     CLIENT("CLIENT", "클라이언트");
 
     private final String code;

@@ -1,19 +1,23 @@
 package com.sk.domain.admin.controller;
 
+import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
 import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
+import com.sk.domain.admin.dto.response.client.ClientAccessSecretRes;
 import com.sk.domain.admin.service.AdminSystemService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "06. 시스템 관리 API", description = "시스템 관리 API 입니다.")
 @Slf4j
@@ -24,14 +28,23 @@ public class AdminSystemController {
 
     private final AdminSystemService adminSystemService;
 
-    @Operation(summary = "클라이언트 접근권한 목록 조회 API", description = "클라이언트 접근권한 목록을 조회합니다.")
+    @ApiOrder(1)
+    @Parameters({
+        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+    })
+    @Operation(summary = "클라이언트 정보 정보 목록 조회 API (with pagination)", description = "클라이언트 접속 정보 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/keys")
-    public BaseResponse<List<ClientAccessInfoRes>> getClientAccessInfos() {
-        return BaseResponseFactory.create(adminSystemService.getClientAccessInfos());
+    @GetMapping("/client-access")
+    public BaseResponse<PaginationRes<ClientAccessInfoRes>> getClientAccessInfos(
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
+    ) {
+        return BaseResponseFactory.create(adminSystemService.getClientAccessInfos(page, size));
     }
 
-    @Operation(summary = "클라이언트 접근권한 등록 API", description = "클라이언트 접근권한을 등록합니다.")
+    @ApiOrder(2)
+    @Operation(summary = "클라이언트 접속 정보 등록 API", description = "클라이언트 접송 정보를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/client-access")
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
@@ -40,22 +53,43 @@ public class AdminSystemController {
         return BaseResponseFactory.create(adminSystemService.postClientAccessInfo(dto));
     }
 
-    @Operation(summary = "클라이언트 접근권한 수정 API", description = "클라이언트 접근권한을 수정합니다.")
+    @ApiOrder(3)
+    @Parameters({
+        @Parameter(name = "clientAccessRegNo", description = "클라이언트 접속 등록 번호"),
+    })
+    @Operation(summary = "클라이언트 Secret-Key 재발급 API", description = "클라이언트 Secret-Key를 재발급합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/client-access")
+    @PatchMapping("/client-access/{clientAccessRegNo}")
     public BaseResponse<ClientAccessInfoRes> patchClientAccessInfo(
-        @RequestBody @Valid ClientAccessInfoReq.Update dto
+        @PathVariable Integer clientAccessRegNo
     ) {
-        return BaseResponseFactory.create(adminSystemService.patchClientAccessInfo(dto));
+        return BaseResponseFactory.create(adminSystemService.patchClientAccessInfo(clientAccessRegNo));
     }
 
-    @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근권한을 삭제합니다.")
+    @ApiOrder(4)
+    @Parameters({
+        @Parameter(name = "clientAccessRegNo", description = "클라이언트 접속 등록 번호"),
+    })
+    @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근 권한을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/client-access/{clientAccessRegNo}")
-    public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
+    public BaseResponse<ClientAccessInfoRes> deleteClientAccessInfo(
         @PathVariable @Valid Integer clientAccessRegNo
     ) {
         return BaseResponseFactory.create(adminSystemService.deleteClientAccessInfo(clientAccessRegNo));
+    }
+
+    @ApiOrder(5)
+    @Parameters({
+        @Parameter(name = "clientAccessRegNo", description = "클라이언트 접속 등록 번호"),
+    })
+    @Operation(summary = "클라이언트 Secret-Key(복호화) 조회 API", description = "복호화된 클라이언트 Secret-Key를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/client-access/client-access/{clientAccessRegNo}/reveal-secret")
+    public BaseResponse<ClientAccessSecretRes> getClientAccessInfoSecret(
+        @PathVariable Integer clientAccessRegNo
+    ) {
+        return BaseResponseFactory.create(adminSystemService.getClientAccessInfoSecret(clientAccessRegNo));
     }
 
 }

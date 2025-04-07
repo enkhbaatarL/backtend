@@ -62,9 +62,9 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
                 modifierCompany.customerCompanyNm
             ))
             .from(customerCompanyGoodsMapping)
-            .leftJoin(creator).on(customerCompanyGoodsMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator).on(customerCompanyGoodsMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR)))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompanyGoodsMapping.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier).on(customerCompanyGoodsMapping.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR)))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
