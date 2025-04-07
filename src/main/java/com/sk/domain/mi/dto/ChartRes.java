@@ -7,6 +7,9 @@ import java.util.List;
 
 public record ChartRes(
 
+    @Schema(description = "단위", example = "$/MMBtu")
+    String unit,
+
     @Schema(description = "시가", example = "[1000, 1002]")
     Double[] open,
 
@@ -25,8 +28,13 @@ public record ChartRes(
     @Schema(description = "분, 시간, 일자", example = "[\"20250301\", \"20250302\"]")
     String[] interval,
 
-    @Schema(description = "이동평균선 + 볼린저밴드 묶음 리스트")
-    List<MovingAverageBundle> movingAverageBundle
+    @Schema(description = "이동평균선 리스트 (5일 선, 20일 선, 60일 선, 120일 선)")
+    List<MovingAverageBundle> movingAverageBundle,
+
+    @Schema(description = "볼린저 밴드 묶음 (20일 선)")
+    BollingerBandsBundle bollingerBandsBundle,
+
+    List<comparisonChart> comparisonCharts
 
 ) {
 
@@ -36,10 +44,7 @@ public record ChartRes(
         int windowSize,
 
         @Schema(description = "이동평균선", example = "[1003, 1004]")
-        Double[] ma,
-
-        @Schema(description = "볼린저 밴드 묶음 (이동평균선 기준)")
-        BollingerBandsBundle bollingerBandsBundle
+        Double[] ma
 
     ) {
 
@@ -58,6 +63,33 @@ public record ChartRes(
 
         @Schema(description = "볼린저 밴드 하단", example = "[994, 995]")
         Double[] low
+
+    ) {
+
+    }
+
+    public record comparisonChart(
+
+        @Schema(description = "단위", example = "$/MMBtu")
+        String unit,
+
+        @Schema(description = "시가", example = "[1000, 1002]")
+        Double[] open,
+
+        @Schema(description = "고가", example = "[1010, 1005]")
+        Double[] high,
+
+        @Schema(description = "저가", example = "[995, 998]")
+        Double[] low,
+
+        @Schema(description = "종가", example = "[1005, 1000]")
+        Double[] close,
+
+        @Schema(description = "시간 단위 (MINUTE, HOUR, DAY)", example = "[1005, 1000]")
+        TimeUnit timeUnit,
+
+        @Schema(description = "분, 시간, 일자", example = "[\"20250301\", \"20250302\"]")
+        String[] interval
 
     ) {
 
