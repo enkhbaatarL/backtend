@@ -59,8 +59,9 @@ public class ResourceServerConfig {
 
             return http
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
-                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
         }
 
