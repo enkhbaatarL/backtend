@@ -5,6 +5,7 @@ import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCo
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,6 +17,8 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.domain.admin.dto.internal.QUserInfoWithCompany;
+import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
 import com.sk.domain.admin.dto.response.QUserInfoRes;
 import com.sk.domain.admin.dto.response.UserInfoRes;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -26,64 +29,108 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 
-    private final JPAQueryFactory queryFactory;
+	private final JPAQueryFactory queryFactory;
 
-    @Override
-    public Page<UserInfoRes> findUserInfosByConditions(int page, int size, UserRoleCd userRoleCd, String companyCd,
-            String userNm,
-            String emailAddress) {
+	@Override
+	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, UserRoleCd userRoleCd, String companyCd,
+			String userNm,
+			String emailAddress) {
 
-        Pageable pageable = PageRequest.of(page - 1, size);
+		Pageable pageable = PageRequest.of(page - 1, size);
 
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(userInfo.isDeleted.isFalse())
-                .and(userInfo.companyCd.eq(companyCd))
-                .and(queryFactory.selectFrom(customerCompany)
-                        .where(customerCompany.customerCompanyCd.eq(companyCd)
-                                .and(customerCompany.isUsed.isTrue()))
-                        .exists());
+		BooleanBuilder builder = new BooleanBuilder();
+		builder.and(userInfo.isDeleted.isFalse())
+				.and(userInfo.companyCd.eq(companyCd))
+				.and(queryFactory.selectFrom(customerCompany)
+						.where(customerCompany.customerCompanyCd.eq(companyCd)
+								.and(customerCompany.isUsed.isTrue())
+								.and(customerCompany.isDeleted.isFalse()))
+						.exists());
 
-        if (userNm != null) {
-            builder.and(userInfo.userNm.lower().contains(userNm.toLowerCase()));
-        }
+		if (userNm != null) {
+			builder.and(userInfo.userNm.lower().contains(userNm.toLowerCase()));
+		}
 
-        if (emailAddress != null) {
-            builder.and(userInfo.emailAddress.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
-        }
+		if (emailAddress != null) {
+			builder.and(userInfo.emailAddress.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
+		}
 
-        BooleanExpression isRegistered = user.userLoginId.isNotNull();
+		BooleanExpression isRegistered = user.userLoginId.isNotNull();
 
-        List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(
-                userInfo.imCd,
-                userInfo.userNm,
-                userInfo.userEnglishNm,
-                userInfo.loginId,
-                userInfo.emailAddress,
-                userInfo.companyCd,
-                userInfo.companyNm,
-                userInfo.employeeNo,
-                userInfo.departmentCd,
-                userInfo.departmentNm,
-                userInfo.positionCd,
-                userInfo.positionNm,
-                userInfo.jobGradeCd,
-                userInfo.jobGradeNm,
-                userInfo.onDutyCd,
-                userInfo.onDutyNm,
-                isRegistered))
-                .from(userInfo)
-                .leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd)))
-                .where(builder)
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .orderBy(userInfo.userNm.asc())
-                .fetch();
+		List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(
+				userInfo.imCd,
+				userInfo.userNm,
+				userInfo.userEnglishNm,
+				userInfo.loginId,
+				userInfo.emailAddress,
+				userInfo.companyCd,
+				userInfo.companyNm,
+				userInfo.employeeNo,
+				userInfo.departmentCd,
+				userInfo.departmentNm,
+				userInfo.positionCd,
+				userInfo.positionNm,
+				userInfo.jobGradeCd,
+				userInfo.jobGradeNm,
+				userInfo.onDutyCd,
+				userInfo.onDutyNm,
+				isRegistered))
+				.from(userInfo)
+				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd)))
+				.where(builder)
+				.offset(pageable.getOffset())
+				.limit(pageable.getPageSize())
+				.orderBy(userInfo.userNm.asc())
+				.fetch();
 
-        JPQLQuery<Long> countQuery = queryFactory
-                .select(userInfo.count())
-                .from(userInfo)
-                .where(builder);
+		JPQLQuery<Long> countQuery = queryFactory
+				.select(userInfo.count())
+				.from(userInfo)
+				.where(builder);
 
-        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
-    }
+		return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+	}
+
+	@Override
+	public List<UserInfoWithCompany> findAllUserByInfoIds(List<String> imCds) {
+		return queryFactory.select(new QUserInfoWithCompany(
+				userInfo.userNm,
+				userInfo.loginId,
+				userInfo.positionNm,
+				userInfo.jobGradeNm,
+				userInfo.onDutyNm,
+				userInfo.departmentNm,
+				customerCompany,
+				customerCompany.customerCompanyNm))
+				.from(userInfo)
+				.leftJoin(customerCompany)
+				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd)
+						.and(customerCompany.isUsed.isTrue())
+						.and(customerCompany.isDeleted.isFalse()))
+				.where(userInfo.imCd.in(imCds)
+						.and(userInfo.isDeleted.isFalse()))
+				.fetch();
+	}
+
+	@Override
+	public Optional<UserInfoWithCompany> findUserByInfoId(String imCd) {
+		return Optional.ofNullable(queryFactory.select(new QUserInfoWithCompany(
+				userInfo.userNm,
+				userInfo.loginId,
+				userInfo.positionNm,
+				userInfo.jobGradeNm,
+				userInfo.onDutyNm,
+				userInfo.departmentNm,
+				customerCompany,
+				customerCompany.customerCompanyNm))
+				.from(userInfo)
+				.leftJoin(customerCompany)
+				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd)
+						.and(customerCompany.isUsed.isTrue())
+						.and(customerCompany.isDeleted.isFalse()))
+				.where(userInfo.imCd.eq(imCd)
+						.and(userInfo.isDeleted.isFalse()))
+				.fetchOne());
+	}
+
 }

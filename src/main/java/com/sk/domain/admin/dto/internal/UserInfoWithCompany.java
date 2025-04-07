@@ -1,11 +1,11 @@
-package com.sk.domain.admin.dto.dataResult;
+package com.sk.domain.admin.dto.internal;
 
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 
 import lombok.Builder;
 
-public record UserWithCompany(
+public record UserInfoWithCompany(
     
         // 사용자 이름
         String userNm,
@@ -33,7 +33,7 @@ public record UserWithCompany(
 
     @Builder
     @QueryProjection
-    public UserWithCompany(String userNm, String userLoginId, String positionNm, String jobGradeNm, String onDutyNm,
+    public UserInfoWithCompany(String userNm, String userLoginId, String positionNm, String jobGradeNm, String onDutyNm,
             String departmentNm, CustomerCompany customerCompany, String customerCompanyNm) {
         this.userNm = userNm;
         this.userLoginId = userLoginId;
