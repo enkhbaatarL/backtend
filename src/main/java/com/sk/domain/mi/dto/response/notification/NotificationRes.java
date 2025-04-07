@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 public record NotificationRes(
-        @Schema(description = "알림번호", example = "1") Integer userGoodsNotificationSettingNo,
+        @Schema(description = "사용자상품알림설정번호", example = "1") Integer userGoodsNotificationSettingNo,
 
         @Schema(description = "사용자번호", example = "1") Integer userNo,
 

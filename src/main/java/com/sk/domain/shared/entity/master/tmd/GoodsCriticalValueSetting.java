@@ -77,7 +77,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     }
 
     public static GoodsCriticalValueSetting of(
-            NotificationReq.Setting dto,
+            NotificationReq.Insert dto,
             GoodsDataSourceDetail goodsDataSourceDetail,
             User user) {
         return GoodsCriticalValueSetting.builder()

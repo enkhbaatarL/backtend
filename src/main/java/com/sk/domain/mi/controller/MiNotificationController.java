@@ -27,7 +27,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "01. 사용자 API", description = "사용자 API 입니다.")
+@Tag(name = "06. 알림 관리 API", description = "알림 관리 API 입니다.")
 @RestController
 @RequestMapping("/api/v1/mi/notification-management")
 @RequiredArgsConstructor
@@ -40,8 +40,8 @@ public class MiNotificationController {
     @ApiOrder(1)
     @Operation(summary = "알림 생성", description = "알림을 생성합니다.")
     @ApiResponse(responseCode = "200", description = "알림 생성 성공")
-    @PostMapping("/notification/goodsdata/{goodsDataSourceNo}")
-    public BaseResponse<List<NotificationRes>> createNotification(
+    @PostMapping("/goodsdata/{goodsDataSourceNo}/notification")
+    public BaseResponse<NotificationRes> createNotification(
             @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
             @RequestBody @Valid NotificationReq.Insert notifications,
             @UserResolve User user) {
@@ -50,28 +50,39 @@ public class MiNotificationController {
     }
 
     @ApiOrder(2)
-    @Operation(summary = "알림 조회", description = "알림을 조회합니다.")
+    @Operation(summary = "알림 리스트 조회", description = "상품 데이터의 알림 리스트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "알림 조회 성공")
-    @GetMapping("/notification/goodsdata/{goodsDataSourceNo}")
+    @GetMapping("/goodsdata/{goodsDataSourceNo}/notifications")
     public BaseResponse<List<NotificationRes>> getNotification(
-            @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,   
+            @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
             @UserResolve User user) {
         return BaseResponseFactory
-                .create(miNotificationService.getNotification(goodsDataSourceNo, user));
+                .create(miNotificationService.getNotifications(goodsDataSourceNo, user));
     }
 
     @ApiOrder(3)
-    @Operation(summary = "알림 삭제", description = "알림을 삭제합니다. (미사용)")
-    @ApiResponse(responseCode = "200", description = "알림 삭제 성공")
-    @DeleteMapping("/notification/goodsdata/{goodsDataSourceNo}")
-    public BaseResponse<List<NotificationRes>> deleteNotification(
+    @Operation(summary = "알림 상세 조회", description = "상품 데이터의 알림 상세를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "알림 조회 성공")
+    @GetMapping("goodsdata/{goodsDataSourceNo}/notifications/{notificationSettingNo}")
+    public BaseResponse<NotificationRes> getNotification(
             @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
-            @RequestBody @Valid NotificationReq.Delete notifications,
+            @PathVariable(value = "notificationSettingNo") @Min(value = 1) Integer notificationSettingNo,
             @UserResolve User user) {
         return BaseResponseFactory
-                .create(miNotificationService.deleteNotification(notifications, goodsDataSourceNo, user));
+                .create(miNotificationService.getNotification(goodsDataSourceNo, notificationSettingNo, user));
     }
 
+    @ApiOrder(4)
+    @Operation(summary = "알림 삭제", description = "알림을 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "알림 삭제 성공")
+    @DeleteMapping("/goodsdata/{goodsDataSourceNo}/notifications/{notificationSettingNo}")
+    public BaseResponse<NotificationRes> deleteNotification(
+            @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
+            @PathVariable(value = "notificationSettingNo") @Min(value = 1) Integer notificationSettingNo,
+            @UserResolve User user) {
+        return BaseResponseFactory
+                .create(miNotificationService.deleteNotification(goodsDataSourceNo, notificationSettingNo, user));
+    }
 
     /**
      * 수정 기획 삭제
@@ -81,10 +92,10 @@ public class MiNotificationController {
     // @ApiResponse(responseCode = "200", description = "알림 수정 성공")
     // @PutMapping("/notification/goodsdata/{goodsDataSourceNo}")
     // public BaseResponse<List<NotificationRes>> updateNotification(
-    //         @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
-    //         @RequestBody @Valid NotificationReq.Update notifications,
-    //         @UserResolve User user) {
-    //     return BaseResponseFactory
-    //             .create(miNotificationService.updateNotification(notifications, goodsDataSourceNo, user));
+    // @PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
+    // @RequestBody @Valid NotificationReq.Update notifications,
+    // @UserResolve User user) {
+    // return BaseResponseFactory
+    // .create(miNotificationService.updateNotification(notifications, goodsDataSourceNo, user));
     // }
 }
