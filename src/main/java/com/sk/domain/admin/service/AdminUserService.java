@@ -66,10 +66,6 @@ public class AdminUserService {
 	 */
 	@Transactional
 	public List<UserRes> saveUserInfo(UserReq.Insert userInfoReqs) {
-		// List<String> imCds = userInfoReqs.stream()
-		// 		.map(UserReq.Insert::imCd)
-		// 		.collect(Collectors.toList());
-
 		List<UserWithCompany> userWithCompanies = userRepository.findAllUserByInfoIds(userInfoReqs.imCd());
 		if (userWithCompanies.size() != userInfoReqs.imCd().size()) {
 			throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "IM코드 목록에 데이터가 존재하지 않습니다.");

@@ -12,11 +12,13 @@ import com.sk.domain.shared.service.SchedulerService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 /**
  * 스케쥴러용 API
  */
+@Tag(name = "00. Scheduler API", description = "스케쥴러 API")
 @RestController
 @RequestMapping("/api/v1/api/scheduler")
 @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -30,7 +32,7 @@ public class SchedulerController {
     public BaseResponse<Boolean> processGdiUserSoftDelete() {
         return BaseResponseFactory.create(schedulerService.processGdiUserSoftDelete());
     }
-    
+
     @ApiOrder(2)
     @Operation(summary = "알림 발송 API", description = "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.")
     @PostMapping("/notification")

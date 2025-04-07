@@ -29,10 +29,10 @@ public record UserRes(
 		@Schema(description = "부서명", example = "총무팀")
 		String departmentNm,
 
-		@Schema(description = "타사서비스접근가능여부", example = "Y")
+		@Schema(description = "타사서비스접근가능여부", example = "true")
 		Boolean isOtherServiceAccessPossible,
 
-		@Schema(description = "개인정보동의여부", example = "Y")
+		@Schema(description = "개인정보동의여부", example = "true")
 		Boolean isIndividualInfoAgreement,
 
 		@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00")
