@@ -293,4 +293,5 @@ public class AdminObjectStorageService {
     public String getBucketName(String customerCompanyCd) {
         return prefix + customerCompanyCd;
     }
+
 }
