@@ -102,20 +102,20 @@ public class TestController {
         return BaseResponseFactory.create(mybatisDynamicQueryService.getDynamicData(testReq));
     }
 
-    @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BaseResponse<FileUploadRes> uploadStructuredDataFile(
-            @RequestPart(value = "file", required = false) MultipartFile file,
-            @Schema(implementation = TestReq.uploadStructuredDataFile.class) @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
+    // @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // public BaseResponse<FileUploadRes> uploadStructuredDataFile(
+    //         @RequestPart(value = "file", required = false) MultipartFile file,
+    //         @Schema(implementation = TestReq.uploadStructuredDataFile.class) @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
 
-        return BaseResponseFactory.create(testService.uploadStructuredDataFile(file, testReq));
-    }
+    //     return BaseResponseFactory.create(testService.uploadStructuredDataFile(file, testReq));
+    // }
     
-    @Operation(summary = "정형 데이터 컴포넌트 저장", description = "정형 데이터 컴포넌트를 저장합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/goodsdatas/component")
-    public BaseResponse<TestRes.SaveComponent> saveComponent(@RequestBody @Valid TestReq.saveComponent testReq) {
-        return BaseResponseFactory.create(testService.saveComponent(testReq));
-    }
+    // @Operation(summary = "정형 데이터 컴포넌트 저장", description = "정형 데이터 컴포넌트를 저장합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @PostMapping("/goodsdatas/component")
+    // public BaseResponse<TestRes.SaveComponent> saveComponent(@RequestBody @Valid TestReq.saveComponent testReq) {
+    //     return BaseResponseFactory.create(testService.saveComponent(testReq));
+    // }
 }
