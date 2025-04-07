@@ -22,14 +22,14 @@ public class SamlController {
     @GetMapping("/user")
     public ResponseEntity<Void> loginUser() {
         return ResponseEntity.status(HttpStatus.FOUND)
-            .location(URI.create("/saml2/authenticate?registrationId=skt-user"))
+            .location(URI.create("/saml2/authenticate?registrationId=mi-user"))
             .build();
     }
 
     @GetMapping("/admin")
     public ResponseEntity<Void> loginAdmin() {
         return ResponseEntity.status(HttpStatus.FOUND)
-            .location(URI.create("/saml2/authenticate?registrationId=skt-admin"))
+            .location(URI.create("/saml2/authenticate?registrationId=mi-admin"))
             .build();
     }
 

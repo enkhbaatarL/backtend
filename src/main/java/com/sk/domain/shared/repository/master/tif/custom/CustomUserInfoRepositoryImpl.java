@@ -1,7 +1,9 @@
 package com.sk.domain.shared.repository.master.tif.custom;
 
 import static com.sk.domain.shared.entity.master.tif.QUserInfo.userInfo;
+import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
+
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -17,6 +19,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.admin.dto.response.QUserInfoRes;
 import com.sk.domain.admin.dto.response.UserInfoRes;
 import com.sk.domain.shared.enums.UserRoleCd;
+
 import lombok.RequiredArgsConstructor;
 
 @Repository
@@ -33,8 +36,12 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(userInfo.isDeleted.eq(false))
-                .and(userInfo.companyCd.eq(companyCd));
+        builder.and(userInfo.isDeleted.isFalse())
+                .and(userInfo.companyCd.eq(companyCd))
+                .and(queryFactory.selectFrom(customerCompany)
+                        .where(customerCompany.customerCompanyCd.eq(companyCd)
+                                .and(customerCompany.isUsed.isTrue()))
+                        .exists());
 
         if (userNm != null) {
             builder.and(userInfo.userNm.lower().contains(userNm.toLowerCase()));

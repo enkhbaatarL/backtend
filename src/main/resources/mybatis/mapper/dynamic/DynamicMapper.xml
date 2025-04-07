@@ -18,4 +18,16 @@
             WHERE ${whereClause}
         </if>
     </select>
+
+    <insert id="insertDynamic" parameterType="map">
+        INSERT INTO ${tableName} (
+            <foreach collection="columns" item="col" separator=", ">
+                #{col}
+            </foreach>
+        ) VALUES (
+            <foreach collection="values" item="val" separator=", ">
+                #{val}
+            </foreach>
+        )
+    </insert>
 </mapper>

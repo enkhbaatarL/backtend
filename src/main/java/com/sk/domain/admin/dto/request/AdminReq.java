@@ -2,6 +2,8 @@ package com.sk.domain.admin.dto.request;
 
 import java.util.List;
 
+import com.sk.domain.shared.enums.UserRoleCd;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -17,7 +19,10 @@ public record AdminReq() {
         Boolean isOtherServiceAccessPossible,
 
         @Schema(description = "접근허용 IP", example = "[\"192.168.1.1\", \"192.168.1.2\"]")
-        List<String> accessAllowedIpAddress
+        List<String> accessAllowedIpAddress,
+
+        @Schema(description = "Role", example = "ADMIN or OPERATOR")
+        UserRoleCd userRoleCd
     ) {
         public Insert {
             isOtherServiceAccessPossible = (isOtherServiceAccessPossible == null) ? false

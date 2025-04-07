@@ -134,50 +134,50 @@ public class TestService {
         return "ok";
     }
 
-    // /**
-    //  * 정형 데이터 파일 검수 후 업로드
-    //  * 
-    //  * @param file
-    //  * @param testReq
-    //  * @return
-    //  */
-    // public FileUploadRes uploadStructuredDataFile(MultipartFile file, TestReq.uploadStructuredDataFile testReq) {
+    /**
+     * 정형 데이터 파일 검수 후 업로드
+     * 
+     * @param file
+     * @param testReq
+     * @return
+     */
+    public FileUploadRes uploadStructuredDataFile(MultipartFile file, TestReq.uploadStructuredDataFile testReq) {
 
-    //     // 컴포넌트 타입 조회
-    //     ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
-    //             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-    //                     String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
+        // 컴포넌트 타입 조회
+        ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
 
-    //     // TODO: DataSourceContextHolder 설정
+        // TODO: DataSourceContextHolder 설정
 
-    //     // 컴포넌트 엑셀 칼럼 추출
-    //     String columnName = componentInfo.getExcelColumnListNm();
+        // 컴포넌트 엑셀 칼럼 추출
+        String columnName = componentInfo.getExcelColumnListNm();
 
-    //     if (columnName == null || columnName.isBlank()) {
-    //         throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Column name is null or blank");
-    //     }
+        if (columnName == null || columnName.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Column name is null or blank");
+        }
 
-    //     String[] columnNames = Arrays.stream(columnName.split(",")).map(String::trim).filter(name -> !name.isEmpty()).toArray(String[]::new);
+        String[] columnNames = Arrays.stream(columnName.split(",")).map(String::trim).filter(name -> !name.isEmpty()).toArray(String[]::new);
 
-    //     // 엑셀 파일 검수 후 업로드
-    //     // excelService.validateStructuredExcelData(file, columnNames, componentInfo.getTargetTableNm(), componentInfo.getTargetDbNm());
+        // 엑셀 파일 검수 후 업로드
+        // excelService.validateStructuredExcelData(file, columnNames, componentInfo.getTargetTableNm(), componentInfo.getTargetDbNm());
 
-    //     //TODO: 데아터 소스 저장, 
+        //TODO: 데아터 소스 저장, 
 
-    //     return null;
-    // }
+        return null;
+    }
 
-    // /**
-    //  * 정형 데이터 컴포넌트 저장
-    //  * 
-    //  * @param testReq
-    //  * @return
-    //  */
-    // public TestRes.SaveComponent saveComponent(TestReq.saveComponent testReq) {
-    //     ComponentInfo componentInfo = componentInfoRepository.save(ComponentInfo.of(testReq));
+    /**
+     * 정형 데이터 컴포넌트 저장
+     * 
+     * @param testReq
+     * @return
+     */
+    public TestRes.SaveComponent saveComponent(TestReq.saveComponent testReq) {
+        ComponentInfo componentInfo = componentInfoRepository.save(ComponentInfo.of(testReq));
 
-    //     //데이터칼럼 설명 명 데이터 업로드
+        //데이터칼럼 설명 명 데이터 업로드
 
-    //     return TestRes.SaveComponent.of(componentInfo);
-    // }
+        return TestRes.SaveComponent.of(componentInfo);
+    }
 }

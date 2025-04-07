@@ -262,4 +262,12 @@ public class AdminObjectStorageService {
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
     }
 
+
+    //TODO: 호영: 정형 데이터 엑셀 파일 검수 후 Stream으로 DB에 업로드
+    /**
+     * 정형 데이터 엑셀 파일 검수
+     */
+    public boolean checkStructuredDataExcelFile(MultipartFile file, String[] columnNames) {
+        return true;
+    }
 }
