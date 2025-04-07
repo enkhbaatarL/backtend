@@ -72,7 +72,13 @@ public class ResultCode {
         // FILE: 파일 관련 오류
         FILE_INVALID("FILE-001", "The file is invalid."),
         FILE_FORMAT_ERROR("REQ-007", "This file format is not allowed."),
-        FILE_SIZE_ERROR("REQ-008", "File size exceeds the maximum limit");
+        FILE_SIZE_ERROR("REQ-008", "File size exceeds the maximum limit"),
+
+        // SEC: 보안 및 암복호화 관련 오류
+        SEC_ENCRYPTION_FAILED("SEC-001", "Failed to encrypt data using AES."),
+        SEC_DECRYPTION_FAILED("SEC-002", "Failed to decrypt data using AES."),
+        SEC_INVALID_KEY("SEC-003", "The provided AES secret key is invalid.");
+
 
         private final String code;
         private final String message;

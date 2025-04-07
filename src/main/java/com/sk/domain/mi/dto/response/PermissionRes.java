@@ -18,14 +18,16 @@ import java.util.stream.Collectors;
 
 public record PermissionRes(
 
-        @Schema(description = "권한주체구분코드", example = "INDIVIDUAL", allowableValues = {
-                "COMPANY", "INDIVIDUAL" }) String goodsAuthManagementSeparateCd,
+    @Schema(description = "권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"COMPANY", "INDIVIDUAL"})
+    String goodsAuthManagementSeparateCd,
 
-        @Schema(description = "권한주체구분코드", example = "개인", allowableValues = { "회사", "개인" }) String goodsAuthManagementSeparateNm,
+    @Schema(description = "권한주체구분코드", example = "개인", allowableValues = {"회사", "개인"})
+    String goodsAuthManagementSeparateNm,
 
-        @Schema(description = "회사 권한 목록") List<CompanyAuthRes> companies
+    @Schema(description = "회사 권한 목록")
+    List<CompanyAuthRes> companies
 
-    ){
+) {
 
     @Builder
     public PermissionRes(String goodsAuthManagementSeparateCd, String goodsAuthManagementSeparateNm, List<CompanyAuthRes> companies) {
@@ -36,11 +38,14 @@ public record PermissionRes(
 
     public record CompanyAuthRes(
 
-            @Schema(description = "회사 번호", example = "159") Integer companyNo,
+        @Schema(description = "회사 번호", example = "159")
+        Integer companyNo,
 
-            @Schema(description = "회사 명", example = "SK이노베이션") String companyNm,
+        @Schema(description = "회사 명", example = "SK이노베이션")
+        String companyNm,
 
-            @Schema(description = "회사 > 프로바이더 권한 목록") List<ProviderAuthRes> providers
+        @Schema(description = "회사 > 프로바이더 권한 목록")
+        List<ProviderAuthRes> providers
 
     ) {
         @Builder
@@ -53,11 +58,14 @@ public record PermissionRes(
 
     public record ProviderAuthRes(
 
-            @Schema(description = "프로바이더 번호", example = "42") Integer providerNo,
+        @Schema(description = "프로바이더 번호", example = "42")
+        Integer providerNo,
 
-            @Schema(description = "프로바이더 명", example = "LSEG") String providerNm,
+        @Schema(description = "프로바이더 명", example = "LSEG")
+        String providerNm,
 
-            @Schema(description = "회사 > 프로바이더 > 상품 권한 목록") List<GoodsAuthRes> goods
+        @Schema(description = "회사 > 프로바이더 > 상품 권한 목록")
+        List<GoodsAuthRes> goods
 
     ) {
         @Builder
@@ -70,15 +78,20 @@ public record PermissionRes(
 
     public record GoodsAuthRes(
 
-            @Schema(description = "상품번호", example = "12") Integer goodsNo,
+        @Schema(description = "상품번호", example = "12")
+        Integer goodsNo,
 
-            @Schema(description = "상품ID", example = "CD159") String goodsId,
+        @Schema(description = "상품ID", example = "CD159")
+        String goodsId,
 
-            @Schema(description = "상품명", example = "제조사별 DRAM 생산량") String goodsNm,
+        @Schema(description = "상품명", example = "제조사별 DRAM 생산량")
+        String goodsNm,
 
-            @Schema(description = "보기권한 여부", example = "true") boolean isViewable,
+        @Schema(description = "보기권한 여부", example = "true")
+        boolean isViewable,
 
-            @Schema(description = "다운로드권한 여부", example = "false") boolean isDownloadable
+        @Schema(description = "다운로드권한 여부", example = "false")
+        boolean isDownloadable
 
     ) {
         @Builder
@@ -97,122 +110,122 @@ public record PermissionRes(
 
         // 1. 회사별로 그룹화
         Map<CustomerCompany, List<AuthManageGoodsMapping>> byCompany = goodsMappings.stream()
-                .collect(Collectors.groupingBy(mapping -> mapping.getCustomerCompanyGoodsMapping().getCustomerCompany()));
+            .collect(Collectors.groupingBy(mapping -> mapping.getCustomerCompanyGoodsMapping().getCustomerCompany()));
 
         // 2. 회사별 CompanyAuth 생성
         List<CompanyAuthRes> companyAuthRes = byCompany.entrySet().stream()
-                .map(entry -> {
-                    CustomerCompany company = entry.getKey();
-                    List<AuthManageGoodsMapping> companyMappings = entry.getValue();
+            .map(entry -> {
+                CustomerCompany company = entry.getKey();
+                List<AuthManageGoodsMapping> companyMappings = entry.getValue();
 
-                    // 3. 프로바이더별로 그룹화
-                    Map<Provider, List<AuthManageGoodsMapping>> byProvider = companyMappings.stream()
-                            .collect(Collectors.groupingBy(mapping -> mapping.getCustomerCompanyGoodsMapping().getGoods().getProvider()));
+                // 3. 프로바이더별로 그룹화
+                Map<Provider, List<AuthManageGoodsMapping>> byProvider = companyMappings.stream()
+                    .collect(Collectors.groupingBy(mapping -> mapping.getCustomerCompanyGoodsMapping().getGoods().getProvider()));
 
-                    // 4. 프로바이더별 ProviderAuth 생성
-                    List<ProviderAuthRes> providerAuthRes = byProvider.entrySet().stream()
-                            .map(providerEntry -> {
-                                Provider provider = providerEntry.getKey();
-                                List<AuthManageGoodsMapping> providerMappings = providerEntry.getValue();
+                // 4. 프로바이더별 ProviderAuth 생성
+                List<ProviderAuthRes> providerAuthRes = byProvider.entrySet().stream()
+                    .map(providerEntry -> {
+                        Provider provider = providerEntry.getKey();
+                        List<AuthManageGoodsMapping> providerMappings = providerEntry.getValue();
 
-                                // 5. 상품별로 그룹화
-                                Map<Integer, List<AuthManageGoodsMapping>> byGoods = providerMappings.stream()
-                                        .collect(Collectors.groupingBy(mapping -> mapping.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo()));
+                        // 5. 상품별로 그룹화
+                        Map<Integer, List<AuthManageGoodsMapping>> byGoods = providerMappings.stream()
+                            .collect(Collectors.groupingBy(mapping -> mapping.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo()));
 
-                                // 6. 상품별 GoodsAuth 생성
-                                List<GoodsAuthRes> goodsAuthRes = byGoods.entrySet().stream()
-                                        .map(goodsEntry -> {
-                                            Integer goodsNo = goodsEntry.getKey();
-                                            List<AuthManageGoodsMapping> goodsMappingList = goodsEntry.getValue();
+                        // 6. 상품별 GoodsAuth 생성
+                        List<GoodsAuthRes> goodsAuthRes = byGoods.entrySet().stream()
+                            .map(goodsEntry -> {
+                                Integer goodsNo = goodsEntry.getKey();
+                                List<AuthManageGoodsMapping> goodsMappingList = goodsEntry.getValue();
 
-                                            // 첫 번째 매핑에서 공통 정보 추출
-                                            String goodsId = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsId();
-                                            String goodsNm = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsNm();
-                                            goodsAuthManagementSeparateCd.set(goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getId()
-                                                    .getGoodsAuthManagementSeparateCd());
+                                // 첫 번째 매핑에서 공통 정보 추출
+                                String goodsId = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsId();
+                                String goodsNm = goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getGoods().getGoodsNm();
+                                goodsAuthManagementSeparateCd.set(goodsMappingList.get(0).getCustomerCompanyGoodsMapping().getId()
+                                    .getGoodsAuthManagementSeparateCd());
 
-                                            // 권한 설정 확인
-                                            boolean isView = false;
-                                            boolean isDownload = false;
+                                // 권한 설정 확인
+                                boolean isView = false;
+                                boolean isDownload = false;
 
-                                            for (AuthManageGoodsMapping mapping : goodsMappingList) {
-                                                GoodsAuthCd authCd = mapping.getGoodsAuthCd();
-                                                if (authCd == GoodsAuthCd.VIEW)
-                                                    isView = true;
-                                                if (authCd == GoodsAuthCd.DOWNLOAD)
-                                                    isDownload = true;
-                                                if (isView && isDownload)
-                                                    break;
-                                            }
+                                for (AuthManageGoodsMapping mapping : goodsMappingList) {
+                                    GoodsAuthCd authCd = mapping.getGoodsAuthCd();
+                                    if (authCd == GoodsAuthCd.VIEW)
+                                        isView = true;
+                                    if (authCd == GoodsAuthCd.DOWNLOAD)
+                                        isDownload = true;
+                                    if (isView && isDownload)
+                                        break;
+                                }
 
-                                            return GoodsAuthRes.builder()
-                                                    .goodsNo(goodsNo)
-                                                    .goodsId(goodsId)
-                                                    .goodsNm(goodsNm)
-                                                    .isViewable(isView)
-                                                    .isDownloadable(isDownload)
-                                                    .build();
-                                        })
-                                        .sorted(Comparator.comparing(GoodsAuthRes::goodsNm))
-                                        .collect(Collectors.toList());
-
-                                return ProviderAuthRes.builder()
-                                        .providerNo(provider.getProviderNo())
-                                        .providerNm(provider.getProviderNm())
-                                        .goods(goodsAuthRes)
-                                        .build();
+                                return GoodsAuthRes.builder()
+                                    .goodsNo(goodsNo)
+                                    .goodsId(goodsId)
+                                    .goodsNm(goodsNm)
+                                    .isViewable(isView)
+                                    .isDownloadable(isDownload)
+                                    .build();
                             })
-                            .sorted(Comparator.comparing(ProviderAuthRes::providerNm))
+                            .sorted(Comparator.comparing(GoodsAuthRes::goodsNm))
                             .collect(Collectors.toList());
 
-                    return CompanyAuthRes.builder()
-                            .companyNo(company.getCustomerCompanyNo())
-                            .companyNm(company.getCustomerCompanyNm())
-                            .providers(providerAuthRes)
+                        return ProviderAuthRes.builder()
+                            .providerNo(provider.getProviderNo())
+                            .providerNm(provider.getProviderNm())
+                            .goods(goodsAuthRes)
                             .build();
-                })
-                .sorted(Comparator.comparing(CompanyAuthRes::companyNm))
-                .collect(Collectors.toList());
+                    })
+                    .sorted(Comparator.comparing(ProviderAuthRes::providerNm))
+                    .collect(Collectors.toList());
+
+                return CompanyAuthRes.builder()
+                    .companyNo(company.getCustomerCompanyNo())
+                    .companyNm(company.getCustomerCompanyNm())
+                    .providers(providerAuthRes)
+                    .build();
+            })
+            .sorted(Comparator.comparing(CompanyAuthRes::companyNm))
+            .collect(Collectors.toList());
 
         return new PermissionRes(
-                Optional.ofNullable(goodsAuthManagementSeparateCd.get()).map(GoodsAuthManagementSeparateCd::getCode).orElse(null),
-                Optional.ofNullable(goodsAuthManagementSeparateCd.get()).map(GoodsAuthManagementSeparateCd::getDescription).orElse(null),
-                companyAuthRes);
+            Optional.ofNullable(goodsAuthManagementSeparateCd.get()).map(GoodsAuthManagementSeparateCd::getCode).orElse(null),
+            Optional.ofNullable(goodsAuthManagementSeparateCd.get()).map(GoodsAuthManagementSeparateCd::getDescription).orElse(null),
+            companyAuthRes);
     }
 
     @JsonIgnore
     public List<Integer> getPermittedCompanies() {
         return this.companies.stream()
-                .map(obj -> obj.companyNo)
-                .toList();
+            .map(obj -> obj.companyNo)
+            .toList();
     }
 
     @JsonIgnore
     public List<Integer> getPermittedProviders() {
         return this.companies.stream()
-                .flatMap(obj -> obj.providers.stream()
-                        .map(obj2 -> obj2.providerNo))
-                .toList();
+            .flatMap(obj -> obj.providers.stream()
+                .map(obj2 -> obj2.providerNo))
+            .toList();
     }
 
     @JsonIgnore
     public List<Integer> getPermittedGoods() {
         return this.companies.stream()
-                .flatMap(obj -> obj.providers.stream()
-                        .flatMap(obj2 -> obj2.goods.stream()))
-                .map(obj3 -> obj3.goodsNo)
-                .toList();
+            .flatMap(obj -> obj.providers.stream()
+                .flatMap(obj2 -> obj2.goods.stream()))
+            .map(obj3 -> obj3.goodsNo)
+            .toList();
     }
 
     @JsonIgnore
     public Map<Integer, Boolean> getGoodsViewableMap() {
 
         return this.companies.stream()
-                .flatMap(obj -> obj.providers.stream()
-                        .flatMap(obj2 -> obj2.goods.stream()))
-                .collect(Collectors.toMap(
-                        GoodsAuthRes::goodsNo,
-                        GoodsAuthRes::isViewable));
+            .flatMap(obj -> obj.providers.stream()
+                .flatMap(obj2 -> obj2.goods.stream()))
+            .collect(Collectors.toMap(
+                GoodsAuthRes::goodsNo,
+                GoodsAuthRes::isViewable));
 
     }
 
@@ -220,11 +233,11 @@ public record PermissionRes(
     public Map<Integer, Boolean> getGoodsDownloadableMap() {
 
         return this.companies.stream()
-                .flatMap(obj -> obj.providers.stream()
-                        .flatMap(obj2 -> obj2.goods.stream()))
-                .collect(Collectors.toMap(
-                        GoodsAuthRes::goodsNo,
-                        GoodsAuthRes::isDownloadable));
+            .flatMap(obj -> obj.providers.stream()
+                .flatMap(obj2 -> obj2.goods.stream()))
+            .collect(Collectors.toMap(
+                GoodsAuthRes::goodsNo,
+                GoodsAuthRes::isDownloadable));
 
     }
 
