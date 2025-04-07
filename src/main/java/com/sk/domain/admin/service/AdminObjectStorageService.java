@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -262,12 +263,4 @@ public class AdminObjectStorageService {
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
     }
 
-
-    //TODO: 호영: 정형 데이터 엑셀 파일 검수 후 Stream으로 DB에 업로드
-    /**
-     * 정형 데이터 엑셀 파일 검수
-     */
-    public boolean checkStructuredDataExcelFile(MultipartFile file, String[] columnNames) {
-        return true;
-    }
 }
