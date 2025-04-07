@@ -27,11 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * todo...
- *  1. auto compelete ? fe 처리 가능? -> 처리가능
- *  2.
- */
+
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
 @Slf4j
 @RestController

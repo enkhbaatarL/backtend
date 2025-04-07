@@ -49,11 +49,11 @@ public class MovingAverageConversion implements ConversionStrategy {
 
             // 현재 윈도우의 데이터 합계 계산
             for (int j = 0; j < windowSize; j++) {
-                sum = sum.add(timeSeriesData.get(i - j), MathUtil.MC);
+                sum = MathUtil.add(sum, timeSeriesData.get(i - j));
             }
 
             // 평균 계산 및 결과 저장
-            results.set(i, sum.divide(new BigDecimal(windowSize), MathUtil.MC));
+            results.set(i, MathUtil.divide(sum, new BigDecimal(windowSize)));
         }
 
         return results;

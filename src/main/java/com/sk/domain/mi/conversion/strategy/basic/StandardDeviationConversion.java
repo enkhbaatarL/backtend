@@ -59,16 +59,19 @@ public class StandardDeviationConversion implements ConversionStrategy {
             // 평균 계산
             BigDecimal sum = BigDecimal.ZERO;
             for (BigDecimal dataPoint : windowData) {
-                sum = sum.add(dataPoint, MathUtil.MC);
+                sum = MathUtil.add(sum, dataPoint);
             }
-            BigDecimal mean = sum.divide(new BigDecimal(windowSize), MathUtil.MC);
+            BigDecimal mean = MathUtil.divide(sum, new BigDecimal(windowSize));
 
             // 각 데이터 포인트와 평균 간의 차이의 제곱의 합 계산
             BigDecimal sumOfSquaredDifferences = BigDecimal.ZERO;
             for (BigDecimal dataPoint : windowData) {
-                BigDecimal difference = dataPoint.subtract(mean, MathUtil.MC);
-                BigDecimal squaredDifference = difference.multiply(difference, MathUtil.MC);
-                sumOfSquaredDifferences = sumOfSquaredDifferences.add(squaredDifference, MathUtil.MC);
+//                BigDecimal difference = dataPoint.subtract(mean, MathUtil.MC);
+                BigDecimal difference = MathUtil.subtract(dataPoint, mean);
+//                BigDecimal squaredDifference = difference.multiply(difference, MathUtil.MC);
+                BigDecimal squaredDifference = MathUtil.multiply(difference, difference);
+//                sumOfSquaredDifferences = sumOfSquaredDifferences.add(squaredDifference, MathUtil.MC);
+                sumOfSquaredDifferences = MathUtil.add(sumOfSquaredDifferences, squaredDifference);
             }
 
             // 모든 값이 동일한 경우(분산이 0) 표준편차도 0
@@ -78,10 +81,11 @@ public class StandardDeviationConversion implements ConversionStrategy {
             }
 
             // 분산 계산 (차이 제곱의 평균)
-            BigDecimal variance = sumOfSquaredDifferences.divide(new BigDecimal(windowSize), MathUtil.MC);
+//            BigDecimal variance = sumOfSquaredDifferences.divide(new BigDecimal(windowSize), MathUtil.MC);
+            BigDecimal variance = MathUtil.divide(sumOfSquaredDifferences, new BigDecimal(windowSize));
 
             // 표준편차 계산 (분산의 제곱근)
-            results.set(i, MathUtil.sqrt(variance, MathUtil.MC));
+            results.set(i, MathUtil.sqrt(variance));
         }
 
         return results;
