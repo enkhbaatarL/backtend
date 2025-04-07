@@ -3,12 +3,15 @@ package com.sk.domain.admin.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -16,12 +19,14 @@ import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
+import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,7 +46,7 @@ public class TestController {
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/user-info")
-    public BaseResponse<TestRes> getUserInfo(@RequestBody @Valid TestReq.getUserInfo testReq) {
+    public BaseResponse<TestRes.GetUserInfo> getUserInfo(@RequestBody @Valid TestReq.getUserInfo testReq) {
         return BaseResponseFactory.create(testService.getUserInfo(testReq));
     }
 
@@ -55,7 +60,7 @@ public class TestController {
     @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/admin")
-    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.userLogin testLoginReq) {
+    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq) {
         return BaseResponseFactory.create(testService.adminLogin(testLoginReq));
     }
 
@@ -97,4 +102,20 @@ public class TestController {
         return BaseResponseFactory.create(mybatisDynamicQueryService.getDynamicData(testReq));
     }
 
+    // @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // public BaseResponse<FileUploadRes> uploadStructuredDataFile(
+    //         @RequestPart(value = "file", required = false) MultipartFile file,
+    //         @Schema(implementation = TestReq.uploadStructuredDataFile.class) @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
+
+    //     return BaseResponseFactory.create(testService.uploadStructuredDataFile(file, testReq));
+    // }
+    
+    // @Operation(summary = "정형 데이터 컴포넌트 저장", description = "정형 데이터 컴포넌트를 저장합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @PostMapping("/goodsdatas/component")
+    // public BaseResponse<TestRes.SaveComponent> saveComponent(@RequestBody @Valid TestReq.saveComponent testReq) {
+    //     return BaseResponseFactory.create(testService.saveComponent(testReq));
+    // }
 }
