@@ -1,5 +1,8 @@
 package com.sk.domain.admin.controller;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -196,14 +199,16 @@ public class AdminBulletinBoardController {
     @PostMapping("/notice/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
             @UserResolve User user,
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
+
+        String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         httpHeaders.setContentLength(fileDownloadRes.fileData().length);
-        httpHeaders.setContentDispositionFormData("attachment", fileDownloadRes.fileNm());
+        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
     }

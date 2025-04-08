@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.PathUtil;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
@@ -86,9 +88,7 @@ public class AdminFileService {
             String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
             String storagePathNm = FileRelationshipObjectSeparateCode.TEMP.getCode();
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
-            String fileName = Paths.get(storagePathNm, storageFileNm).toString();
-
-            // todo-companyCd
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(storagePathNm) + storageFileNm;
             String fileUrl = adminObjectStorageService.uploadFile(file, bucketName, fileName, isPublic);
 
             // DB 에 저장
@@ -123,8 +123,7 @@ public class AdminFileService {
         try {
             String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
             String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
-            String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
             byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
@@ -147,7 +146,7 @@ public class AdminFileService {
 
         String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
         String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
-        String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+        String fileName = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
 
         adminObjectStorageService.deleteFile(bucketName, fileName);
 
@@ -169,7 +168,8 @@ public class AdminFileService {
 
         String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
         String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
-        fileList.forEach(f -> adminObjectStorageService.deleteFile(bucketName, Paths.get(f.getStoragePathNm(), f.getStorageFileNm()).toString()));
+        fileList.forEach(f -> adminObjectStorageService.deleteFile(bucketName,
+                PathUtil.IncludeTrailingPathDelimiter(f.getStoragePathNm()) + f.getStorageFileNm()));
         fileList.forEach(f -> f.softDelete());
     }
 
@@ -194,8 +194,8 @@ public class AdminFileService {
 
         String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
         String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
-        String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-        String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
+        String oldPath = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
+        String newPath = PathUtil.IncludeTrailingPathDelimiter(fileRelationshipObjectSeparateCode) + uploadedFile.getStorageFileNm();
 
         adminObjectStorageService.moveFile(bucketName, oldPath, newPath);
 
@@ -228,7 +228,7 @@ public class AdminFileService {
 
         String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
         String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
-        String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+        String fileName = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
 
         return adminObjectStorageService.getUrl(bucketName, fileName);
     }

@@ -32,6 +32,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
+import com.sk.common.utils.PathUtil;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 
@@ -136,7 +137,7 @@ public class AdminObjectStorageService {
 
         if (isPublic) {
             this.setACL(bucketName, fileName);
-            return Paths.get(endPoint, bucketName, fileName).toString();
+            return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
         }
 
         return "";// this.getPresignedUrl(bucketName, fileName);
@@ -219,7 +220,7 @@ public class AdminObjectStorageService {
     // return url.toString();
     // }
     public String getUrl(String bucketName, String fileName) {
-        return Paths.get(endPoint, bucketName, fileName).toString();
+        return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
     }
 
     /**
