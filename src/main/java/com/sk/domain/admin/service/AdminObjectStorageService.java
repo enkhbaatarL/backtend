@@ -193,7 +193,7 @@ public class AdminObjectStorageService {
     * 파일을 삭제 한다.
     *
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public void deleteFile(String fileName) {
         objectStorageClient.deleteObject(new DeleteObjectRequest(bucketName, fileName));
@@ -204,7 +204,7 @@ public class AdminObjectStorageService {
     *
     * @param oldPath 기존 위치
     * @param newPath 새 위치
-    * @return 
+    * @return
     */
     public void copyFile(String oldPath, String newPath) {
         objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
@@ -215,7 +215,7 @@ public class AdminObjectStorageService {
     *
     * @param oldPath 기존 위치
     * @param newPath 새 위치
-    * @return 
+    * @return
     */
     public void moveFile(String oldPath, String newPath) {
         this.copyFile(oldPath, newPath);
@@ -226,7 +226,7 @@ public class AdminObjectStorageService {
     * 파일의 URL을 생성한다.
     *
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public String getPresignedUrl(String fileName) {
         // presigned URL 만료 시간 설정 (예: 1시간 후 만료)
@@ -250,7 +250,7 @@ public class AdminObjectStorageService {
     * 파일의 ACL을 설정한다.
     *
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public void setACL(String fileName) {
         // get the current ACL
@@ -260,6 +260,16 @@ public class AdminObjectStorageService {
         accessControlList.grantPermission(GroupGrantee.AllUsers, Permission.Read);
 
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
+    }
+
+    // 테스트 코드
+    public void uploadImageTemp(String imageName, int length, ByteArrayInputStream imageInputStream) throws IOException {
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentType("image/png");
+        objectMetadata.setContentLength(length);
+
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, imageName, imageInputStream, objectMetadata);
+        objectStorageClient.putObject(putObjectRequest);
     }
 
 }

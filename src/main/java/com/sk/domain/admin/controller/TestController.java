@@ -9,6 +9,7 @@ import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.admin.service.TestService;
+import com.sk.domain.mi.service.MiPdfService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,13 +21,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Tag(name = "00. 테스트 샘플 API", description = "테스트 샘플 API 입니다.")
 @Slf4j
@@ -36,6 +40,7 @@ import java.util.Map;
 public class TestController {
 
     private final TestService testService;
+    private final MiPdfService pdfService;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
@@ -97,6 +102,7 @@ public class TestController {
         return BaseResponseFactory.create(mybatisDynamicQueryService.getDynamicData(testReq));
     }
 
+    // 테스트 코드
     @GetMapping(value = "/watermark", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getWatermarkedImage() throws IOException {
 
@@ -107,6 +113,18 @@ public class TestController {
         return ResponseEntity.ok()
             .contentType(MediaType.IMAGE_PNG)
             .body(imageBytes);
+    }
+
+    // 테스트 코드
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, Object>> uploadPdf(@RequestParam("file") MultipartFile pdfFile) {
+        String uuidFileName = UUID.randomUUID().toString();
+        pdfService.uploadPageImagesFromPDF(pdfFile, uuidFileName);
+        Map<String, Object> response = new HashMap<>();
+        response.put("uuid", uuidFileName);
+        response.put("originalFilename", pdfFile.getOriginalFilename());
+        response.put("message", "PDF 파일이 성공적으로 업로드되었습니다.");
+        return ResponseEntity.ok(response);
     }
 
 }
