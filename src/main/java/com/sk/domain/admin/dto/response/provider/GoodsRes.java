@@ -7,6 +7,9 @@ public record GoodsRes(
         @Schema(description = "상품번호", example = "5000")
         Integer goodsNo,
 
+        @Schema(description = "타입", example = "Y")
+        Boolean isPublic,
+
         @Schema(description = "상품명", example = "제조사별 DRAM 생산량")
         String goodsNm,
 

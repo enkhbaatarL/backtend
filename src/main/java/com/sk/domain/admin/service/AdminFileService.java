@@ -1,9 +1,11 @@
 package com.sk.domain.admin.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
@@ -11,9 +13,13 @@ import java.util.UUID;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.PathUtil;
+import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +32,11 @@ public class AdminFileService {
     private final UploadedFileRepository uploadedFileRepository;
     private final AdminObjectStorageService adminObjectStorageService;
 
-    /**
-    * 전체 파일를 조회한다.
-    *
-    * @return List<String>
-    */
-    public List<String> getAll() {
-        return adminObjectStorageService.getAll();
-    }
+    @Value("${ncp.storage.bucketName}")
+    private String commBucketName;
+
+    @Value("${ncp.storage.prefix}")
+    private String prefix;
 
     /**
     * 파일를 조회한다.
@@ -65,7 +68,7 @@ public class AdminFileService {
     * @return FileUploadRes
     */
     @Transactional
-    public FileUploadRes uploadFile(MultipartFile file, boolean isPublic) {
+    public FileUploadRes uploadFile(User user, MultipartFile file, boolean isPublic) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -75,17 +78,18 @@ public class AdminFileService {
         }
 
         try {
+            String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
             String originalFileNm = file.getOriginalFilename();
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
             long fileSize = file.getSize();
             String mimeTypeNm = file.getContentType();
 
             // Object Storage 저장
-            String storagePathNm = "TEMP";
+            String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+            String storagePathNm = FileRelationshipObjectSeparateCode.TEMP.getCode();
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
-            String fileName = Paths.get(storagePathNm, storageFileNm).toString();
-
-            String fileUrl = adminObjectStorageService.uploadFile(file, fileName, isPublic);
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(storagePathNm) + storageFileNm;
+            String fileUrl = adminObjectStorageService.uploadFile(file, bucketName, fileName, isPublic);
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -111,14 +115,16 @@ public class AdminFileService {
     * @param fileNo 파일번호
     * @return FileDownloadRes
     */
-    public FileDownloadRes downloadFile(Long fileNo) {
+    public FileDownloadRes downloadFile(User user, Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
         try {
-            String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-            byte[] fileData = adminObjectStorageService.downloadFile(fileName);
+            String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
+            String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
+            byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
@@ -133,13 +139,16 @@ public class AdminFileService {
     * @return 
     */
     @Transactional
-    public void deleteFile(Long fileNo) {
+    public void deleteFile(User user, Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-        String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-        adminObjectStorageService.deleteFile(fileName);
+        String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
+        String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+        String fileName = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
+
+        adminObjectStorageService.deleteFile(bucketName, fileName);
 
         uploadedFile.softDelete();
     }
@@ -152,12 +161,15 @@ public class AdminFileService {
     * @return 
     */
     @Transactional
-    public void deleteFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
+    public void deleteFiles(User user, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {
         List<UploadedFile> fileList = uploadedFileRepository.findByRelationshipObjectInfo(
                 fileRelationshipObjectDistinguishNo,
                 fileRelationshipObjectSeparateCode);
 
-        fileList.forEach(f -> adminObjectStorageService.deleteFile(Paths.get(f.getStoragePathNm(), f.getStorageFileNm()).toString()));
+        String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
+        String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+        fileList.forEach(f -> adminObjectStorageService.deleteFile(bucketName,
+                PathUtil.IncludeTrailingPathDelimiter(f.getStoragePathNm()) + f.getStorageFileNm()));
         fileList.forEach(f -> f.softDelete());
     }
 
@@ -171,6 +183,7 @@ public class AdminFileService {
     */
     @Transactional
     public UploadedFile updateFile(
+            User user,
             Long fileNo,
             Integer fileRelationshipObjectDistinguishNo,
             String fileRelationshipObjectSeparateCode,
@@ -179,9 +192,12 @@ public class AdminFileService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-        String oldPath = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-        String newPath = Paths.get(fileRelationshipObjectSeparateCode, uploadedFile.getStorageFileNm()).toString();
-        adminObjectStorageService.moveFile(oldPath, newPath);
+        String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
+        String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+        String oldPath = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
+        String newPath = PathUtil.IncludeTrailingPathDelimiter(fileRelationshipObjectSeparateCode) + uploadedFile.getStorageFileNm();
+
+        adminObjectStorageService.moveFile(bucketName, oldPath, newPath);
 
         uploadedFile.update(fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
 
@@ -194,16 +210,34 @@ public class AdminFileService {
     * @param fileNo 파일번호
     * @return URL
     */
-    public String getPresignedUrl(Long fileNo) {
+    // public String getPresignedUrl(User user, Long fileNo) {
+    // UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+    // .orElseThrow(
+    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+    // String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
+    // String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+    // String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
+
+    // return adminObjectStorageService.getPresignedUrl(bucketName, fileName);
+    // }
+    public String getUrl(User user, Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-        String fileName = Paths.get(uploadedFile.getStoragePathNm(), uploadedFile.getStorageFileNm()).toString();
-        return adminObjectStorageService.getPresignedUrl(fileName);
+        String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd();
+        String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
+        String fileName = PathUtil.IncludeTrailingPathDelimiter(uploadedFile.getStoragePathNm()) + uploadedFile.getStorageFileNm();
+
+        return adminObjectStorageService.getUrl(bucketName, fileName);
     }
 
     private String getFileExtension(String fileName) {
         return fileName.substring(fileName.lastIndexOf("."));
+    }
+
+    private String getBucketName(String customerCompanyCd) {
+        return prefix + customerCompanyCd;
     }
 }

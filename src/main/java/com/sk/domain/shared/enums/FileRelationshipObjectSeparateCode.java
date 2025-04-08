@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum FileRelationshipObjectSeparateCode {
 
+  TEMP("TEMP", "임시저장"), 
   BBS("BBS", "게시판"), 
   GDATS("GDATS", "상품데이타소스"), 
   GUDAT("GUDAT", "상품비정형데이타");
