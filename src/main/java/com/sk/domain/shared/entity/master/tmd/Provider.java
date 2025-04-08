@@ -63,12 +63,12 @@ public class Provider extends BaseEntity {
         this.isUsed = isUsed;
     }
 
-    public static Provider of(ProviderCreateReq dto) {
+    public static Provider of(String providerNm, String providerId, String providerExpn, Boolean isUsed) {
         return Provider.builder()
-                .providerNm(dto.providerNm())
-                .providerId(dto.providerId())
-                .providerExpn(dto.providerExpn())
-                .isUsed(dto.isUsed())
+                .providerNm(providerNm)
+                .providerId(providerId)
+                .providerExpn(providerExpn)
+                .isUsed(isUsed)
                 .build();
     }
 

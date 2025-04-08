@@ -70,23 +70,27 @@ public class GoodsData extends BaseEntity {
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
         this.goodsDataNm = goodsDataNm;
-        this.goodsDataExpn = "";
+        this.goodsDataExpn = goodsDataExpn;
         this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         this.goods = goods;
         this.customerCompany = customerCompany;
     }
 
-    public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataSummaryCntt) {
+    public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt) {
         return GoodsData.builder()
                 .goodsDataNm(goodsDataNm)
-                .goodsDataExpn("")
+                .goodsDataExpn(goodsDataExpn)
                 .goodsDataSummaryCntt(goodsDataSummaryCntt)
                 .goods(goods)
                 .customerCompany(customerCompany)
                 .build();
     }
 
-    public void update(String goodsDataSummaryCntt) {
+    public void update(String goodsDataExpn, String goodsDataSummaryCntt) {
+        if (StringUtils.isNotEmpty(goodsDataExpn)) {
+            this.goodsDataExpn = goodsDataExpn;
+        }
+
         if (StringUtils.isNotEmpty(goodsDataSummaryCntt)) {
             this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         }

@@ -48,4 +48,4 @@ springdoc:
     tags-sorter: alpha
 
 security:
-  enabled: false
+  enabled: true

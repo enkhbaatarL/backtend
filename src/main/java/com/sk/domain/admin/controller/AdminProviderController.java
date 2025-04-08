@@ -8,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +26,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.request.provider.GoodsCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
@@ -78,17 +78,10 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
+    private static final int TEST_USER_NO = 1000004; // Admin
+    // private static final int TEST_USER_NO = 1000000; // Operator
+
     @ApiOrder(1)
-    @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/provider/name")
-    public BaseResponse<List<ProviderNameRes>> getAllProviderNm(
-            @UserResolve User user) {
-
-        return BaseResponseFactory.create(providerService.getAllProviderNm(user));
-    }
-
-    @ApiOrder(2)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
@@ -101,16 +94,29 @@ public class AdminProviderController {
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
 
+        // User user = getUser();
+
         return BaseResponseFactory.create(providerService.getAllProviders(user, page, size));
+    }
+
+    @ApiOrder(2)
+    @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/provider/name")
+    public BaseResponse<List<ProviderNameRes>> getAllProviderNm(
+    // @UserResolve User user
+    ) {
+        User user = getUser();
+
+        return BaseResponseFactory.create(providerService.getAllProviderNm(user));
     }
 
     @ApiOrder(3)
     @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    // @RequirePermission(roles = {Role.ADMIN})
     public BaseResponse<String> createProvider(
-            // @UserResolve User user,
             @RequestBody @Valid ProviderCreateReq body) {
 
         providerService.createProvider(body);
@@ -126,8 +132,11 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
     public BaseResponse<ProviderDetailRes> getProvider(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+
+        User user = getUser();
+
         return BaseResponseFactory.create(providerService.getProvider(user, providerNo));
     }
 
@@ -138,9 +147,8 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 수정", description = "데이타 프로바이더를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    // @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateProvider(
-            @UserResolve User user,
             @RequestBody @Valid ProviderUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -156,9 +164,8 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/providers/{providerNo}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    // @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> deleteProvider(
-            @UserResolve User user,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
         providerService.deleteProvider(providerNo);
@@ -166,150 +173,169 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    // @ApiOrder(7)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
-    // })
-    // @Operation(summary = "데이타 프로바이더 최신 수정일, 수정자", description = "데이타 프로바이더의 최신 수정일과 수정자를 반납합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/latest-updated/")
-    // public BaseResponse<ProviderLatestUpdatedRes> getProviderLatestUpdated(
-    // @UserResolve User user,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    // return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
-    // }
+    @ApiOrder(7)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
+    })
+    @Operation(summary = "데이타 프로바이더 최신 수정일, 수정자", description = "데이타 프로바이더의 최신 수정일과 수정자를 반납합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/latest-updated/")
+    public BaseResponse<ProviderLatestUpdatedRes> getProviderLatestUpdated(
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+        return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
+    }
 
-    // @ApiOrder(8)
-    // @Parameters({
-    // @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-    // @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
-    // @Parameter(name = "keyword", description = "상품명 또는 상품설명 검색"),
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
-    // })
-    // @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/goods")
-    // public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
-    // @UserResolve User user,
-    // @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-    // @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-    // @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-    // return BaseResponseFactory.create(goodsService.getAllGoods(page, size, keyword, providerNo));
-    // }
+    @ApiOrder(8)
+    @Parameters({
+            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+            @Parameter(name = "keyword", description = "상품명 또는 상품설명 검색"),
+            @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
+    })
+    @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods")
+    public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
+            // @UserResolve User user,
+            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
+            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-    // @ApiOrder(9)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품 번호")
-    // })
-    // @Operation(summary = "상품 상세 조회", description = "상품 1개를 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/goods/{goodsNo}")
-    // public BaseResponse<GoodsDetailRes> getGoodsDetail(
-    // @UserResolve User user,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-    // return BaseResponseFactory.create(goodsService.getGoods(goodsNo));
-    // }
+        User user = getUser();
 
-    // @ApiOrder(10)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품 번호")
-    // })
-    // @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-    // public BaseResponse<String> updateGoods(
-    // @UserResolve User user,
-    // @RequestBody @Valid GoodsUpdateReq body,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        return BaseResponseFactory.create(goodsService.getAllGoods(user, page, size, keyword, providerNo));
+    }
 
-    // goodsService.updateGoods(goodsNo, body);
+    @ApiOrder(9)
+    @Operation(summary = "상품 등록", description = "상품을 등록합니다")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/providers/{providerNo}/goods")
+    public BaseResponse<String> createGoods(
+            @RequestBody @Valid GoodsCreateReq body,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-    // return BaseResponseFactory.create("success");
-    // }
+        goodsService.createGoods(providerNo, body);
 
-    // @ApiOrder(11)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품 번호")
-    // })
-    // @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
-    // public BaseResponse<String> deleteGoods(
-    // @UserResolve User user,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        return BaseResponseFactory.create("success");
+    }
 
-    // goodsService.deleteGoods(goodsNo);
+    @ApiOrder(10)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품 번호")
+    })
+    @Operation(summary = "상품 상세 조회", description = "상품 1개를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}")
+    public BaseResponse<GoodsDetailRes> getGoodsDetail(
+            // @UserResolve User user,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    // return BaseResponseFactory.create("success");
-    // }
+        User user = getUser();
 
-    // @ApiOrder(12)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품 번호")
-    // })
-    // @Operation(summary = "상품 최신 수정일, 수정자", description = "상품의 최신 수정일과 수정자를 반납합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated/")
-    // public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
-    // @UserResolve User user,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-    // return BaseResponseFactory.create(goodsService.getGoodsLatestUpdated(goodsNo));
-    // }
+        return BaseResponseFactory.create(goodsService.getGoods(user, providerNo, goodsNo));
+    }
 
-    // @ApiOrder(13)
-    // @Parameters({
-    // @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-    // @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
-    // @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품번호")
-    // })
-    // @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    // public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
-    // @UserResolve User user,
-    // @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-    // @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-    // @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+    @ApiOrder(11)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품 번호")
+    })
+    @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
+    // @RequirePermission(roles = { Role.ADMIN })
+    public BaseResponse<String> updateGoods(
+            @RequestBody @Valid GoodsUpdateReq body,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    // return BaseResponseFactory.create(goodsDataService.getAllGoodsData(page, size, keyword, providerNo, goodsNo));
-    // }
+        goodsService.updateGoods(goodsNo, body);
 
-    // @ApiOrder(14)
-    // @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/goodsdata/category")
-    // public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
+        return BaseResponseFactory.create("success");
+    }
 
-    // return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
-    // }
+    @ApiOrder(12)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품 번호")
+    })
+    @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
+    // @RequirePermission(roles = { Role.ADMIN })
+    public BaseResponse<String> deleteGoods(
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    // @ApiOrder(15)
-    // @Parameters({
-    // @Parameter(name = "codeId", description = "대분류 코드ID"),
-    // })
-    // @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/goodsdata/category/{codeId}")
-    // public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
-    // @PathVariable(value = "codeId") String codeId) {
+        goodsService.deleteGoods(goodsNo);
 
-    // return BaseResponseFactory.create(goodsDataService.getGoodsDataSubCategorys(codeId));
-    // }
+        return BaseResponseFactory.create("success");
+    }
 
-    // @ApiOrder(16)
+    @ApiOrder(13)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품 번호")
+    })
+    @Operation(summary = "상품 최신 수정일, 수정자", description = "상품의 최신 수정일과 수정자를 반납합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated/")
+    public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        return BaseResponseFactory.create(goodsService.getGoodsLatestUpdated(goodsNo));
+    }
+
+    @ApiOrder(14)
+    @Parameters({
+            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+            @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품번호")
+    })
+    @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
+            // @UserResolve User user,
+            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
+            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+
+        User user = getUser();
+
+        return BaseResponseFactory.create(goodsDataService.getAllGoodsData(user, page, size, keyword, providerNo, goodsNo));
+    }
+
+    @ApiOrder(15)
+    @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goodsdata/category")
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
+
+        return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
+    }
+
+    @ApiOrder(16)
+    @Parameters({
+            @Parameter(name = "codeId", description = "대분류 코드ID"),
+    })
+    @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goodsdata/category/{codeId}")
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
+            @PathVariable(value = "codeId") String codeId) {
+
+        return BaseResponseFactory.create(goodsDataService.getGoodsDataSubCategorys(codeId));
+    }
+
+    // @ApiOrder(17)
     // @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
     // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     // @GetMapping("/goodsdata/structureddatatype")
@@ -319,150 +345,160 @@ public class AdminProviderController {
     // return BaseResponseFactory.create("todo");
     // }
 
-    // @ApiOrder(17)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품번호")
-    // })
-    // @Operation(summary = "데이터명 목록 조회", description = "데이터명 목록을 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata/name")
-    // public BaseResponse<List<GoodsDataNameRes>> getAllGoodsDataNm(
-    // @UserResolve User user,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+    @ApiOrder(18)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품번호")
+    })
+    @Operation(summary = "데이터명 목록 조회", description = "데이터명 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata/name")
+    public BaseResponse<List<GoodsDataNameRes>> getAllGoodsDataNm(
+            // @UserResolve User user,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    // return BaseResponseFactory.create(goodsDataService.getAllGoodsDataNm(providerNo, goodsNo));
-    // }
+        User user = getUser();
 
-    // @ApiOrder(18)
-    // @Parameters({
-    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-    // @Parameter(name = "goodsNo", description = "상품번호"),
-    // @Parameter(name = "goodsDataNo", description = "상품데이타번호")
-    // })
-    // @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
-    // public BaseResponse<GoodsDataDetailRes> getGoodsData(
-    // @UserResolve User user,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
-    // @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
+        return BaseResponseFactory.create(goodsDataService.getAllGoodsDataNm(user, providerNo, goodsNo));
+    }
 
-    // return BaseResponseFactory.create(goodsDataService.getGoodsData(goodsDataNo));
-    // }
+    @ApiOrder(19)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품번호"),
+            @Parameter(name = "goodsDataNo", description = "상품데이타번호")
+    })
+    @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
+    public BaseResponse<GoodsDataDetailRes> getGoodsData(
+            // @UserResolve User user,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+            @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
 
-    // @ApiOrder(19)
-    // @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    // public BaseResponse<String> createGoodsData(
-    // @UserResolve User user,
-    // @RequestBody @Valid GoodsDataCreateReq body,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        User user = getUser();
 
-    // goodsDataService.createGoodsData(goodsNo, body);
+        return BaseResponseFactory.create(goodsDataService.getGoodsData(user, providerNo, goodsNo, goodsDataNo));
+    }
 
-    // return BaseResponseFactory.create("success");
-    // }
+    @ApiOrder(20)
+    @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    public BaseResponse<String> createGoodsData(
+            // @UserResolve User user,
+            @RequestBody @Valid GoodsDataCreateReq body,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-    // @ApiOrder(20)
-    // @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
-    // public BaseResponse<String> updateGoodsData(
-    // @UserResolve User user,
-    // @RequestBody @Valid GoodsDataUpdateReq body,
-    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
-    // @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
+        User user = getUser();
 
-    // goodsDataService.updateGoodsData(goodsDataNo, body);
+        goodsDataService.createGoodsData(user, providerNo, goodsNo, body);
 
-    // return BaseResponseFactory.create("success");
-    // }
+        return BaseResponseFactory.create("success");
+    }
 
-    // @ApiOrder(97)
-    // @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    // public BaseResponse<FileUploadRes> uploadStructuredDataFile(
-    // @UserResolve User user,
-    // @RequestPart(value = "file", required = false) MultipartFile file) {
+    @ApiOrder(21)
+    @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
+    public BaseResponse<String> updateGoodsData(
+            // @UserResolve User user,
+            @RequestBody @Valid GoodsDataUpdateReq body,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+            @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
 
-    // // todo: 데이타 검증
+        User user = getUser();
 
-    // if (file == null) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
-    // }
+        goodsDataService.updateGoodsData(user, providerNo, goodsNo, goodsDataNo, body);
 
-    // String fileName = file.getOriginalFilename();
-    // if (fileName == null || fileName.lastIndexOf('.') == -1) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
-    // }
+        return BaseResponseFactory.create("success");
+    }
 
-    // String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-    // if (!ALLOWED_EXTENSIONS.contains(extension)) {
-    // throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-    // }
+    @ApiOrder(97)
+    @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<FileUploadRes> uploadStructuredDataFile(
+            // @UserResolve User user,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
 
-    // if (file.getSize() > MAX_SIZE) {
-    // throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
-    // }
+        User user = getUser();
 
-    // return BaseResponseFactory.create(adminFileService.uploadFile(file, false));
-    // }
+        if (file == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
 
-    // @ApiOrder(98)
-    // @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    // public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
-    // @UserResolve User user,
-    // @RequestPart(value = "file", required = false) MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.lastIndexOf('.') == -1) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
+        }
 
-    // // todo
+        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        }
 
-    // if (file == null) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
-    // }
+        if (file.getSize() > MAX_SIZE) {
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
+        }
 
-    // String fileName = file.getOriginalFilename();
-    // if (fileName == null || fileName.lastIndexOf('.') == -1) {
-    // throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
-    // }
+        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
+    }
 
-    // String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-    // if (!ALLOWED_EXTENSIONS.contains(extension)) {
-    // throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-    // }
+    @ApiOrder(98)
+    @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
+            // @UserResolve User user,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
 
-    // if (file.getSize() > MAX_SIZE) {
-    // throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
-    // }
+        User user = getUser();
 
-    // return BaseResponseFactory.create(adminFileService.uploadFile(file, false));
-    // }
+        if (file == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
 
-    // @ApiOrder(99)
-    // @Operation(summary = "첨부 파일 다운로드", description = "첨부 파일을 다운로드합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @PostMapping("/goodsdatas/download-file/{fileNo}")
-    // public ResponseEntity<byte[]> downloadFile(
-    // @UserResolve User user,
-    // @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.lastIndexOf('.') == -1) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
+        }
 
-    // FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
+        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        }
 
-    // HttpHeaders httpHeaders = new HttpHeaders();
-    // httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-    // httpHeaders.setContentLength(fileDownloadRes.fileData().length);
-    // httpHeaders.setContentDispositionFormData("attachment", fileDownloadRes.fileNm());
+        if (file.getSize() > MAX_SIZE) {
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
+        }
 
-    // return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
-    // }
+        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
+    }
+
+    @ApiOrder(99)
+    @Operation(summary = "첨부 파일 다운로드", description = "첨부 파일을 다운로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/goodsdatas/download-file/{fileNo}")
+    public ResponseEntity<byte[]> downloadFile(
+            // @UserResolve User user,
+            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+
+        User user = getUser();
+
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        httpHeaders.setContentLength(fileDownloadRes.fileData().length);
+        httpHeaders.setContentDispositionFormData("attachment", fileDownloadRes.fileNm());
+
+        return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
+    }
 
     private User getUser() {
         return userRepository.findByUserNoAndIsDeletedFalse(TEST_USER_NO).orElseThrow(

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.UserResolve;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
@@ -40,6 +41,7 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
 import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
+import com.sk.domain.shared.entity.master.tmd.User;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -104,9 +106,11 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 등록", description = "공지사항을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice")
-    public BaseResponse<String> createNotice(@RequestBody @Valid NoticeCreateReq body) {
+    public BaseResponse<String> createNotice(
+            @UserResolve User user,
+            @RequestBody @Valid NoticeCreateReq body) {
 
-        adminBulletinBoardService.createNotice(body);
+        adminBulletinBoardService.createNotice(user, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -119,8 +123,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/{noticeNo}")
     public BaseResponse<NoticeDetailRes> getNotice(
+            @UserResolve User user,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
-        return BaseResponseFactory.create(adminBulletinBoardService.getNotice(noticeNo));
+        return BaseResponseFactory.create(adminBulletinBoardService.getNotice(user, noticeNo));
     }
 
     @ApiOrder(5)
@@ -131,10 +136,11 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/notices/{noticeNo}")
     public BaseResponse<String> updateNotice(
+            @UserResolve User user,
             @RequestBody @Valid NoticeUpdateReq body,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
-        adminBulletinBoardService.updateNotice(body, noticeNo);
+        adminBulletinBoardService.updateNotice(user, body, noticeNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -147,9 +153,10 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/notices/{noticeNo}")
     public BaseResponse<String> deleteNotice(
+            @UserResolve User user,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
-        adminBulletinBoardService.deleteNotice(noticeNo);
+        adminBulletinBoardService.deleteNotice(user, noticeNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -159,6 +166,7 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/notice/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
+            @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         if (file == null) {
@@ -179,7 +187,7 @@ public class AdminBulletinBoardController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, true));
+        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, true));
     }
 
     @ApiOrder(8)
@@ -187,9 +195,10 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
+            @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -203,8 +212,8 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/popup")
-    public BaseResponse<PopupRes> getPopup() {
-        return BaseResponseFactory.create(adminBulletinBoardService.getPopup());
+    public BaseResponse<PopupRes> getPopup(@UserResolve User user) {
+        return BaseResponseFactory.create(adminBulletinBoardService.getPopup(user));
     }
 
     /*******************************************************************

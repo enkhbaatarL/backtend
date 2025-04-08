@@ -84,7 +84,18 @@ public class Goods extends BaseEntity {
         this.provider = provider;
     }
 
-    public void update(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed) {
+    public static Goods of(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic, Provider provider) {
+        return Goods.builder()
+                .goodsNm(goodsNm)
+                .goodsId(goodsId)
+                .goodsExpn(goodsExpn)
+                .isUsed(isUsed)
+                .isPublic(isPublic)
+                .provider(provider)
+                .build();
+    }
+
+    public void update(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic) {
 
         if (StringUtils.isNotEmpty(goodsNm)) {
             this.goodsNm = goodsNm;
@@ -100,6 +111,10 @@ public class Goods extends BaseEntity {
 
         if (ObjectUtils.isNotEmpty(isUsed)) {
             this.isUsed = isUsed;
+        }
+
+        if (ObjectUtils.isNotEmpty(isPublic)) {
+            this.isPublic = isPublic;
         }
     }
 

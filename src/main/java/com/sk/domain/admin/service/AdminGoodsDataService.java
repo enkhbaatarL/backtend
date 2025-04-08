@@ -14,6 +14,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
@@ -26,13 +27,18 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.admin.dto.response.provider.UnstructuredDataRes;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
+import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
+import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
@@ -50,224 +56,286 @@ public class AdminGoodsDataService {
     private final GoodsDataRepository goodsDataRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
-
+    private final CustomerCompanyRepository customerCompanyRepository;
+    private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
+    private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final AdminFileService adminFileService;
 
-    // /**
-    // * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
-    // *
-    // * @param page 조회할 페이지 번호 (min 1)
-    // * @param size 조회할 요소 사이즈 (min 1)
-    // * @param keyword 검색 키워드
-    // * @param providerNo 데이타 프로바이더 번호
-    // * @param goodsNo 상품 번호
-    // * @return PaginationRes<GoodsDataRes>
-    // */
-    // public PaginationRes<GoodsDataRes> getAllGoodsData(int page, int size, String keyword, int providerNo, int goodsNo) {
+    /**
+    * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
+    *
+    * @param user 사용자 정보
+    * @param page 조회할 페이지 번호 (min 1)
+    * @param size 조회할 요소 사이즈 (min 1)
+    * @param keyword 검색 키워드
+    * @param providerNo 데이타 프로바이더 번호
+    * @param goodsNo 상품 번호
+    * @return PaginationRes<GoodsDataRes>
+    */
+    public PaginationRes<GoodsDataRes> getAllGoodsData(User user, int page, int size, String keyword, int providerNo, int goodsNo) {
 
-    // Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
 
-    // Page<GoodsDataRes> goodsDataPage = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(providerNo, goodsNo, keyword, pageable);
+        if (RoleUtil.isAdmin(user)) {
+            return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
+        }
 
-    // return PaginationRes.toRes(goodsDataPage);
-    // }
+        if (RoleUtil.isOperator(user)) {
+            // 고객사와 프로바이더 맵핑 정보 확인
+            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
 
-    // /**
-    // * 데이터 카테고리 대분류 목록을 조회한다.
-    // *
-    // * @return List<GoodsDataCatgoryRes>
-    // */
-    // public List<GoodsDataCategoryRes> getGoodsDataMainCategorys() {
-    // return commonCodeDetailRepository.getGoodsDataMainCategorys();
-    // }
+            // 고객사와 상품 맵핑 정보 확인
+            customerCompanyGoodsMappingRepository
+                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("goods no: %d", goodsNo)));
 
-    // /**
-    // * 데이터 카테고리 중분류 목록을 조회한다.
-    // *
-    // * @param codeId
-    // * @return List<GoodsDataCatgoryRes>
-    // */
-    // public List<GoodsDataCategoryRes> getGoodsDataSubCategorys(String codeId) {
-    // return commonCodeDetailRepository.getGoodsDataSubCategorys(codeId);
-    // }
+            return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(
+                    user.getCustomerCompany().getCustomerCompanyNo(), providerNo, goodsNo, keyword, pageable));
+        }
 
-    // /**
-    // * 데이터명 목록을 조회합니다.
-    // *
-    // * @param providerNo 데이타 프로바이더 번호
-    // * @param goodsNo 상품 번호
-    // * @return List<GoodsDataNameRes>
-    // */
-    // public List<GoodsDataNameRes> getAllGoodsDataNm(Integer providerNo, Integer goodsNo) {
-    // return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
-    // }
+        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+    }
 
-    // /**
-    // * 데이터 상세 조회합니다.
-    // *
-    // * @param goodsNo 상품 번호
-    // * @return GoodsDataDetailRes
-    // */
-    // public GoodsDataDetailRes getGoodsData(Integer goodsDataNo) {
-    // GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
-    // .orElseThrow(
-    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
+    /**
+    * 데이터 카테고리 대분류 목록을 조회한다.
+    *
+    * @return List<GoodsDataCatgoryRes>
+    */
+    public List<GoodsDataCategoryRes> getGoodsDataMainCategorys() {
+        return commonCodeDetailRepository.findGoodsDataMainCategorys();
+    }
 
-    // List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+    /**
+    * 데이터 카테고리 중분류 목록을 조회한다.
+    *
+    * @param codeId
+    * @return List<GoodsDataCatgoryRes>
+    */
+    public List<GoodsDataCategoryRes> getGoodsDataSubCategorys(String codeId) {
+        return commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(codeId);
+    }
 
-    // List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+    /**
+    * 데이터명 목록을 조회합니다.
+    *
+    * @param user 사용자 정보
+    * @param providerNo 데이타 프로바이더 번호
+    * @param goodsNo 상품 번호
+    * @return List<GoodsDataNameRes>
+    */
+    public List<GoodsDataNameRes> getAllGoodsDataNm(User user, int providerNo, int goodsNo) {
+        if (RoleUtil.isAdmin(user)) {
+            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
+        }
 
-    // List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+        if (RoleUtil.isOperator(user)) {
+            //
+        }
 
-    // return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
-    // }
+        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
 
-    // /**
-    // * 데이터 등록: 신규등록
-    // *
-    // * @param goodsNo 상품 번호
-    // * @param GoodsDataCreateReq
-    // * @return
-    // */
-    // @Transactional
-    // public void createGoodsData(Integer providerNo, Integer goodsNo, GoodsDataCreateReq dto) {
-    // Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
-    // .orElseThrow(
-    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
+    }
 
-    // GoodsData savedGoodsData = goodsDataRepository.save(GoodsData.of(goods, dto.goodsDataNm(), dto.goodsDataSummaryCntt()));
+    /**
+    * 데이터 상세 조회합니다.
+    *
+    * @param user 사용자 정보
+    * @param goodsNo 상품 번호
+    * @return GoodsDataDetailRes
+    */
+    public GoodsDataDetailRes getGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo) {
+        if (RoleUtil.isAdmin(user)) {
 
-    // // 카테고리 저장
-    // if (dto.categoryDataList() != null) {
-    // List<GoodsDataCategory> goodsDataCategoryList = dto.categoryDataList().stream()
-    // .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
-    // GoodsDataManagementSeparateCode.GDAT.getCode(), null))
-    // .toList();
-    // goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
-    // }
+        }
 
-    // // 정형 데이타 저장
-    // if (dto.structuredDataList() != null) {
-    // for (StructuredDataReq structuredData : dto.structuredDataList()) {
+        if (RoleUtil.isOperator(user)) {
+            // 고객사와 프로바이더 맵핑 정보 확인
+            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
 
-    // adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
-    // FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
+            // 고객사와 상품 맵핑 정보 확인
+            customerCompanyGoodsMappingRepository
+                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("goods no: %d", goodsNo)));
+        }
 
-    // // todo
-    // GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-    // .save(GoodsDataSourceDetail.of(savedGoodsData, structuredData.dataNm(), "targetDbNm",
-    // "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
 
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "DATATYPE", structuredData.dataType(),
-    // GoodsDataManagementSeparateCode.GUDAT.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
-    // }
-    // }
+        List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-    // // 비정형 데이타 저장
-    // if (dto.unstructuredDataList() != null) {
-    // for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
+        List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-    // adminFileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
-    // FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
+        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository
+                .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
-    // GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
-    // }
-    // }
+        return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
+    }
 
-    // return;
-    // }
+    /**
+    * 데이터 등록: 신규등록
+    *
+    * @param goodsNo 상품 번호
+    * @param GoodsDataCreateReq
+    * @return
+    */
+    @Transactional
+    public void createGoodsData(User user, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
 
-    // /**
-    // * 데이터 등록: 기존 데이타 업데이트
-    // *
-    // * @param goodsNo 상품 번호
-    // * @param GoodsDataUpdateReq
-    // * @return
-    // */
-    // @Transactional
-    // public void updateGoodsData(Integer goodsDataNo, GoodsDataUpdateReq dto) {
-    // GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
-    // .orElseThrow(
-    // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
+        CustomerCompany customerCompany = null;
 
-    // goodsData.update(dto.goodsDataSummaryCntt());
+        if (RoleUtil.isAdmin(user)) {
+            customerCompany = null;
+        }
 
-    // // 카테고리 수정
-    // if (dto.categoryDataList() != null) {
-    // List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
-    // .map(category -> category.codeId())
-    // .toList();
+        if (RoleUtil.isOperator(user)) {
+            customerCompany = user.getCustomerCompany();
+        }
 
-    // List<String> newCategoryCodes = dto.categoryDataList().stream().map(CategoryDataReq::CodeId).toList();
+        Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
 
-    // Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
-    // codesToDelete.removeAll(newCategoryCodes);
-    // for (String codeId : codesToDelete) {
-    // goodsDataCategoryRepository.findByCategoryCode(goodsData.getGoodsDataNo(), codeId).ifPresent(category -> category.softDelete());
-    // }
+        GoodsData savedGoodsData = goodsDataRepository
+                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsExpn(), dto.goodsDataSummaryCntt()));
 
-    // Set<String> codesToAdd = new HashSet<>(newCategoryCodes);
-    // codesToAdd.removeAll(oldCategoryCodes);
-    // for (String codeId : codesToAdd) {
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, codeId, "",
-    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-    // }
-    // }
+        // 카테고리 저장
+        if (dto.categoryDataList() != null) {
+            List<GoodsDataCategory> goodsDataCategoryList = dto.categoryDataList().stream()
+                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
+                            GoodsDataManagementSeparateCode.GDAT.getCode(), null))
+                    .toList();
+            goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
+        }
 
-    // // 정형 데이타 수정
-    // if (dto.structuredDataList() != null) {
-    // for (StructuredDataReq structuredData : dto.structuredDataList()) {
-    // log.info("==================> {}", structuredData);
-    // // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
-    // }
-    // }
+        // 정형 데이타 저장
+        if (dto.structuredDataList() != null) {
+            for (StructuredDataReq structuredData : dto.structuredDataList()) {
 
-    // // 비정형데이타 수정
-    // if (dto.unstructuredDataList() != null) {
-    // List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-    // .stream()
-    // .map(file -> file.getFileNo())
-    // .toList();
-    // List<Long> newFileNos = dto.unstructuredDataList()
-    // .stream()
-    // .map(UnstructuredDataReq::fileNo)
-    // .toList();
+                adminFileService.updateFile(user, structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
-    // Set<Long> oldFileSet = new HashSet<>(oldFileNos);
-    // Set<Long> newFileSet = new HashSet<>(newFileNos);
+                // todo
+                GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
+                        .save(GoodsDataSourceDetail.of(savedGoodsData, structuredData.dataNm(), "targetDbNm",
+                                "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
 
-    // Set<Long> filesToDelete = new HashSet<>(oldFileSet);
-    // filesToDelete.removeAll(newFileSet);
-    // for (Long fileNo : filesToDelete) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "DATATYPE", structuredData.dataType(),
+                        GoodsDataManagementSeparateCode.GUDAT.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
+            }
+        }
 
-    // adminFileService.deleteFile(fileNo);
+        // 비정형 데이타 저장
+        if (dto.unstructuredDataList() != null) {
+            for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
 
-    // goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
-    // goodsData.getGoodsDataNo(),
-    // GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
-    // .ifPresent(category -> category.softDelete());
-    // }
+                adminFileService.updateFile(user, unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
 
-    // Set<Long> filesToAdd = new HashSet<>(newFileSet);
-    // filesToAdd.removeAll(oldFileSet);
-    // for (Long fileNo : filesToAdd) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
+                        GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
+            }
+        }
 
-    // adminFileService.updateFile(
-    // fileNo,
-    // goodsData.getGoodsDataNo(),
-    // FileRelationshipObjectSeparateCode.GUDAT.getCode(),
-    // DateUtil.endYmd());
+        return;
+    }
 
-    // dto.unstructuredDataList()
-    // .stream()
-    // .filter(data -> fileNo.equals(data.fileNo()))
-    // .findFirst()
-    // .ifPresent(data -> goodsDataCategoryRepository.save(
-    // GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
-    // GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
-    // }
-    // }
+    /**
+    * 데이터 등록: 기존 데이타 업데이트
+    *
+    * @param goodsNo 상품 번호
+    * @param GoodsDataUpdateReq
+    * @return
+    */
+    @Transactional
+    public void updateGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
+        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
 
-    // }
+        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt());
+
+        // 카테고리 수정
+        if (dto.categoryDataList() != null) {
+            List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
+                    .map(category -> category.codeId())
+                    .toList();
+
+            List<String> newCategoryCodes = dto.categoryDataList().stream().map(CategoryDataReq::CodeId).toList();
+
+            Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
+            codesToDelete.removeAll(newCategoryCodes);
+            for (String codeId : codesToDelete) {
+                goodsDataCategoryRepository.findByCategoryCode(goodsData.getGoodsDataNo(), codeId).ifPresent(category -> category.softDelete());
+            }
+
+            Set<String> codesToAdd = new HashSet<>(newCategoryCodes);
+            codesToAdd.removeAll(oldCategoryCodes);
+            for (String codeId : codesToAdd) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, codeId, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            }
+        }
+
+        // 정형 데이타 수정
+        if (dto.structuredDataList() != null) {
+            for (StructuredDataReq structuredData : dto.structuredDataList()) {
+                log.info("==================> {}", structuredData);
+                // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
+            }
+        }
+
+        // 비정형데이타 수정
+        if (dto.unstructuredDataList() != null) {
+            List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
+                    .stream()
+                    .map(file -> file.getFileNo())
+                    .toList();
+            List<Long> newFileNos = dto.unstructuredDataList()
+                    .stream()
+                    .map(UnstructuredDataReq::fileNo)
+                    .toList();
+
+            Set<Long> oldFileSet = new HashSet<>(oldFileNos);
+            Set<Long> newFileSet = new HashSet<>(newFileNos);
+
+            Set<Long> filesToDelete = new HashSet<>(oldFileSet);
+            filesToDelete.removeAll(newFileSet);
+            for (Long fileNo : filesToDelete) {
+
+                adminFileService.deleteFile(user, fileNo);
+
+                goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
+                        goodsData.getGoodsDataNo(),
+                        GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
+                        .ifPresent(category -> category.softDelete());
+            }
+
+            Set<Long> filesToAdd = new HashSet<>(newFileSet);
+            filesToAdd.removeAll(oldFileSet);
+            for (Long fileNo : filesToAdd) {
+
+                adminFileService.updateFile(
+                        user,
+                        fileNo,
+                        goodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GUDAT.getCode(),
+                        DateUtil.endYmd());
+
+                dto.unstructuredDataList()
+                        .stream()
+                        .filter(data -> fileNo.equals(data.fileNo()))
+                        .findFirst()
+                        .ifPresent(data -> goodsDataCategoryRepository.save(
+                                GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
+                                        GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
+            }
+        }
+    }
 }

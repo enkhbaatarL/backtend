@@ -33,7 +33,7 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
                 GROUP BY sub.highCodeId)
             ORDER BY ccd.codeRnk
             """)
-    List<GoodsDataCategoryRes> getGoodsDataMainCategorys();
+    List<GoodsDataCategoryRes> findGoodsDataMainCategorys();
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(
@@ -50,5 +50,5 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             AND ccd.highCodeId = :codeId
             ORDER BY ccd.codeRnk
             """)
-    List<GoodsDataCategoryRes> getGoodsDataSubCategorys(@Param("codeId") String codeId);
+    List<GoodsDataCategoryRes> findGoodsDataSubCategorysByCodeId(@Param("codeId") String codeId);
 }

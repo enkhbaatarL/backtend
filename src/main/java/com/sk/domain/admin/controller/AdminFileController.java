@@ -57,9 +57,10 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
+            @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(file, true));
+        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, true));
     }
 
     @ApiOrder(3)
@@ -67,9 +68,10 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
+            @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -84,9 +86,10 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/{fileNo}")
     public BaseResponse<String> deleteFile(
+            @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
-        adminFileService.deleteFile(fileNo);
+        adminFileService.deleteFile(user, fileNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -96,23 +99,24 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/{fileNo}")
     public BaseResponse<String> updateFile(
+            @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo,
             @RequestBody @Valid FileUpdateReq body) {
 
-        adminFileService.updateFile(fileNo, body.fileRelationshipObjectDistinguishNo(), body.fileRelationshipObjectSeparateCode(),
+        adminFileService.updateFile(user, fileNo, body.fileRelationshipObjectDistinguishNo(), body.fileRelationshipObjectSeparateCode(),
                 body.fileValidEndDt());
 
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(6)
-    @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/presigned-url/{fileNo}")
-    public BaseResponse<String> getPresignedUrl(
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+    // @ApiOrder(6)
+    // @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/presigned-url/{fileNo}")
+    // public BaseResponse<String> getPresignedUrl(
+    // @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
-        return BaseResponseFactory.create(adminFileService.getPresignedUrl(fileNo));
-    }
+    // return BaseResponseFactory.create(adminFileService.getPresignedUrl(fileNo));
+    // }
 
 }

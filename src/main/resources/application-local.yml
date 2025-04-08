@@ -114,4 +114,5 @@ ncp:
     regionName: kr-standard
     accessKey: ncp_iam_BPASKR5qxBUswjrS1Mks
     secretKey: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
+    bucketName: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
