@@ -1,17 +1,8 @@
 package com.sk.domain.admin.controller;
 
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.PDFUtil;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
@@ -20,13 +11,22 @@ import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @Tag(name = "00. 테스트 샘플 API", description = "테스트 샘플 API 입니다.")
 @Slf4j
@@ -95,6 +95,18 @@ public class TestController {
     public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
             @RequestBody @Valid DynamicDataReq testReq) {
         return BaseResponseFactory.create(mybatisDynamicQueryService.getDynamicData(testReq));
+    }
+
+    @GetMapping(value = "/watermark", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getWatermarkedImage() throws IOException {
+
+        BufferedImage image = ImageIO.read(new File("C:\\Users\\mk.jang\\Desktop\\TLC\\05_MI\\files\\image_1.png"));
+        BufferedImage watermarkedImage = PDFUtil.addTextWatermark(image, "JANG MIN GYU - TWOLINECLOUD");
+        byte[] imageBytes = PDFUtil.imageToByteArray(watermarkedImage, "png");
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .body(imageBytes);
     }
 
 }
