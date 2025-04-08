@@ -28,3 +28,6 @@ api:
     url: http://localhost:8081
     connection-timeout: 1s
     read-timeout: 20s
+
+aes:
+    secret-key: mysecretmysecret

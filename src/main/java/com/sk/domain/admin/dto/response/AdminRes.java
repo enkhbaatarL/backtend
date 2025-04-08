@@ -17,48 +17,51 @@ import lombok.Builder;
 // @formatter:off
 public record AdminRes(
 
-@Schema(description = "사용자번호", example = "1")
-Integer userNo,
+	@Schema(description = "사용자번호", example = "1")
+	Integer userNo,
 
-@Schema(description = "사용자명", example = "홍길동")
-String userNm,
+	@Schema(description = "사용자명", example = "홍길동")
+	String userNm,
 
-@Schema(description = "사용자로그인ID", example = "hong@sk.com")
-String userLoginId,
+	@Schema(description = "사용자로그인ID", example = "hong@sk.com")
+	String userLoginId,
 
-@Schema(description = "사용자역할코드", example = "ADMIN")
-UserRoleCd userRoleCd,
+	@Schema(description = "사용자역할코드", example = "ADMIN")
+	UserRoleCd userRoleCd,
 
-@Schema(description = "직책명", example = "사장")
-String onDutyNm,
+	@Schema(description = "직책명", example = "사장")
+	String onDutyNm,
 
-@Schema(description = "부서명", example = "총무팀")
-String departmentNm,
+	@Schema(description = "부서명", example = "총무팀")
+	String departmentNm,
 
-@Schema(description = "타사서비스접근가능여부", example = "Y")
-Boolean isOtherServiceAccessPossible,
+	@Schema(description = "타사서비스접근가능여부", example = "true")
+	Boolean isOtherServiceAccessPossible,
 
-@Schema(description = "개인정보동의여부", example = "Y")
-Boolean isIndividualInfoAgreement,
+	@Schema(description = "개인정보동의여부", example = "true")
+	Boolean isIndividualInfoAgreement,
 
-@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00")
-LocalDateTime individualInfoAgreementDtm,
+	@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00")
+	LocalDateTime individualInfoAgreementDtm,
 
-@Schema(description = "고객사번호", example = "1")
-Integer customerCompanyNo,
+	@Schema(description = "고객사번호", example = "1")
+	Integer customerCompanyNo,
 
-@JsonUnwrapped
-@Schema(description = "감사 정보")
-AuditInfo auditInfo,
+	@Schema(description = "고객사명", example = "SK하이닉스")
+	String customerCompanyNm,
 
-@Schema(description = "관리자 허용 IP 주소 목록", example = "[192.168.1.1, 192.168.1.2]")
-List<String> accessAllowedIpAddressList) {
+	@Schema(description = "감사 정보")
+	AuditInfo auditInfo,
+
+	@Schema(description = "관리자 허용 IP 주소 목록", example = "[192.168.1.1, 192.168.1.2]")
+	List<String> accessAllowedIpAddressList
+) {
 
     @Builder
     public AdminRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
             String onDutyNm,
             String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
-            LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, AuditInfo auditInfo,
+            LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, String customerCompanyNm, AuditInfo auditInfo,
             List<String> accessAllowedIpAddressList) {
         this.userNo = userNo;
         this.userNm = userNm;
@@ -70,6 +73,7 @@ List<String> accessAllowedIpAddressList) {
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
         this.individualInfoAgreementDtm = individualInfoAgreementDtm;
         this.customerCompanyNo = customerCompanyNo;
+        this.customerCompanyNm = customerCompanyNm;
         this.auditInfo = auditInfo;
         this.accessAllowedIpAddressList = accessAllowedIpAddressList;
     }
@@ -86,6 +90,7 @@ List<String> accessAllowedIpAddressList) {
                 .isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
                 .individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
                 .customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
+                .customerCompanyNm(user.getCustomerCompany().getCustomerCompanyNm())
                 .auditInfo(AuditInfo.ofSimple(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
                         user.getModifyDt()))
                 .accessAllowedIpAddressList(accessAllowedIpAddressList.stream()
@@ -94,5 +99,30 @@ List<String> accessAllowedIpAddressList) {
                         .collect(Collectors.toList()))
                 .build();
     }
+
+	public static AdminRes ofDetail(User user, List<AdminPermission> accessAllowedIpAddressList) {
+        return AdminRes.builder()
+                .userNo(user.getUserNo())
+                .userNm(user.getUserNm())
+                .userLoginId(user.getUserLoginId())
+                .userRoleCd(user.getUserRoleCd())
+                .onDutyNm(user.getOnDutyNm())
+                .departmentNm(user.getDepartmentNm())
+                .isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
+                .isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
+                .individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
+                .customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
+                .customerCompanyNm(user.getCustomerCompany().getCustomerCompanyNm())
+                .auditInfo(AuditInfo.ofDetail(
+			            user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
+                        user.getModifyDt(), user.accessCreatorNm(), user.accessCreatorDeptNm(),
+                        user.accessCreatorCompanyNm(), user.accessModifierNm(), user.accessModifierDeptNm(),
+                        user.accessModifierCompanyNm()))
+                .accessAllowedIpAddressList(accessAllowedIpAddressList.stream()
+                        .map(AdminPermission::getId)
+                        .map(AdminPermissionId::getIpAddress)
+                        .collect(Collectors.toList()))
+                .build();
+	}
 }
 // @formatter:on

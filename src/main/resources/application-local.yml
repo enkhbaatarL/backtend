@@ -34,7 +34,7 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: validate
-      
+
   data:
     redis:
       host: bold-trout-35521.upstash.io
@@ -107,7 +107,7 @@ mybatis:
   config-location: classpath:mybatis/mybatis-config.xml
   configuration:
     map-underscore-to-camel-case: true
-    
+
 ncp:
   storage:
     endPoint: https://kr.object.ncloudstorage.com
@@ -116,3 +116,6 @@ ncp:
     secretKey: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
     bucketName: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
+
+aes:
+    secret-key: mysecretmysecret

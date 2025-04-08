@@ -64,47 +64,19 @@ public class ClientAccessInfo extends BaseEntity {
         this.permissionAuthScopeNm = permissionAuthScopeNm;
     }
 
-    public static ClientAccessInfo of(ClientAccessInfoReq.Insert dto) {
+    public static ClientAccessInfo of(ClientAccessInfoReq.Insert dto, String encryptedClientSecret, CustomerCompany customerCompany) {
         return ClientAccessInfo.builder()
             .clientCertId(dto.clientCertId())
-            .clientSecretKey(dto.clientSecretKey())
-            .customerCompany(null)
-            .certTypeNm(dto.certMethodNm())
-            .certMethodNm(dto.certMethodNm())
-            .permissionAuthScopeNm(dto.permissionAuthScopeNm())
+            .clientSecretKey(encryptedClientSecret)
+            .customerCompany(customerCompany)
+            .certTypeNm("CLIENT_CREDENTIALS")
+            .certMethodNm("CLIENT_SECRET_BASIC")
+            .permissionAuthScopeNm("")
             .build();
     }
 
-    public void update(ClientAccessInfoReq.Update dto, CustomerCompany customerCompany) {
-
-        if (StringUtils.isNotEmpty(dto.clientCertId())) {
-            this.clientCertId = dto.clientCertId();
-        }
-
-        if (StringUtils.isNotEmpty(dto.clientSecretKey())) {
-            this.clientSecretKey = dto.clientSecretKey();
-        }
-
-        if (ObjectUtils.isNotEmpty(dto.customerCompanyNo())) {
-            this.customerCompany = customerCompany;
-        }
-
-        if (StringUtils.isNotEmpty(dto.certTypeNm())) {
-            this.certTypeNm = dto.certTypeNm();
-        }
-
-        if (StringUtils.isNotEmpty(dto.certMethodNm())) {
-            this.certMethodNm = dto.certMethodNm();
-        }
-
-        if (StringUtils.isNotEmpty(dto.permissionAuthScopeNm())) {
-            this.permissionAuthScopeNm = dto.permissionAuthScopeNm();
-        }
-
-    }
-
-    public void softDelete() {
-        super.softDelete();
+    public void update(String encryptedClientSecret) {
+        this.clientSecretKey = encryptedClientSecret;
     }
 
 }

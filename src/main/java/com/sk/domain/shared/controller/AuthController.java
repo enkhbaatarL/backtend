@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "00. Auth API", description = "Auth API 입니다.")
+@Tag(name = "01. Auth API", description = "Auth API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/api/auth")

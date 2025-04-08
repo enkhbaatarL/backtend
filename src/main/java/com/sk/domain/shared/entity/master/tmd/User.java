@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.dataResult.UserWithCompany;
+import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
 import com.sk.domain.admin.dto.request.AdminReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -110,19 +110,19 @@ public class User extends BaseEntity {
         this.customerCompany = customerCompany;
     }
 
-    public static User of(UserWithCompany userWithCompany, UserRoleCd userRoleCd) {
+    public static User of(UserInfoWithCompany userInfoWithCompany, UserRoleCd userRoleCd) {
         return User.builder()
-                .userNm(userWithCompany.userNm())
-                .userLoginId(userWithCompany.userLoginId())
+                .userNm(userInfoWithCompany.userNm())
+                .userLoginId(userInfoWithCompany.userLoginId())
                 .userRoleCd(userRoleCd)
-                .positionNm(userWithCompany.positionNm() != null ? userWithCompany.positionNm() : null)
-                .jobGradeNm(userWithCompany.jobGradeNm() != null ? userWithCompany.jobGradeNm() : null)
-                .onDutyNm(userWithCompany.onDutyNm() != null ? userWithCompany.onDutyNm() : null)
-                .departmentNm(userWithCompany.departmentNm() != null ? userWithCompany.departmentNm() : null)
+                .positionNm(userInfoWithCompany.positionNm() != null ? userInfoWithCompany.positionNm() : null)
+                .jobGradeNm(userInfoWithCompany.jobGradeNm() != null ? userInfoWithCompany.jobGradeNm() : null)
+                .onDutyNm(userInfoWithCompany.onDutyNm() != null ? userInfoWithCompany.onDutyNm() : null)
+                .departmentNm(userInfoWithCompany.departmentNm() != null ? userInfoWithCompany.departmentNm() : null)
                 .isOtherServiceAccessPossible(false)
                 .isIndividualInfoAgreement(true)
                 .individualInfoAgreementDtm(LocalDateTime.now())
-                .customerCompany(userWithCompany.customerCompany())
+                .customerCompany(userInfoWithCompany.customerCompany())
                 .build();
     }
 
