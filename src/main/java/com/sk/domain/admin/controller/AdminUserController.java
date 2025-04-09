@@ -20,10 +20,9 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.AdminReq;
 import com.sk.domain.admin.dto.request.UserReq;
 import com.sk.domain.admin.dto.response.AdminRes;
+import com.sk.domain.admin.dto.response.UserDetailRes;
 import com.sk.domain.admin.dto.response.UserInfoRes;
 import com.sk.domain.admin.dto.response.UserRes;
-import com.sk.domain.admin.dto.response.UserWithCompanyRes;
-import com.sk.domain.admin.dto.response.UserWithCreatorRes;
 import com.sk.domain.admin.service.AdminUserService;
 import com.sk.domain.shared.enums.UserRoleCd;
 
@@ -71,7 +70,7 @@ public class AdminUserController {
 
     @ApiOrder(2)
     @Operation(summary = "사용자 등록 API", description = "사용자 정보를 등록합니다.")
-    @PostMapping("/user")
+    @PostMapping("/users")
     public BaseResponse<List<UserRes>> saveUserInfo(
             @RequestBody @Valid UserReq.Insert userReq) {
         return BaseResponseFactory.create(adminUserService.saveUserInfo(userReq));
@@ -89,7 +88,7 @@ public class AdminUserController {
     })
     @Operation(summary = "사용자 목록 조회 API", description = "사용자 목록을 조회합니다.")
     @GetMapping("/users")
-    public BaseResponse<PaginationRes<UserWithCreatorRes>> getUsers(
+    public BaseResponse<PaginationRes<UserDetailRes>> getUsers(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "userRoleCd", required = true) UserRoleCd userRoleCd,
@@ -108,7 +107,7 @@ public class AdminUserController {
     })
     @Operation(summary = "사용자 상세 조회 API", description = "사용자 상세 정보를 조회합니다.")
     @GetMapping("/users/{userNo}")
-    public BaseResponse<UserWithCompanyRes> getUser(
+    public BaseResponse<UserDetailRes> getUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.getUser(userNo));
     }

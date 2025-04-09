@@ -18,10 +18,12 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
                 gd.goodsDataNo,
+                cc.customerCompanyNm,
                 gd.goodsDataNm,
                 gd.goodsDataExpn
             )
             FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
             WHERE gd.isDeleted = false
               AND gd.goods.provider.providerNo = :providerNo
               AND gd.goods.goodsNo = :goodsNo
@@ -31,13 +33,44 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """, countQuery = """
             SELECT COUNT(DISTINCT gd.goodsDataNo)
             FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
             WHERE gd.isDeleted = false
               AND gd.goods.provider.providerNo = :providerNo
               AND gd.goods.goodsNo = :goodsNo
               AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNo(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo,
+    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+            @Param("keyword") String keyword, Pageable pageable);
+
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
+                gd.goodsDataNo,
+                cc.customerCompanyNm,
+                gd.goodsDataNm,
+                gd.goodsDataExpn
+            )
+            FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            WHERE gd.isDeleted = false
+              AND gd.goods.provider.providerNo = :providerNo
+              AND gd.goods.goodsNo = :goodsNo
+              AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                  OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            ORDER BY gd.goodsDataNm ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT gd.goodsDataNo)
+            FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            WHERE gd.isDeleted = false
+              AND gd.goods.provider.providerNo = :providerNo
+              AND gd.goods.goodsNo = :goodsNo
+              AND gd.customerCompany.customerCompanyNo = :customerCompanyNo
+              AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                  OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            """)
+    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
+            @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
             @Param("keyword") String keyword, Pageable pageable);
 
     @Query(value = """
@@ -47,11 +80,10 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             )
             FROM GoodsData gd
             WHERE gd.isDeleted = false
-            AND gd.goods.provider.providerNo = :providerNo
-            AND gd.goods.goodsNo = :goodsNo
+              AND gd.goods.provider.providerNo = :providerNo
+              AND gd.goods.goodsNo = :goodsNo
                         """)
-    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") Integer providerNo, @Param("goodsNo") Integer goodsNo);
+    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
-    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") Integer goodsDataNo);
-
+    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 }

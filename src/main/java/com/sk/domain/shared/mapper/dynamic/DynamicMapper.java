@@ -8,4 +8,6 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface DynamicMapper {
     List<Map<String, Object>> selectDynamic(Map<String, Object> params);
+
+    void insertDynamic(Map<String, String> params);
 }

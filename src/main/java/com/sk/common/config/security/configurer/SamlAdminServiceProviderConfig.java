@@ -26,13 +26,13 @@ public class SamlAdminServiceProviderConfig {
     SecurityFilterChain samlAdminSecurityFilterChain(HttpSecurity http) throws Exception {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http
-                .securityMatcher("/login/saml2/admin", "/login/saml2/sso/skt-admin") // SAML 로그인
+                .securityMatcher("/login/saml2/admin", "/login/saml2/sso/mi-admin") // SAML 로그인
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login/saml2/admin").authenticated()
                         .anyRequest().permitAll())
                 .saml2Login(saml2 -> saml2
                         .authenticationManager(new ProviderManager(authenticationProvider))
-                        .loginPage("/saml2/authenticate?registrationId=skt-admin")
+                        .loginPage("/saml2/authenticate?registrationId=mi-admin")
                         .successHandler(customSamlAdminAuthenticationSuccessHandler)
                         .failureHandler(customSamlAuthenticationFailureHandler))
                 .sessionManagement(session -> session

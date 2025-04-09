@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -29,50 +30,65 @@ public class ComponentInfo extends BaseEntity {
 
     @Column(name = "cmpnt_type_nm", nullable = false, length = 100)
     @Comment("컴포넌트유형명")
-    private String componentTypeName;
+    private String componentTypeNm;
 
     @Column(name = "gds_data_src_nm", nullable = false, length = 100)
     @Comment("상품데이터소스명")
-    private String goodsDataSourceName;
+    private String goodsDataSourceNm;
 
     @Column(name = "tgt_db_nm", nullable = false, length = 100)
     @Comment("대상데이터베이스명")
-    private String targetDbName;
+    private String targetDbNm;
 
     @Column(name = "tgt_tbl_nm", nullable = false, length = 50)
     @Comment("대상테이블명")
-    private String targetTableName;
+    private String targetTableNm;
 
     @Column(name = "qry_cdtn_cntt", length = 1000)
     @Comment("쿼리조건내용")
-    private String queryConditionContent;
+    private String queryConditionCntt;
 
     @Column(name = "tbl_colm_list_nm", length = 255)
     @Comment("테이블컬럼목록명")
-    private String tableColumnListName;
+    private String tableColumnListNm;
 
     @Column(name = "exl_colm_list_nm", length = 255)
     @Comment("엑셀컬럼목록명")
-    private String excelColumnListName;
+    private String excelColumnListNm;
 
     @Column(name = "exl_cdtn_cntt", length = 500)
     @Comment("엑셀조건내용")
-    private String excelConditionContent;
+    private String excelConditionCntt;
 
     @Builder
     public ComponentInfo(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, String componentTypeId, String componentTypeName, String goodsDataSourceName,
-            String targetDbName, String targetTableName, String queryConditionContent,
-            String tableColumnListName, String excelColumnListName, String excelConditionContent) {
+            Boolean isDeleted, String componentTypeId, String componentTypeNm, String goodsDataSourceNm,
+            String targetDbNm, String targetTableNm, String queryConditionCntt,
+            String tableColumnListNm, String excelColumnListNm, String excelConditionCntt) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.componentTypeId = componentTypeId;
-        this.componentTypeName = componentTypeName;
-        this.goodsDataSourceName = goodsDataSourceName;
-        this.targetDbName = targetDbName;
-        this.targetTableName = targetTableName;
-        this.queryConditionContent = queryConditionContent;
-        this.tableColumnListName = tableColumnListName;
-        this.excelColumnListName = excelColumnListName;
-        this.excelConditionContent = excelConditionContent;
+        this.componentTypeNm = componentTypeNm;
+        this.goodsDataSourceNm = goodsDataSourceNm;
+        this.targetDbNm = targetDbNm;
+        this.targetTableNm = targetTableNm;
+        this.queryConditionCntt = queryConditionCntt;
+        this.tableColumnListNm = tableColumnListNm;
+        this.excelColumnListNm = excelColumnListNm;
+        this.excelConditionCntt = excelConditionCntt;
+    }
+
+    //TODO: 호영: Request DTO 변경 필요
+    public static ComponentInfo of(TestReq.saveComponent testReq) {
+        return ComponentInfo.builder()
+                .componentTypeId(testReq.componentTypeId())
+                .componentTypeNm(testReq.componentTypeNm())
+                .goodsDataSourceNm(testReq.goodsDataSourceNm())
+                .targetDbNm(testReq.targetDbNm())
+                .targetTableNm(testReq.targetTableNm())
+                .queryConditionCntt(testReq.queryConditionCntt())
+                .tableColumnListNm(testReq.tableColumnListNm())
+                .excelColumnListNm(testReq.excelColumnListNm())
+                .excelConditionCntt(testReq.excelConditionCntt())
+                .build();
     }
 }

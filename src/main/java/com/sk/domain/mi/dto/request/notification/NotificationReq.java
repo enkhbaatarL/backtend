@@ -16,7 +16,7 @@ public record NotificationReq() {
     // 중첩 레코드: NotificationSetting
     public record Setting(
         @NotNull
-        @Schema(name = "notiCrtvlSptCd", description = "알림 임계치 구분 코드", example = "UPPER / LOWER")
+        @Schema(name = "notiCrtvlSptCd", description = "알림 임계치 구분 코드", example = "UPPER / LOWER / INCRATE / DECRATE")
         NotiCrtvlSptCd notificationCriticalValueSeparateCd,
 
         @DecimalMin(value = "0.0", message = "알림 임계치는 0.0 이상이어야 합니다.")
@@ -32,7 +32,7 @@ public record NotificationReq() {
         Integer userGoodsNotificationSettingNo,
 
         @NotNull
-        @Schema(name = "notiCrtvlSptCd", description = "알림 임계치 구분 코드", example = "UPPER / LOWER")
+        @Schema(name = "notiCrtvlSptCd", description = "알림 임계치 구분 코드", example = "UPPER / LOWER / INCRATE / DECRATE")
         NotiCrtvlSptCd notificationCriticalValueSeparateCd,
 
         @DecimalMin(value = "0.0", message = "알림 임계치는 0.0 이상이어야 합니다.")

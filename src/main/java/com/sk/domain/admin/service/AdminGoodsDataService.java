@@ -14,6 +14,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
@@ -26,13 +27,18 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.admin.dto.response.provider.UnstructuredDataRes;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
+import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
+import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
@@ -50,65 +56,114 @@ public class AdminGoodsDataService {
     private final GoodsDataRepository goodsDataRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
-
+    private final CustomerCompanyRepository customerCompanyRepository;
+    private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
+    private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final AdminFileService adminFileService;
 
     /**
-     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
-     *
-     * @param page       조회할 페이지 번호 (min 1)
-     * @param size       조회할 요소 사이즈 (min 1)
-     * @param keyword 검색 키워드
-     * @param providerNo 데이타 프로바이더 번호
-     * @param goodsNo 상품 번호
-     * @return PaginationRes<GoodsDataRes>
-     */
-    public PaginationRes<GoodsDataRes> getAllGoodsData(int page, int size, String keyword, int providerNo, int goodsNo) {
+    * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
+    *
+    * @param user 사용자 정보
+    * @param page 조회할 페이지 번호 (min 1)
+    * @param size 조회할 요소 사이즈 (min 1)
+    * @param keyword 검색 키워드
+    * @param providerNo 데이타 프로바이더 번호
+    * @param goodsNo 상품 번호
+    * @return PaginationRes<GoodsDataRes>
+    */
+    public PaginationRes<GoodsDataRes> getAllGoodsData(User user, int page, int size, String keyword, int providerNo, int goodsNo) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<GoodsDataRes> goodsDataPage = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(providerNo, goodsNo, keyword, pageable);
+        if (RoleUtil.isAdmin(user)) {
+            return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
+        }
 
-        return PaginationRes.toRes(goodsDataPage);
+        if (RoleUtil.isOperator(user)) {
+            // 고객사와 프로바이더 맵핑 정보 확인
+            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
+
+            // 고객사와 상품 맵핑 정보 확인
+            customerCompanyGoodsMappingRepository
+                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("goods no: %d", goodsNo)));
+
+            return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(
+                    user.getCustomerCompany().getCustomerCompanyNo(), providerNo, goodsNo, keyword, pageable));
+        }
+
+        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
     }
 
     /**
-     * 데이터 카테고리 대분류 목록을 조회한다.
-     *
-     * @return List<GoodsDataCatgoryRes>
-     */
+    * 데이터 카테고리 대분류 목록을 조회한다.
+    *
+    * @return List<GoodsDataCatgoryRes>
+    */
     public List<GoodsDataCategoryRes> getGoodsDataMainCategorys() {
-        return commonCodeDetailRepository.getGoodsDataMainCategorys();
+        return commonCodeDetailRepository.findGoodsDataMainCategorys();
     }
 
     /**
     * 데이터 카테고리 중분류 목록을 조회한다.
     *
     * @param codeId
-    * @return List<GoodsDataCatgoryRes> 
+    * @return List<GoodsDataCatgoryRes>
     */
     public List<GoodsDataCategoryRes> getGoodsDataSubCategorys(String codeId) {
-        return commonCodeDetailRepository.getGoodsDataSubCategorys(codeId);
+        return commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(codeId);
     }
 
     /**
     * 데이터명 목록을 조회합니다.
     *
+    * @param user 사용자 정보
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @return List<GoodsDataNameRes>
     */
-    public List<GoodsDataNameRes> getAllGoodsDataNm(Integer providerNo, Integer goodsNo) {
-        return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
+    public List<GoodsDataNameRes> getAllGoodsDataNm(User user, int providerNo, int goodsNo) {
+        if (RoleUtil.isAdmin(user)) {
+            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
+        }
+
+        if (RoleUtil.isOperator(user)) {
+            //
+        }
+
+        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+
     }
 
     /**
     * 데이터 상세 조회합니다.
     *
+    * @param user 사용자 정보
     * @param goodsNo 상품 번호
     * @return GoodsDataDetailRes
     */
-    public GoodsDataDetailRes getGoodsData(Integer goodsDataNo) {
+    public GoodsDataDetailRes getGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo) {
+        if (RoleUtil.isAdmin(user)) {
+
+        }
+
+        if (RoleUtil.isOperator(user)) {
+            // 고객사와 프로바이더 맵핑 정보 확인
+            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
+
+            // 고객사와 상품 맵핑 정보 확인
+            customerCompanyGoodsMappingRepository
+                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("goods no: %d", goodsNo)));
+        }
+
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
@@ -117,7 +172,8 @@ public class AdminGoodsDataService {
 
         List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository
+                .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
         return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
     }
@@ -127,15 +183,27 @@ public class AdminGoodsDataService {
     *
     * @param goodsNo 상품 번호
     * @param GoodsDataCreateReq
-    * @return 
+    * @return
     */
     @Transactional
-    public void createGoodsData(Integer goodsNo, GoodsDataCreateReq dto) {
+    public void createGoodsData(User user, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
+
+        CustomerCompany customerCompany = null;
+
+        if (RoleUtil.isAdmin(user)) {
+            customerCompany = null;
+        }
+
+        if (RoleUtil.isOperator(user)) {
+            customerCompany = user.getCustomerCompany();
+        }
+
         Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goods no: %d", goodsNo)));
 
-        GoodsData savedGoodsData = goodsDataRepository.save(GoodsData.of(goods, dto));
+        GoodsData savedGoodsData = goodsDataRepository
+                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsExpn(), dto.goodsDataSummaryCntt()));
 
         // 카테고리 저장
         if (dto.categoryDataList() != null) {
@@ -150,7 +218,7 @@ public class AdminGoodsDataService {
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
 
-                adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                adminFileService.updateFile(user, structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
                 // todo
@@ -167,7 +235,7 @@ public class AdminGoodsDataService {
         if (dto.unstructuredDataList() != null) {
             for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
 
-                adminFileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                adminFileService.updateFile(user, unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
 
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
@@ -183,15 +251,15 @@ public class AdminGoodsDataService {
     *
     * @param goodsNo 상품 번호
     * @param GoodsDataUpdateReq
-    * @return 
+    * @return
     */
     @Transactional
-    public void updateGoodsData(Integer goodsDataNo, GoodsDataUpdateReq dto) {
+    public void updateGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("goodsdata no: %d", goodsDataNo)));
 
-        goodsData.update(dto);
+        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt());
 
         // 카테고리 수정
         if (dto.categoryDataList() != null) {
@@ -241,7 +309,7 @@ public class AdminGoodsDataService {
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
 
-                adminFileService.deleteFile(fileNo);
+                adminFileService.deleteFile(user, fileNo);
 
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
                         goodsData.getGoodsDataNo(),
@@ -254,6 +322,7 @@ public class AdminGoodsDataService {
             for (Long fileNo : filesToAdd) {
 
                 adminFileService.updateFile(
+                        user,
                         fileNo,
                         goodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(),
@@ -268,6 +337,5 @@ public class AdminGoodsDataService {
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
             }
         }
-
     }
 }

@@ -1,7 +1,5 @@
 package com.sk.domain.admin.dto.response.provider;
 
-import java.time.LocalDateTime;
-
 import com.sk.domain.shared.dto.AuditInfo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,6 +21,9 @@ public record GoodsDetailRes(
 
         @Schema(description = "사용여부", example = "Y")
         Boolean isUsed,
+
+        @Schema(description = "타입", example = "Y")
+        Boolean isPublic,
 
         @Schema(description = "감사 정보")
         AuditInfo auditInfo) {

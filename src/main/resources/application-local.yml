@@ -50,17 +50,17 @@ spring:
     saml2:
       relyingparty:
         registration:
-          skt-user:
-            entity-id: http://localhost:8080/saml2/service-provider-metadata/skt-user
+          mi-user:
+            entity-id: http://localhost:8080/saml2/service-provider-metadata/mi-user
             acs:
-              location: http://localhost:8080/login/saml2/sso/skt-user
+              location: http://localhost:8080/login/saml2/sso/mi-user
               binding: POST
             assertingparty:
               metadata-uri: https://dev-25395713.okta.com/app/exknog7293gkyVoqS5d7/sso/saml/metadata
-          skt-admin:
-            entity-id: http://localhost:8080/saml2/service-provider-metadata/skt-admin
+          mi-admin:
+            entity-id: http://localhost:8080/saml2/service-provider-metadata/mi-admin
             acs:
-              location: http://localhost:8080/login/saml2/sso/skt-admin
+              location: http://localhost:8080/login/saml2/sso/mi-admin
               binding: POST
             assertingparty:
               metadata-uri: https://dev-25395713.okta.com/app/exknqq0r1bABpMTN55d7/sso/saml/metadata
@@ -115,6 +115,7 @@ ncp:
     accessKey: ncp_iam_BPASKR5qxBUswjrS1Mks
     secretKey: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
     bucketName: skt-mi-d-osb-01
+    prefix: skt-mi-d-osb-ss-
 
 aes:
     secret-key: mysecretmysecret

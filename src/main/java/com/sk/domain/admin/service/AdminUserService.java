@@ -13,14 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.dataResult.UserWithCompany;
+import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
 import com.sk.domain.admin.dto.request.AdminReq;
 import com.sk.domain.admin.dto.request.UserReq;
 import com.sk.domain.admin.dto.response.AdminRes;
+import com.sk.domain.admin.dto.response.UserDetailRes;
 import com.sk.domain.admin.dto.response.UserInfoRes;
 import com.sk.domain.admin.dto.response.UserRes;
-import com.sk.domain.admin.dto.response.UserWithCompanyRes;
-import com.sk.domain.admin.dto.response.UserWithCreatorRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -46,8 +45,9 @@ public class AdminUserService {
 	 * 
 	 * @param page         조회할 페이지 번호 (min 1)
 	 * @param size         조회할 요소 사이즈 (min 1)
-	 * @param companyCd  회사코드
-	 * @param userNm     사용자명
+	 * @param userRoleCd   사용자역할코드
+	 * @param companyCd    회사코드
+	 * @param userNm       사용자명
 	 * @param emailAddress 이메일주소
 	 * @return PaginationRes<UserInfoRes>
 	 */
@@ -61,22 +61,18 @@ public class AdminUserService {
 	/**
 	 * 사용자 정보를 MI 서비스에 등록합니다.
 	 * 
-	 * @param List<UserReq.Insert> 원장 테이블에서 사용자 ID 목록
+	 * @param userInfoReqs 원장 테이블에서 사용자 ID 목록
 	 * @return List<UserRes>
 	 */
 	@Transactional
 	public List<UserRes> saveUserInfo(UserReq.Insert userInfoReqs) {
-		// List<String> imCds = userInfoReqs.stream()
-		// 		.map(UserReq.Insert::imCd)
-		// 		.collect(Collectors.toList());
-
-		List<UserWithCompany> userWithCompanies = userRepository.findAllUserByInfoIds(userInfoReqs.imCd());
-		if (userWithCompanies.size() != userInfoReqs.imCd().size()) {
+		List<UserInfoWithCompany> userInfoWithCompanies = userInfoRepository.findAllUserByInfoIds(userInfoReqs.imCd());
+		if (userInfoWithCompanies.size() != userInfoReqs.imCd().size()) {
 			throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "IM코드 목록에 데이터가 존재하지 않습니다.");
 		}
 
 		List<User> existingUsers = userRepository.findByUserLoginIdsAndRoleAndNotDeleted(
-				userWithCompanies.stream().map(UserWithCompany::userLoginId).collect(Collectors.toList()),
+				userInfoWithCompanies.stream().map(UserInfoWithCompany::userLoginId).collect(Collectors.toList()),
 				UserRoleCd.USER);
 
 		if (!existingUsers.isEmpty()) {
@@ -88,12 +84,12 @@ public class AdminUserService {
 					"이미 등록된 유저가 있습니다: " + duplicatedUserNames);
 		}
 
-		List<User> users = userWithCompanies.stream()
-				.map(userWithCompany -> User.of(userWithCompany, UserRoleCd.USER))
+		List<User> users = userInfoWithCompanies.stream()
+				.map(userInfoWithCompany -> User.of(userInfoWithCompany, UserRoleCd.USER))
 				.collect(Collectors.toList());
 
 		return userRepository.saveAll(users).stream()
-				.map(UserRes::of)
+				.map(UserRes::ofSimple)
 				.collect(Collectors.toList());
 	}
 
@@ -107,9 +103,9 @@ public class AdminUserService {
 	 * @param departmentNm      부서명
 	 * @param userNm            사용자명
 	 * @param emailAddress      이메일주소
-	 * @return PaginationRes<UserWithCreatorRes>
+	 * @return PaginationRes<UserDetailRes>
 	 */
-	public PaginationRes<UserWithCreatorRes> getUsers(int page, int size, UserRoleCd userRoleCd,
+	public PaginationRes<UserDetailRes> getUsers(int page, int size, UserRoleCd userRoleCd,
 			Integer customerCompanyNo,
 			String departmentNm, String userNm, String emailAddress) {
 
@@ -121,13 +117,13 @@ public class AdminUserService {
 	 * 사용자 상세 정보를 조회합니다.
 	 * 
 	 * @param userNo 사용자번호
-	 * @return UserWithCompanyRes
+	 * @return UserDetailRes
 	 */
-	public UserWithCompanyRes getUser(Integer userNo) {
+	public UserDetailRes getUser(Integer userNo) {
 		User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						"사용자 정보를 찾을 수 없습니다."));
-		return UserWithCompanyRes.of(user);
+		return UserDetailRes.of(user);
 	}
 
 	/**
@@ -142,7 +138,7 @@ public class AdminUserService {
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						"사용자 정보를 찾을 수 없습니다."));
 		user.softDelete();
-		return UserRes.of(user);
+		return UserRes.ofSimple(user);
 	}
 
 	/**
@@ -153,15 +149,17 @@ public class AdminUserService {
 	 */
 	@Transactional
 	public UserRes saveAdminUser(AdminReq.Insert adminReq) {
-		UserWithCompany userWithCompany = userRepository.findUserByInfoId(adminReq.imCd())
-				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The data does not exist in the IM code list. imCd: %s", adminReq.imCd())));
+		UserInfoWithCompany userInfoWithCompany = userInfoRepository.findUserByInfoId(adminReq.imCd())
+				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+						String.format("The data does not exist in the IM code list. imCd: %s", adminReq.imCd())));
 
-		userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(userWithCompany.userLoginId(), UserRoleCd.ADMIN)
+		userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(userInfoWithCompany.userLoginId(), adminReq.userRoleCd())
 				.ifPresent(u -> {
-					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, String.format("The administrator is already registered: %s", u.getUserNm()));
+					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
+							String.format("The administrator is already registered: %s", u.getUserNm()));
 				});
 
-		User user = User.of(userWithCompany, UserRoleCd.ADMIN);
+		User user = User.of(userInfoWithCompany, UserRoleCd.ADMIN);
 		User savedUser = userRepository.save(user);
 
 		List<AdminPermission> existingPermissions = adminPermissionRepository
@@ -180,14 +178,14 @@ public class AdminUserService {
 			adminPermissionRepository.save(AdminPermission.of(savedUser, ipAddress));
 		});
 
-		return UserRes.of(savedUser);
+		return UserRes.ofSimple(savedUser);
 	}
 
 	/**
 	 * 어드민 관리자 상세 정보를 조회합니다.
 	 * 
 	 * @param userNo 사용자번호
-	 * @return UserRes
+	 * @return AdminRes
 	 */
 	public AdminRes getAdminUser(Integer userNo) {
 		User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
@@ -196,7 +194,7 @@ public class AdminUserService {
 
 		List<AdminPermission> adminPermissions = adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(userNo);
 
-		return AdminRes.of(user, adminPermissions);
+		return AdminRes.ofDetail(user, adminPermissions);
 	}
 
 	/**
@@ -238,13 +236,13 @@ public class AdminUserService {
 		List<String> toInsert = requestedIpAddresses.stream()
 				.filter(ip -> !existingIpSet.contains(ip))
 				.toList();
-				
+
 		List<AdminPermission> newPermissions = toInsert.stream()
 				.map(ip -> AdminPermission.of(user, ip))
 				.toList();
 		adminPermissionRepository.saveAll(newPermissions);
 
-		return UserRes.of(user);
+		return UserRes.ofSimple(user);
 	}
 
 	/**
@@ -259,6 +257,9 @@ public class AdminUserService {
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						"사용자 정보를 찾을 수 없습니다."));
 		user.softDelete();
-		return UserRes.of(user);
+
+		adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(userNo).forEach(AdminPermission::softDelete);
+
+		return UserRes.ofSimple(user);
 	}
 }

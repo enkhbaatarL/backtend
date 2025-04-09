@@ -11,50 +11,44 @@ import lombok.Builder;
 
 public record UserRes(
 
-		@Schema(description = "사용자번호", example = "1")
-		Integer userNo,
+		@Schema(description = "사용자번호", example = "1") Integer userNo,
 
-		@Schema(description = "사용자명", example = "홍길동")
-		String userNm,
+		@Schema(description = "사용자명", example = "홍길동") String userNm,
 
-		@Schema(description = "사용자로그인ID", example = "hong@sk.com")
-		String userLoginId,
+		@Schema(description = "사용자로그인ID", example = "hong@sk.com") String userLoginId,
 
-		@Schema(description = "사용자역할코드", example = "ADMIN")
-		UserRoleCd userRoleCd,
+		@Schema(description = "사용자역할코드", example = "ADMIN") UserRoleCd userRoleCd,
 
-		@Schema(description = "직책명", example = "사장")
-		String onDutyNm,
+		@Schema(description = "직위명", example = "사장") String positionNm,
 
-		@Schema(description = "부서명", example = "총무팀")
-		String departmentNm,
+		@Schema(description = "직급명", example = "과장") String jobGradeNm,
 
-		@Schema(description = "타사서비스접근가능여부", example = "Y")
-		Boolean isOtherServiceAccessPossible,
+		@Schema(description = "직책명", example = "사장") String onDutyNm,
 
-		@Schema(description = "개인정보동의여부", example = "Y")
-		Boolean isIndividualInfoAgreement,
+		@Schema(description = "부서명", example = "총무팀") String departmentNm,
 
-		@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00")
-		LocalDateTime individualInfoAgreementDtm,
+		@Schema(description = "타사서비스접근가능여부", example = "true") Boolean isOtherServiceAccessPossible,
 
-		@Schema(description = "고객사번호", example = "1")
-		Integer customerCompanyNo,
+		@Schema(description = "개인정보동의여부", example = "true") Boolean isIndividualInfoAgreement,
 
-		@Schema(description = "감사 정보")
-		AuditInfo auditInfo
+		@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00") LocalDateTime individualInfoAgreementDtm,
+
+		@Schema(description = "고객사번호", example = "1") Integer customerCompanyNo,
+
+		@Schema(description = "감사 정보") AuditInfo auditInfo
 
 ) {
-
 	@Builder
 	public UserRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
-			String onDutyNm,
+			String positionNm, String jobGradeNm, String onDutyNm,
 			String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
 			LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, AuditInfo auditInfo) {
 		this.userNo = userNo;
 		this.userNm = userNm;
 		this.userLoginId = userLoginId;
 		this.userRoleCd = userRoleCd;
+		this.positionNm = positionNm;
+		this.jobGradeNm = jobGradeNm;
 		this.onDutyNm = onDutyNm;
 		this.departmentNm = departmentNm;
 		this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
@@ -64,12 +58,14 @@ public record UserRes(
 		this.auditInfo = auditInfo;
 	}
 
-	public static UserRes of(User user) {
+	public static UserRes ofSimple(User user) {
 		return UserRes.builder()
 				.userNo(user.getUserNo())
 				.userNm(user.getUserNm())
 				.userLoginId(user.getUserLoginId())
 				.userRoleCd(user.getUserRoleCd())
+				.positionNm(user.getPositionNm())
+				.jobGradeNm(user.getJobGradeNm())
 				.onDutyNm(user.getOnDutyNm())
 				.departmentNm(user.getDepartmentNm())
 				.isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
@@ -80,5 +76,4 @@ public record UserRes(
 						user.getModifyDt()))
 				.build();
 	}
-
 }
