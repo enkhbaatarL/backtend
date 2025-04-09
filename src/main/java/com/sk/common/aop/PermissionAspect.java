@@ -28,10 +28,22 @@ import java.util.Arrays;
 public class PermissionAspect {
 
     private final MiUserService userService;
-    private final AuthorizationService authService;
+    private final AuthorizationService authorizationService;
 
     /**
      * RequirePermission 어노테이션이 적용된 메서드 실행 전에 권한을 검증
+     *
+     *  [역할 검증]
+     *  - ROLE: ADMIN(관리자), OPERATOR(운영자), USER(사용자)
+     *  - 'ADMIN':
+     *      - 타사서비스접속가능(Y) MI API, ADMIN API 허용
+     *      - 타사서비스접속가능(N) ADMIN API 허용
+     *  - 'OPERATOR': ADMIN API > 프로바이더 관리 API 허용
+     *  - 'USER': MI API 사용 가능
+     *
+     *  [상품 권한 검증]
+     *  - 상품 VIEW 권한 검증
+     *  - 상품 DOWNLOAD 권한 검증
      *
      * @param joinPoint 조인 포인트
      */
@@ -41,28 +53,28 @@ public class PermissionAspect {
         Method method = signature.getMethod();
         RequirePermission annotation = method.getAnnotation(RequirePermission.class);
 
-        // 1. 관리자 권한 검증
+        // 1. 관리자 권한 검증(Only ADMIN)
         if (annotation.requireAdmin()) {
-            authService.validateAdmin();
+            authorizationService.validateAdmin();
             return; // todo mi 서비스의 경우 타사서비스접속가능여부(otcmp_svc_accs_psbl_yn)를 확인해야할 수 있음
         }
 
-        PermissionRes goodsPermissions = userService.getUserGoodsPermissions(authService.getUserNo());
-
         // 2. 역할 검증
         if (annotation.roles().length > 0) {
-            Role currentRole = authService.getCurrentRole();
+            Role currentRole = authorizationService.getCurrentRole();
             boolean hasRequiredRole = Arrays.asList(annotation.roles()).contains(currentRole);
             if (!hasRequiredRole) {
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
             }
         }
 
+        PermissionRes goodsPermissions = userService.getUserGoodsPermissions(authorizationService.getUserNo());
+
         // 3. 회사 접근 권한 검증
         if (StringUtils.hasText(annotation.companyParam())) {
             Integer companyNo = extractParameterValue(joinPoint, annotation.companyParam(), Integer.class);
             if (companyNo != null) {
-                authService.validateCompanyAccess(companyNo, goodsPermissions);
+                authorizationService.validateCompanyAccess(companyNo, goodsPermissions);
             }
         }
 
@@ -70,7 +82,7 @@ public class PermissionAspect {
         if (StringUtils.hasText(annotation.providerParam())) {
             Integer providerNo = extractParameterValue(joinPoint, annotation.providerParam(), Integer.class);
             if (providerNo != null) {
-                authService.validateProviderAccess(providerNo, goodsPermissions);
+                authorizationService.validateProviderAccess(providerNo, goodsPermissions);
             }
         }
 
@@ -80,12 +92,12 @@ public class PermissionAspect {
             if (goodsNo != null) {
                 // 5-1. VIEW 권한 검증
                 if (annotation.requireViewPermission()) {
-                    authService.validateViewPermission(goodsNo, goodsPermissions);
+                    authorizationService.validateViewPermission(goodsNo, goodsPermissions);
                 }
 
                 // 5-2. DOWNLOAD 권한 검증
                 if (annotation.requireDownloadPermission()) {
-                    authService.validateDownloadPermission(goodsNo, goodsPermissions);
+                    authorizationService.validateDownloadPermission(goodsNo, goodsPermissions);
                 }
             }
         }

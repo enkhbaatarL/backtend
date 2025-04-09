@@ -90,7 +90,7 @@ public class AuthorizationService {
         try {
             return Role.valueOf(role);
         } catch (IllegalArgumentException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role: " + role);
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role: %s".formatted(role));
         }
     }
 
@@ -127,8 +127,7 @@ public class AuthorizationService {
      */
     public void validateAdmin() {
         if (!isAdmin()) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "Admin permission required");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "'ADMIN' permission required.");
         }
     }
 
