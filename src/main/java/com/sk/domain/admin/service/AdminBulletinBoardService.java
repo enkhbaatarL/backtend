@@ -70,7 +70,8 @@ public class AdminBulletinBoardService {
                 .map(cat -> new BulletinBoardFilterDto(cat.getCode(), cat.getName()))
                 .collect(Collectors.toList());
 
-        List<BulletinBoardFilterDto> target = customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream()
+        List<BulletinBoardFilterDto> target = customerCompanyRepository
+                .findByIsDeletedFalseAndIsMipManagementCompanyFalseOrderByCustomerCompanyNmAsc().stream()
                 .map(company -> new BulletinBoardFilterDto(company.getCustomerCompanyNo().toString(), company.getCustomerCompanyNm()))
                 .collect(Collectors.toList());
 

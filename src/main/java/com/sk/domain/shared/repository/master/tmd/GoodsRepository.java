@@ -124,9 +124,9 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                 )
             )
             FROM Goods g
-            LEFT JOIN User cu ON g.createUserId = cu.userLoginId
+            LEFT JOIN User cu ON g.createUserId = cu.userLoginId AND (cu.userRoleCd = 'ADMIN' OR cu.userRoleCd = 'OPERATOR')
             LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId
+            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
             LEFT JOIN mu.customerCompany muc
             WHERE g.isDeleted = false
             AND g.goodsNo = :goodsNo
