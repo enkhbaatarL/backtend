@@ -38,6 +38,11 @@ public class AdminFileService {
     @Value("${ncp.storage.prefix}")
     private String prefix;
 
+    public void getAll() {
+        adminObjectStorageService.getAll();
+        return;
+    }
+
     /**
     * 파일를 조회한다.
     *
@@ -86,10 +91,12 @@ public class AdminFileService {
 
             // Object Storage 저장
             String bucketName = RoleUtil.isAdmin(user) ? commBucketName : getBucketName(customerCompanyCd);
-            String storagePathNm = FileRelationshipObjectSeparateCode.TEMP.getCode();
+            String storagePathNm = "TEMP";
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
             String fileName = PathUtil.IncludeTrailingPathDelimiter(storagePathNm) + storageFileNm;
             String fileUrl = adminObjectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            Integer fileRelationshipObjectDistinguishNo = 0;
+            String fileRelationshipObjectSeparateCd = FileRelationshipObjectSeparateCode.TEMP.getCode();
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -100,8 +107,8 @@ public class AdminFileService {
                     fileExtNm,
                     mimeTypeNm,
                     DateUtil.endYmd(),
-                    0,
-                    storagePathNm));
+                    fileRelationshipObjectDistinguishNo,
+                    fileRelationshipObjectSeparateCd));
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {

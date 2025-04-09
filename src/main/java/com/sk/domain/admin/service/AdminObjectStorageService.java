@@ -3,6 +3,7 @@ package com.sk.domain.admin.service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.HttpMethod;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.AccessControlList;
@@ -48,10 +50,10 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminObjectStorageService {
+    private final CustomerCompanyRepository customerCompanyRepository;
+
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
-
-    private final CustomerCompanyRepository customerCompanyRepository;
 
     @Value("${ncp.storage.endPoint}")
     private String endPoint;
@@ -62,27 +64,12 @@ public class AdminObjectStorageService {
     @Value("${ncp.storage.prefix}")
     private String prefix;
 
-    private List<String> folderList = new ArrayList<>();
-
     @PostConstruct
     public void init() {
 
         // 공통 버킷 생성
         if (!objectStorageClient.doesBucketExistV2(commBucketName)) {
             objectStorageClient.createBucket(commBucketName);
-        }
-
-        // create folder
-        ObjectMetadata objectMetadata = new ObjectMetadata();
-        objectMetadata.setContentLength(0L);
-        objectMetadata.setContentType("application/x-directory");
-
-        for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
-            if (!objectStorageClient.doesObjectExist(commBucketName, value.getCode() + "/")) {
-                objectStorageClient.putObject(commBucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), objectMetadata);
-            }
-
-            folderList.add(value.getCode() + "/");
         }
 
         // 고객사 버킷 생성
@@ -94,14 +81,6 @@ public class AdminObjectStorageService {
                     // create bucket
                     if (!objectStorageClient.doesBucketExistV2(bucketName)) {
                         objectStorageClient.createBucket(bucketName);
-                    }
-
-                    for (FileRelationshipObjectSeparateCode value : FileRelationshipObjectSeparateCode.values()) {
-                        if (!objectStorageClient.doesObjectExist(bucketName, value.getCode() + "/")) {
-                            objectStorageClient.putObject(bucketName, value.getCode() + "/", new ByteArrayInputStream(new byte[0]), objectMetadata);
-                        }
-
-                        folderList.add(value.getCode() + "/");
                     }
                 });
 
@@ -128,6 +107,19 @@ public class AdminObjectStorageService {
     */
     public String uploadFile(MultipartFile file, String bucketName, String fileName, boolean isPublic) throws IOException {
 
+        Path path = Paths.get(fileName.replace("\\", "/"));
+        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString());
+
+        // create directory
+        if (!objectStorageClient.doesObjectExist(bucketName, directoryPath)) {
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(0L);
+            objectMetadata.setContentType("application/x-directory");
+
+            objectStorageClient.putObject(bucketName, directoryPath, new ByteArrayInputStream(new byte[0]), objectMetadata);
+        }
+
+        // create file
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(file.getContentType());
         objectMetadata.setContentLength(file.getSize());
@@ -240,4 +232,72 @@ public class AdminObjectStorageService {
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
     }
 
+    public void getAll() {
+        List<Bucket> buckets = objectStorageClient.listBuckets();
+        for (Bucket bucket : buckets) {
+            String bucketName = bucket.getName();
+            System.out.println("");
+            System.out.println("bucketName:" + bucketName);
+
+            if (bucketName.equals("mi-airflow") || bucketName.equals("mi-etl") || bucketName.equals("mi-unstructure-data")
+                    || bucketName.equals("mi-unstructure-data")) {
+                continue;
+            }
+            // list all in the bucket
+            try {
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withBucketName(bucketName)
+                        .withMaxKeys(300);
+
+                ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+
+                System.out.println("Object List:");
+                while (true) {
+                    for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                        if (objectSummary.getKey().contains("airflow") || objectSummary.getKey().contains("docker")) {
+                            continue;
+                        }
+
+                        System.out.println(" name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
+                                + objectSummary.getOwner().getId());
+                    }
+
+                    if (objectListing.isTruncated()) {
+                        objectListing = objectStorageClient.listNextBatchOfObjects(objectListing);
+                    } else {
+                        break;
+                    }
+                }
+            } catch (AmazonS3Exception e) {
+                System.err.println(e.getErrorMessage());
+                System.exit(1);
+            }
+
+            // top level folders and files in the bucket
+            try {
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withBucketName(bucketName)
+                        .withDelimiter("/")
+                        .withMaxKeys(300);
+
+                ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+
+                System.out.println("Folder List:");
+                for (String commonPrefixes : objectListing.getCommonPrefixes()) {
+                    System.out.println(" name=" + commonPrefixes);
+                }
+
+                System.out.println("File List:");
+                for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                    System.out.println(
+                            " name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
+                                    + objectSummary.getOwner().getId());
+                }
+            } catch (AmazonS3Exception e) {
+                e.printStackTrace();
+            } catch (SdkClientException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

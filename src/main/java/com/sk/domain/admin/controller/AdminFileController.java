@@ -46,14 +46,16 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminFileController {
     private final AdminFileService adminFileService;
 
-    // @ApiOrder(1)
-    // @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/all")
-    // public BaseResponse<List<String>> getAll(@UserResolve User user) {
+    @ApiOrder(1)
+    @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/all")
+    public BaseResponse<String> getAll(@UserResolve User user) {
 
-    // return BaseResponseFactory.create(adminFileService.getAll());
-    // }
+        adminFileService.getAll();
+
+        return BaseResponseFactory.create("success");
+    }
 
     @ApiOrder(2)
     @Operation(summary = "파일 업로드", description = "파일을 업로드합니다.")
