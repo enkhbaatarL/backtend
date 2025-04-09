@@ -51,9 +51,4 @@ public @interface RequirePermission {
      */
     boolean requireDownloadPermission() default false;
 
-    /**
-     * 관리자 권한 필수 여부
-     */
-    boolean requireAdmin() default false;
-
 }

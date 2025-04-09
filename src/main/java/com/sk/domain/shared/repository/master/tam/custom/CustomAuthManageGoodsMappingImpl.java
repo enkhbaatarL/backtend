@@ -87,6 +87,44 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
     }
 
     @Override
+    public List<AuthManageGoodsMapping> findAdminGoodsPermissions() {
+
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+
+        return queryFactory
+            .select(authMapping)
+            .from(authMapping)
+            .join(authMapping.customerCompanyGoodsMapping, ccgMapping).fetchJoin()
+            .join(ccgMapping.customerCompany, customerCompany).fetchJoin()
+            .join(ccgMapping.goods, goods).fetchJoin()
+            .join(goods.provider, provider).fetchJoin()
+            .join(ccpMapping).on(
+                ccpMapping.customerCompany.eq(customerCompany)
+                    .and(ccpMapping.provider.eq(provider))
+            )
+            .where(
+                authMapping.user.isNull(), // 개별권한 무시 → user가 null인 매핑만
+                ccgMapping.id.goodsAuthManagementSeparateCd.eq(GoodsAuthManagementSeparateCd.COMPANY), // 회사권한 설정된 상품만
+                ccgMapping.isUsed.isTrue(),
+                ccgMapping.isDeleted.isFalse(),
+                goods.isUsed.isTrue(),
+                goods.isDeleted.isFalse(),
+                provider.isUsed.isTrue(),
+                provider.isDeleted.isFalse(),
+                customerCompany.isUsed.isTrue(),
+                customerCompany.isDeleted.isFalse(),
+                ccpMapping.isUsed.isTrue(),
+                ccpMapping.isDeleted.isFalse(),
+                authMapping.isDeleted.isFalse(),
+                authMapping.useBeginDate.loe(currentDate),
+                authMapping.useEndDate.goe(currentDate),
+                customerCompany.useBeginDt.loe(currentDate).or(customerCompany.useBeginDt.isNull()),
+                customerCompany.useEndDt.goe(currentDate).or(customerCompany.useEndDt.isNull())
+            )
+            .fetch();
+    }
+
+    @Override
     public List<AuthManageGoodsMapping> findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(Integer companyNo, Integer goodsNo, GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd) {
 
         return queryFactory

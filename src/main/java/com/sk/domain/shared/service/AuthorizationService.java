@@ -171,7 +171,7 @@ public class AuthorizationService {
      * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateViewPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
+        if (!allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have VIEW permission for goods: " + goodsNo);
         }
@@ -184,10 +184,15 @@ public class AuthorizationService {
      * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateDownloadPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
+        if (!allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have DOWNLOAD permission for goods: " + goodsNo);
         }
+    }
+
+    // todo DB조회? claim?
+    public boolean isThirdPartyAccessAllowed() {
+        return true;
     }
 
 }
