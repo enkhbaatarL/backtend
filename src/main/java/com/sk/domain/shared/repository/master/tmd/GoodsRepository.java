@@ -3,7 +3,6 @@ package com.sk.domain.shared.repository.master.tmd;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
-import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,31 +14,91 @@ import java.util.Optional;
 
 public interface GoodsRepository extends JpaRepository<Goods, Integer> {
 
+    // 전체 상품 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
-            g.goodsNo,
-            g.goodsNm,
-            g.goodsExpn,
-            count(gd)
-              )
+                g.goodsNo,
+                g.isPublic,
+                g.goodsNm,
+                g.goodsExpn,
+                count(gd)
+            )
             FROM Goods g
             LEFT JOIN GoodsData gd on g = gd.goods
             WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
-            AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-            GROUP BY g.goodsNo, g.goodsNm, g.goodsExpn
-            ORDER BY g.goodsNm asc, g.goodsExpn asc
+              AND g.provider.providerNo = :providerNo
+              AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            GROUP BY g.goodsNo, g.isPublic, g.goodsNm, g.goodsExpn
+            ORDER BY g.goodsNm ASC, g.goodsExpn ASC
                   """, countQuery = """
             SELECT COUNT(distinct g.goodsNo)
             FROM Goods g
             LEFT JOIN GoodsData gd on g = gd.goods
             WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
-            AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+              AND g.provider.providerNo = :providerNo
+              AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsRes> search(@Param("providerNo") Integer providerNo, @Param("keyword") String keyword, Pageable pageable);
+    Page<GoodsRes> findGoodsByProviderNoForAdmin(@Param("providerNo") int providerNo, @Param("keyword") String keyword, Pageable pageable);
 
-    Optional<Goods> findByGoodsNoAndIsDeletedFalse(Integer goodsNo);
+    // 고객사와 맵핑된 상품 목록을 조회한다.
+    // 고객사와 프로바이더가 맵핑 되어있는 상품 중에 공개된 상품과
+    // 고객사에 맵핑된 비공개 상품을 조회한다.
+    // 고객사와 프로바이더가 맵핑 되어있지 않은 상품은 조회하지 않는다.
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
+                g.goodsNo,
+                g.isPublic,
+                g.goodsNm,
+                g.goodsExpn,
+                count(gd)
+            )
+            FROM Goods g
+            LEFT JOIN GoodsData gd on g = gd.goods
+            WHERE g.isDeleted = false
+              AND g.provider.providerNo = :providerNo
+              AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                    OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+              AND g.provider IN (
+                    SELECT ccp.provider
+                    FROM CustomerCompanyProviderMapping ccp
+                    WHERE ccp.customerCompany.customerCompanyNo = :customerCompanyNo
+              )
+              AND (
+                    g.isPublic = TRUE
+                    OR (g.isPublic = FALSE AND EXISTS (
+                        SELECT 1 FROM CustomerCompanyGoodsMapping cgm
+                        WHERE cgm.customerCompany.customerCompanyNo = :customerCompanyNo
+                          AND cgm.goods = g
+                    ))
+              )
+            GROUP BY g.goodsNo, g.isPublic, g.goodsNm, g.goodsExpn
+            ORDER BY g.goodsNm ASC, g.goodsExpn ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT g.goodsNo)
+            FROM Goods g
+            LEFT JOIN GoodsData gd on g = gd.goods
+            WHERE g.isDeleted = false
+              AND g.provider.providerNo = :providerNo
+              AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                    OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+              AND g.provider IN (
+                    SELECT ccp.provider
+                    FROM CustomerCompanyProviderMapping ccp
+                    WHERE ccp.customerCompany.customerCompanyNo = :customerCompanyNo
+              )
+              AND (
+                    g.isPublic = TRUE
+                    OR (g.isPublic = FALSE AND EXISTS (
+                        SELECT 1 FROM CustomerCompanyGoodsMapping cgm
+                        WHERE cgm.customerCompany.customerCompanyNo = :customerCompanyNo
+                          AND cgm.goods = g
+                    ))
+              )
+            """)
+    Page<GoodsRes> findGoodsByProviderNoForOperator(@Param("customerCompanyNo") int customerCompanyNo, @Param("providerNo") int providerNo,
+            @Param("keyword") String keyword, Pageable pageable);
+
+    Optional<Goods> findByGoodsNoAndIsDeletedFalse(int goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
@@ -48,6 +107,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             g.goodsId,
             g.goodsExpn,
             g.isUsed,
+            g.isPublic,
             new com.sk.domain.shared.dto.AuditInfo(
                     g.createUserId,
                     g.createDt,
@@ -64,14 +124,14 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                 )
             )
             FROM Goods g
-            LEFT JOIN User cu ON g.createUserId = cu.userLoginId
+            LEFT JOIN User cu ON g.createUserId = cu.userLoginId AND (cu.userRoleCd = 'ADMIN' OR cu.userRoleCd = 'OPERATOR')
             LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId
+            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
             LEFT JOIN mu.customerCompany muc
             WHERE g.isDeleted = false
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsDetailRes> getGoodsDetail(@Param("goodsNo") Integer goodsNo);
+    Optional<GoodsDetailRes> findGoodsDetailByGoodsNo(@Param("goodsNo") int goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes(
@@ -83,6 +143,6 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             WHERE g.isDeleted = false
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsLatestUpdatedRes> getGoodsLatestUpdated(@Param("goodsNo") Integer goodsNo);
+    Optional<GoodsLatestUpdatedRes> findGoodsLatestUpdatedByGoodsNo(@Param("goodsNo") int goodsNo);
 
 }

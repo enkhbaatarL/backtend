@@ -15,6 +15,9 @@ public record GoodsDataCreateReq(
     @Schema(description = "데이터명", example = "")
     String goodsDataNm,
 
+    @Schema(description = "상품데이터설명", example = "") 
+    String goodsExpn,
+
     @Schema(description = "Summary", example = "") 
     String goodsDataSummaryCntt,
 

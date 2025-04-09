@@ -31,6 +31,7 @@ import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.BulletinBoardType;
 import com.sk.domain.shared.enums.FaqCategory;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
@@ -69,7 +70,8 @@ public class AdminBulletinBoardService {
                 .map(cat -> new BulletinBoardFilterDto(cat.getCode(), cat.getName()))
                 .collect(Collectors.toList());
 
-        List<BulletinBoardFilterDto> target = customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream()
+        List<BulletinBoardFilterDto> target = customerCompanyRepository
+                .findByIsDeletedFalseAndIsMipManagementCompanyFalseOrderByCustomerCompanyNmAsc().stream()
                 .map(company -> new BulletinBoardFilterDto(company.getCustomerCompanyNo().toString(), company.getCustomerCompanyNm()))
                 .collect(Collectors.toList());
 
@@ -102,7 +104,7 @@ public class AdminBulletinBoardService {
      * @return BulletinBoard
      */
     @Transactional
-    public BulletinBoard createNotice(NoticeCreateReq dto) {
+    public BulletinBoard createNotice(User user, NoticeCreateReq dto) {
         if (dto.isWholePost() == false) {
             if (dto.target() == null) {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
@@ -119,10 +121,20 @@ public class AdminBulletinBoardService {
                     .forEach(b -> b.updateIsPopupUse(false));
         }
 
-        BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.of(dto));
+        BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.ofNotice(
+                dto.isTopFixed(),
+                dto.isPopupUse(),
+                dto.popupPostBeginDt(),
+                dto.popupPostEndDt(),
+                dto.bulletinCategorySeparateCd(),
+                dto.isWholePost(),
+                dto.bulletinValidBeginDt(),
+                dto.bulletinValidEndDt(),
+                dto.bulletinTitleNm(),
+                dto.bulletinCntt()));
 
         if (dto.fileNo() != null) {
-            adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+            adminFileService.updateFile(user, dto.fileNo(), savedBulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
                     DateUtil.endYmd());
         }
 
@@ -150,7 +162,7 @@ public class AdminBulletinBoardService {
     * @param noticeNo 공지사항 번호
     * @return NoticeDetailRes
     */
-    public NoticeDetailRes getNotice(int noticeNo) {
+    public NoticeDetailRes getNotice(User user, int noticeNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
                 .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
                 .orElseThrow(
@@ -165,7 +177,7 @@ public class AdminBulletinBoardService {
                         f.getFileNo(),
                         f.getOriginalFileNm(),
                         f.getFileSize(),
-                        adminFileService.getPresignedUrl(f.getFileNo())))
+                        adminFileService.getUrl(user, f.getFileNo())))
                 .toList();
 
         return NoticeDetailRes.of(bulletinBoard, target, fileInfo);
@@ -179,7 +191,7 @@ public class AdminBulletinBoardService {
     * @return BulletinBoard
     */
     @Transactional
-    public BulletinBoard updateNotice(NoticeUpdateReq dto, int noticeNo) {
+    public BulletinBoard updateNotice(User user, NoticeUpdateReq dto, int noticeNo) {
         if (dto.isWholePost() != null) {
             if (dto.isWholePost() == false) {
                 if (dto.target() == null) {
@@ -198,9 +210,9 @@ public class AdminBulletinBoardService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
         if (dto.fileNo() == null) {
-            adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
+            adminFileService.deleteFiles(user, bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
         } else {
-            adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+            adminFileService.updateFile(user, dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
                     DateUtil.endYmd());
         }
 
@@ -247,7 +259,8 @@ public class AdminBulletinBoardService {
             }
         }
 
-        bulletinBoard.update(dto);
+        bulletinBoard.updateNotice(dto.isTopFixed(), dto.isPopupUse(), dto.popupPostBeginDt(), dto.popupPostEndDt(), dto.bulletinCategorySeparateCd(),
+                dto.isWholePost(), dto.bulletinValidBeginDt(), dto.bulletinValidEndDt(), dto.bulletinTitleNm(), dto.bulletinCntt());
 
         return bulletinBoard;
     }
@@ -259,7 +272,7 @@ public class AdminBulletinBoardService {
     * @return BulletinBoard
     */
     @Transactional
-    public BulletinBoard deleteNotice(int noticeNo) {
+    public BulletinBoard deleteNotice(User user, int noticeNo) {
         BulletinBoard bulletinBoard = bulletinBoardRepository
                 .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, BulletinBoardType.NOTICE.getCode())
                 .orElseThrow(
@@ -267,7 +280,7 @@ public class AdminBulletinBoardService {
 
         bulletinBoardCustomerCompanyMappingRepository.deleteByBulletinNo(bulletinBoard.getBulletinNo());
 
-        adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
+        adminFileService.deleteFiles(user, bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
 
         bulletinBoard.softDelete();
 
@@ -280,7 +293,7 @@ public class AdminBulletinBoardService {
     * @param
     * @return PopupRes
     */
-    public PopupRes getPopup() {
+    public PopupRes getPopup(User user) {
         BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
         if (bulletinBoard == null) {
             return null;
@@ -293,7 +306,7 @@ public class AdminBulletinBoardService {
                         f.getFileNo(),
                         f.getOriginalFileNm(),
                         f.getFileSize(),
-                        adminFileService.getPresignedUrl(f.getFileNo())))
+                        adminFileService.getUrl(user, f.getFileNo())))
                 .toList();
 
         return PopupRes.of(bulletinBoard, fileInfo);
@@ -337,7 +350,7 @@ public class AdminBulletinBoardService {
      */
     @Transactional
     public BulletinBoard createFaq(FaqCreateReq dto) {
-        return bulletinBoardRepository.save(BulletinBoard.of(dto));
+        return bulletinBoardRepository.save(BulletinBoard.ofFaq(dto.bulletinCategorySeparateCd(), dto.bulletinTitleNm(), dto.bulletinCntt()));
     }
 
     /**
@@ -367,7 +380,7 @@ public class AdminBulletinBoardService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("faq no: %d", faqNo)));
 
-        bulletinBoard.update(dto);
+        bulletinBoard.updateFaq(dto.bulletinCategorySeparateCd(), dto.bulletinTitleNm(), dto.bulletinCntt());
 
         return bulletinBoard;
     }

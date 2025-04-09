@@ -8,7 +8,6 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.listener.GoodsListener;
 
@@ -60,6 +59,12 @@ public class Goods extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
+    @Column(name = "cpny_comm_use_psbl_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("회사공통사용가능여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isPublic;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prvd_no", referencedColumnName = "prvd_no", nullable = false)
     @Comment("프로바이더번호")
@@ -67,32 +72,49 @@ public class Goods extends BaseEntity {
 
     @Builder
     public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Provider provider) {
+            Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic,
+            Provider provider) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
         this.goodsId = goodsId;
         this.goodsExpn = goodsExpn;
         this.isUsed = isUsed;
+        this.isPublic = isPublic;
         this.provider = provider;
     }
 
-    public void update(GoodsUpdateReq goodsReq) {
+    public static Goods of(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic, Provider provider) {
+        return Goods.builder()
+                .goodsNm(goodsNm)
+                .goodsId(goodsId)
+                .goodsExpn(goodsExpn)
+                .isUsed(isUsed)
+                .isPublic(isPublic)
+                .provider(provider)
+                .build();
+    }
 
-        if (StringUtils.isNotEmpty(goodsReq.goodsNm())) {
-            this.goodsNm = goodsReq.goodsNm();
+    public void update(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic) {
+
+        if (StringUtils.isNotEmpty(goodsNm)) {
+            this.goodsNm = goodsNm;
         }
 
-        if (StringUtils.isNotEmpty(goodsReq.goodsId())) {
-            this.goodsId = goodsReq.goodsId();
+        if (StringUtils.isNotEmpty(goodsId)) {
+            this.goodsId = goodsId;
         }
 
-        if (StringUtils.isNotEmpty(goodsReq.goodsExpn())) {
-            this.goodsExpn = goodsReq.goodsExpn();
+        if (StringUtils.isNotEmpty(goodsExpn)) {
+            this.goodsExpn = goodsExpn;
         }
 
-        if (ObjectUtils.isNotEmpty(goodsReq.isUsed())) {
-            this.isUsed = goodsReq.isUsed();
+        if (ObjectUtils.isNotEmpty(isUsed)) {
+            this.isUsed = isUsed;
+        }
+
+        if (ObjectUtils.isNotEmpty(isPublic)) {
+            this.isPublic = isPublic;
         }
     }
 

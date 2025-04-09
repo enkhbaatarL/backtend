@@ -17,49 +17,98 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 
 public interface ProviderRepository extends JpaRepository<Provider, Integer> {
 
+    // 전체 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
-            p.providerNo,
-            p.providerNm
-              )
+                p.providerNo,
+                p.providerNm
+            )
             FROM Provider p
             WHERE p.isDeleted = false
             ORDER BY p.providerNm ASC
                   """)
-    List<ProviderNameRes> getAllProviderNm();
+    List<ProviderNameRes> findProviderNmForAdmin();
 
+    // 고객사와 맵핑된 프로바이더 목록을 조회한다.
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
-            p.providerNo,
-            p.providerNm,
-            p.providerId,
-            p.isUsed,
-            count(g),
-            p.createDt
+            SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
+                p.providerNo,
+                p.providerNm
             )
             FROM Provider p
-            LEFT JOIN Goods g on p = g.provider
+            JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
+            WHERE p.isDeleted = false
+              AND p.isUsed = true
+              AND cp.isDeleted = false
+              AND cp.isUsed = true
+              AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
+            ORDER BY p.providerNm ASC
+                  """)
+    List<ProviderNameRes> findProviderNmForOperator(@Param("customerCompanyNo") int customerCompanyNo);
+
+    // 전체 프로바이더 목록을 조회한다.
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
+                p.providerNo,
+                p.providerNm,
+                p.providerId,
+                p.isUsed,
+                COUNT(g),
+                p.createDt
+            )
+            FROM Provider p
+            LEFT JOIN Goods g ON p = g.provider AND g.isDeleted = false
             WHERE p.isDeleted = false
             GROUP BY p.providerNo, p.providerNm, p.providerId, p.isUsed, p.createDt
             ORDER BY p.providerNm ASC
             """, countQuery = """
-            SELECT COUNT(distinct p.providerNo)
+            SELECT COUNT(DISTINCT p.providerNo)
             FROM Provider p
             WHERE p.isDeleted = false
             """)
-    Page<ProviderRes> search(Pageable pageable);
+    Page<ProviderRes> findAllForAdmin(Pageable pageable);
 
-    Optional<Provider> findByProviderNoAndIsDeletedFalse(Integer providerNo);
+    // 고객사와 맵핑된 프로바이더 목록을 조회한다.
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
+                p.providerNo,
+                p.providerNm,
+                p.providerId,
+                p.isUsed,
+                COUNT(g),
+                p.createDt
+            )
+            FROM Provider p
+            LEFT JOIN Goods g ON p = g.provider AND g.isDeleted = false
+            JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
+            WHERE p.isDeleted = false
+              AND cp.isDeleted = false
+              AND cp.isUsed = true
+              AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
+            GROUP BY p.providerNo, p.providerNm, p.providerId, p.isUsed, p.createDt
+            ORDER BY p.providerNm ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT p.providerNo)
+            FROM Provider p
+            JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
+            WHERE p.isDeleted = false
+              AND cp.isDeleted = false
+              AND cp.isUsed = true
+              AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
+            """)
+    Page<ProviderRes> findAllForOperator(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
+
+    Optional<Provider> findByProviderNoAndIsDeletedFalse(int providerNo);
 
     // 상세보기
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderDetailRes(
-            p.providerNo,
-            p.providerNm,
-            p.providerId,
-            p.providerExpn,
-            p.isUsed,
-            new com.sk.domain.shared.dto.AuditInfo(
+                p.providerNo,
+                p.providerNm,
+                p.providerId,
+                p.providerExpn,
+                p.isUsed,
+                new com.sk.domain.shared.dto.AuditInfo(
                           p.createUserId,
                           p.createDt,
                           p.modifyUserId,
@@ -75,25 +124,36 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                       )
             )
             FROM Provider p
-            LEFT JOIN User cu ON p.createUserId = cu.userLoginId
+            LEFT JOIN User cu ON p.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
             LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId
+            LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
             LEFT JOIN mu.customerCompany muc
             WHERE p.isDeleted = false
-            AND p.providerNo = :providerNo
+              AND p.providerNo = :providerNo
+            GROUP BY p.providerNo, p.providerNm, p.providerId, p.providerExpn, p.isUsed,
+                     cu.userNm, cu.departmentNm, cuc.customerCompanyNm,
+                     mu.userNm, mu.departmentNm, muc.customerCompanyNm
             """)
-    Optional<ProviderDetailRes> getProviderDetail(@Param("providerNo") Integer providerNo);
+    Optional<ProviderDetailRes> findProviderDetailByProviderNo(@Param("providerNo") int providerNo);
 
     // 프로바이더의 수정시간이 상품의 수정시간보다 최근이면 프로바이더의 수정시간과 수정자를 가져오고
     // 상품의 수정시간이 프로바이더의 수정시간보다 최근이면 상품의 수정시간과 수정자를 가져온다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes(
-            CASE WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt) THEN p.modifyDt ELSE (SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo) END,
-            CASE WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt) THEN (SELECT u.userNm FROM User u WHERE u.userLoginId = p.modifyUserId) ELSE (SELECT u.userNm FROM User u WHERE u.userLoginId = (SELECT g.modifyUserId FROM Goods g WHERE g.modifyDt = (SELECT MAX(g2.modifyDt) FROM Goods g2 WHERE g2.provider.providerNo = :providerNo))) END
+                CASE
+                    WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt)
+                    THEN p.modifyDt
+                    ELSE (SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo)
+                    END,
+                CASE
+                    WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt)
+                    THEN (SELECT u.userNm FROM User u WHERE u.userLoginId = p.modifyUserId AND (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR'))
+                    ELSE (SELECT u.userNm FROM User u WHERE (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR') AND u.userLoginId = (SELECT g.modifyUserId FROM Goods g WHERE g.modifyDt = (SELECT MAX(g2.modifyDt) FROM Goods g2 WHERE g2.provider.providerNo = :providerNo)))
+                    END
             )
             FROM Provider p
             WHERE p.isDeleted = false
-            AND p.providerNo = :providerNo
+              AND p.providerNo = :providerNo
             """)
-    Optional<ProviderLatestUpdatedRes> getProviderLatestUpdated(@Param("providerNo") Integer providerNo);
+    Optional<ProviderLatestUpdatedRes> findProviderLatestUpdatedByProviderNo(@Param("providerNo") int providerNo);
 }

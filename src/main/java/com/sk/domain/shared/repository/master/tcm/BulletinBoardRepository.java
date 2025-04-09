@@ -62,9 +62,9 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
             LEFT JOIN m.customerCompany c
-            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
             LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON b.modifyUserId = mu.userLoginId
+            LEFT JOIN User mu ON b.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
             LEFT JOIN mu.customerCompany muc
             WHERE b.isDeleted = false
               AND b.bulletinTypeCd = 'NOTICE'
@@ -153,9 +153,9 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 )
             )
             FROM BulletinBoard b
-            LEFT JOIN User cu ON b.createUserId = cu.userLoginId
+            LEFT JOIN User cu ON b.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
             LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON b.modifyUserId = mu.userLoginId
+            LEFT JOIN User mu ON b.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
             LEFT JOIN mu.customerCompany muc
             WHERE b.isDeleted = false
             AND b.bulletinTypeCd = 'FAQ'

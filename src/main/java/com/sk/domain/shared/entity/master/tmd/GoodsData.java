@@ -40,7 +40,7 @@ public class GoodsData extends BaseEntity {
     @Comment("상품데이터식별ID")
     private String goodsDataDistinguishId;
 
-    @Column(name = "gds_data_nm", length = 100)
+    @Column(name = "gds_data_nm", length = 500)
     @Comment("상품데이터명")
     private String goodsDataNm;
 
@@ -57,30 +57,42 @@ public class GoodsData extends BaseEntity {
     @Comment("상품번호")
     private Goods goods;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no")
+    @Comment("고객회사")
+    private CustomerCompany customerCompany;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
-            Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods) {
+            Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
+            CustomerCompany customerCompany) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
         this.goodsDataNm = goodsDataNm;
-        this.goodsDataExpn = "";
+        this.goodsDataExpn = goodsDataExpn;
         this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         this.goods = goods;
+        this.customerCompany = customerCompany;
     }
 
-    public static GoodsData of(Goods goods, GoodsDataCreateReq dto) {
+    public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt) {
         return GoodsData.builder()
-                .goodsDataNm(dto.goodsDataNm())
-                .goodsDataExpn("")
-                .goodsDataSummaryCntt(dto.goodsDataSummaryCntt())
+                .goodsDataNm(goodsDataNm)
+                .goodsDataExpn(goodsDataExpn)
+                .goodsDataSummaryCntt(goodsDataSummaryCntt)
                 .goods(goods)
+                .customerCompany(customerCompany)
                 .build();
     }
 
-    public void update(GoodsDataUpdateReq dto) {
-        if (StringUtils.isNotEmpty(dto.goodsDataSummaryCntt())) {
-            this.goodsDataSummaryCntt = dto.goodsDataSummaryCntt();
+    public void update(String goodsDataExpn, String goodsDataSummaryCntt) {
+        if (StringUtils.isNotEmpty(goodsDataExpn)) {
+            this.goodsDataExpn = goodsDataExpn;
+        }
+
+        if (StringUtils.isNotEmpty(goodsDataSummaryCntt)) {
+            this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         }
     }
 
