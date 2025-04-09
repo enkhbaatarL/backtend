@@ -29,13 +29,13 @@ public class SamlUserServiceProviderConfig {
     SecurityFilterChain samlUserSecurityFilterChain(HttpSecurity http) throws Exception {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http
-                .securityMatcher("/login/saml2/user", "/login/saml2/sso/mi-user", "/saml2/authenticate/**") // SAML 로그인
+                .securityMatcher("/login/saml2/user", "/login/saml2/sso/mi", "/saml2/authenticate/**") // SAML 로그인
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login/saml2/user").authenticated() // 이 경로만 인증 요구
                         .anyRequest().permitAll())
                 .saml2Login(saml2 -> saml2
                         .authenticationManager(new ProviderManager(authenticationProvider))
-                        .loginPage("/saml2/authenticate?registrationId=mi-user")
+                        .loginPage("/saml2/authenticate?registrationId=mi")
                         .successHandler(customSamlUserAuthenticationSuccessHandler)
                         .failureHandler(customSamlAuthenticationFailureHandler))
                 .saml2Logout(withDefaults())

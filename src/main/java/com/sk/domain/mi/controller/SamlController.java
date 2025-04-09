@@ -22,7 +22,7 @@ public class SamlController {
     @GetMapping("/user")
     public ResponseEntity<Void> loginUser() {
         return ResponseEntity.status(HttpStatus.FOUND)
-            .location(URI.create("/saml2/authenticate?registrationId=mi-user"))
+            .location(URI.create("/saml2/authenticate?registrationId=mi"))
             .build();
     }
 

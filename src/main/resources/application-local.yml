@@ -50,10 +50,10 @@ spring:
     saml2:
       relyingparty:
         registration:
-          mi-user:
-            entity-id: http://localhost:8080/saml2/service-provider-metadata/mi-user
+          mi:
+            entity-id: http://localhost:8080/saml2/service-provider-metadata/mi
             acs:
-              location: http://localhost:8080/login/saml2/sso/mi-user
+              location: http://localhost:8080/login/saml2/sso/mi
               binding: POST
             assertingparty:
               metadata-uri: https://dev-25395713.okta.com/app/exknog7293gkyVoqS5d7/sso/saml/metadata
