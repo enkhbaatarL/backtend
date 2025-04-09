@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequirePermission;
 import com.sk.common.annotation.UserResolve;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -45,6 +46,7 @@ import com.sk.domain.admin.service.AdminBulletinBoardService;
 import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -109,11 +111,12 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 등록", description = "공지사항을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice")
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> createNotice(
-            @UserResolve User user,
+            // @UserResolve User user,
             @RequestBody @Valid NoticeCreateReq body) {
 
-        adminBulletinBoardService.createNotice(user, body);
+        adminBulletinBoardService.createNotice(body);
 
         return BaseResponseFactory.create("success");
     }
@@ -126,9 +129,9 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/{noticeNo}")
     public BaseResponse<NoticeDetailRes> getNotice(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
-        return BaseResponseFactory.create(adminBulletinBoardService.getNotice(user, noticeNo));
+        return BaseResponseFactory.create(adminBulletinBoardService.getNotice(noticeNo));
     }
 
     @ApiOrder(5)
@@ -138,12 +141,13 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 수정", description = "공지사항을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/notices/{noticeNo}")
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateNotice(
-            @UserResolve User user,
+            // @UserResolve User user,
             @RequestBody @Valid NoticeUpdateReq body,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
-        adminBulletinBoardService.updateNotice(user, body, noticeNo);
+        adminBulletinBoardService.updateNotice(body, noticeNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -155,11 +159,12 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 삭제", description = "공지사항을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/notices/{noticeNo}")
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> deleteNotice(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
-        adminBulletinBoardService.deleteNotice(user, noticeNo);
+        adminBulletinBoardService.deleteNotice(noticeNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -198,10 +203,10 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
         String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
 
@@ -217,8 +222,8 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/popup")
-    public BaseResponse<PopupRes> getPopup(@UserResolve User user) {
-        return BaseResponseFactory.create(adminBulletinBoardService.getPopup(user));
+    public BaseResponse<PopupRes> getPopup() {
+        return BaseResponseFactory.create(adminBulletinBoardService.getPopup());
     }
 
     /*******************************************************************
@@ -258,6 +263,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 등록", description = "FAQ를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/faq")
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> createFaq(
             @RequestBody() @Valid FaqCreateReq body) {
 
@@ -285,6 +291,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 수정", description = "FAQ를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/faq/{faqNo}")
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateFaq(
             @RequestBody @Valid FaqUpdateReq body,
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
@@ -301,6 +308,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 삭제", description = "FAQ를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/faq/{faqNo}")
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> deleteFaq(
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
 
