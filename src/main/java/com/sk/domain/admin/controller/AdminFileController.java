@@ -73,10 +73,10 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
         String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
 
@@ -93,10 +93,10 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/{fileNo}")
     public BaseResponse<String> deleteFile(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
-        adminFileService.deleteFile(user, fileNo);
+        adminFileService.deleteFile(fileNo);
 
         return BaseResponseFactory.create("success");
     }
@@ -106,11 +106,11 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/{fileNo}")
     public BaseResponse<String> updateFile(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo,
             @RequestBody @Valid FileUpdateReq body) {
 
-        adminFileService.updateFile(user, fileNo, body.fileRelationshipObjectDistinguishNo(), body.fileRelationshipObjectSeparateCode(),
+        adminFileService.updateFile(fileNo, body.fileRelationshipObjectDistinguishNo(), body.fileRelationshipObjectSeparateCode(),
                 body.fileValidEndDt());
 
         return BaseResponseFactory.create("success");

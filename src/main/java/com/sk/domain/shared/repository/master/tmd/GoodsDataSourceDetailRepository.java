@@ -11,6 +11,11 @@ import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsDataSourceDetail, Integer> {
+    /**
+     * 
+     * 기본적으로 고객사나 사용자의 사용가능 상태는 체크 하지 않는다. 로그인 단에서 체크하는걸로 처리
+     *
+     */
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.StructuredDataRes(

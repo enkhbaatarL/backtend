@@ -42,15 +42,17 @@ public class AdminProviderService {
     public PaginationRes<ProviderRes> getAllProviders(User user, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
+        // 관리자
         if (RoleUtil.isAdmin(user)) {
             return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
         }
 
+        // 운영자
         if (RoleUtil.isOperator(user)) {
             return PaginationRes.toRes(providerRepository.findAllForOperator(user.getCustomerCompany().getCustomerCompanyNo(), pageable));
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
     }
 
     /**
@@ -60,15 +62,17 @@ public class AdminProviderService {
      */
     public List<ProviderNameRes> getAllProviderNm(User user) {
 
+        // 관리자
         if (RoleUtil.isAdmin(user)) {
             return providerRepository.findProviderNmForAdmin();
         }
 
+        // 운영자
         if (RoleUtil.isOperator(user)) {
             return providerRepository.findProviderNmForOperator(user.getCustomerCompany().getCustomerCompanyNo());
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
     }
 
     /**
@@ -92,19 +96,26 @@ public class AdminProviderService {
      * @return ProviderDetailRes
      */
     public ProviderDetailRes getProvider(User user, int providerNo) {
+
+        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            //
+            return providerRepository.findProviderDetailByProviderNoForAdmin(providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
         }
 
+        // 운영자
         if (RoleUtil.isOperator(user)) {
             customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
                     .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "provider no: %d".formatted(providerNo)));
+
+            return providerRepository.findProviderDetailByProviderNoForOperator(providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
         }
 
-        return providerRepository.findProviderDetailByProviderNo(providerNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
     }
 
     /**
@@ -119,7 +130,7 @@ public class AdminProviderService {
 
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
         provider.update(dto.providerNm(), dto.providerExpn(), dto.isUsed());
 
@@ -136,7 +147,7 @@ public class AdminProviderService {
     public void deleteProvider(int providerNo) {
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
         provider.softDelete();
 
@@ -153,7 +164,7 @@ public class AdminProviderService {
     public ProviderLatestUpdatedRes getProviderLatestUpdated(int providerNo) {
         return providerRepository.findProviderLatestUpdatedByProviderNo(providerNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("provider no: %d", providerNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
     }
 
 }
