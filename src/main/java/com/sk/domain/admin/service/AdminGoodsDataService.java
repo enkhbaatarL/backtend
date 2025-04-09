@@ -21,6 +21,7 @@ import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
 import com.sk.domain.admin.dto.response.provider.CategoryDataRes;
+import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
@@ -38,6 +39,7 @@ import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tcm.ComponentInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
@@ -56,9 +58,9 @@ public class AdminGoodsDataService {
     private final GoodsDataRepository goodsDataRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
-    private final CustomerCompanyRepository customerCompanyRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
+    private final ComponentInfoRepository componentInfoRepository;
     private final AdminFileService adminFileService;
 
     /**
@@ -116,6 +118,15 @@ public class AdminGoodsDataService {
     */
     public List<GoodsDataCategoryRes> getGoodsDataSubCategorys(String codeId) {
         return commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(codeId);
+    }
+
+    /**
+    * 정형 데이타의 타입 목록을 조회한다.
+    *
+    * @return List<ComponentInfoRes>
+    */
+    public List<ComponentInfoRes> getStructuredDataType() {
+        return componentInfoRepository.findComponentNm();
     }
 
     /**

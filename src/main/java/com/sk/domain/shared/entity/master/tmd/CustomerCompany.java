@@ -69,6 +69,12 @@ public class CustomerCompany extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
+    @Column(name = "mip_mng_cpny_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("MI플랫폼관리회사여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isMipManagementCompany;
+
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
 

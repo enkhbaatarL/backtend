@@ -38,6 +38,7 @@ import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
@@ -333,15 +334,14 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getGoodsDataSubCategorys(codeId));
     }
 
-    // @ApiOrder(17)
-    // @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/goodsdata/structureddatatype")
-    // public BaseResponse<String> getstructuredDataType() {
-    // // todo: 데이타 타입 리스트 전달
+    @ApiOrder(17)
+    @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goodsdata/structureddatatype")
+    public BaseResponse<List<ComponentInfoRes>> getStructuredDataType() {
 
-    // return BaseResponseFactory.create("todo");
-    // }
+        return BaseResponseFactory.create(goodsDataService.getStructuredDataType());
+    }
 
     @ApiOrder(18)
     @Parameters({

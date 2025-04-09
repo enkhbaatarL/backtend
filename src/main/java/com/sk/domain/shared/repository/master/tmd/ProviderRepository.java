@@ -124,12 +124,15 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                       )
             )
             FROM Provider p
-            LEFT JOIN User cu ON p.createUserId = cu.userLoginId
+            LEFT JOIN User cu ON p.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
             LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId
+            LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
             LEFT JOIN mu.customerCompany muc
             WHERE p.isDeleted = false
-            AND p.providerNo = :providerNo
+              AND p.providerNo = :providerNo
+            GROUP BY p.providerNo, p.providerNm, p.providerId, p.providerExpn, p.isUsed,
+                     cu.userNm, cu.departmentNm, cuc.customerCompanyNm,
+                     mu.userNm, mu.departmentNm, muc.customerCompanyNm
             """)
     Optional<ProviderDetailRes> findProviderDetailByProviderNo(@Param("providerNo") int providerNo);
 
@@ -137,12 +140,20 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
     // 상품의 수정시간이 프로바이더의 수정시간보다 최근이면 상품의 수정시간과 수정자를 가져온다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes(
-                CASE WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt) THEN p.modifyDt ELSE (SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo) END,
-                CASE WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt) THEN (SELECT u.userNm FROM User u WHERE u.userLoginId = p.modifyUserId) ELSE (SELECT u.userNm FROM User u WHERE u.userLoginId = (SELECT g.modifyUserId FROM Goods g WHERE g.modifyDt = (SELECT MAX(g2.modifyDt) FROM Goods g2 WHERE g2.provider.providerNo = :providerNo))) END
+                CASE
+                    WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt)
+                    THEN p.modifyDt
+                    ELSE (SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo)
+                    END,
+                CASE
+                    WHEN p.modifyDt >= COALESCE((SELECT MAX(g.modifyDt) FROM Goods g WHERE g.provider.providerNo = :providerNo), p.modifyDt)
+                    THEN (SELECT u.userNm FROM User u WHERE u.userLoginId = p.modifyUserId AND (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR'))
+                    ELSE (SELECT u.userNm FROM User u WHERE (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR') AND u.userLoginId = (SELECT g.modifyUserId FROM Goods g WHERE g.modifyDt = (SELECT MAX(g2.modifyDt) FROM Goods g2 WHERE g2.provider.providerNo = :providerNo)))
+                    END
             )
             FROM Provider p
             WHERE p.isDeleted = false
-            AND p.providerNo = :providerNo
+              AND p.providerNo = :providerNo
             """)
     Optional<ProviderLatestUpdatedRes> findProviderLatestUpdatedByProviderNo(@Param("providerNo") int providerNo);
 }
