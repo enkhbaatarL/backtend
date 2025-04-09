@@ -55,7 +55,6 @@ import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -77,8 +76,6 @@ public class AdminProviderController {
     private final AdminGoodsService goodsService;
     private final AdminGoodsDataService goodsDataService;
     private final AdminFileService adminFileService;
-
-    private final UserRepository userRepository;
 
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xls", "xlsx");
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
