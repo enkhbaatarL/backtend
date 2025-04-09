@@ -1,19 +1,24 @@
 package com.sk.domain.mi.service;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.mi.dto.request.notification.NotificationReq;
-import com.sk.domain.mi.dto.response.notification.NotificationRes;
+import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
+import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
+import com.sk.domain.mi.dto.response.notification.MiNotificationSettingRes;
+import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 
@@ -28,6 +33,7 @@ public class MiNotificationService {
 
     private final GoodsCriticalValueSettingRepository goodsCriticalValueSettingRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final EmailAccessLogRepository emailAccessLogRepository;
 
     /**
      * 알림 등록
@@ -38,20 +44,19 @@ public class MiNotificationService {
      * @return
      */
     @Transactional
-    public NotificationRes createNotification(NotificationReq.Insert notifications, Integer goodsDataSourceNo,
-            User user) {
+    public MiNotificationSettingRes createNotificationSetting(Integer goodsDataSourceNo, NotificationSettingReq.Insert notifications, User user) {
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
                 .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        "GoodsCriticalValueSetting not found"));
+                        String.format("GoodsDataSourceDetail not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
 
         GoodsCriticalValueSetting goodsCriticalValueSetting = GoodsCriticalValueSetting.of(notifications, goodsDataSourceDetail, user);
 
         GoodsCriticalValueSetting savedGoodsCriticalValueSetting = goodsCriticalValueSettingRepository
                 .save(goodsCriticalValueSetting);
 
-        return NotificationRes.of(savedGoodsCriticalValueSetting);
+        return MiNotificationSettingRes.of(savedGoodsCriticalValueSetting, goodsDataSourceDetail);
     }
 
     /**
@@ -61,20 +66,14 @@ public class MiNotificationService {
      * @param user
      * @return
      */
-    public List<NotificationRes> getNotifications(Integer goodsDataSourceNo, User user) {
+    public PaginationRes<MiNotificationSettingRes> getNotificationSettings(int page, int size, Integer goodsDataSourceNo, User user) {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
                 .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        String.format("GoodsCriticalValueSetting not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
+                        String.format("GoodsDataSourceDetail not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
 
-        List<GoodsCriticalValueSetting> goodsCriticalValueSettings = goodsCriticalValueSettingRepository
-                .findAllByGoodsDataSourceDetailAndUserAndIsDeletedFalse(goodsDataSourceDetail, user);
-
-        if (goodsCriticalValueSettings.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return NotificationRes.ofList(goodsCriticalValueSettings);
+        return PaginationRes.toRes(goodsCriticalValueSettingRepository
+                .findNotificationSettingsByConditions(goodsDataSourceDetail, user, page, size));
     }
 
     /**
@@ -85,18 +84,20 @@ public class MiNotificationService {
      * @param user
      * @return
      */
-    public NotificationRes getNotification(Integer goodsDataSourceNo, Integer notificationSettingNo, User user) {
-        goodsDataSourceDetailRepository
+    public MiNotificationSettingRes getNotificationSetting(Integer goodsDataSourceNo, Integer notificationSettingNo, User user) {
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
                 .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d", notificationSettingNo)));
+                        String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d",
+                                notificationSettingNo)));
 
         GoodsCriticalValueSetting goodsCriticalValueSetting = goodsCriticalValueSettingRepository
                 .findByUserGoodsNotificationSettingNoAndUserAndIsDeletedFalse(notificationSettingNo, user)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d", notificationSettingNo)));
+                        String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d",
+                                notificationSettingNo)));
 
-        return NotificationRes.of(goodsCriticalValueSetting);
+        return MiNotificationSettingRes.of(goodsCriticalValueSetting, goodsDataSourceDetail);
     }
 
     /**
@@ -107,9 +108,9 @@ public class MiNotificationService {
      * @return
      */
     @Transactional
-    public NotificationRes deleteNotification(Integer goodsDataSourceNo, Integer notificationSettingNo,
+    public MiNotificationSettingRes deleteNotificationSetting(Integer goodsDataSourceNo, Integer notificationSettingNo,
             User user) {
-        goodsDataSourceDetailRepository
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
                 .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("GoodsCriticalValueSetting not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
@@ -117,95 +118,43 @@ public class MiNotificationService {
         GoodsCriticalValueSetting goodsCriticalValueSetting = goodsCriticalValueSettingRepository
                 .findByUserGoodsNotificationSettingNoAndUserAndIsDeletedFalse(notificationSettingNo, user)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d", notificationSettingNo)));
+                        String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d",
+                                notificationSettingNo)));
 
         goodsCriticalValueSetting.softDelete();
 
-        return NotificationRes.of(goodsCriticalValueSetting);
+        return MiNotificationSettingRes.of(goodsCriticalValueSetting, goodsDataSourceDetail);
     }
 
     /**
-     * 수정 기획 삭제
+     * 알림 발송 내역 리스트 조회
      * 
-     * 알림 수정 (Insert/Update/Delete 일괄 처리)
-     * PK값이 없는 경우:
+     * @param user
+     * @param page
+     * @param size
+     * @return
+     */
+    public PaginationRes<MiNotificationRes> getNotifications(int page, int size, User user) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        Page<EmailAccessLog> emailAccessLogs = emailAccessLogRepository.findAllByEmailReceiveUserLoginIdAndIsDeletedFalse(pageable,
+                user.getUserLoginId());
+
+        return PaginationRes.toRes(emailAccessLogs.map(MiNotificationRes::of));
+    }
+
+    /**
+     * 알림 발송 내역 상세보기
      * 
-     * @param notifications
-     * @param goodsDataSourceNo
+     * @param emailSendSn
      * @param user
      * @return
      */
-    // @Transactional
-    // public List<NotificationRes> updateNotification(NotificationReq.Update notifications, Integer goodsDataSourceNo,
-    // User user) {
-    // // 1. GoodsDataSourceDetail 조회
-    // GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
-    // .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
-    // .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-    // "GoodsCriticalValueSetting not found"));
-
-    // // 2. DB에서 기존 GoodsCriticalValueSetting 조회 (user와 goodsDataSourceNo로 필터링)
-    // List<GoodsCriticalValueSetting> existingSettings = goodsCriticalValueSettingRepository
-    // .findByGoodsDataSourceDetailAndUserAndIsDeletedFalse(goodsDataSourceDetail, user);
-
-    // // 3. DTO에서 받은 설정 목록
-    // List<NotificationReq.UpdateSetting> requestedSettings = notifications.settings();
-
-    // // 4. DB와 DTO의 키(userGoodsNotificationSettingNo)로 비교 준비
-    // Map<Integer, GoodsCriticalValueSetting> existingSettingsMap = existingSettings.stream()
-    // .collect(Collectors.toMap(
-    // GoodsCriticalValueSetting::getUserGoodsNotificationSettingNo,
-    // setting -> setting));
-
-    // // Map<Integer, NotificationReq.UpdateSetting> requestedSettingsMap =
-    // // requestedSettings.stream()
-    // // .collect(Collectors.toMap(
-    // // NotificationReq.UpdateSetting::userGoodsNotificationSettingNo,
-    // // setting -> setting));
-
-    // // 5. 삭제 처리: DB에 있는데 DTO에 없는 경우, => 안할 가능성이 높아졌음
-    // List<GoodsCriticalValueSetting> toDelete = existingSettings.stream()
-    // .filter(setting -> requestedSettings.stream()
-    // .noneMatch(requested -> Objects.equals(requested.userGoodsNotificationSettingNo(),
-    // setting.getUserGoodsNotificationSettingNo())))
-    // .toList();
-    // toDelete.forEach(GoodsCriticalValueSetting::softDelete);
-
-    // // 5. 삭제 처리: DB에 있는데 DTO에 없는 경우
-    // // List<GoodsCriticalValueSetting> toDelete = existingSettings.stream()
-    // // .filter(setting ->
-    // // !requestedSettingsMap.containsKey(setting.getUserGoodsNotificationSettingNo()))
-    // // .toList();
-    // // toDelete.forEach(GoodsCriticalValueSetting::softDelete);
-
-    // // 6. 삽입 및 업데이트 처리
-    // List<GoodsCriticalValueSetting> toSave = new ArrayList<>();
-    // for (NotificationReq.UpdateSetting requested : requestedSettings) {
-    // Integer settingNo = requested.userGoodsNotificationSettingNo();
-
-    // if (settingNo == null) {
-    // // DTO에 ID 없음 -> 삽입
-    // GoodsCriticalValueSetting newSetting = GoodsCriticalValueSetting.of(requested, goodsDataSourceDetail, user);
-    // toSave.add(newSetting);
-    // } else {
-    // // DTO에 ID 있음 -> 업데이트 (DB에 없으면 예외)
-    // GoodsCriticalValueSetting existing = existingSettingsMap.get(settingNo);
-    // if (existing == null) {
-    // throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-    // "Notification setting with ID " + settingNo + " not found for update");
-    // }
-    // existing.update(requested);
-    // toSave.add(existing);
-    // }
-
-    // }
-
-    // // 7. 변경 사항 저장
-    // List<GoodsCriticalValueSetting> savedSettings = goodsCriticalValueSettingRepository.saveAll(toSave);
-
-    // // 8. 결과 반환
-    // return savedSettings.stream()
-    // .map(NotificationRes::of)
-    // .collect(Collectors.toList());
-    // }
+    public MiNotificationRes getNotification(Integer emailSendSn, User user) {
+        EmailAccessLog emailAccessLog = emailAccessLogRepository
+                .findByEmailSendSnAndEmailReceiveUserLoginIdAndIsDeletedFalse(emailSendSn, user.getUserLoginId())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        String.format("EmailAccessLog not found: emailSendSn=%d", emailSendSn)));
+        return MiNotificationRes.of(emailAccessLog);
+    }
 }

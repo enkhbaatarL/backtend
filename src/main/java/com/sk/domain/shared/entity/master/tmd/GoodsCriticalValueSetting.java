@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.mi.dto.request.notification.NotificationReq;
+import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
 
@@ -77,7 +77,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     }
 
     public static GoodsCriticalValueSetting of(
-            NotificationReq.Insert dto,
+            NotificationSettingReq.Insert dto,
             GoodsDataSourceDetail goodsDataSourceDetail,
             User user) {
         return GoodsCriticalValueSetting.builder()
@@ -90,7 +90,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     }
 
     public static GoodsCriticalValueSetting of(
-            NotificationReq.UpdateSetting dto,
+            NotificationSettingReq.UpdateSetting dto,
             GoodsDataSourceDetail goodsDataSourceDetail,
             User user) {
         return GoodsCriticalValueSetting.builder()
@@ -102,7 +102,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
                 .build();
     }
 
-    public void update(NotificationReq.UpdateSetting dto) {
+    public void update(NotificationSettingReq.UpdateSetting dto) {
         if (ObjectUtils.isNotEmpty(dto.notificationCriticalValueSeparateCd())) {
             this.notificationCriticalValueSeparateCd = dto.notificationCriticalValueSeparateCd();
         }

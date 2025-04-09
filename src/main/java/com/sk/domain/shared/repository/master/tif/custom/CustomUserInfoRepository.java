@@ -11,7 +11,7 @@ import com.sk.domain.shared.enums.UserRoleCd;
 
 public interface CustomUserInfoRepository {
 
-    Page<UserInfoRes> findUserInfosByConditions(int page, int size, UserRoleCd userRoleCd, String companyCd, String userNm,
+    Page<UserInfoRes> findUserInfosByConditions(int page, int size, List<UserRoleCd> userRoleCds, String companyCd, String userNm,
             String emailAddress);
 
     List<UserInfoWithCompany> findAllUserByInfoIds(List<String> imCds);

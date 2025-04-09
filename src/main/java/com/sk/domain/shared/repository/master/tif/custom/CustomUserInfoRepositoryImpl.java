@@ -32,7 +32,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, UserRoleCd userRoleCd, String companyCd,
+	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, List<UserRoleCd> userRoleCds, String companyCd,
 			String userNm,
 			String emailAddress) {
 
@@ -76,7 +76,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				userInfo.onDutyNm,
 				isRegistered))
 				.from(userInfo)
-				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd)))
+				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.in(userRoleCds)))
 				.where(builder)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())

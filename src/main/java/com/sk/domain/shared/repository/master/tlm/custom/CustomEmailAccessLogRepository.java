@@ -6,6 +6,6 @@ import com.sk.domain.admin.dto.response.NotificationRes;
 
 public interface CustomEmailAccessLogRepository {
 
-    Page<NotificationRes> findNotificationsByConditions(int page, int size);
+    Page<NotificationRes> findNotificationsByConditions(int page, int size, String search);
     
 }

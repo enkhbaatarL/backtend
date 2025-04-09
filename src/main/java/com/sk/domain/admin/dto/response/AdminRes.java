@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.compositeKey.tam.AdminPermissionId;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
@@ -54,7 +53,7 @@ public record AdminRes(
 	AuditInfo auditInfo,
 
 	@Schema(description = "관리자 허용 IP 주소 목록", example = "[192.168.1.1, 192.168.1.2]")
-	List<String> accessAllowedIpAddressList
+	List<String> accessAllowedIpAddress
 ) {
 
     @Builder
@@ -62,7 +61,7 @@ public record AdminRes(
             String onDutyNm,
             String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
             LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, String customerCompanyNm, AuditInfo auditInfo,
-            List<String> accessAllowedIpAddressList) {
+            List<String> accessAllowedIpAddress) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
@@ -75,10 +74,10 @@ public record AdminRes(
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
         this.auditInfo = auditInfo;
-        this.accessAllowedIpAddressList = accessAllowedIpAddressList;
+        this.accessAllowedIpAddress = accessAllowedIpAddress;
     }
 
-    public static AdminRes of(User user, List<AdminPermission> accessAllowedIpAddressList) {
+    public static AdminRes of(User user, List<AdminPermission> accessAllowedIpAddress) {
         return AdminRes.builder()
                 .userNo(user.getUserNo())
                 .userNm(user.getUserNm())
@@ -93,14 +92,14 @@ public record AdminRes(
                 .customerCompanyNm(user.getCustomerCompany().getCustomerCompanyNm())
                 .auditInfo(AuditInfo.ofSimple(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
                         user.getModifyDt()))
-                .accessAllowedIpAddressList(accessAllowedIpAddressList.stream()
+                .accessAllowedIpAddress(accessAllowedIpAddress.stream()
                         .map(AdminPermission::getId)
                         .map(AdminPermissionId::getIpAddress)
                         .collect(Collectors.toList()))
                 .build();
     }
 
-	public static AdminRes ofDetail(User user, List<AdminPermission> accessAllowedIpAddressList) {
+	public static AdminRes ofDetail(User user, List<AdminPermission> accessAllowedIpAddress) {
         return AdminRes.builder()
                 .userNo(user.getUserNo())
                 .userNm(user.getUserNm())
@@ -118,7 +117,7 @@ public record AdminRes(
                         user.getModifyDt(), user.accessCreatorNm(), user.accessCreatorDeptNm(),
                         user.accessCreatorCompanyNm(), user.accessModifierNm(), user.accessModifierDeptNm(),
                         user.accessModifierCompanyNm()))
-                .accessAllowedIpAddressList(accessAllowedIpAddressList.stream()
+                .accessAllowedIpAddress(accessAllowedIpAddress.stream()
                         .map(AdminPermission::getId)
                         .map(AdminPermissionId::getIpAddress)
                         .collect(Collectors.toList()))

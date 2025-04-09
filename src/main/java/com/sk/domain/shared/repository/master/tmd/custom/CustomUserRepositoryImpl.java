@@ -5,6 +5,7 @@ import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,7 +33,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Page<UserDetailRes> findUsersByConditions(int page, int size, UserRoleCd userRoleCd,
+	public Page<UserDetailRes> findUsersByConditions(int page, int size, List<UserRoleCd> userRoleCds,
 			Integer customerCompanyNo, String departmentNm,
 			String userNm, String emailAddress) {
 
@@ -48,7 +49,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 
 		BooleanBuilder builder = new BooleanBuilder();
 		builder.and(user.isDeleted.isFalse())
-				.and(user.userRoleCd.eq(userRoleCd));
+				.and(user.userRoleCd.in(userRoleCds));
 
 		if (customerCompanyNo != null) {
 			builder.and(user.customerCompany.customerCompanyNo.eq(customerCompanyNo));
@@ -82,15 +83,16 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 						user.customerCompany.customerCompanyNo,
 						user.customerCompany.customerCompanyNm,
 						creator.userLoginId,
-						creator.createDt,
+						user.createDt,
 						modifier.userLoginId,
-						modifier.modifyDt,
+						user.modifyDt,
 						creator.userNm,
 						creator.departmentNm,
 						creatorCompany.customerCompanyNm,
 						modifier.userNm,
 						modifier.departmentNm,
 						modifierCompany.customerCompanyNm))
+				.distinct()
 				.from(user)
 				.leftJoin(user.customerCompany, customerCompany)
 				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId))
@@ -100,7 +102,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 				.where(builder)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())
-				.orderBy()
+				.orderBy(user.userNm.asc())
 				.fetch();
 
 		JPAQuery<Long> countQuery = queryFactory
@@ -149,5 +151,15 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 				.where(builder
 						.and(user.isDeleted.isFalse()))
 				.fetch();
+	}
+
+	@Override
+	public Optional<User> findByUserNoAndUserRoleCdList(Integer userNo, List<UserRoleCd> userRoleCds) {
+		return Optional.ofNullable(queryFactory
+				.selectFrom(user)
+				.where(user.userNo.eq(userNo)
+						.and(user.userRoleCd.in(userRoleCds))
+						.and(user.isDeleted.isFalse()))
+				.fetchOne());
 	}
 }

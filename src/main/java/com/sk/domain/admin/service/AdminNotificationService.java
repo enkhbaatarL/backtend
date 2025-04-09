@@ -25,8 +25,8 @@ public class AdminNotificationService {
      * @param size   페이지 크기
      * @return 알림 목록
      */
-    public PaginationRes<NotificationRes> getNotifications(int page, int size) {
-        return PaginationRes.toRes(emailAccessLogRepository.findNotificationsByConditions(page, size));
+    public PaginationRes<NotificationRes> getNotifications(int page, int size, String search) {
+        return PaginationRes.toRes(emailAccessLogRepository.findNotificationsByConditions(page, size, search));
     }
 
 }
