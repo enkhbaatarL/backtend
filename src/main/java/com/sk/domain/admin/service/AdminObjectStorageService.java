@@ -28,10 +28,11 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
+
 import com.sk.common.utils.PathUtil;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 
 import jakarta.annotation.PostConstruct;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,8 +44,6 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminObjectStorageService {
-    private final CustomerCompanyRepository customerCompanyRepository;
-
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
 
@@ -59,24 +58,6 @@ public class AdminObjectStorageService {
 
     @PostConstruct
     public void init() {
-
-        // 공통 버킷 생성
-        if (!objectStorageClient.doesBucketExistV2(commBucketName)) {
-            objectStorageClient.createBucket(commBucketName);
-        }
-
-        // 고객사 버킷 생성
-        customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream().forEach(
-                company -> {
-                    String customerCompanyCd = company.getCustomerCompanyCd().toLowerCase();
-                    String bucketName = prefix + customerCompanyCd;
-
-                    // create bucket
-                    if (!objectStorageClient.doesBucketExistV2(bucketName)) {
-                        objectStorageClient.createBucket(bucketName);
-                    }
-                });
-
         // getBucketList();
     }
 
@@ -102,6 +83,11 @@ public class AdminObjectStorageService {
 
         Path path = Paths.get(fileName.replace("\\", "/"));
         String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString());
+
+        // create bucket
+        if (!objectStorageClient.doesBucketExistV2(bucketName)) {
+            objectStorageClient.createBucket(bucketName);
+        }
 
         // create directory
         if (!objectStorageClient.doesObjectExist(bucketName, directoryPath)) {
@@ -144,6 +130,11 @@ public class AdminObjectStorageService {
 
         Path path = Paths.get(fileName.replace("\\", "/"));
         String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString());
+
+        // create bucket
+        if (!objectStorageClient.doesBucketExistV2(bucketName)) {
+            objectStorageClient.createBucket(bucketName);
+        }
 
         // create directory
         if (!objectStorageClient.doesObjectExist(bucketName, directoryPath)) {
@@ -228,23 +219,6 @@ public class AdminObjectStorageService {
     * @param fileName 파일 Full Path
     * @return 
     */
-    // public String getPresignedUrl(String bucketName, String fileName) {
-    // // presigned URL 만료 시간 설정 (예: 1시간 후 만료)
-    // Date expiration = new Date();
-    // long expTimeMillis = expiration.getTime() + (1000 * 60 * 60);
-    // expiration.setTime(expTimeMillis);
-
-    // // presigned URL 생성 요청
-    // GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, fileName)
-    // .withMethod(HttpMethod.GET)
-    // .withExpiration(expiration);
-
-    // generatePresignedUrlRequest.addRequestParameter(Headers.S3_CANNED_ACL,
-    // CannedAccessControlList.PublicRead.toString());
-
-    // URL url = objectStorageClient.generatePresignedUrl(generatePresignedUrlRequest);
-    // return url.toString();
-    // }
     public String getUrl(String bucketName, String fileName) {
         return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
     }
@@ -266,6 +240,7 @@ public class AdminObjectStorageService {
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
     }
 
+    // debug
     public void getAll() {
         List<Bucket> buckets = objectStorageClient.listBuckets();
         for (Bucket bucket : buckets) {
