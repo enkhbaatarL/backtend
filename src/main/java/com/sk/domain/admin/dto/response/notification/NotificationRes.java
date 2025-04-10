@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.notification;
 
 import java.time.LocalDateTime;
 

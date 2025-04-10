@@ -1,15 +1,16 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.user;
 
 import java.time.LocalDateTime;
 
-import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.dto.AuditInfo;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-public record UserWithCreatorRes(
+public record UserRes(
+
 		@Schema(description = "사용자번호", example = "1") Integer userNo,
 
 		@Schema(description = "사용자명", example = "홍길동") String userNm,
@@ -22,7 +23,7 @@ public record UserWithCreatorRes(
 
 		@Schema(description = "직급명", example = "과장") String jobGradeNm,
 
-		@Schema(description = "직책명", example = "총무") String onDutyNm,
+		@Schema(description = "직책명", example = "사장") String onDutyNm,
 
 		@Schema(description = "부서명", example = "총무팀") String departmentNm,
 
@@ -32,20 +33,16 @@ public record UserWithCreatorRes(
 
 		@Schema(description = "개인정보동의일시", example = "2025-01-01 12:00:00") LocalDateTime individualInfoAgreementDtm,
 
-		@Schema(description = "고객회사번호", example = "1") Integer customerCompanyNo,
-
-		@Schema(description = "고객회사명", example = "SK하이닉스") String customerCompanyNm,
+		@Schema(description = "고객사번호", example = "1") Integer customerCompanyNo,
 
 		@Schema(description = "감사 정보") AuditInfo auditInfo
 
 ) {
-
 	@Builder
-	public UserWithCreatorRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
+	public UserRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
 			String positionNm, String jobGradeNm, String onDutyNm,
 			String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
-			LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, String customerCompanyNm,
-			AuditInfo auditInfo) {
+			LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, AuditInfo auditInfo) {
 		this.userNo = userNo;
 		this.userNm = userNm;
 		this.userLoginId = userLoginId;
@@ -58,28 +55,25 @@ public record UserWithCreatorRes(
 		this.isIndividualInfoAgreement = isIndividualInfoAgreement;
 		this.individualInfoAgreementDtm = individualInfoAgreementDtm;
 		this.customerCompanyNo = customerCompanyNo;
-		this.customerCompanyNm = customerCompanyNm;
 		this.auditInfo = auditInfo;
 	}
 
-	@QueryProjection
-	public UserWithCreatorRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
-			String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
-			Boolean isOtherServiceAccessPossible,
-			Boolean isIndividualInfoAgreement, LocalDateTime individualInfoAgreementDtm,
-			Integer customerCompanyNo, String customerCompanyNm,
-			String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
-			String createUserNm, String createDepartmentNm, String createCompanyNm,
-			String modifyUserNm, String modifyDepartmentNm, String modifyCompanyNm) {
-		this(userNo, userNm, userLoginId, userRoleCd, jobGradeNm, positionNm, onDutyNm, departmentNm,
-				isOtherServiceAccessPossible, isIndividualInfoAgreement, individualInfoAgreementDtm,
-				customerCompanyNo, customerCompanyNm,
-				AuditInfo.ofDetail(
-						createUserId, createDt, modifyUserId, modifyDt,
-						createUserNm, createDepartmentNm, createCompanyNm,
-						modifyUserNm, modifyDepartmentNm, modifyCompanyNm
-				)
-
-		);
+	public static UserRes ofSimple(User user) {
+		return UserRes.builder()
+				.userNo(user.getUserNo())
+				.userNm(user.getUserNm())
+				.userLoginId(user.getUserLoginId())
+				.userRoleCd(user.getUserRoleCd())
+				.positionNm(user.getPositionNm())
+				.jobGradeNm(user.getJobGradeNm())
+				.onDutyNm(user.getOnDutyNm())
+				.departmentNm(user.getDepartmentNm())
+				.isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
+				.isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
+				.individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
+				.customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
+				.auditInfo(AuditInfo.ofSimple(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
+						user.getModifyDt()))
+				.build();
 	}
 }

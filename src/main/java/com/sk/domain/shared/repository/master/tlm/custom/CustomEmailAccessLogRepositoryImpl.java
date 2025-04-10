@@ -15,8 +15,8 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.domain.admin.dto.response.NotificationRes;
-import com.sk.domain.admin.dto.response.QNotificationRes;
+import com.sk.domain.admin.dto.response.notification.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.QNotificationRes;
 
 import lombok.RequiredArgsConstructor;
 

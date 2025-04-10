@@ -17,12 +17,12 @@ import com.sk.common.annotation.TrimmedNotEmpty;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.AdminReq;
-import com.sk.domain.admin.dto.request.UserReq;
-import com.sk.domain.admin.dto.response.AdminRes;
-import com.sk.domain.admin.dto.response.UserDetailRes;
-import com.sk.domain.admin.dto.response.UserInfoRes;
-import com.sk.domain.admin.dto.response.UserRes;
+import com.sk.domain.admin.dto.request.user.AdminReq;
+import com.sk.domain.admin.dto.request.user.UserReq;
+import com.sk.domain.admin.dto.response.user.AdminRes;
+import com.sk.domain.admin.dto.response.user.UserDetailRes;
+import com.sk.domain.admin.dto.response.user.UserInfoRes;
+import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.admin.service.AdminUserService;
 import com.sk.domain.shared.enums.UserRoleCd;
 
@@ -153,6 +153,8 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.saveAdminUser(adminReq));
     }
 
+
+    //TODO: 호영: 관리자 목록 조회시 Filter 추가
     @ApiOrder(8)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -189,6 +191,8 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.getAdminUser(userNo));
     }
 
+
+    //TODO: 호영: 관리자 수정시 ROLE 변경 안됨
     @ApiOrder(10)
     @Parameters({
             @Parameter(name = "userNo", description = "사용자 번호")

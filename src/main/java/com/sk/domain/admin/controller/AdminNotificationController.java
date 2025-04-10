@@ -9,7 +9,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.NotificationRes;
 import com.sk.domain.admin.service.AdminNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.company;
 
 import java.util.List;
 

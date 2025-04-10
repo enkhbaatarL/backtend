@@ -6,13 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,6 +54,7 @@ import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
+import com.sk.domain.shared.dto.request.rpa.ProviderDataColumnReq;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 
@@ -485,5 +486,4 @@ public class AdminProviderController {
 
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
     }
-
 }

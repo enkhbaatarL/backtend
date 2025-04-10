@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.NotificationRes;
 import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
 
 import lombok.RequiredArgsConstructor;

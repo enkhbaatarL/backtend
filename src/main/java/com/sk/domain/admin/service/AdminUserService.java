@@ -14,12 +14,12 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
-import com.sk.domain.admin.dto.request.AdminReq;
-import com.sk.domain.admin.dto.request.UserReq;
-import com.sk.domain.admin.dto.response.AdminRes;
-import com.sk.domain.admin.dto.response.UserDetailRes;
-import com.sk.domain.admin.dto.response.UserInfoRes;
-import com.sk.domain.admin.dto.response.UserRes;
+import com.sk.domain.admin.dto.request.user.AdminReq;
+import com.sk.domain.admin.dto.request.user.UserReq;
+import com.sk.domain.admin.dto.response.user.AdminRes;
+import com.sk.domain.admin.dto.response.user.UserDetailRes;
+import com.sk.domain.admin.dto.response.user.UserInfoRes;
+import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -183,7 +183,7 @@ public class AdminUserService {
 		userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(userInfoWithCompany.userLoginId(), adminReq.userRoleCd())
 				.ifPresent(u -> {
 					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-							String.format("The administrator is already registered: %s", u.getUserNm()));
+							String.format("이미 등록된 사용자입니다: %s", u.getUserNm()));
 				});
 
 		User user = User.of(userInfoWithCompany, adminReq.userRoleCd());

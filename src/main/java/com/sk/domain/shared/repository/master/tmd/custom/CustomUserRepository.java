@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 
-import com.sk.domain.admin.dto.response.UserDetailRes;
+import com.sk.domain.admin.dto.response.user.UserDetailRes;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
