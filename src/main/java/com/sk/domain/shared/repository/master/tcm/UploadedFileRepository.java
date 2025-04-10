@@ -32,4 +32,6 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
             @Param("fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode);
 
+    Optional<UploadedFile> findByFileNoAndIsDeletedFalse(Long fileNo);
+
 }

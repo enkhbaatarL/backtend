@@ -1,22 +1,23 @@
 package com.sk.domain.mi.service;
 
-import com.sk.common.utils.PDFUtil;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.PdfUtil;
+import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.mi.dto.response.PdfMetadataRes;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.stream.IntStream;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -25,58 +26,96 @@ public class MiPdfService {
     private final UploadedFileRepository uploadedFileRepository;
     private final AdminObjectStorageService adminObjectStorageService;
 
-    // 1. pdf 파일 fileNo 유효성 체크
-    // 2. pdf 파일에 매핑된 이미지 폴더 내 이미지 파일 존재 체크 -> 빈 배열
-    // 3. pdf 이미지 파일 갯수 확인
-    // 4. pdf 파일에 대한 메타데이터 반환(UploadedFile)
-    public PdfMetadataRes getPdfMetadata(Integer fileNo) {
-        return null;
-    }
+    /**
+     * 파일 메타데이터를 반환한다.
+     *
+     * @param fileNo 파일 번호
+     * @return PdfMetadataRes
+     */
+    public PdfMetadataRes getPdfFileMetadata(Long fileNo) {
 
-    public Object getSliceImage(Integer fileNo, Integer sliceNo) {
-        return null;
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
+
+        if (!Extension.PDF.getCode().equalsIgnoreCase(uploadedFile.getFileExtNm())) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The fileNo is not a PDF file. fileNo: %s".formatted(fileNo));
+        }
+
+        return PdfMetadataRes.of(uploadedFile);
     }
 
     /**
-     * PDF 파일을 받아 각 페이지를 이미지로 변환하여 S3에 업로드하는 메소드
+     * PDF 파일 이미지를 조회한다.
      *
-     * @param pdfFile PDF 파일
+     * @param fileNo 파일 번호
+     * @param page 페이지
+     * @return byte[]
      */
-    public void uploadPageImagesFromPDF(MultipartFile pdfFile, String uuidFileName) {
+    public byte[] getImagePageFromPdf(Long fileNo, int page) {
+
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
+
+        if (!Extension.PDF.getCode().equalsIgnoreCase(uploadedFile.getFileExtNm())) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The fileNo is not a PDF file. fileNo: %s".formatted(fileNo));
+        }
+
+        if (!uploadedFile.getIsImageConversionCompleted()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The PDF image conversion has not yet been completed. fileNo: %s".formatted(fileNo));
+        }
+
         try {
-
-            byte[] pdfBytes = pdfFile.getBytes();
-            PDDocument document = Loader.loadPDF(pdfBytes);
-            PDFRenderer renderer = new PDFRenderer(document);
-
-            String imageFolderPath = "GUDAT/%s/".formatted(uuidFileName);
-
-            int pageCount = document.getNumberOfPages();
-
-            IntStream.range(0, pageCount)
-                .forEach(pageIndex -> {
-                    try {
-                        // 페이지를 이미지로 렌더링 (DPI 300으로 설정)
-                        BufferedImage image = renderer.renderImageWithDPI(pageIndex, 300);
-
-                        String imageName = String.format("page_%03d.png", pageIndex + 1);
-                        byte[] imageBytes = PDFUtil.imageToByteArray(image, "png");
-
-                        try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
-                            adminObjectStorageService.uploadImageTemp(imageFolderPath + imageName, imageBytes.length, imageInputStream);
-                        }
-
-                    } catch (IOException e) {
-                        throw new RuntimeException("페이지 " + (pageIndex + 1) + " 처리 중 오류 발생", e);
-                    }
-                });
-
-            document.close();
-
-        } catch (IOException e) {
-            throw new RuntimeException("PDF 파일을 이미지로 변환하는 중 오류가 발생했습니다.", e);
+            byte[] bytes = adminObjectStorageService.downloadFile("skt-mi-d-osb-01", "GUDAT/353f20b7-32cd-44fa-afbc-b52881fe84b3/%s.png".formatted(StringUtil.formatPageNumber(page)));
+            BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
+            BufferedImage addTextWatermark = PdfUtil.addTextWatermark(bufferedImage, "T E S T - W A T E R M A R K");
+            return PdfUtil.imageToByteArray(addTextWatermark, Extension.PNG.getCode());
+        } catch (Exception e) {
+            log.error("error [getImagePageFromPdf]: {}", e.getMessage(), e);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
 
     }
+
+//    /**
+//     * PDF 파일을 받아 각 페이지를 이미지로 변환하여 S3에 업로드하는 메소드
+//     *
+//     * @param pdfFile PDF 파일
+//     */
+//    public void uploadPageImagesFromPDF(MultipartFile pdfFile, String uuidFileName) {
+//        try {
+//
+//            byte[] pdfBytes = pdfFile.getBytes();
+//            PDDocument document = Loader.loadPDF(pdfBytes);
+//            PDFRenderer renderer = new PDFRenderer(document);
+//
+//            String imageFolderPath = "GUDAT/%s/".formatted(uuidFileName);
+//
+//            int pageCount = document.getNumberOfPages();
+//
+//            IntStream.range(0, pageCount)
+//                .forEach(pageIndex -> {
+//                    try {
+//                        // 페이지를 이미지로 렌더링 (DPI 300으로 설정)
+//                        BufferedImage image = renderer.renderImageWithDPI(pageIndex, 300);
+//
+//                        String imageName = String.format("page_%03d.png", pageIndex + 1);
+//                        byte[] imageBytes = PdfUtil.imageToByteArray(image, "png");
+//
+//                        try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
+////                            adminObjectStorageService.uploadImageTemp(imageFolderPath + imageName, imageBytes.length, imageInputStream);
+//                        }
+//
+//                    } catch (IOException e) {
+//                        throw new RuntimeException("페이지 " + (pageIndex + 1) + " 처리 중 오류 발생", e);
+//                    }
+//                });
+//
+//            document.close();
+//
+//        } catch (IOException e) {
+//            throw new RuntimeException("PDF 파일을 이미지로 변환하는 중 오류가 발생했습니다.", e);
+//        }
+//
+//    }
 
 }

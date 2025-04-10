@@ -1,12 +1,16 @@
 package com.sk.common.utils;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class PDFUtil {
+public class PdfUtil {
 
     public static byte[] imageToByteArray(BufferedImage image, String format) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -14,7 +18,15 @@ public class PDFUtil {
             ImageIO.write(image, format, baos);
             return baos.toByteArray();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to convert image to byte array", e);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "Failed to convert image to byte array");
+        }
+    }
+
+    public static BufferedImage byteArrayToImage(byte[] imageBytes) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes)) {
+            return ImageIO.read(bais);
+        } catch (IOException e) {
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "Failed to convert byte array to image");
         }
     }
 

@@ -22,4 +22,11 @@ public class StringUtil {
         return sb.toString();
     }
 
+    public static String formatPageNumber(int pageNumber) {
+        if (pageNumber < 0 || pageNumber > 999) {
+            throw new IllegalArgumentException("pageNumber must be between 0 and 999");
+        }
+        return String.format("page_%03d", pageNumber);
+    }
+
 }
