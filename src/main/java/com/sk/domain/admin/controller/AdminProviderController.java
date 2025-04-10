@@ -78,7 +78,9 @@ public class AdminProviderController {
     private final AdminGoodsDataService goodsDataService;
     private final AdminFileService adminFileService;
 
-    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xls", "xlsx");
+    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls");
+    private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel");
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
             "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
@@ -410,10 +412,11 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(97)
-    @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
+    @ApiOrder(91)
+    @Operation(summary = "정형 데이타 파일 업로드", description = "정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<FileUploadRes> uploadStructuredDataFile(
             @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
@@ -432,6 +435,11 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
+        String mimeType = file.getContentType();
+        if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        }
+
         if (file.getSize() > MAX_SIZE) {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
@@ -439,10 +447,11 @@ public class AdminProviderController {
         return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
     }
 
-    @ApiOrder(98)
-    @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
+    @ApiOrder(92)
+    @Operation(summary = "비정형 데이타 파일 업로드", description = "비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
@@ -468,13 +477,15 @@ public class AdminProviderController {
         return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
     }
 
-    @ApiOrder(99)
-    @Operation(summary = "첨부 파일 다운로드", description = "첨부 파일을 다운로드합니다.")
+    @ApiOrder(93)
+    @Operation(summary = "비정형 데이타 파일 다운로드", description = "비정형 데이타 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/goodsdatas/download-file/{fileNo}")
+    @PostMapping("/goodsdatas/download-file/unstructureddata/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            // @UserResolve User user,
+            @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
+
+        // todo: 검증 로직 추가
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
@@ -486,6 +497,22 @@ public class AdminProviderController {
         httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
+    }
+
+    @ApiOrder(94)
+    @Operation(summary = "비정형 데이타 파일 삭제", description = "비정형 데이타 파일을 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @DeleteMapping("/goodsdatas/delete-file/unstructureddata/{fileNo}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    public BaseResponse<String> deleteFile(
+            @UserResolve User user,
+            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
+
+        // todo: 검증 로직 추가
+
+        adminFileService.deleteFile(fileNo);
+
+        return BaseResponseFactory.create("success");
     }
 
 }
