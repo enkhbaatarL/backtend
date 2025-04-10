@@ -2,6 +2,7 @@ package com.sk.domain.admin.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -128,6 +129,48 @@ public class AdminObjectStorageService {
     }
 
     /**
+    * 파일을 업로드 한다.
+    *
+    * @param InputStream 단일 파일 업로드
+    * @param bucketName 버킷 이름
+    * @param fileName 파일 Full Path
+    * @param isPublic 공개 여부
+    * @param contentType 타입
+    * @param contentLength 크기
+    * @return String 접근할 수 있는 URL 리턴
+    */
+    public String uploadFile(InputStream file, String bucketName, String fileName, boolean isPublic, String contentType, long contentLength)
+            throws IOException {
+
+        Path path = Paths.get(fileName.replace("\\", "/"));
+        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString());
+
+        // create directory
+        if (!objectStorageClient.doesObjectExist(bucketName, directoryPath)) {
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(0L);
+            objectMetadata.setContentType("application/x-directory");
+
+            objectStorageClient.putObject(bucketName, directoryPath, new ByteArrayInputStream(new byte[0]), objectMetadata);
+        }
+
+        // create file
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentType(contentType);
+        objectMetadata.setContentLength(contentLength);
+
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, file, objectMetadata);
+        objectStorageClient.putObject(putObjectRequest);
+
+        if (isPublic) {
+            this.setACL(bucketName, fileName);
+            return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
+        }
+
+        return "";// this.getPresignedUrl(bucketName, fileName);
+    }
+
+    /**
     * 파일을 다운로드 한다.
     *
     * @param bucketName 버킷 이름
@@ -135,7 +178,6 @@ public class AdminObjectStorageService {
     * @return byte[] 파일 데이타
     */
     public byte[] downloadFile(String bucketName, String fileName) throws IOException {
-
         S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
 
         S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();

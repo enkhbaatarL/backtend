@@ -51,11 +51,13 @@ public class AdminGoodsService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
+        // 관리자
         if (RoleUtil.isAdmin(user)) {
             Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable);
             return PaginationRes.toRes(goodsPage);
         }
 
+        // 운영자
         if (RoleUtil.isOperator(user)) {
             Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNoForOperator(user.getCustomerCompany().getCustomerCompanyNo(),
                     providerNo,
@@ -63,7 +65,7 @@ public class AdminGoodsService {
             return PaginationRes.toRes(goodsPage);
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
     }
 
     /**
@@ -77,8 +79,7 @@ public class AdminGoodsService {
 
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("provider no: %d", providerNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
         goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider));
 
@@ -94,27 +95,38 @@ public class AdminGoodsService {
     * @return GoodsDetailRes
     */
     public GoodsDetailRes getGoods(User user, int providerNo, int goodsNo) {
+
+        // 프로바이더 정보 확인
+        providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            //
+            return goodsRepository.findGoodsDetailByGoodsNoForAdmin(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
         }
 
+        // 운영자
         if (RoleUtil.isOperator(user)) {
             // 고객사와 프로바이더 맵핑 정보 확인
             customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
                     .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("provider no: %d", providerNo)));
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "provider no: %d".formatted(providerNo)));
 
             // 고객사와 상품 맵핑 정보 확인
             customerCompanyGoodsMappingRepository
                     .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
                     .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, String.format("goods no: %d", goodsNo)));
+                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "goods no: %d".formatted(goodsNo)));
+
+            return goodsRepository.findGoodsDetailByGoodsNoForOperator(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
         }
 
-        return goodsRepository.findGoodsDetailByGoodsNo(goodsNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
+        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
     }
 
     /**
@@ -129,8 +141,7 @@ public class AdminGoodsService {
 
         Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
         goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
 
@@ -148,8 +159,7 @@ public class AdminGoodsService {
 
         Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalse(goodsNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
         goods.softDelete();
 
@@ -166,7 +176,6 @@ public class AdminGoodsService {
     public GoodsLatestUpdatedRes getGoodsLatestUpdated(int goodsNo) {
         return goodsRepository.findGoodsLatestUpdatedByGoodsNo(goodsNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                String.format("goods no: %d", goodsNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
     }
 }

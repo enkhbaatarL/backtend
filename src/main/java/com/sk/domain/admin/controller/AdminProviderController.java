@@ -102,9 +102,6 @@ public class AdminProviderController {
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
 
-        System.out.println(String.format("========>>>   %d-%s-%s-%s", user.getUserNo(), user.getUserNm(), user.getUserLoginId(),
-                user.getUserRoleCd().getCode()));
-
         return BaseResponseFactory.create(providerService.getAllProviders(user, page, size));
     }
 
@@ -214,8 +211,9 @@ public class AdminProviderController {
     @Operation(summary = "상품 등록", description = "상품을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> createGoods(
+            @UserResolve User user,
             @RequestBody @Valid GoodsCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -472,10 +470,10 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/goodsdatas/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
         String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
 

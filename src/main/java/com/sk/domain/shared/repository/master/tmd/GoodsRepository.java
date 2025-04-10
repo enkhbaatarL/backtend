@@ -13,6 +13,15 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface GoodsRepository extends JpaRepository<Goods, Integer> {
+    /**
+     * 
+     * 기본적으로 고객사나 사용자의 사용가능 상태는 체크 하지 않는다. 로그인 단에서 체크하는걸로 처리
+     *
+     */
+
+    Optional<Goods> findByGoodsNoAndIsDeletedFalse(int goodsNo);
+
+    Optional<Goods> findByGoodsNoAndIsDeletedFalseAndIsUsedTrue(int goodsNo);
 
     // 전체 상품 목록을 조회한다.
     @Query(value = """
@@ -98,7 +107,39 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
     Page<GoodsRes> findGoodsByProviderNoForOperator(@Param("customerCompanyNo") int customerCompanyNo, @Param("providerNo") int providerNo,
             @Param("keyword") String keyword, Pageable pageable);
 
-    Optional<Goods> findByGoodsNoAndIsDeletedFalse(int goodsNo);
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
+            g.goodsNo,
+            g.goodsNm,
+            g.goodsId,
+            g.goodsExpn,
+            g.isUsed,
+            g.isPublic,
+            new com.sk.domain.shared.dto.AuditInfo(
+                    g.createUserId,
+                    g.createDt,
+                    g.modifyUserId,
+                    g.modifyDt,
+                    new com.sk.domain.shared.dto.AuditExtension(
+                        cu.userNm,
+                        cu.departmentNm,
+                        cuc.customerCompanyNm,
+                        mu.userNm,
+                        mu.departmentNm,
+                        muc.customerCompanyNm
+                    )
+                )
+            )
+            FROM Goods g
+            LEFT JOIN User cu ON g.createUserId = cu.userLoginId AND (cu.userRoleCd = 'ADMIN' OR cu.userRoleCd = 'OPERATOR')
+            LEFT JOIN cu.customerCompany cuc
+            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
+            LEFT JOIN mu.customerCompany muc
+            WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
+            AND g.goodsNo = :goodsNo
+            """)
+    Optional<GoodsDetailRes> findGoodsDetailByGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
@@ -129,9 +170,10 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
             LEFT JOIN mu.customerCompany muc
             WHERE g.isDeleted = false
+            AND g.provider.providerNo = :providerNo
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsDetailRes> findGoodsDetailByGoodsNo(@Param("goodsNo") int goodsNo);
+    Optional<GoodsDetailRes> findGoodsDetailByGoodsNoForOperator(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes(
