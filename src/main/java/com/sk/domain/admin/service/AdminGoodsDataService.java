@@ -167,17 +167,11 @@ public class AdminGoodsDataService {
 
         // 관리자
         if (RoleUtil.isAdmin(user)) {
-            providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+            //
         }
 
         // 운영자
         if (RoleUtil.isOperator(user)) {
-            providerRepository.findByProviderNoAndIsDeletedFalseAndIsUsedTrue(providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
             // 고객사와 프로바이더 맵핑 정보 확인
             customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
                     .orElseThrow(
@@ -190,13 +184,14 @@ public class AdminGoodsDataService {
                             () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "goods no: %d".formatted(goodsNo)));
         }
 
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
+        GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
 
         List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-        List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+        List<StructuredDataRes> structuredDataList = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
         List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
@@ -237,8 +232,9 @@ public class AdminGoodsDataService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
+        // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
-                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsExpn(), dto.goodsDataSummaryCntt()));
+                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt()));
 
         // 카테고리 저장
         if (dto.categoryDataList() != null) {
@@ -258,11 +254,12 @@ public class AdminGoodsDataService {
 
                 // todo
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                        .save(GoodsDataSourceDetail.of(savedGoodsData, structuredData.dataNm(), "targetDbNm",
+                        .save(GoodsDataSourceDetail.of(savedGoodsData, "goodsDataSourceNm", "targetDbNm",
                                 "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
 
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "DATATYPE", structuredData.dataType(),
-                        GoodsDataManagementSeparateCode.GUDAT.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
+                // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
+                        GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
             }
         }
 
@@ -290,7 +287,7 @@ public class AdminGoodsDataService {
     */
     @Transactional
     public void updateGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
+        GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
@@ -323,6 +320,7 @@ public class AdminGoodsDataService {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
                 log.info("==================> {}", structuredData);
                 // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
+                // 재현님하고 협의
             }
         }
 
