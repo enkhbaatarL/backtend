@@ -80,14 +80,18 @@ public class AdminProviderController {
     private final AdminFileService adminFileService;
 
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xls", "xlsx");
-    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
+    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
+            "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
-    // ADMIN
+    // ADMIN-SKCC
     // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0MDk4ODk2LCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0NzY5ODg5Nn0.68OEYnjjNj7nR-zp2bO3nb2FmaYOSKfIbo7zgl8Nfd8
 
-    // OPERATOR
+    // OPERATOR-SKHY
     // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0MDk4OTM4LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc0NzY5ODkzOH0.P8PcdjIKGDriBVVMggr4VnC9ubHJDn9GiDzR-Rw1kp8
+
+    // OPERATOR-SKGAS
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNDU0MzgsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI0NTQzOH0.cbpjFfcl5V8XNi_rkt4awLuwNPvayqf5DenNv8APWqM
 
     @ApiOrder(1)
     @Parameters({

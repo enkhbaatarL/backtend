@@ -7,11 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 // @formatter:off
 public record StructuredDataRes(
         
-        @Schema(description = "데이타타입", example = "") 
-        String dataType,
-
-        @Schema(description = "데이타명", example = "") 
-        String dataNm,
+        @Schema(description = "컴포넌트유형명", example = "") 
+        String componentTypeNm,
 
         @Schema(description = "등록일시", example = "2025-02-12 15:00:00")
         LocalDateTime createDt) {

@@ -218,13 +218,9 @@ public class AdminFileService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
         try {
-            URL url = new URL(uploadedFile.getStoragePathNm());
-            String pathOnly = url.getPath();
-            String[] filePaths = pathOnly.split("/");
-            String bucketName = filePaths[1];
-            String oldPath = String.join("/", Arrays.copyOfRange(filePaths, 2, filePaths.length));
-            String newPath = PathUtil.IncludeTrailingPathDelimiter(fileRelationshipObjectSeparateCode)
-                    + String.join("/", Arrays.copyOfRange(filePaths, 3, filePaths.length));
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String oldPath = getFileName(uploadedFile.getStoragePathNm());
+            String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
             adminObjectStorageService.moveFile(bucketName, oldPath, newPath);

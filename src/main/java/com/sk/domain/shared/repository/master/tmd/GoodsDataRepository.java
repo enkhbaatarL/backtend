@@ -20,7 +20,18 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
      *
      */
 
-    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
+    @Query(value = """
+            SELECT gd
+            FROM GoodsData gd
+            WHERE gd.isDeleted = false
+            AND gd.goods.provider.providerNo = :providerNo
+            AND gd.goods.provider.isDeleted = false
+            AND gd.goods.goodsNo = :goodsNo
+            AND gd.goods.isDeleted = false
+            AND gd.goodsDataNo = :goodsDataNo
+                        """)
+    Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+            @Param("goodsDataNo") int goodsDataNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(

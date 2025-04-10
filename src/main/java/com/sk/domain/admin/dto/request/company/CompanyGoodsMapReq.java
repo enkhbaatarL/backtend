@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 // @formatter:off
 public record CompanyGoodsMapReq(
 
-        @NotEmpty 
+        @NotNull 
         @Schema(description = "상품번호", example = "1") 
         Integer goodsNo,
 
