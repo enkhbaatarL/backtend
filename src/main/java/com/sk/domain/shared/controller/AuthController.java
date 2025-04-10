@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.shared.dto.response.GenerateTokenRes;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/api/auth")
-@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -31,6 +30,7 @@ public class AuthController {
     @ApiOrder(1)
     @Operation(summary = "토큰 갱신 API", description = "Access Token, Refresh Token을 갱신합니다. (Refresh Token Rotation)")
     @PostMapping("/token-generation")
+    @ApiResponse(responseCode = "200", description = "토큰 갱신 성공")
     public BaseResponse<GenerateTokenRes> generateToken(
             @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = true) String authHeader,
             @RequestHeader(value = "X-Refresh-Token", required = true) String refreshToken) {

@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.admin.dto.request.TestReq;
+import com.sk.domain.shared.dto.request.rpa.ComponentInfoReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -77,18 +77,17 @@ public class ComponentInfo extends BaseEntity {
         this.excelConditionCntt = excelConditionCntt;
     }
 
-    //TODO: 호영: Request DTO 변경 필요
-    public static ComponentInfo of(TestReq.saveComponent testReq) {
+    public static ComponentInfo of(ComponentInfoReq.Insert dto) {
         return ComponentInfo.builder()
-                .componentTypeId(testReq.componentTypeId())
-                .componentTypeNm(testReq.componentTypeNm())
-                .goodsDataSourceNm(testReq.goodsDataSourceNm())
-                .targetDbNm(testReq.targetDbNm())
-                .targetTableNm(testReq.targetTableNm())
-                .queryConditionCntt(testReq.queryConditionCntt())
-                .tableColumnListNm(testReq.tableColumnListNm())
-                .excelColumnListNm(testReq.excelColumnListNm())
-                .excelConditionCntt(testReq.excelConditionCntt())
+                .componentTypeId(dto.componentTypeId())
+                .componentTypeNm(dto.componentTypeNm())
+                .goodsDataSourceNm(dto.goodsDataSourceNm())
+                .targetDbNm(dto.targetDbNm())
+                .targetTableNm(dto.targetTableNm())
+                .queryConditionCntt(dto.queryConditionCntt())
+                .tableColumnListNm(dto.tableColumnListNm())
+                .excelColumnListNm(dto.excelColumnListNm())
+                .excelConditionCntt(dto.excelConditionCntt())
                 .build();
     }
 }

@@ -22,7 +22,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
+import com.sk.domain.admin.dto.response.company.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.CompanyRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.admin.dto.response.company.QCompanyRes;

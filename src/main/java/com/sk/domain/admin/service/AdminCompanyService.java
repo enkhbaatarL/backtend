@@ -10,7 +10,6 @@ import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
-import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.validator.CompanyValidator;
 import com.sk.domain.shared.entity.base.BaseEntity;

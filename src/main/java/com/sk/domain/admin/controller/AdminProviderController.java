@@ -6,13 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,6 +38,7 @@ import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
@@ -53,6 +54,7 @@ import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
+import com.sk.domain.shared.dto.request.rpa.ProviderDataColumnReq;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 
@@ -78,14 +80,18 @@ public class AdminProviderController {
     private final AdminFileService adminFileService;
 
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xls", "xlsx");
-    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
+    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
+            "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
-    // ADMIN
+    // ADMIN-SKCC
     // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0MDk4ODk2LCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0NzY5ODg5Nn0.68OEYnjjNj7nR-zp2bO3nb2FmaYOSKfIbo7zgl8Nfd8
 
-    // OPERATOR
+    // OPERATOR-SKHY
     // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0MDk4OTM4LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc0NzY5ODkzOH0.P8PcdjIKGDriBVVMggr4VnC9ubHJDn9GiDzR-Rw1kp8
+
+    // OPERATOR-SKGAS
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNDU0MzgsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI0NTQzOH0.cbpjFfcl5V8XNi_rkt4awLuwNPvayqf5DenNv8APWqM
 
     @ApiOrder(1)
     @Parameters({
@@ -99,9 +105,6 @@ public class AdminProviderController {
             @UserResolve User user,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
-
-        System.out.println(String.format("========>>>   %d-%s-%s-%s", user.getUserNo(), user.getUserNm(), user.getUserLoginId(),
-                user.getUserRoleCd().getCode()));
 
         return BaseResponseFactory.create(providerService.getAllProviders(user, page, size));
     }
@@ -212,8 +215,9 @@ public class AdminProviderController {
     @Operation(summary = "상품 등록", description = "상품을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> createGoods(
+            @UserResolve User user,
             @RequestBody @Valid GoodsCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -333,15 +337,14 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getGoodsDataSubCategorys(codeId));
     }
 
-    // @ApiOrder(17)
-    // @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/goodsdata/structureddatatype")
-    // public BaseResponse<String> getstructuredDataType() {
-    // // todo: 데이타 타입 리스트 전달
+    @ApiOrder(17)
+    @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goodsdata/structureddatatype")
+    public BaseResponse<List<ComponentInfoRes>> getStructuredDataType() {
 
-    // return BaseResponseFactory.create("todo");
-    // }
+        return BaseResponseFactory.create(goodsDataService.getStructuredDataType());
+    }
 
     @ApiOrder(18)
     @Parameters({
@@ -471,10 +474,10 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/goodsdatas/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            @UserResolve User user,
+            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(user, fileNo);
+        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
         String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
 
@@ -485,5 +488,4 @@ public class AdminProviderController {
 
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
     }
-
 }

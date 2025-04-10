@@ -14,6 +14,24 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
+    /**
+     * 
+     * 기본적으로 고객사나 사용자의 사용가능 상태는 체크 하지 않는다. 로그인 단에서 체크하는걸로 처리
+     *
+     */
+
+    @Query(value = """
+            SELECT gd
+            FROM GoodsData gd
+            WHERE gd.isDeleted = false
+            AND gd.goods.provider.providerNo = :providerNo
+            AND gd.goods.provider.isDeleted = false
+            AND gd.goods.goodsNo = :goodsNo
+            AND gd.goods.isDeleted = false
+            AND gd.goodsDataNo = :goodsDataNo
+                        """)
+    Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+            @Param("goodsDataNo") int goodsDataNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
@@ -85,5 +103,4 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                         """)
     List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
-    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 }
