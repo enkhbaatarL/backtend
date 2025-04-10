@@ -28,8 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
-    private final List<String> excludeUriStartsWith = List.of("/excludeUri", "/api/v1/admin/bulletinboard-manangement",
-            "/api/v1/admin/file-manangement", "/api/v1/admin/provider-manangement", "/api/v1/admin/excel");
     private final AtomicLong id = new AtomicLong(0);
 
     @Override
@@ -49,7 +47,10 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             log.debug("Header: {}={}", headerName, headerValue);
         }
 
-        if (excludeUriStartsWith.stream().anyMatch(excluded -> request.getRequestURI().startsWith(excluded))) {
+        String contentType = request.getContentType();
+        String requestUri = request.getRequestURI();
+
+        if (isMultipartRequest(contentType) || isDownloadResponse(requestUri)) {
 
             initializeMDC(request);
             logRequest(request);
@@ -177,6 +178,16 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         log.info("res uri={}, totalTime={}", uri, System.currentTimeMillis() - startTime);
 
     }
+
+    private boolean isMultipartRequest(String contentType) {
+        return contentType != null && contentType.toLowerCase().startsWith("multipart/");
+    }
+
+    private boolean isDownloadResponse(String requestUri) {
+        return requestUri.matches(".*/(download|export|file|attachment)/.*")
+            || requestUri.matches(".*\\.(xlsx|xls|csv|pdf|zip|tar|7z|exe|jpg|png|mp4|mp3)$");
+    }
+
 
     @Override
     public int getOrder() {

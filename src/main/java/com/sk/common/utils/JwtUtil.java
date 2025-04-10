@@ -12,6 +12,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -49,6 +50,7 @@ public class JwtUtil {
             .claim("companyNo", user.getCustomerCompany().getCustomerCompanyNo())
             .claim("companyCd", user.getCustomerCompany().getCustomerCompanyCd())
             .claim("role", user.getUserRoleCd().getCode())
+            .claim("isOtherServiceAccessPossible", ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
             .compact();
     }

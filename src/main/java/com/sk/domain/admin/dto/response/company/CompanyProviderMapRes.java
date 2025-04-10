@@ -36,6 +36,27 @@ public record CompanyProviderMapRes(
         this.auditInfo = auditInfo;
     }
 
+    public static CompanyProviderMapRes of(CustomerCompanyProviderMapping entity) {
+        return CompanyProviderMapRes.builder()
+            .providerNo(entity.getProvider().getProviderNo())
+            .providerNm(entity.getProvider().getProviderNm())
+            .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
+            .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
+            .auditInfo(AuditInfo.ofDetail(
+                entity.getCreateUserId(),
+                entity.getCreateDt(),
+                entity.getModifyUserId(),
+                entity.getModifyDt(),
+                entity.accessCreatorNm(),
+                entity.accessCreatorDeptNm(),
+                entity.accessCreatorCompanyNm(),
+                entity.accessModifierNm(),
+                entity.accessModifierDeptNm(),
+                entity.accessModifierCompanyNm()
+            ))
+            .build();
+    }
+
     public static CompanyProviderMapRes ofDefault(CustomerCompanyProviderMapping entity) {
         return CompanyProviderMapRes.builder()
             .providerNo(entity.getProvider().getProviderNo())

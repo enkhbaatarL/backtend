@@ -9,10 +9,7 @@ import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -52,10 +49,11 @@ public class CustomJwtEncoder implements JwtEncoder {
         Date expiryDate = new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry());
 
         String token = Jwts.builder()
+            .header().add("typ", "JWT").and()
             .subject(clientId)
-            .claim("scope", registeredClient.getScopes())
-            .claim("tenant", registeredClient.getClientSettings().getSetting("tenant"))
-            .claim("role", registeredClient.getClientSettings().getSetting("role"))
+            .claim("companyNo", registeredClient.getClientSettings().getSetting("companyNo")) // 회사번호
+            .claim("companyCd", registeredClient.getClientSettings().getSetting("companyCd")) // 회사코드
+            .claim("role", registeredClient.getClientSettings().getSetting("role")) // 역할
             .issuedAt(new Date())
             .expiration(expiryDate)
             .signWith(jwtUtil.getSecretKey(), Jwts.SIG.HS256)

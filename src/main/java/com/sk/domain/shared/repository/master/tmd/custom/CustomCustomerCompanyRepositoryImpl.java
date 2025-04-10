@@ -147,7 +147,8 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             latestModifyNm = queryFactory
                     .select(user.userNm)
                     .from(user)
-                    .where(user.userLoginId.eq(latestModifyId))
+                    .where(user.userLoginId.eq(latestModifyId).and(user.userRoleCd.eq(UserRoleCd.ADMIN)))
+                    .limit(1)
                     .fetchOne();
         }
 

@@ -44,4 +44,10 @@ public class MiUserService {
         return permissionRes;
     }
 
+    // todo 캐시
+    public PermissionRes getAdminGoodsPermissions() {
+        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findAdminGoodsPermissions();
+        return PermissionRes.fromAuthorityMappings(goodsMappings);
+    }
+
 }
