@@ -20,8 +20,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Tag(name = "00. Scheduler API", description = "스케쥴러 API")
 @RestController
-@RequestMapping("/api/v1/api/scheduler")
-@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+@RequestMapping("/api/v1/api/scheduler-management")
 @RequiredArgsConstructor
 public class SchedulerController {
     private final SchedulerService schedulerService;
@@ -29,6 +28,7 @@ public class SchedulerController {
     @ApiOrder(1)
     @Operation(summary = "GDI 탈퇴 유저 soft delete 처리 API", description = "GDI 탈퇴 유저 soft delete 처리 API 입니다.")
     @DeleteMapping("/group-users")
+    @ApiResponse(responseCode = "200", description = "GDI 탈퇴 유저 soft delete 처리 성공")
     public BaseResponse<Boolean> processGdiUserSoftDelete() {
         return BaseResponseFactory.create(schedulerService.processGdiUserSoftDelete());
     }
@@ -36,6 +36,7 @@ public class SchedulerController {
     @ApiOrder(2)
     @Operation(summary = "알림 발송 API", description = "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.")
     @PostMapping("/notification")
+    @ApiResponse(responseCode = "200", description = "알림 발송 성공")
     public BaseResponse<Boolean> createNotification() {
         return BaseResponseFactory.create(schedulerService.createNotification());
     }

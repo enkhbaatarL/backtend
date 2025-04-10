@@ -19,8 +19,8 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.admin.dto.internal.QUserInfoWithCompany;
 import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
-import com.sk.domain.admin.dto.response.QUserInfoRes;
-import com.sk.domain.admin.dto.response.UserInfoRes;
+import com.sk.domain.admin.dto.response.user.QUserInfoRes;
+import com.sk.domain.admin.dto.response.user.UserInfoRes;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import lombok.RequiredArgsConstructor;
@@ -32,11 +32,15 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, UserRoleCd userRoleCd, String companyCd,
+	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, List<UserRoleCd> userRoleCds, String companyCd,
 			String userNm,
 			String emailAddress) {
 
 		Pageable pageable = PageRequest.of(page - 1, size);
+
+
+		// //TODO: 호영: => 조회 API 하나로 => ROLECD로 고객사냐 관리사냐 구분해서 JOIN 조건 추가
+
 
 		BooleanBuilder builder = new BooleanBuilder();
 		builder.and(userInfo.isDeleted.isFalse())
@@ -76,7 +80,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				userInfo.onDutyNm,
 				isRegistered))
 				.from(userInfo)
-				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd)))
+				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.in(userRoleCds)))
 				.where(builder)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())
@@ -107,6 +111,9 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd)
 						.and(customerCompany.isUsed.isTrue())
 						.and(customerCompany.isDeleted.isFalse()))
+
+						//TODO: 호영: 고객사 OR 관리사 조건 추가
+
 				.where(userInfo.imCd.in(imCds)
 						.and(userInfo.isDeleted.isFalse()))
 				.fetch();

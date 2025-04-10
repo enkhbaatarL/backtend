@@ -7,10 +7,13 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.EmailSendStatusName;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -47,9 +50,10 @@ public class EmailAccessLog extends BaseEntity {
     @Comment("이메일내용")
     private String emailCntt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "eml_send_stat_nm", length = 20)
     @Comment("이메일발송상태명")
-    private String emailSendStatusNm;
+    private EmailSendStatusName emailSendStatusNm;
 
     @Lob
     @Column(name = "eml_send_err_cntt", columnDefinition = "text")
@@ -69,7 +73,7 @@ public class EmailAccessLog extends BaseEntity {
     @Builder
     public EmailAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer emailSendSn, String emailReceiveUserLoginId,
-            String emailTitleNm, String emailCntt, String emailSendStatusNm,
+            String emailTitleNm, String emailCntt, EmailSendStatusName emailSendStatusNm,
             String emailSendErrCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.emailSendSn = emailSendSn;
@@ -83,7 +87,7 @@ public class EmailAccessLog extends BaseEntity {
     }
 
     public static EmailAccessLog of(String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
-            String emailSendStatusNm) {
+            EmailSendStatusName emailSendStatusNm) {
         return EmailAccessLog.builder()
                 .emailReceiveUserLoginId(emailReceiveUserLoginId)
                 .emailTitleNm(emailTitleNm)
@@ -94,12 +98,12 @@ public class EmailAccessLog extends BaseEntity {
                 .build();
     }
 
-    public void successUpdate(String emailSendStatusNm) {
+    public void successUpdate(EmailSendStatusName emailSendStatusNm) {
         this.emailSendStatusNm = emailSendStatusNm;
         this.isSendSuccess = true;
     }
 
-    public void failUpdate(String emailSendStatusNm, String emailSendErrCntt) {
+    public void failUpdate(EmailSendStatusName emailSendStatusNm, String emailSendErrCntt) {
         this.emailSendStatusNm = emailSendStatusNm;
         this.emailSendErrCntt = emailSendErrCntt;
         this.isSendSuccess = false;

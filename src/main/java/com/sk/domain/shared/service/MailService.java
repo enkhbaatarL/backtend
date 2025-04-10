@@ -33,7 +33,7 @@ public class MailService {
     @Transactional(noRollbackFor = AppErrorException.class)
     public void sendMail(String to, String subject, String data) {
 
-        EmailAccessLog emailAccessLog = EmailAccessLog.of(to, subject, data, EmailSendStatusName.PENDING.getCode());
+        EmailAccessLog emailAccessLog = EmailAccessLog.of(to, subject, data, EmailSendStatusName.PENDING);
         emailAccessLogRepository.save(emailAccessLog);
 
         MimeMessage message = javaMailSender.createMimeMessage();
@@ -45,11 +45,11 @@ public class MailService {
             helper.setText(setContext(data), true);
             javaMailSender.send(message);
 
-            emailAccessLog.successUpdate(EmailSendStatusName.SUCCESS.getCode());
+            emailAccessLog.successUpdate(EmailSendStatusName.SUCCESS);
 
             log.info("Mail sent successfully");
         } catch (Exception e) {
-            emailAccessLog.failUpdate(EmailSendStatusName.FAILED.getCode(), e.getMessage());
+            emailAccessLog.failUpdate(EmailSendStatusName.FAILED, e.getMessage());
             
             log.error("Mail sending failed", e);
             throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,

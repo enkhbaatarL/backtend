@@ -7,7 +7,7 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
-import com.sk.domain.admin.dto.request.AdminReq;
+import com.sk.domain.admin.dto.request.user.AdminReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.UserRoleCd;
 
@@ -129,6 +129,9 @@ public class User extends BaseEntity {
     public void update(AdminReq.Update dto){
         if(dto.isOtherServiceAccessPossible() != null) {
             this.isOtherServiceAccessPossible = dto.isOtherServiceAccessPossible();
+        }
+        if(dto.userRoleCd() != null) {
+            this.userRoleCd = dto.userRoleCd();
         }
     }
 }

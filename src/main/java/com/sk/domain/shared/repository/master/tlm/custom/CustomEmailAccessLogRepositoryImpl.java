@@ -12,11 +12,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.domain.admin.dto.response.NotificationRes;
-import com.sk.domain.admin.dto.response.QNotificationRes;
-import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.admin.dto.response.notification.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.QNotificationRes;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,8 +27,14 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<NotificationRes> findNotificationsByConditions(int page, int size) {
+    public Page<NotificationRes> findNotificationsByConditions(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page - 1, size);
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(emailAccessLog.isDeleted.isFalse());
+        if (search != null && !search.isEmpty()) {
+            builder.and(user.userNm.contains(search).or(emailAccessLog.emailCntt.contains(search)));
+        }
 
         List<NotificationRes> content = queryFactory.select(new QNotificationRes(
                 emailAccessLog.emailSendSn,
@@ -40,6 +46,8 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 emailAccessLog.emailSendDtm,
                 user.userNm,
                 user.userRoleCd,
+                user.positionNm,
+                user.jobGradeNm,
                 user.onDutyNm,
                 user.departmentNm,
                 customerCompany.customerCompanyNo,
@@ -49,18 +57,18 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 emailAccessLog.modifyUserId,
                 emailAccessLog.modifyDt))
                 .from(emailAccessLog)
-                .leftJoin(user).on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId)
-                        .and(user.userRoleCd.eq(UserRoleCd.ADMIN)))
+                .leftJoin(user).on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId))
                 .leftJoin(user.customerCompany, customerCompany)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .where(emailAccessLog.isDeleted.isFalse(), user.isDeleted.isFalse())
-                .orderBy(emailAccessLog.emailSendDtm.desc())
+                .where(builder)
+                .orderBy(emailAccessLog.emailSendSn.desc())
+                .groupBy(emailAccessLog.emailSendSn)
                 .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory.select(emailAccessLog.count())
                 .from(emailAccessLog)
-                .where(emailAccessLog.isDeleted.isFalse());
+                .where(builder);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }

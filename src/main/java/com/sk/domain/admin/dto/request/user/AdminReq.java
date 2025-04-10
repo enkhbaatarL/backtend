@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.request;
+package com.sk.domain.admin.dto.request.user;
 
 import java.util.List;
 
