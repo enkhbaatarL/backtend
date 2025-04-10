@@ -1,8 +1,8 @@
 package com.sk.common.config.security.oauth2;
 
-import com.sk.domain.shared.entity.master.Oauth2RegisteredClient;
+import com.sk.domain.shared.entity.master.tif.ClientAccessInfo;
 import com.sk.domain.shared.enums.Role;
-//import com.sk.domain.shared.repository.master.Oauth2RegisteredClientRepository;
+import com.sk.domain.shared.repository.master.tif.ClientAccessInfoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -15,16 +15,12 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.time.Duration;
-import java.util.UUID;
-
 @Component
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CustomRegisteredClientRepository implements RegisteredClientRepository {
 
-//    private final Oauth2RegisteredClientRepository oauth2RegisteredClientRepository;
+    private final ClientAccessInfoRepository clientAccessInfoRepository;
 
     @Override
     public void save(RegisteredClient registeredClient) {
@@ -33,34 +29,32 @@ public class CustomRegisteredClientRepository implements RegisteredClientReposit
 
     @Override
     public RegisteredClient findById(String id) {
-        return null;
+        return findByClientId(id);
     }
 
     @Override
     public RegisteredClient findByClientId(String clientId) {
 
-//        Oauth2RegisteredClient client = oauth2RegisteredClientRepository.findByClientId(clientId)
-//            .orElseThrow(() -> new AuthenticationServiceException("clientId: %s".formatted(clientId)));
-//
-//        return RegisteredClient.withId(UUID.randomUUID().toString())
-//            .clientId(client.getClientId())
-//            .clientSecret(client.getClientSecret())
-//            .clientAuthenticationMethod(new ClientAuthenticationMethod(client.getClientAuthenticationMethod()))
-//            .authorizationGrantType(new AuthorizationGrantType(client.getAuthorizationGrantTypes()))
-//            .scope(client.getScopes())
-//            .clientSettings(ClientSettings.builder()
-//                .setting("tenant", client.getTenant())
-//                .setting("role", Role.CLIENT)
-//                .requireProofKey(false)  // PKCE(Proof Key for Code Exchange) 필요 없음 - 클라이언트 크리덴셜에서는 사용 안함
-//                .requireAuthorizationConsent(false)  // 명시적 동의 필요 없음
-//                .build())
-//            .tokenSettings(TokenSettings.builder()
-//                // 토큰 수명 설정
-//                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)  // JWT 토큰 형식 사용
-//                .reuseRefreshTokens(false)
-//                .build())
-//            .build();
-        return null;
+        ClientAccessInfo client = clientAccessInfoRepository.findByClientCertId(clientId)
+            .orElseThrow(() -> new AuthenticationServiceException("clientId: %s".formatted(clientId)));
+
+        return RegisteredClient.withId(clientId)
+            .clientId(client.getClientCertId())
+            .clientSecret(client.getClientSecretKey())
+            .clientAuthenticationMethod(new ClientAuthenticationMethod(client.getCertMethodNm()))
+            .authorizationGrantType(new AuthorizationGrantType(client.getCertTypeNm()))
+            .clientSettings(ClientSettings.builder()
+                .setting("companyNo", client.getCustomerCompany().getCustomerCompanyNo())
+                .setting("companyCd", client.getCustomerCompany().getCustomerCompanyCd())
+                .setting("role", Role.OPERATOR)
+                .requireProofKey(false)
+                .requireAuthorizationConsent(false)  // 명시적 동의 필요 없음
+                .build())
+            .tokenSettings(TokenSettings.builder()
+                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)  // JWT 토큰 형식 사용
+                .reuseRefreshTokens(false)
+                .build())
+            .build();
     }
 
 }

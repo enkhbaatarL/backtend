@@ -29,7 +29,6 @@ public record CompanyRes(
     @Schema(description = "활성화 여부", example = "true")
     Boolean isActivated,
 
-//    @JsonUnwrapped
     @Schema(description = "감사 정보")
     AuditInfo auditInfo
 

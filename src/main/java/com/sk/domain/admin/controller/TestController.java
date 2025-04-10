@@ -3,6 +3,9 @@ package com.sk.domain.admin.controller;
 import java.util.List;
 import java.util.Map;
 
+import com.sk.common.annotation.RequirePermission;
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -158,4 +161,39 @@ public class TestController {
     public BaseResponse<TestRes.SaveComponent> saveComponent(@RequestBody @Valid TestReq.saveComponent testReq) {
         return BaseResponseFactory.create(testService.saveComponent(testReq));
     }
+
+    @GetMapping("/auth/admin")
+    @RequirePermission(
+        roles = {Role.ADMIN}
+    )
+    public String getAdmin() {
+        return "OK";
+    }
+
+    @GetMapping("/auth/user-with-admin")
+    @RequirePermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public String getSuperAdmin() {
+        return "OK";
+    }
+
+    @GetMapping("/auth/operator")
+    @RequirePermission(
+        roles = {Role.OPERATOR}
+    )
+    public String getOperator() {
+        return "OK";
+    }
+
+    @RequirePermission(
+        roles = {Role.USER}
+    )
+    @GetMapping("/auth/user")
+    public String getUser() {
+        return "OK";
+    }
+
+
 }

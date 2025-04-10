@@ -238,8 +238,8 @@ public class AdminObjectStorageService {
         objectMetadata.setContentType("image/png");
         objectMetadata.setContentLength(length);
 
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, imageName, imageInputStream, objectMetadata);
-        objectStorageClient.putObject(putObjectRequest);
+//        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, imageName, imageInputStream, objectMetadata);
+//        objectStorageClient.putObject(putObjectRequest);
     }
 
     public void getAll() {

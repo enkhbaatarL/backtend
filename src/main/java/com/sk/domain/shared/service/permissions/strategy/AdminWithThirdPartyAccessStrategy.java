@@ -1,19 +1,24 @@
-package com.sk.domain.shared.service.auth;
+package com.sk.domain.shared.service.permissions.strategy;
 
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.service.MiUserService;
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 @RequiredArgsConstructor
 public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
 
     private final MiUserService userService;
+    private final AuthorizationService authorizationService;
 
     @Override
-    public boolean canAccessApi() {
-        return true;
+    public boolean canAccessApi(Role[] allowedRoles, PermissionCondition condition) {
+        return Arrays.stream(allowedRoles).anyMatch(role -> role == Role.ADMIN) && authorizationService.isThirdPartyAccessAllowed();
     }
 
     @Override

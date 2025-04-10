@@ -1,13 +1,17 @@
-package com.sk.domain.shared.service.auth;
+package com.sk.domain.shared.service.permissions.strategy;
 
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
 
 @RequiredArgsConstructor
 public class AdminPermissionStrategy implements PermissionStrategy {
 
     @Override
-    public boolean canAccessApi() {
-        return true;
+    public boolean canAccessApi(Role[] allowedRoles, PermissionCondition condition) {
+        return Arrays.stream(allowedRoles).anyMatch(role -> role == Role.ADMIN);
     }
 
     @Override

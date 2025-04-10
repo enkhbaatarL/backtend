@@ -1,5 +1,6 @@
 package com.sk.common.annotation;
 
+import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 
 import java.lang.annotation.ElementType;
@@ -50,5 +51,10 @@ public @interface RequirePermission {
      * - true: 해당 상품에 대한 DOWNLOAD 권한이 필요함
      */
     boolean requireDownloadPermission() default false;
+
+    /**
+     * 부가 조건 지정
+     */
+    PermissionCondition condition() default PermissionCondition.NONE;
 
 }

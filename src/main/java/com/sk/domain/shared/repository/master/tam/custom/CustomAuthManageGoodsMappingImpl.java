@@ -8,13 +8,11 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.company.AuthGoodsMapRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
-import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
-import com.sk.domain.shared.entity.master.tam.QAuthManageGoodsMapping;
-import com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping;
-import com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping;
+import com.sk.domain.shared.entity.master.tam.*;
 import com.sk.domain.shared.entity.master.tmd.*;
 import com.sk.domain.shared.enums.GoodsAuthCd;
 import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
+import com.sk.domain.shared.enums.UserRoleCd;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.domain.Page;
@@ -30,6 +28,7 @@ import java.util.Map;
 
 import static com.sk.domain.shared.entity.master.tam.QAuthManageGoodsMapping.authManageGoodsMapping;
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
+import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 @RequiredArgsConstructor
 public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMapping {
@@ -147,7 +146,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .where(user.isDeleted.isFalse(),
-                        user.customerCompany.customerCompanyNo.eq(companyNo))
+                        user.customerCompany.customerCompanyNo.eq(companyNo).and(user.userRoleCd.eq(UserRoleCd.USER)))
                 .orderBy(user.userNm.asc())
                 .fetch();
 
@@ -155,7 +154,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                 .select(user.count())
                 .from(user)
                 .where(user.isDeleted.isFalse(),
-                        user.customerCompany.customerCompanyNo.eq(companyNo));
+                        user.customerCompany.customerCompanyNo.eq(companyNo).and(user.userRoleCd.eq(UserRoleCd.USER)));
 
         // 2. 해당 상품에 대한 권한 매핑 정보를 모두 조회
         List<AuthManageGoodsMapping> authGoodsMappings = queryFactory
@@ -167,8 +166,6 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                 .where(authManageGoodsMapping.isDeleted.isFalse(),
                         customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo), customerCompany.customerCompanyNo.eq(companyNo))
                 .fetch();
-
-        GoodsAuthManagementSeparateCd authSeparateCd = authGoodsMappings.get(0).getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd();
 
         Map<Integer, Boolean[]> individualAuthMap = new HashMap<>();
         Boolean[] companyAuth = new Boolean[] { Boolean.FALSE, Boolean.FALSE };
@@ -200,9 +197,17 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         }
 
+        CustomerCompanyGoodsMapping ccgm = queryFactory
+            .select(ccgMapping)
+            .from(ccgMapping)
+            .where(ccgMapping.isDeleted.isFalse()
+                .and(ccgMapping.customerCompany.customerCompanyNo.eq(companyNo))
+                .and(ccgMapping.goods.goodsNo.eq(goodsNo)))
+            .fetchOne();
+
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
 
-            if (authSeparateCd == GoodsAuthManagementSeparateCd.COMPANY) {
+            if (ccgm.getId().getGoodsAuthManagementSeparateCd() == GoodsAuthManagementSeparateCd.COMPANY) {
                 return AuthGoodsMapRes.of(user, companyAuth);
             } else {
                 Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[] { Boolean.FALSE, Boolean.FALSE });
@@ -243,13 +248,13 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         String latestModifyId = null;
         String latestModifyNm = null;
 
-        if (ObjectUtils.isNotEmpty(ccgMappings)) {
+        if (ObjectUtils.isNotEmpty(ccgMappings) && ObjectUtils.isNotEmpty(ccgMappings.get(0, LocalDateTime.class))) {
             LocalDateTime date = ccgMappings.get(0, LocalDateTime.class);
             latestModifyDt = date;
             latestModifyId = ccgMappings.get(1, String.class);
         }
 
-        if (ObjectUtils.isNotEmpty(amgMappings)) {
+        if (ObjectUtils.isNotEmpty(amgMappings) && ObjectUtils.isNotEmpty(amgMappings.get(0, LocalDateTime.class))) {
             LocalDateTime date = amgMappings.get(0, LocalDateTime.class);
             if (latestModifyDt == null || date.isAfter(latestModifyDt)) {
                 latestModifyDt = date;
@@ -261,7 +266,8 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
             latestModifyNm = queryFactory
                     .select(user.userNm)
                     .from(user)
-                    .where(user.userLoginId.eq(latestModifyId))
+                    .where(user.userLoginId.eq(latestModifyId).and(user.userRoleCd.eq(UserRoleCd.ADMIN)))
+                    .limit(1)
                     .fetchOne();
         }
 

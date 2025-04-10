@@ -112,7 +112,7 @@ public class AdminCompanyService {
     public CompanyRes getCompanyDetail(Integer companyNo) {
         ValidationResult<CustomerCompany> valid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = valid.getOrThrow();
-        return CompanyRes.ofDefault(company);
+        return CompanyRes.of(company);
     }
 
     /**
@@ -229,15 +229,13 @@ public class AdminCompanyService {
         ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         ccpResult.validOrThrow();
 
-        ValidationResult<CustomerCompanyGoodsMapping> ccgResult = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo,
-                companyGoodsMapReq.goodsNo());
+        ValidationResult<CustomerCompanyGoodsMapping> ccgResult = companyValidator.ensureCcgmNotExistsByCompanyNoAndGoodsNo(companyNo, companyGoodsMapReq.goodsNo());
         ccgResult.validOrThrow();
 
         ValidationResult<Goods> goodsResult = companyValidator.ensureGoodsExistsByGoodsNo(companyGoodsMapReq.goodsNo());
         Goods goods = goodsResult.getOrThrow();
 
-        return CompanyGoodsMapRes.ofDefault(customerCompanyGoodsMappingRepository
-                .save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManagementSeparateCd())));
+        return CompanyGoodsMapRes.ofDefault(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManagementSeparateCd())));
     }
 
     /**
@@ -279,7 +277,7 @@ public class AdminCompanyService {
             Integer goodsNo) {
 
         ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-        ccpResult.validOrThrow();
+//        ccpResult.validOrThrow();
 
         Page<AuthGoodsMapRes> paged = authManageGoodsMappingRepository.findByAuthGoodsByConditions(page, size, companyNo, goodsNo);
 

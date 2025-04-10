@@ -20,7 +20,7 @@ public class CustomJwtDecoder implements JwtDecoder {
     @Override
     public Jwt decode(String token) throws JwtException {
         Claims claims = jwtUtil.extractClaims(token);
-        return new Jwt(token, claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant(), Map.of("alg", Jwts.SIG.HS256), claims);
+        return new Jwt(token, claims.getIssuedAt().toInstant(), claims.getExpiration().toInstant(), Map.of("typ", "JWT", "alg", Jwts.SIG.HS256), claims);
     }
 
 }
