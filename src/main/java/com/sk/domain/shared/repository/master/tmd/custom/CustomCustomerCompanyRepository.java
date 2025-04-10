@@ -2,12 +2,11 @@ package com.sk.domain.shared.repository.master.tmd.custom;
 
 import java.util.List;
 
+import com.sk.domain.admin.dto.response.company.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.CompanyRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.shared.enums.ActivationStatus;
 import org.springframework.data.domain.Page;
-
-import com.sk.domain.admin.dto.response.CompanyDepartmentRes;
 
 public interface CustomCustomerCompanyRepository {
 

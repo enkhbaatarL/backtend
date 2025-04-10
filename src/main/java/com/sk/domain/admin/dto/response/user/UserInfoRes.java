@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.response;
+package com.sk.domain.admin.dto.response.user;
 
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.entity.master.tif.UserInfo;

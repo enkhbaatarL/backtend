@@ -9,7 +9,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.NotificationRes;
 import com.sk.domain.admin.service.AdminNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,14 +32,16 @@ public class AdminNotificationController {
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)")
+            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
+            @Parameter(name = "search", description = "검색어")
     })
     @Operation(summary = "알림 조회 API", description = "알림 조회 API 입니다.")
     @GetMapping("/notifications")
     public BaseResponse<PaginationRes<NotificationRes>> getNotifications(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size) {
-        return BaseResponseFactory.create(adminNotificationService.getNotifications(page, size));
+            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+            @RequestParam(value = "search", required = false) String search) {
+        return BaseResponseFactory.create(adminNotificationService.getNotifications(page, size, search));
     }
 
 }

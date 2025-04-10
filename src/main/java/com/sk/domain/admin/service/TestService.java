@@ -162,22 +162,8 @@ public class TestService {
         // 엑셀 파일 검수 후 업로드
         // excelService.validateStructuredExcelData(file, columnNames, componentInfo.getTargetTableNm(), componentInfo.getTargetDbNm());
 
-        //TODO: 데아터 소스 저장, 
+        //TODO: 호영: 데아터 소스 저장, 
 
         return null;
-    }
-
-    /**
-     * 정형 데이터 컴포넌트 저장
-     * 
-     * @param testReq
-     * @return
-     */
-    public TestRes.SaveComponent saveComponent(TestReq.saveComponent testReq) {
-        ComponentInfo componentInfo = componentInfoRepository.save(ComponentInfo.of(testReq));
-
-        //데이터칼럼 설명 명 데이터 업로드
-
-        return TestRes.SaveComponent.of(componentInfo);
     }
 }

@@ -14,12 +14,12 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.internal.UserInfoWithCompany;
-import com.sk.domain.admin.dto.request.AdminReq;
-import com.sk.domain.admin.dto.request.UserReq;
-import com.sk.domain.admin.dto.response.AdminRes;
-import com.sk.domain.admin.dto.response.UserDetailRes;
-import com.sk.domain.admin.dto.response.UserInfoRes;
-import com.sk.domain.admin.dto.response.UserRes;
+import com.sk.domain.admin.dto.request.user.AdminReq;
+import com.sk.domain.admin.dto.request.user.UserReq;
+import com.sk.domain.admin.dto.response.user.AdminRes;
+import com.sk.domain.admin.dto.response.user.UserDetailRes;
+import com.sk.domain.admin.dto.response.user.UserInfoRes;
+import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -45,16 +45,32 @@ public class AdminUserService {
 	 * 
 	 * @param page         조회할 페이지 번호 (min 1)
 	 * @param size         조회할 요소 사이즈 (min 1)
-	 * @param userRoleCd   사용자역할코드
 	 * @param companyCd    회사코드
 	 * @param userNm       사용자명
 	 * @param emailAddress 이메일주소
 	 * @return PaginationRes<UserInfoRes>
 	 */
-	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, UserRoleCd userRoleCd, String companyCd, String userNm,
+	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, String companyCd, String userNm,
 			String emailAddress) {
 		return PaginationRes
-				.toRes(userInfoRepository.findUserInfosByConditions(page, size, userRoleCd, companyCd, userNm,
+				.toRes(userInfoRepository.findUserInfosByConditions(page, size, List.of(UserRoleCd.USER), companyCd, userNm,
+						emailAddress));
+	}
+
+	/**
+	* 사용자 목록을 원장 테이블에서 페이지네이션 처리하여 조회합니다.
+	* 
+	* @param page         조회할 페이지 번호 (min 1)
+	* @param size         조회할 요소 사이즈 (min 1)
+	* @param companyCd    회사코드
+	* @param userNm       사용자명
+	* @param emailAddress 이메일주소
+	* @return PaginationRes<UserInfoRes>
+	*/
+	public PaginationRes<UserInfoRes> getAdminUserInfos(int page, int size, String companyCd, String userNm,
+			String emailAddress) {
+		return PaginationRes
+				.toRes(userInfoRepository.findUserInfosByConditions(page, size, List.of(UserRoleCd.ADMIN, UserRoleCd.OPERATOR), companyCd, userNm,
 						emailAddress));
 	}
 
@@ -72,7 +88,14 @@ public class AdminUserService {
 		}
 
 		List<User> existingUsers = userRepository.findByUserLoginIdsAndRoleAndNotDeleted(
-				userInfoWithCompanies.stream().map(UserInfoWithCompany::userLoginId).collect(Collectors.toList()),
+				userInfoWithCompanies.stream().map(
+						userInfoWithCompany -> {
+							if(userInfoWithCompany.customerCompany() == null) {
+								throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객사로 등록되지 않은 회사의 사용자입니다: %s", userInfoWithCompany.userLoginId()));
+							}
+							return userInfoWithCompany.userLoginId();
+						}
+				).collect(Collectors.toList()),
 				UserRoleCd.USER);
 
 		if (!existingUsers.isEmpty()) {
@@ -105,11 +128,10 @@ public class AdminUserService {
 	 * @param emailAddress      이메일주소
 	 * @return PaginationRes<UserDetailRes>
 	 */
-	public PaginationRes<UserDetailRes> getUsers(int page, int size, UserRoleCd userRoleCd,
-			Integer customerCompanyNo,
-			String departmentNm, String userNm, String emailAddress) {
+	public PaginationRes<UserDetailRes> getUsers(int page, int size, Integer customerCompanyNo, String departmentNm, String userNm,
+			String emailAddress) {
 
-		return PaginationRes.toRes(userRepository.findUsersByConditions(page, size, userRoleCd, customerCompanyNo,
+		return PaginationRes.toRes(userRepository.findUsersByConditions(page, size, List.of(UserRoleCd.USER), customerCompanyNo,
 				departmentNm, userNm, emailAddress));
 	}
 
@@ -134,9 +156,10 @@ public class AdminUserService {
 	 */
 	@Transactional
 	public UserRes deleteUser(Integer userNo) {
-		User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+		User user = userRepository.findByUserNoAndUserRoleCdList(userNo, List.of(UserRoleCd.USER))
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-						"사용자 정보를 찾을 수 없습니다."));
+						String.format("사용자 정보를 찾을 수 없습니다. userNo: %s", userNo)));
+
 		user.softDelete();
 		return UserRes.ofSimple(user);
 	}
@@ -153,13 +176,17 @@ public class AdminUserService {
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						String.format("The data does not exist in the IM code list. imCd: %s", adminReq.imCd())));
 
+		if(userInfoWithCompany.customerCompany() == null) {
+			throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객사로 등록되지 않은 회사의 사용자입니다: %s", userInfoWithCompany.userLoginId()));
+		}
+
 		userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(userInfoWithCompany.userLoginId(), adminReq.userRoleCd())
 				.ifPresent(u -> {
 					throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-							String.format("The administrator is already registered: %s", u.getUserNm()));
+							String.format("이미 등록된 사용자입니다: %s", u.getUserNm()));
 				});
 
-		User user = User.of(userInfoWithCompany, UserRoleCd.ADMIN);
+		User user = User.of(userInfoWithCompany, adminReq.userRoleCd());
 		User savedUser = userRepository.save(user);
 
 		List<AdminPermission> existingPermissions = adminPermissionRepository
@@ -182,6 +209,26 @@ public class AdminUserService {
 	}
 
 	/**
+	 * 사용자 목록을 조회합니다.
+	 * 운영자와 관리자는 한 화면에서 조회
+	 * 
+	 * @param page              조회할 페이지 번호 (min 1)
+	 * @param size              조회할 요소 사이즈 (min 1)
+	 * @param userRoleCd        사용자역할코드
+	 * @param customerCompanyNo 고객회사번호
+	 * @param departmentNm      부서명
+	 * @param userNm            사용자명
+	 * @param emailAddress      이메일주소
+	 * @return PaginationRes<UserDetailRes>
+	 */
+	public PaginationRes<UserDetailRes> getAdminUsers(int page, int size, Integer customerCompanyNo, String departmentNm, String userNm,
+			String emailAddress) {
+
+		return PaginationRes.toRes(userRepository.findUsersByConditions(page, size, List.of(UserRoleCd.ADMIN, UserRoleCd.OPERATOR), customerCompanyNo,
+				departmentNm, userNm, emailAddress));
+	}
+
+	/**
 	 * 어드민 관리자 상세 정보를 조회합니다.
 	 * 
 	 * @param userNo 사용자번호
@@ -199,6 +246,7 @@ public class AdminUserService {
 
 	/**
 	 * 어드민 관리자 정보를 수정합니다.
+	 * 현재 로직은 한 계정으로 관리자(ADMIN) / 운영자(OPERATOR) 두 가지 역할이 Switching이 가능하다는 전제에 구현되어 있습니다.
 	 * 
 	 * @param userNo   사용자번호
 	 * @param adminReq 어드민 관리자 정보
@@ -246,16 +294,18 @@ public class AdminUserService {
 	}
 
 	/**
-	 * 어드민 관리자 정보를 삭제합니다. (관리자 -> 유저/관리자 삭제에 로직(권한 등) 차이가 있을 경우 분리하여 사용)
+	 * 어드민 관리자 정보를 삭제합니다.
+	 * 현재 로직은 한 계정으로 관리자(ADMIN) / 운영자(OPERATOR) 두 가지 역할을 가질 수 없다는 전제에 구현되어 있습니다.
 	 * 
 	 * @param userNo 사용자번호
 	 * @return UserRes
 	 */
 	@Transactional
 	public UserRes deleteAdminUser(Integer userNo) {
-		User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+		User user = userRepository.findByUserNoAndUserRoleCdList(userNo, List.of(UserRoleCd.ADMIN, UserRoleCd.OPERATOR))
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-						"사용자 정보를 찾을 수 없습니다."));
+						String.format("사용자 정보를 찾을 수 없습니다. userNo: %s", userNo)));
+
 		user.softDelete();
 
 		adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(userNo).forEach(AdminPermission::softDelete);

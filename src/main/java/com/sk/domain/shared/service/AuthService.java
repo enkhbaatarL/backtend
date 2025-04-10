@@ -8,7 +8,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.utils.JwtUtil;
-import com.sk.domain.shared.dto.response.GenerateTokenRes;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 

@@ -1,5 +1,15 @@
 package com.sk.domain.shared.repository.master.tif.custom;
 
+import static com.sk.domain.shared.entity.master.tif.QClientAccessInfo.clientAccessInfo;
+import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
+
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
+
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
@@ -7,19 +17,9 @@ import com.sk.domain.admin.dto.response.client.QClientAccessInfoRes;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
 import com.sk.domain.shared.enums.UserRoleCd;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.support.PageableExecutionUtils;
-import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
-import static com.sk.domain.shared.entity.master.tif.QClientAccessInfo.clientAccessInfo;
-import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
-
-@Repository
 @RequiredArgsConstructor
 public class CustomClientAccessInfoRepositoryImpl implements CustomClientAccessInfoRepository {
 

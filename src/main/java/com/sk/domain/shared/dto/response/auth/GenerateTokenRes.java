@@ -1,4 +1,4 @@
-package com.sk.domain.shared.dto.response;
+package com.sk.domain.shared.dto.response.auth;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
