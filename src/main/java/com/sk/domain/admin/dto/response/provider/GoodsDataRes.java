@@ -4,12 +4,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 // @formatter:off
 public record GoodsDataRes(
+        @Schema(description = "고객회사명", example = "")
+        String customerCompanyNm,
+    
         @Schema(description = "상품데이터번호", example = "")
         Integer goodsDataNo,
 
-        @Schema(description = "고객회사명", example = "")
-        String customerCompanyNm,
-        
         @Schema(description = "상품데이터명", example = "")
         String goodsDataNm,
 

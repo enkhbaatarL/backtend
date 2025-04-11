@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.Normalizer;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -89,7 +90,7 @@ public class AdminFileService {
         }
 
         try {
-            String originalFileNm = file.getOriginalFilename();
+            String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
             long fileSize = file.getSize();
             String mimeTypeNm = file.getContentType();
