@@ -59,7 +59,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 			builder.and(userInfo.emailAddress.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
 		}
 
-		BooleanExpression isRegistered = user.userLoginId.isNotNull();
+		BooleanExpression isRegistered = user.userLoginId.isNotNull().and(user.isDeleted.isFalse());
 
 		List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(
 				userInfo.imCd,

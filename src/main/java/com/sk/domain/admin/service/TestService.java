@@ -1,7 +1,9 @@
 package com.sk.domain.admin.service;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -21,6 +23,7 @@ import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 import com.sk.domain.shared.mapper.hynix.tlm.HynixEmailAccessLogMapper;
 import com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
@@ -46,6 +49,7 @@ public class TestService {
     private final AdminPermissionRepository adminPermissionRepository;
     private final ComponentInfoRepository componentInfoRepository;
     private final ExcelService excelService;
+    private final DynamicMapper dynamicMapper;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -87,7 +91,8 @@ public class TestService {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
                 testLoginReq.userRoleCd())
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format(
-                        "User information could not be found. userLoginId: %s, userRoleCd: %s", testLoginReq.loginUserId(), testLoginReq.userRoleCd())));
+                        "User information could not be found. userLoginId: %s, userRoleCd: %s", testLoginReq.loginUserId(),
+                        testLoginReq.userRoleCd())));
 
         adminPermissionRepository.findByIdUserNoAndIdIpAddressAndIsDeletedFalse(user.getUserNo(), clientIp)
                 .stream()
@@ -142,28 +147,37 @@ public class TestService {
      * @return
      */
     public FileUploadRes uploadStructuredDataFile(MultipartFile file, TestReq.uploadStructuredDataFile testReq) {
+        try {
+            // 컴포넌트 타입 조회
+            ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
+                    .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                            String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
 
-        // 컴포넌트 타입 조회
-        ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
+            // 엑셀 파일 검수 후 업로드
+            boolean isUploaded = excelService.uploadStructuredData(file, componentInfo);
 
-        // TODO: DataSourceContextHolder 설정
 
-        // 컴포넌트 엑셀 칼럼 추출
-        String columnName = componentInfo.getExcelColumnListNm();
+            // TODO: 호영: 데아터 소스 저장,
+            
+            // TODO: 호영: 데이터 소스 저장시에 예외처리: 날짜 겹치면 overwrite 처리 였나??
 
-        if (columnName == null || columnName.isBlank()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Column name is null or blank");
+            // 데이터 소스 저장
+
+            // 파일 S3에 저장
+
+            // 파일 내용 DB 테이블에 저장
+
+            //TODO:  상품 데이터 단위 변환 내역 저장 => 이건 컴포넌트 저장시에?!
+
+            return null;
+        } catch (IOException e) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, e.getMessage());
+        } finally {
+            DataSourceContextHolder.clearDataSourceKey();
         }
+    }
 
-        String[] columnNames = Arrays.stream(columnName.split(",")).map(String::trim).filter(name -> !name.isEmpty()).toArray(String[]::new);
-
-        // 엑셀 파일 검수 후 업로드
-        // excelService.validateStructuredExcelData(file, columnNames, componentInfo.getTargetTableNm(), componentInfo.getTargetDbNm());
-
-        //TODO: 호영: 데아터 소스 저장, 
-
+    public FileUploadRes uploadStructuredDataFileTest(MultipartFile file) {
         return null;
     }
 }

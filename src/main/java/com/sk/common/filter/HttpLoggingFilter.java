@@ -23,13 +23,16 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+
+//TODO: 호영: form-data 파일 업로드 처리 필요
+
 @Slf4j
 @Component
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
     private final List<String> excludeUriStartsWith = List.of("/excludeUri", "/api/v1/admin/bulletinboard-manangement",
-            "/api/v1/admin/file-manangement", "/api/v1/admin/provider-manangement", "/api/v1/admin/excel");
+            "/api/v1/admin/file-manangement", "/api/v1/admin/provider-manangement", "/api/v1/admin/excel", "/api/v1/test/goodsdatas/upload-file/structureddata");
     private final AtomicLong id = new AtomicLong(0);
 
     @Override

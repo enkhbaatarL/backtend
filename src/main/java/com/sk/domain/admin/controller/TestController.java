@@ -1,5 +1,6 @@
 package com.sk.domain.admin.controller;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -106,9 +107,19 @@ public class TestController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadStructuredDataFile(
-            @RequestPart(value = "file", required = false) MultipartFile file,
-            @Schema(implementation = TestReq.uploadStructuredDataFile.class) @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
+            @RequestPart(value = "file", required = true) MultipartFile file,
+            @Schema(implementation = TestReq.uploadStructuredDataFile.class) @RequestPart(value = "data", required = true) @Valid TestReq.uploadStructuredDataFile testReq) {
+
+        log.info("file: {}", file);
+        log.info("testReq: {}", testReq);
 
         return BaseResponseFactory.create(testService.uploadStructuredDataFile(file, testReq));
+    }
+
+    @Operation(summary = "Excel upload API", description = "Excel 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/upload-excel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<String> uploadExcelFile(@RequestParam("file") MultipartFile file) throws IOException {
+        return BaseResponseFactory.create("success");
     }
 }

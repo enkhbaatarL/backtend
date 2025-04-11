@@ -32,7 +32,7 @@ public record TestReq() {
 	}
 
 	public record uploadStructuredDataFile(
-			@NotEmpty @Schema(description = "컴포넌트 타입 ID", example = "1") String componentTypeId
+			@NotNull @Schema(description = "컴포넌트 타입 ID", example = "TYPE_ID") String componentTypeId
 	) {
 	}
 
