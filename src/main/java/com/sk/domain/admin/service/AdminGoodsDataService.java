@@ -101,7 +101,7 @@ public class AdminGoodsDataService {
                     user.getCustomerCompany().getCustomerCompanyNo(), providerNo, goodsNo, keyword, pageable));
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
     }
 
     /**
@@ -152,7 +152,7 @@ public class AdminGoodsDataService {
             //
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
 
     }
 

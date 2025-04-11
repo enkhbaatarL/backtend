@@ -26,7 +26,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
 
     Optional<Provider> findByProviderNoAndIsDeletedFalseAndIsUsedTrue(int providerNo);
 
-    // 전체 프로바이더 목록을 조회한다.
+    // 관리자는 전체 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
                 p.providerNo,
@@ -48,7 +48,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             """)
     Page<ProviderRes> findAllForAdmin(Pageable pageable);
 
-    // 고객사와 맵핑된 프로바이더 목록을 조회한다.
+    // 운영자는 고객사와 맵핑된 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
                 p.providerNo,
@@ -63,6 +63,8 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
             WHERE p.isDeleted = false
                 AND p.isUsed = true
+                AND cp.isDeleted = false
+                AND cp.isUsed = true
                 AND cp.customerCompany.customerCompanyNo = :customerCompanyNo
             GROUP BY p.providerNo, p.providerNm, p.providerId, p.isUsed, p.createDt
             ORDER BY p.providerNm ASC
@@ -75,7 +77,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             """)
     Page<ProviderRes> findAllForOperator(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
-    // 전체 프로바이더 목록을 조회한다.
+    // 관리자는 전체 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
                 p.providerNo,
@@ -87,7 +89,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                   """)
     List<ProviderNameRes> findProviderNmForAdmin();
 
-    // 고객사와 맵핑된 프로바이더 목록을 조회한다.
+    // 운영자는 고객사와 맵핑된 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
                 p.providerNo,

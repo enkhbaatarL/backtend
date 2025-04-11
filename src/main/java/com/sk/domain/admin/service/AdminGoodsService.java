@@ -65,7 +65,7 @@ public class AdminGoodsService {
             return PaginationRes.toRes(goodsPage);
         }
 
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
     }
 
     /**
@@ -126,7 +126,7 @@ public class AdminGoodsService {
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
         }
 
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
     }
 
     /**
