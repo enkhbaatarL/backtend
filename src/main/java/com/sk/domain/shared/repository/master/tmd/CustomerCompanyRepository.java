@@ -13,10 +13,16 @@ public interface CustomerCompanyRepository extends JpaRepository<CustomerCompany
     @EntityGraph(attributePaths = { "creator", "modifier" })
     Optional<CustomerCompany> findByCustomerCompanyNoAndIsDeletedFalse(Integer customerCompanyNo);
 
-    Optional<CustomerCompany> findByCustomerCompanyCdAndIsDeletedFalse(String customerCompanyCd);
+    Optional<CustomerCompany> findByCustomerCompanyNoAndIsMipManagementCompanyTrueAndIsDeletedFalse(Integer customerCompanyNo);
+
+    Optional<CustomerCompany> findByCustomerCompanyCdAndIsMipManagementCompanyFalseAndIsDeletedFalse(String customerCompanyCd);
+
+    Optional<CustomerCompany> findByCustomerCompanyCdAndIsMipManagementCompanyTrueAndIsDeletedFalse(String customerCompanyCd);
 
     List<CustomerCompany> findByIsDeletedFalseOrderByCustomerCompanyNmAsc();
 
     List<CustomerCompany> findByIsDeletedFalseAndIsMipManagementCompanyFalseOrderByCustomerCompanyNmAsc();
+
+    Long countByIsMipManagementCompanyTrueAndIsDeletedFalse();
 
 }

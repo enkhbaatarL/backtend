@@ -71,6 +71,72 @@ public class AdminCompanyService {
     }
 
     /**
+     * 관리사 목록을 조회한다. (with pagination)
+     * - Sort : companyNm ASC
+     *
+     * @param page          조회할 페이지 번호 (min 1)
+     * @param size          조회할 요소 사이즈 (min 1)
+     * @param companyNm     고객사 명 (LIKE '%검색어%)
+     * @return PaginationRes<CompanyRes>
+     */
+    public PaginationRes<CompanyRes> getOwnerCompanies(int page, int size, String companyNm) {
+        return PaginationRes.toRes(customerCompanyRepository.findOwnerCompaniesByConditions(page, size, companyNm));
+    }
+
+    /**
+     * 관리사를 등록한다.
+     *
+     * @param companyReq 관리사 등록 데이터
+     * @return CompanyRes
+     */
+    @Transactional
+    public CompanyRes postOwnerCompany(CompanyReq.OwnerInsert companyReq) {
+
+        ValidationResult<CompanyInfo> groupCompanyValid = companyValidator.ensureGroupCompanyExistsByCompanyCd(companyReq.companyCd());
+        CompanyInfo companyInfo = groupCompanyValid.getOrThrow();
+
+        ValidationResult<CustomerCompany> ownerCompanyValid = companyValidator.ensureOwnerCompanyNotExistsByCompanyCd(companyReq.companyCd());
+        ownerCompanyValid.validOrThrow();
+
+        CustomerCompany savedEntity = customerCompanyRepository.save(CustomerCompany.ofOwner(companyReq, companyInfo.getCompanyNm()));
+
+        return CompanyRes.ofDefault(savedEntity);
+
+    }
+
+    /**
+     * 관리사를 삭제한다.
+     *
+     * @param companyNo 회사 번호
+     * @return CompanyRes
+     */
+    @Transactional
+    public CompanyRes deleteOwnerCompany(Integer companyNo) {
+
+        ValidationResult<CustomerCompany> result = companyValidator.ensureOwnerCompanyExistsByCompanyNo(companyNo);
+        CustomerCompany company = result.getOrThrow();
+
+        // BIZ RULE : 관리사가 1개 이하인 경우 삭제할 수 없다.
+        Long ownerCompaniesCnt = customerCompanyRepository.countByIsMipManagementCompanyTrueAndIsDeletedFalse();
+        if (ownerCompaniesCnt <= 1) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                "There is only one owner-company. Cannot be deleted. companyNo: %s".formatted(companyNo));
+        }
+
+        // BIZ RULE : 관리사에 소속된 사용자 존재 여부가 있으면 관리사는 삭제될 수 없다.
+        List<User> ownerCompanyUsers = userRepository.findByCustomerCompanyAndIsDeletedFalse(company);
+        if (!ownerCompanyUsers.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                "There are users associated with the owner-company. Cannot be deleted. companyNo: %s".formatted(companyNo));
+        }
+
+        company.softDelete();
+
+        return CompanyRes.ofDefault(company);
+
+    }
+
+    /**
      * 고객사 목록을 조회한다. (with pagination)
      * - Sort : companyNm ASC
      *
@@ -78,7 +144,7 @@ public class AdminCompanyService {
      * @param size          조회할 요소 사이즈 (min 1)
      * @param companyNm     고객사 명 (LIKE '%검색어%)
      * @param activationSts 활성화 여부 (null: 전체, ACTIVE: 활성화, INACTIVE: 비활성화)
-     * @return PaginationRes<CustomerCompanyRes>
+     * @return PaginationRes<CompanyRes>
      */
     public PaginationRes<CompanyRes> getCompanies(int page, int size, String companyNm, ActivationStatus activationSts) {
         return PaginationRes.toRes(customerCompanyRepository.findCompaniesByConditions(page, size, companyNm, activationSts));
@@ -88,15 +154,18 @@ public class AdminCompanyService {
      * 고객사를 등록한다.
      *
      * @param companyReq 고객사 등록 데이터
-     * @return CustomerCompanyRes
+     * @return CompanyRes
      */
     @Transactional
     public CompanyRes postCompany(CompanyReq.Insert companyReq) {
 
-        companyValidator.ensureCompanyNotExistsByCompanyCd(companyReq.companyCd());
-        companyValidator.ensureGroupCompanyExistsByCompanyCd(companyReq.companyCd());
+        ValidationResult<CompanyInfo> groupCompanyValid = companyValidator.ensureGroupCompanyExistsByCompanyCd(companyReq.companyCd());
+        CompanyInfo companyInfo = groupCompanyValid.getOrThrow();
 
-        CustomerCompany savedEntity = customerCompanyRepository.save(CustomerCompany.of(companyReq));
+        ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyNotExistsByCompanyCd(companyReq.companyCd());
+        companyValid.validOrThrow();
+
+        CustomerCompany savedEntity = customerCompanyRepository.save(CustomerCompany.of(companyReq, companyInfo.getCompanyNm()));
 
         return CompanyRes.ofDefault(savedEntity);
 
@@ -123,10 +192,14 @@ public class AdminCompanyService {
      */
     @Transactional
     public CompanyRes patchCompany(Integer companyNo, CompanyReq.Update companyReq) {
+
         ValidationResult<CustomerCompany> companyResult = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
         CustomerCompany company = companyResult.getOrThrow();
+
         company.update(companyReq);
+
         return CompanyRes.ofDefault(company);
+
     }
 
     /**
@@ -171,12 +244,9 @@ public class AdminCompanyService {
      * @return ProviderMappingDetailRes
      */
     public CompanyProviderMapDetailRes getProviderDetail(Integer companyNo, Integer providerNo) {
-
         ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
-
         return CompanyProviderMapDetailRes.of(ccp);
-
     }
 
     /**
@@ -188,12 +258,15 @@ public class AdminCompanyService {
      * @return CompanyProviderMapRes
      */
     @Transactional
-    public CompanyProviderMapRes patchProviderMappedToCompany(Integer companyNo, Integer providerNo,
-            CompanyProviderMapReq.Update companyProviderMapReq) {
+    public CompanyProviderMapRes patchProviderMappedToCompany(Integer companyNo, Integer providerNo, CompanyProviderMapReq.Update companyProviderMapReq) {
+
         ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
         CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
+
         ccp.update(companyProviderMapReq);
+
         return CompanyProviderMapRes.ofDefault(ccp);
+
     }
 
     /**

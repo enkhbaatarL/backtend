@@ -76,14 +76,74 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 .leftJoin(modifier.customerCompany, modifierCompany)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm), equalIsUsed(activationSts))
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411):  고객사만 조회
+                    containsCompanyName(companyNm),
+                    equalIsUsed(activationSts)
+                )
                 .orderBy(customerCompany.customerCompanyNm.asc())
                 .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
                 .select(customerCompany.count())
                 .from(customerCompany)
-                .where(customerCompany.isDeleted.eq(false), containsCompanyName(companyNm), equalIsUsed(activationSts));
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411):  고객사만 조회
+                    containsCompanyName(companyNm),
+                    equalIsUsed(activationSts)
+                );
+
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public Page<CompanyRes> findOwnerCompaniesByConditions(int page, int size, String companyNm) {
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        // User 테이블 별칭
+        QUser creator = new QUser("creator");
+        QUser modifier = new QUser("modifier");
+
+        // Company 테이블 별칭
+        QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany");
+        QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
+
+        List<CompanyRes> content = queryFactory
+            .select(new QCompanyRes(
+                customerCompany.customerCompanyNo,
+                customerCompany.customerCompanyCd,
+                customerCompany.customerCompanyNm,
+                customerCompany.useBeginDt,
+                customerCompany.useEndDt,
+                customerCompany.isUsed,
+                customerCompany.createUserId,
+                customerCompany.createDt,
+                customerCompany.modifyUserId,
+                customerCompany.modifyDt,
+                creator.userNm,
+                creator.departmentNm,
+                creatorCompany.customerCompanyNm,
+                modifier.userNm,
+                modifier.departmentNm,
+                modifierCompany.customerCompanyNm))
+            .from(customerCompany)
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator.customerCompany, creatorCompany)
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier.customerCompany, modifierCompany)
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411):  관리사만 조회
+                containsCompanyName(companyNm)
+            )
+            .orderBy(customerCompany.customerCompanyNm.asc())
+            .fetch();
+
+        JPQLQuery<Long> countQuery = queryFactory
+            .select(customerCompany.count())
+            .from(customerCompany)
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411):  관리사만 조회
+                containsCompanyName(companyNm)
+            );
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -99,7 +159,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 .fetchOne();
 
         if (ObjectUtils.isEmpty(company.get(0, LocalDateTime.class))) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [companyNo]. companyNo: %s".formatted(companyNo));
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo));
         }
 
         // 2. 회사-프로바이더 매핑 마지막 수정 일시(삭제 포함)

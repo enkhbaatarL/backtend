@@ -1,33 +1,22 @@
 package com.sk.domain.shared.entity.master.tmd;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.lang3.ObjectUtils;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
-
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.listener.CustomerCompanyListener;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -79,35 +68,44 @@ public class CustomerCompany extends BaseEntity {
     private List<User> users = new ArrayList<>();
 
     @Builder
-    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
-            Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String useBeginDt, String useEndDt, Boolean isUsed) {
+    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String companySubcommitteeSeparateCd, String useBeginDt, String useEndDt, Boolean isUsed, Boolean isMipManagementCompany) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
         this.customerCompanyCd = customerCompanyCd;
+        this.companySubcommitteeSeparateCd = companySubcommitteeSeparateCd;
         this.useBeginDt = useBeginDt;
         this.useEndDt = useEndDt;
         this.isUsed = isUsed;
+        this.isMipManagementCompany = isMipManagementCompany;
     }
 
-    public static CustomerCompany of(CompanyReq.Insert dto) {
+
+
+    public static CustomerCompany ofOwner(CompanyReq.OwnerInsert dto, String companyNm) {
         return CustomerCompany.builder()
-                .customerCompanyCd(dto.companyCd())
-                .customerCompanyNm(dto.companyNm())
-                .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
-                .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
-                .isUsed(Boolean.TRUE)
-                .build();
+            .customerCompanyCd(dto.companyCd())
+            .customerCompanyNm(companyNm)
+            .isUsed(Boolean.TRUE)
+            .isMipManagementCompany(Boolean.TRUE)
+            .build();
+    }
+
+    public static CustomerCompany of(CompanyReq.Insert dto, String companyNm) {
+        return CustomerCompany.builder()
+            .customerCompanyCd(dto.companyCd())
+            .customerCompanyNm(companyNm)
+            .useBeginDt(DateUtil.toYmd(dto.usageBeginDate()))
+            .useEndDt(DateUtil.toYmd(dto.usageEndDate()))
+            .isUsed(Boolean.TRUE)
+            .isMipManagementCompany(Boolean.FALSE)
+            .build();
     }
 
     public void update(CompanyReq.Update companyReq) {
 
         if (ObjectUtils.isNotEmpty(companyReq.isActivated())) {
             this.isUsed = companyReq.isActivated();
-        }
-
-        if (ObjectUtils.isNotEmpty(companyReq.companyNm())) {
-            this.customerCompanyNm = companyReq.companyNm();
         }
 
         if (ObjectUtils.isNotEmpty(companyReq.usageBeginDate())) {
