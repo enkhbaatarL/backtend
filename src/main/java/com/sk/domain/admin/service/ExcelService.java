@@ -49,6 +49,8 @@ public class ExcelService {
     private final SqlSessionFactory sqlSessionFactory;
     private final int DEFAULT_HEADER_ROW_INDEX = 0; // 기본 엑셀 헤더 행 인덱스 (파일에서 1행 => 인덱스 0)
     private final int DEFAULT_DATA_START_ROW_INDEX = 1; // 기본 엑셀 데이터 시작 행 인덱스 (파일에서 2행 => 인덱스 1)
+    private final int MAX_CONSECUTIVE_EMPTY_ROWS = 5; // 최대 허용 빈 행 수 (엑셀 검수 시 연속 빈 행 수가 5개 이상이면 종료)
+
     @Autowired
     public ExcelService(@Qualifier("dynamicSqlSessionFactory") SqlSessionFactory sqlSessionFactory) {
         this.sqlSessionFactory = sqlSessionFactory;
@@ -360,17 +362,30 @@ public class ExcelService {
 
             // 데이터 수집
             List<Object[]> data = new ArrayList<>();
+            int consecutiveEmptyRows = 0; // 연속 빈 행 수
+
+            // 5행 이상 연속 빈 행이면 종료
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
-                if (row.getLastCellNum() > 0) { // 빈 행 제외
+                if (row.getLastCellNum() > 0) { // 데이터가 있는 행
                     Object[] rowData = parseRowToArray(row, actualColumns);
                     if (rowData.length == 0) {
                         log.warn("Parsed empty row data for row: {}", row.getRowNum());
                     } else {
                         data.add(rowData);
-                    };
+                        consecutiveEmptyRows = 0; // 데이터가 있으면 카운터 초기화
+                    }
+                } else {
+                    // 빈 행 처리
+                    consecutiveEmptyRows++;
+                    log.debug("Empty row detected at row: {}, consecutive empty rows: {}", row.getRowNum(), consecutiveEmptyRows);
+                    if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                        log.info("Terminating data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
+
+                    }
                 }
             }
+
             return data;
         } catch (Exception e) {
             log.error("Exception during data collection: {}", e.getMessage(), e);
@@ -431,13 +446,13 @@ public class ExcelService {
         Set<String> expectedSet = Arrays.stream(expectedColumns).map(String::trim).collect(Collectors.toSet());
         Set<String> actualSet = new HashSet<>(actualColumns);
 
-        if (!actualSet.equals(expectedSet)) {
-            List<String> missing = expectedSet.stream().filter(col -> !actualSet.contains(col)).collect(Collectors.toList());
-            List<String> extra = actualSet.stream().filter(col -> !expectedSet.contains(col)).collect(Collectors.toList());
-            String errorMessage = "Column mismatch: " +
-                    (missing.isEmpty() ? "" : "Missing: " + missing) +
-                    (extra.isEmpty() ? "" : "; Extra: " + extra);
-            
+        // actualColumns에만 있는 칼럼(엑셀 칼럼에만 있는 경우) 체크
+        List<String> extra = actualSet.stream()
+        .filter(col -> !expectedSet.contains(col))
+        .collect(Collectors.toList());
+
+        if (!extra.isEmpty()) {
+            String errorMessage = "Column mismatch: Extra columns found in Excel: " + extra;
             throw AppErrorException.of(ResultCode.Error.BIZ_VALIDATION_FAILED, errorMessage);
         }
     }
