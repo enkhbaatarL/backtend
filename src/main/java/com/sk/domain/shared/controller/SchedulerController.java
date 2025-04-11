@@ -40,4 +40,13 @@ public class SchedulerController {
     public BaseResponse<Boolean> createNotification() {
         return BaseResponseFactory.create(schedulerService.createNotification());
     }
+
+    @ApiOrder(3)
+    @Operation(summary = "PDF파일 이미지 변환 API", description = "배치에 쓰일 API로 PDF파일을 이미지로 나누어 S3 업로드 합니다.")
+    @PostMapping("/pdf-to-images")
+    @ApiResponse(responseCode = "200", description = "알림 발송 성공")
+    public BaseResponse<Boolean> processPdfToImages() {
+        return BaseResponseFactory.create(schedulerService.processPdfToImages());
+    }
+
 }
