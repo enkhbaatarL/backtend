@@ -38,7 +38,7 @@ public class AdminProviderService {
     private final ProviderRepository providerRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
     private final ProviderDataColumnRepository providerDataColumnRepository;
-    
+
     /**
      * 데이타 프로바이더 목록을 페이지네이션 처리하여 조회한다.
      *
@@ -60,7 +60,7 @@ public class AdminProviderService {
             return PaginationRes.toRes(providerRepository.findAllForOperator(user.getCustomerCompany().getCustomerCompanyNo(), pageable));
         }
 
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
     }
 
     /**
@@ -80,7 +80,7 @@ public class AdminProviderService {
             return providerRepository.findProviderNmForOperator(user.getCustomerCompany().getCustomerCompanyNo());
         }
 
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
     }
 
     /**
@@ -123,7 +123,7 @@ public class AdminProviderService {
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
         }
 
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, "user role not found");
     }
 
     /**

@@ -31,6 +31,7 @@ public class ResultCode {
         AUTH_TOKEN_INVALID("AUTH-004", "The provided token is invalid or malformed."),
         AUTH_INSUFFICIENT_PERMISSIONS("AUTH-005", "You don't have sufficient permissions for this operation."),
         AUTH_ACCOUNT_LOCKED("AUTH-006", "Your account has been locked. Please contact support."),
+        AUTH_ACCESS_DENIED("AUTH-007", "Access denied. You do not have permission to access this resource."),
 
         // REQ: 요청/입력 관련 오류
         REQ_INVALID("REQ-001", "The request is invalid."),
