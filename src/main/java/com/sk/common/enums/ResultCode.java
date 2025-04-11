@@ -49,10 +49,10 @@ public class ResultCode {
         RSC_COMPONENT_NOT_FOUND("RSC-005", "The required system component could not be found."),
 
         // BIZ: 비즈니스 로직 관련 오류
-        BIZ_RULE_VIOLATION("BIZ-001", "The operation violates a business rule."),
-        BIZ_DATA_INTEGRITY("BIZ-002", "The operation would violate data integrity."),
-        BIZ_STATE_CONFLICT("BIZ-003", "The operation cannot be performed in the current state."),
-        BIZ_VALIDATION_FAILED("BIZ-004", "Business validation failed."),
+        BIZ_RULE_VIOLATION("BIZ-001", "The operation violates a business rule."), // 비즈니스 룰 위반 통합
+//        BIZ_DATA_INTEGRITY("BIZ-002", "The operation would violate data integrity."),
+//        BIZ_STATE_CONFLICT("BIZ-003", "The operation cannot be performed in the current state."),
+//        BIZ_VALIDATION_FAILED("BIZ-004", "Business validation failed."),
 
         // API: 외부 시스템 및 서비스 관련 오류
         API_CALL_FAILED("API-001", "An external API call has failed."),
