@@ -113,4 +113,10 @@ public class UploadedFile extends BaseEntity {
         this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
         this.fileValidEndDt = fileValidEndDt;
     }
+
+    public void updateUploadedImagesResult(int numberOfPages) {
+        this.filePageCnt = numberOfPages;
+        this.isImageConversionCompleted = Boolean.TRUE;
+    }
+
 }

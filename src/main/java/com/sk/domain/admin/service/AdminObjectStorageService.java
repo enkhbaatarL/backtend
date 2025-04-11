@@ -128,8 +128,8 @@ public class AdminObjectStorageService {
     public String uploadFile(InputStream file, String bucketName, String fileName, boolean isPublic, String contentType, long contentLength)
             throws IOException {
 
-        Path path = Paths.get(fileName.replace("\\", "/"));
-        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString());
+        Path path = Paths.get(fileName);
+        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString().replace("\\", "/"));
 
         // create bucket
         if (!objectStorageClient.doesBucketExistV2(bucketName)) {

@@ -3,6 +3,7 @@ package com.sk.domain.mi.service;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.service.AdminObjectStorageService;
@@ -12,8 +13,10 @@ import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.util.StringUtils;
 
 import java.awt.image.BufferedImage;
 
@@ -56,6 +59,10 @@ public class MiPdfService {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
 
+        if (page > uploadedFile.getFilePageCnt()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The page is out of range. fileNo: %s, page: %s".formatted(fileNo, page));
+        }
+
         if (!Extension.PDF.getCode().equalsIgnoreCase(uploadedFile.getFileExtNm())) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The fileNo is not a PDF file. fileNo: %s".formatted(fileNo));
         }
@@ -65,57 +72,22 @@ public class MiPdfService {
         }
 
         try {
-            byte[] bytes = adminObjectStorageService.downloadFile("skt-mi-d-osb-01", "GUDAT/353f20b7-32cd-44fa-afbc-b52881fe84b3/%s.png".formatted(StringUtil.formatPageNumber(page)));
+
+            Pair<String, String> bucketInfo = StringUtil.extractBucketAndPath(uploadedFile.getStoragePathNm());
+            String bucket = bucketInfo.getLeft();
+            String fullPath = bucketInfo.getRight();
+            String prefix = StringUtil.stripFileExtension(fullPath);
+            String imageName = StringUtils.concat(StringUtil.formatPageNumber(page), ".", Extension.PNG.getCode());
+            String imagePath = StringUtils.concat(prefix, "/", imageName);
+
+            byte[] bytes = adminObjectStorageService.downloadFile(bucket, imagePath);
             BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
-            BufferedImage addTextWatermark = PdfUtil.addTextWatermark(bufferedImage, "T E S T - W A T E R M A R K");
+            BufferedImage addTextWatermark = PdfUtil.addTextWatermark(bufferedImage, "SKCC000@SKCC.com/팀장/개발팀/장민규/%s".formatted(DateUtil.currentYmdHyphen()));
             return PdfUtil.imageToByteArray(addTextWatermark, Extension.PNG.getCode());
         } catch (Exception e) {
-            log.error("error [getImagePageFromPdf]: {}", e.getMessage(), e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
 
     }
-
-//    /**
-//     * PDF 파일을 받아 각 페이지를 이미지로 변환하여 S3에 업로드하는 메소드
-//     *
-//     * @param pdfFile PDF 파일
-//     */
-//    public void uploadPageImagesFromPDF(MultipartFile pdfFile, String uuidFileName) {
-//        try {
-//
-//            byte[] pdfBytes = pdfFile.getBytes();
-//            PDDocument document = Loader.loadPDF(pdfBytes);
-//            PDFRenderer renderer = new PDFRenderer(document);
-//
-//            String imageFolderPath = "GUDAT/%s/".formatted(uuidFileName);
-//
-//            int pageCount = document.getNumberOfPages();
-//
-//            IntStream.range(0, pageCount)
-//                .forEach(pageIndex -> {
-//                    try {
-//                        // 페이지를 이미지로 렌더링 (DPI 300으로 설정)
-//                        BufferedImage image = renderer.renderImageWithDPI(pageIndex, 300);
-//
-//                        String imageName = String.format("page_%03d.png", pageIndex + 1);
-//                        byte[] imageBytes = PdfUtil.imageToByteArray(image, "png");
-//
-//                        try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
-////                            adminObjectStorageService.uploadImageTemp(imageFolderPath + imageName, imageBytes.length, imageInputStream);
-//                        }
-//
-//                    } catch (IOException e) {
-//                        throw new RuntimeException("페이지 " + (pageIndex + 1) + " 처리 중 오류 발생", e);
-//                    }
-//                });
-//
-//            document.close();
-//
-//        } catch (IOException e) {
-//            throw new RuntimeException("PDF 파일을 이미지로 변환하는 중 오류가 발생했습니다.", e);
-//        }
-//
-//    }
 
 }
