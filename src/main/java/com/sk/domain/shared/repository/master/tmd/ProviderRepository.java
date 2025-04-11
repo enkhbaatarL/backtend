@@ -48,7 +48,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
             """)
     Page<ProviderRes> findAllForAdmin(Pageable pageable);
 
-    // 운영자는 고객사와 맵핑된 프로바이더 목록을 조회한다.
+    // 운영자는 고객사에 등록된 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
                 p.providerNo,
@@ -89,7 +89,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                   """)
     List<ProviderNameRes> findProviderNmForAdmin();
 
-    // 운영자는 고객사와 맵핑된 프로바이더 목록을 조회한다.
+    // 운영자는 고객사에 등록된 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
                 p.providerNo,
@@ -140,42 +140,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                      cu.userNm, cu.departmentNm, cuc.customerCompanyNm,
                      mu.userNm, mu.departmentNm, muc.customerCompanyNm
             """)
-    Optional<ProviderDetailRes> findProviderDetailByProviderNoForAdmin(@Param("providerNo") int providerNo);
-
-    @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.ProviderDetailRes(
-                p.providerNo,
-                p.providerNm,
-                p.providerId,
-                p.providerExpn,
-                p.isUsed,
-                new com.sk.domain.shared.dto.AuditInfo(
-                          p.createUserId,
-                          p.createDt,
-                          p.modifyUserId,
-                          p.modifyDt,
-                          new com.sk.domain.shared.dto.AuditExtension(
-                              cu.userNm,
-                              cu.departmentNm,
-                              cuc.customerCompanyNm,
-                              mu.userNm,
-                              mu.departmentNm,
-                              muc.customerCompanyNm
-                          )
-                      )
-            )
-            FROM Provider p
-            LEFT JOIN User cu ON p.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
-            LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
-            LEFT JOIN mu.customerCompany muc
-            WHERE p.isDeleted = false
-                AND p.providerNo = :providerNo
-            GROUP BY p.providerNo, p.providerNm, p.providerId, p.providerExpn, p.isUsed,
-                     cu.userNm, cu.departmentNm, cuc.customerCompanyNm,
-                     mu.userNm, mu.departmentNm, muc.customerCompanyNm
-            """)
-    Optional<ProviderDetailRes> findProviderDetailByProviderNoForOperator(@Param("providerNo") int providerNo);
+    Optional<ProviderDetailRes> findProviderDetailByProviderNo(@Param("providerNo") int providerNo);
 
     // 프로바이더의 수정시간이 상품의 수정시간보다 최근이면 프로바이더의 수정시간과 수정자를 가져오고
     // 상품의 수정시간이 프로바이더의 수정시간보다 최근이면 상품의 수정시간과 수정자를 가져온다.
