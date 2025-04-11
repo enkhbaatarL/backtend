@@ -3,6 +3,7 @@ package com.sk.common.config.security.configurer;
 import com.sk.common.config.security.CustomAccessDeniedHandler;
 import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.jwt.CustomJwtEncoder;
+import com.sk.common.config.security.oauth2.AesPasswordEncoder;
 import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
 import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
 import com.sk.common.filter.ExceptionHandlerFilter;
@@ -106,14 +107,14 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-            .issuer("http://localhost:8080")
-            .tokenEndpoint("/oauth2/token")
+            .issuer("http://localhost:8080") // todo
+            .tokenEndpoint("/oauth2/token") // todo
             .build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public PasswordEncoder passwordEncoder(@Value("${aes.secret-key}") String secretKey) {
+        return new AesPasswordEncoder(secretKey);
     }
 
 }

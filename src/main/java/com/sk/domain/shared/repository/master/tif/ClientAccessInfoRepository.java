@@ -13,4 +13,7 @@ public interface ClientAccessInfoRepository extends JpaRepository<ClientAccessIn
     @EntityGraph(attributePaths = {"customerCompany"})
     Optional<ClientAccessInfo> findByClientAccessRegNoAndIsDeletedFalse(Integer integer);
 
+    @EntityGraph(attributePaths = {"customerCompany"})
+    Optional<ClientAccessInfo> findByClientCertId(String clientId);
+
 }

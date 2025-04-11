@@ -181,7 +181,7 @@ public class AdminObjectStorageService {
     *
     * @param bucketName 버킷 이름
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public void deleteFile(String bucketName, String fileName) {
         objectStorageClient.deleteObject(new DeleteObjectRequest(bucketName, fileName));
@@ -193,7 +193,7 @@ public class AdminObjectStorageService {
     * @param bucketName 버킷 이름
     * @param oldPath 기존 위치
     * @param newPath 새 위치
-    * @return 
+    * @return
     */
     public void copyFile(String bucketName, String oldPath, String newPath) {
         objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
@@ -205,7 +205,7 @@ public class AdminObjectStorageService {
     * @param bucketName 버킷 이름
     * @param oldPath 기존 위치
     * @param newPath 새 위치
-    * @return 
+    * @return
     */
     public void moveFile(String bucketName, String oldPath, String newPath) {
         this.copyFile(bucketName, oldPath, newPath);
@@ -217,7 +217,7 @@ public class AdminObjectStorageService {
     *
     * @param bucketName 버킷 이름
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public String getUrl(String bucketName, String fileName) {
         return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
@@ -228,7 +228,7 @@ public class AdminObjectStorageService {
     *
     * @param bucketName 버킷 이름
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public void setACL(String bucketName, String fileName) {
         // get the current ACL

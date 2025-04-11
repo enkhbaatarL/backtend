@@ -23,7 +23,7 @@ public record CompanyProviderMapDetailRes(
 
     public static CompanyProviderMapDetailRes of(CustomerCompanyProviderMapping entity) {
         return CompanyProviderMapDetailRes.builder()
-            .companyProviderMapRes(CompanyProviderMapRes.ofDefault(entity))
+            .companyProviderMapRes(CompanyProviderMapRes.of(entity))
             .providerExpn(entity.getProvider().getProviderExpn())
             .build();
     }

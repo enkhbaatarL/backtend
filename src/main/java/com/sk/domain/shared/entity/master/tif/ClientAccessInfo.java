@@ -69,8 +69,8 @@ public class ClientAccessInfo extends BaseEntity {
             .clientCertId(dto.clientCertId())
             .clientSecretKey(encryptedClientSecret)
             .customerCompany(customerCompany)
-            .certTypeNm("CLIENT_CREDENTIALS")
-            .certMethodNm("CLIENT_SECRET_BASIC")
+            .certTypeNm("client_credentials")
+            .certMethodNm("client_secret_basic")
             .permissionAuthScopeNm("")
             .build();
     }
