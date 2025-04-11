@@ -86,13 +86,13 @@ public class AdminProviderController {
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
     // ADMIN-SKCC
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0MDk4ODk2LCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0NzY5ODg5Nn0.68OEYnjjNj7nR-zp2bO3nb2FmaYOSKfIbo7zgl8Nfd8
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0Mjc0ODcxLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc4MDI3NDg3MX0.hVm8KPlcTPwjxGtdRr8VH1uIrGFIfIePb_FyVkiquHc
 
     // OPERATOR-SKHY
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0MDk4OTM4LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc0NzY5ODkzOH0.P8PcdjIKGDriBVVMggr4VnC9ubHJDn9GiDzR-Rw1kp8
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0Mjc0OTA0LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkwNH0.T0JZ5XJva9dokRGhDhipWTvlRi92kSO9cUEzpFfXgSk
 
     // OPERATOR-SKGAS
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNDU0MzgsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI0NTQzOH0.cbpjFfcl5V8XNi_rkt4awLuwNPvayqf5DenNv8APWqM
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNzQ5MjcsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkyN30.p3BWi9foUIVa2LoG4GF6yBLvyoV-1ZTb7Q2S_JS2U1I
 
     @ApiOrder(1)
     @Parameters({
@@ -498,21 +498,4 @@ public class AdminProviderController {
 
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
     }
-
-    @ApiOrder(94)
-    @Operation(summary = "비정형 데이타 파일 삭제", description = "비정형 데이타 파일을 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/goodsdatas/delete-file/unstructureddata/{fileNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
-    public BaseResponse<String> deleteFile(
-            @UserResolve User user,
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
-
-        // todo: 검증 로직 추가
-
-        adminFileService.deleteFile(fileNo);
-
-        return BaseResponseFactory.create("success");
-    }
-
 }

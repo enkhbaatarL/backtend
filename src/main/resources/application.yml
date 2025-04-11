@@ -49,4 +49,4 @@ springdoc:
     persist-authorization: true
 
 security:
-  enabled: false
+  enabled: true
