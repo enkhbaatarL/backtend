@@ -21,7 +21,6 @@ import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
-import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -42,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
-    private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -97,10 +95,11 @@ public class TestController {
         return BaseResponseFactory.create(testService.delete(id));
     }
 
+    //TODO: 컴포넌트가 아닌 데이터소스를 불러와야 함
     @PostMapping("/dynamic-query")
     public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
-            @RequestBody @Valid DynamicDataReq testReq) {
-        return BaseResponseFactory.create(mybatisDynamicQueryService.getDynamicData(testReq));
+            @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
+        return BaseResponseFactory.create(testService.getDynamicData(testReq));
     }
 
     @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")

@@ -1,7 +1,6 @@
 package com.sk.domain.admin.service;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +13,7 @@ import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
+import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
@@ -50,6 +50,7 @@ public class TestService {
     private final ComponentInfoRepository componentInfoRepository;
     private final ExcelService excelService;
     private final DynamicMapper dynamicMapper;
+    private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -137,6 +138,18 @@ public class TestService {
                 .orElseThrow();
         customerCompany.softDelete();
         return "ok";
+    }
+
+
+    public List<Map<String, Object>> getDynamicData(TestReq.uploadStructuredDataFile testReq) {
+        ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
+        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
+
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(componentInfo.getTargetDbNm());
+
+        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
     }
 
     /**

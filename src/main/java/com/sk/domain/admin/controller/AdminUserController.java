@@ -24,11 +24,13 @@ import com.sk.domain.admin.dto.response.user.UserDetailRes;
 import com.sk.domain.admin.dto.response.user.UserInfoRes;
 import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.admin.service.AdminUserService;
+import com.sk.domain.shared.enums.CompanyType;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -45,7 +47,6 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
-    //TODO: 호영: 관리사 / 고객사 구분 필요
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -71,21 +72,23 @@ public class AdminUserController {
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
+            @Parameter(name = "companyType", description = "검색할 회사 타입, 고객사 => CUSTOMER, 관리사 => MANAGER"),
             @Parameter(name = "companyCd", description = "검색할 고객사 코드"),
             @Parameter(name = "userNm", description = "검색할 사용자 이름"),
             @Parameter(name = "emailAddress", description = "검색할 이메일 주소")
     })
-    @Operation(summary = "그룹사 사용자 목록 인터페이스 테이블 조회 API", description = "사용자 목록을 인터페이스 테이블에서 조회합니다.")
+    @Operation(summary = "그룹사 운영자 / 관리자 목록 인터페이스 테이블 조회 API", description = "운영자 / 관리자 목록을 인터페이스 테이블에서 조회합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 목록 조회 성공")
     @GetMapping("/group-admin-users")
     public BaseResponse<PaginationRes<UserInfoRes>> getAdminUserInfos(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+            @RequestParam(value = "companyType", required = true) CompanyType companyType,
             @RequestParam(value = "companyCd", required = true) String companyCd,
             @RequestParam(value = "userNm", required = false) @TrimmedNotEmpty String userNm,
             @RequestParam(value = "emailAddress", required = false) @TrimmedNotEmpty String emailAddress) {
         return BaseResponseFactory
-                .create(adminUserService.getAdminUserInfos(page, size, companyCd, userNm, emailAddress));
+                .create(adminUserService.getAdminUserInfos(page, size, companyType, companyCd, userNm, emailAddress));
     }
 
     @ApiOrder(3)
@@ -97,7 +100,6 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.saveUserInfo(userReq));
     }
 
-    //TODO: 호영: UserRoleCd 를 List로 받아서 User / Admin / Operator 한번에 처리
     @ApiOrder(4)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -155,12 +157,12 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.saveAdminUser(adminReq));
     }
 
-
-    //TODO: 호영: 관리자 목록 조회시 Filter 추가
     @ApiOrder(8)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
+            @Parameter(name = "userRoleCd", description = "검색할 사용자 역할 코드 (ADMIN 또는 OPERATOR)", schema = @Schema(type = "string", allowableValues = {
+                    "ADMIN", "OPERATOR" }, example = "ADMIN")),
             @Parameter(name = "companyNo", description = "검색할 고객사 번호"),
             @Parameter(name = "departmentNm", description = "검색할 부서 이름"),
             @Parameter(name = "userNm", description = "검색할 사용자 이름"),
@@ -172,12 +174,13 @@ public class AdminUserController {
     public BaseResponse<PaginationRes<UserDetailRes>> getAdminUsers(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+            @RequestParam(value = "userRoleCd", required = false) UserRoleCd userRoleCd,
             @RequestParam(value = "companyNo", required = false) Integer companyNo,
             @RequestParam(value = "departmentNm", required = false) @TrimmedNotEmpty String departmentNm,
             @RequestParam(value = "userNm", required = false) @TrimmedNotEmpty String userNm,
             @RequestParam(value = "emailAddress", required = false) @TrimmedNotEmpty String emailAddress) {
         return BaseResponseFactory
-                .create(adminUserService.getAdminUsers(page, size, companyNo, departmentNm, userNm,
+                .create(adminUserService.getAdminUsers(page, size, userRoleCd, companyNo, departmentNm, userNm,
                         emailAddress));
     }
 

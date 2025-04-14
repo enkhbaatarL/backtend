@@ -1,5 +1,17 @@
 package com.sk.domain.admin.controller;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -9,9 +21,23 @@ import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
-import com.sk.domain.admin.dto.response.company.*;
+import com.sk.domain.admin.dto.response.company.AuthGoodsMapCntRes;
+import com.sk.domain.admin.dto.response.company.AuthGoodsMapRes;
+import com.sk.domain.admin.dto.response.company.AuthGoodsMapSettingRes;
+import com.sk.domain.admin.dto.response.company.CompanyDepartmentRes;
+import com.sk.domain.admin.dto.response.company.CompanyGoodsMapDetailRes;
+import com.sk.domain.admin.dto.response.company.CompanyGoodsMapRes;
+import com.sk.domain.admin.dto.response.company.CompanyProviderMapDetailRes;
+import com.sk.domain.admin.dto.response.company.CompanyProviderMapRes;
+import com.sk.domain.admin.dto.response.company.CompanyRes;
+import com.sk.domain.admin.dto.response.company.CompanyTypeAndCompanyRes;
+import com.sk.domain.admin.dto.response.company.GoodsWithDataCntRes;
+import com.sk.domain.admin.dto.response.company.GroupCompanyRes;
+import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
+import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
 import com.sk.domain.admin.service.AdminCompanyService;
 import com.sk.domain.shared.enums.ActivationStatus;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -21,9 +47,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
@@ -315,11 +338,18 @@ public class AdminCompanyController {
     }
 
     @ApiOrder(21)
-    @Operation(summary = "고객사, 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
+    @Operation(summary = "고객사별 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/company/department/all")
+    @GetMapping("/companies/department/all")
     public BaseResponse<List<CompanyDepartmentRes>> getCompaniesAndDepartments() {
         return BaseResponseFactory.create(adminCompanyService.getCompaniesAndDepartments());
     }
 
+    @ApiOrder(22)
+    @Operation(summary = "고객사, 관리사 목록 일괄 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 관리사 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/all")
+    public BaseResponse<List<CompanyTypeAndCompanyRes>> getCompanyTypeAndCompanies() {
+        return BaseResponseFactory.create(adminCompanyService.getCompanyTypeAndCompanies());
+    }
 }
