@@ -79,29 +79,16 @@ public class AdminGoodsDataService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        // 관리자
         if (RoleUtil.isAdmin(user)) {
+            // 관리자: 프로바이더 -> 상품 -> 상품 데이타 목록 조회
             return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
-        }
-
-        // 운영자
-        if (RoleUtil.isOperator(user)) {
-            // 고객사와 프로바이더 맵핑 정보 확인
-            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "provider no: %d".formatted(providerNo)));
-
-            // 고객사와 상품 맵핑 정보 확인
-            customerCompanyGoodsMappingRepository
-                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "goods no: %d".formatted(goodsNo)));
-
+        } else if (RoleUtil.isOperator(user)) {
+            // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 목록 조회
             return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(
                     user.getCustomerCompany().getCustomerCompanyNo(), providerNo, goodsNo, keyword, pageable));
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
@@ -142,70 +129,81 @@ public class AdminGoodsDataService {
     */
     public List<GoodsDataNameRes> getAllGoodsDataNm(User user, int providerNo, int goodsNo) {
 
-        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
+            // 관리자: 프로바이더 -> 상품 -> 상품 데이타명 목록 조회
+            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
+        } else if (RoleUtil.isOperator(user)) {
+            // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타명 목록 조회
+            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(user.getCustomerCompany().getCustomerCompanyNo(),
+                    providerNo, goodsNo);
         }
 
-        // 운영자
-        if (RoleUtil.isOperator(user)) {
-            //
-        }
-
-        throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "user role not found");
-
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
     * 데이터 상세 조회합니다.
     *
     * @param user 사용자 정보
+    * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
+    * @param goodsDataNo 상품 데이타 번호
     * @return GoodsDataDetailRes
     */
     public GoodsDataDetailRes getGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo) {
 
-        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+            // 관리자: 프로바이더 -> 상품 -> 상품 데이타 조회
+            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
+
+            List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+            List<StructuredDataRes> structuredDataList = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+            List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository
+                    .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+            return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
+        } else if (RoleUtil.isOperator(user)) {
+            // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 조회
+
+            // 프로바이더 등록 유무 체크
+            customerCompanyProviderMappingRepository
+                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            // 상품 권한 유무 체크
+            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
+
+            List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+            List<StructuredDataRes> structuredDataList = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+            List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository
+                    .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+            return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
         }
 
-        // 운영자
-        if (RoleUtil.isOperator(user)) {
-            providerRepository.findByProviderNoAndIsDeletedFalseAndIsUsedTrue(providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-            // 고객사와 프로바이더 맵핑 정보 확인
-            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "provider no: %d".formatted(providerNo)));
-
-            // 고객사와 상품 맵핑 정보 확인
-            customerCompanyGoodsMappingRepository
-                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "goods no: %d".formatted(goodsNo)));
-        }
-
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-        List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
-
-        List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
-
-        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
-
-        return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
     * 데이터 등록: 신규등록
     *
+    * @param user 사용자 정보
+    * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param GoodsDataCreateReq
     * @return
@@ -213,32 +211,47 @@ public class AdminGoodsDataService {
     @Transactional
     public void createGoodsData(User user, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
 
-        CustomerCompany customerCompany = null;
-
-        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            customerCompany = null;
+            // 관리자: 상품이 퍼블릭일 경우 등록 가능
+            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
-            providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+            if (!goods.getIsPublic()) {
+                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+            }
+
+            internalCreateGoodsData(goods, null, dto);
+
+        } else if (RoleUtil.isOperator(user)) {
+            // 운영자: 상품이 프라이빗일 경우 등록 가능
+            customerCompanyProviderMappingRepository
+                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-        }
 
-        // 운영자
-        if (RoleUtil.isOperator(user)) {
-            customerCompany = user.getCustomerCompany();
-
-            providerRepository.findByProviderNoAndIsDeletedFalseAndIsUsedTrue(providerNo)
+            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
                     .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+            if (goods.getIsPublic()) {
+                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+            }
+
+            internalCreateGoodsData(goods, user.getCustomerCompany(), dto);
         }
+    }
 
-        Goods goods = goodsRepository.findByGoodsNoAndIsDeletedFalseAndIsUsedTrue(goodsNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
+    private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, GoodsDataCreateReq dto) {
+        // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
-                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsExpn(), dto.goodsDataSummaryCntt()));
+                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt()));
 
         // 카테고리 저장
         if (dto.categoryDataList() != null) {
@@ -258,11 +271,12 @@ public class AdminGoodsDataService {
 
                 // todo
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                        .save(GoodsDataSourceDetail.of(savedGoodsData, structuredData.dataNm(), "targetDbNm",
+                        .save(GoodsDataSourceDetail.of(savedGoodsData, "goodsDataSourceNm", "targetDbNm",
                                 "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
 
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "DATATYPE", structuredData.dataType(),
-                        GoodsDataManagementSeparateCode.GUDAT.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
+                // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
+                        GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
             }
         }
 
@@ -284,16 +298,62 @@ public class AdminGoodsDataService {
     /**
     * 데이터 등록: 기존 데이타 업데이트
     *
+    * @param user 사용자 정보
+    * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param GoodsDataUpdateReq
     * @return
     */
     @Transactional
     public void updateGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+        if (RoleUtil.isAdmin(user)) {
+            // 관리자: 상품이 퍼블릭일 경우 수정 가능
+            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
+            if (!goods.getIsPublic()) {
+                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+            }
+
+            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+            internalUpdateGoodsData(goodsData, dto);
+        }
+
+        if (RoleUtil.isOperator(user)) {
+            // 운영자: 상품이 프라이빗일 경우 수정 가능
+            customerCompanyProviderMappingRepository
+                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+            if (goods.getIsPublic()) {
+                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+            }
+
+            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+            internalUpdateGoodsData(goodsData, dto);
+        }
+
+    }
+
+    private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
         goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt());
 
         // 카테고리 수정
@@ -323,6 +383,7 @@ public class AdminGoodsDataService {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
                 log.info("==================> {}", structuredData);
                 // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
+                // 재현님하고 협의
             }
         }
 

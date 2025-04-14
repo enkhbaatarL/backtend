@@ -16,7 +16,9 @@ public interface CustomerCompanyGoodsMappingRepository
     @EntityGraph(attributePaths = { "goods" })
     List<CustomerCompanyGoodsMapping> findByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany);
 
-    @EntityGraph(attributePaths = { "goods" })
+    @EntityGraph(attributePaths = { "goods", "creator", "modifier" })
     Optional<CustomerCompanyGoodsMapping> findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(Integer companyNo, Integer goodsNo);
+
+    Optional<CustomerCompanyGoodsMapping> findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(CustomerCompany company, Integer goodsNo);
 
 }

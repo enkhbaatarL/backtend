@@ -97,7 +97,7 @@ public record CompanyGoodsMapDetailRes(
 
     public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping) {
         return CompanyGoodsMapDetailRes.builder()
-            .companyGoodsMapRes(CompanyGoodsMapRes.ofDefault(goodsMapping))
+            .companyGoodsMapRes(CompanyGoodsMapRes.of(goodsMapping))
             .goodsNm(goodsMapping.getGoods().getGoodsNm())
             .goodsExpn(goodsMapping.getGoods().getGoodsExpn())
             .build();

@@ -6,13 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,7 +54,6 @@ import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
-import com.sk.domain.shared.dto.request.rpa.ProviderDataColumnReq;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 
@@ -79,15 +78,21 @@ public class AdminProviderController {
     private final AdminGoodsDataService goodsDataService;
     private final AdminFileService adminFileService;
 
-    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xls", "xlsx");
-    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx");
+    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls");
+    private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel");
+    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
+            "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
-    // ADMIN
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0MDk4ODk2LCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0NzY5ODg5Nn0.68OEYnjjNj7nR-zp2bO3nb2FmaYOSKfIbo7zgl8Nfd8
+    // ADMIN-SKCC
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0Mjc0ODcxLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc4MDI3NDg3MX0.hVm8KPlcTPwjxGtdRr8VH1uIrGFIfIePb_FyVkiquHc
 
-    // OPERATOR
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0MDk4OTM4LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc0NzY5ODkzOH0.P8PcdjIKGDriBVVMggr4VnC9ubHJDn9GiDzR-Rw1kp8
+    // OPERATOR-SKHY
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0Mjc0OTA0LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkwNH0.T0JZ5XJva9dokRGhDhipWTvlRi92kSO9cUEzpFfXgSk
+
+    // OPERATOR-SKGAS
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNzQ5MjcsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkyN30.p3BWi9foUIVa2LoG4GF6yBLvyoV-1ZTb7Q2S_JS2U1I
 
     @ApiOrder(1)
     @Parameters({
@@ -182,6 +187,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 최신 수정일, 수정자", description = "데이타 프로바이더의 최신 수정일과 수정자를 반납합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/latest-updated/")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<ProviderLatestUpdatedRes> getProviderLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
         return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
@@ -197,6 +203,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
             @UserResolve User user,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
@@ -283,6 +290,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 최신 수정일, 수정자", description = "상품의 최신 수정일과 수정자를 반납합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated/")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
@@ -315,6 +323,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
         return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
@@ -327,6 +336,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category/{codeId}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
             @PathVariable(value = "codeId") String codeId) {
 
@@ -337,6 +347,7 @@ public class AdminProviderController {
     @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/structureddatatype")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<List<ComponentInfoRes>> getStructuredDataType() {
 
         return BaseResponseFactory.create(goodsDataService.getStructuredDataType());
@@ -350,6 +361,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터명 목록 조회", description = "데이터명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata/name")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<List<GoodsDataNameRes>> getAllGoodsDataNm(
             @UserResolve User user,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -367,6 +379,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<GoodsDataDetailRes> getGoodsData(
             @UserResolve User user,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -380,6 +393,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<String> createGoodsData(
             @UserResolve User user,
             @RequestBody @Valid GoodsDataCreateReq body,
@@ -395,6 +409,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<String> updateGoodsData(
             @UserResolve User user,
             @RequestBody @Valid GoodsDataUpdateReq body,
@@ -407,10 +422,11 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(97)
-    @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
+    @ApiOrder(91)
+    @Operation(summary = "정형 데이타 파일 업로드", description = "정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<FileUploadRes> uploadStructuredDataFile(
             @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
@@ -429,6 +445,11 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
+        String mimeType = file.getContentType();
+        if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
+            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        }
+
         if (file.getSize() > MAX_SIZE) {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
@@ -436,10 +457,11 @@ public class AdminProviderController {
         return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
     }
 
-    @ApiOrder(98)
-    @Operation(summary = "데이타의 비정형 데이타 파일 업로드", description = "데이타의 비정형 데이타 파일을 업로드합니다.")
+    @ApiOrder(92)
+    @Operation(summary = "비정형 데이타 파일 업로드", description = "비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
@@ -465,13 +487,16 @@ public class AdminProviderController {
         return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
     }
 
-    @ApiOrder(99)
-    @Operation(summary = "첨부 파일 다운로드", description = "첨부 파일을 다운로드합니다.")
+    @ApiOrder(93)
+    @Operation(summary = "비정형 데이타 파일 다운로드", description = "비정형 데이타 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/goodsdatas/download-file/{fileNo}")
+    @PostMapping("/goodsdatas/download-file/unstructureddata/{fileNo}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public ResponseEntity<byte[]> downloadFile(
-            // @UserResolve User user,
+            @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
+
+        // todo: 검증 로직 추가
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 

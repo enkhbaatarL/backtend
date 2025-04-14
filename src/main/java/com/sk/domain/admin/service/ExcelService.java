@@ -453,7 +453,7 @@ public class ExcelService {
 
         if (!extra.isEmpty()) {
             String errorMessage = "Column mismatch: Extra columns found in Excel: " + extra;
-            throw AppErrorException.of(ResultCode.Error.BIZ_VALIDATION_FAILED, errorMessage);
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, errorMessage);
         }
     }
 

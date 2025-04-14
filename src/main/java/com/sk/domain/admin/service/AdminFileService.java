@@ -5,13 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.Normalizer;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -91,7 +90,7 @@ public class AdminFileService {
         }
 
         try {
-            String originalFileNm = file.getOriginalFilename();
+            String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
             long fileSize = file.getSize();
             String mimeTypeNm = file.getContentType();
@@ -218,13 +217,9 @@ public class AdminFileService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
         try {
-            URL url = new URL(uploadedFile.getStoragePathNm());
-            String pathOnly = url.getPath();
-            String[] filePaths = pathOnly.split("/");
-            String bucketName = filePaths[1];
-            String oldPath = String.join("/", Arrays.copyOfRange(filePaths, 2, filePaths.length));
-            String newPath = PathUtil.IncludeTrailingPathDelimiter(fileRelationshipObjectSeparateCode)
-                    + String.join("/", Arrays.copyOfRange(filePaths, 3, filePaths.length));
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String oldPath = getFileName(uploadedFile.getStoragePathNm());
+            String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
             adminObjectStorageService.moveFile(bucketName, oldPath, newPath);

@@ -8,16 +8,8 @@ import jakarta.validation.constraints.NotNull;
 public record StructuredDataReq(
         
         @NotBlank
-        @Schema(description = "데이타타입", example = "") 
-        String dataType,
-
-        @NotBlank
-        @Schema(description = "데이타명", example = "") 
-        String dataNm,
-
-        // @NotNull
-        // @Schema(description = "상품데이터소스번호", example = "1") 
-        // Integer goodsDataSourceNo,
+        @Schema(description = "컴포넌트유형ID", example = "") 
+        String componentTypeId,
 
         @NotNull
         @Schema(description = "파일번호", example = "1") 

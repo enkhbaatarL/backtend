@@ -12,6 +12,8 @@ public interface CustomCustomerCompanyRepository {
 
     Page<CompanyRes> findCompaniesByConditions(int page, int size, String companyNm, ActivationStatus activationSts);
 
+    Page<CompanyRes> findOwnerCompaniesByConditions(int page, int size, String companyNm);
+
     LatestUpdatedRes findLatestUpdated(Integer companyNo);
 
     List<CompanyDepartmentRes> findAllCompaniesAndDepartments();

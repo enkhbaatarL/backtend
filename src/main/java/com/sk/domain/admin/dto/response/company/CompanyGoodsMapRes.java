@@ -37,18 +37,40 @@ public record CompanyGoodsMapRes(
         this.auditInfo = auditInfo;
     }
 
-    public static CompanyGoodsMapRes ofDefault(CustomerCompanyGoodsMapping companyGoodsMapping) {
+    public static CompanyGoodsMapRes of(CustomerCompanyGoodsMapping entity) {
         return CompanyGoodsMapRes.builder()
-            .companyNo(companyGoodsMapping.getId().getCustomerCompanyNo())
-            .goodsNo(companyGoodsMapping.getId().getGoodsNo())
-            .isUsed(companyGoodsMapping.getIsUsed())
-            .goodsAuthManagementSeparateCd(companyGoodsMapping.getId().getGoodsAuthManagementSeparateCd().getCode())
-            .goodsAuthManagementSeparateNm(companyGoodsMapping.getId().getGoodsAuthManagementSeparateCd().getDescription())
+            .companyNo(entity.getId().getCustomerCompanyNo())
+            .goodsNo(entity.getId().getGoodsNo())
+            .isUsed(entity.getIsUsed())
+            .goodsAuthManagementSeparateCd(entity.getId().getGoodsAuthManagementSeparateCd().getCode())
+            .goodsAuthManagementSeparateNm(entity.getId().getGoodsAuthManagementSeparateCd().getDescription())
+            .auditInfo(AuditInfo.ofDetail(
+                entity.getCreateUserId(),
+                entity.getCreateDt(),
+                entity.getModifyUserId(),
+                entity.getModifyDt(),
+                entity.accessCreatorNm(),
+                entity.accessCreatorDeptNm(),
+                entity.accessCreatorCompanyNm(),
+                entity.accessModifierNm(),
+                entity.accessModifierDeptNm(),
+                entity.accessModifierCompanyNm()
+            ))
+            .build();
+    }
+
+    public static CompanyGoodsMapRes ofDefault(CustomerCompanyGoodsMapping entity) {
+        return CompanyGoodsMapRes.builder()
+            .companyNo(entity.getId().getCustomerCompanyNo())
+            .goodsNo(entity.getId().getGoodsNo())
+            .isUsed(entity.getIsUsed())
+            .goodsAuthManagementSeparateCd(entity.getId().getGoodsAuthManagementSeparateCd().getCode())
+            .goodsAuthManagementSeparateNm(entity.getId().getGoodsAuthManagementSeparateCd().getDescription())
             .auditInfo(AuditInfo.ofSimple(
-                companyGoodsMapping.getCreateUserId(),
-                companyGoodsMapping.getCreateDt(),
-                companyGoodsMapping.getModifyUserId(),
-                companyGoodsMapping.getModifyDt()
+                entity.getCreateUserId(),
+                entity.getCreateDt(),
+                entity.getModifyUserId(),
+                entity.getModifyDt()
             ))
             .build();
     }

@@ -39,7 +39,7 @@ public class AdminGoodsService {
 
     /**
     * 상품 목록을 페이지네이션 처리하여 조회한다.
-    *
+    * 
     * @param user 사용자 정보
     * @param page 조회할 페이지 번호 (min 1)
     * @param size 조회할 요소 사이즈 (min 1)
@@ -51,39 +51,34 @@ public class AdminGoodsService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable);
-            return PaginationRes.toRes(goodsPage);
-        }
-
-        // 운영자
-        if (RoleUtil.isOperator(user)) {
-            Page<GoodsRes> goodsPage = goodsRepository.findGoodsByProviderNoForOperator(user.getCustomerCompany().getCustomerCompanyNo(),
+            // 관리자: 프로바이더에 속한 모든 상품 조회
+            return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
+        } else if (RoleUtil.isOperator(user)) {
+            // 운영자: 고객사에 등록 된 프로바이더에 속한 모든 상품 조회
+            return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(user.getCustomerCompany().getCustomerCompanyNo(),
                     providerNo,
-                    keyword, pageable);
-            return PaginationRes.toRes(goodsPage);
+                    keyword, pageable));
         }
 
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
      * 상품을 등록한다.
      *
-     * @param ProviderCreateReq 데이타 프로바이더 등록 데이터
-     * @return ProviderCreateRes
+     * @param providerNo 데이타 프로바이더 번호
+     * @param GoodsCreateReq 상품 데이터
+     * @return Goods
      */
     @Transactional
-    public void createGoods(int providerNo, GoodsCreateReq dto) {
+    public Goods createGoods(int providerNo, GoodsCreateReq dto) {
 
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-        goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider));
-
-        return;
+        return goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider));
     }
 
     /**
@@ -95,46 +90,39 @@ public class AdminGoodsService {
     * @return GoodsDetailRes
     */
     public GoodsDetailRes getGoods(User user, int providerNo, int goodsNo) {
-
-        // 프로바이더 정보 확인
-        providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-        // 관리자
         if (RoleUtil.isAdmin(user)) {
-            return goodsRepository.findGoodsDetailByGoodsNoForAdmin(providerNo, goodsNo)
+            // 관리자: 프로바이더에 속한 상품 조회
+            return goodsRepository.findGoodsDetail(providerNo, goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+        } else if (RoleUtil.isOperator(user)) {
+            // 운영자: 고객사에 등록 된 프로바이더에 속한 권한 있는 상품 조회
+
+            // 프로바이더 등록 유무 체크
+            customerCompanyProviderMappingRepository
+                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            // 상품 권한 유무 체크
+            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+            return goodsRepository.findGoodsDetail(providerNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
         }
 
-        // 운영자
-        if (RoleUtil.isOperator(user)) {
-            // 고객사와 프로바이더 맵핑 정보 확인
-            customerCompanyProviderMappingRepository.findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "provider no: %d".formatted(providerNo)));
-
-            // 고객사와 상품 맵핑 정보 확인
-            customerCompanyGoodsMappingRepository
-                    .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany().getCustomerCompanyNo(), goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "goods no: %d".formatted(goodsNo)));
-
-            return goodsRepository.findGoodsDetailByGoodsNoForOperator(providerNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-        }
-
-        throw AppErrorException.of(ResultCode.Error.REQ_METHOD_NOT_ALLOWED, "user role not found");
+        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
     * 상품을 수정한다.
     *
     * @param goodsNo 상품 번호
-    * @param GoodsUpdateReq 상품 등록 데이터
-    * @return GoodsUpdateRes
+    * @param GoodsUpdateReq 상품 데이터
+    * @return 
     */
     @Transactional
     public void updateGoods(int goodsNo, GoodsUpdateReq dto) {
@@ -152,7 +140,7 @@ public class AdminGoodsService {
     * 상품을 삭제한다.
     *
     * @param goodsNo 상품 번호
-    * @return GoodsDeleteRes
+    * @return 
     */
     @Transactional
     public void deleteGoods(int goodsNo) {

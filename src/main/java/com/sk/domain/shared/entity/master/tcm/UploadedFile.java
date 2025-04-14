@@ -1,21 +1,15 @@
 package com.sk.domain.shared.entity.master.tcm;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.Comment;
-
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Comment;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -66,11 +60,20 @@ public class UploadedFile extends BaseEntity {
     @Comment("파일관계객체구분코드")
     private String fileRelationshipObjectSeparateCd;
 
+    @Column(name = "file_page_cnt", columnDefinition = "mediumint unsigned")
+    @Comment("파일페이지수")
+    private Integer filePageCnt;
+
+    @Column(name = "img_conv_cmpt_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("이미지변환완료여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isImageConversionCompleted;
+
     @Builder
     public UploadedFile(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Long fileNo, String originalFileNm, String storageFileNm, String storagePathNm, Long fileSize,
             String fileExtNm, String mimeTypeNm, String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo,
-            String fileRelationshipObjectSeparateCd) {
+            String fileRelationshipObjectSeparateCd, Integer filePageCnt, Boolean isImageConversionCompleted) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.fileNo = fileNo;
         this.originalFileNm = originalFileNm;
@@ -82,6 +85,8 @@ public class UploadedFile extends BaseEntity {
         this.fileValidEndDt = fileValidEndDt;
         this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
         this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
+        this.filePageCnt = filePageCnt;
+        this.isImageConversionCompleted = isImageConversionCompleted;
     }
 
     public static UploadedFile of(String originalFileNm, String storageFileNm, String storagePathNm, long fileSize, String fileExtNm,
@@ -97,6 +102,7 @@ public class UploadedFile extends BaseEntity {
                 .fileValidEndDt(fileValidEndDt)
                 .fileRelationshipObjectDistinguishNo(fileRelationshipObjectDistinguishNo)
                 .fileRelationshipObjectSeparateCd(fileRelationshipObjectSeparateCd)
+                .isImageConversionCompleted(Boolean.FALSE)
                 .build();
     }
 
@@ -107,4 +113,10 @@ public class UploadedFile extends BaseEntity {
         this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
         this.fileValidEndDt = fileValidEndDt;
     }
+
+    public void updateUploadedImagesResult(int numberOfPages) {
+        this.filePageCnt = numberOfPages;
+        this.isImageConversionCompleted = Boolean.TRUE;
+    }
+
 }

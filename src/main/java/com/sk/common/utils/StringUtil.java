@@ -1,5 +1,8 @@
 package com.sk.common.utils;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 public class StringUtil {
 
     private StringUtil() {}
@@ -20,6 +23,44 @@ public class StringUtil {
         sb.append("*".repeat(input.length() - prefix - suffix));
         sb.append(input, input.length() - suffix, input.length());
         return sb.toString();
+    }
+
+    public static String formatPageNumber(int pageNumber) {
+        if (pageNumber < 0 || pageNumber > 999) {
+            throw new IllegalArgumentException("pageNumber must be between 0 and 999");
+        }
+        return String.format("page_%03d", pageNumber);
+    }
+
+
+    public static Pair<String, String> extractBucketAndPath(String url) {
+        if (url == null) return null;
+
+        int baseIndex = url.indexOf(".com/");
+        if (baseIndex == -1 || baseIndex + 5 >= url.length()) return null;
+
+        String fullPath = url.substring(baseIndex + 5); // ex: skt-mi-d-osb-ss-skhy/TEMP/abc.pdf
+        int firstSlash = fullPath.indexOf("/");
+
+        if (firstSlash == -1 || firstSlash + 1 >= fullPath.length()) return null;
+
+        String bucket = fullPath.substring(0, firstSlash);
+        String path = fullPath.substring(firstSlash + 1);
+
+        return new ImmutablePair<>(bucket, path);
+    }
+
+    public static String stripFileExtension(String path) {
+        if (path == null) return null;
+
+        int lastDotIndex = path.lastIndexOf('.');
+        int lastSlashIndex = path.lastIndexOf('/');
+
+        // 확장자가 있고, 그 위치가 마지막 슬래시 뒤에 있을 때만 제거
+        if (lastDotIndex > lastSlashIndex) {
+            return path.substring(0, lastDotIndex);
+        }
+        return path;
     }
 
 }

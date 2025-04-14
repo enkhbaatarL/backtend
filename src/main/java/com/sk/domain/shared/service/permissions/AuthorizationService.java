@@ -1,4 +1,4 @@
-package com.sk.domain.shared.service;
+package com.sk.domain.shared.service.permissions;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
@@ -90,7 +90,25 @@ public class AuthorizationService {
         try {
             return Role.valueOf(role);
         } catch (IllegalArgumentException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role: " + role);
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role: %s".formatted(role));
+        }
+    }
+
+    /**
+     * 현재 인증된 사용자의 타사접속 가능 여부를 반환합니다.
+     *
+     * @return 타사접속가능여부
+     */
+    public boolean isThirdPartyAccessAllowed() {
+        Jwt jwt = getCurrentJwt();
+        Object isOtherServiceAccessPossible = jwt.getClaim("isOtherServiceAccessPossible");
+        if (isOtherServiceAccessPossible == null) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "'isOtherServiceAccessPossible' information not found in token");
+        }
+        try {
+            return Boolean.parseBoolean(isOtherServiceAccessPossible.toString());
+        } catch (NumberFormatException e) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid 'isOtherServiceAccessPossible' format");
         }
     }
 
@@ -127,8 +145,7 @@ public class AuthorizationService {
      */
     public void validateAdmin() {
         if (!isAdmin()) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "Admin permission required");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "'ADMIN' permission required.");
         }
     }
 
@@ -172,7 +189,7 @@ public class AuthorizationService {
      * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateViewPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
+        if (!allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have VIEW permission for goods: " + goodsNo);
         }
@@ -185,7 +202,7 @@ public class AuthorizationService {
      * @throws CustomAuthorizationException 권한이 없는 경우 발생
      */
     public void validateDownloadPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
+        if (!allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
                 "You don't have DOWNLOAD permission for goods: " + goodsNo);
         }

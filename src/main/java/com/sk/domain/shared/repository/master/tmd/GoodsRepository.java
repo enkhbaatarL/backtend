@@ -21,9 +21,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
 
     Optional<Goods> findByGoodsNoAndIsDeletedFalse(int goodsNo);
 
-    Optional<Goods> findByGoodsNoAndIsDeletedFalseAndIsUsedTrue(int goodsNo);
-
-    // 전체 상품 목록을 조회한다.
+    // 관리자는 전체 상품 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
                 g.goodsNo,
@@ -49,8 +47,9 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             """)
     Page<GoodsRes> findGoodsByProviderNoForAdmin(@Param("providerNo") int providerNo, @Param("keyword") String keyword, Pageable pageable);
 
-    // 고객사와 맵핑된 상품 목록을 조회한다.
-    // 고객사와 프로바이더가 맵핑 되어있는 상품 중에 공개된 상품과
+    // 운영자는 고객사와 맵핑된 상품 목록을 조회한다.
+    // 고객사와 프로바이더가 맵핑 되어있는 상품 중에
+    // 공개된 상품과
     // 고객사에 맵핑된 비공개 상품을 조회한다.
     // 고객사와 프로바이더가 맵핑 되어있지 않은 상품은 조회하지 않는다.
     @Query(value = """
@@ -107,6 +106,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
     Page<GoodsRes> findGoodsByProviderNoForOperator(@Param("customerCompanyNo") int customerCompanyNo, @Param("providerNo") int providerNo,
             @Param("keyword") String keyword, Pageable pageable);
 
+    //
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
             g.goodsNo,
@@ -139,41 +139,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             AND g.provider.providerNo = :providerNo
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsDetailRes> findGoodsDetailByGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
-
-    @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDetailRes(
-            g.goodsNo,
-            g.goodsNm,
-            g.goodsId,
-            g.goodsExpn,
-            g.isUsed,
-            g.isPublic,
-            new com.sk.domain.shared.dto.AuditInfo(
-                    g.createUserId,
-                    g.createDt,
-                    g.modifyUserId,
-                    g.modifyDt,
-                    new com.sk.domain.shared.dto.AuditExtension(
-                        cu.userNm,
-                        cu.departmentNm,
-                        cuc.customerCompanyNm,
-                        mu.userNm,
-                        mu.departmentNm,
-                        muc.customerCompanyNm
-                    )
-                )
-            )
-            FROM Goods g
-            LEFT JOIN User cu ON g.createUserId = cu.userLoginId AND (cu.userRoleCd = 'ADMIN' OR cu.userRoleCd = 'OPERATOR')
-            LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
-            LEFT JOIN mu.customerCompany muc
-            WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
-            AND g.goodsNo = :goodsNo
-            """)
-    Optional<GoodsDetailRes> findGoodsDetailByGoodsNoForOperator(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+    Optional<GoodsDetailRes> findGoodsDetail(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes(
@@ -181,10 +147,19 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             u.userNm
             )
             FROM Goods g
-            LEFT JOIN User u ON u.userLoginId = g.modifyUserId
+            LEFT JOIN User u ON u.userLoginId = g.modifyUserId AND (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR')
             WHERE g.isDeleted = false
             AND g.goodsNo = :goodsNo
             """)
     Optional<GoodsLatestUpdatedRes> findGoodsLatestUpdatedByGoodsNo(@Param("goodsNo") int goodsNo);
 
+    // 관리자는 상품 번호로 상품을 조회한다.
+    @Query(value = """
+            SELECT g
+            FROM Goods g
+            WHERE g.isDeleted = false
+                AND g.provider.providerNo = :providerNo
+                AND g.goodsNo = :goodsNo
+            """)
+    Optional<Goods> findByGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 }

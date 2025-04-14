@@ -32,4 +32,16 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
             @Param("fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode);
 
+    Optional<UploadedFile> findByFileNoAndIsDeletedFalse(Long fileNo);
+
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+            AND (u.isImageConversionCompleted != true OR u.isImageConversionCompleted IS NULL)
+            AND u.fileExtNm = :fileExtNm
+            AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCd
+            """)
+    List<UploadedFile> findPdfToImagesTarget(String fileExtNm, String fileRelationshipObjectSeparateCd);
+
 }

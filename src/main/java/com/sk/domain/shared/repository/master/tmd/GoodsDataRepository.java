@@ -15,17 +15,15 @@ import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     /**
-     * 
+     *
      * 기본적으로 고객사나 사용자의 사용가능 상태는 체크 하지 않는다. 로그인 단에서 체크하는걸로 처리
      *
      */
 
-    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
-
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
-                gd.goodsDataNo,
                 cc.customerCompanyNm,
+                gd.goodsDataNo,
                 gd.goodsDataNm,
                 gd.goodsDataExpn
             )
@@ -52,13 +50,15 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
-                gd.goodsDataNo,
                 cc.customerCompanyNm,
+                gd.goodsDataNo,
                 gd.goodsDataNm,
                 gd.goodsDataExpn
             )
             FROM GoodsData gd
             LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
             WHERE gd.isDeleted = false
               AND gd.goods.provider.providerNo = :providerNo
               AND gd.goods.goodsNo = :goodsNo
@@ -89,7 +89,40 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             WHERE gd.isDeleted = false
               AND gd.goods.provider.providerNo = :providerNo
               AND gd.goods.goodsNo = :goodsNo
+            ORDER BY gd.goodsDataNm ASC
                         """)
-    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
+            gd.goodsDataNo,
+            gd.goodsDataNm
+            )
+            FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+            WHERE gd.isDeleted = false
+              AND gd.goods.provider.providerNo = :providerNo
+              AND gd.goods.goodsNo = :goodsNo
+            ORDER BY gd.goodsDataNm ASC
+                        """)
+    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
+            @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+
+    @Query(value = """
+            SELECT gd
+            FROM GoodsData gd
+            WHERE gd.isDeleted = false
+            AND gd.goods.provider.providerNo = :providerNo
+            AND gd.goods.provider.isDeleted = false
+            AND gd.goods.goodsNo = :goodsNo
+            AND gd.goods.isDeleted = false
+            AND gd.goodsDataNo = :goodsDataNo
+                        """)
+    Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+            @Param("goodsDataNo") int goodsDataNo);
+
+    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
 }

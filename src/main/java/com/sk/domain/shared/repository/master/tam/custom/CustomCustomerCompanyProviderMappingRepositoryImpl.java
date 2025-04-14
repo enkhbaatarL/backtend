@@ -60,9 +60,9 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
                 modifierCompany.customerCompanyNm
             ))
             .from(customerCompanyProviderMapping)
-            .leftJoin(creator).on(customerCompanyProviderMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator).on(customerCompanyProviderMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN).and(creator.isDeleted.isFalse())))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompanyProviderMapping.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier).on(customerCompanyProviderMapping.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN).and(modifier.isDeleted.isFalse())))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .where(customerCompanyProviderMapping.isDeleted.eq(false),
                 customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo))
@@ -115,7 +115,8 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
             latestModifyNm = queryFactory
                 .select(user.userNm)
                 .from(user)
-                .where(user.userLoginId.eq(latestModifyId))
+                .where(user.userLoginId.eq(latestModifyId).and(user.userRoleCd.eq(UserRoleCd.ADMIN)))
+                .limit(1)
                 .fetchOne();
         }
 

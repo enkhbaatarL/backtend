@@ -1,6 +1,5 @@
 package com.sk.domain.admin.dto.response.company;
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
@@ -29,7 +28,6 @@ public record CompanyRes(
     @Schema(description = "활성화 여부", example = "true")
     Boolean isActivated,
 
-//    @JsonUnwrapped
     @Schema(description = "감사 정보")
     AuditInfo auditInfo
 
