@@ -13,6 +13,9 @@ import org.springframework.data.repository.query.Param;
 import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
+import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
+import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
+import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
 
 public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, Integer> {
 
@@ -29,6 +32,8 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     * 공지사항
     *
     *******************************************************************/
+
+    List<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(String bulletinTypeCode);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.bbs.NoticeRes(
@@ -107,14 +112,61 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
               ))
             """)
-    Page<NoticeRes> searchNotice(
+    Page<NoticeRes> findAllNoticeForAdmin(
             @Param("category") String category,
             @Param("status") String status,
             @Param("target") Integer target,
             @Param("keyword") String keyword,
             Pageable pageable);
 
-    List<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(String bulletinTypeCode);
+    @Query(value = """
+            SELECT new com.sk.domain.mi.dto.response.bbs.MiNoticeRes(
+                b.bulletinNo,
+                b.isTopFixed,
+                b.bulletinCategorySeparateCd,
+                b.bulletinTitleNm,
+                b.createDt
+            )
+            FROM BulletinBoard b
+            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
+            LEFT JOIN m.customerCompany c
+            WHERE b.isDeleted = false
+              AND b.bulletinTypeCd = 'NOTICE'
+              AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+              AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+              AND (b.isWholePost = 'Y' OR (b.isWholePost = 'N' AND c.customerCompanyNo = :customerCompanyNo))
+              AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
+              AND (:keyword IS NULL OR (
+                  LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                  OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
+              ))
+            GROUP BY
+                b.bulletinNo,
+                b.isTopFixed,
+                b.bulletinCategorySeparateCd,
+                b.bulletinTitleNm
+            ORDER BY b.isTopFixed DESC, b.createDt DESC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT b.bulletinNo)
+            FROM BulletinBoard b
+            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
+            LEFT JOIN m.customerCompany c
+            WHERE b.isDeleted = false
+            AND b.bulletinTypeCd = 'NOTICE'
+              AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+              AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+              AND (b.isWholePost = 'Y' OR (b.isWholePost = 'N' AND c.customerCompanyNo = :customerCompanyNo))
+              AND (:category IS NULL OR b.bulletinCategorySeparateCd = :category)
+              AND (:keyword IS NULL OR (
+                  LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                  OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
+              ))
+            """)
+    Page<MiNoticeRes> findAllNoticeForService(
+            @Param("customerCompanyNo") int customerCompanyNo,
+            @Param("category") String category,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 
     @Query(value = """
             SELECT b
@@ -172,7 +224,32 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
             AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
                         """)
-    Page<FaqRes> searchFaq(
+    Page<FaqRes> findAllFaqForAdmin(
+            @Param("category") String category,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+    @Query(value = """
+            SELECT new com.sk.domain.mi.dto.response.bbs.MiFaqRes(
+                b.bulletinNo,
+                b.bulletinTitleNm,
+                b.bulletinCntt
+            )
+            FROM BulletinBoard b
+            WHERE b.isDeleted = false
+            AND b.bulletinTypeCd = 'FAQ'
+            AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
+            AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
+            ORDER BY b.createDt ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT b)
+            FROM BulletinBoard b
+            WHERE b.isDeleted = false
+            AND b.bulletinTypeCd = 'FAQ'
+            AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
+            AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
+                        """)
+    Page<MiFaqRes> findAllFaqForService(
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);

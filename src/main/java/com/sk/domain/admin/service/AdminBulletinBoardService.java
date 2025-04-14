@@ -52,7 +52,6 @@ public class AdminBulletinBoardService {
     private final UploadedFileRepository uploadedFileRepository;
     private final BulletinBoardCustomerCompanyMappingRepository bulletinBoardCustomerCompanyMappingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
-
     private final AdminFileService adminFileService;
 
     /**
@@ -91,7 +90,7 @@ public class AdminBulletinBoardService {
     public PaginationRes<NoticeRes> getAllNotices(int page, int size, String category, String status, Integer target, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<NoticeRes> noticePage = bulletinBoardRepository.searchNotice(category, status, target, keyword, pageable);
+        Page<NoticeRes> noticePage = bulletinBoardRepository.findAllNoticeForAdmin(category, status, target, keyword, pageable);
 
         return PaginationRes.toRes(noticePage);
     }
@@ -152,6 +151,7 @@ public class AdminBulletinBoardService {
             }
         }
 
+        System.out.println("===>> savedBulletinBoard = " + savedBulletinBoard.getBulletinNo());
         return savedBulletinBoard;
     }
 
@@ -336,7 +336,7 @@ public class AdminBulletinBoardService {
     public PaginationRes<FaqRes> getAllFaq(int page, int size, String category, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<FaqRes> BulletinBoardPage = bulletinBoardRepository.searchFaq(category, keyword, pageable);
+        Page<FaqRes> BulletinBoardPage = bulletinBoardRepository.findAllFaqForAdmin(category, keyword, pageable);
 
         return PaginationRes.toRes(BulletinBoardPage);
     }

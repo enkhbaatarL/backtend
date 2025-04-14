@@ -44,4 +44,15 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             """)
     List<UploadedFile> findPdfToImagesTarget(String fileExtNm, String fileRelationshipObjectSeparateCd);
 
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+            AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
+            AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
+            AND u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
+                """)
+    Optional<UploadedFile> findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
+            @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
+            @Param("fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode);
 }
