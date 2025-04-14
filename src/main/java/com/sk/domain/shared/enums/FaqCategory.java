@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum FaqCategory {
 
-  CAT1("CATEGORY1", "카테고리1"), 
-  CAT2("CATEGORY2", "카테고리2"), 
-  CAT3("CATEGORY3", "카테고리3");
+    CATEGORY1("CATEGORY1", "사용 안내"), 
+    CATEGORY2("CATEGORY2", "권한 및 접근"), 
+    CATEGORY3("CATEGORY3", "기타");
 
   private final String code;
   private final String name;
