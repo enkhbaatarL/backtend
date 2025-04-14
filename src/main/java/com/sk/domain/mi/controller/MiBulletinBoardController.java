@@ -1,54 +1,26 @@
-package com.sk.domain.admin.controller;
+package com.sk.domain.mi.controller;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequirePermission;
 import com.sk.common.annotation.UserResolve;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
-import com.sk.domain.admin.dto.response.bbs.FaqRes;
-import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
 import com.sk.domain.mi.service.MiBulletinBoardService;
-import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
-import com.sk.domain.shared.enums.Role;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
