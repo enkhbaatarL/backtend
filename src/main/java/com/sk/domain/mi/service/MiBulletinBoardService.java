@@ -1,9 +1,5 @@
 package com.sk.domain.mi.service;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,10 +9,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
-import com.sk.domain.admin.dto.response.bbs.BulletinBoardCompanyDto;
-import com.sk.domain.admin.dto.response.bbs.BulletinBoardFileDto;
-import com.sk.domain.admin.dto.response.bbs.FaqRes;
-import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
@@ -28,8 +20,6 @@ import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,7 +31,7 @@ public class MiBulletinBoardService {
     private final BulletinBoardRepository bulletinBoardRepository;
     private final UploadedFileRepository uploadedFileRepository;
     private final BulletinBoardCustomerCompanyMappingRepository bulletinBoardCustomerCompanyMappingRepository;
-    private final AdminFileService adminFileService;
+    private final MiFileService miFileService;
 
     /**
      * 공지사항 목록을 페이지네이션 처리하여 조회한다.
@@ -108,7 +98,7 @@ public class MiBulletinBoardService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", bulletinBoard.getBulletinNo())));
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), bulletinBoard.getBulletinTitleNm(),
-                bulletinBoard.getBulletinCntt(), uploadFile != null ? adminFileService.getUrl(uploadFile.getFileNo()) : null);
+                bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile.getFileNo()) : null);
     }
 
     /**
