@@ -45,6 +45,7 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
+    //TODO: 호영: 관리사 / 고객사 구분 필요
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -96,6 +97,7 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.saveUserInfo(userReq));
     }
 
+    //TODO: 호영: UserRoleCd 를 List로 받아서 User / Admin / Operator 한번에 처리
     @ApiOrder(4)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -191,8 +193,6 @@ public class AdminUserController {
         return BaseResponseFactory.create(adminUserService.getAdminUser(userNo));
     }
 
-
-    //TODO: 호영: 관리자 수정시 ROLE 변경 안됨
     @ApiOrder(10)
     @Parameters({
             @Parameter(name = "userNo", description = "사용자 번호")
