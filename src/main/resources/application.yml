@@ -28,7 +28,7 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
-  
+
 server:
   tomcat:
     uri-encoding: UTF-8
@@ -50,4 +50,4 @@ springdoc:
     doc-expansion: none
 
 security:
-  enabled: true
+  enabled: false

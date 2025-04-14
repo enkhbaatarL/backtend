@@ -30,24 +30,40 @@ public class PdfUtil {
         }
     }
 
-    public static BufferedImage addTextWatermark(BufferedImage originalImage, String text) {
-        int width = originalImage.getWidth();
-        int height = originalImage.getHeight();
+    public static BufferedImage addTextWatermark(BufferedImage image, String watermarkText) {
+        int width = image.getWidth();
+        int height = image.getHeight();
 
-        BufferedImage watermarked = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage watermarked = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = watermarked.createGraphics();
 
-        g2d.drawImage(originalImage, 0, 0, null);
+        // 원본 이미지 그리기
+        g2d.drawImage(image, 0, 0, null);
 
-        // 워터마크 스타일
-        g2d.setFont(new Font("Arial", Font.BOLD, 40));
+        int fontSize = 30;
+
+        // 워터마크 스타일 설정
+        AlphaComposite alphaChannel = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.2f); // 투명도 낮게
+        g2d.setComposite(alphaChannel);
         g2d.setColor(new Color(255, 0, 0, 80)); // 빨간색 + 투명도
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
+        g2d.setFont(new Font("Dialog", Font.BOLD, fontSize)); // todo 폰트... 깨질 수 있으므로 다운받을까 함
 
-        // 중앙 대각선 위치
-        g2d.translate(width / 2, height / 2);
-        g2d.rotate(Math.toRadians(-30));
-        g2d.drawString(text, -g2d.getFontMetrics().stringWidth(text) / 2, 0);
+        // 회전 설정 (대각선 방향으로)
+        g2d.rotate(Math.toRadians(-30), (double) width / 2, (double) height / 2);
+
+        // 문자열 길이와 폰트 기반으로 간격 계산
+        FontMetrics fontMetrics = g2d.getFontMetrics();
+        int textWidth = fontMetrics.stringWidth(watermarkText);
+        int textHeight = fontMetrics.getHeight();
+
+        int stepX = textWidth + 100;  // 텍스트 너비 + 여유 간격
+        int stepY = textHeight + 80;  // 텍스트 높이 + 여유 간격
+
+        for (int x = -width; x < width * 2; x += stepX) {
+            for (int y = -height; y < height * 2; y += stepY) {
+                g2d.drawString(watermarkText, x, y);
+            }
+        }
 
         g2d.dispose();
         return watermarked;
