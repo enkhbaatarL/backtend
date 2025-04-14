@@ -1,10 +1,13 @@
 package com.sk.domain.admin.controller;
 
 import java.io.IOException;
+import java.net.http.HttpHeaders;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
@@ -29,6 +31,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +62,21 @@ public class TestController {
     @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/admin")
-    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq) {
-        return BaseResponseFactory.create(testService.adminLogin(testLoginReq));
+    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq,
+            HttpServletResponse response) {
+
+        TestLoginRes testLoginRes = testService.adminLogin(testLoginReq);
+
+        ResponseCookie responseCookie = ResponseCookie.from("X-Refresh-Token", testLoginRes.refreshToken())
+                .maxAge(Duration.ofDays(1))
+                .path("/")
+                .secure(true)
+                .httpOnly(true)
+                .build();
+
+        response.addHeader("Set-Cookie", responseCookie.toString());
+
+        return BaseResponseFactory.create(testLoginRes);
     }
 
     @Operation(summary = "토큰 검증", description = "토큰 검증을 진행합니다.")
@@ -108,10 +124,6 @@ public class TestController {
     public BaseResponse<FileUploadRes> uploadStructuredDataFile(
             @RequestPart(value = "file", required = true) MultipartFile file,
             @Schema(implementation = TestReq.uploadStructuredDataFile.class) @RequestPart(value = "data", required = true) @Valid TestReq.uploadStructuredDataFile testReq) {
-
-        log.info("file: {}", file);
-        log.info("testReq: {}", testReq);
-
         return BaseResponseFactory.create(testService.uploadStructuredDataFile(file, testReq));
     }
 

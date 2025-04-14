@@ -226,6 +226,10 @@ public class AdminUserService {
 	public PaginationRes<UserDetailRes> getAdminUsers(int page, int size, UserRoleCd userRoleCd, Integer customerCompanyNo, String departmentNm, String userNm,
 			String emailAddress) {
 
+		if(userRoleCd != null && userRoleCd == UserRoleCd.USER) {
+			throw AppErrorException.of(ResultCode.Error.REQ_INVALID, String.format("UserRoleCd: %s는 사용할 수 없습니다.", UserRoleCd.USER));
+		}
+
 		// 사용자 역할 코드가 없으면 모든 운영자 / 관리자 사용자 조회
 		List<UserRoleCd> userRoleCdsCondition = null;
 		if(userRoleCd == null) {

@@ -1,18 +1,19 @@
 package com.sk.domain.admin.controller;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,8 +37,10 @@ import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataFileReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
@@ -60,6 +63,7 @@ import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -427,9 +431,11 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
-    public BaseResponse<FileUploadRes> uploadStructuredDataFile(
+    public BaseResponse<GoodsDataFileUploadRes> uploadStructuredDataFile(
             @UserResolve User user,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @Schema(implementation = StructuredDataFileReq.class) @RequestPart(value = "data", required = true) @Valid StructuredDataFileReq structuredDataFileReq)
+            throws IOException {
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
@@ -454,7 +460,7 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, false));
+        return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(user, file, false, structuredDataFileReq));
     }
 
     @ApiOrder(92)

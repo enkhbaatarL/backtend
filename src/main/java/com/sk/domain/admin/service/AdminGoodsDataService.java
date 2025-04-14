@@ -1,13 +1,16 @@
 package com.sk.domain.admin.service;
 
-import org.springframework.data.domain.Pageable;
-
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -17,8 +20,11 @@ import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataFileReq;
 import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
+import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.admin.dto.response.provider.CategoryDataRes;
 import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
@@ -27,6 +33,7 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.admin.dto.response.provider.UnstructuredDataRes;
+import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -63,6 +70,7 @@ public class AdminGoodsDataService {
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final ComponentInfoRepository componentInfoRepository;
     private final AdminFileService adminFileService;
+    private final ExcelService excelService;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -269,10 +277,15 @@ public class AdminGoodsDataService {
                 adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
-                // todo
+                // 컴포넌트 타입 조회
+                ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
+                        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
+
+                //TODO: private String goodsDataSourceExpn, goodsDataSourceUnitNm; => 어디서 값을 구해야 하지??
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                        .save(GoodsDataSourceDetail.of(savedGoodsData, "goodsDataSourceNm", "targetDbNm",
-                                "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+                        .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                               componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn", "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm()));
 
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
@@ -432,5 +445,36 @@ public class AdminGoodsDataService {
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
             }
         }
+    }
+
+    /**
+     * 정형 데이타 파일 업로드 (엑셀 파일 업로드와 함께 엑셀 파싱하여 DB에 데이터 저장)
+     * 
+     * @param user
+     * @param file
+     * @param isPublic
+     * @param structuredDataFileReq
+     * @return
+     */
+    public GoodsDataFileUploadRes uploadStructuredDataFile(User user, MultipartFile file, boolean isPublic,
+            StructuredDataFileReq structuredDataFileReq) throws IOException {
+
+        
+        //TODO => 엑셀파일은 업로드 되는데 S3에는 업로드 안될 때 => 처리 필요 (mybatis, jpa가 달라서)
+                
+
+        // 컴포넌트 타입 조회
+        ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredDataFileReq.componentTypeId())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        String.format("Component information could not be found. componentTypeId: %s", structuredDataFileReq.componentTypeId())));
+
+        // 엑셀 파일 검수 후 업로드
+        excelService.uploadStructuredData(file, componentInfo);
+
+        // 파일 업로드
+        FileUploadRes fileUploadRes = adminFileService.uploadFile(user, file, isPublic);
+
+        return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
+                fileUploadRes.fileSize(), fileUploadRes.fileUrl());
     }
 }
