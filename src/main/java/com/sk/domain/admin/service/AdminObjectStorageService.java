@@ -9,7 +9,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.SdkClientException;
@@ -41,7 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
@@ -81,8 +79,8 @@ public class AdminObjectStorageService {
     */
     public String uploadFile(MultipartFile file, String bucketName, String fileName, boolean isPublic) throws IOException {
 
-        Path path = Paths.get(fileName.replace("\\", "/"));
-        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString());
+        Path path = Paths.get(fileName);
+        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString().replace("\\", "/"));
 
         // create bucket
         if (!objectStorageClient.doesBucketExistV2(bucketName)) {
@@ -197,6 +195,8 @@ public class AdminObjectStorageService {
     */
     public void copyFile(String bucketName, String oldPath, String newPath) {
         objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
+
+        copyACL(bucketName, oldPath, newPath);
     }
 
     /**
@@ -238,6 +238,12 @@ public class AdminObjectStorageService {
         accessControlList.grantPermission(GroupGrantee.AllUsers, Permission.Read);
 
         objectStorageClient.setObjectAcl(bucketName, fileName, accessControlList);
+    }
+
+    public void copyACL(String bucketName, String oldPath, String newPath) {
+        AccessControlList accessControlList = objectStorageClient.getObjectAcl(bucketName, oldPath);
+
+        objectStorageClient.setObjectAcl(bucketName, newPath, accessControlList);
     }
 
     // debug

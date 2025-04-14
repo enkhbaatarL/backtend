@@ -18,4 +18,10 @@ public class RoleUtil {
         return user.getUserRoleCd().getCode() == UserRoleCd.OPERATOR.getCode();
     }
 
+    public static boolean isUser(User user) {
+        if (user == null || user.getUserRoleCd() == null) {
+            return false;
+        }
+        return user.getUserRoleCd().getCode() == UserRoleCd.USER.getCode();
+    }
 }

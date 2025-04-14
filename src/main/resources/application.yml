@@ -47,6 +47,7 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     persist-authorization: true
+    doc-expansion: none
 
 security:
-  enabled: false
+  enabled: true

@@ -1,6 +1,9 @@
 package com.sk.domain.shared.repository.master.tcm;
 
+import java.lang.StackWalker.Option;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,4 +39,6 @@ public interface BulletinBoardCustomerCompanyMappingRepository
                                     AND m.bulletinBoard = :bulletinBoard
                                                 """)
     List<BulletinBoardCompanyDto> findCustomCompanyByBulletinBoard(BulletinBoard bulletinBoard);
+
+    Optional<BulletinBoardCustomerCompanyMapping> findById(BulletinBoardCustomerCompanyMappingId id);
 }
