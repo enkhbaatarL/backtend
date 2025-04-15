@@ -5,10 +5,6 @@ import java.util.Optional;
 
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsDataSourceDetail, Integer> {
