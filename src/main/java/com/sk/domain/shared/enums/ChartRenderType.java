@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ChartFieldType {
+public enum ChartRenderType {
 
     DATE("date"),
     MAIN("main"),

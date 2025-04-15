@@ -1,15 +1,17 @@
 package com.sk.domain.mi.service;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.ValidationResult;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
-import com.sk.domain.mi.ConverterTest;
+import com.sk.domain.mi.ChartDataConverter;
 import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.conversion.dto.ConversionResult;
 import com.sk.domain.mi.dto.response.GoodsDataDetailRes;
 import com.sk.domain.mi.dto.response.GoodsDataSourceRes;
-import com.sk.domain.mi.dto.response.chart.ChartBundleRes;
-import com.sk.domain.mi.dto.response.chart.DynamicChartRes;
+import com.sk.domain.mi.dto.response.chart2.ChartBundleRes;
+import com.sk.domain.mi.dto.response.chart2.ChartData;
 import com.sk.domain.mi.validator.GoodsDataValidator;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -84,18 +86,20 @@ public class MiDataDetailService {
 
         // 컬럼 정보
         List<ProviderDataColumn> dataColumns = goodsData.getGoods().getProvider().getProviderDataColumns();
-        Map<String, String> dataColumnsMap = dataColumns.stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), c -> c.getDataColumnExpn()));
+
+        // key 컬럼명, value 범례
+        Map<String, String> dataColumnsMap = dataColumns.stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
 
         // 상품 데이터소스 '메인' 조회
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(dataSourceNo)
-            .orElseThrow(() -> new IllegalArgumentException("상품 데이터소스가 존재하지 않습니다."));
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_DATA_NOT_FOUND));
 
         List<Map<String, Object>> goodsDataSourceCharts = getGoodsDataSourceCharts(goodsDataSourceDetail);
 
         // 데이터 변경
-        DynamicChartRes dynamicChartRes = ConverterTest.converterChart(goodsDataSourceCharts, goodsDataSourceDetail.getTableColumnListNm(), dataColumnsMap);
+        ChartData chartData = ChartDataConverter.convertToChartData(goodsDataSourceCharts, goodsDataSourceDetail.getTableColumnListNm(), dataColumnsMap);
 
-        List<BigDecimal> values = ConverterTest.extractMainSeries(dynamicChartRes);
+        List<BigDecimal> values = ChartDataConverter.extractMainSeries(chartData);
 
         // todo 보조지표(MA5~MA120) 조회
         List<BigDecimal> ma5 = unitConversionService.convertTimeSeriesForMA(values, 5);
@@ -106,7 +110,7 @@ public class MiDataDetailService {
         // todo 보조지표(BB) 조회
         List<? extends ConversionResult> bb = unitConversionService.convertTimeSeriesForBB(values, 20);
 
-        List<DynamicChartRes> compareDynamicChartRes = new ArrayList<>();
+        List<ChartData> compareDynamicChartRes = new ArrayList<>();
 
         // 상품 데이터소스 '비교군' 조회
         List<DataSourceGroupMapping> compareDataSources = dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(goodsDataSourceDetail);
@@ -117,15 +121,10 @@ public class MiDataDetailService {
             Map<String, String> compareDataColumnsMap = compareDataColumns.stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), c -> c.getDataColumnExpn()));
 
             List<Map<String, Object>> cds = getGoodsDataSourceCharts(compareDataSource.getCompareGoodsDataSourceDetail());
-            compareDynamicChartRes.add(ConverterTest.converterChart(cds, compareGoodsDataSourceDetail.getTableColumnListNm(), compareDataColumnsMap));
+            compareDynamicChartRes.add(ChartDataConverter.convertToChartData(cds, compareGoodsDataSourceDetail.getTableColumnListNm(), compareDataColumnsMap));
         });
 
-        return ChartBundleRes.builder()
-            .chartMetaData(null)
-            .mainChart(dynamicChartRes)
-            .indicators(null)
-            .compareCharts(compareDynamicChartRes)
-            .build();
+        return null;
     }
 
     @Transactional(transactionManager = "dynamicTransactionManager")
