@@ -71,10 +71,19 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @JoinColumn(name = "cmpnt_type_id", referencedColumnName = "cmpnt_type_id")
     private ComponentInfo componentInfo;
 
+    @Column(name = "gds_data_src_rmk", nullable = false, length = 2000)
+    @Comment("상품데이터소스비고")
+    private String goodsDataSourceRmk;
+
+    @Column(name = "gds_data_use_mnagt_cd", length = 10)
+    @Comment("상품데이터사용주체코드")
+    private String goodsDataUseManagementCd;
+
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm, GoodsData goodsData) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm, GoodsData goodsData,
+            ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -85,10 +94,14 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
         this.tableColumnListNm = tableColumnListNm;
         this.goodsData = goodsData;
+        this.componentInfo = componentInfo;
+        this.goodsDataSourceRmk = goodsDataSourceRmk;
+        this.goodsDataUseManagementCd = goodsDataUseManagementCd;
     }
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm,
+            String goodsDataSourceRmk, String goodsDataUseManagementCd) {
         return GoodsDataSourceDetail.builder()
                 .goodsDataSourceNm(goodsDataSourceNm)
                 .targetDbNm(targetDbNm)
@@ -98,6 +111,8 @@ public class GoodsDataSourceDetail extends BaseEntity {
                 .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
                 .tableColumnListNm(tableColumnListNm)
                 .goodsData(goodsData)
+                .goodsDataSourceRmk(goodsDataSourceRmk)
+                .goodsDataUseManagementCd(goodsDataUseManagementCd)
                 .build();
     }
 
