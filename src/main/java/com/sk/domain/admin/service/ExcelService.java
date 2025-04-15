@@ -1,9 +1,13 @@
 package com.sk.domain.admin.service;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,6 +19,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -25,18 +33,19 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.github.pjfanning.xlsx.StreamingReader;
 import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.PairUtil;
 import com.sk.domain.admin.dto.request.ExcelReq;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -232,38 +241,33 @@ public class ExcelService {
      */
     public boolean uploadStructuredExcelData(MultipartFile file, String[] expectedColumnNames, String tableName, int headerRowIndex, int dataStartRowIndex) {
             try {
-                // 1. 엑셀 구조 검증
-                List<String> actualColumns = validateExcelStructure(file, expectedColumnNames, headerRowIndex);
+                String fileName = file.getOriginalFilename();
+                if (fileName == null) {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "File name is null");
+                }
+                // 엑셀 구조 검증
+                List<String> actualColumns;
+                // 데이터 수집
+                List<Object[]> values;
 
-                // 2. 데이터 수집
-                List<Object[]> values = collectExcelData(file, actualColumns, dataStartRowIndex);
+                // 파일 확장자 검증
+                String extension = fileName.toLowerCase();
 
-                // 3. DB에 배치 삽입 (배치 사이즈 500개씩 saveAll)
-                DynamicMapper mapper = sqlSessionTemplate.getMapper(DynamicMapper.class);
-                // DynamicMapper mapper = sqlSession.getMapper(DynamicMapper.class);
-                int batchSize = 500; // 500개씩 처리
-                int totalRows = values.size();
-                int batchCount = (totalRows + batchSize - 1) / batchSize; // 총 배치 수 (올림 처리)
-
-                for (int i = 0; i < batchCount; i++) {
-                    int fromIndex = i * batchSize;
-                    int toIndex = Math.min(fromIndex + batchSize, totalRows);
-                    List<Object[]> batchData = values.subList(fromIndex, toIndex);
-
-                    log.info("Batch {}: fromIndex={}, toIndex={}, size={}, first element: {}", 
-                        i + 1, fromIndex, toIndex, batchData.size(), batchData.isEmpty() ? "empty" : batchData.get(0).getClass());
-
-                    Map<String, Object> param = new HashMap<>();
-                    param.put("tableName", tableName);
-                    param.put("columns", actualColumns);
-                    param.put("values", batchData);
-                    mapper.saveAllDynamic(param);
-
-                    log.info("Processed batch {} of {}: {} rows to {}", i + 1, batchCount, batchData.size(), tableName);
+                if (extension.endsWith(".csv")) {
+                    // CSV 처리
+                    PairUtil<List<String>, List<Object[]>> result = processCsvData(file, expectedColumnNames, headerRowIndex, dataStartRowIndex);
+                    actualColumns = result.getFirst();
+                    values = result.getSecond();
+                } else if (extension.endsWith(".xlsx") || extension.endsWith(".xls")) {
+                    // Excel 처리
+                    actualColumns = validateExcelStructure(file, expectedColumnNames, headerRowIndex);
+                    values = collectExcelData(file, actualColumns, dataStartRowIndex);
+                } else {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported file type: " + fileName);
                 }
 
-                log.info("Committed total {} rows to {}", totalRows, tableName);
-                return true;
+                // 공통 DB 배치 삽입
+                return saveBatchData(actualColumns, values, tableName);
             } catch (Exception e) {
                 log.error("Exception during upload: {}", e.getMessage(), e);
                 throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
@@ -279,13 +283,24 @@ public class ExcelService {
      * @throws IOException 파일 처리 중 오류 발생 시
      */
     public List<String> validateExcelStructure(MultipartFile file, String[] expectedColumnNames, int headerRowIndex) {
-        try (InputStream is = file.getInputStream();
-                Workbook workbook = StreamingReader.builder()
+        Workbook workbook = null;
+        try (InputStream is = file.getInputStream()) {
+
+            String fileName = file.getOriginalFilename();
+
+            // 파일 확장자에 따라 처리 분기
+            if (fileName.toLowerCase().endsWith(".xlsx")) {
+                workbook = StreamingReader.builder()
                         .rowCacheSize(100)
                         .bufferSize(4096)
-                        .open(is)) {
+                        .open(is);
+            } else if (fileName.toLowerCase().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(is);
+            } else {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported Excel file type: " + fileName);
+            }
 
-            // 1. 엑셀 확장가 파일 검증
+            // 1. 엑셀 확장자 파일 검증
             validateExcelFile(file);
 
             Sheet sheet = workbook.getSheetAt(0);
@@ -327,6 +342,14 @@ public class ExcelService {
         } catch (Exception e) {
             log.error("Exception", e);
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    log.warn("Failed to close workbook: {}", e.getMessage());
+                }
+            }
         }
     }
 
@@ -340,11 +363,21 @@ public class ExcelService {
      * @throws IOException 파일 처리 중 오류 발생 시
      */
     private List<Object[]> collectExcelData(MultipartFile file, List<String> actualColumns, int dataStartRowIndex) {
-        try (InputStream is = file.getInputStream();
-            Workbook workbook = StreamingReader.builder()
-                    .rowCacheSize(100)
-                    .bufferSize(4096)
-                    .open(is)) {
+        Workbook workbook = null;
+        try (InputStream is = file.getInputStream()) {
+            String fileName = file.getOriginalFilename();
+
+            if (fileName.toLowerCase().endsWith(".xlsx")) {
+                workbook = StreamingReader.builder()
+                        .rowCacheSize(100)
+                        .bufferSize(4096)
+                        .open(is);
+            } else if (fileName.toLowerCase().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(is);
+            } else {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported Excel file type: " + fileName);
+            }
+            
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
 
@@ -383,6 +416,14 @@ public class ExcelService {
         } catch (Exception e) {
             log.error("Exception during data collection: {}", e.getMessage(), e);
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    log.warn("Failed to close workbook: {}", e.getMessage());
+                }
+            }
         }
     }
 
@@ -400,18 +441,29 @@ public class ExcelService {
         String fileName = file.getOriginalFilename();
         String contentType = file.getContentType();
 
-        // 파일 이름이 null이거나 확장자를 확인할 수 없는 경우
-        if (fileName == null || !fileName.matches("(?i).+\\.(xlsx|xls)$")) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
-                    "Invalid file extension. Only .xlsx and .xls are allowed. File: " + fileName);
+        if (fileName == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "File name is null");
         }
 
-        // MIME 타입 확인
-        if (contentType == null ||
-                !contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") && // .xlsx
-                        !contentType.equals("application/vnd.ms-excel")) { // .xls
+        // 확장자 검증
+        if (!fileName.matches("(?i).+\\.(xlsx|xls|csv)$")) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
-                    "Invalid file type. Expected Excel file, but got: " + contentType);
+                    "Invalid file extension. Only .xlsx, .xls, and .csv are allowed. File: " + fileName);
+        }
+
+        // MIME 타입 검증
+        if (contentType == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Content type is null");
+        }
+
+        boolean isValidMimeType = contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") || // xlsx
+            contentType.equals("application/vnd.ms-excel") || // xls
+            contentType.equals("text/csv") || // csv
+            contentType.equals("text/plain"); // csv (일부 클라이언트에서)
+
+        if (!isValidMimeType) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
+                    "Invalid file type. Expected Excel or CSV file, but got: " + contentType);
         }
     }
 
@@ -488,10 +540,150 @@ public class ExcelService {
                     default:
                         value = cell.toString(); // 기본 VARCHAR
                 }
-
             }
             rowData[i] = value;
         }
         return rowData;
+    }
+
+    /**
+     * CSV 데이터 처리 (헤더 검증 및 데이터 수집)
+     * 
+     * @param file
+     * @param expectedColumnNames
+     * @param headerRowIndex
+     * @param dataStartRowIndex
+     * @return
+     * @throws IOException
+     */
+    private PairUtil<List<String>, List<Object[]>> processCsvData(MultipartFile file, String[] expectedColumnNames, int headerRowIndex, int dataStartRowIndex) throws IOException {
+        // 구분자 감지
+        char delimiter = detectDelimiter(file);
+        log.info("Detected CSV delimiter: '{}'", delimiter == ',' ? "comma" : delimiter == ';' ? "semicolon" : delimiter == '\t' ? "tab" : delimiter);
+        try (Reader reader = new InputStreamReader(file.getInputStream());
+                CSVParser csvParser = CSVParser.parse(reader, CSVFormat.Builder.create(CSVFormat.DEFAULT)
+                .setDelimiter(delimiter)
+                .setTrim(true)
+                .setAllowMissingColumnNames(true)
+                .get())) {
+
+            List<String> actualColumns = null;
+            List<Object[]> data = new ArrayList<>();
+            int currentRow = 0;
+            int consecutiveEmptyRows = 0;
+
+            for (CSVRecord record : csvParser) {
+                // 헤더 행 처리
+                if (currentRow == headerRowIndex && actualColumns == null) {
+                    actualColumns = new ArrayList<>();
+                    for (int i = 0; i < record.size(); i++) {
+                        String header = record.get(i);
+                        if (header == null) {
+                            header = "";
+                        }
+                        String rawHeader = header; // 원시 값 저장
+                        // 비표준 문자 제거
+                        header = cleanHeader(rawHeader);
+                        actualColumns.add(header);
+                    }
+                    try {
+                        validateColumns(actualColumns, expectedColumnNames);
+                    } catch (Exception e) {
+                        throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, e.getMessage());
+                    }
+                }
+
+                // 데이터 행 처리
+                if (currentRow >= dataStartRowIndex) {
+                    if (record.size() > 0) {
+                        Object[] rowData = new Object[actualColumns.size()];
+                        for (int i = 0; i < actualColumns.size(); i++) {
+                            String value = i < record.size() ? record.get(i) : null;
+                            rowData[i] = value != null && !value.trim().isEmpty() ? value.trim() : null;
+                        }
+                        data.add(rowData);
+                        consecutiveEmptyRows = 0;
+                    } else {
+                        consecutiveEmptyRows++;
+                        if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                            break;
+                        }
+                    }
+                }
+                currentRow++;
+            }
+
+            if (actualColumns == null) {
+                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Header row not found at index " + headerRowIndex);
+            }
+            return new PairUtil<>(actualColumns, data);
+
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        }
+    }
+
+    /**
+     * 공통 DB 배치 삽입 로직
+     * 
+     * @param columns
+     * @param values
+     * @param tableName
+     * @return
+     */
+    private boolean saveBatchData(List<String> columns, List<Object[]> values, String tableName) {
+        DynamicMapper mapper = sqlSessionTemplate.getMapper(DynamicMapper.class);
+        int batchSize = 500;
+        int totalRows = values.size();
+        int batchCount = (totalRows + batchSize - 1) / batchSize;
+
+        for (int i = 0; i < batchCount; i++) {
+            int fromIndex = i * batchSize;
+            int toIndex = Math.min(fromIndex + batchSize, totalRows);
+            List<Object[]> batchData = values.subList(fromIndex, toIndex);
+
+            Map<String, Object> param = new HashMap<>();
+            param.put("tableName", tableName);
+            param.put("columns", columns);
+            param.put("values", batchData);
+            mapper.saveAllDynamic(param);
+        }
+        return true;
+    }
+
+    // 비표준 문자 제거
+    private String cleanHeader(String header) {
+        if (header == null) {
+            return "";
+        }
+        // BOM, 공백, 줄바꿈, 비표준 공백 제거
+        String cleaned = header.replaceAll("^[\\uFEFF\\u200B\\u00A0]+", "") // BOM, Zero-width space, NBSP 제거
+                            .replaceAll("[\\r\\n\\t\\u00A0]+", "") // 줄바꿈, 탭, NBSP 제거
+                            .trim(); // 양쪽 공백 제거
+        if (cleaned.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Header cleaned to empty string. Original: '" + header + "'");
+        }
+        return cleaned;
+    }
+
+    private char detectDelimiter(MultipartFile file) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String firstLine = reader.readLine();
+            if (firstLine == null) {
+                return ',';
+            }
+            // BOM 제거 후 구분자 감지
+            firstLine = firstLine.replaceAll("^[\\uFEFF\\u200B]", "");
+            int commaCount = firstLine.split(",").length;
+            int semicolonCount = firstLine.split(";").length;
+            int tabCount = firstLine.split("\t").length;
+            if (semicolonCount > commaCount && semicolonCount > tabCount) {
+                return ';';
+            }
+            if (tabCount > commaCount && tabCount > semicolonCount) {
+                return '\t';
+            }
+            return ',';
+        }
     }
 }
