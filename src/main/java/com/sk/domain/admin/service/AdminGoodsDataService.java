@@ -269,11 +269,12 @@ public class AdminGoodsDataService {
                 adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
-                // todo
+                // todo: 호영 추가
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, "goodsDataSourceNm", "targetDbNm",
                                 "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
 
+                // todo: 호영 추가
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
                         GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
@@ -381,9 +382,37 @@ public class AdminGoodsDataService {
         // 정형 데이타 수정
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
-                log.info("==================> {}", structuredData);
-                // todo 기존 정형 데이타 비교해서 신규 데이타 추가만 가능
-                // 재현님하고 협의
+                List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                        .stream()
+                        .map(file -> file.getFileNo())
+                        .toList();
+                List<Long> newFileNos = dto.structuredDataList()
+                        .stream()
+                        .map(StructuredDataReq::fileNo)
+                        .toList();
+
+                Set<Long> oldFileSet = new HashSet<>(oldFileNos);
+                Set<Long> newFileSet = new HashSet<>(newFileNos);
+                Set<Long> filesToAdd = new HashSet<>(newFileSet);
+                filesToAdd.removeAll(oldFileSet);
+                for (Long fileNo : filesToAdd) {
+                    adminFileService.updateFile(
+                            fileNo,
+                            goodsData.getGoodsDataNo(),
+                            FileRelationshipObjectSeparateCode.GDATS.getCode(),
+                            DateUtil.endYmd());
+
+                    // todo: 호영 추가
+                    GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
+                            .save(GoodsDataSourceDetail.of(goodsData, "goodsDataSourceNm", "targetDbNm",
+                                    "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+
+                    // todo: 호영 추가
+                    // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
+                    goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
+                            GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
+
+                }
             }
         }
 
