@@ -82,7 +82,8 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm, GoodsData goodsData) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm, GoodsData goodsData,
+            ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -93,10 +94,14 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
         this.tableColumnListNm = tableColumnListNm;
         this.goodsData = goodsData;
+        this.componentInfo = componentInfo;
+        this.goodsDataSourceRmk = goodsDataSourceRmk;
+        this.goodsDataUseManagementCd = goodsDataUseManagementCd;
     }
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm,
+            String goodsDataSourceRmk, String goodsDataUseManagementCd) {
         return GoodsDataSourceDetail.builder()
                 .goodsDataSourceNm(goodsDataSourceNm)
                 .targetDbNm(targetDbNm)
@@ -106,6 +111,8 @@ public class GoodsDataSourceDetail extends BaseEntity {
                 .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
                 .tableColumnListNm(tableColumnListNm)
                 .goodsData(goodsData)
+                .goodsDataSourceRmk(goodsDataSourceRmk)
+                .goodsDataUseManagementCd(goodsDataUseManagementCd)
                 .build();
     }
 
