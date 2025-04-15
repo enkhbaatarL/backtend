@@ -5,15 +5,12 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum TimeUnit {
+public enum Interval {
 
-    SECOND("s", "초"),
-    MINUTE("m", "분"),
-    HOUR("h", "시간"),
-    DAY("d", "일"),
-    WEEK("w", "주"),
+    DAY("D", "일"),
+    WEEK("W", "주"),
     MONTH("M", "월"),
-    YEAR("y", "년");
+    YEAR("Y", "년");
 
     private final String code;
     private final String description;

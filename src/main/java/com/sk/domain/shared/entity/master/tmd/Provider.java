@@ -1,6 +1,8 @@
 package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.sk.domain.shared.listener.ProviderListener;
 import jakarta.persistence.*;
@@ -50,6 +52,9 @@ public class Provider extends BaseEntity {
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
+
+    @OneToMany(mappedBy = "provider", fetch = FetchType.LAZY)
+    private List<ProviderDataColumn> providerDataColumns = new ArrayList<>();
 
     @Builder
     public Provider(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
