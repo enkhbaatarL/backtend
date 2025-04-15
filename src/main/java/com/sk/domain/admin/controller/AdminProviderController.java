@@ -164,21 +164,21 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(6)
-    @Parameters({
-            @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
-    })
-    @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/providers/{providerNo}")
-    @RequirePermission(roles = { Role.ADMIN })
-    public BaseResponse<String> deleteProvider(
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+    // @ApiOrder(6)
+    // @Parameters({
+    // @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
+    // })
+    // @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @DeleteMapping("/providers/{providerNo}")
+    // @RequirePermission(roles = { Role.ADMIN })
+    // public BaseResponse<String> deleteProvider(
+    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-        providerService.deleteProvider(providerNo);
+    // providerService.deleteProvider(providerNo);
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
     @ApiOrder(7)
     @Parameters({
@@ -264,23 +264,23 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(12)
-    @Parameters({
-            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-            @Parameter(name = "goodsNo", description = "상품 번호")
-    })
-    @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequirePermission(roles = { Role.ADMIN })
-    public BaseResponse<String> deleteGoods(
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+    // @ApiOrder(12)
+    // @Parameters({
+    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+    // @Parameter(name = "goodsNo", description = "상품 번호")
+    // })
+    // @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
+    // @RequirePermission(roles = { Role.ADMIN })
+    // public BaseResponse<String> deleteGoods(
+    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        goodsService.deleteGoods(goodsNo);
+    // goodsService.deleteGoods(goodsNo);
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
     @ApiOrder(13)
     @Parameters({
