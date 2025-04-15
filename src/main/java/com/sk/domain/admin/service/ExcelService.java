@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -24,8 +22,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,21 +36,20 @@ import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ExcelService {
 
-    private final SqlSessionFactory sqlSessionFactory;
+    // private final SqlSessionFactory sqlSessionFactory;
+    private final SqlSessionTemplate sqlSessionTemplate;
     private final int DEFAULT_HEADER_ROW_INDEX = 0; // 기본 엑셀 헤더 행 인덱스 (파일에서 1행 => 인덱스 0)
     private final int DEFAULT_DATA_START_ROW_INDEX = 1; // 기본 엑셀 데이터 시작 행 인덱스 (파일에서 2행 => 인덱스 1)
     private final int MAX_CONSECUTIVE_EMPTY_ROWS = 5; // 최대 허용 빈 행 수 (엑셀 검수 시 연속 빈 행 수가 5개 이상이면 종료)
-
-    @Autowired
-    public ExcelService(@Qualifier("dynamicSqlSessionFactory") SqlSessionFactory sqlSessionFactory) {
-        this.sqlSessionFactory = sqlSessionFactory;
-    }
 
     // todo: 시트 2개 이상에서 데이타 담아서 내려주고 읽어오기
     /**
@@ -161,6 +157,7 @@ public class ExcelService {
      * @return
      * @throws IOException
      */
+    @Transactional(transactionManager = "myBatisTransactionManager")
     public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo) throws IOException {
         if(componentInfo.getTargetDbNm() == null || componentInfo.getTargetDbNm().isBlank()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Target database name is null or blank");
@@ -234,7 +231,6 @@ public class ExcelService {
      * @throws IOException 파일 처리 중 오류 발생 시
      */
     public boolean uploadStructuredExcelData(MultipartFile file, String[] expectedColumnNames, String tableName, int headerRowIndex, int dataStartRowIndex) {
-        try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
             try {
                 // 1. 엑셀 구조 검증
                 List<String> actualColumns = validateExcelStructure(file, expectedColumnNames, headerRowIndex);
@@ -243,7 +239,8 @@ public class ExcelService {
                 List<Object[]> values = collectExcelData(file, actualColumns, dataStartRowIndex);
 
                 // 3. DB에 배치 삽입 (배치 사이즈 500개씩 saveAll)
-                DynamicMapper mapper = sqlSession.getMapper(DynamicMapper.class);
+                DynamicMapper mapper = sqlSessionTemplate.getMapper(DynamicMapper.class);
+                // DynamicMapper mapper = sqlSession.getMapper(DynamicMapper.class);
                 int batchSize = 500; // 500개씩 처리
                 int totalRows = values.size();
                 int batchCount = (totalRows + batchSize - 1) / batchSize; // 총 배치 수 (올림 처리)
@@ -265,15 +262,12 @@ public class ExcelService {
                     log.info("Processed batch {} of {}: {} rows to {}", i + 1, batchCount, batchData.size(), tableName);
                 }
 
-                sqlSession.commit(); // 모든 배치 성공 시 커밋
                 log.info("Committed total {} rows to {}", totalRows, tableName);
                 return true;
             } catch (Exception e) {
                 log.error("Exception during upload: {}", e.getMessage(), e);
-                sqlSession.rollback();
                 throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
             }
-        } 
     }
 
     /**

@@ -122,6 +122,7 @@ public class AdminFileService {
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
+            log.error("Exception during upload: {}", e.getMessage(), e);
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
     }
