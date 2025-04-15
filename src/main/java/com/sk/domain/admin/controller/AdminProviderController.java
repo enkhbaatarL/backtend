@@ -30,6 +30,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.admin.dto.request.provider.FileDownloadReq;
 import com.sk.domain.admin.dto.request.provider.GoodsCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
@@ -54,7 +55,9 @@ import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,9 +81,9 @@ public class AdminProviderController {
     private final AdminGoodsDataService goodsDataService;
     private final AdminFileService adminFileService;
 
-    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls");
+    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel");
+            "application/vnd.ms-excel", "text/csv");
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
             "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
@@ -164,21 +167,21 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(6)
-    @Parameters({
-            @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
-    })
-    @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/providers/{providerNo}")
-    @RequirePermission(roles = { Role.ADMIN })
-    public BaseResponse<String> deleteProvider(
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+    // @ApiOrder(6)
+    // @Parameters({
+    // @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
+    // })
+    // @Operation(summary = "데이타 프로바이더 삭제", description = "데이타 프로바이더를 삭제합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @DeleteMapping("/providers/{providerNo}")
+    // @RequirePermission(roles = { Role.ADMIN })
+    // public BaseResponse<String> deleteProvider(
+    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-        providerService.deleteProvider(providerNo);
+    // providerService.deleteProvider(providerNo);
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
     @ApiOrder(7)
     @Parameters({
@@ -264,23 +267,23 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(12)
-    @Parameters({
-            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-            @Parameter(name = "goodsNo", description = "상품 번호")
-    })
-    @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequirePermission(roles = { Role.ADMIN })
-    public BaseResponse<String> deleteGoods(
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+    // @ApiOrder(12)
+    // @Parameters({
+    // @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+    // @Parameter(name = "goodsNo", description = "상품 번호")
+    // })
+    // @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @DeleteMapping("/providers/{providerNo}/goods/{goodsNo}")
+    // @RequirePermission(roles = { Role.ADMIN })
+    // public BaseResponse<String> deleteGoods(
+    // @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+    // @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        goodsService.deleteGoods(goodsNo);
+    // goodsService.deleteGoods(goodsNo);
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
     @ApiOrder(13)
     @Parameters({
@@ -494,9 +497,21 @@ public class AdminProviderController {
     @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
     public ResponseEntity<byte[]> downloadFile(
             @UserResolve User user,
+            @RequestBody @Valid FileDownloadReq body,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
-        // todo: 검증 로직 추가
+        UploadedFile uploadedFile = adminFileService.getFile(fileNo);
+
+        // 검증 로직
+        if (uploadedFile.getFileRelationshipObjectSeparateCd() != FileRelationshipObjectSeparateCode.GUDAT.getCode()) {
+            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
+        }
+        if (uploadedFile.getFileNo() != body.fileNo()) {
+            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
+        }
+        if (!uploadedFile.getOriginalFileNm().equals(body.fileNm())) {
+            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
+        }
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
 
