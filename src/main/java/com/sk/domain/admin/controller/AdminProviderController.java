@@ -39,6 +39,7 @@ import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
+import com.sk.domain.admin.dto.response.provider.GoodsCreateRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
@@ -46,6 +47,7 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
+import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
 import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
 import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
@@ -127,12 +129,10 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
     @RequirePermission(roles = { Role.ADMIN })
-    public BaseResponse<String> createProvider(
+    public BaseResponse<ProviderCreateRes> createProvider(
             @RequestBody @Valid ProviderCreateReq body) {
 
-        providerService.createProvider(body);
-
-        return BaseResponseFactory.create("success");
+        return BaseResponseFactory.create(providerService.createProvider(body));
     }
 
     @ApiOrder(4)
@@ -221,14 +221,12 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods")
     @RequirePermission(roles = { Role.ADMIN })
-    public BaseResponse<String> createGoods(
+    public BaseResponse<GoodsCreateRes> createGoods(
             @UserResolve User user,
             @RequestBody @Valid GoodsCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-        goodsService.createGoods(providerNo, body);
-
-        return BaseResponseFactory.create("success");
+        return BaseResponseFactory.create(goodsService.createGoods(providerNo, body));
     }
 
     @ApiOrder(10)

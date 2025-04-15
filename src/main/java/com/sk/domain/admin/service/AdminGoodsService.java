@@ -13,6 +13,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.GoodsCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
+import com.sk.domain.admin.dto.response.provider.GoodsCreateRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
@@ -72,13 +73,14 @@ public class AdminGoodsService {
      * @return Goods
      */
     @Transactional
-    public Goods createGoods(int providerNo, GoodsCreateReq dto) {
+    public GoodsCreateRes createGoods(int providerNo, GoodsCreateReq dto) {
 
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-        return goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider));
+        return GoodsCreateRes
+                .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider)));
     }
 
     /**
