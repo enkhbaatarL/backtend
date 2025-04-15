@@ -101,7 +101,7 @@ public class GoodsDataSourceDetail extends BaseEntity {
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
             String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm,
-            String goodsDataSourceRmk, String goodsDataUseManagementCd) {
+            ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd) {
         return GoodsDataSourceDetail.builder()
                 .goodsDataSourceNm(goodsDataSourceNm)
                 .targetDbNm(targetDbNm)
@@ -111,6 +111,7 @@ public class GoodsDataSourceDetail extends BaseEntity {
                 .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
                 .tableColumnListNm(tableColumnListNm)
                 .goodsData(goodsData)
+                .componentInfo(componentInfo)
                 .goodsDataSourceRmk(goodsDataSourceRmk)
                 .goodsDataUseManagementCd(goodsDataUseManagementCd)
                 .build();
