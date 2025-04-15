@@ -78,9 +78,9 @@ public class AdminProviderController {
     private final AdminGoodsDataService goodsDataService;
     private final AdminFileService adminFileService;
 
-    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls");
+    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel");
+            "application/vnd.ms-excel", "text/csv");
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
             "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
