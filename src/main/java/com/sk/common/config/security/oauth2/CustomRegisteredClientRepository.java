@@ -46,7 +46,7 @@ public class CustomRegisteredClientRepository implements RegisteredClientReposit
             .clientSettings(ClientSettings.builder()
                 .setting("companyNo", client.getCustomerCompany().getCustomerCompanyNo())
                 .setting("companyCd", client.getCustomerCompany().getCustomerCompanyCd())
-                .setting("role", Role.OPERATOR) // todo ADMIN 의 경우도 있다. 클레임 추가 할 것.
+                .setting("role", client.getCustomerCompany().getIsMipManagementCompany() ? Role.SUB_ADMIN : Role.OPERATOR)
                 .requireProofKey(false)
                 .requireAuthorizationConsent(false)  // 명시적 동의 필요 없음
                 .build())

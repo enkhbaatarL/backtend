@@ -84,16 +84,17 @@ public class MiDataDetailService {
         ValidationResult<GoodsData> goodsDataValid = goodsDataValidator.ensureExists(goodsDataNo);
         GoodsData goodsData = goodsDataValid.getOrThrow();
 
-        // 컬럼 정보
+        // 프로바이더 컬럼 정보
         List<ProviderDataColumn> dataColumns = goodsData.getGoods().getProvider().getProviderDataColumns();
 
-        // key 컬럼명, value 범례
+        // Map 생성(key 컬럼명, value 범례)
         Map<String, String> dataColumnsMap = dataColumns.stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
 
-        // 상품 데이터소스 '메인' 조회
+        // 상품 데이터소스 '메인' 메타 정보 조회
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(dataSourceNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_DATA_NOT_FOUND));
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [goods-datasource]. dataSourceNo: %s".formatted(dataSourceNo)));
 
+        // 상품 데이터소스 '메인' 차트 데이터 조회
         List<Map<String, Object>> goodsDataSourceCharts = getGoodsDataSourceCharts(goodsDataSourceDetail);
 
         // 데이터 변경
