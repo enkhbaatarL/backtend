@@ -34,6 +34,7 @@ import com.sk.domain.admin.dto.request.bbs.FaqCreateReq;
 import com.sk.domain.admin.dto.request.bbs.FaqUpdateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeCreateReq;
 import com.sk.domain.admin.dto.request.bbs.NoticeUpdateReq;
+import com.sk.domain.admin.dto.response.bbs.FaqDetailRes;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
@@ -279,9 +280,13 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 상세 조회", description = "FAQ 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq/{faqNo}")
-    public BaseResponse<BulletinBoard> getFaq(
+    public BaseResponse<FaqDetailRes> getFaq(
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
-        return BaseResponseFactory.create(adminBulletinBoardService.getFaq(faqNo));
+
+        BulletinBoard bulletinBoard = adminBulletinBoardService.getFaq(faqNo);
+
+        return BaseResponseFactory.create(
+                FaqDetailRes.of(bulletinBoard.getBulletinCategorySeparateCd(), bulletinBoard.getBulletinTitleNm(), bulletinBoard.getBulletinCntt()));
     }
 
     @ApiOrder(13)
