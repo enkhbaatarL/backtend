@@ -48,7 +48,7 @@ public class MiDataDetailController {
     })
     @Operation(summary = "데이터소스 목록 조회 API", description = "상품 데이터 번호에 매핑된 데이터소스 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods-data/{goodsDataNo}/data-sources")
+    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources")
     public BaseResponse<List<GoodsDataSourceRes>> getGoodsDataSources(
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo
     ) {
@@ -59,15 +59,16 @@ public class MiDataDetailController {
     @Parameters({
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
+        @Parameter(name = "interval", description = ""),
     })
     @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods-data/{goodsDataNo}/data-sources/{dataSourceNo}/chart")
+    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
     public BaseResponse<?> getGoodsDataSourceChart(
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-        @PathVariable(value = "dataSourceNo") Integer dataSourceNo
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceChart(goodsDataNo, dataSourceNo));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceChart(goodsDataNo, goodsDataSourceNo));
     }
 
 }
