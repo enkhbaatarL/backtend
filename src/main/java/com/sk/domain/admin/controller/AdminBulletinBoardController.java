@@ -24,7 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequirePermission;
-import com.sk.common.annotation.UserResolve;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
@@ -46,8 +45,10 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
 import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -65,8 +66,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/admin/bulletinboard-manangement")
 @RequiredArgsConstructor
 public class AdminBulletinBoardController {
+    private final AuthorizationService authorizationService;
     private final AdminBulletinBoardService adminBulletinBoardService;
     private final AdminFileService adminFileService;
+    private final CustomerCompanyRepository customerCompanyRepository;
 
     /*******************************************************************
      * 
@@ -114,7 +117,6 @@ public class AdminBulletinBoardController {
     @PostMapping("/notice")
     @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> createNotice(
-            // @UserResolve User user,
             @RequestBody @Valid NoticeCreateReq body) {
 
         adminBulletinBoardService.createNotice(body);
@@ -130,7 +132,6 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/{noticeNo}")
     public BaseResponse<NoticeDetailRes> getNotice(
-            // @UserResolve User user,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.getNotice(noticeNo));
     }
@@ -144,7 +145,6 @@ public class AdminBulletinBoardController {
     @PatchMapping("/notices/{noticeNo}")
     @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateNotice(
-            // @UserResolve User user,
             @RequestBody @Valid NoticeUpdateReq body,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
@@ -162,7 +162,6 @@ public class AdminBulletinBoardController {
     @DeleteMapping("/notices/{noticeNo}")
     @RequirePermission(roles = { Role.ADMIN })
     public BaseResponse<String> deleteNotice(
-            // @UserResolve User user,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
         adminBulletinBoardService.deleteNotice(noticeNo);
@@ -175,8 +174,14 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/notice/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
-            @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
+
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+        String companyCd = customerCompany.getCustomerCompanyCd();
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
@@ -196,7 +201,7 @@ public class AdminBulletinBoardController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, true));
+        return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, true));
     }
 
     @ApiOrder(8)
@@ -204,7 +209,6 @@ public class AdminBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice/download-file/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);

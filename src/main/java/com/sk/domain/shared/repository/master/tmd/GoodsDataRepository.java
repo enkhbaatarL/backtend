@@ -124,7 +124,20 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
             @Param("goodsDataNo") int goodsDataNo);
 
-    @EntityGraph(attributePaths = {"goods", "provider"})
+    @EntityGraph(attributePaths = { "goods", "provider" })
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
+    // List<GoodsData> find
+
+    @Query(value = """
+            SELECT gd
+            FROM GoodsData gd
+            WHERE gd.isDeleted = false
+            AND gd.goods.provider.providerNo = :providerNo
+            AND gd.goods.provider.isDeleted = false
+            AND gd.goods.goodsNo = :goodsNo
+            AND gd.goods.isDeleted = false
+            AND gd.goodsDataNo = :goodsDataNo
+                        """, nativeQuery = true)
+    List<GoodsData> findAllByCustomerCompanyNo(Integer customerCompanyNo);
 }

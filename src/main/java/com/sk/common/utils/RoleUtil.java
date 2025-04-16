@@ -1,41 +1,40 @@
 package com.sk.common.utils;
 
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 
 public class RoleUtil {
-    public static boolean isAdmin(User user) {
-        if (user == null || user.getUserRoleCd() == null) {
+    public static boolean isAdmin(Role role) {
+        if (role == null || role.getCode() == null) {
             return false;
         }
-        return user.getUserRoleCd().getCode() == Role.ADMIN.getCode();
+        return role.getCode().equals(Role.ADMIN.getCode());
     }
 
-    public static boolean isSubAdmin(User user) {
-        if (user == null || user.getUserRoleCd() == null) {
+    public static boolean isSubAdmin(Role role) {
+        if (role == null || role.getCode() == null) {
             return false;
         }
-        return user.getUserRoleCd().getCode() == Role.SUB_ADMIN.getCode();
+        return role.getCode().equals(Role.SUB_ADMIN.getCode());
     }
 
-    public static boolean isOperator(User user) {
-        if (user == null || user.getUserRoleCd() == null) {
+    public static boolean isOperator(Role role) {
+        if (role == null || role.getCode() == null) {
             return false;
         }
-        return user.getUserRoleCd().getCode() == Role.OPERATOR.getCode();
+        return role.getCode().equals(Role.OPERATOR.getCode());
     }
 
-    public static boolean isUser(User user) {
-        if (user == null || user.getUserRoleCd() == null) {
+    public static boolean isUser(Role role) {
+        if (role == null || role.getCode() == null) {
             return false;
         }
-        return user.getUserRoleCd().getCode() == Role.USER.getCode();
+        return role.getCode().equals(Role.USER.getCode());
     }
 
-    public static boolean isClient(User user) {
-        if (user == null || user.getUserRoleCd() == null) {
+    public static boolean isClient(Role role) {
+        if (role == null || role.getCode() == null) {
             return false;
         }
-        return user.getUserRoleCd().getCode() == Role.CLIENT.getCode();
+        return role.getCode().equals(Role.CLIENT.getCode());
     }
 }

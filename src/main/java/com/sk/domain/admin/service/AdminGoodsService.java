@@ -2,7 +2,6 @@ package com.sk.domain.admin.service;
 
 import org.springframework.data.domain.Pageable;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +18,7 @@ import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
-import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
@@ -48,18 +47,16 @@ public class AdminGoodsService {
     * @param providerNo 데이타 프로바이더 번호
     * @return PaginationRes<GoodsRes>
     */
-    public PaginationRes<GoodsRes> getAllGoods(User user, int page, int size, String keyword, int providerNo) {
+    public PaginationRes<GoodsRes> getAllGoods(int companyNo, Role role, int page, int size, String keyword, int providerNo) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더에 속한 모든 상품 조회
             return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 고객사에 등록 된 프로바이더에 속한 모든 상품 조회
-            return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(user.getCustomerCompany().getCustomerCompanyNo(),
-                    providerNo,
-                    keyword, pageable));
+            return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
         }
 
         throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
@@ -91,23 +88,23 @@ public class AdminGoodsService {
     * @param goodsNo 상품 번호
     * @return GoodsDetailRes
     */
-    public GoodsDetailRes getGoods(User user, int providerNo, int goodsNo) {
-        if (RoleUtil.isAdmin(user)) {
+    public GoodsDetailRes getGoods(int companyNo, Role role, int providerNo, int goodsNo) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더에 속한 상품 조회
             return goodsRepository.findGoodsDetail(providerNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 고객사에 등록 된 프로바이더에 속한 권한 있는 상품 조회
 
             // 프로바이더 등록 유무 체크
             customerCompanyProviderMappingRepository
-                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
             // 상품 권한 유무 체크
-            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 

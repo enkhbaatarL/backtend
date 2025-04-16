@@ -12,13 +12,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record GoodsDataCreateReq(
     @NotBlank
     @Size(min = 1, max = 100)
-    @Schema(description = "데이터명", example = "")
+    @Schema(description = "상품데이터명", example = "")
     String goodsDataNm,
 
     @Schema(description = "상품데이터설명", example = "") 
     String goodsDataExpn,
 
-    @Schema(description = "Summary", example = "") 
+    @Schema(description = "상품데이터 Summary", example = "") 
     String goodsDataSummaryCntt,
 
     @NotNull

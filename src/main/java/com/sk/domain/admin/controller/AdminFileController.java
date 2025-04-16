@@ -3,7 +3,6 @@ package com.sk.domain.admin.controller;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,14 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.UserResolve;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.file.FileUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminFileService;
-import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -44,13 +47,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/admin/file-manangement")
 @RequiredArgsConstructor
 public class AdminFileController {
+    private final AuthorizationService authorizationService;
     private final AdminFileService adminFileService;
+    private final CustomerCompanyRepository customerCompanyRepository;
 
     @ApiOrder(1)
     @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/all")
-    public BaseResponse<String> getAll(@UserResolve User user) {
+    public BaseResponse<String> getAll() {
 
         adminFileService.getAll();
 
@@ -62,10 +67,16 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
-            @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(user, file, true));
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+        String companyCd = customerCompany.getCustomerCompanyCd();
+
+        return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, true));
     }
 
     @ApiOrder(3)
@@ -73,7 +84,6 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
-            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
         FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
@@ -93,7 +103,6 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/{fileNo}")
     public BaseResponse<String> deleteFile(
-            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
         adminFileService.deleteFile(fileNo);
@@ -106,7 +115,6 @@ public class AdminFileController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/{fileNo}")
     public BaseResponse<String> updateFile(
-            // @UserResolve User user,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo,
             @RequestBody @Valid FileUpdateReq body) {
 
