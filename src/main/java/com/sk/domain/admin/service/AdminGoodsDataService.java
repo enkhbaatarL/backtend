@@ -272,7 +272,8 @@ public class AdminGoodsDataService {
                 // todo: 호영 추가
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, "goodsDataSourceNm", "targetDbNm",
-                                "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+                                "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm", null,
+                                "goodsDataSourceRmk", "goodsDataUseManagementCd"));
 
                 // todo: 호영 추가
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
@@ -405,7 +406,8 @@ public class AdminGoodsDataService {
                     // todo: 호영 추가
                     GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                             .save(GoodsDataSourceDetail.of(goodsData, "goodsDataSourceNm", "targetDbNm",
-                                    "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+                                    "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm", null,
+                                    "goodsDataSourceRmk", "goodsDataUseManagementCd"));
 
                     // todo: 호영 추가
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
