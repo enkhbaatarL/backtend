@@ -53,7 +53,6 @@ public class ApiAccessLog extends BaseEntity {
     @Comment("접속아이피주소")
     private String accessIpAddress;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "usr_role_cd", length = 10)
     @Comment("사용자역할코드")
     private String userRoleCd;
