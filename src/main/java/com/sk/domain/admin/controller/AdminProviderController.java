@@ -132,7 +132,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN })
     public BaseResponse<ProviderCreateRes> createProvider(
             @RequestBody @Valid ProviderCreateReq body) {
 
@@ -209,7 +209,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR })
     public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
             @UserResolve User user,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
@@ -327,7 +327,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
         return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
@@ -340,7 +340,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category/{codeId}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
             @PathVariable(value = "codeId") String codeId) {
 
@@ -397,7 +397,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR })
     public BaseResponse<String> createGoodsData(
             @UserResolve User user,
             @RequestBody @Valid GoodsDataCreateReq body,
@@ -467,7 +467,7 @@ public class AdminProviderController {
     @Operation(summary = "비정형 데이타 파일 업로드", description = "비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR })
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @UserResolve User user,
             @RequestPart(value = "file", required = false) MultipartFile file) {
