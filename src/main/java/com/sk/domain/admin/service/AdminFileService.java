@@ -22,6 +22,7 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +81,7 @@ public class AdminFileService {
     * @return FileUploadRes
     */
     @Transactional
-    public FileUploadRes uploadFile(User user, MultipartFile file, boolean isPublic) {
+    public FileUploadRes uploadFile(String companyCd, Role role, MultipartFile file, boolean isPublic) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -95,8 +96,8 @@ public class AdminFileService {
             long fileSize = file.getSize();
             String mimeTypeNm = file.getContentType();
 
-            String customerCompanyCd = user.getCustomerCompany().getCustomerCompanyCd().toLowerCase();
-            String bucketName = RoleUtil.isAdmin(user) ? commBucketName : prefix + customerCompanyCd;
+            String customerCompanyCd = companyCd.toLowerCase();
+            String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
                     + PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR)
