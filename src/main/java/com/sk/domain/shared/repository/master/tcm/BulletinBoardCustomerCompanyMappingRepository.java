@@ -38,7 +38,7 @@ public interface BulletinBoardCustomerCompanyMappingRepository
                                     WHERE c.isDeleted = false
                                     AND m.bulletinBoard = :bulletinBoard
                                                 """)
-    List<BulletinBoardCompanyDto> findCustomCompanyByBulletinBoard(BulletinBoard bulletinBoard);
+    List<BulletinBoardCompanyDto> findCustomerCompanyByBulletinBoard(BulletinBoard bulletinBoard);
 
     Optional<BulletinBoardCustomerCompanyMapping> findById(BulletinBoardCustomerCompanyMappingId id);
 }
