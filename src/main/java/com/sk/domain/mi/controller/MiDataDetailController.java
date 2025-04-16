@@ -3,20 +3,21 @@ package com.sk.domain.mi.controller;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
+import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.GoodsDataDetailRes;
-import com.sk.domain.mi.dto.response.GoodsDataSourceRes;
+import com.sk.domain.mi.dto.response.chart.GoodsDataSourceRes;
+import com.sk.domain.mi.dto.response.chart.UnitConversionRes;
 import com.sk.domain.mi.service.MiDataDetailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -58,8 +59,55 @@ public class MiDataDetailController {
     @ApiOrder(3)
     @Parameters({
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호")
+    })
+    @Operation(summary = "데이터소스 단위 변환 목록 조회 API", description = "데이터소스에서 변환이 가능한 단위 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/unit-conversion")
+    public BaseResponse<List<UnitConversionRes>> getGoodsDataSourcesUnitConversion(
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourcesUnitConversion(goodsDataNo, goodsDataSourceNo));
+    }
+
+    @ApiOrder(3)
+    @Parameters({
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
-        @Parameter(name = "interval", description = ""),
+        @Parameter(name = "chartsPersonalizeReqs", description = "차트 개인화 정보")
+    })
+    @Operation(summary = "데이터소스 차트 개인화 조회 API", description = "상품 데이터소스 차트를 개인 설정을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
+    public BaseResponse<List<ChartsPersonalizeRes>> getChartsPersonalize(
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getChartsPersonalize(goodsDataNo, goodsDataSourceNo));
+    }
+
+    @ApiOrder(3)
+    @Parameters({
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
+        @Parameter(name = "chartsPersonalizeReqs", description = "차트 개인화 정보")
+    })
+    @Operation(summary = "데이터소스 차트 개인화 설정 API", description = "상품 데이터소스 차트를 개인 설정합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PutMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
+    public BaseResponse<List<ChartsPersonalizeRes>> putChartsPersonalize(
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
+        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.putChartsPersonalize(goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs));
+    }
+
+    @ApiOrder(3)
+    @Parameters({
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호")
     })
     @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")

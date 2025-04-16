@@ -8,19 +8,25 @@ import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.ChartDataConverter;
 import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.conversion.dto.ConversionResult;
+import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
+import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.GoodsDataDetailRes;
-import com.sk.domain.mi.dto.response.GoodsDataSourceRes;
-import com.sk.domain.mi.dto.response.chart2.ChartBundleRes;
-import com.sk.domain.mi.dto.response.chart2.ChartData;
+import com.sk.domain.mi.dto.response.chart.GoodsDataSourceRes;
+import com.sk.domain.mi.dto.response.chart.UnitConversionRes;
+import com.sk.domain.mi.dto.response.chart.ChartBundleRes;
+import com.sk.domain.mi.dto.response.chart.ChartData;
 import com.sk.domain.mi.validator.GoodsDataValidator;
+import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
+import com.sk.domain.shared.enums.ChartSettingConditionCd;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +34,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,6 +80,83 @@ public class MiDataDetailService {
     }
 
     /**
+     *
+     * @param goodsDataNo
+     * @param goodsDataSourceNo
+     * @return
+     */
+    public List<ChartsPersonalizeRes> getChartsPersonalize(Integer goodsDataNo, Integer goodsDataSourceNo) {
+
+        ValidationResult<GoodsData> result = goodsDataValidator.ensureExists(goodsDataNo);
+        result.validOrThrow();
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [goods-datasource]. dataSourceNo: %s".formatted(goodsDataSourceNo)));
+
+        List<PersonalizedChartSetting> personalizedChartSettings = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(goodsDataSourceDetail, "");
+
+        return ChartsPersonalizeRes.ofList(personalizedChartSettings);
+    }
+
+    /**
+     *
+     * @param goodsDataNo
+     * @param goodsDataSourceNo
+     * @return
+     */
+    public List<UnitConversionRes> getGoodsDataSourcesUnitConversion(Integer goodsDataNo, Integer goodsDataSourceNo) {
+
+        ValidationResult<GoodsData> result = goodsDataValidator.ensureExists(goodsDataNo);
+        GoodsData goodsData = result.getOrThrow();
+
+        return null;
+
+    }
+
+    /**
+     *
+     * @param goodsDataNo
+     * @param goodsDataSourceNo
+     * @param chartsPersonalizeReqs
+     * @return
+     */
+    @Transactional
+    public List<ChartsPersonalizeRes> putChartsPersonalize(Integer goodsDataNo, Integer goodsDataSourceNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs) {
+
+        ValidationResult<GoodsData> result = goodsDataValidator.ensureExists(goodsDataNo);
+        result.validOrThrow();
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [goods-datasource]. dataSourceNo: %s".formatted(goodsDataSourceNo)));
+
+        List<PersonalizedChartSetting> personalizedChartSettings = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(goodsDataSourceDetail, "");
+        Map<ChartSettingConditionCd, PersonalizedChartSetting> personalSettingMap = personalizedChartSettings.stream().collect(Collectors.toMap(PersonalizedChartSetting::getChartSettingConditionCd, Function.identity()));
+
+        chartsPersonalizeReqs.forEach(req -> {
+
+            if (personalSettingMap.containsKey(req.chartSettingConditionCd())) {
+
+                PersonalizedChartSetting personalizedChartSetting = personalSettingMap.get(req.chartSettingConditionCd());
+
+                if (ObjectUtils.isEmpty(req.chartConditionValue())) {
+                    personalizedChartSetting.softDelete(); // 값이 null이면 soft delete
+                } else {
+                    personalizedChartSetting.update(req); // 값이 null이 아니면 update
+                }
+
+            } else {
+
+                PersonalizedChartSetting setting = PersonalizedChartSetting.of(req, goodsDataSourceDetail);// 새로운 key의 값이면 insert
+
+            }
+
+        });
+
+
+        return null; // todo
+    }
+
+    /**
      * 상품 데이터소스 차트를 조회한다.
      *
      * @param goodsDataNo 상품 데이터 번호
@@ -80,6 +164,8 @@ public class MiDataDetailService {
      * @return
      */
     public ChartBundleRes getGoodsDataSourceChart(Integer goodsDataNo, Integer goodsDataSourceNo) {
+
+        // todo 개인화 추가...
 
         ValidationResult<GoodsData> goodsDataValid = goodsDataValidator.ensureExists(goodsDataNo);
         GoodsData goodsData = goodsDataValid.getOrThrow();
@@ -101,13 +187,11 @@ public class MiDataDetailService {
 
         List<BigDecimal> majorFactor = ChartDataConverter.extractMainSeries(chartData);
 
-        // todo 보조지표(MA5, MA20, MA60, MA120) 변환
         List<BigDecimal> ma5 = unitConversionService.convertTimeSeriesForMA(majorFactor, 5);
         List<BigDecimal> ma20 = unitConversionService.convertTimeSeriesForMA(majorFactor, 20);
         List<BigDecimal> ma60 = unitConversionService.convertTimeSeriesForMA(majorFactor, 60);
         List<BigDecimal> ma120 = unitConversionService.convertTimeSeriesForMA(majorFactor, 120);
 
-        // todo 보조지표(BB) 변환
         List<? extends ConversionResult> bb = unitConversionService.convertTimeSeriesForBB(majorFactor, 20);
 
         List<ChartData> compareDynamicChartRes = new ArrayList<>();

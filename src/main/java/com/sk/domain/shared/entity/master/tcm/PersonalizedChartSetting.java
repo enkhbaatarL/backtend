@@ -1,7 +1,9 @@
 package com.sk.domain.shared.entity.master.tcm;
 
+import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.ChartSettingConditionCd;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -31,20 +33,34 @@ public class PersonalizedChartSetting extends BaseEntity {
     @Comment("상품데이터소스번호")
     private GoodsDataSourceDetail goodsDataSourceDetail;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "chrt_set_cdtn_spt_cd", nullable = false, length = 20)
     @Comment("차트설정조건구분코드")
-    private String chartSettingConditionCd;
+    private ChartSettingConditionCd chartSettingConditionCd;
 
     @Column(name = "chrt_set_cdtn_val", nullable = false, length = 20)
     @Comment("차트설정조건값")
     private String chartSettingConditionVal;
 
     @Builder
-    public PersonalizedChartSetting(String userLoginId, GoodsDataSourceDetail goodsDataSourceDetail, String chartSettingConditionCd, String chartSettingConditionVal) {
+    public PersonalizedChartSetting(String userLoginId, GoodsDataSourceDetail goodsDataSourceDetail, ChartSettingConditionCd chartSettingConditionCd, String chartSettingConditionVal) {
         this.userLoginId = userLoginId;
         this.goodsDataSourceDetail = goodsDataSourceDetail;
         this.chartSettingConditionCd = chartSettingConditionCd;
         this.chartSettingConditionVal = chartSettingConditionVal;
+    }
+
+    public static PersonalizedChartSetting of(ChartsPersonalizeReq req, GoodsDataSourceDetail goodsDataSourceDetail) {
+        return PersonalizedChartSetting.builder()
+            .chartSettingConditionCd(req.chartSettingConditionCd())
+            .chartSettingConditionVal(req.chartConditionValue())
+            .goodsDataSourceDetail(goodsDataSourceDetail)
+            .userLoginId("todo")
+            .build();
+    }
+
+    public void update(ChartsPersonalizeReq req) {
+        this.chartSettingConditionVal = req.chartConditionValue();
     }
 
 }

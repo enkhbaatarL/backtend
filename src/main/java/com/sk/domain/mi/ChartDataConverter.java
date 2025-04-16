@@ -1,7 +1,7 @@
 package com.sk.domain.mi;
 
-import com.sk.domain.mi.dto.response.chart2.ChartData;
-import com.sk.domain.mi.dto.response.chart2.SchemaEntry;
+import com.sk.domain.mi.dto.response.chart.ChartData;
+import com.sk.domain.mi.dto.response.chart.SchemaEntry;
 
 import java.math.BigDecimal;
 import java.util.*;
