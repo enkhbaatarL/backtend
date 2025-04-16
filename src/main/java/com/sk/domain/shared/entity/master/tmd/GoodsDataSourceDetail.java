@@ -71,11 +71,11 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @JoinColumn(name = "cmpnt_type_id", referencedColumnName = "cmpnt_type_id")
     private ComponentInfo componentInfo;
 
-    @Column(name = "gds_data_src_rmk", nullable = false, length = 2000)
+    @Column(name = "gds_data_src_rmk", length = 2000)
     @Comment("상품데이터소스비고")
     private String goodsDataSourceRmk;
 
-    @Column(name = "gds_data_use_mnagt_cd", length = 10)
+    @Column(name = "gds_data_use_mnagt_cd", nullable = false, length = 10)
     @Comment("상품데이터사용주체코드")
     private String goodsDataUseManagementCd;
 

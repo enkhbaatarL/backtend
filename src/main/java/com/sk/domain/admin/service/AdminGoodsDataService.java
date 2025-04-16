@@ -287,15 +287,15 @@ public class AdminGoodsDataService {
                         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                                 String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
 
-                // TODO: private String goodsDataSourceExpn, goodsDataSourceUnitNm; => 어디서 값을 구해야 하지??
+				// todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
                                 componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
-                                "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), null, "goodsDataSourceRmk", "goodsDataUseManagementCd"));
+                                "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
 
                 // todo: 호영 추가
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), null,
                         GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
             }
         }
@@ -421,15 +421,20 @@ public class AdminGoodsDataService {
                             FileRelationshipObjectSeparateCode.GDATS.getCode(),
                             DateUtil.endYmd());
 
-                    // todo: 호영 추가
-                    GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                            .save(GoodsDataSourceDetail.of(goodsData, "goodsDataSourceNm", "targetDbNm",
-                                    "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm", null,
-                                    "goodsDataSourceRmk", "goodsDataUseManagementCd"));
+					ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
+							.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+									String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));		
+
+                    // todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
+					GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
+					.save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+							componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
+							"goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+
 
                     // todo: 호영 추가
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
-                    goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), "goodsDataKeywordNm",
+                    goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), null,
                             GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
 
                 }
