@@ -67,6 +67,17 @@ public class UnitConversionService {
             .toList();
     }
 
+    /**
+     * 시계열데이터 변환
+     *
+     * @param timeSeriesValues 변환시킬 시계열데이터
+     * @param windowSize       윈도우사이즈
+     * @return List<BigDecimal>
+     */
+    public List<BigDecimal> convertTimeSeriesForMA(List<BigDecimal> timeSeriesValues, int windowSize) {
+        return unitConversionContext.convertTimeSeries(FormulaService.MOVING_AVERAGE, timeSeriesValues, windowSize);
+    }
+
 
     /**
      * 특정 결과 타입을 반환하는 시계열 데이터 변환
@@ -89,6 +100,10 @@ public class UnitConversionService {
         throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
             "Basic coefficient-based conversions do not support result types.. unitConversionNo: %s".formatted(unitConversionNo));
 
+    }
+
+    public List<? extends ConversionResult> convertTimeSeriesForBB(List<BigDecimal> timeSeriesValues, int windowSize) {
+        return unitConversionContext.convertTimeSeriesResult(FormulaService.BOLLINGER_BANDS, timeSeriesValues, windowSize);
     }
 
     // todo 캐싱
