@@ -2,6 +2,7 @@ package com.sk.common.interceptor;
 
 import java.util.Optional;
 
+import com.sk.domain.shared.enums.Role;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
@@ -42,11 +43,11 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
         log.info(MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG));
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userRoleCd = null;
+        String role = null;
         if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
             if (authentication instanceof JwtAuthenticationToken jwtToken) {
-                userRoleCd = jwtToken.getToken().getClaimAsString("role"); // "role" 클레임
-            } 
+                role = jwtToken.getToken().getClaimAsString("role"); // "role" 클레임
+            }
         }
 
         ApiAccessLog accessLog = ApiAccessLog.of(
@@ -55,7 +56,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
             StringUtil.stripNewlinesAndTabs(MDCUtil.getValue(MDCUtil.REQUEST_BODY)),
             MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG),
             MDCUtil.getValue(MDCUtil.ACCESS_IP_ADDRESS),
-            userRoleCd != null ? UserRoleCd.valueOf(userRoleCd) : null
+            Role.valueOf(role)
         );
 
         apiAccessLogRepository.save(accessLog);

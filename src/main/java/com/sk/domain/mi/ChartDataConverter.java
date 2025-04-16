@@ -11,33 +11,22 @@ import java.util.stream.IntStream;
 public class ChartDataConverter {
 
     /**
-     * ChartData 객체에서 '종가(close)'에 해당하는 데이터 시리즈를 추출하여 List<BigDecimal>로 반환합니다.
-     * schema에서 renderAs가 "close"인 항목을 찾아 해당 데이터를 변환합니다.
-     * 이동평균 계산 등 후속 작업에 사용하기 적합합니다.
+     * ChartData 객체에서 '종가(close)' 또는 'main' 해당하는 데이터 시리즈를 추출하여 List<BigDecimal>로 반환합니다.
      *
-     * @param chartData 변환된 ChartData 객체
-     * @return 종가 데이터 리스트 (BigDecimal). 해당 시리즈가 없거나 데이터가 없으면 빈 리스트 반환. 리스트 내 null 값은 유지됨.
-     * @throws NullPointerException chartData가 null인 경우
-     * @throws IllegalStateException 'close' 시리즈가 여러 개 발견되는 경우 (데이터 설계 오류)
      */
     public static List<BigDecimal> extractMainSeries(ChartData chartData) {
 
         // 1. 스키마에서 "close" 역할(renderAs)을 하는 컬럼명(name) 찾기
-        List<String> closeColumnNames = chartData.schema().stream()
+        List<String> majorColumnNames = chartData.schema().stream()
             .filter(entry -> "close".equals(entry.renderAs()) || "main".equals(entry.renderAs()))
             .map(SchemaEntry::name) // 레코드 getter 사용 (Java 16+) 또는 entry -> entry.name()
-            .collect(Collectors.toList());
+            .toList();
 
-        if (closeColumnNames.isEmpty()) {
-            // "close" 시리즈 스키마 없음, 빈 리스트 반환
+        if (majorColumnNames.isEmpty()) {
             return Collections.emptyList();
         }
 
-        if (closeColumnNames.size() > 1) {
-            // "close" 시리즈가 여러 개 정의된 것은 데이터 설계 오류일 가능성이 높음
-        }
-
-        String closeColumnName = closeColumnNames.get(0);
+        String closeColumnName = majorColumnNames.get(0);
 
         // 2. 데이터 맵에서 해당 컬럼명의 데이터 리스트 가져오기
         // Map의 값 타입이 List<?> 이므로 형변환 필요 없음
@@ -50,16 +39,13 @@ public class ChartDataConverter {
 
         // 3. 데이터 리스트의 각 요소를 BigDecimal로 변환 (null 유지)
         return rawDataList.stream()
-            .map(s -> new BigDecimal(String.valueOf(s))) // 아래 정의된 헬퍼 메소드 사용
+            .map(s -> new BigDecimal(String.valueOf(s)))
             .collect(Collectors.toList());
     }
 
     public static ChartData convertToChartData(List<Map<String, Object>> rawData, String tableColumnListNm, Map<String, String> columnLabelsMap) {
 
-        // --- 입력 값 검증 ---
-        if (rawData == null) {
-            rawData = Collections.emptyList();
-        }
+        // todo 파라미터 검증...
 
         // tableColumnListNm을 쉼표로 분리하여 순서가 보장된 DB 컬럼명 리스트 생성
         List<String> dbColumnNamesInOrder = Arrays.stream(tableColumnListNm.split(","))
@@ -80,6 +66,7 @@ public class ChartDataConverter {
         // 2. data 생성 (순서 보장된 컬럼명 리스트 사용)
         Map<String, List<?>> data = new HashMap<>();
         if (!rawData.isEmpty()) {
+
             for (String dbColName : dbColumnNamesInOrder) {
                 // 컬럼명에 해당하는 값들을 rawData에서 추출
                 List<Object> columnValues = rawData.stream()
@@ -87,11 +74,14 @@ public class ChartDataConverter {
                     .collect(Collectors.toList());
                 data.put(dbColName, columnValues);
             }
+
         } else {
+
             // rawData가 비어있으면, 모든 컬럼에 대해 빈 리스트를 넣어줌
             for (String dbColName : dbColumnNamesInOrder) {
                 data.put(dbColName, Collections.emptyList());
             }
+
         }
 
 
@@ -102,7 +92,7 @@ public class ChartDataConverter {
 
     /**
      * 컬럼 인덱스를 기반으로 renderAs 값을 결정합니다.
-     * (0: date, 1: open, 2: high, 3: close, 4: low, 그 외: "value")
+     * (0: date, 1: open, 2: high, 3: close, 4: low, 그 외: "unknown")
      *
      * @param index 컬럼의 인덱스 (0부터 시작)
      * @return 결정된 renderAs 문자열
@@ -114,7 +104,7 @@ public class ChartDataConverter {
             case 2 -> "high";
             case 3 -> "close";
             case 4 -> "low";
-            default -> "value";
+            default -> "unknown"; // 그 외의 경우
         };
     }
 
