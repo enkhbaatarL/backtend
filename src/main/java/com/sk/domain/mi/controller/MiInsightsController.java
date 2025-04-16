@@ -50,13 +50,7 @@ public class MiInsightsController {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-
-        int cNo = 0;
-        if (RoleUtil.isAdmin(role)) {
-            cNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(role)) {
-            cNo = companyNo;
-        }
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
 
         return BaseResponseFactory.create(miInsightsService.getFocused(cNo));
     }
@@ -76,13 +70,7 @@ public class MiInsightsController {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-
-        int cNo = 0;
-        if (RoleUtil.isAdmin(role)) {
-            cNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(role)) {
-            cNo = companyNo;
-        }
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
 
         return BaseResponseFactory.create(miInsightsService.getDataCatalogAutoComplete(cNo, keyword));
     }
@@ -106,13 +94,7 @@ public class MiInsightsController {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-
-        int cNo = 0;
-        if (RoleUtil.isAdmin(role)) {
-            cNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(role)) {
-            cNo = companyNo;
-        }
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
 
         return BaseResponseFactory.create(miInsightsService.getDataCatalog(cNo, page, size, keyword));
     }

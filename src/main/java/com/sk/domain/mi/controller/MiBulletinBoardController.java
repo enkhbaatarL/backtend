@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequirePermission;
-import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -16,7 +15,6 @@ import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
 import com.sk.domain.mi.service.MiBulletinBoardService;
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
@@ -65,13 +63,7 @@ public class MiBulletinBoardController {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-
-        int cNo = 0;
-        if (RoleUtil.isAdmin(role)) {
-            cNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(role)) {
-            cNo = companyNo;
-        }
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
 
         return BaseResponseFactory.create(miBulletinBoardService.getAllNotices(cNo, role, page, size, category, keyword));
     }
@@ -89,13 +81,7 @@ public class MiBulletinBoardController {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-
-        int cNo = 0;
-        if (RoleUtil.isAdmin(role)) {
-            cNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(role)) {
-            cNo = companyNo;
-        }
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
 
         return BaseResponseFactory.create(miBulletinBoardService.getNotice(cNo, noticeNo));
     }
