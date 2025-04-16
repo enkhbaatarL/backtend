@@ -38,12 +38,15 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 			Integer customerCompanyNo, String departmentNm,
 			String userNm, String emailAddress) {
 
+		/*
+		 * 현재 정책은 creator, modifier 는 관리자로 관리사를 Join 하여 데이터 조회
+		 */
 		QUser user = QUser.user;
-		QUser creator = new QUser("creator");
+		QUser creator = new QUser("creator"); 
 		QUser modifier = new QUser("modifier");
 
 		QCustomerCompany customerCompany = QCustomerCompany.customerCompany;
-		QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany");
+		QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany"); 
 		QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
 
 		Pageable pageable = PageRequest.of(page - 1, size);
@@ -96,9 +99,9 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 				.distinct()
 				.from(user)
 				.leftJoin(user.customerCompany, customerCompany)
-				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId))
+				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
 				.leftJoin(creator.customerCompany, creatorCompany)
-				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId))
+				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
 				.leftJoin(modifier.customerCompany, modifierCompany)
 				.where(builder)
 				.offset(pageable.getOffset())
@@ -112,6 +115,57 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 				.where(builder);
 
 		return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+	}
+
+	@Override
+	public Optional<UserDetailRes> findUserByConditions(int userNo) {
+		/*
+		 * 현재 정책은 creator, modifier 는 관리자로 관리사를 Join 하여 데이터 조회
+		 */
+		QUser user = QUser.user;
+		QUser creator = new QUser("creator"); 
+		QUser modifier = new QUser("modifier");
+
+		QCustomerCompany customerCompany = QCustomerCompany.customerCompany;
+		QCustomerCompany creatorCompany = new QCustomerCompany("creatorCompany"); 
+		QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
+
+		return Optional.ofNullable(queryFactory
+				.select(new QUserDetailRes(
+					user.userNo,
+					user.userNm,
+					user.userLoginId,
+					user.userRoleCd,
+					user.positionNm,
+					user.jobGradeNm,
+					user.onDutyNm,
+					user.departmentNm,
+					user.isOtherServiceAccessPossible,
+					user.isIndividualInfoAgreement,
+					user.individualInfoAgreementDtm,
+					user.customerCompany.customerCompanyNo,
+					user.customerCompany.customerCompanyNm,
+					creator.userLoginId,
+					user.createDt,
+					modifier.userLoginId,
+					user.modifyDt,
+					creator.userNm,
+					creator.departmentNm,
+					creatorCompany.customerCompanyNm,
+					modifier.userNm,
+					modifier.departmentNm,
+					modifierCompany.customerCompanyNm))
+				.from(user)
+				.leftJoin(user.customerCompany, customerCompany)
+				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+				.leftJoin(creator.customerCompany, creatorCompany)
+				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+				.leftJoin(modifier.customerCompany, modifierCompany)
+				.where(
+						user.userNo.eq(userNo),
+						user.isDeleted.isFalse()
+				)
+				.fetchOne());
 	}
 
 	@Override

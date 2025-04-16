@@ -10,12 +10,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sk.domain.admin.dto.response.bbs.FaqRes;
-import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
-import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
+
+import com.sk.domain.admin.dto.response.bbs.NoticeRes;
+import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
+import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 
 public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, Integer> {
 
@@ -24,7 +24,6 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     * 공통
     *
     *******************************************************************/
-
     Optional<BulletinBoard> findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(Integer bulletinNo, String bulletinTypeCode);
 
     /*******************************************************************
@@ -179,6 +178,8 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             """)
     Optional<BulletinBoard> findByIsPopupUseTrue();
 
+    Page<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(Specification<BulletinBoard> spec, Pageable page, String bulletinTypeCode);
+
     /*******************************************************************
     *
     * FAQ
@@ -253,7 +254,5 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);
-
-    Page<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(Specification<BulletinBoard> spec, Pageable page, String bulletinTypeCode);
 
 }

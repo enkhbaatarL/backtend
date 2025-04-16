@@ -1,13 +1,17 @@
 package com.sk.domain.admin.service;
 
-import org.springframework.data.domain.Pageable;
-
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -17,8 +21,11 @@ import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataFileReq;
 import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
+import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.admin.dto.response.provider.CategoryDataRes;
 import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
@@ -27,6 +34,7 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.admin.dto.response.provider.UnstructuredDataRes;
+import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -44,6 +52,7 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +72,10 @@ public class AdminGoodsDataService {
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final ComponentInfoRepository componentInfoRepository;
     private final AdminFileService adminFileService;
+    private final ExcelService excelService;
+    private final UserRepository userRepository;
+    private final PlatformTransactionManager masterTransactionManager;
+    private final PlatformTransactionManager myBatisTransactionManager;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -269,10 +282,16 @@ public class AdminGoodsDataService {
                 adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
-                // todo: 호영 추가
+                // 컴포넌트 타입 조회
+                ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
+                        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
+
+                // TODO: private String goodsDataSourceExpn, goodsDataSourceUnitNm; => 어디서 값을 구해야 하지??
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                        .save(GoodsDataSourceDetail.of(savedGoodsData, "goodsDataSourceNm", "targetDbNm",
-                                "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+                        .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                                componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
+                                "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), null, "goodsDataSourceRmk", "goodsDataUseManagementCd"));
 
                 // todo: 호영 추가
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
@@ -405,7 +424,8 @@ public class AdminGoodsDataService {
                     // todo: 호영 추가
                     GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                             .save(GoodsDataSourceDetail.of(goodsData, "goodsDataSourceNm", "targetDbNm",
-                                    "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm"));
+                                    "targetTableNm", "queryConditionCntt", "goodsDataSourceExpn", "goodsDataSourceUnitNm", "tableColumnListNm", null,
+                                    "goodsDataSourceRmk", "goodsDataUseManagementCd"));
 
                     // todo: 호영 추가
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
@@ -461,5 +481,79 @@ public class AdminGoodsDataService {
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
             }
         }
+    }
+
+    /**
+     * 정형 데이타 파일 업로드 (엑셀 파일 업로드와 함께 엑셀 파싱하여 DB에 데이터 저장)
+     * 
+     * @param user
+     * @param file
+     * @param isPublic
+     * @param structuredDataFileReq
+     * @return
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public GoodsDataFileUploadRes uploadStructuredDataFile(User user, MultipartFile file, boolean isPublic,
+            StructuredDataFileReq structuredDataFileReq) throws IOException {
+
+        // TODO: JPA, MyBatis 트랜잭션 통합 관리 필요(XA 도입 또는 데이터 소스 분리 등 방법 필요)
+
+        // JPA, MyBatis 트랜잭션 각각 관리
+        // TransactionTemplate jpaTxTemplate = new TransactionTemplate(masterTransactionManager);
+        // jpaTxTemplate.setReadOnly(false);
+        // TransactionTemplate myBatisTxTemplate = new TransactionTemplate(myBatisTransactionManager);
+
+        // 1. JPA: 조회 (Select는 )
+        ComponentInfo componentInfo = componentInfoRepository
+                .findByComponentTypeIdAndIsDeletedFalse(structuredDataFileReq.componentTypeId())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        String.format("Component information could not be found. componentTypeId: %s",
+                                structuredDataFileReq.componentTypeId())));
+
+
+        // User 조회 (외부 트랜잭션에서 가져온 user는 새로 만든 트랜잭션의 영속성 컨텍스트로 관리하지 않아서 Lazy 조회 불가)
+        // User loadedUser = jpaTxTemplate.execute(status -> {
+        //     return userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
+        //             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
+        // });
+
+        // JPA / Mybatis 둘 중 하나라도 문제 생긴 경우 전체 롤백
+        // try {
+        //     // 2. MyBatis: 데이터 업로드
+        //     myBatisTxTemplate.execute(status -> {
+        //         try {
+        //             excelService.uploadStructuredData(file, componentInfo);
+        //             return true;
+        //         } catch (IOException e) {
+        //             throw new RuntimeException("MyBatis upload failed", e);
+        //         }
+        //     });
+
+        //     // 3. JPA + S3: 파일 업로드
+        //     FileUploadRes fileUploadRes = jpaTxTemplate.execute(status -> {
+        //         try {
+        //             return adminFileService.uploadFile(loadedUser, file, isPublic);
+        //         } catch (Exception e) {
+        //             throw new RuntimeException("JPA/S3 upload failed", e);
+        //         }
+        //     });
+
+        //     return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(),
+        //             fileUploadRes.fileNm(), fileUploadRes.fileSize(), fileUploadRes.fileUrl());
+        // } catch (Exception e) {
+        //     log.error("Upload failed: {}", e.getMessage(), e);
+        //     throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        // }
+
+        // User 조회 (외부 트랜잭션에서 가져온 user는 새로 만든 트랜잭션의 영속성 컨텍스트로 관리하지 않아서 Lazy 조회 불가)
+        User loadedUser = userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
+
+        excelService.uploadStructuredData(file, componentInfo);
+
+        FileUploadRes fileUploadRes = adminFileService.uploadFile(loadedUser, file, isPublic);
+
+        return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
+                fileUploadRes.fileSize(), fileUploadRes.fileUrl());
     }
 }

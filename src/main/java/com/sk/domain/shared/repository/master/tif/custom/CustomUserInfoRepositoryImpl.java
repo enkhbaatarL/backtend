@@ -32,24 +32,27 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, List<UserRoleCd> userRoleCds, String companyCd,
+	public Page<UserInfoRes> findUserInfosByConditions(int page, int size, UserRoleCd userRoleCd, String companyCd,
 			String userNm,
 			String emailAddress) {
 
 		Pageable pageable = PageRequest.of(page - 1, size);
 
-
-		// //TODO: 호영: => 조회 API 하나로 => ROLECD로 고객사냐 관리사냐 구분해서 JOIN 조건 추가
-
+		/**
+		 * 관리자는 관리사에서 조회
+		 * 사용자 / 운영자는 고객사에서 조회
+		 */
+		BooleanExpression existsExpression = queryFactory.selectFrom(customerCompany)
+		.where(customerCompany.customerCompanyCd.eq(companyCd)
+				.and(customerCompany.isUsed.isTrue())
+				.and(customerCompany.isDeleted.isFalse())
+				.and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
+		.exists();
 
 		BooleanBuilder builder = new BooleanBuilder();
 		builder.and(userInfo.isDeleted.isFalse())
 				.and(userInfo.companyCd.eq(companyCd))
-				.and(queryFactory.selectFrom(customerCompany)
-						.where(customerCompany.customerCompanyCd.eq(companyCd)
-								.and(customerCompany.isUsed.isTrue())
-								.and(customerCompany.isDeleted.isFalse()))
-						.exists());
+				.and(existsExpression);
 
 		if (userNm != null) {
 			builder.and(userInfo.userNm.lower().contains(userNm.toLowerCase()));
@@ -59,7 +62,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 			builder.and(userInfo.emailAddress.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
 		}
 
-		BooleanExpression isRegistered = user.userLoginId.isNotNull();
+		BooleanExpression isRegistered = user.userLoginId.isNotNull().and(user.isDeleted.isFalse());
 
 		List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(
 				userInfo.imCd,
@@ -80,7 +83,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				userInfo.onDutyNm,
 				isRegistered))
 				.from(userInfo)
-				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.in(userRoleCds)))
+				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd)))
 				.where(builder)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())
@@ -96,7 +99,8 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 	}
 
 	@Override
-	public List<UserInfoWithCompany> findAllUserByInfoIds(List<String> imCds) {
+	public List<UserInfoWithCompany> findAllUserByInfoIds(List<String> imCds, UserRoleCd userRoleCd) {
+		
 		return queryFactory.select(new QUserInfoWithCompany(
 				userInfo.userNm,
 				userInfo.loginId,
@@ -110,17 +114,15 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				.leftJoin(customerCompany)
 				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd)
 						.and(customerCompany.isUsed.isTrue())
-						.and(customerCompany.isDeleted.isFalse()))
-
-						//TODO: 호영: 고객사 OR 관리사 조건 추가
-
+						.and(customerCompany.isDeleted.isFalse())
+						.and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
 				.where(userInfo.imCd.in(imCds)
 						.and(userInfo.isDeleted.isFalse()))
 				.fetch();
 	}
 
 	@Override
-	public Optional<UserInfoWithCompany> findUserByInfoId(String imCd) {
+	public Optional<UserInfoWithCompany> findUserByInfoId(String imCd, UserRoleCd userRoleCd) {
 		return Optional.ofNullable(queryFactory.select(new QUserInfoWithCompany(
 				userInfo.userNm,
 				userInfo.loginId,
@@ -134,7 +136,8 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				.leftJoin(customerCompany)
 				.on(userInfo.companyCd.eq(customerCompany.customerCompanyCd)
 						.and(customerCompany.isUsed.isTrue())
-						.and(customerCompany.isDeleted.isFalse()))
+						.and(customerCompany.isDeleted.isFalse())
+						.and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
 				.where(userInfo.imCd.eq(imCd)
 						.and(userInfo.isDeleted.isFalse()))
 				.fetchOne());

@@ -130,8 +130,5 @@ public class User extends BaseEntity {
         if(dto.isOtherServiceAccessPossible() != null) {
             this.isOtherServiceAccessPossible = dto.isOtherServiceAccessPossible();
         }
-        if(dto.userRoleCd() != null) {
-            this.userRoleCd = dto.userRoleCd();
-        }
     }
 }

@@ -27,6 +27,7 @@ public class AuthController {
 
     private final AuthService authService;
 
+    //TODO: 리프레시 토큰 => 쿠키로
     @ApiOrder(1)
     @Operation(summary = "토큰 갱신 API", description = "Access Token, Refresh Token을 갱신합니다. (Refresh Token Rotation)")
     @PostMapping("/token-generation")

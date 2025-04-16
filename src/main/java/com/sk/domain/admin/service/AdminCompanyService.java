@@ -595,4 +595,12 @@ public class AdminCompanyService {
         return customerCompanyRepository.findAllCompaniesAndDepartments();
     }
 
+    /**
+     * 회사 타입별 모든 고객사, 관리사를 조회한다.
+     *
+     * @return List<CompanyDepartmentRes>
+     */
+    public List<CompanyTypeAndCompanyRes> getCompanyTypeAndCompanies() {
+        return customerCompanyRepository.findCompaniesByTypeWithSubCompanies();
+    }
 }

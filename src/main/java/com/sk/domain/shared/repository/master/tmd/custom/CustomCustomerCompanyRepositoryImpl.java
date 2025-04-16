@@ -5,6 +5,8 @@ import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCo
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -24,11 +27,14 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.company.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.CompanyRes;
+import com.sk.domain.admin.dto.response.company.CompanyTypeAndCompanyRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.admin.dto.response.company.QCompanyRes;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
 import com.sk.domain.shared.enums.ActivationStatus;
+import com.sk.domain.shared.enums.CompanyType;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import lombok.RequiredArgsConstructor;
@@ -224,13 +230,16 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         return ObjectUtils.isNotEmpty(activationSts) ? customerCompany.isUsed.eq(activationSts.isActive()) : null;
     }
 
+    /**
+     * 현재 정책 : 고객사 한정
+     */
     @Override
     public List<CompanyDepartmentRes> findAllCompaniesAndDepartments() {
         // 1. 모든 회사 조회
         List<Tuple> companies = queryFactory
                 .select(customerCompany.customerCompanyNo, customerCompany.customerCompanyCd, customerCompany.customerCompanyNm)
                 .from(customerCompany)
-                .where(customerCompany.isDeleted.isFalse())
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse())) 
                 .orderBy(customerCompany.customerCompanyNm.asc())
                 .fetch();
 
@@ -263,4 +272,30 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public List<CompanyTypeAndCompanyRes> findCompaniesByTypeWithSubCompanies() {
+        List<CustomerCompany> companies = queryFactory
+            .selectFrom(customerCompany)
+            .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse())
+            .orderBy(customerCompany.customerCompanyNo.asc())
+            .fetch();
+
+        Map<CompanyType, List<CompanyTypeAndCompanyRes.Company>> grouped = companies.stream()
+            .collect(Collectors.groupingBy(
+                company -> company.getIsMipManagementCompany() ? CompanyType.MANAGER : CompanyType.CUSTOMER,
+                Collectors.mapping(
+                    company -> new CompanyTypeAndCompanyRes.Company(
+                        company.getCustomerCompanyNo(),
+                        company.getCustomerCompanyCd(),
+                        company.getCustomerCompanyNm()
+                    ),
+                    Collectors.toList()
+                )
+            ));
+
+        return Arrays.stream(CompanyType.values())
+            .map(type -> new CompanyTypeAndCompanyRes(type, grouped.getOrDefault(type, Collections.emptyList())))
+            .filter(res -> !res.companies().isEmpty())
+            .toList();
+    }
 }

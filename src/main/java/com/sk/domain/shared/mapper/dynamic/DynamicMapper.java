@@ -9,5 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 public interface DynamicMapper {
     List<Map<String, Object>> selectDynamic(Map<String, Object> params);
 
-    void insertDynamic(Map<String, String> params);
+    void saveDynamic(Map<String, String> params);
+
+    void saveAllDynamic(Map<String, Object> param);
 }

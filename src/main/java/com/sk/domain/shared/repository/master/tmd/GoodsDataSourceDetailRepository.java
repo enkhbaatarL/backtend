@@ -6,9 +6,7 @@ import java.util.Optional;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
-import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsDataSourceDetail, Integer> {
@@ -18,8 +16,22 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
      *
      */
 
+    @Query(value = """
+            SELECT gdsd
+            FROM GoodsDataSourceDetail gdsd
+            WHERE gdsd.isDeleted = false
+                AND gdsd.goodsDataUseManagementCd = 'backend'
+                AND gdsd.goodsDataSourceNo = :goodsDataSourceNo
+            """)
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
 
+    @Query(value = """
+            SELECT gdsd
+            FROM GoodsDataSourceDetail gdsd
+            WHERE gdsd.isDeleted = false
+            AND gdsd.goodsDataUseManagementCd = 'backend'
+            AND gdsd.goodsData = :goodsData
+            """)
     List<GoodsDataSourceDetail> findByGoodsDataAndIsDeletedFalse(GoodsData goodsData);
 
 }

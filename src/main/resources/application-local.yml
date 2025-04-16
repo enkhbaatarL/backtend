@@ -79,6 +79,8 @@ logging:
   config: classpath:logback-local.xml
   level:
     org.springframework.security: DEBUG
+    org.mybatis: DEBUG
+    com.sk.domain.shared.mapper.dynamic.DynamicMapper: DEBUG
 
 api:
   sample:

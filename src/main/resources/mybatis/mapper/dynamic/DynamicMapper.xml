@@ -19,7 +19,7 @@
         </if>
     </select>
 
-    <insert id="insertDynamic" parameterType="map">
+    <insert id="saveDynamic" parameterType="map">
         INSERT INTO ${tableName} (
             <foreach collection="columns" item="col" separator=", ">
                 #{col}
@@ -29,5 +29,27 @@
                 #{val}
             </foreach>
         )
+    </insert>
+
+    <insert id="saveAllDynamic" parameterType="map">
+        INSERT INTO ${tableName}
+            <trim prefix="(" suffix=")" suffixOverrides=",">
+                <foreach collection="columns" item="col">
+                    ${col},
+                </foreach>
+            </trim>
+        VALUES
+        <foreach collection="values" item="row" separator=",">
+            <trim prefix="(" suffix=")" suffixOverrides=",">
+                <foreach collection="row" item="value">
+                    <if test="value == null">
+                        NULL,
+                    </if>
+                    <if test="value != null">
+                        #{value},
+                    </if>
+                </foreach>
+            </trim>
+        </foreach>
     </insert>
 </mapper>

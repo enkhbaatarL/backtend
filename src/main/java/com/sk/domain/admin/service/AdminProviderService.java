@@ -12,6 +12,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
+import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
 import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
 import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
@@ -19,7 +20,6 @@ import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
-import com.sk.domain.shared.repository.master.tmd.ProviderDataColumnRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -78,12 +78,13 @@ public class AdminProviderService {
      * 데이타 프로바이더를 등록한다.
      *
      * @param ProviderCreateReq 데이타 프로바이더 데이터
-     * @return Provider
+     * @return ProviderCreateRes
      */
     @Transactional
-    public Provider createProvider(ProviderCreateReq dto) {
+    public ProviderCreateRes createProvider(ProviderCreateReq dto) {
 
-        return providerRepository.save(Provider.of(dto.providerNm(), dto.providerId(), dto.providerExpn(), dto.isUsed()));
+        return ProviderCreateRes
+                .of(providerRepository.save(Provider.of(dto.providerNm(), dto.providerId(), dto.providerExpn(), dto.isUsed())));
     }
 
     /**

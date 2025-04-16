@@ -1,5 +1,6 @@
 package com.sk.domain.admin.dto.request;
 
+import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
@@ -23,6 +24,15 @@ public record DynamicDataReq(
             .columns(goodsDataSourceDetail.getTableColumnListNm())
             .tableName(goodsDataSourceDetail.getTargetTableNm())
             .whereClause(goodsDataSourceDetail.getQueryConditionCntt())
+            .build();
+    }
+
+    //TEST 용
+    public static DynamicDataReq of(ComponentInfo componentInfo) {
+        return DynamicDataReq.builder()
+            .columns(componentInfo.getTableColumnListNm())
+            .tableName(componentInfo.getTargetTableNm())
+            .whereClause(componentInfo.getQueryConditionCntt())
             .build();
     }
 }
