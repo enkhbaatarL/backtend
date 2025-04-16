@@ -1,13 +1,10 @@
 package com.sk.domain.admin.controller;
 
 import java.io.IOException;
-import java.net.http.HttpHeaders;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +25,9 @@ import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,31 +52,86 @@ public class TestController {
         return BaseResponseFactory.create(testService.getUserInfo(testReq));
     }
 
+    @ApiResponse(
+        responseCode = "200",
+        description = "토큰 갱신 성공",
+        headers = {
+            @Header(
+                name = "Authorization",
+                description = "새로운 Access Token (형식: Bearer <token>)",
+                schema = @Schema(type = "string")
+            ),
+            @Header(
+                name = "Set-Cookie",
+                description = "새로운 Refresh Token (쿠키: X-Refresh-Token=<token>; Max-Age=604800; Path=/; Secure; HttpOnly;)",
+                schema = @Schema(type = "string")
+            )
+        },
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = BaseResponse.class),
+            examples = @ExampleObject(
+                value = """
+                {
+                    "status": true,
+                    "code": "string",
+                    "message": "string",
+                    "data": {
+                        "accessToken": "string"
+                    }
+                }
+                """
+            )
+        )
+    )
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/user")
-    public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq) {
-        return BaseResponseFactory.create(testService.userLogin(testLoginReq));
+    public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq,
+            HttpServletResponse response) {
+
+        return BaseResponseFactory.create(testService.userLogin(testLoginReq, response));
     }
 
+    @ApiResponse(
+        responseCode = "200",
+        description = "토큰 갱신 성공",
+        headers = {
+            @Header(
+                name = "Authorization",
+                description = "새로운 Access Token (형식: Bearer <token>)",
+                schema = @Schema(type = "string")
+            ),
+            @Header(
+                name = "Set-Cookie",
+                description = "새로운 Refresh Token (쿠키: X-Refresh-Token=<token>; Max-Age=604800; Path=/; Secure; HttpOnly;)",
+                schema = @Schema(type = "string")
+            )
+        },
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = BaseResponse.class),
+            examples = @ExampleObject(
+                value = """
+                {
+                    "status": true,
+                    "code": "string",
+                    "message": "string",
+                    "data": {
+                        "accessToken": "string"
+                    }
+                }
+                """
+            )
+        )
+    )
     @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/admin")
     public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq,
             HttpServletResponse response) {
 
-        TestLoginRes testLoginRes = testService.adminLogin(testLoginReq);
-
-        ResponseCookie responseCookie = ResponseCookie.from("X-Refresh-Token", testLoginRes.refreshToken())
-                .maxAge(Duration.ofDays(1))
-                .path("/")
-                .secure(true)
-                .httpOnly(true)
-                .build();
-
-        response.addHeader("Set-Cookie", responseCookie.toString());
-
-        return BaseResponseFactory.create(testLoginRes);
+        return BaseResponseFactory.create(testService.adminLogin(testLoginReq, response));
     }
 
     @Operation(summary = "토큰 검증", description = "토큰 검증을 진행합니다.")

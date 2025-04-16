@@ -4,21 +4,18 @@ import lombok.Builder;
 
 public record TestLoginRes(
 
-        String accessToken,
-        String refreshToken
+        String accessToken
 
 ) {
 
     @Builder
-    public TestLoginRes(String accessToken, String refreshToken) {
+    public TestLoginRes(String accessToken) {
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
     }
 
-    public static TestLoginRes of(String accessToken, String refreshToken) {
+    public static TestLoginRes of(String accessToken) {
         return TestLoginRes.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .build();
     }
 
