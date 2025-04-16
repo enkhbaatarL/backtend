@@ -44,7 +44,7 @@ public class AdminProviderService {
     public PaginationRes<ProviderRes> getAllProviders(User user, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(user) || RoleUtil.isSubAdmin(user)) {
             // 관리자: 전체 프로바이더를 조회한다.
             return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
         } else if (RoleUtil.isOperator(user)) {
