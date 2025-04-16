@@ -22,6 +22,7 @@ import com.sk.domain.admin.dto.response.user.UserInfoRes;
 import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.CompanyType;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
@@ -53,7 +54,7 @@ public class AdminUserService {
 	public PaginationRes<UserInfoRes> getUserInfos(int page, int size, String companyCd, String userNm,
 			String emailAddress) {
 		return PaginationRes
-				.toRes(userInfoRepository.findUserInfosByConditions(page, size, List.of(UserRoleCd.USER), companyCd, userNm,
+				.toRes(userInfoRepository.findUserInfosByConditions(page, size, UserRoleCd.USER, companyCd, userNm,
 						emailAddress));
 	}
 
@@ -67,10 +68,12 @@ public class AdminUserService {
 	* @param emailAddress 이메일주소
 	* @return PaginationRes<UserInfoRes>
 	*/
-	public PaginationRes<UserInfoRes> getAdminUserInfos(int page, int size, String companyCd, String userNm,
+	public PaginationRes<UserInfoRes> getAdminUserInfos(int page, int size, CompanyType companyType, String companyCd, String userNm,
 			String emailAddress) {
+
+		// 고객사는 운영자, 관리사는 관리자
 		return PaginationRes
-				.toRes(userInfoRepository.findUserInfosByConditions(page, size, List.of(UserRoleCd.ADMIN, UserRoleCd.OPERATOR), companyCd, userNm,
+				.toRes(userInfoRepository.findUserInfosByConditions(page, size, companyType == CompanyType.CUSTOMER ? UserRoleCd.OPERATOR : UserRoleCd.ADMIN, companyCd, userNm,
 						emailAddress));
 	}
 
@@ -82,7 +85,7 @@ public class AdminUserService {
 	 */
 	@Transactional
 	public List<UserRes> saveUserInfo(UserReq.Insert userInfoReqs) {
-		List<UserInfoWithCompany> userInfoWithCompanies = userInfoRepository.findAllUserByInfoIds(userInfoReqs.imCd());
+		List<UserInfoWithCompany> userInfoWithCompanies = userInfoRepository.findAllUserByInfoIds(userInfoReqs.imCd(), UserRoleCd.USER);
 		if (userInfoWithCompanies.size() != userInfoReqs.imCd().size()) {
 			throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "IM코드 목록에 데이터가 존재하지 않습니다.");
 		}
@@ -142,10 +145,9 @@ public class AdminUserService {
 	 * @return UserDetailRes
 	 */
 	public UserDetailRes getUser(Integer userNo) {
-		User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+		return userRepository.findUserByConditions(userNo)
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						"사용자 정보를 찾을 수 없습니다."));
-		return UserDetailRes.of(user);
 	}
 
 	/**
@@ -172,7 +174,7 @@ public class AdminUserService {
 	 */
 	@Transactional
 	public UserRes saveAdminUser(AdminReq.Insert adminReq) {
-		UserInfoWithCompany userInfoWithCompany = userInfoRepository.findUserByInfoId(adminReq.imCd())
+		UserInfoWithCompany userInfoWithCompany = userInfoRepository.findUserByInfoId(adminReq.imCd(), adminReq.userRoleCd())
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						String.format("The data does not exist in the IM code list. imCd: %s", adminReq.imCd())));
 
@@ -221,10 +223,22 @@ public class AdminUserService {
 	 * @param emailAddress      이메일주소
 	 * @return PaginationRes<UserDetailRes>
 	 */
-	public PaginationRes<UserDetailRes> getAdminUsers(int page, int size, Integer customerCompanyNo, String departmentNm, String userNm,
+	public PaginationRes<UserDetailRes> getAdminUsers(int page, int size, UserRoleCd userRoleCd, Integer customerCompanyNo, String departmentNm, String userNm,
 			String emailAddress) {
 
-		return PaginationRes.toRes(userRepository.findUsersByConditions(page, size, List.of(UserRoleCd.ADMIN, UserRoleCd.OPERATOR), customerCompanyNo,
+		if(userRoleCd != null && userRoleCd == UserRoleCd.USER) {
+			throw AppErrorException.of(ResultCode.Error.REQ_INVALID, String.format("UserRoleCd: %s는 사용할 수 없습니다.", UserRoleCd.USER));
+		}
+
+		// 사용자 역할 코드가 없으면 모든 운영자 / 관리자 사용자 조회
+		List<UserRoleCd> userRoleCdsCondition = null;
+		if(userRoleCd == null) {
+			userRoleCdsCondition = List.of(UserRoleCd.ADMIN, UserRoleCd.OPERATOR);
+		} else {
+			userRoleCdsCondition = List.of(userRoleCd);
+		}
+
+		return PaginationRes.toRes(userRepository.findUsersByConditions(page, size, userRoleCdsCondition, customerCompanyNo,
 				departmentNm, userNm, emailAddress));
 	}
 
@@ -241,7 +255,7 @@ public class AdminUserService {
 
 		List<AdminPermission> adminPermissions = adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(userNo);
 
-		return AdminRes.ofDetail(user, adminPermissions);
+		return AdminRes.of(user, adminPermissions);
 	}
 
 	/**

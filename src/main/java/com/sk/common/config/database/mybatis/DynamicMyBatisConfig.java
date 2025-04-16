@@ -16,11 +16,11 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
  * Master를 제외한 다른 테넌트 사용하는 MyBatis 설정
  */
 @Configuration
-@MapperScan(basePackages = "com.sk.domain.shared.mapper", sqlSessionFactoryRef = "dynamicSqlSessionFactory")
+@MapperScan(basePackages = "com.sk.domain.shared.mapper", sqlSessionFactoryRef = "sqlSessionFactory")
 public class DynamicMyBatisConfig {
 
-    @Bean(name = "dynamicSqlSessionFactory")
-    public SqlSessionFactory dynamicSqlSessionFactory(
+    @Bean
+    public SqlSessionFactory sqlSessionFactory(
             @Qualifier("dynamicDataSource") DataSource dynamicDataSource) throws Exception {
         SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
         factoryBean.setDataSource(dynamicDataSource);
@@ -29,14 +29,14 @@ public class DynamicMyBatisConfig {
         return factoryBean.getObject();
     }
 
-    @Bean(name = "dynamicSqlSessionTemplate")
-    public SqlSessionTemplate dynamicSqlSessionTemplate(
-            @Qualifier("dynamicSqlSessionFactory") SqlSessionFactory sqlSessionFactory) {
+    @Bean
+    public SqlSessionTemplate sqlSessionTemplate(
+            SqlSessionFactory sqlSessionFactory) {
         return new SqlSessionTemplate(sqlSessionFactory);
     }
 
-    @Bean
-    public DataSourceTransactionManager dynamicTransactionManager(
+    @Bean(name = "myBatisTransactionManager")
+    public DataSourceTransactionManager myBatisTransactionManager(
             @Qualifier("dynamicDataSource") DataSource dynamicDataSource) {
         return new DataSourceTransactionManager(dynamicDataSource);
     }

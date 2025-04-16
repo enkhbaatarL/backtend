@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.querydsl.core.annotations.QueryProjection;
 
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -18,7 +19,10 @@ public record CompanyDepartmentRes(
         @Schema(description = "고객회사명", example = "테스트 고객사")
         String companyNm,
 
-        @Schema(description = "부서명", example = "[\"개발팀\", \"기획팀\"]")
+        @ArraySchema(
+            schema = @Schema(type = "string", example = "개발팀"),
+            arraySchema = @Schema(description = "부서명 목록")
+        )
         List<String> departmentNm) {
 
     @Builder
