@@ -1,11 +1,11 @@
 package com.sk.common.config.security.saml;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
 
-import org.apache.hc.core5.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
@@ -13,31 +13,30 @@ import org.springframework.security.saml2.provider.service.authentication.Saml2A
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sk.common.utils.JwtUtil;
 import com.sk.domain.shared.entity.master.tlm.UserAccessLog;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tlm.UserAccessLogRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-//TODO: 호영:Validate Service로 분리
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class CustomSamlUserAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-	private final JwtUtil jwtUtil;
 	private final UserRepository userRepository;
 	private final UserAccessLogRepository userAccessLogRepository;
+	private final StringRedisTemplate redisTemplate;
+
+	private final int LOGIN_SESSION_EXPIRE_TIME = 60 * 10; //로그인 세션 유지시간 10분
 
 	@Override
+	@Transactional
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException {
 
@@ -49,25 +48,23 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 		// SAML 속성에서 사용자 정보 추출
 		String loginId = principal.getName();
 
-		User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(loginId, UserRoleCd.USER)
-				.orElseThrow(() -> new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId)));
+		List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(loginId);
+		if (users.isEmpty()) {
+			String errorUrl = "http://localhost:3000/error?error=SAML_USER_NOT_FOUND";
+			response.sendRedirect(errorUrl);
+			throw new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId));
+		}
 
-		// JWT 토큰 생성
-		String accessToken = jwtUtil.generateAccessToken(user);
-		String refreshToken = jwtUtil.generateRefreshToken(user);
-
-		// 토큰 응답 생성
-		Map<String, Object> tokenResponse = new HashMap<>();
-		tokenResponse.put("access_token", accessToken);
-		tokenResponse.put("refresh_token", refreshToken);
-		tokenResponse.put("token_type", "Bearer");
-
-		UserAccessLog userAccessLog = UserAccessLog.of(user.getUserLoginId());
+		UserAccessLog userAccessLog = UserAccessLog.of(principal.getName());
 		userAccessLogRepository.save(userAccessLog);
 
-		// JSON 응답 전송
-		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-		response.setStatus(HttpStatus.SC_OK);
-		response.getWriter().write(new ObjectMapper().writeValueAsString(tokenResponse));
+
+		String sessionId = UUID.randomUUID().toString();
+
+		redisTemplate.opsForValue().set(sessionId, principal.getName(), Duration.ofSeconds(LOGIN_SESSION_EXPIRE_TIME));
+
+		// // 프론트엔드 콜백 URL로 리다이렉트, 액세스 토큰을 쿼리 파라미터로 전달
+		String callbackUrl = "http://localhost:3000/callback?sessionId=" + sessionId;
+		response.sendRedirect(callbackUrl);
 	}
 }

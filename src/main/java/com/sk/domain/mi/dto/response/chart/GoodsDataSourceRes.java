@@ -1,6 +1,5 @@
-package com.sk.domain.mi.dto.response;
+package com.sk.domain.mi.dto.response.chart;
 
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;

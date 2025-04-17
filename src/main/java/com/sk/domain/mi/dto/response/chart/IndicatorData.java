@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.chart2;
+package com.sk.domain.mi.dto.response.chart;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

@@ -2,6 +2,7 @@ package com.sk.domain.mi.conversion;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.conversion.dto.ConversionResult;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
@@ -74,7 +75,7 @@ public class UnitConversionService {
      * @param windowSize       윈도우사이즈
      * @return List<BigDecimal>
      */
-    public List<BigDecimal> convertTimeSeriesForMA(List<BigDecimal> timeSeriesValues, int windowSize) {
+    public List<BigDecimal> convertTimeSeriesToMovingAverage(List<BigDecimal> timeSeriesValues, int windowSize) {
         return unitConversionContext.convertTimeSeries(FormulaService.MOVING_AVERAGE, timeSeriesValues, windowSize);
     }
 
@@ -102,7 +103,7 @@ public class UnitConversionService {
 
     }
 
-    public List<? extends ConversionResult> convertTimeSeriesForBB(List<BigDecimal> timeSeriesValues, int windowSize) {
+    public List<BollingerBandResult> convertTimeSeriesToBollingerBands(List<BigDecimal> timeSeriesValues, int windowSize) {
         return unitConversionContext.convertTimeSeriesResult(FormulaService.BOLLINGER_BANDS, timeSeriesValues, windowSize);
     }
 

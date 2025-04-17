@@ -22,17 +22,21 @@ public record CompanyProviderMapRes(
     @Schema(description = "고객회사 명", example = "sk이노베이션")
     String companyNm,
 
+    @Schema(description = "사용여부", example = "true")
+    Boolean isUsed,
+
     @Schema(description = "감사 정보")
     AuditInfo auditInfo
 
 ) {
 
     @Builder
-    public CompanyProviderMapRes(Integer providerNo, String providerNm, Integer companyNo, String companyNm, AuditInfo auditInfo) {
+    public CompanyProviderMapRes(Integer providerNo, String providerNm, Integer companyNo, String companyNm, Boolean isUsed, AuditInfo auditInfo) {
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.companyNo = companyNo;
         this.companyNm = companyNm;
+        this.isUsed = isUsed;
         this.auditInfo = auditInfo;
     }
 
@@ -42,6 +46,7 @@ public record CompanyProviderMapRes(
             .providerNm(entity.getProvider().getProviderNm())
             .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
+            .isUsed(entity.getIsUsed())
             .auditInfo(AuditInfo.ofDetail(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
@@ -63,6 +68,7 @@ public record CompanyProviderMapRes(
             .providerNm(entity.getProvider().getProviderNm())
             .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
+            .isUsed(entity.getIsUsed())
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),

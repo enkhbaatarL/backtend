@@ -17,6 +17,9 @@
         <if test="whereClause != null and whereClause != ''">
             WHERE ${whereClause}
         </if>
+        <if test="additionalWhereClause != null and additionalWhereClause != ''">
+            AND ${additionalWhereClause}
+        </if>
     </select>
 
     <insert id="saveDynamic" parameterType="map">
@@ -51,5 +54,13 @@
                 </foreach>
             </trim>
         </foreach>
+        ON DUPLICATE KEY UPDATE
+        <trim suffixOverrides=",">
+            <foreach collection="columns" item="col" index="index">
+                <if test="col != 'id'"> <!-- 기본 키(id)를 제외하고 업데이트 -->
+                    ${col} = VALUES(${col}),
+                </if>
+            </foreach>
+        </trim>
     </insert>
 </mapper>

@@ -31,6 +31,7 @@ public class MybatisDynamicQueryService {
         String tableName = dynamicDataReq.tableName();
         String columns = dynamicDataReq.columns();
         String whereClause = dynamicDataReq.whereClause();
+        String additionalWhereClause = dynamicDataReq.additionalWhereClause();
 
         // 컬럼 명에서 특수문자 검사 ('*' 미허용)
         if (columns != null) {
@@ -55,6 +56,7 @@ public class MybatisDynamicQueryService {
         params.put("columns", columns);
         params.put("tableName", tableName);
         params.put("whereClause", whereClause);
+        params.put("additionalWhereClause", additionalWhereClause);
         return dynamicMapper.selectDynamic(params);
     }
 }
