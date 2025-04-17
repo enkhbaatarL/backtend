@@ -108,16 +108,20 @@ public class MiDataDetailController {
     @ApiOrder(6)
     @Parameters({
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-        @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호")
+        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
+        @Parameter(name = "startDate", description = "조회 시작일"),
+        @Parameter(name = "endDate", description = "조회 종료일")
     })
     @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
     public BaseResponse<ChartBundleRes> getGoodsDataSourceChart(
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
+        @RequestParam(value = "startDate") String startDate,
+        @RequestParam(value = "endDate") String endDate
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceChart(goodsDataNo, goodsDataSourceNo));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceChart(goodsDataNo, goodsDataSourceNo, startDate, endDate));
     }
 
 }

@@ -12,7 +12,7 @@ public record CompanyReq(
 
 ) {
 
-    @Schema(name = "companyInsert")
+    @Schema(name = "CompanyReq.Insert")
     public record Insert(
 
         @NotEmpty
@@ -34,7 +34,7 @@ public record CompanyReq(
     ) {
     }
 
-    @Schema(name = "companyUpdate")
+    @Schema(name = "CompanyReq.Update")
     public record Update(
 
         @Schema(description = "활성화 여부", example = "true")
@@ -53,7 +53,7 @@ public record CompanyReq(
     ) {
     }
 
-    @Schema(name = "ownerCompanyInsert")
+    @Schema(name = "CompanyReq.OwnerInsert")
     public record OwnerInsert(
 
         @NotEmpty
