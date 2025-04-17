@@ -38,9 +38,9 @@ public class GoodsDataInqueryUserId implements Serializable {
     private LocalDateTime inquerytDtm;
 
     @Builder
-    public GoodsDataInqueryUserId(GoodsData goodsData, String userLoginId, LocalDateTime inquerytDtm) {
+    public GoodsDataInqueryUserId(GoodsData goodsData, String userLoginId) {
         this.goodsData = goodsData;
         this.userLoginId = userLoginId;
-        this.inquerytDtm = inquerytDtm;
+        this.inquerytDtm = LocalDateTime.now();
     }
 }

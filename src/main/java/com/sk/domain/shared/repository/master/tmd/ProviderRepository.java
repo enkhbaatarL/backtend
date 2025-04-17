@@ -26,6 +26,8 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
 
     Optional<Provider> findByProviderNoAndIsDeletedFalseAndIsUsedTrue(int providerNo);
 
+    Optional<Provider> findByProviderIdAndIsDeletedFalse(String providerId);
+
     // 관리자는 전체 프로바이더 목록을 조회한다.
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderRes(
