@@ -65,7 +65,7 @@ public class ChartBundleFactory {
             data.put(dbColName, columnValues);
         }
 
-        return new ChartData(isCandleChartPossible ? ChartType.CANDLE, ChartType.METRIC, columnNamesInOrder, schema, data);
+        return new ChartData(isCandleChartPossible ? ChartType.CANDLE.name() : ChartType.METRIC.name(), columnNamesInOrder, schema, data);
     }
 
     /**
