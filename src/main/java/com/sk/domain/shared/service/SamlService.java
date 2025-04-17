@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -18,18 +19,24 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class SamlService {
 
-    private final StringRedisTemplate redisTemplate;
-    private final UserRepository userRepository;
-    private final AuthService authService;
+	private final UserRepository userRepository;
+	private final StringRedisTemplate redisTemplate;
+	private final AuthService authService;
 
-    public Boolean callback(SamlCallbackReq samlCallbackReq, HttpServletResponse response) {
-        String sessionId = samlCallbackReq.sessionId();
+	/**
+	 * SAML 콜백 API
+	 * 
+	 * @param samlCallbackReq
+	 * @param response
+	 * @return
+	 */
+	@Transactional
+	public Boolean samlCallback(String sessionId, HttpServletResponse response) {
         String userLoginId = redisTemplate.opsForValue().get(sessionId);
-        
-        redisTemplate.delete(sessionId);
         
         if (userLoginId == null) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("SAML 사용자 인증 실패: %s", sessionId));
@@ -47,6 +54,8 @@ public class SamlService {
             .orElse(users.get(0));
 
         authService.generateToken(user, response);
+
+        redisTemplate.delete(sessionId);
 
         return true;
     }

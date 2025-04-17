@@ -2,20 +2,14 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
+import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -78,6 +72,11 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Column(name = "gds_data_use_mnagt_cd", nullable = false, length = 10)
     @Comment("상품데이터사용주체코드")
     private String goodsDataUseManagementCd;
+
+    @Column(name = "cndlc_psbl_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("캔들차트가능여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isCandleChartPossible;
 
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,

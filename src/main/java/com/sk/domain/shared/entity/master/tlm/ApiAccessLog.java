@@ -2,6 +2,7 @@ package com.sk.domain.shared.entity.master.tlm;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.shared.enums.Role;
 import org.hibernate.annotations.Comment;
 import org.springframework.data.annotation.CreatedBy;
 
@@ -52,10 +53,9 @@ public class ApiAccessLog extends BaseEntity {
     @Comment("접속아이피주소")
     private String accessIpAddress;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "usr_role_cd", length = 10)
     @Comment("사용자역할코드")
-    private UserRoleCd userRoleCd;
+    private String userRoleCd;
 
     @Lob
     @Column(name = "req_data_cntt", columnDefinition = "text")
@@ -71,7 +71,7 @@ public class ApiAccessLog extends BaseEntity {
     public ApiAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
                         Integer apiAccessSn, Boolean isDeleted, String userLoginId, String apiEndpointUrl,
                         String httpMethodNm, String requestDataCntt, String errorMessageCntt, String accessIpAddress,
-                        UserRoleCd userRoleCd) {
+                        String userRoleCd) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.apiAccessSn = apiAccessSn;
         this.userLoginId = userLoginId;
@@ -83,7 +83,7 @@ public class ApiAccessLog extends BaseEntity {
         this.errorMessageCntt = errorMessageCntt;
     }
 
-    public static ApiAccessLog of(String uri, String httpMethodNm, String body, String errorMessageCntt, String accessIpAddress, UserRoleCd userRoleCd) {
+    public static ApiAccessLog of(String uri, String httpMethodNm, String body, String errorMessageCntt, String accessIpAddress, Role role) {
         return ApiAccessLog.builder()
             .apiEndpointUrl(uri)
             .httpMethodNm(httpMethodNm)
@@ -91,7 +91,7 @@ public class ApiAccessLog extends BaseEntity {
             .requestDataCntt(body)
             .errorMessageCntt(errorMessageCntt)
             .accessIpAddress(accessIpAddress)
-            .userRoleCd(userRoleCd)
+            .userRoleCd(role.getCode())
             .build();
     }
 

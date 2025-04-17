@@ -3,8 +3,10 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
+import org.antlr.v4.runtime.atn.SemanticContext.AND;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,9 +32,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             FROM GoodsData gd
             LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
             WHERE gd.isDeleted = false
-              AND gd.goods.provider.providerNo = :providerNo
-              AND gd.goods.goodsNo = :goodsNo
-              AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+                AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             ORDER BY gd.goodsDataNm ASC
             """, countQuery = """
@@ -40,9 +42,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             FROM GoodsData gd
             LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
             WHERE gd.isDeleted = false
-              AND gd.goods.provider.providerNo = :providerNo
-              AND gd.goods.goodsNo = :goodsNo
-              AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+                AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
     Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
@@ -60,9 +62,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
             LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
             WHERE gd.isDeleted = false
-              AND gd.goods.provider.providerNo = :providerNo
-              AND gd.goods.goodsNo = :goodsNo
-              AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+                AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             ORDER BY gd.goodsDataNm ASC
             """, countQuery = """
@@ -70,10 +72,10 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             FROM GoodsData gd
             LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
             WHERE gd.isDeleted = false
-              AND gd.goods.provider.providerNo = :providerNo
-              AND gd.goods.goodsNo = :goodsNo
-              AND gd.customerCompany.customerCompanyNo = :customerCompanyNo
-              AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+                AND gd.customerCompany.customerCompanyNo = :customerCompanyNo
+                AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
     Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
@@ -87,9 +89,15 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             )
             FROM GoodsData gd
             WHERE gd.isDeleted = false
-              AND gd.goods.provider.providerNo = :providerNo
-              AND gd.goods.goodsNo = :goodsNo
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
             ORDER BY gd.goodsDataNm ASC
+                        """, countQuery = """
+            SELECT COUNT(gd.goodsDataNo)
+            FROM GoodsData gd
+            WHERE gd.isDeleted = false
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
                         """)
     List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
@@ -103,12 +111,40 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
             LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
             WHERE gd.isDeleted = false
-              AND gd.goods.provider.providerNo = :providerNo
-              AND gd.goods.goodsNo = :goodsNo
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
             ORDER BY gd.goodsDataNm ASC
-                        """)
+                        """, countQuery = """
+            SELECT COUNT(DISTINCT gd.goodsDataNo)
+            FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+            WHERE gd.isDeleted = false
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+              """)
     List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
             @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+
+    @Query(value = """
+                    SELECT gd
+            FROM GoodsData
+            gd
+                    WHERE gd.isDeleted=false
+            AND gd.goods.provider.providerNo=:
+            providerNo AND gd.goods.provider.isDeleted=false
+            AND gd.goods.goodsNo=:
+            goodsNo AND gd.goods.isDeleted=false
+            AND gd.goodsDataNo=:goodsDataNo""")
+
+    Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+            @Param("goodsDataNo") int goodsDataNo);
+
+    @EntityGraph(attributePaths = { "goods", "provider" })
+    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
+
+    // List<GoodsData> find
 
     @Query(value = """
             SELECT gd
@@ -119,10 +155,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             AND gd.goods.goodsNo = :goodsNo
             AND gd.goods.isDeleted = false
             AND gd.goodsDataNo = :goodsDataNo
-                        """)
-    Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
-            @Param("goodsDataNo") int goodsDataNo);
+                        """, countQuery = """
 
-    Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
-
+            """, nativeQuery = true)
+    List<GoodsData> findAllByCustomerCompanyNo(Integer customerCompanyNo);
 }

@@ -45,7 +45,7 @@ public class CompanyValidator {
         Optional<CustomerCompany> entity = customerCompanyRepository.findByCustomerCompanyCdAndIsMipManagementCompanyFalseAndIsDeletedFalse(companyCd);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                "It already exists in the [group-company]. companyCd: %s".formatted(companyCd)));
+                "It already exists in the [company]. companyCd: %s".formatted(companyCd)));
         } else {
             return ValidationResult.success(null);
         }
@@ -55,7 +55,7 @@ public class CompanyValidator {
         Optional<CustomerCompany> entity = customerCompanyRepository.findByCustomerCompanyCdAndIsMipManagementCompanyTrueAndIsDeletedFalse(companyCd);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                "It already exists in the [group-company]. companyCd: %s".formatted(companyCd)));
+                "It already exists in the [company]. companyCd: %s".formatted(companyCd)));
         } else {
             return ValidationResult.success(null);
         }

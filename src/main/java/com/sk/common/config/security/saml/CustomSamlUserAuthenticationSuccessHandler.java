@@ -33,7 +33,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 	private final UserAccessLogRepository userAccessLogRepository;
 	private final StringRedisTemplate redisTemplate;
 
-	private final int LOGIN_SESSION_EXPIRE_TIME = 60 * 1; //로그인 세션 유지시간 1분
+	private final int LOGIN_SESSION_EXPIRE_TIME = 60 * 10; //로그인 세션 유지시간 10분
 
 	@Override
 	@Transactional
@@ -63,11 +63,8 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 		redisTemplate.opsForValue().set(sessionId, principal.getName(), Duration.ofSeconds(LOGIN_SESSION_EXPIRE_TIME));
 
-		log.info("SAML 사용자 인증 성공 후 리다이렉트 시작");
 		// // 프론트엔드 콜백 URL로 리다이렉트, 액세스 토큰을 쿼리 파라미터로 전달
 		String callbackUrl = "http://localhost:3000/callback?sessionId=" + sessionId;
 		response.sendRedirect(callbackUrl);
-
-		log.info("SAML 사용자 인증 성공 후 리다이렉트 {}", callbackUrl);
 	}
 }

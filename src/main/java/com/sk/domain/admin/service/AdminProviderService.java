@@ -18,9 +18,10 @@ import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
 import com.sk.domain.admin.dto.response.provider.ProviderRes;
 import com.sk.domain.shared.entity.master.tmd.Provider;
-import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,15 +42,15 @@ public class AdminProviderService {
      * @param size 조회할 요소 사이즈 (min 1)
      * @return PaginationRes<ProviderRes>
      */
-    public PaginationRes<ProviderRes> getAllProviders(User user, int page, int size) {
+    public PaginationRes<ProviderRes> getAllProviders(int companyNo, Role role, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role)) {
             // 관리자: 전체 프로바이더를 조회한다.
             return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 고객사에 등록 된 프로바이더만 조회한다.
-            return PaginationRes.toRes(providerRepository.findAllForOperator(user.getCustomerCompany().getCustomerCompanyNo(), pageable));
+            return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
         }
 
         throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
@@ -61,14 +62,14 @@ public class AdminProviderService {
      * @param user 사용자 정보
      * @return List<ProviderNameRes>
      */
-    public List<ProviderNameRes> getAllProviderNm(User user) {
+    public List<ProviderNameRes> getAllProviderNm(int companyNo, Role role) {
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 전체 프로바이더명을 조회한다.
             return providerRepository.findProviderNmForAdmin();
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자 고객사에 등록 된 프로바이더명만 조회한다.
-            return providerRepository.findProviderNmForOperator(user.getCustomerCompany().getCustomerCompanyNo());
+            return providerRepository.findProviderNmForOperator(companyNo);
         }
 
         throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
@@ -96,19 +97,19 @@ public class AdminProviderService {
      * @param providerNo 데이타 프로바이더 번호
      * @return ProviderDetailRes
      */
-    public ProviderDetailRes getProvider(User user, int providerNo) {
+    public ProviderDetailRes getProvider(int companyNo, Role role, int providerNo) {
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더를 조회한다.
             return providerRepository.findProviderDetailByProviderNo(providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 프로바이더 등록 유무 체크 후 조회한다.
 
             // 프로바이더 등록 유무 체크
             customerCompanyProviderMappingRepository
-                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 

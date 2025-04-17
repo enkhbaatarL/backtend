@@ -4,33 +4,25 @@ import java.net.URI;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.shared.dto.request.saml.SamlCallbackReq;
 import com.sk.domain.shared.service.SamlService;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "00. SAML API", description = "SAML API 입니다.")
+// @Tag(name = "00. SAML API", description = "SAML API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/login/saml2")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SamlController {
 
     private final SamlService samlService;
@@ -42,6 +34,14 @@ public class SamlController {
             .build();
     }
 
+    @GetMapping("/saml-callback")
+    public BaseResponse<Boolean> samlCallback(
+        @RequestParam(value = "sessionId", required = true) String sessionId,
+        HttpServletResponse response
+    ) {
+        return BaseResponseFactory.create(samlService.samlCallback(sessionId, response));
+    }
+
     /**
      * 정책 변경에 따른 미사용
     @GetMapping("/admin")
@@ -51,12 +51,4 @@ public class SamlController {
             .build();
     }
     */
-    
-    @ApiOrder(1)
-    @Operation(summary = "SAML 콜백 API", description = "SAML 콜백 API로 JWT 토큰을 발급합니다.")
-    @ApiResponse(responseCode = "200", description = "JWT 토큰 발급 성공")
-    @PostMapping("/callback")
-    public BaseResponse<Boolean> callback(@RequestBody @Valid SamlCallbackReq samlCallbackReq, HttpServletResponse response) {
-        return BaseResponseFactory.create(samlService.callback(samlCallbackReq, response));
-    }
 }

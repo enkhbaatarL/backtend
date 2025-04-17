@@ -167,7 +167,7 @@ public class AdminBulletinBoardService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
-        List<BulletinBoardCompanyDto> target = bulletinBoardCustomerCompanyMappingRepository.findCustomCompanyByBulletinBoard(bulletinBoard);
+        List<BulletinBoardCompanyDto> target = bulletinBoardCustomerCompanyMappingRepository.findCustomerCompanyByBulletinBoard(bulletinBoard);
 
         List<BulletinBoardFileDto> fileInfo = uploadedFileRepository
                 .findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())

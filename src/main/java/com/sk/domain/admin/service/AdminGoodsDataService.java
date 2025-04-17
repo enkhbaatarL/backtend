@@ -43,10 +43,12 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ComponentInfoRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
@@ -68,6 +70,7 @@ public class AdminGoodsDataService {
     private final GoodsDataRepository goodsDataRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final ComponentInfoRepository componentInfoRepository;
@@ -88,17 +91,17 @@ public class AdminGoodsDataService {
     * @param goodsNo 상품 번호
     * @return PaginationRes<GoodsDataRes>
     */
-    public PaginationRes<GoodsDataRes> getAllGoodsData(User user, int page, int size, String keyword, int providerNo, int goodsNo) {
+    public PaginationRes<GoodsDataRes> getAllGoodsData(int companyNo, Role role, int page, int size, String keyword, int providerNo, int goodsNo) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타 목록 조회
             return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 목록 조회
-            return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(
-                    user.getCustomerCompany().getCustomerCompanyNo(), providerNo, goodsNo, keyword, pageable));
+            return PaginationRes
+                    .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
         }
 
         throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
@@ -140,15 +143,14 @@ public class AdminGoodsDataService {
     * @param goodsNo 상품 번호
     * @return List<GoodsDataNameRes>
     */
-    public List<GoodsDataNameRes> getAllGoodsDataNm(User user, int providerNo, int goodsNo) {
+    public List<GoodsDataNameRes> getAllGoodsDataNm(int companyNo, Role role, int providerNo, int goodsNo) {
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타명 목록 조회
             return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타명 목록 조회
-            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(user.getCustomerCompany().getCustomerCompanyNo(),
-                    providerNo, goodsNo);
+            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
         }
 
         throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
@@ -163,9 +165,9 @@ public class AdminGoodsDataService {
     * @param goodsDataNo 상품 데이타 번호
     * @return GoodsDataDetailRes
     */
-    public GoodsDataDetailRes getGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo) {
+    public GoodsDataDetailRes getGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo) {
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타 조회
             GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
                     .orElseThrow(
@@ -180,17 +182,17 @@ public class AdminGoodsDataService {
                     .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
             return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 조회
 
             // 프로바이더 등록 유무 체크
             customerCompanyProviderMappingRepository
-                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
             // 상품 권한 유무 체크
-            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
@@ -222,9 +224,9 @@ public class AdminGoodsDataService {
     * @return
     */
     @Transactional
-    public void createGoodsData(User user, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
+    public void createGoodsData(int companyNo, Role role, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
 
-        if (RoleUtil.isAdmin(user)) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 상품이 퍼블릭일 경우 등록 가능
             Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
                     .orElseThrow(
@@ -237,14 +239,14 @@ public class AdminGoodsDataService {
 
             internalCreateGoodsData(goods, null, dto);
 
-        } else if (RoleUtil.isOperator(user)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 상품이 프라이빗일 경우 등록 가능
             customerCompanyProviderMappingRepository
-                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
@@ -257,7 +259,11 @@ public class AdminGoodsDataService {
                 throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
             }
 
-            internalCreateGoodsData(goods, user.getCustomerCompany(), dto);
+            CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+
+            internalCreateGoodsData(goods, customerCompany, dto);
         }
     }
 
@@ -324,8 +330,8 @@ public class AdminGoodsDataService {
     * @return
     */
     @Transactional
-    public void updateGoodsData(User user, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
-        if (RoleUtil.isAdmin(user)) {
+    public void updateGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
+        if (RoleUtil.isAdmin(role)) {
             // 관리자: 상품이 퍼블릭일 경우 수정 가능
             Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
                     .orElseThrow(
@@ -343,14 +349,14 @@ public class AdminGoodsDataService {
             internalUpdateGoodsData(goodsData, dto);
         }
 
-        if (RoleUtil.isOperator(user)) {
+        if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
             // 운영자: 상품이 프라이빗일 경우 수정 가능
             customerCompanyProviderMappingRepository
-                    .findByCustomerCompanyAndId_ProviderNoAndIsDeletedFalse(user.getCustomerCompany(), providerNo)
+                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-            customerCompanyGoodsMappingRepository.findByCustomerCompanyAndId_GoodsNoAndIsDeletedFalse(user.getCustomerCompany(), goodsNo)
+            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
@@ -488,14 +494,16 @@ public class AdminGoodsDataService {
     /**
      * 정형 데이타 파일 업로드 (엑셀 파일 업로드와 함께 엑셀 파싱하여 DB에 데이터 저장)
      * 
-     * @param user
+     * @param userNo
+     * @param companyCd
+     * @param role
      * @param file
      * @param isPublic
      * @param structuredDataFileReq
      * @return
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public GoodsDataFileUploadRes uploadStructuredDataFile(User user, MultipartFile file, boolean isPublic,
+    public GoodsDataFileUploadRes uploadStructuredDataFile(int userNo, String companyCd, Role role, MultipartFile file, boolean isPublic,
             StructuredDataFileReq structuredDataFileReq) throws IOException {
 
         // TODO: JPA, MyBatis 트랜잭션 통합 관리 필요(XA 도입 또는 데이터 소스 분리 등 방법 필요)
@@ -512,48 +520,43 @@ public class AdminGoodsDataService {
                         String.format("Component information could not be found. componentTypeId: %s",
                                 structuredDataFileReq.componentTypeId())));
 
-
         // User 조회 (외부 트랜잭션에서 가져온 user는 새로 만든 트랜잭션의 영속성 컨텍스트로 관리하지 않아서 Lazy 조회 불가)
         // User loadedUser = jpaTxTemplate.execute(status -> {
-        //     return userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
-        //             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
+        // return userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
+        // .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
         // });
 
         // JPA / Mybatis 둘 중 하나라도 문제 생긴 경우 전체 롤백
         // try {
-        //     // 2. MyBatis: 데이터 업로드
-        //     myBatisTxTemplate.execute(status -> {
-        //         try {
-        //             excelService.uploadStructuredData(file, componentInfo);
-        //             return true;
-        //         } catch (IOException e) {
-        //             throw new RuntimeException("MyBatis upload failed", e);
-        //         }
-        //     });
-
-        //     // 3. JPA + S3: 파일 업로드
-        //     FileUploadRes fileUploadRes = jpaTxTemplate.execute(status -> {
-        //         try {
-        //             return adminFileService.uploadFile(loadedUser, file, isPublic);
-        //         } catch (Exception e) {
-        //             throw new RuntimeException("JPA/S3 upload failed", e);
-        //         }
-        //     });
-
-        //     return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(),
-        //             fileUploadRes.fileNm(), fileUploadRes.fileSize(), fileUploadRes.fileUrl());
-        // } catch (Exception e) {
-        //     log.error("Upload failed: {}", e.getMessage(), e);
-        //     throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        // // 2. MyBatis: 데이터 업로드
+        // myBatisTxTemplate.execute(status -> {
+        // try {
+        // excelService.uploadStructuredData(file, componentInfo);
+        // return true;
+        // } catch (IOException e) {
+        // throw new RuntimeException("MyBatis upload failed", e);
         // }
+        // });
 
-        // User 조회 (외부 트랜잭션에서 가져온 user는 새로 만든 트랜잭션의 영속성 컨텍스트로 관리하지 않아서 Lazy 조회 불가)
-        User loadedUser = userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
+        // // 3. JPA + S3: 파일 업로드
+        // FileUploadRes fileUploadRes = jpaTxTemplate.execute(status -> {
+        // try {
+        // return adminFileService.uploadFile(loadedUser, file, isPublic);
+        // } catch (Exception e) {
+        // throw new RuntimeException("JPA/S3 upload failed", e);
+        // }
+        // });
+
+        // return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(),
+        // fileUploadRes.fileNm(), fileUploadRes.fileSize(), fileUploadRes.fileUrl());
+        // } catch (Exception e) {
+        // log.error("Upload failed: {}", e.getMessage(), e);
+        // throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        // }
 
         excelService.uploadStructuredData(file, componentInfo);
 
-        FileUploadRes fileUploadRes = adminFileService.uploadFile(loadedUser, file, isPublic);
+        FileUploadRes fileUploadRes = adminFileService.uploadFile(companyCd, role, file, isPublic);
 
         return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
                 fileUploadRes.fileSize(), fileUploadRes.fileUrl());

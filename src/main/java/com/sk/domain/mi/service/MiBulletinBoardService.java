@@ -17,6 +17,7 @@ import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -44,17 +45,8 @@ public class MiBulletinBoardService {
      * @param keyword
      * @return PaginationRes<MiNoticeRes>
      */
-    public PaginationRes<MiNoticeRes> getAllNotices(User user, int page, int size, int customerCompanyNo, String category, String keyword) {
+    public PaginationRes<MiNoticeRes> getAllNotices(int companyNo, Role role, int page, int size, String category, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
-
-        int companyNo = 0;
-        if (RoleUtil.isAdmin(user)) {
-            companyNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(user)) {
-            companyNo = user.getCustomerCompany().getCustomerCompanyNo();
-        } else {
-            throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
-        }
 
         return PaginationRes.toRes(bulletinBoardRepository.findAllNoticeForService(companyNo, category, keyword, pageable));
     }
@@ -67,15 +59,7 @@ public class MiBulletinBoardService {
     * @param noticeNo 공지사항 번호
     * @return MiNoticeDetailRes
     */
-    public MiNoticeDetailRes getNotice(User user, int customerCompanyNo, int noticeNo) {
-        int companyNo = 0;
-        if (RoleUtil.isAdmin(user)) {
-            companyNo = customerCompanyNo;
-        } else if (RoleUtil.isUser(user)) {
-            companyNo = user.getCustomerCompany().getCustomerCompanyNo();
-        } else {
-            throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
-        }
+    public MiNoticeDetailRes getNotice(int companyNo, int noticeNo) {
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
                 .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")

@@ -42,6 +42,7 @@ public class AuthService {
 	 * @param refreshToken
 	 * @return
 	 */
+	@Transactional
 	public Boolean generateToken(String authHeader, String refreshToken, HttpServletResponse response) {
 		String accessToken = authHeader.replace("Bearer ", "");
 

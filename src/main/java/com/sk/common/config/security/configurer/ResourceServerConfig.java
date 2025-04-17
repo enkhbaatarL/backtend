@@ -17,6 +17,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -36,10 +38,12 @@ public class ResourceServerConfig {
         if (securityEnabled) {
 
             http
+                .cors(withDefaults())
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/api/v1/auth/**").permitAll()
                     .requestMatchers("/api/v1/test/login/**").permitAll()
                     .anyRequest().authenticated()
                 )
@@ -58,6 +62,7 @@ public class ResourceServerConfig {
         } else {
 
             return http
+                .cors(withDefaults())
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .csrf(AbstractHttpConfigurer::disable)

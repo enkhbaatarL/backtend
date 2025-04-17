@@ -14,6 +14,8 @@ import com.sk.common.config.security.saml.CustomSamlAuthenticationFailureHandler
 
 import lombok.RequiredArgsConstructor;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @RequiredArgsConstructor
 public class SamlAdminServiceProviderConfig {
@@ -26,17 +28,18 @@ public class SamlAdminServiceProviderConfig {
     SecurityFilterChain samlAdminSecurityFilterChain(HttpSecurity http) throws Exception {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http
-                .securityMatcher("/login/saml2/admin", "/login/saml2/sso/mi-admin") // SAML 로그인
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login/saml2/admin").authenticated()
-                        .anyRequest().permitAll())
-                .saml2Login(saml2 -> saml2
-                        .authenticationManager(new ProviderManager(authenticationProvider))
-                        .loginPage("/saml2/authenticate?registrationId=mi-admin")
-                        .successHandler(customSamlAdminAuthenticationSuccessHandler)
-                        .failureHandler(customSamlAuthenticationFailureHandler))
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            .cors(withDefaults())
+            .securityMatcher("/login/saml2/admin", "/login/saml2/sso/mi-admin") // SAML 로그인
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/login/saml2/admin").authenticated()
+                .anyRequest().permitAll())
+            .saml2Login(saml2 -> saml2
+                .authenticationManager(new ProviderManager(authenticationProvider))
+                .loginPage("/saml2/authenticate?registrationId=mi-admin")
+                .successHandler(customSamlAdminAuthenticationSuccessHandler)
+                .failureHandler(customSamlAuthenticationFailureHandler))
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
 }
