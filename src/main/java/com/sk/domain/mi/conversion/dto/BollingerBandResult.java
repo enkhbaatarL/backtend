@@ -27,4 +27,8 @@ public record BollingerBandResult(
             .build();
     }
 
+    public static BollingerBandResult ofEmpty() {
+        return BollingerBandResult.builder().build();
+    }
+
 }

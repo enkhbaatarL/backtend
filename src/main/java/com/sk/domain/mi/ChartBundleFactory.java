@@ -11,6 +11,9 @@ import com.sk.domain.shared.enums.ChartType;
 import com.sk.domain.shared.enums.IndicatorType;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -60,8 +63,29 @@ public class ChartBundleFactory {
         Map<String, List<?>> data = new HashMap<>();
         for (String dbColName : columnNamesInOrder) {
             List<Object> columnValues = rawData.stream()
-                .map(row -> row.get(dbColName))
+                .map(row -> {
+                    Object value = row.get(dbColName);
+
+                    // 첫 번째 컬럼(날짜)이면 포맷 변환
+                    if (dbColName.equalsIgnoreCase(columnNamesInOrder.get(0))) {
+                        if (value instanceof LocalDateTime ldt) {
+                            return ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                        } else if (value instanceof Timestamp ts) {
+                            return ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                        } else if (value instanceof String str) {
+                            try {
+                                LocalDateTime ldt = LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                                return ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            } catch (Exception e) {
+                                return str;
+                            }
+                        }
+                    }
+
+                    return value;
+                })
                 .collect(Collectors.toList());
+
             data.put(dbColName, columnValues);
         }
 
