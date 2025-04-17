@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Interval {
 
-    DAY("D", "일"),
-    WEEK("W", "주"),
-    MONTH("M", "월"),
-    YEAR("Y", "년");
+    DAY("DAY", "일"),
+    WEEK("WEEK", "주"),
+    MONTH("MONTH", "월"),
+    YEAR("YEAR", "년");
 
     private final String code;
     private final String description;

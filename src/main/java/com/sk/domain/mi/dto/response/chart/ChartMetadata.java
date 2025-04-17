@@ -5,10 +5,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChartMetadata(
 
-    @Schema(description = "값 단위", example = "$/MMBtu")
+    @Schema(description = "값 단위", example = "MMBtu")
     String unit,
 
-    @Schema(description = "interval (DAY, WEEK, MONTH)", example = "D")
+    @Schema(description = "interval (DAY, WEEK, MONTH, YEAR)", example = "YEAR")
     Interval interval
 
 ) {

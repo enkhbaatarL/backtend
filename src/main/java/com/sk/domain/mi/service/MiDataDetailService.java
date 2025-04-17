@@ -156,7 +156,7 @@ public class MiDataDetailService {
      * @param goodsDataSourceNo 상품 데이터소스 번호
      * @return ChartBundleRes
      */
-    public ChartBundleRes getGoodsDataSourceChart(Integer goodsDataNo, Integer goodsDataSourceNo) {
+    public ChartBundleRes getGoodsDataSourceChart(Integer goodsDataNo, Integer goodsDataSourceNo, String startDate, String endDate) {
 
         // todo 개인화 추가...
 
@@ -173,7 +173,8 @@ public class MiDataDetailService {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceResult.getOrThrow();
 
         // 상품 데이터소스 '메인 차트' 데이터 조회
-        List<Map<String, Object>> goodsDataSourceCharts = getRows(goodsDataSourceDetail);
+        String dateColumnName = goodsDataSourceDetail.getTableColumnListNm().split(",")[0].trim();
+        List<Map<String, Object>> goodsDataSourceCharts = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
 
         // 데이터 변경
         ChartData chartData = ChartBundleFactory.convertToChartData(goodsDataSourceDetail.getIsCandleChartPossible(), goodsDataSourceCharts, goodsDataSourceDetail.getTableColumnListNm(), dataColumnsMap);
@@ -208,7 +209,7 @@ public class MiDataDetailService {
             Map<String, String> compareDataColumnsMap = compareGoodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns()
                 .stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
 
-            List<Map<String, Object>> cds = getRows(compareDataSource.getCompareGoodsDataSourceDetail());
+            List<Map<String, Object>> cds = getRows(compareDataSource.getCompareGoodsDataSourceDetail(), dateColumnName, startDate, endDate);
             compareDynamicChartRes.add(ChartBundleFactory.convertToChartData(compareGoodsDataSourceDetail.getIsCandleChartPossible(), cds, compareGoodsDataSourceDetail.getTableColumnListNm(), compareDataColumnsMap));
         });
 
@@ -222,8 +223,9 @@ public class MiDataDetailService {
     }
 
     @Transactional(transactionManager = "myBatisTransactionManager")
-    public List<Map<String, Object>> getRows(GoodsDataSourceDetail goodsDataSourceDetail) {
-        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail));
+    public List<Map<String, Object>> getRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate, String endDate) {
+        String additionalWhere = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, endDate);
+        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, additionalWhere));
     }
 
 }

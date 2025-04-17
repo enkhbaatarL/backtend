@@ -17,6 +17,9 @@
         <if test="whereClause != null and whereClause != ''">
             WHERE ${whereClause}
         </if>
+        <if test="additionalWhereClause != null and additionalWhereClause != ''">
+            AND ${additionalWhereClause}
+        </if>
     </select>
 
     <insert id="saveDynamic" parameterType="map">
