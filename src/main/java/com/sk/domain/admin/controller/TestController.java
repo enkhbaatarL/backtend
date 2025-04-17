@@ -17,10 +17,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.TestService;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
 
@@ -87,7 +87,7 @@ public class TestController {
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/user")
-    public BaseResponse<TestLoginRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq,
+    public BaseResponse<GenerateTokenRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq,
             HttpServletResponse response) {
 
         return BaseResponseFactory.create(testService.userLogin(testLoginReq, response));
@@ -128,7 +128,7 @@ public class TestController {
     @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/admin")
-    public BaseResponse<TestLoginRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq,
+    public BaseResponse<GenerateTokenRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq,
             HttpServletResponse response) {
 
         return BaseResponseFactory.create(testService.adminLogin(testLoginReq, response));

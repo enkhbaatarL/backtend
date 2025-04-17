@@ -1,7 +1,6 @@
 package com.sk.domain.shared.service;
 
-import java.time.Duration;
-
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +31,10 @@ public class AuthService {
 	private final RefreshTokenService refreshTokenService;
 	private final JwtProperties jwtProperties;
 
+	private final String ACCESS_TOKEN_HEADER = "Authorization";
+	private final String REFRESH_TOKEN_HEADER = "X-Refresh-Token";
+	private final String ACCESS_TOKEN_RULE = "Bearer ";
+
 	/**
 	 * 토큰 갱신 (Refresh Token Rotation)
 	 * 
@@ -53,25 +56,31 @@ public class AuthService {
 		}
 
 		User user = userRepository.findById(accessTokenClaims.get("userNo", Integer.class))
-				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("User information could not be found. userNo: %s", accessTokenClaims.get("userNo", Integer.class))));
+				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+						String.format("User information could not be found. userNo: %s", accessTokenClaims.get("userNo", Integer.class))));
 
-		// 토큰 생성
+		generateToken(user, response);
+
+		return true;
+	}
+
+	public GenerateTokenRes generateToken(User user, HttpServletResponse response) {
 		String renewedAccessToken = jwtUtil.generateAccessToken(user);
 		String renewedRefreshToken = jwtUtil.generateRefreshToken(user);
 
 		// 리프레시 토큰을 쿠키에 설정
-		ResponseCookie responseCookie = ResponseCookie.from("X-Refresh-Token", renewedRefreshToken)
+		ResponseCookie responseCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
 				.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
 				.path("/")
 				.secure(true)
 				.httpOnly(true)
 				.build();
 
-		response.addHeader("Set-Cookie", responseCookie.toString());
+		response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
 
 		// 액세스 토큰을 Authorization 헤더에 설정
-		response.addHeader("Authorization", "Bearer " + renewedAccessToken);
-		
-		return true;
+		response.addHeader(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken);
+
+		return GenerateTokenRes.of(renewedAccessToken);
 	}
 }

@@ -1,11 +1,9 @@
 package com.sk.domain.admin.service;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -18,9 +16,9 @@ import com.sk.common.utils.JwtUtil;
 import com.sk.common.utils.Properties.JwtProperties;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
@@ -33,6 +31,7 @@ import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tcm.ComponentInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -55,7 +54,7 @@ public class TestService {
     private final ExcelService excelService;
     private final DynamicMapper dynamicMapper;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
-    private final JwtProperties jwtProperties;
+    private final AuthService authService;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -68,27 +67,13 @@ public class TestService {
      * @return
      */
     @Transactional
-    public TestLoginRes userLogin(TestReq.userLogin testLoginReq, HttpServletResponse response) {
+    public GenerateTokenRes userLogin(TestReq.userLogin testLoginReq, HttpServletResponse response) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
                 UserRoleCd.USER)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "User information could not be found. userLoginId: " + testLoginReq.loginUserId()));
 
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-
-        ResponseCookie responseCookie = ResponseCookie.from("X-Refresh-Token", refreshToken)
-                .maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
-                .path("/")
-                .secure(true)
-                .httpOnly(true)
-                .build();
-
-        response.addHeader("Set-Cookie", responseCookie.toString());
-        
-        response.addHeader("Authorization", "Bearer " + accessToken);
-
-        return TestLoginRes.of(accessToken);
+        return authService.generateToken(user, response);
     }
 
     /**
@@ -98,7 +83,7 @@ public class TestService {
      * @return
      */
     @Transactional
-    public TestLoginRes adminLogin(TestReq.adminLogin testLoginReq, HttpServletResponse response) {
+    public GenerateTokenRes adminLogin(TestReq.adminLogin testLoginReq, HttpServletResponse response) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes.getRequest();
         String clientIp = request.getRemoteAddr();
@@ -117,21 +102,7 @@ public class TestService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The IP address is not allowed: %s", clientIp)));
 
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-
-        ResponseCookie responseCookie = ResponseCookie.from("X-Refresh-Token", refreshToken)
-                .maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
-                .path("/")
-                .secure(true)
-                .httpOnly(true)
-                .build();
-
-        response.addHeader("Set-Cookie", responseCookie.toString());
-
-        response.addHeader("Authorization", "Bearer " + accessToken);
-
-        return TestLoginRes.of(accessToken);
+        return authService.generateToken(user, response);
     }
 
     /**
