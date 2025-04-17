@@ -4,6 +4,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
+import com.sk.domain.mi.dto.response.chart.ChartBundleRes;
 import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.GoodsDataDetailRes;
 import com.sk.domain.mi.dto.response.chart.GoodsDataSourceRes;
@@ -112,7 +113,7 @@ public class MiDataDetailController {
     @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
-    public BaseResponse<?> getGoodsDataSourceChart(
+    public BaseResponse<ChartBundleRes> getGoodsDataSourceChart(
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
     ) {

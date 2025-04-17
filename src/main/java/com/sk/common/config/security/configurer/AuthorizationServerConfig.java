@@ -31,6 +31,8 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
@@ -64,9 +66,10 @@ public class AuthorizationServerConfig {
 
             // Authorization Server 관련 경로 매칭
             http
+                .cors(withDefaults())
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
                 .securityMatcher("/oauth2/token") // Authorization Server 경로 제한
-                .with(authorizationServerConfigurer, Customizer.withDefaults())
+                .with(authorizationServerConfigurer, withDefaults())
                 .exceptionHandling(exceptions -> exceptions
                     .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                     .accessDeniedHandler(new CustomAccessDeniedHandler())
@@ -83,6 +86,7 @@ public class AuthorizationServerConfig {
         } else {
 
             http
+                .cors(withDefaults())
                 .securityMatcher("/oauth2/token")
                 .authorizeHttpRequests(authorize -> authorize
                     .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용
