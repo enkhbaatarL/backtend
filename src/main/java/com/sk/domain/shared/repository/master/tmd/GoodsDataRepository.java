@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
+import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -128,35 +129,56 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
     @Query(value = """
-                    SELECT gd
-            FROM GoodsData
-            gd
-                    WHERE gd.isDeleted=false
-            AND gd.goods.provider.providerNo=:
-            providerNo AND gd.goods.provider.isDeleted=false
-            AND gd.goods.goodsNo=:
-            goodsNo AND gd.goods.isDeleted=false
-            AND gd.goodsDataNo=:goodsDataNo""")
-
+            SELECT gd
+            FROM GoodsData gd
+            WHERE gd.isDeleted=false
+                AND gd.goods.provider.providerNo=:providerNo
+                AND gd.goods.provider.isDeleted=false
+                AND gd.goods.goodsNo=:goodsNo
+                AND gd.goods.isDeleted=false
+                AND gd.goodsDataNo=:goodsDataNo
+                """)
     Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
             @Param("goodsDataNo") int goodsDataNo);
 
     @EntityGraph(attributePaths = { "goods", "goods.provider" })
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
-    // List<GoodsData> find
-
     @Query(value = """
-            SELECT gd
-            FROM GoodsData gd
-            WHERE gd.isDeleted = false
-            AND gd.goods.provider.providerNo = :providerNo
-            AND gd.goods.provider.isDeleted = false
-            AND gd.goods.goodsNo = :goodsNo
-            AND gd.goods.isDeleted = false
-            AND gd.goodsDataNo = :goodsDataNo
+            SELECT
+                tg.prvd_no AS providerNo,
+                tc.gds_no AS goodsNo,
+                tg2.gds_data_no AS goodsDataNo,
+                tg2.gds_data_nm AS goodsDataNm,
+                tg2.gds_data_expn AS goodsDataExpn,
+                tg2.gds_data_smry_cntt AS goodsDataSummaryCntt
+            FROM tam_custcpnygdsmappl AS tc
+            LEFT JOIN tmd_gdsm AS tg ON tg.gds_no = tc.gds_no
+            LEFT JOIN tmd_gdsdatam AS tg2 ON tg2.gds_no = tg.gds_no
+            WHERE tc.cust_cpny_no = :customerCompanyNo
+              AND tc.del_yn = 'N'
+              AND tg.del_yn = 'N'
+              AND tg2.del_yn = 'N'
+              AND tc.use_yn = 'Y'
+              AND tg.use_yn = 'Y'
+              AND MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE)
+            ORDER BY tg2.crt_dtm DESC
                         """, countQuery = """
-
+            SELECT
+                COUNT(*)
+            FROM tam_custcpnygdsmappl AS tc
+            LEFT JOIN tmd_gdsm AS tg ON tg.gds_no = tc.gds_no
+            LEFT JOIN tmd_gdsdatam AS tg2 ON tg2.gds_no = tg.gds_no
+            WHERE tc.cust_cpny_no = :customerCompanyNo
+              AND tc.del_yn = 'N'
+              AND tg.del_yn = 'N'
+              AND tg2.del_yn = 'N'
+              AND tc.use_yn = 'Y'
+              AND tg.use_yn = 'Y'
+              AND MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE)
             """, nativeQuery = true)
-    List<GoodsData> findAllByCustomerCompanyNo(Integer customerCompanyNo);
+    Page<IGoodsDataRes> findByNameContainingOrSmryCntteContaining(@Param("customerCompanyNo") Integer customerCompanyNo,
+            @Param("keyword") String keyword, Pageable pageable);
 }
+
+// CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm)

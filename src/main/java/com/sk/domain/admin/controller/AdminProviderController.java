@@ -408,6 +408,10 @@ public class AdminProviderController {
     }
 
     @ApiOrder(20)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품번호"),
+    })
     @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
@@ -426,6 +430,11 @@ public class AdminProviderController {
     }
 
     @ApiOrder(21)
+    @Parameters({
+            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품번호"),
+            @Parameter(name = "goodsDataNo", description = "상품데이타번호")
+    })
     @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")

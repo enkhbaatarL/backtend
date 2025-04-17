@@ -84,6 +84,11 @@ public class AdminProviderService {
     @Transactional
     public ProviderCreateRes createProvider(ProviderCreateReq dto) {
 
+        providerRepository.findByProviderIdAndIsDeletedFalse(dto.providerId())
+                .ifPresent(provider -> {
+                    throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, "provider id: %s".formatted(dto.providerId()));
+                });
+
         return ProviderCreateRes
                 .of(providerRepository.save(Provider.of(dto.providerNm(), dto.providerId(), dto.providerExpn(), dto.isUsed())));
     }

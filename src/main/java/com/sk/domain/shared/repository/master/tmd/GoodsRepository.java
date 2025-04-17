@@ -26,6 +26,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
                 g.goodsNo,
                 g.isPublic,
+                g.goodsId,
                 g.goodsNm,
                 g.goodsExpn,
                 count(gd)
@@ -56,6 +57,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
                 g.goodsNo,
                 g.isPublic,
+                g.goodsId,
                 g.goodsNm,
                 g.goodsExpn,
                 count(gd)
