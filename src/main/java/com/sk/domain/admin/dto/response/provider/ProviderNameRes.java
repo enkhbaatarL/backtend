@@ -8,7 +8,10 @@ public record ProviderNameRes(
         Integer providerNo,
 
         @Schema(description = "프로바이더명", example = "레피니티브")
-        String providerNm) {
+        String providerNm,
+        
+        @Schema(description = "사용여부", example = "true")
+        Boolean isUsed) {
 
 }
 // @formatter:on

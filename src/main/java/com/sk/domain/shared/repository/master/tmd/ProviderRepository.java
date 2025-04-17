@@ -81,7 +81,8 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
                 p.providerNo,
-                p.providerNm
+                p.providerNm,
+                p.isUsed
             )
             FROM Provider p
             WHERE p.isDeleted = false
@@ -93,7 +94,8 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.ProviderNameRes(
                 p.providerNo,
-                p.providerNm
+                p.providerNm,
+                p.isUsed
             )
             FROM Provider p
             JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
