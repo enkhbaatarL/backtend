@@ -72,28 +72,8 @@ public class ChartBundleFactory {
      * 컬럼 인덱스를 기반으로 renderAs 값을 결정합니다.
      */
     private static ChartRenderType determineRenderAsByIndex(boolean isCandleChartPossible, int index) {
-
-        if (isCandleChartPossible) {
-
-            return switch (index) {
-                case 0 -> ChartRenderType.DATE;
-                case 1 -> ChartRenderType.OPEN;
-                case 2 -> ChartRenderType.HIGH;
-                case 3 -> ChartRenderType.CLOSE;
-                case 4 -> ChartRenderType.LOW;
-                default -> ChartRenderType.UNKNOWN;
-            };
-
-        } else {
-
-            return switch (index) {
-                case 0 -> ChartRenderType.DATE;
-                case 1 -> ChartRenderType.MAIN;
-                default -> ChartRenderType.REFERENCE;
-            };
-
-        }
-
+        ChartType chartType = isCandleChartPossible ? ChartType.CANDLE : ChartType.METRIC;
+        return chartType.resolveRenderType(index);
     }
 
     /**
