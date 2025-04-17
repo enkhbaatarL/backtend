@@ -2,6 +2,7 @@ package com.sk.domain.shared.enums;
 
 public enum IndicatorType {
 
-    MA, BB
+    MOVING_AVERAGE,
+    BOLLINGER_BANDS
 
 }

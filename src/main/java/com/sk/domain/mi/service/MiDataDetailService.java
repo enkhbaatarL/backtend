@@ -150,11 +150,11 @@ public class MiDataDetailService {
 //    }
 
     /**
-     * 상품 데이터소스 차트를 조회한다.
+     * 상품 데이터소스 차트 묶음을 조회한다.
      *
      * @param goodsDataNo 상품 데이터 번호
      * @param goodsDataSourceNo 상품 데이터소스 번호
-     * @return
+     * @return ChartBundleRes
      */
     public ChartBundleRes getGoodsDataSourceChart(Integer goodsDataNo, Integer goodsDataSourceNo) {
 
@@ -164,11 +164,9 @@ public class MiDataDetailService {
         ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
         GoodsData goodsData = goodsDataResult.getOrThrow();
 
-        // 프로바이더 공통 컬럼 정보
-        List<ProviderDataColumn> dataColumns = goodsData.getGoods().getProvider().getProviderDataColumns();
-
-        // Map 생성(key 컬럼명, value 범례)
-        Map<String, String> dataColumnsMap = dataColumns.stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
+        // 컬럼 정보 Map 생성
+        Map<String, String> dataColumnsMap = goodsData.getGoods().getProvider().getProviderDataColumns()
+            .stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
 
         // 상품 데이터소스 검증 및 '메인 차트' 메타 정보 조회
         ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(goodsDataSourceNo);
@@ -178,27 +176,26 @@ public class MiDataDetailService {
         List<Map<String, Object>> goodsDataSourceCharts = getRows(goodsDataSourceDetail);
 
         // 데이터 변경
-        ChartData chartData = ChartBundleFactory.convertToChartData(goodsDataSourceCharts, goodsDataSourceDetail.getTableColumnListNm(), dataColumnsMap);
+        ChartData chartData = ChartBundleFactory.convertToChartData(goodsDataSourceDetail.getIsCandleChartPossible(), goodsDataSourceCharts, goodsDataSourceDetail.getTableColumnListNm(), dataColumnsMap);
 
-        List<BigDecimal> majorFactor = ChartBundleFactory.extractMainSeries(chartData);
+        // 보조지표를 위한 주요 메트릭 시계열 데이터 추출 ('close' 또는 'main')
+        List<BigDecimal> majorMetricSeries = ChartBundleFactory.extractMajorMetricSeries(chartData);
 
-        List<BigDecimal> ma5 = unitConversionService.convertTimeSeriesToMovingAverage(majorFactor, 5);
-        List<BigDecimal> ma20 = unitConversionService.convertTimeSeriesToMovingAverage(majorFactor, 20);
-        List<BigDecimal> ma60 = unitConversionService.convertTimeSeriesToMovingAverage(majorFactor, 60);
-        List<BigDecimal> ma120 = unitConversionService.convertTimeSeriesToMovingAverage(majorFactor, 120);
+        List<BigDecimal> ma5 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 5);
+        List<BigDecimal> ma20 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 20);
+        List<BigDecimal> ma60 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 60);
+        List<BigDecimal> ma120 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 120);
 
         // 이동평균선(MA) 지표 데이터 생성
-        IndicatorData maIndicator = ChartBundleFactory.createMAIndicatorData(chartData, ma5, ma20, ma60, ma120);
+        IndicatorData maIndicator = ChartBundleFactory.createMovingAverageIndicator(chartData, ma5, ma20, ma60, ma120);
 
-        List<BollingerBandResult> bollingerBandResults = unitConversionService.convertTimeSeriesToBollingerBands(majorFactor, 20);
+        List<BollingerBandResult> bollingerBandResults = unitConversionService.convertTimeSeriesToBollingerBands(majorMetricSeries, 20);
 
         // 볼린저 밴드(BB) 지표 데이터 생성
-        IndicatorData bbIndicator = ChartBundleFactory.createBBIndicatorData(chartData, bollingerBandResults);
+        IndicatorData bbIndicator = ChartBundleFactory.createBollingerBandsIndicator(chartData, bollingerBandResults);
 
         // 지표 데이터 목록 생성
-        List<IndicatorData> indicators = new ArrayList<>();
-        indicators.add(maIndicator);
-        indicators.add(bbIndicator);
+        List<IndicatorData> indicators = List.of(maIndicator, bbIndicator);
 
         List<ChartData> compareDynamicChartRes = new ArrayList<>();
 
@@ -208,11 +205,11 @@ public class MiDataDetailService {
         compareDataSources.forEach(compareDataSource -> {
             GoodsDataSourceDetail compareGoodsDataSourceDetail = compareDataSource.getCompareGoodsDataSourceDetail();
 
-            List<ProviderDataColumn> compareDataColumns = compareGoodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns();
-            Map<String, String> compareDataColumnsMap = compareDataColumns.stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), c -> c.getDataColumnExpn()));
+            Map<String, String> compareDataColumnsMap = compareGoodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns()
+                .stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
 
             List<Map<String, Object>> cds = getRows(compareDataSource.getCompareGoodsDataSourceDetail());
-            compareDynamicChartRes.add(ChartBundleFactory.convertToChartData(cds, compareGoodsDataSourceDetail.getTableColumnListNm(), compareDataColumnsMap));
+            compareDynamicChartRes.add(ChartBundleFactory.convertToChartData(compareGoodsDataSourceDetail.getIsCandleChartPossible(), cds, compareGoodsDataSourceDetail.getTableColumnListNm(), compareDataColumnsMap));
         });
 
 

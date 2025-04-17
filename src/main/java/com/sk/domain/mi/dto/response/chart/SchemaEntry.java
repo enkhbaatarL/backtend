@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.chart;
 
+import com.sk.domain.shared.enums.ChartRenderType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -16,7 +17,7 @@ public record SchemaEntry(
     String name,
 
     @Schema(description = "프론트엔드 렌더링 힌트", example = "open")
-    String renderAs,
+    ChartRenderType renderAs,
 
     @Schema(description = "화면에 표시될 컬럼 레이블", example = "시가")
     String label
