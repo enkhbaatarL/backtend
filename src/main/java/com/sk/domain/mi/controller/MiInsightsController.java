@@ -45,7 +45,13 @@ public class MiInsightsController {
 
     // OPERATOR-SKGAS
     // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNzQ5MjcsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkyN30.p3BWi9foUIVa2LoG4GF6yBLvyoV-1ZTb7Q2S_JS2U1I
-    
+
+    // USER-SKHY
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAxQFNLSFkuY29tIiwiaWF0IjoxNzQ0ODUyODE4LCJ1c2VyTm8iOjEwMDAwNTMsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MjgxOH0.QVEABqTE7DIwcjRP81FvxKCmThW3ImwveJKFecaiXcA
+
+    // USER-SKGAS
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMUBTS0dBUy5jb20iLCJpYXQiOjE3NDQ4NTMwMTUsInVzZXJObyI6MTAwMDA4NSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MzAxNX0.WcDDwXHwvXtkSITUeLE18AzFgWkwSCEEvGA_tqmx5X8
+
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
@@ -108,4 +114,6 @@ public class MiInsightsController {
         return BaseResponseFactory.create(miInsightsService.getDataCatalog(cNo, page, size, keyword));
     }
 
+    // todo: 카테고리 리스트
+    // todo: 상세보기
 }

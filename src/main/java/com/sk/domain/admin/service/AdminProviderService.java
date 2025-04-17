@@ -21,6 +21,8 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
