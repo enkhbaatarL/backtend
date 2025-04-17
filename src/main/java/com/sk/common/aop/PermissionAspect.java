@@ -52,6 +52,9 @@ public class PermissionAspect {
         if (StringUtils.hasText(requirePermission.goodsParam())) {
             Integer goodsNo = extractParameterValue(joinPoint, requirePermission.goodsParam());
 
+            // todo 상품 데이터소스 번호(정형)
+            // todo 파일 번호(비정형)
+
             if (goodsNo != null) {
                 // 2-1. VIEW 권한 체크
                 if (requirePermission.requireViewPermission() && !strategy.canViewGoods(goodsNo)) {

@@ -22,17 +22,7 @@ public class GoodsDataValidator {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                    "It doesn't exist in the [GoodsData]. goodsDataNo: %s".formatted(goodsDataNo)));
-        }
-    }
-
-    public ValidationResult<Void> ensureNotExists(Integer goodsDataNo) {
-        Optional<GoodsData> entity = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo);
-        if (entity.isPresent()) {
-            return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
-                    "goodsDataNo: %s".formatted(goodsDataNo)));
-        } else {
-            return ValidationResult.success(null);
+                    "It doesn't exist in the [goods-data]. goodsDataNo: %s".formatted(goodsDataNo)));
         }
     }
 
