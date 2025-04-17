@@ -96,15 +96,6 @@ public class AdminProviderController {
             "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
-    // ADMIN-SKCC
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0Mjc0ODcxLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc4MDI3NDg3MX0.hVm8KPlcTPwjxGtdRr8VH1uIrGFIfIePb_FyVkiquHc
-
-    // OPERATOR-SKHY
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0Mjc0OTA0LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkwNH0.T0JZ5XJva9dokRGhDhipWTvlRi92kSO9cUEzpFfXgSk
-
-    // OPERATOR-SKGAS
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNzQ5MjcsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkyN30.p3BWi9foUIVa2LoG4GF6yBLvyoV-1ZTb7Q2S_JS2U1I
-
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -113,6 +104,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 목록 조회 - with pagination", description = "데이타 프로바이더 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider")
+    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<PaginationRes<ProviderRes>> getAllProviders(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
@@ -127,6 +119,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider/name")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<List<ProviderNameRes>> getAllProviderNm() {
 
         int companyNo = authorizationService.getCompanyNo();
@@ -153,6 +146,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<ProviderDetailRes> getProvider(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -251,6 +245,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 상세 조회", description = "상품 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<GoodsDetailRes> getGoodsDetail(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
@@ -324,6 +319,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
+    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,

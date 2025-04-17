@@ -15,6 +15,7 @@ import com.sk.domain.mi.dto.response.insights.GoodsDataACRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.repository.master.tlm.GoodsDataInqueryUserRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MiInsightsService {
     private final GoodsDataRepository goodsDataRepository;
+    private final GoodsDataInqueryUserRepository goodsDataInqueryUserRepository;
 
     /**
      * Focused 목록 조회
