@@ -24,4 +24,5 @@ public interface UserRepository extends JpaRepository<User, Integer>, CustomUser
 
     List<User> findByUserNoInAndIsDeletedFalse(List<Integer> ids);
 
+    List<User> findByUserLoginIdAndIsDeletedFalse(String userLoginId);
 }

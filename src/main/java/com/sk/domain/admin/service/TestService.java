@@ -13,11 +13,12 @@ import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
+import com.sk.common.utils.Properties.JwtProperties;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.response.TestLoginRes;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
@@ -30,8 +31,10 @@ import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tcm.ComponentInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +54,7 @@ public class TestService {
     private final ExcelService excelService;
     private final DynamicMapper dynamicMapper;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
+    private final AuthService authService;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -63,16 +67,13 @@ public class TestService {
      * @return
      */
     @Transactional
-    public TestLoginRes userLogin(TestReq.userLogin testLoginReq) {
+    public GenerateTokenRes userLogin(TestReq.userLogin testLoginReq, HttpServletResponse response) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
                 UserRoleCd.USER)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "User information could not be found. userLoginId: " + testLoginReq.loginUserId()));
 
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-
-        return TestLoginRes.of(accessToken, refreshToken);
+        return authService.generateToken(user, response);
     }
 
     /**
@@ -82,7 +83,7 @@ public class TestService {
      * @return
      */
     @Transactional
-    public TestLoginRes adminLogin(TestReq.adminLogin testLoginReq) {
+    public GenerateTokenRes adminLogin(TestReq.adminLogin testLoginReq, HttpServletResponse response) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes.getRequest();
         String clientIp = request.getRemoteAddr();
@@ -101,10 +102,7 @@ public class TestService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The IP address is not allowed: %s", clientIp)));
 
-        String accessToken = jwtUtil.generateAccessToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-
-        return TestLoginRes.of(accessToken, refreshToken);
+        return authService.generateToken(user, response);
     }
 
     /**

@@ -13,7 +13,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import com.sk.common.config.security.saml.CustomSamlAuthenticationFailureHandler;
 import com.sk.common.config.security.saml.CustomSamlUserAuthenticationSuccessHandler;
-// import org.springframework.security.saml2.provider.service.authentication.DefaultSaml2AuthenticationRequestResolver;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,9 +29,8 @@ public class SamlUserServiceProviderConfig {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http
             .cors(withDefaults())
-            .securityMatcher("/login/saml2/user", "/login/saml2/sso/mi", "/saml2/authenticate/**") // SAML 로그인
+            .securityMatcher("/login/saml2/user", "/login/saml2/sso/mi", "/saml2/authenticate/**", "/login/saml2/saml-callback") // SAML 로그인
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/login/saml2/user").authenticated() // 이 경로만 인증 요구
                 .anyRequest().permitAll())
             .saml2Login(saml2 -> saml2
                 .authenticationManager(new ProviderManager(authenticationProvider))
