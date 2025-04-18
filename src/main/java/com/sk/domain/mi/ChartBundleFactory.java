@@ -2,6 +2,7 @@ package com.sk.domain.mi;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.chart.ChartData;
 import com.sk.domain.mi.dto.response.chart.IndicatorData;
@@ -12,8 +13,8 @@ import com.sk.domain.shared.enums.IndicatorType;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -21,7 +22,29 @@ import java.util.stream.IntStream;
 public class ChartBundleFactory {
 
     /**
-     * ChartData 객체에서 'close' 또는 'main' 해당하는 데이터 자표 시리즈를 추출한다.
+     * ChartData 객체에서 renderAs 'date' 해당하는 시계열 데이터를 추출한다.
+     */
+    public static List<LocalDate> extractDateMetricSeries(ChartData chartData) {
+
+        String dateColumnName = chartData.schema().stream()
+            .filter(entry -> ChartRenderType.DATE == entry.renderAs())
+            .map(SchemaEntry::name)
+            .findFirst()
+            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No 'date' column(renderAs) names found"));
+
+        List<?> rawDataList = chartData.data().get(dateColumnName);
+
+        if (rawDataList == null || rawDataList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return rawDataList.stream()
+            .map(DateUtil::parseDate)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * ChartData 객체에서 renderAs 'close' 또는 'main' 해당하는 시계열 데이터를 추출한다.
      */
     public static List<BigDecimal> extractMajorMetricSeries(ChartData chartData) {
 
@@ -29,7 +52,7 @@ public class ChartBundleFactory {
             .filter(entry -> ChartRenderType.isMajorType(entry.renderAs()))
             .map(SchemaEntry::name)
             .findFirst()
-            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No major column names found"));
+            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No major column(major is 'close' or 'main' renderAs) names found"));
 
         List<?> rawDataList = chartData.data().get(majorColumnName);
 
@@ -64,18 +87,19 @@ public class ChartBundleFactory {
         for (String dbColName : columnNamesInOrder) {
             List<Object> columnValues = rawData.stream()
                 .map(row -> {
+
                     Object value = row.get(dbColName);
 
                     // 첫 번째 컬럼(날짜)이면 포맷 변환
                     if (dbColName.equalsIgnoreCase(columnNamesInOrder.get(0))) {
                         if (value instanceof LocalDateTime ldt) {
-                            return ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            return ldt.format(DateUtil.YYYYMMDD);
                         } else if (value instanceof Timestamp ts) {
-                            return ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            return ts.toLocalDateTime().format(DateUtil.YYYYMMDD);
                         } else if (value instanceof String str) {
                             try {
-                                LocalDateTime ldt = LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                                return ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                                LocalDateTime ldt = LocalDateTime.parse(str, DateUtil.YYYY_MM_DD_HH_MM_SS);
+                                return ldt.format(DateUtil.YYYYMMDD);
                             } catch (Exception e) {
                                 return str;
                             }
@@ -103,10 +127,7 @@ public class ChartBundleFactory {
     /**
      * 이동평균선(MA) 지표 데이터를 생성하는 메서드
      */
-    public static IndicatorData createMovingAverageIndicator(ChartData chartData, List<BigDecimal> ma5, List<BigDecimal> ma20, List<BigDecimal> ma60, List<BigDecimal> ma120) {
-
-        // 날짜 시계열 데이터 추출
-        List<?> dateData = chartData.data().get(chartData.columns().get(0));
+    public static IndicatorData createMovingAverageIndicator(List<LocalDate> dateMetricSeries, List<BigDecimal> ma5, List<BigDecimal> ma20, List<BigDecimal> ma60, List<BigDecimal> ma120) {
 
         // 컬럼명 목록 생성
         List<String> columns = List.of("date", "ma5", "ma20", "ma60", "ma120");
@@ -114,7 +135,7 @@ public class ChartBundleFactory {
         // 스키마 생성
         List<SchemaEntry> schema = List.of(
             new SchemaEntry("date", ChartRenderType.DATE, "날짜"),
-            new SchemaEntry("ma5", ChartRenderType.MA, "5일 이동평균"),
+            new SchemaEntry("ma5", ChartRenderType.MA, "5 이동평균"),
             new SchemaEntry("ma20", ChartRenderType.MA, "20일 이동평균"),
             new SchemaEntry("ma60", ChartRenderType.MA, "60일 이동평균"),
             new SchemaEntry("ma120", ChartRenderType.MA, "120일 이동평균")
@@ -122,7 +143,7 @@ public class ChartBundleFactory {
 
         // 데이터 맵 생성
         Map<String, List<?>> data = Map.of(
-            "date", dateData,
+            "date", dateMetricSeries,
             "ma5", ma5,
             "ma20", ma20,
             "ma60", ma60,
@@ -136,10 +157,7 @@ public class ChartBundleFactory {
     /**
      * 볼린저 밴드(BB) 지표 데이터를 생성하는 메서드
      */
-    public static IndicatorData createBollingerBandsIndicator(ChartData chartData, List<BollingerBandResult> bollingerBandResults) {
-
-        // 날짜 시계열 데이터 추출
-        List<?> dateData = chartData.data().get(chartData.columns().get(0));
+    public static IndicatorData createBollingerBandsIndicator(List<LocalDate> dateMetricSeries, List<BollingerBandResult> bollingerBandResults) {
 
         // 볼린저 밴드 데이터 추출
         List<BigDecimal> middleBand = new ArrayList<>();
@@ -163,9 +181,8 @@ public class ChartBundleFactory {
         schema.add(new SchemaEntry("lower", ChartRenderType.BB, "하단 밴드"));
 
         // 데이터 맵 생성
-        // 데이터 맵 생성
         Map<String, List<?>> data = Map.of(
-            "date", dateData,
+            "date", dateMetricSeries,
             "upper", upperBand,
             "middle", middleBand,
             "lower", lowerBand

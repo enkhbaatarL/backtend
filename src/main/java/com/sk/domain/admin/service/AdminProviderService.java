@@ -21,7 +21,6 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
-import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +47,7 @@ public class AdminProviderService {
         if (RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role)) {
             // 관리자: 전체 프로바이더를 조회한다.
             return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 고객사에 등록 된 프로바이더만 조회한다.
             return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
         }
@@ -58,7 +57,7 @@ public class AdminProviderService {
 
     /**
      * 데이타 프로바이더명 목록을 조회한다.
-     * 
+     *
      * @param user 사용자 정보
      * @return List<ProviderNameRes>
      */
@@ -67,7 +66,7 @@ public class AdminProviderService {
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 전체 프로바이더명을 조회한다.
             return providerRepository.findProviderNmForAdmin();
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자 고객사에 등록 된 프로바이더명만 조회한다.
             return providerRepository.findProviderNmForOperator(companyNo);
         }
@@ -84,14 +83,19 @@ public class AdminProviderService {
     @Transactional
     public ProviderCreateRes createProvider(ProviderCreateReq dto) {
 
+        providerRepository.findByProviderIdAndIsDeletedFalse(dto.providerId())
+                .ifPresent(provider -> {
+                    throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, "provider id: %s".formatted(dto.providerId()));
+                });
+
         return ProviderCreateRes
                 .of(providerRepository.save(Provider.of(dto.providerNm(), dto.providerId(), dto.providerExpn(), dto.isUsed())));
     }
 
     /**
      * 데이타 프로바이더를 상세 조회한다.
-     * 
-     * 
+     *
+     *
      *
      * @param user 사용자 정보
      * @param providerNo 데이타 프로바이더 번호
@@ -104,7 +108,7 @@ public class AdminProviderService {
             return providerRepository.findProviderDetailByProviderNo(providerNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 프로바이더 등록 유무 체크 후 조회한다.
 
             // 프로바이더 등록 유무 체크
@@ -126,7 +130,7 @@ public class AdminProviderService {
      *
      * @param providerNo 데이타 프로바이더 번호
      * @param ProviderUpdateReq 데이타 프로바이더 데이터
-     * @return 
+     * @return
      */
     @Transactional
     public void updateProvider(int providerNo, ProviderUpdateReq dto) {
@@ -144,7 +148,7 @@ public class AdminProviderService {
      * 데이타 프로바이더를 삭제한다.
      *
      * @param providerNo 데이타 프로바이더 번호
-     * @return 
+     * @return
      */
     @Transactional
     public void deleteProvider(int providerNo) {

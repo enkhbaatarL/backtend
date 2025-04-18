@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequirePermission;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -38,9 +38,9 @@ public class MiBulletinBoardController {
     private final MiBulletinBoardService miBulletinBoardService;
 
     /*******************************************************************
-     * 
+     *
      * 공지사항
-     * 
+     *
      *******************************************************************/
 
     @ApiOrder(1)
@@ -53,17 +53,16 @@ public class MiBulletinBoardController {
     @Operation(summary = "공지사항 목록 조회 - with pagination", description = "공지사항 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice")
-    @RequirePermission(roles = { Role.ADMIN, Role.USER })
+    @RequiredPermission(roles = { Role.ADMIN, Role.USER })
     public BaseResponse<PaginationRes<MiNoticeRes>> getAllNotices(
+            @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-            @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @RequestParam(value = "category", required = false, defaultValue = "") String category,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
 
-        int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory.create(miBulletinBoardService.getAllNotices(cNo, role, page, size, category, keyword));
     }
@@ -79,17 +78,16 @@ public class MiBulletinBoardController {
             @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
-        int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : companyNo;
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory.create(miBulletinBoardService.getNotice(cNo, noticeNo));
     }
 
     /*******************************************************************
-     * 
+     *
      * FAQ
-     * 
+     *
      *******************************************************************/
 
     @ApiOrder(3)

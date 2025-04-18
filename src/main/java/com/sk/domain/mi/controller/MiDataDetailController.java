@@ -3,24 +3,17 @@ package com.sk.domain.mi.controller;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.chart.ChartBundleRes;
-import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
-import com.sk.domain.mi.dto.response.GoodsDataDetailRes;
-import com.sk.domain.mi.dto.response.chart.GoodsDataSourceRes;
-import com.sk.domain.mi.dto.response.chart.UnitConversionRes;
 import com.sk.domain.mi.service.MiDataDetailService;
+import com.sk.domain.shared.enums.Interval;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "05. 상품 데이터 상세 API", description = "상품 데이터 상세 API 입니다.")
 @Slf4j
@@ -107,21 +100,25 @@ public class MiDataDetailController {
 
     @ApiOrder(6)
     @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
+        @Parameter(name = "interval", description = "인터벌"),
         @Parameter(name = "startDate", description = "조회 시작일"),
         @Parameter(name = "endDate", description = "조회 종료일")
     })
     @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
     public BaseResponse<ChartBundleRes> getGoodsDataSourceChart(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
+        @RequestParam(value = "interval") Interval interval,
         @RequestParam(value = "startDate") String startDate,
         @RequestParam(value = "endDate") String endDate
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceChart(goodsDataNo, goodsDataSourceNo, startDate, endDate));
+        return BaseResponseFactory.create(miDataDetailService.getDynamicCharts(goodsDataNo, goodsDataSourceNo, interval, startDate, endDate));
     }
 
 }
