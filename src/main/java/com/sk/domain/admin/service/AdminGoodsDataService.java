@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.RoleUtil;
@@ -96,6 +97,29 @@ public class AdminGoodsDataService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
+        switch (role) {
+            case ADMIN:
+                // handleAdmin();
+                break;
+            case OPERATOR:
+                // handleOperator();
+                break;
+            case USER:
+                // handleUser();
+                break;
+            case API_SUB_ADMIN:
+                // handleApiSubAdmin();
+                break;
+            case API_OPERATOR:
+                // handleApiOperator();
+                break;
+            case API_CLIENT:
+                // handleApiClient();
+                break;
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
+
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타 목록 조회
             return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
@@ -147,6 +171,29 @@ public class AdminGoodsDataService {
     */
     public List<GoodsDataNameRes> getAllGoodsDataNm(int companyNo, Role role, int providerNo, int goodsNo) {
 
+        switch (role) {
+            case ADMIN:
+                // handleAdmin();
+                break;
+            case OPERATOR:
+                // handleOperator();
+                break;
+            case USER:
+                // handleUser();
+                break;
+            case API_SUB_ADMIN:
+                // handleApiSubAdmin();
+                break;
+            case API_OPERATOR:
+                // handleApiOperator();
+                break;
+            case API_CLIENT:
+                // handleApiClient();
+                break;
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
+
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타명 목록 조회
             return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
@@ -169,6 +216,29 @@ public class AdminGoodsDataService {
     * @return GoodsDataDetailRes
     */
     public GoodsDataDetailRes getGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo) {
+
+        switch (role) {
+            case ADMIN:
+                // handleAdmin();
+                break;
+            case OPERATOR:
+                // handleOperator();
+                break;
+            case USER:
+                // handleUser();
+                break;
+            case API_SUB_ADMIN:
+                // handleApiSubAdmin();
+                break;
+            case API_OPERATOR:
+                // handleApiOperator();
+                break;
+            case API_CLIENT:
+                // handleApiClient();
+                break;
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
 
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타 조회
@@ -229,6 +299,29 @@ public class AdminGoodsDataService {
     */
     @Transactional
     public void createGoodsData(int companyNo, Role role, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
+
+        switch (role) {
+            case ADMIN:
+                // handleAdmin();
+                break;
+            case OPERATOR:
+                // handleOperator();
+                break;
+            case USER:
+                // handleUser();
+                break;
+            case API_SUB_ADMIN:
+                // handleApiSubAdmin();
+                break;
+            case API_OPERATOR:
+                // handleApiOperator();
+                break;
+            case API_CLIENT:
+                // handleApiClient();
+                break;
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
 
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 상품이 퍼블릭일 경우 등록 가능
@@ -336,6 +429,30 @@ public class AdminGoodsDataService {
     */
     @Transactional
     public void updateGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
+
+        switch (role) {
+            case ADMIN:
+                // handleAdmin();
+                break;
+            case OPERATOR:
+                // handleOperator();
+                break;
+            case USER:
+                // handleUser();
+                break;
+            case API_SUB_ADMIN:
+                // handleApiSubAdmin();
+                break;
+            case API_OPERATOR:
+                // handleApiOperator();
+                break;
+            case API_CLIENT:
+                // handleApiClient();
+                break;
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
+
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 상품이 퍼블릭일 경우 수정 가능
             Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)

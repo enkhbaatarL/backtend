@@ -111,6 +111,11 @@ public class AdminProviderController {
     // USER-SKGAS
     // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMUBTS0dBUy5jb20iLCJpYXQiOjE3NDQ4NTMwMTUsInVzZXJObyI6MTAwMDA4NSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MzAxNX0.WcDDwXHwvXtkSITUeLE18AzFgWkwSCEEvGA_tqmx5X8
 
+    /*********************************************************************************************************************
+    *
+    * Provider 관리 API
+    *
+    *********************************************************************************************************************/
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -119,7 +124,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 목록 조회 - with pagination", description = "데이타 프로바이더 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR, Role.API_CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<PaginationRes<ProviderRes>> getAllProviders(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
@@ -134,7 +139,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider/name")
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<List<ProviderNameRes>> getAllProviderNm() {
 
         int companyNo = authorizationService.getCompanyNo();
@@ -147,7 +152,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN})
+    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN })
     public BaseResponse<ProviderCreateRes> createProvider(
             @RequestBody @Valid ProviderCreateReq body) {
 
@@ -161,7 +166,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<ProviderDetailRes> getProvider(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -217,6 +222,12 @@ public class AdminProviderController {
         return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
     }
 
+    /*********************************************************************************************************************
+    *
+    * Goods 관리 API
+    *
+    *********************************************************************************************************************/
+
     @ApiOrder(8)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -227,7 +238,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR, Role.API_CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_OPERATOR })
     public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -244,12 +255,14 @@ public class AdminProviderController {
     @Operation(summary = "상품 등록", description = "상품을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_OPERATOR })
     public BaseResponse<GoodsCreateRes> createGoods(
             @RequestBody @Valid GoodsCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-        return BaseResponseFactory.create(goodsService.createGoods(providerNo, body));
+        Role role = authorizationService.getCurrentRole();
+
+        return BaseResponseFactory.create(goodsService.createGoods(role, providerNo, body));
     }
 
     @ApiOrder(10)
@@ -260,7 +273,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 상세 조회", description = "상품 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<GoodsDetailRes> getGoodsDetail(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
@@ -285,7 +298,10 @@ public class AdminProviderController {
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        goodsService.updateGoods(goodsNo, body);
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+
+        goodsService.updateGoods(companyNo, role, providerNo, goodsNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -322,6 +338,12 @@ public class AdminProviderController {
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
         return BaseResponseFactory.create(goodsService.getGoodsLatestUpdated(goodsNo));
     }
+
+    /*********************************************************************************************************************
+    *
+    * Goods Data 관리 API
+    *
+    *********************************************************************************************************************/
 
     @ApiOrder(14)
     @Parameters({

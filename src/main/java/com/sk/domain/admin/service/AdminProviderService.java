@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
@@ -21,8 +21,6 @@ import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
-import com.sk.domain.shared.service.permissions.AuthorizationService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,17 +42,25 @@ public class AdminProviderService {
      * @return PaginationRes<ProviderRes>
      */
     public PaginationRes<ProviderRes> getAllProviders(int companyNo, Role role, int page, int size) {
+
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role)) {
-            // 관리자: 전체 프로바이더를 조회한다.
-            return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
-            // 운영자: 고객사에 등록 된 프로바이더만 조회한다.
-            return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
-        }
+        switch (role) {
+            case ADMIN:
+                return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
 
-        return null;
+            case OPERATOR:
+                return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
+
+            case API_SUB_ADMIN:
+                return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
+
+            case API_OPERATOR:
+                return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
     }
 
     /**
@@ -66,15 +72,16 @@ public class AdminProviderService {
      */
     public List<ProviderNameRes> getAllProviderNm(int companyNo, Role role) {
 
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 전체 프로바이더명을 조회한다.
-            return providerRepository.findProviderNmForAdmin();
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
-            // 운영자 고객사에 등록 된 프로바이더명만 조회한다.
-            return providerRepository.findProviderNmForOperator(companyNo);
-        }
+        switch (role) {
+            case ADMIN:
+                return providerRepository.findProviderNmForAdmin();
 
-        return null;
+            case OPERATOR:
+                return providerRepository.findProviderNmForOperator(companyNo);
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
     }
 
     /**
@@ -105,26 +112,25 @@ public class AdminProviderService {
      */
     public ProviderDetailRes getProvider(int companyNo, Role role, int providerNo) {
 
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 프로바이더를 조회한다.
-            return providerRepository.findProviderDetailByProviderNo(providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
-            // 운영자: 프로바이더 등록 유무 체크 후 조회한다.
+        switch (role) {
+            case ADMIN:
+                return providerRepository.findProviderDetailByProviderNo(providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-            // 프로바이더 등록 유무 체크
-            customerCompanyProviderMappingRepository
-                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+            case OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
 
-            return providerRepository.findProviderDetailByProviderNo(providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+                return providerRepository.findProviderDetailByProviderNo(providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
-
-        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
