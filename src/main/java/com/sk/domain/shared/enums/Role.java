@@ -7,11 +7,43 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Role {
 
+    /**
+     * SSO 로그인 이후 발급되는 '사용자' 토큰
+     */
     USER("USER", "사용자"),
-    ADMIN("ADMIN", "관리자"),
-    SUB_ADMIN("SUB_ADMIN", "관리자(public 상품 업로드)"),
-    OPERATOR("OPERATOR", "운영자(private 상품 업로드)"),
-    CLIENT("CLIENT", "클라이언트"),
+
+    /**
+     * SSO 로그인 이후 발급되는 '관리자' 토큰
+     */
+    ADMIN("ADMIN", "관리자(Private 상품 업로더)"),
+
+    /**
+     * SSO 로그인 이후 발급되는 '운영자' 토큰
+     *   - 사용자가 직접 RPA 상품(Private) 업로드를 위한 토큰
+     */
+    OPERATOR("OPERATOR", "운영자"),
+
+    /**
+     * Oauth2 인증 이후 발급되는 '회사 단위 사용자' 토큰
+     *   - '회사권한'을 가진 상품 리소스에 접근이 가능
+     */
+    API_CLIENT("API_CLIENT", "클라이언트"),
+
+    /**
+     * Oauth2 인증 이후 발급되는 '회사 단위 관리자' 토큰
+     *   - API를 통하여 RPA 상품(Public) 업로드를 위한 토큰
+     */
+    API_SUB_ADMIN("API_SUB_ADMIN", "관리자(Public 상품 업로더)"),
+
+    /**
+     * Oauth2 인증 이후 발급되는 '회사 단위 운영자' 토큰
+     *   - API를 통하여 RPA 상품(Private) 업로드를 위한 토큰
+     */
+    API_OPERATOR("API_OPERATOR", "관리자(Private 상품 업로드)"),
+
+    /**
+     * 기본 Default Role
+     */
     SYSTEM("SYSTEM", "시스템");
 
     private final String code;

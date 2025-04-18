@@ -46,7 +46,7 @@ public class CustomRegisteredClientRepository implements RegisteredClientReposit
             .clientSettings(ClientSettings.builder()
                 .setting("companyNo", client.getCustomerCompany().getCustomerCompanyNo())
                 .setting("companyCd", client.getCustomerCompany().getCustomerCompanyCd())
-                .setting("role", client.getCustomerCompany().getIsMipManagementCompany() ? Role.SUB_ADMIN : Role.OPERATOR)
+                .setting("role", client.getCustomerCompany().getIsMipManagementCompany() ? Role.API_SUB_ADMIN : Role.API_OPERATOR)
                 .requireProofKey(false)
                 .requireAuthorizationConsent(false)  // 명시적 동의 필요 없음
                 .build())

@@ -10,7 +10,7 @@ import java.util.List;
  * @param chartMetadata 차트의 공통 메타데이터 (단위, 간격 등)
  * @param mainChart     주요 차트 데이터 (캔들 차트 등) - ChartDataDto 사용
  * @param indicators    보조 지표 데이터 목록 (이동평균선, 볼린저밴드 등) - IndicatorDto 사용
- * @param compareCharts 비교 차트 데이터 목록 (다른 상품 가격, 지수 등) - ChartDataDto 사용
+ * @param comparisonCharts 비교 차트 데이터 목록 (다른 상품 가격, 지수 등) - ChartDataDto 사용
  */
 public record ChartBundleRes(
 
@@ -24,7 +24,7 @@ public record ChartBundleRes(
     List<IndicatorData> indicators,
 
     @Schema(description = "비교군 차트")
-    List<ChartData> compareCharts
+    List<ChartData> comparisonCharts
 
 ) {
 

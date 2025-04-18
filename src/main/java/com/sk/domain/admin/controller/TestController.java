@@ -156,7 +156,7 @@ public class TestController {
 
     // [관리자 화면] 오직 관리자만 접근가능한 화면 = 관리자 화면은 95% 이상 이 권한으로 매칭될 것으로 생각함
     @RequiredPermission(roles = { Role.ADMIN })
-    @GetMapping("/admin-management/goods/{goodsNo}/graph1")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph0")
     public String test1() {
         return "OK";
     }
@@ -166,8 +166,8 @@ public class TestController {
     // 운영자(oauth 토큰 발급 / 관리회사 전용(private 데이터 업로드를 위함))
     // 서브 관리자(oauth 토큰 발급 / 운영회사 전용(public 데이터 업로드를 위함))
     // RPA? 거기서 사용되는 용도
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.SUB_ADMIN })
-    @GetMapping("/admin-management/goods/{goodsNo}/graph2")
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN })
+    @GetMapping("/admin-management/goods/{goodsNo}/graph1")
     public String test2() {
         return "OK";
     }
@@ -175,7 +175,7 @@ public class TestController {
     // [사용자 화면] - 사용자 화면중에서 그냥 상품에 대한 권한없이 다 볼 수 있는 화면
     @RequiredPermission(roles = { Role.USER, Role.ADMIN }, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY // 타사권한 가진 어드민을 의미함
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph3")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph2")
     public String test3() {
         return "OK";
     }
@@ -184,7 +184,7 @@ public class TestController {
     @RequiredPermission(roles = { Role.USER, Role.ADMIN }, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, // 타사권한 가진 어드민을 의미함
             requireViewPermission = true, goodsParam = "goodsNo" // 상품 단위로 권한을 체크하기 위함
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph4")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph3")
     public String test4() {
         return "OK";
     }
@@ -193,7 +193,7 @@ public class TestController {
     @RequiredPermission(roles = { Role.USER, Role.ADMIN }, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, // 타사권한 가진 어드민을 의미함
             requireDownloadPermission = true, goodsParam = "goodsNo" // 상품 단위로 권한을 체크하기 위함
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph5")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph4")
     public String test5() {
         return "OK";
     }
