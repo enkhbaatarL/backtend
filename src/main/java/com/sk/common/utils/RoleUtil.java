@@ -31,10 +31,10 @@ public class RoleUtil {
         return role.getCode().equals(Role.USER.getCode());
     }
 
-    public static boolean isClient(Role role) {
+    public static boolean isPlusOperator(Role role) {
         if (role == null || role.getCode() == null) {
             return false;
         }
-        return role.getCode().equals(Role.API_CLIENT.getCode());
+        return role.getCode().equals(Role.API_PLUS_OPERATOR.getCode());
     }
 }
