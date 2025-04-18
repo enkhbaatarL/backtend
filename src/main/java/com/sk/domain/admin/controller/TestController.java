@@ -207,7 +207,7 @@ public class TestController {
     // 서브 관리자(oauth 토큰 발급 / 운영회사 전용(public 데이터 업로드를 위함))
     // RPA? 거기서 사용되는 용도
     @RequiredPermission(
-        roles = { Role.ADMIN, Role.OPERATOR, Role.SUB_ADMIN }
+        roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN }
     )
     @GetMapping("/admin-management/goods/{goodsNo}/graph1")
     public String test2() {
