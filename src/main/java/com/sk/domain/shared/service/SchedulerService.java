@@ -83,6 +83,22 @@ public class SchedulerService {
         for (GoodsCriticalValueSetting goodsCriticalValueSettingData : goodsCriticalValueSettings) {
             // TODO: 호영: 임계치에 따른 이메일 발송 로직 추가, 성공한 메일, 실패한 메일 나눠서 Response 작성
 
+            String goodsDataSourceNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getGoodsDataSourceNm();
+            String targetDbNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
+            String targetTableNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetTableNm();
+            String queryConditionCntt = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getQueryConditionCntt();
+
+
+            String querySelect;
+            String queryFrom;
+            String queryWhere;
+            String queryOrderBy;
+
+            
+
+
+
+
             // Integer goodsDataSourceNo = goodsCriticalValueSetting.getGoodsDataSource().getGoodsDataSourceNo();
             // String goodsDataSourceNm = goodsCriticalValueSetting.getGoodsDataSource().getGoodsDataSourceNm();
             // Goods goods = goodsCriticalValueSetting.getGoodsDataSource().getGoods();

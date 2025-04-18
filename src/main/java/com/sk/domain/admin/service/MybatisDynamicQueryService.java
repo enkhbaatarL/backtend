@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
+import com.sk.domain.admin.dto.request.DynamicDataSaveAll;
 import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -58,5 +59,18 @@ public class MybatisDynamicQueryService {
         params.put("whereClause", whereClause);
         params.put("additionalWhereClause", additionalWhereClause);
         return dynamicMapper.selectDynamic(params);
+    }
+
+    public void saveAllDynamicData(DynamicDataSaveAll dynamicDataSaveAll) {
+        String tableName = dynamicDataSaveAll.tableName();
+        List<String> columns = dynamicDataSaveAll.columns();
+        List<Object[]> values = dynamicDataSaveAll.values();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("values", values);
+
+        dynamicMapper.saveAllDynamic(params);
     }
 }

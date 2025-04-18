@@ -167,19 +167,6 @@ public class TestService {
             // 엑셀 파일 검수 후 업로드
             boolean isUploaded = excelService.uploadStructuredData(file, componentInfo);
 
-
-            // TODO: 호영: 데아터 소스 저장,
-            
-            // TODO: 호영: 데이터 소스 저장시에 예외처리: 날짜 겹치면 overwrite 처리 였나??
-
-            // 데이터 소스 저장
-
-            // 파일 S3에 저장
-
-            // 파일 내용 DB 테이블에 저장
-
-            //TODO:  상품 데이터 단위 변환 내역 저장 => 이건 컴포넌트 저장시에?!
-
             return null;
         } catch (IOException e) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, e.getMessage());

@@ -297,7 +297,9 @@ public class AdminGoodsDataService {
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
                                 componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
-                                "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                                componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+
+				//TODO: 단위 매핑 데이터 추가
 
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), null,
@@ -434,7 +436,9 @@ public class AdminGoodsDataService {
 					GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
 					.save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
 							componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
-							"goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+							componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+
+					//TODO: 단위 매핑 데이터 추가
 
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                     goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), null,

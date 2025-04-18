@@ -10,11 +10,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +28,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,9 +38,9 @@ import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.PairUtil;
+import com.sk.domain.admin.dto.request.DynamicDataSaveAll;
 import com.sk.domain.admin.dto.request.ExcelReq;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
-import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -54,11 +51,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ExcelService {
 
-    // private final SqlSessionFactory sqlSessionFactory;
-    private final SqlSessionTemplate sqlSessionTemplate;
     private final int DEFAULT_HEADER_ROW_INDEX = 0; // 기본 엑셀 헤더 행 인덱스 (파일에서 1행 => 인덱스 0)
     private final int DEFAULT_DATA_START_ROW_INDEX = 1; // 기본 엑셀 데이터 시작 행 인덱스 (파일에서 2행 => 인덱스 1)
     private final int MAX_CONSECUTIVE_EMPTY_ROWS = 5; // 최대 허용 빈 행 수 (엑셀 검수 시 연속 빈 행 수가 5개 이상이면 종료)
+
+    private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     // todo: 시트 2개 이상에서 데이타 담아서 내려주고 읽어오기
     /**
@@ -632,7 +629,6 @@ public class ExcelService {
      * @return
      */
     private boolean saveBatchData(List<String> columns, List<Object[]> values, String tableName) {
-        DynamicMapper mapper = sqlSessionTemplate.getMapper(DynamicMapper.class);
         int batchSize = 500;
         int totalRows = values.size();
         int batchCount = (totalRows + batchSize - 1) / batchSize;
@@ -642,11 +638,7 @@ public class ExcelService {
             int toIndex = Math.min(fromIndex + batchSize, totalRows);
             List<Object[]> batchData = values.subList(fromIndex, toIndex);
 
-            Map<String, Object> param = new HashMap<>();
-            param.put("tableName", tableName);
-            param.put("columns", columns);
-            param.put("values", batchData);
-            mapper.saveAllDynamic(param);
+            mybatisDynamicQueryService.saveAllDynamicData(DynamicDataSaveAll.of(tableName, columns, batchData));
         }
         return true;
     }

@@ -30,7 +30,7 @@ public record DynamicDataReq(
             .build();
     }
 
-    //TEST 용
+    //TODO: 삭제 필요, TEST용
     public static DynamicDataReq of(ComponentInfo componentInfo) {
         return DynamicDataReq.builder()
             .columns(componentInfo.getTableColumnListNm())
