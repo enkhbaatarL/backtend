@@ -83,7 +83,8 @@ public class AdminGoodsDataService {
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param page 조회할 페이지 번호 (min 1)
     * @param size 조회할 요소 사이즈 (min 1)
     * @param keyword 검색 키워드
@@ -138,7 +139,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터명 목록을 조회합니다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @return List<GoodsDataNameRes>
@@ -159,7 +161,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터 상세 조회합니다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param goodsDataNo 상품 데이타 번호
@@ -217,7 +220,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터 등록: 신규등록
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param GoodsDataCreateReq
@@ -293,7 +297,7 @@ public class AdminGoodsDataService {
                         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                                 String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
 
-				// todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
+                // todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
                                 componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
@@ -323,7 +327,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터 등록: 기존 데이타 업데이트
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param GoodsDataUpdateReq
@@ -426,15 +431,16 @@ public class AdminGoodsDataService {
                             FileRelationshipObjectSeparateCode.GDATS.getCode(),
                             DateUtil.endYmd());
 
-					ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-							.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-									String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));		
+                    ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
+                            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    String.format("Component information could not be found. componentTypeId: %s",
+                                            structuredData.componentTypeId())));
 
                     // todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
-					GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-					.save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
-							componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
-							"goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                    GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
+                            .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                                    componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
+                                    "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
 
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                     goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), null,

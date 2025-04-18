@@ -40,7 +40,8 @@ public class AdminGoodsService {
     /**
     * 상품 목록을 페이지네이션 처리하여 조회한다.
     * 
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param page 조회할 페이지 번호 (min 1)
     * @param size 조회할 요소 사이즈 (min 1)
     * @param keyword 검색 키워드
@@ -51,7 +52,7 @@ public class AdminGoodsService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(role)) {
+        if (RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role)) {
             // 관리자: 프로바이더에 속한 모든 상품 조회
             return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
         } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
@@ -83,7 +84,8 @@ public class AdminGoodsService {
     /**
     * 상품을 상세 조회한다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @return GoodsDetailRes

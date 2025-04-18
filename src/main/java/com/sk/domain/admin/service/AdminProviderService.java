@@ -37,7 +37,8 @@ public class AdminProviderService {
     /**
      * 데이타 프로바이더 목록을 페이지네이션 처리하여 조회한다.
      *
-     * @param user 사용자 정보
+     * @param companyNo 사용자가 속한 고객사 번호
+     * @param role 사용자 역할
      * @param page 조회할 페이지 번호 (min 1)
      * @param size 조회할 요소 사이즈 (min 1)
      * @return PaginationRes<ProviderRes>
@@ -53,13 +54,14 @@ public class AdminProviderService {
             return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+        return null;
     }
 
     /**
      * 데이타 프로바이더명 목록을 조회한다.
      * 
-     * @param user 사용자 정보
+     * @param companyNo 사용자가 속한 고객사 번호
+     * @param role 사용자 역할
      * @return List<ProviderNameRes>
      */
     public List<ProviderNameRes> getAllProviderNm(int companyNo, Role role) {
@@ -72,7 +74,7 @@ public class AdminProviderService {
             return providerRepository.findProviderNmForOperator(companyNo);
         }
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+        return null;
     }
 
     /**
@@ -96,9 +98,8 @@ public class AdminProviderService {
     /**
      * 데이타 프로바이더를 상세 조회한다.
      * 
-     * 
-     *
-     * @param user 사용자 정보
+     * @param companyNo 사용자가 속한 고객사 번호
+     * @param role 사용자 역할
      * @param providerNo 데이타 프로바이더 번호
      * @return ProviderDetailRes
      */
