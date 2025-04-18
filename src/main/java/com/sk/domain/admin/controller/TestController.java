@@ -196,7 +196,7 @@ public class TestController {
     @RequiredPermission(
         roles = { Role.ADMIN }
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph0")
     public String test1() {
         return "OK";
     }
@@ -209,7 +209,7 @@ public class TestController {
     @RequiredPermission(
         roles = { Role.ADMIN, Role.OPERATOR, Role.SUB_ADMIN }
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph1")
     public String test2() {
         return "OK";
     }
@@ -219,7 +219,7 @@ public class TestController {
         roles = { Role.USER, Role.ADMIN },
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY // 타사권한 가진 어드민을 의미함
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph2")
     public String test3() {
         return "OK";
     }
@@ -231,7 +231,7 @@ public class TestController {
         requireViewPermission = true,
         goodsParam = "goodsNo" // 상품 단위로 권한을 체크하기 위함
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph3")
     public String test4() {
         return "OK";
     }
@@ -243,7 +243,7 @@ public class TestController {
         requireDownloadPermission = true,
         goodsParam = "goodsNo" // 상품 단위로 권한을 체크하기 위함
     )
-    @GetMapping("/admin-management/goods/{goodsNo}/graph")
+    @GetMapping("/admin-management/goods/{goodsNo}/graph4")
     public String test5() {
         return "OK";
     }
