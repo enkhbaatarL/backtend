@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequirePermission;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
@@ -72,9 +72,9 @@ public class AdminBulletinBoardController {
     private final CustomerCompanyRepository customerCompanyRepository;
 
     /*******************************************************************
-     * 
+     *
      * 공지사항
-     * 
+     *
      *******************************************************************/
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "png");
     private static final long MAX_SIZE = 10 * 1024 * 1024;
@@ -83,7 +83,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice/filter")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<NoticeFilterRes> getNoticeFilter() {
 
         return BaseResponseFactory.create(adminBulletinBoardService.getNoticeFilter());
@@ -101,7 +101,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 목록 조회 - with pagination", description = "공지사항 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<PaginationRes<NoticeRes>> getAllNotices(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -117,7 +117,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 등록", description = "공지사항을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> createNotice(
             @RequestBody @Valid NoticeCreateReq body) {
 
@@ -133,7 +133,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 상세 조회", description = "공지사항 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/{noticeNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<NoticeDetailRes> getNotice(
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
         return BaseResponseFactory.create(adminBulletinBoardService.getNotice(noticeNo));
@@ -146,7 +146,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 수정", description = "공지사항을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/notices/{noticeNo}")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateNotice(
             @RequestBody @Valid NoticeUpdateReq body,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
@@ -163,7 +163,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 삭제", description = "공지사항을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/notices/{noticeNo}")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> deleteNotice(
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
@@ -176,7 +176,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 첨부 파일 업로드", description = "공지사항 첨부 파일을 업로드합니다. 20MB 이하의 jpg, png만 허용")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/notice/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<FileUploadRes> uploadFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
@@ -212,7 +212,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 첨부 파일 다운로드", description = "공지사항 첨부 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/notice/download-file/{fileNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public ResponseEntity<byte[]> downloadFile(
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
@@ -232,21 +232,21 @@ public class AdminBulletinBoardController {
     @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/popup")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<PopupRes> getPopup() {
         return BaseResponseFactory.create(adminBulletinBoardService.getPopup());
     }
 
     /*******************************************************************
-     * 
+     *
      * FAQ
-     * 
+     *
      *******************************************************************/
     @ApiOrder(9)
     @Operation(summary = "FAQ 필터 조회", description = "FAQ 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq/filter")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<FaqFilterRes> getFaqFilter() {
 
         return BaseResponseFactory.create(adminBulletinBoardService.getFaqFilter());
@@ -262,7 +262,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 목록 조회 - with pagination", description = "FAQ 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<PaginationRes<FaqRes>> getAllFaq(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -276,7 +276,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 등록", description = "FAQ를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/faq")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> createFaq(
             @RequestBody() @Valid FaqCreateReq body) {
 
@@ -292,7 +292,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 상세 조회", description = "FAQ 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq/{faqNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<FaqDetailRes> getFaq(
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
 
@@ -309,7 +309,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 수정", description = "FAQ를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/faq/{faqNo}")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateFaq(
             @RequestBody @Valid FaqUpdateReq body,
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
@@ -326,7 +326,7 @@ public class AdminBulletinBoardController {
     @Operation(summary = "FAQ 삭제", description = "FAQ를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/faq/{faqNo}")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> deleteFaq(
             @PathVariable(value = "faqNo") @Min(value = 1) Integer faqNo) {
 

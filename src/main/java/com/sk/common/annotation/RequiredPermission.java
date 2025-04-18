@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RequirePermission {
+public @interface RequiredPermission {
 
     /**
      * 필요한 역할
