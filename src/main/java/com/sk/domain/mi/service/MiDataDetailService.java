@@ -167,32 +167,56 @@ public class MiDataDetailService {
 
         // 상품데이터 검증
         ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
-        GoodsData goodsData = goodsDataResult.getOrThrow();
-
-        // 컬럼 정보 Map 생성
-        Map<String, String> dataColumnsMap = goodsData.getGoods().getProvider().getProviderDataColumns()
-            .stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
+        goodsDataResult.validOrThrow();
 
         // 상품 데이터소스 검증 및 '메인 차트' 메타 정보 조회
         ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(goodsDataSourceNo);
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceResult.getOrThrow();
 
-        // 상품 데이터소스 '메인 차트' 데이터 조회
+        // '메인 차트' 객체 생성
+        ChartData mainCharts = generateChartData(goodsDataSourceDetail, startDate, endDate, interval);
 
-        // hint 1. date 컬럼명
+        // 보조지표를 위한 주요 메트릭 시계열 데이터 추출 ('close' 또는 'main')
+        List<BigDecimal> majorMetricSeries = ChartBundleFactory.extractMajorMetricSeries(mainCharts);
+        // 보조지표를 위한 주요 날짜 시계열 데이터 추출 ('date')
+        List<LocalDate> dateMetricSeries = ChartBundleFactory.extractDateMetricSeries(mainCharts);
+
+        List<IndicatorData> indicators = generateIndicator(majorMetricSeries, dateMetricSeries);
+
+        // 상품 데이터소스 '비교군' 메타 정보 조회
+        List<DataSourceGroupMapping> compareDataSourcesMappings = dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(goodsDataSourceDetail);
+
+        List<ChartData> comparisonCharts = compareDataSourcesMappings.stream()
+            .map(compareDataSource -> generateChartData(compareDataSource.getCompareGoodsDataSourceDetail(), startDate, endDate, interval))
+            .toList();
+
+        return new ChartBundleRes(
+            null,
+            mainCharts,
+            indicators,
+            comparisonCharts
+        );
+
+    }
+
+    private ChartData generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval) {
+
+        Map<String, String> expnMap = goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns()
+            .stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
+
         String[] cols = goodsDataSourceDetail.getTableColumnListNm().split(",");
         String dateColumnName = cols[0];
-        // hint 2. 차트 유형 (캔들 형 or 매트릭 형)
+
         Boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
 
         List<Map<String, Object>> goodsDataSourceCharts = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
         List<Map<String, Object>> grouped = aggregateByInterval(goodsDataSourceCharts, interval, dateColumnName, cols, isCandleChartPossible);
 
-        // 데이터 변경
-        ChartData chartData = ChartBundleFactory.convertToChartData(goodsDataSourceDetail.getIsCandleChartPossible(), grouped, goodsDataSourceDetail.getTableColumnListNm(), dataColumnsMap);
+        return ChartBundleFactory.convertToChartData(goodsDataSourceDetail.getIsCandleChartPossible(), grouped, goodsDataSourceDetail.getTableColumnListNm(), expnMap);
 
-        // 보조지표를 위한 주요 메트릭 시계열 데이터 추출 ('close' 또는 'main')
-        List<BigDecimal> majorMetricSeries = ChartBundleFactory.extractMajorMetricSeries(chartData);
+    }
+
+    private List<IndicatorData> generateIndicator(List<BigDecimal> majorMetricSeries, List<LocalDate> dateMetricSeries) {
 
         List<BigDecimal> ma5 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 5);
         List<BigDecimal> ma20 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 20);
@@ -200,43 +224,14 @@ public class MiDataDetailService {
         List<BigDecimal> ma120 = unitConversionService.convertTimeSeriesToMovingAverage(majorMetricSeries, 120);
 
         // 이동평균선(MA) 지표 데이터 생성
-        IndicatorData maIndicator = ChartBundleFactory.createMovingAverageIndicator(chartData, ma5, ma20, ma60, ma120);
+        IndicatorData maIndicator = ChartBundleFactory.createMovingAverageIndicator(dateMetricSeries, ma5, ma20, ma60, ma120);
 
         List<BollingerBandResult> bollingerBandResults = unitConversionService.convertTimeSeriesToBollingerBands(majorMetricSeries, 20);
 
         // 볼린저 밴드(BB) 지표 데이터 생성
-        IndicatorData bbIndicator = ChartBundleFactory.createBollingerBandsIndicator(chartData, bollingerBandResults);
+        IndicatorData bbIndicator = ChartBundleFactory.createBollingerBandsIndicator(dateMetricSeries, bollingerBandResults);
 
-        // 지표 데이터 목록 생성
-        List<IndicatorData> indicators = List.of(maIndicator, bbIndicator);
-
-        List<ChartData> compareDynamicChartRes = new ArrayList<>();
-
-        // 상품 데이터소스 '비교군' 메타 정보 조회
-        List<DataSourceGroupMapping> compareDataSources = dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(goodsDataSourceDetail);
-
-        compareDataSources.forEach(compareDataSource -> {
-            GoodsDataSourceDetail compareGoodsDataSourceDetail = compareDataSource.getCompareGoodsDataSourceDetail();
-
-            Map<String, String> compareDataColumnsMap = compareGoodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns()
-                .stream().collect(Collectors.toMap(c -> c.getId().getProviderDataColumnNm(), ProviderDataColumn::getDataColumnExpn));
-
-            String[] compareCols = compareGoodsDataSourceDetail.getTableColumnListNm().split(",");
-            String compareDateColumnName = compareCols[0];
-            Boolean isCompareCandleChartPossible = compareGoodsDataSourceDetail.getIsCandleChartPossible();
-
-            List<Map<String, Object>> cds = getRows(compareDataSource.getCompareGoodsDataSourceDetail(), compareDateColumnName, startDate, endDate);
-            List<Map<String, Object>> groupedCds = aggregateByInterval(cds, interval, compareDateColumnName, compareCols, isCompareCandleChartPossible);
-
-            compareDynamicChartRes.add(ChartBundleFactory.convertToChartData(compareGoodsDataSourceDetail.getIsCandleChartPossible(), groupedCds, compareGoodsDataSourceDetail.getTableColumnListNm(), compareDataColumnsMap));
-        });
-
-        return new ChartBundleRes(
-            null,
-            chartData,
-            indicators,
-            compareDynamicChartRes
-        );
+        return List.of(maIndicator, bbIndicator);
 
     }
 
