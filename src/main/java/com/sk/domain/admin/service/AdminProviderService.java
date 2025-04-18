@@ -111,7 +111,8 @@ public class AdminProviderService {
 
         Short codeRnk = (short) (commonCodeDetailRepository.findMaxCodeRnkByHighCodeId(commonCode.getCodeGroupId()) + 1);
 
-        CommonCodeDetail commonCodeDetail = CommonCodeDetail.of(commonCode.getCodeGroupId(), "", dto.providerNm(), codeRnk != null ? codeRnk : 1,
+        CommonCodeDetail commonCodeDetail = CommonCodeDetail.of(commonCode.getCodeGroupId(), "A_".concat(dto.providerId()), dto.providerNm(),
+                codeRnk != null ? codeRnk : 1,
                 dto.providerExpn(),
                 DateUtil.currentYmd(), DateUtil.endYmd(), dto.isUsed(), commonCode.getCodeGroupId(), "A_PROVIDERS", commonCode);
         commonCodeDetailRepository.save(commonCodeDetail);
