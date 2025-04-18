@@ -9,6 +9,7 @@ import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.chart.ChartBundleRes;
 import com.sk.domain.mi.dto.response.chart.ChartData;
+import com.sk.domain.mi.dto.response.chart.ChartMetadata;
 import com.sk.domain.mi.dto.response.chart.IndicatorData;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
 import com.sk.domain.mi.validator.GoodsDataValidator;
@@ -173,6 +174,9 @@ public class MiDataDetailService {
         ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(goodsDataSourceNo);
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceResult.getOrThrow();
 
+        // 차트 메타데이터 생성
+        ChartMetadata metadata = ChartMetadata.of(goodsDataSourceDetail.getGoodsDataSourceUnitNm(), interval);
+
         // '메인 차트' 객체 생성
         ChartData mainCharts = generateChartData(goodsDataSourceDetail, startDate, endDate, interval);
 
@@ -190,12 +194,7 @@ public class MiDataDetailService {
             .map(compareDataSource -> generateChartData(compareDataSource.getCompareGoodsDataSourceDetail(), startDate, endDate, interval))
             .toList();
 
-        return new ChartBundleRes(
-            null,
-            mainCharts,
-            indicators,
-            comparisonCharts
-        );
+        return ChartBundleRes.of(metadata, mainCharts, indicators, comparisonCharts);
 
     }
 
@@ -257,7 +256,8 @@ public class MiDataDetailService {
         // 2) 전체 날짜 리스트, 시작/끝 구하기
         List<LocalDate> allDates = rawRows.stream()
             .map(r -> DateUtil.parseDate(r.get(dateColName)))
-            .collect(Collectors.toList());
+            .toList();
+
         LocalDate firstDate = allDates.get(0);
         LocalDate lastDate = allDates.get(allDates.size() - 1);
 
@@ -265,6 +265,7 @@ public class MiDataDetailService {
         List<LocalDate> bucketStarts = new ArrayList<>();
         bucketStarts.add(lastDate);
         LocalDate cursor = lastDate;
+
         while (true) {
             LocalDate next = switch (interval) {
                 case ONE_WEEK -> cursor.minusWeeks(1);
@@ -329,7 +330,7 @@ public class MiDataDetailService {
         BigDecimal low   = bucket.stream().map(r -> toBigDecimal(r.get(lowCol))).min(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
 
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put(dateCol, DateUtil.toYmdHyphen(startDate));
+        m.put(dateCol, DateUtil.toYmd(startDate));
         m.put(openCol, open);
         m.put(closeCol, close);
         m.put(highCol, high);
@@ -345,7 +346,7 @@ public class MiDataDetailService {
             .average().orElse(0d);
 
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put(dateCol, DateUtil.toYmdHyphen(startDate));
+        m.put(dateCol, DateUtil.toYmd(startDate));
         m.put(mainCol, BigDecimal.valueOf(mainAvg));
 
         for (String ref : refCols) {

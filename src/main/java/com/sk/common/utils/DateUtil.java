@@ -88,9 +88,9 @@ public final class DateUtil {
             return ts.toLocalDateTime().toLocalDate();
         } else {
             String s = dateObj.toString();
-            // "yyyy-MM-dd HH:mm:ss" 또는 "yyyy-MM-dd"
-            String d = s.length() >= 10 ? s.substring(0, 10) : s;
-            return DateUtil.fromYmdHyphen(d);
+            // "yyyyMMdd"
+            String d = s.length() >= 8 ? s.substring(0, 8) : s;
+            return DateUtil.fromYmd(d);
         }
     }
 

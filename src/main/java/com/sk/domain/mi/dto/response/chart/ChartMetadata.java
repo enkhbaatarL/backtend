@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.chart;
 
 import com.sk.domain.shared.enums.Interval;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 
 public record ChartMetadata(
 
@@ -12,4 +13,18 @@ public record ChartMetadata(
     Interval interval
 
 ) {
+
+    @Builder
+    public ChartMetadata(String unit, Interval interval) {
+        this.unit = unit;
+        this.interval = interval;
+    }
+
+    public static ChartMetadata of(String unit, Interval interval) {
+        return ChartMetadata.builder()
+            .unit(unit)
+            .interval(interval)
+            .build();
+    }
+
 }
