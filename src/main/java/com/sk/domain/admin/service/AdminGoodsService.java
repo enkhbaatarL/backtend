@@ -39,7 +39,7 @@ public class AdminGoodsService {
 
     /**
     * 상품 목록을 페이지네이션 처리하여 조회한다.
-    * 
+    *
     * @param user 사용자 정보
     * @param page 조회할 페이지 번호 (min 1)
     * @param size 조회할 요소 사이즈 (min 1)
@@ -54,7 +54,7 @@ public class AdminGoodsService {
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더에 속한 모든 상품 조회
             return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 고객사에 등록 된 프로바이더에 속한 모든 상품 조회
             return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
         }
@@ -94,7 +94,7 @@ public class AdminGoodsService {
             return goodsRepository.findGoodsDetail(providerNo, goodsNo)
                     .orElseThrow(
                             () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 고객사에 등록 된 프로바이더에 속한 권한 있는 상품 조회
 
             // 프로바이더 등록 유무 체크
@@ -121,7 +121,7 @@ public class AdminGoodsService {
     *
     * @param goodsNo 상품 번호
     * @param GoodsUpdateReq 상품 데이터
-    * @return 
+    * @return
     */
     @Transactional
     public void updateGoods(int goodsNo, GoodsUpdateReq dto) {
@@ -139,7 +139,7 @@ public class AdminGoodsService {
     * 상품을 삭제한다.
     *
     * @param goodsNo 상품 번호
-    * @return 
+    * @return
     */
     @Transactional
     public void deleteGoods(int goodsNo) {
