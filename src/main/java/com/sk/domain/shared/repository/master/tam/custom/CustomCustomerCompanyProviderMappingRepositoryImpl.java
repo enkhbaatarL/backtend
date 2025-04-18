@@ -105,7 +105,7 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
 
         if (ObjectUtils.isNotEmpty(ccgMappings)) {
             LocalDateTime date = ccgMappings.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date.isAfter(latestModifyDt)) {
+            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
                 latestModifyDt = date;
                 latestModifyId = ccgMappings.get(1, String.class);
             }

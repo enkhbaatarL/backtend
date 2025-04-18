@@ -195,7 +195,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
 
         if (ObjectUtils.isNotEmpty(ccpMapping)) {
             LocalDateTime date = ccpMapping.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date.isAfter(latestModifyDt)) {
+            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
                 latestModifyDt = date;
                 latestModifyId = ccpMapping.get(1, String.class);
             }
@@ -203,7 +203,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
 
         if (ObjectUtils.isNotEmpty(userInfo)) {
             LocalDateTime date = userInfo.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date.isAfter(latestModifyDt)) {
+            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
                 latestModifyDt = date;
                 latestModifyId = userInfo.get(1, String.class);
             }
@@ -239,7 +239,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         List<Tuple> companies = queryFactory
                 .select(customerCompany.customerCompanyNo, customerCompany.customerCompanyCd, customerCompany.customerCompanyNm)
                 .from(customerCompany)
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse())) 
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()))
                 .orderBy(customerCompany.customerCompanyNm.asc())
                 .fetch();
 

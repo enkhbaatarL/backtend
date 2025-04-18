@@ -3,6 +3,7 @@ package com.sk.common.interceptor;
 import java.util.Optional;
 
 import com.sk.domain.shared.enums.Role;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
@@ -56,7 +57,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
             StringUtil.stripNewlinesAndTabs(MDCUtil.getValue(MDCUtil.REQUEST_BODY)),
             MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG),
             MDCUtil.getValue(MDCUtil.ACCESS_IP_ADDRESS),
-            Role.valueOf(role)
+            ObjectUtils.isNotEmpty(role) ? Role.valueOf(role) : Role.SYSTEM
         );
 
         apiAccessLogRepository.save(accessLog);

@@ -26,6 +26,6 @@ public record ChartData(
     List<SchemaEntry> schema,
 
     @Schema(description = "실제 차트 데이터 (Key: 컬럼명, Value: 데이터 배열)")
-    Map<String, List<?>> data // String(날짜) 또는 Number(값) 타입을 모두 포함할 수 있도록 List<?> 사용
+    Map<String, List<?>> data
 
 ) {}
