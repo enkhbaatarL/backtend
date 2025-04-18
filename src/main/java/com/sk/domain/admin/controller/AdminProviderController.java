@@ -96,6 +96,26 @@ public class AdminProviderController {
             "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
 
+    // ADMIN-SKCC
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0Mjc0ODcxLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc4MDI3NDg3MX0.hVm8KPlcTPwjxGtdRr8VH1uIrGFIfIePb_FyVkiquHc
+
+    // OPERATOR-SKHY
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0Mjc0OTA0LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkwNH0.T0JZ5XJva9dokRGhDhipWTvlRi92kSO9cUEzpFfXgSk
+
+    // OPERATOR-SKGAS
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNzQ5MjcsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkyN30.p3BWi9foUIVa2LoG4GF6yBLvyoV-1ZTb7Q2S_JS2U1I
+
+    // USER-SKHY
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAxQFNLSFkuY29tIiwiaWF0IjoxNzQ0ODUyODE4LCJ1c2VyTm8iOjEwMDAwNTMsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MjgxOH0.QVEABqTE7DIwcjRP81FvxKCmThW3ImwveJKFecaiXcA
+
+    // USER-SKGAS
+    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMUBTS0dBUy5jb20iLCJpYXQiOjE3NDQ4NTMwMTUsInVzZXJObyI6MTAwMDA4NSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MzAxNX0.WcDDwXHwvXtkSITUeLE18AzFgWkwSCEEvGA_tqmx5X8
+
+    /*********************************************************************************************************************
+    *
+    * Provider 관리 API
+    *
+    *********************************************************************************************************************/
     @ApiOrder(1)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -104,7 +124,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 목록 조회 - with pagination", description = "데이타 프로바이더 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<PaginationRes<ProviderRes>> getAllProviders(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
@@ -119,7 +139,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider/name")
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<List<ProviderNameRes>> getAllProviderNm() {
 
         int companyNo = authorizationService.getCompanyNo();
@@ -132,7 +152,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN})
+    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN })
     public BaseResponse<ProviderCreateRes> createProvider(
             @RequestBody @Valid ProviderCreateReq body) {
 
@@ -202,6 +222,12 @@ public class AdminProviderController {
         return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
     }
 
+    /*********************************************************************************************************************
+    *
+    * Goods 관리 API
+    *
+    *********************************************************************************************************************/
+
     @ApiOrder(8)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -212,7 +238,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -229,12 +255,14 @@ public class AdminProviderController {
     @Operation(summary = "상품 등록", description = "상품을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods")
-    @RequiredPermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<GoodsCreateRes> createGoods(
             @RequestBody @Valid GoodsCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
-        return BaseResponseFactory.create(goodsService.createGoods(providerNo, body));
+        Role role = authorizationService.getCurrentRole();
+
+        return BaseResponseFactory.create(goodsService.createGoods(role, providerNo, body));
     }
 
     @ApiOrder(10)
@@ -264,13 +292,16 @@ public class AdminProviderController {
     @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequiredPermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<String> updateGoods(
             @RequestBody @Valid GoodsUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
-        goodsService.updateGoods(goodsNo, body);
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+
+        goodsService.updateGoods(companyNo, role, providerNo, goodsNo, body);
 
         return BaseResponseFactory.create("success");
     }
@@ -308,6 +339,12 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsService.getGoodsLatestUpdated(goodsNo));
     }
 
+    /*********************************************************************************************************************
+    *
+    * Goods Data 관리 API
+    *
+    *********************************************************************************************************************/
+
     @ApiOrder(14)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -337,7 +374,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
         return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
@@ -350,7 +387,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category/{codeId}")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
             @PathVariable(value = "codeId") String codeId) {
 
@@ -415,7 +452,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<String> createGoodsData(
             @RequestBody @Valid GoodsDataCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -457,7 +494,7 @@ public class AdminProviderController {
     @Operation(summary = "정형 데이타 파일 업로드", description = "정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<GoodsDataFileUploadRes> uploadStructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file,
             @Schema(implementation = StructuredDataFileReq.class) @RequestPart(value = "data", required = true) @Valid StructuredDataFileReq structuredDataFileReq)
@@ -501,7 +538,7 @@ public class AdminProviderController {
     @Operation(summary = "비정형 데이타 파일 업로드", description = "비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequiredPermission(roles = { Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR })
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
