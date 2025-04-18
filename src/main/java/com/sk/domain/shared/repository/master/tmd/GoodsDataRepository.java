@@ -157,11 +157,11 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             LEFT JOIN tmd_gdsdatam AS tg2 ON tg2.gds_no = tg.gds_no
             WHERE tc.cust_cpny_no = :customerCompanyNo
               AND tc.del_yn = 'N'
-              AND tg.del_yn = 'N'
-              AND tg2.del_yn = 'N'
               AND tc.use_yn = 'Y'
+              AND tg.del_yn = 'N'
               AND tg.use_yn = 'Y'
-              AND MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE)
+              AND tg2.del_yn = 'N'
+              AND (:keyword IS NULL OR MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE))
             ORDER BY tg2.crt_dtm DESC
                         """, countQuery = """
             SELECT
@@ -171,11 +171,11 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             LEFT JOIN tmd_gdsdatam AS tg2 ON tg2.gds_no = tg.gds_no
             WHERE tc.cust_cpny_no = :customerCompanyNo
               AND tc.del_yn = 'N'
-              AND tg.del_yn = 'N'
-              AND tg2.del_yn = 'N'
               AND tc.use_yn = 'Y'
+              AND tg.del_yn = 'N'
               AND tg.use_yn = 'Y'
-              AND MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE)
+              AND tg2.del_yn = 'N'
+              AND (:keyword IS NULL OR MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE))
             """, nativeQuery = true)
     Page<IGoodsDataRes> findByNameContainingOrSmryCntteContaining(@Param("customerCompanyNo") Integer customerCompanyNo,
             @Param("keyword") String keyword, Pageable pageable);
