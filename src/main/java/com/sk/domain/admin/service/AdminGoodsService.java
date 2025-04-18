@@ -63,7 +63,7 @@ public class AdminGoodsService {
             case API_SUB_ADMIN:
                 return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
 
-            case API_OPERATOR:
+            case API_PLUS_OPERATOR:
                 return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
 
             default:
@@ -98,7 +98,7 @@ public class AdminGoodsService {
                 return GoodsCreateRes
                         .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), true, provider)));
 
-            case API_OPERATOR:
+            case API_PLUS_OPERATOR:
                 return GoodsCreateRes
                         .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), false, provider)));
 

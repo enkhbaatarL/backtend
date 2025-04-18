@@ -1,5 +1,6 @@
 package com.sk.domain.admin.service;
 
+import java.sql.Date;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
 import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
@@ -17,9 +19,13 @@ import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
 import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
 import com.sk.domain.admin.dto.response.provider.ProviderRes;
+import com.sk.domain.shared.entity.master.tcm.CommonCode;
+import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyProviderMappingRepository;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminProviderService {
+    private final CommonCodeRepository commonCodeRepository;
+    private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final ProviderRepository providerRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
 
@@ -52,12 +60,6 @@ public class AdminProviderService {
             case OPERATOR:
                 return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
 
-            case API_SUB_ADMIN:
-                return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
-
-            case API_OPERATOR:
-                return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
-
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
@@ -79,6 +81,12 @@ public class AdminProviderService {
             case OPERATOR:
                 return providerRepository.findProviderNmForOperator(companyNo);
 
+            case API_SUB_ADMIN:
+                return providerRepository.findProviderNmForAdmin();
+
+            case API_PLUS_OPERATOR:
+                return providerRepository.findProviderNmForOperator(companyNo);
+
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
@@ -97,6 +105,16 @@ public class AdminProviderService {
                 .ifPresent(provider -> {
                     throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, "provider id: %s".formatted(dto.providerId()));
                 });
+
+        CommonCode commonCode = commonCodeRepository.findByCodeGroupId("gds_data_ctgr_cd")
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "gds_data_ctgr_cd"));
+
+        Short codeRnk = (short) (commonCodeDetailRepository.findMaxCodeRnkByHighCodeId(commonCode.getCodeGroupId()) + 1);
+
+        CommonCodeDetail commonCodeDetail = CommonCodeDetail.of(commonCode.getCodeGroupId(), "", dto.providerNm(), codeRnk != null ? codeRnk : 1,
+                dto.providerExpn(),
+                DateUtil.currentYmd(), DateUtil.endYmd(), dto.isUsed(), commonCode.getCodeGroupId(), "A_PROVIDERS", commonCode);
+        commonCodeDetailRepository.save(commonCodeDetail);
 
         return ProviderCreateRes
                 .of(providerRepository.save(Provider.of(dto.providerNm(), dto.providerId(), dto.providerExpn(), dto.isUsed())));

@@ -74,17 +74,35 @@ public class CommonCodeDetail extends BaseEntity {
 
     @Builder
     public CommonCodeDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, CommonCodeDetailId id, CommonCode commonCd, String codeNm,
+            Boolean isDeleted, CommonCodeDetailId id, String codeNm,
             Short codeRnk, String codeExpn, String useBeginDt, String useEndDt,
-            Boolean isUsed) {
+            Boolean isUsed, String highCodeGroupId, String highCodeId, CommonCode commonCd) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.id = id;
-        this.commonCd = commonCd;
         this.codeNm = codeNm;
         this.codeRnk = codeRnk;
         this.codeExpn = codeExpn;
         this.useBeginDt = useBeginDt;
         this.useEndDt = useEndDt;
         this.isUsed = isUsed;
+        this.highCodeGroupId = highCodeGroupId;
+        this.highCodeId = highCodeId;
+        this.commonCd = commonCd;
+    }
+
+    public static CommonCodeDetail of(String codeGroupId, String codeId, String codeNm, Short codeRnk, String codeExpn,
+            String useBeginDt, String useEndDt, Boolean isUsed, String highCodeGroupId, String highCodeId, CommonCode commonCd) {
+        return CommonCodeDetail.builder()
+                .id(new CommonCodeDetailId(codeGroupId, codeId))
+                .codeNm(codeNm)
+                .codeRnk(codeRnk)
+                .codeExpn(codeExpn)
+                .useBeginDt(useBeginDt)
+                .useEndDt(useEndDt)
+                .isUsed(isUsed)
+                .highCodeGroupId(highCodeGroupId)
+                .highCodeId(highCodeId)
+                .commonCd(commonCd)
+                .build();
     }
 }
