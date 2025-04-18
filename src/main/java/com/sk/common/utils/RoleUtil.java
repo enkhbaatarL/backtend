@@ -10,6 +10,13 @@ public class RoleUtil {
         return role.getCode().equals(Role.ADMIN.getCode());
     }
 
+    public static boolean isSubAdmin(Role role) {
+        if (role == null || role.getCode() == null) {
+            return false;
+        }
+        return role.getCode().equals(Role.API_SUB_ADMIN.getCode());
+    }
+
     public static boolean isOperator(Role role) {
         if (role == null || role.getCode() == null) {
             return false;
@@ -24,24 +31,10 @@ public class RoleUtil {
         return role.getCode().equals(Role.USER.getCode());
     }
 
-    public static boolean isApiSubAdmin(Role role) {
+    public static boolean isPlusOperator(Role role) {
         if (role == null || role.getCode() == null) {
             return false;
         }
-        return role.getCode().equals(Role.API_SUB_ADMIN.getCode());
-    }
-
-    public static boolean isApiOperator(Role role) {
-        if (role == null || role.getCode() == null) {
-            return false;
-        }
-        return role.getCode().equals(Role.API_OPERATOR.getCode());
-    }
-
-    public static boolean isApiClient(Role role) {
-        if (role == null || role.getCode() == null) {
-            return false;
-        }
-        return role.getCode().equals(Role.API_CLIENT.getCode());
+        return role.getCode().equals(Role.API_PLUS_OPERATOR.getCode());
     }
 }

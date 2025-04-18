@@ -41,7 +41,6 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.Role;
@@ -123,7 +122,7 @@ public class AdminGoodsDataService {
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타 목록 조회
             return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 목록 조회
             return PaginationRes
                     .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
@@ -197,7 +196,7 @@ public class AdminGoodsDataService {
         if (RoleUtil.isAdmin(role)) {
             // 관리자: 프로바이더 -> 상품 -> 상품 데이타명 목록 조회
             return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타명 목록 조회
             return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
         }
@@ -255,7 +254,7 @@ public class AdminGoodsDataService {
                     .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
             return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 조회
 
             // 프로바이더 등록 유무 체크
@@ -336,7 +335,7 @@ public class AdminGoodsDataService {
 
             internalCreateGoodsData(goods, null, dto);
 
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 상품이 프라이빗일 경우 등록 가능
             customerCompanyProviderMappingRepository
                     .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
@@ -471,7 +470,7 @@ public class AdminGoodsDataService {
             internalUpdateGoodsData(goodsData, dto);
         }
 
-        if (RoleUtil.isOperator(role) || RoleUtil.isClient(role)) {
+        if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
             // 운영자: 상품이 프라이빗일 경우 수정 가능
             customerCompanyProviderMappingRepository
                     .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
@@ -616,7 +615,7 @@ public class AdminGoodsDataService {
 
     /**
      * 정형 데이타 파일 업로드 (엑셀 파일 업로드와 함께 엑셀 파싱하여 DB에 데이터 저장)
-     * 
+     *
      * @param userNo
      * @param companyCd
      * @param role
