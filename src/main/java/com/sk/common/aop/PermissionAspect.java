@@ -1,6 +1,6 @@
 package com.sk.common.aop;
 
-import com.sk.common.annotation.RequirePermission;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -16,8 +16,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.lang.reflect.Method;
-
 @Slf4j
 @Aspect
 @Component
@@ -32,14 +30,14 @@ public class PermissionAspect {
      *
      *
      * @param joinPoint
-     * @param requirePermission
+     * @param requiredPermission
      */
-    @Before("@annotation(requirePermission)")
-    public void checkPermission(JoinPoint joinPoint, RequirePermission requirePermission) {
+    @Before("@annotation(requiredPermission)")
+    public void checkPermission(JoinPoint joinPoint, RequiredPermission requiredPermission) {
 
         // allowedRoles
-        Role[] roles = requirePermission.roles();
-        PermissionCondition condition = requirePermission.condition();
+        Role[] roles = requiredPermission.roles();
+        PermissionCondition condition = requiredPermission.condition();
 
         PermissionStrategy strategy = strategyFactory.getStrategy(condition);
 
@@ -49,20 +47,20 @@ public class PermissionAspect {
         }
 
         // 2. 상품 권한이 필요한 경우
-        if (StringUtils.hasText(requirePermission.goodsParam())) {
-            Integer goodsNo = extractParameterValue(joinPoint, requirePermission.goodsParam());
+        if (StringUtils.hasText(requiredPermission.goodsParam())) {
+            Integer goodsNo = extractParameterValue(joinPoint, requiredPermission.goodsParam());
 
             // todo 상품 데이터소스 번호(정형)
             // todo 파일 번호(비정형)
 
             if (goodsNo != null) {
                 // 2-1. VIEW 권한 체크
-                if (requirePermission.requireViewPermission() && !strategy.canViewGoods(goodsNo)) {
+                if (requiredPermission.requireViewPermission() && !strategy.canViewGoods(goodsNo)) {
                     throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsNo: %s)".formatted(goodsNo));
                 }
 
                 // 2-2. DOWNLOAD 권한 체크
-                if (requirePermission.requireDownloadPermission() && !strategy.canDownloadGoods(goodsNo)) {
+                if (requiredPermission.requireDownloadPermission() && !strategy.canDownloadGoods(goodsNo)) {
                     throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'DOWNLOAD' the goods(goodsNo: %s)".formatted(goodsNo));
                 }
             }

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequirePermission;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
@@ -104,7 +104,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 목록 조회 - with pagination", description = "데이타 프로바이더 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider")
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<PaginationRes<ProviderRes>> getAllProviders(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size) {
@@ -119,7 +119,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더명 목록 조회 - without pagination", description = "데이타 프로바이더명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/provider/name")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<List<ProviderNameRes>> getAllProviderNm() {
 
         int companyNo = authorizationService.getCompanyNo();
@@ -132,7 +132,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 등록", description = "데이타 프로바이더를 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/provider")
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN })
     public BaseResponse<ProviderCreateRes> createProvider(
             @RequestBody @Valid ProviderCreateReq body) {
 
@@ -146,7 +146,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 상세 조회", description = "데이타 프로바이더 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<ProviderDetailRes> getProvider(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
 
@@ -163,7 +163,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 수정", description = "데이타 프로바이더를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateProvider(
             @RequestBody @Valid ProviderUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
@@ -196,7 +196,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 프로바이더 최신 수정일, 수정자", description = "데이타 프로바이더의 최신 수정일과 수정자를 반납합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/latest-updated/")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<ProviderLatestUpdatedRes> getProviderLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
         return BaseResponseFactory.create(providerService.getProviderLatestUpdated(providerNo));
@@ -212,7 +212,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 목록 조회 - with pagination", description = "상품 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods")
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<PaginationRes<GoodsRes>> getAllGoods(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -229,7 +229,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 등록", description = "상품을 등록합니다")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods")
-    @RequirePermission(roles = { Role.ADMIN, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.CLIENT })
     public BaseResponse<GoodsCreateRes> createGoods(
             @RequestBody @Valid GoodsCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
@@ -245,7 +245,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 상세 조회", description = "상품 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<GoodsDetailRes> getGoodsDetail(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
@@ -264,7 +264,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequirePermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = { Role.ADMIN })
     public BaseResponse<String> updateGoods(
             @RequestBody @Valid GoodsUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -301,7 +301,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 최신 수정일, 수정자", description = "상품의 최신 수정일과 수정자를 반납합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated/")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
@@ -319,7 +319,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
@@ -337,7 +337,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category")
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
         return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
@@ -350,7 +350,7 @@ public class AdminProviderController {
     @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/category/{codeId}")
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
             @PathVariable(value = "codeId") String codeId) {
 
@@ -361,7 +361,7 @@ public class AdminProviderController {
     @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goodsdata/structureddatatype")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<List<ComponentInfoRes>> getStructuredDataType() {
 
         return BaseResponseFactory.create(goodsDataService.getStructuredDataType());
@@ -375,7 +375,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터명 목록 조회", description = "데이터명 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata/name")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<List<GoodsDataNameRes>> getAllGoodsDataNm(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
@@ -395,7 +395,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<GoodsDataDetailRes> getGoodsData(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
             @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
@@ -415,7 +415,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdata")
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<String> createGoodsData(
             @RequestBody @Valid GoodsDataCreateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -438,7 +438,7 @@ public class AdminProviderController {
     @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goodsdatas/{goodsDataNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<String> updateGoodsData(
             @RequestBody @Valid GoodsDataUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -457,7 +457,7 @@ public class AdminProviderController {
     @Operation(summary = "정형 데이타 파일 업로드", description = "정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<GoodsDataFileUploadRes> uploadStructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file,
             @Schema(implementation = StructuredDataFileReq.class) @RequestPart(value = "data", required = true) @Valid StructuredDataFileReq structuredDataFileReq)
@@ -501,7 +501,7 @@ public class AdminProviderController {
     @Operation(summary = "비정형 데이타 파일 업로드", description = "비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/unstructureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequirePermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
+    @RequiredPermission(roles = { Role.ADMIN, Role.SUB_ADMIN, Role.OPERATOR, Role.CLIENT })
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
@@ -537,7 +537,7 @@ public class AdminProviderController {
     @Operation(summary = "비정형 데이타 파일 다운로드", description = "비정형 데이타 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/goodsdatas/download-file/unstructureddata/{fileNo}")
-    @RequirePermission(roles = { Role.ADMIN, Role.OPERATOR })
+    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR })
     public ResponseEntity<byte[]> downloadFile(
             @RequestBody @Valid FileDownloadReq body,
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
