@@ -1,6 +1,8 @@
 package com.sk.common.utils;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -8,6 +10,7 @@ import java.time.format.DateTimeFormatter;
  */
 public final class DateUtil {
 
+    public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final DateTimeFormatter YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static final DateTimeFormatter YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -75,6 +78,22 @@ public final class DateUtil {
     public static String currentYmdHyphen() {
         return LocalDate.now().format(YYYY_MM_DD);
     }
+
+    public static LocalDate parseDate(Object dateObj) {
+        if (dateObj instanceof LocalDate ld) {
+            return ld;
+        } else if (dateObj instanceof LocalDateTime ldt) {
+            return ldt.toLocalDate();
+        } else if (dateObj instanceof Timestamp ts) {
+            return ts.toLocalDateTime().toLocalDate();
+        } else {
+            String s = dateObj.toString();
+            // "yyyy-MM-dd HH:mm:ss" 또는 "yyyy-MM-dd"
+            String d = s.length() >= 10 ? s.substring(0, 10) : s;
+            return DateUtil.fromYmdHyphen(d);
+        }
+    }
+
 
     /**
      * 마지막 날짜를 "yyyyMMdd"로 반환

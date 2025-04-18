@@ -256,7 +256,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         if (ObjectUtils.isNotEmpty(amgMappings) && ObjectUtils.isNotEmpty(amgMappings.get(0, LocalDateTime.class))) {
             LocalDateTime date = amgMappings.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date.isAfter(latestModifyDt)) {
+            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
                 latestModifyDt = date;
                 latestModifyId = amgMappings.get(1, String.class);
             }
