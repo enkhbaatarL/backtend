@@ -2,6 +2,7 @@ package com.sk.domain.mi;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.chart.ChartData;
 import com.sk.domain.mi.dto.response.chart.IndicatorData;
@@ -64,18 +65,19 @@ public class ChartBundleFactory {
         for (String dbColName : columnNamesInOrder) {
             List<Object> columnValues = rawData.stream()
                 .map(row -> {
+
                     Object value = row.get(dbColName);
 
                     // 첫 번째 컬럼(날짜)이면 포맷 변환
                     if (dbColName.equalsIgnoreCase(columnNamesInOrder.get(0))) {
                         if (value instanceof LocalDateTime ldt) {
-                            return ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            return ldt.format(DateUtil.YYYYMMDD);
                         } else if (value instanceof Timestamp ts) {
-                            return ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                            return ts.toLocalDateTime().format(DateUtil.YYYYMMDD);
                         } else if (value instanceof String str) {
                             try {
-                                LocalDateTime ldt = LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                                return ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                                LocalDateTime ldt = LocalDateTime.parse(str, DateUtil.YYYY_MM_DD_HH_MM_SS);
+                                return ldt.format(DateUtil.YYYYMMDD);
                             } catch (Exception e) {
                                 return str;
                             }
@@ -114,7 +116,7 @@ public class ChartBundleFactory {
         // 스키마 생성
         List<SchemaEntry> schema = List.of(
             new SchemaEntry("date", ChartRenderType.DATE, "날짜"),
-            new SchemaEntry("ma5", ChartRenderType.MA, "5일 이동평균"),
+            new SchemaEntry("ma5", ChartRenderType.MA, "5 이동평균"),
             new SchemaEntry("ma20", ChartRenderType.MA, "20일 이동평균"),
             new SchemaEntry("ma60", ChartRenderType.MA, "60일 이동평균"),
             new SchemaEntry("ma120", ChartRenderType.MA, "120일 이동평균")

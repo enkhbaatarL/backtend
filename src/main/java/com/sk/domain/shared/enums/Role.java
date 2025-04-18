@@ -11,7 +11,8 @@ public enum Role {
     ADMIN("ADMIN", "관리자"),
     SUB_ADMIN("SUB_ADMIN", "관리자(public 상품 업로드)"),
     OPERATOR("OPERATOR", "운영자(private 상품 업로드)"),
-    CLIENT("CLIENT", "클라이언트");
+    CLIENT("CLIENT", "클라이언트"),
+    SYSTEM("SYSTEM", "시스템");
 
     private final String code;
     private final String description;
