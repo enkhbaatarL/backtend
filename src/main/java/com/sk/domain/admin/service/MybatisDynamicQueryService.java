@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
@@ -28,6 +29,9 @@ public class MybatisDynamicQueryService {
     private static final Set<String> FORBIDDEN_TOKENS = Set.of(";", "--", "#", "UNION");
 
     public List<Map<String, Object>> getDynamicData(DynamicDataReq dynamicDataReq) {
+
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.tartgetDataSource());
 
         String tableName = dynamicDataReq.tableName();
         String columns = dynamicDataReq.columns();
@@ -62,6 +66,9 @@ public class MybatisDynamicQueryService {
     }
 
     public void saveAllDynamicData(DynamicDataSaveAll dynamicDataSaveAll) {
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataSaveAll.tartgetDataSource());
+
         String tableName = dynamicDataSaveAll.tableName();
         List<String> columns = dynamicDataSaveAll.columns();
         List<Object[]> values = dynamicDataSaveAll.values();

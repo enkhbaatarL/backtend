@@ -167,11 +167,11 @@ public class TestController {
     }
 
     //TODO: 컴포넌트가 아닌 데이터소스를 불러와야 함
-    @PostMapping("/dynamic-query")
-    public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
-            @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
-        return BaseResponseFactory.create(testService.getDynamicData(testReq));
-    }
+    // @PostMapping("/dynamic-query")
+    // public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
+    //         @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
+    //     return BaseResponseFactory.create(testService.getDynamicData(testReq));
+    // }
 
     @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")

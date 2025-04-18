@@ -139,16 +139,13 @@ public class TestService {
     }
 
 
-    public List<Map<String, Object>> getDynamicData(TestReq.uploadStructuredDataFile testReq) {
-        ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
-        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
+    // public List<Map<String, Object>> getDynamicData(TestReq.uploadStructuredDataFile testReq) {
+    //     ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
+    //     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    //             String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
 
-        // 데이터 소스 설정
-        DataSourceContextHolder.setDataSourceKey(componentInfo.getTargetDbNm());
-
-        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
-    }
+    //     return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
+    // }
 
     /**
      * 정형 데이터 파일 검수 후 업로드

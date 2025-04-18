@@ -169,9 +169,6 @@ public class ExcelService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Target database name is null or blank");
         }
         try {
-            // 데이터 소스 설정
-            DataSourceContextHolder.setDataSourceKey(componentInfo.getTargetDbNm());
-
             // 컴포넌트 엑셀 칼럼 추출
             String columnName = componentInfo.getExcelColumnListNm();
 
@@ -212,7 +209,7 @@ public class ExcelService {
                 }
             }
 
-            return uploadStructuredExcelData(file, columnNames, componentInfo.getTargetTableNm(), headerRowIndex, dataStartRowIndex);
+            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), columnNames, componentInfo.getTargetTableNm(), headerRowIndex, dataStartRowIndex);
 
         } catch (Exception e) {
             log.error("Exception", e);
@@ -236,7 +233,7 @@ public class ExcelService {
      * @return 저장 성공 여부
      * @throws IOException 파일 처리 중 오류 발생 시
      */
-    public boolean uploadStructuredExcelData(MultipartFile file, String[] expectedColumnNames, String tableName, int headerRowIndex, int dataStartRowIndex) {
+    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String[] expectedColumnNames, String tableName, int headerRowIndex, int dataStartRowIndex) {
             try {
                 String fileName = file.getOriginalFilename();
                 if (fileName == null) {
@@ -264,7 +261,7 @@ public class ExcelService {
                 }
 
                 // 공통 DB 배치 삽입
-                return saveBatchData(actualColumns, values, tableName);
+                return saveBatchData(tartgetDataSource, actualColumns, values, tableName);
             } catch (Exception e) {
                 log.error("Exception during upload: {}", e.getMessage(), e);
                 throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
@@ -628,7 +625,7 @@ public class ExcelService {
      * @param tableName
      * @return
      */
-    private boolean saveBatchData(List<String> columns, List<Object[]> values, String tableName) {
+    private boolean saveBatchData(String tartgetDataSource, List<String> columns, List<Object[]> values, String tableName) {
         int batchSize = 500;
         int totalRows = values.size();
         int batchCount = (totalRows + batchSize - 1) / batchSize;
@@ -638,7 +635,7 @@ public class ExcelService {
             int toIndex = Math.min(fromIndex + batchSize, totalRows);
             List<Object[]> batchData = values.subList(fromIndex, toIndex);
 
-            mybatisDynamicQueryService.saveAllDynamicData(DynamicDataSaveAll.of(tableName, columns, batchData));
+            mybatisDynamicQueryService.saveAllDynamicData(DynamicDataSaveAll.of(tartgetDataSource, tableName, columns, batchData));
         }
         return true;
     }
