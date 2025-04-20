@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import java.util.Arrays;
 import java.util.Optional;
 
+/**
+ * USER 권한 전략
+ */
 @RequiredArgsConstructor
 public class UserPermissionStrategy implements PermissionStrategy {
 

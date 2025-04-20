@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import java.util.Arrays;
 import java.util.Optional;
 
+/**
+ * 타사접근권한이 있는 ADMIN 권한 전략
+ */
 @RequiredArgsConstructor
 public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
 

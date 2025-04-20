@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.response.chart;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 
 import java.util.List;
 
@@ -27,5 +28,22 @@ public record ChartBundleRes(
     List<ChartData> comparisonCharts
 
 ) {
+
+    @Builder
+    public ChartBundleRes(ChartMetadata chartMetadata, ChartData mainChart, List<IndicatorData> indicators, List<ChartData> comparisonCharts) {
+        this.chartMetadata = chartMetadata;
+        this.mainChart = mainChart;
+        this.indicators = indicators;
+        this.comparisonCharts = comparisonCharts;
+    }
+
+    public static ChartBundleRes of(ChartMetadata chartMetadata, ChartData mainChart, List<IndicatorData> indicators, List<ChartData> comparisonCharts) {
+        return ChartBundleRes.builder()
+            .chartMetadata(chartMetadata)
+            .mainChart(mainChart)
+            .indicators(indicators)
+            .comparisonCharts(comparisonCharts)
+            .build();
+    }
 
 }

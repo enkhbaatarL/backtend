@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.chart;
 
+import com.sk.domain.shared.enums.ChartType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.Map;
 public record ChartData(
 
     @Schema(description = "차트 종류", example = "CANDLE")
-    String chartType,
+    ChartType chartType,
 
     @Schema(description = "데이터 컬럼명 목록")
     List<String> columns,
