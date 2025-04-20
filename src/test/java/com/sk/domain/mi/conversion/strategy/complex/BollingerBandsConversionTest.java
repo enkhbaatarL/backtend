@@ -3,8 +3,8 @@ package com.sk.domain.mi.conversion.strategy.complex;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.mi.conversion.FormulaService;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
+import com.sk.domain.mi.conversion.strategy.basic.FixedStandardDeviationConversion;
 import com.sk.domain.mi.conversion.strategy.basic.MovingAverageConversion;
-import com.sk.domain.mi.conversion.strategy.basic.StandardDeviationConversion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,7 +33,7 @@ class BollingerBandsConversionTest {
     private MovingAverageConversion movingAverageConversion;
 
     @Mock
-    private StandardDeviationConversion standardDeviationConversion;
+    private FixedStandardDeviationConversion standardDeviationConversion;
 
     @InjectMocks
     private BollingerBandsConversion bollingerBandsConversion;
@@ -107,7 +107,7 @@ class BollingerBandsConversionTest {
         void setUpRealDependencies() {
             // 실제 의존성 사용
             movingAverageConversion = new MovingAverageConversion();
-            standardDeviationConversion = new StandardDeviationConversion();
+            standardDeviationConversion = new FixedStandardDeviationConversion();
             bollingerBandsConversion = new BollingerBandsConversion(movingAverageConversion, standardDeviationConversion);
         }
 
@@ -303,7 +303,7 @@ class BollingerBandsConversionTest {
         void setUpRealDependencies() {
             // 성능 테스트는 실제 구현체를 사용
             movingAverageConversion = new MovingAverageConversion();
-            standardDeviationConversion = new StandardDeviationConversion();
+            standardDeviationConversion = new FixedStandardDeviationConversion();
             bollingerBandsConversion = new BollingerBandsConversion(movingAverageConversion, standardDeviationConversion);
         }
 

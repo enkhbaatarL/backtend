@@ -79,6 +79,9 @@ public final class DateUtil {
         return LocalDate.now().format(YYYY_MM_DD);
     }
 
+    /**
+     * 날짜를 LocalDate(yyyy-MM-dd)로 반환
+     */
     public static LocalDate parseDate(Object dateObj) {
         if (dateObj instanceof LocalDate ld) {
             return ld;
@@ -88,9 +91,8 @@ public final class DateUtil {
             return ts.toLocalDateTime().toLocalDate();
         } else {
             String s = dateObj.toString();
-            // "yyyyMMdd"
-            String d = s.length() >= 8 ? s.substring(0, 8) : s;
-            return DateUtil.fromYmd(d);
+            String d = s.length() >= 10 ? s.substring(0, 10) : s;
+            return DateUtil.fromYmdHyphen(d);
         }
     }
 

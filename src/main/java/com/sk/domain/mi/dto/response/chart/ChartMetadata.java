@@ -12,6 +12,8 @@ public record ChartMetadata(
     @Schema(description = "interval (DAY, WEEK, MONTH, YEAR)", example = "YEAR")
     Interval interval
 
+    // todo 변경할 수 있는 단위 리스트
+
 ) {
 
     @Builder
