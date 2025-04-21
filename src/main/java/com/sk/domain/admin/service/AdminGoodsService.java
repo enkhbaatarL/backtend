@@ -88,19 +88,11 @@ public class AdminGoodsService {
         switch (role) {
             case ADMIN:
                 return GoodsCreateRes
-                        .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), true, provider)));
-
-            case OPERATOR:
-                return GoodsCreateRes
-                        .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), false, provider)));
+                        .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider)));
 
             case API_SUB_ADMIN:
                 return GoodsCreateRes
-                        .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), true, provider)));
-
-            case API_PLUS_OPERATOR:
-                return GoodsCreateRes
-                        .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), false, provider)));
+                        .of(goodsRepository.save(Goods.of(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic(), provider)));
 
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
@@ -138,6 +130,11 @@ public class AdminGoodsService {
                         .orElseThrow(
                                 () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
+            case API_SUB_ADMIN:
+                return goodsRepository.findGoodsDetail(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
@@ -159,7 +156,7 @@ public class AdminGoodsService {
 
         if (goods.getIsPublic()) {
             if (role == Role.ADMIN) {
-                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), true);
+                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
             }
         } else {
             if (role == Role.OPERATOR) {
@@ -172,7 +169,7 @@ public class AdminGoodsService {
                         .orElseThrow(
                                 () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
 
-                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), false);
+                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
             }
         }
 

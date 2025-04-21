@@ -60,6 +60,12 @@ public class AdminProviderService {
             case OPERATOR:
                 return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
 
+            case API_SUB_ADMIN:
+                return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
+
+            case API_PLUS_OPERATOR:
+                return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
+
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
@@ -141,6 +147,21 @@ public class AdminProviderService {
                                 () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
             case OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
+
+                return providerRepository.findProviderDetailByProviderNo(providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            case API_SUB_ADMIN:
+                return providerRepository.findProviderDetailByProviderNo(providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            case API_PLUS_OPERATOR:
                 customerCompanyProviderMappingRepository
                         .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                         .orElseThrow(

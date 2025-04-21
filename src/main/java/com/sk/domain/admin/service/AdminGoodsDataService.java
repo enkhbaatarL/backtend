@@ -104,6 +104,13 @@ public class AdminGoodsDataService {
                 return PaginationRes
                         .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
 
+            case API_SUB_ADMIN:
+                return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
+
+            case API_PLUS_OPERATOR:
+                return PaginationRes
+                        .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
+
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
@@ -153,6 +160,12 @@ public class AdminGoodsDataService {
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
 
             case OPERATOR:
+                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
+
+            case API_SUB_ADMIN:
+                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
+
+            case API_PLUS_OPERATOR:
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
 
             default:
@@ -424,6 +437,49 @@ public class AdminGoodsDataService {
                                 () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
                 internalUpdateGoodsData(goodsData2, dto);
+                break;
+
+            case API_SUB_ADMIN:
+                Goods goods3 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (!goods3.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                GoodsData goodsData3 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+                internalUpdateGoodsData(goodsData3, dto);
+                break;
+
+            case API_PLUS_OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+                Goods goods4 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (goods4.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                GoodsData goodsData4 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+                internalUpdateGoodsData(goodsData4, dto);
                 break;
 
             default:

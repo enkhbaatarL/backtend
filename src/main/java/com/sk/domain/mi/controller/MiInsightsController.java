@@ -15,7 +15,6 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
-import com.sk.domain.mi.dto.response.insights.GoodsDataRes;
 import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
 import com.sk.domain.mi.service.MiInsightsService;
 import com.sk.domain.shared.enums.Role;

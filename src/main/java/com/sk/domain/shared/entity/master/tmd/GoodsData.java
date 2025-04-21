@@ -94,6 +94,8 @@ public class GoodsData extends BaseEntity {
         if (StringUtils.isNotEmpty(goodsDataSummaryCntt)) {
             this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         }
+
+        this.modifyDt = LocalDateTime.now();
     }
 
     public void softDelete() {
