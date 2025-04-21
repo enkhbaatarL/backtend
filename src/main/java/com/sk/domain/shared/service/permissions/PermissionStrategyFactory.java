@@ -31,7 +31,7 @@ public class PermissionStrategyFactory {
         }
 
         if (role == Role.API_SUB_ADMIN) {
-            return new ApiSubAdminPermissionStrategy(userService, authorizationService);
+            return new ApiSubAdminPermissionStrategy();
         }
 
         if (role == Role.API_PLUS_OPERATOR) {
