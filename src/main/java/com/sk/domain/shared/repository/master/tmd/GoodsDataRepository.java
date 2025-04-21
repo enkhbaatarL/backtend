@@ -144,6 +144,32 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     @EntityGraph(attributePaths = { "goods", "goods.provider" })
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
+    //
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
+            gd.goodsDataNo,
+            gd.goodsDataNm
+            )
+            FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+            WHERE gd.isDeleted = false
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+            ORDER BY gd.goodsDataNm ASC
+                        """, countQuery = """
+            SELECT COUNT(DISTINCT gd.goodsDataNo)
+            FROM GoodsData gd
+            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+            WHERE gd.isDeleted = false
+                AND gd.goods.provider.providerNo = :providerNo
+                AND gd.goods.goodsNo = :goodsNo
+              """)
+    List<GoodsDataNameRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd);
+
     @Query(value = """
             SELECT
                 tg.prvd_no AS providerNo,
@@ -180,5 +206,3 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     Page<IGoodsDataRes> findByNameContainingOrSmryCntteContaining(@Param("customerCompanyNo") Integer customerCompanyNo,
             @Param("keyword") String keyword, Pageable pageable);
 }
-
-// CONCAT(FUNCTION('GROUP_CONCAT', c.customerCompanyNm)

@@ -60,6 +60,12 @@ public class AdminProviderService {
             case OPERATOR:
                 return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
 
+            case API_SUB_ADMIN:
+                return PaginationRes.toRes(providerRepository.findAllForAdmin(pageable));
+
+            case API_PLUS_OPERATOR:
+                return PaginationRes.toRes(providerRepository.findAllForOperator(companyNo, pageable));
+
             default:
                 throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
@@ -106,15 +112,18 @@ public class AdminProviderService {
                     throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, "provider id: %s".formatted(dto.providerId()));
                 });
 
-        CommonCode commonCode = commonCodeRepository.findByCodeGroupId("gds_data_ctgr_cd")
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "gds_data_ctgr_cd"));
+        String highCodeGroupId = "gds_data_ctgr_cd";
+        String highCodeId = "A_PROVIDERS";
 
-        Short codeRnk = (short) (commonCodeDetailRepository.findMaxCodeRnkByHighCodeId(commonCode.getCodeGroupId()) + 1);
+        CommonCode commonCode = commonCodeRepository.findByCodeGroupId(highCodeGroupId)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, highCodeGroupId));
+
+        Short codeRnk = (short) (commonCodeDetailRepository.findMaxCodeRnkByHighCodeId(commonCode.getCodeGroupId(), highCodeId) + 1);
 
         CommonCodeDetail commonCodeDetail = CommonCodeDetail.of(commonCode.getCodeGroupId(), "A_".concat(dto.providerId()), dto.providerNm(),
                 codeRnk != null ? codeRnk : 1,
                 dto.providerExpn(),
-                DateUtil.currentYmd(), DateUtil.endYmd(), dto.isUsed(), commonCode.getCodeGroupId(), "A_PROVIDERS", commonCode);
+                DateUtil.currentYmd(), DateUtil.endYmd(), dto.isUsed(), commonCode.getCodeGroupId(), highCodeId, commonCode);
         commonCodeDetailRepository.save(commonCodeDetail);
 
         return ProviderCreateRes
@@ -138,6 +147,21 @@ public class AdminProviderService {
                                 () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
             case OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
+
+                return providerRepository.findProviderDetailByProviderNo(providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            case API_SUB_ADMIN:
+                return providerRepository.findProviderDetailByProviderNo(providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+            case API_PLUS_OPERATOR:
                 customerCompanyProviderMappingRepository
                         .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                         .orElseThrow(
