@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.MathUtil;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.Interval;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class ChartAggregationService {
     private static final int IDX_REF = 2;
 
     /**
-     * 원시 데이터(rawData)를 주어진 간격(interval)과 소스 정보(source)에 맞춰 집계한다.
+     * 원시 데이터(rawData)를 주어진 간격(currentInterval)과 소스 정보(source)에 맞춰 집계한다.
      *
      * @param rawData  소스에서 조회한 원시 데이터 목록
      * @param interval 집계 단위
@@ -46,6 +47,7 @@ public class ChartAggregationService {
         String[] columns = Arrays.stream(source.getTableColumnListNm().split(","))
             .map(String::trim)
             .toArray(String[]::new);
+
         String dateCol = columns[IDX_DATE];
         boolean isCandle = Boolean.TRUE.equals(source.getIsCandleChartPossible());
 
@@ -75,6 +77,7 @@ public class ChartAggregationService {
     }
 
     private List<LocalDate> calculateBucketStarts(List<Map<String, Object>> rows, Interval interval, String dateCol) {
+
         List<LocalDate> dates = rows.stream()
             .map(r -> DateUtil.parseDate(r.get(dateCol)))
             .filter(Objects::nonNull)
@@ -159,22 +162,24 @@ public class ChartAggregationService {
         return bucket.stream()
             .map(r -> toBigDecimal(r.get(col)))
             .max(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO);
+            .orElse(BigDecimal.ZERO)
+            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
     }
 
     private BigDecimal min(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
             .map(r -> toBigDecimal(r.get(col)))
             .min(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO);
+            .orElse(BigDecimal.ZERO)
+            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
     }
 
     private BigDecimal average(List<Map<String, Object>> bucket, String col) {
-        double avg = bucket.stream()
-            .mapToDouble(r -> toBigDecimal(r.get(col)).doubleValue())
-            .average()
-            .orElse(0d);
-        return BigDecimal.valueOf(avg);
+        BigDecimal sum = bucket.stream()
+            .map(r -> toBigDecimal(r.get(col)))
+            .reduce(BigDecimal.ZERO, MathUtil::add);
+
+        return MathUtil.divide(sum, BigDecimal.valueOf(bucket.size()));
     }
 
     private BigDecimal toBigDecimal(Object v) {

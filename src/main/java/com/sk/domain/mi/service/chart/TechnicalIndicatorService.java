@@ -9,12 +9,14 @@ import com.sk.domain.mi.dto.response.chart.ChartData;
 import com.sk.domain.mi.dto.response.chart.IndicatorData;
 import com.sk.domain.mi.dto.response.chart.SchemaEntry;
 import com.sk.domain.shared.enums.ChartRenderType;
+import com.sk.domain.shared.enums.ChartSettingConditionCd;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -36,7 +38,7 @@ public class TechnicalIndicatorService {
     }
 
 
-    public List<IndicatorData> generateIndicators(ChartData mainChart) {
+    public List<IndicatorData> generateIndicators(ChartData mainChart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         if (mainChart == null) {
             return Collections.emptyList();
         }
@@ -48,24 +50,24 @@ public class TechnicalIndicatorService {
             return Collections.emptyList();
         }
 
-        IndicatorData maData = createMovingAverageData(dates, priceSeries);
-        IndicatorData bbData = createBollingerBandData(dates, priceSeries);
+        IndicatorData maData = createMovingAverageData(dates, priceSeries, personalizedMap);
+        IndicatorData bbData = createBollingerBandData(dates, priceSeries, personalizedMap);
 
         return List.of(maData, bbData);
     }
 
-    private IndicatorData createMovingAverageData(List<LocalDate> dates, List<BigDecimal> series) {
+    private IndicatorData createMovingAverageData(List<LocalDate> dates, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BigDecimal> maShort = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_SHORT);
         List<BigDecimal> maMedium = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_MEDIUM);
         List<BigDecimal> maLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_LONG);
         List<BigDecimal> maExtraLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_EXTRA_LONG);
 
-        return ChartBundleFactory.createMovingAverageIndicator(dates, maShort, maMedium, maLong, maExtraLong);
+        return ChartBundleFactory.createMovingAverageIndicator(dates, maShort, maMedium, maLong, maExtraLong, personalizedMap);
     }
 
-    private IndicatorData createBollingerBandData(List<LocalDate> dates, List<BigDecimal> series) {
+    private IndicatorData createBollingerBandData(List<LocalDate> dates, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, PERIOD_MEDIUM);
-        return ChartBundleFactory.createBollingerBandsIndicator(dates, results);
+        return ChartBundleFactory.createBollingerBandsIndicator(dates, results, personalizedMap);
     }
 
     /**

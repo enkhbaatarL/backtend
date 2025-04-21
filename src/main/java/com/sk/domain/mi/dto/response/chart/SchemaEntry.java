@@ -21,22 +21,27 @@ public record SchemaEntry(
     ChartRenderType renderAs,
 
     @Schema(description = "화면에 표시될 컬럼 레이블", example = "시가")
-    String label
+    String label,
+
+    @Schema(description = "화면 표시 여부", example = "boolean")
+    Boolean hidden
 
 ) {
 
     @Builder
-    public SchemaEntry(String name, ChartRenderType renderAs, String label) {
+    public SchemaEntry(String name, ChartRenderType renderAs, String label, Boolean hidden) {
         this.name = name;
         this.renderAs = renderAs;
         this.label = label;
+        this.hidden = hidden;
     }
 
-    public static SchemaEntry of(String name, ChartRenderType renderAs, String label) {
+    public static SchemaEntry of(String name, ChartRenderType renderAs, String label, Boolean hidden) {
         return SchemaEntry.builder()
             .name(name)
             .renderAs(renderAs)
             .label(label)
+            .hidden(hidden)
             .build();
     }
 
