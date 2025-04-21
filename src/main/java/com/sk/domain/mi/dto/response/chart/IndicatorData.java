@@ -1,6 +1,8 @@
 package com.sk.domain.mi.dto.response.chart;
 
+import com.sk.domain.shared.enums.IndicatorType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,7 @@ import java.util.Map;
 public record IndicatorData(
 
     @Schema(description = "보조 지표 종류", example = "MA")
-    String indicatorType,
+    IndicatorType indicatorType,
 
     @Schema(description = "데이터 컬럼명 목록")
     List<String> columns,
@@ -26,6 +28,25 @@ public record IndicatorData(
     List<SchemaEntry> schema,
 
     @Schema(description = "실제 보조 지표 데이터 (Key: 컬럼명, Value: 데이터 배열)")
-    Map<String, List<?>> data // String(날짜) 또는 Number(값) 타입을 모두 포함할 수 있도록 List<?> 사용
+    Map<String, List<?>> data
 
-) {}
+) {
+
+    @Builder
+    public IndicatorData(IndicatorType indicatorType, List<String> columns, List<SchemaEntry> schema, Map<String, List<?>> data) {
+        this.indicatorType = indicatorType;
+        this.columns = columns;
+        this.schema = schema;
+        this.data = data;
+    }
+
+    public static IndicatorData of(IndicatorType type, List<String> columns, List<SchemaEntry> schema, Map<String, List<?>> data) {
+        return IndicatorData.builder()
+            .indicatorType(type)
+            .columns(columns)
+            .schema(schema)
+            .data(data)
+            .build();
+    }
+
+}

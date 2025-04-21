@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 
+/**
+ * ADMIN 권한 전략
+ */
 @RequiredArgsConstructor
 public class AdminPermissionStrategy implements PermissionStrategy {
 
@@ -16,11 +19,13 @@ public class AdminPermissionStrategy implements PermissionStrategy {
 
     @Override
     public boolean canViewGoods(Integer goodsNo) {
+        // 관리자는 상품 조회 권한 없음
         return false;
     }
 
     @Override
     public boolean canDownloadGoods(Integer goodsNo) {
+        // 관리자는 상품 다운로드 권한 없음
         return false;
     }
 

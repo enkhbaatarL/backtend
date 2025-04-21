@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.chart;
 
 import com.sk.domain.shared.enums.ChartRenderType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 
 /**
  * 스키마의 각 항목(컬럼)에 대한 정보를 나타내는 DTO
@@ -22,4 +23,21 @@ public record SchemaEntry(
     @Schema(description = "화면에 표시될 컬럼 레이블", example = "시가")
     String label
 
-) {}
+) {
+
+    @Builder
+    public SchemaEntry(String name, ChartRenderType renderAs, String label) {
+        this.name = name;
+        this.renderAs = renderAs;
+        this.label = label;
+    }
+
+    public static SchemaEntry of(String name, ChartRenderType renderAs, String label) {
+        return SchemaEntry.builder()
+            .name(name)
+            .renderAs(renderAs)
+            .label(label)
+            .build();
+    }
+
+}

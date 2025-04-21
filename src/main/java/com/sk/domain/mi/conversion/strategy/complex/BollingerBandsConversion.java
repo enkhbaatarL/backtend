@@ -6,18 +6,18 @@ import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.FormulaService;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.conversion.strategy.ResultWrapperConversionStrategy;
+import com.sk.domain.mi.conversion.strategy.basic.FixedStandardDeviationConversion;
 import com.sk.domain.mi.conversion.strategy.basic.MovingAverageConversion;
-import com.sk.domain.mi.conversion.strategy.basic.StandardDeviationConversion;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 볼린저 밴드 계산을 위한 복합 전략 클래스 (위임 방식 사용)
+ * 볼린저 밴드 계산을 위한 복합 전략 클래스
+ * - 이동평균은 MovingAverageConversion을 사용
+ * - 고정 표준편차는 FixedStandardDeviationConversion(최근 최대 1년치) 적용
  */
 @Component
 public class BollingerBandsConversion implements ResultWrapperConversionStrategy<BollingerBandResult> {
@@ -25,11 +25,11 @@ public class BollingerBandsConversion implements ResultWrapperConversionStrategy
     private static final BigDecimal DEFAULT_K = new BigDecimal("2");
 
     private final MovingAverageConversion movingAverageConversion;
-    private final StandardDeviationConversion standardDeviationConversion;
+    private final FixedStandardDeviationConversion fixedStandardDeviationConversion;
 
-    public BollingerBandsConversion(MovingAverageConversion movingAverageConversion, StandardDeviationConversion standardDeviationConversion) {
+    public BollingerBandsConversion(MovingAverageConversion movingAverageConversion, FixedStandardDeviationConversion fixedStandardDeviationConversion) {
         this.movingAverageConversion = movingAverageConversion;
-        this.standardDeviationConversion = standardDeviationConversion;
+        this.fixedStandardDeviationConversion = fixedStandardDeviationConversion;
     }
 
     @Override
@@ -42,6 +42,14 @@ public class BollingerBandsConversion implements ResultWrapperConversionStrategy
         throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "BOLLINGER_BANDS requires a time series data");
     }
 
+    /**
+     * 시계열 데이터 기반으로 볼린저 밴드 상단/하단 값을 생성한다.
+     * 표준편차는 최근 최대 1년치 데이터를 기준으로 고정 계산된다.
+     *
+     * @param timeSeriesData 전체 시계열 데이터
+     * @param windowSize     이동평균 윈도우 크기
+     * @param resultType     결과 타입 (BollingerBandResult)
+     */
     @Override
     public List<BollingerBandResult> convertTimeSeries(List<BigDecimal> timeSeriesData, int windowSize, Class<BollingerBandResult> resultType) {
 
@@ -53,8 +61,10 @@ public class BollingerBandsConversion implements ResultWrapperConversionStrategy
             throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Only BOLLINGER_BANDS resultType is supported");
         }
 
+        // 이동평균 계산
         List<BigDecimal> maList = movingAverageConversion.convertTimeSeries(timeSeriesData, windowSize);
-        List<BigDecimal> sdList = standardDeviationConversion.convertTimeSeries(timeSeriesData, windowSize);
+        // 고정 표준편차 계산 (최근 1년치)
+        List<BigDecimal> sdList = fixedStandardDeviationConversion.convertTimeSeries(timeSeriesData, windowSize);
 
         List<BollingerBandResult> results = new ArrayList<>(timeSeriesData.size());
         for (int i = 0; i < timeSeriesData.size(); i++) {
