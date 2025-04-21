@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataRes;
 import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
@@ -63,8 +65,8 @@ public class MiInsightsController {
     @Operation(summary = "Focused 목록 조회", description = "Focused 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/focused")
-    // @RequirePermission(roles = { Role.ADMIN, Role.USER })
-    public BaseResponse<List<GoodsDataRes>> getFocused(
+    @RequiredPermission(roles = { Role.ADMIN, Role.USER })
+    public BaseResponse<List<FocusedDataRes>> getFocused(
             @RequestParam(value = "customerCompanyNo") @Min(value = 1) Integer customerCompanyNo) {
 
         Role role = authorizationService.getCurrentRole();
@@ -73,30 +75,11 @@ public class MiInsightsController {
         return BaseResponseFactory.create(miInsightsService.getFocused(cNo));
     }
 
-    // @ApiOrder(2)
-    // @Parameters({
-    // @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
-    // @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색")
-    // })
-    // @Operation(summary = "Insights 검색에서 사용할 자동완성", description = "Insights 검색에서 사용할 자동완성 데이타를 조회합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/insights/autocomplete")
-    // @RequirePermission(roles = { Role.ADMIN, Role.USER })
-    // public BaseResponse<List<GoodsDataACRes>> getDataCatalogAutoComplete(
-    // @RequestParam(value = "customerCompanyNo", required = true) @Min(value = 1) Integer customerCompanyNo,
-    // @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
-
-    // Role role = authorizationService.getCurrentRole();
-    // int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
-
-    // return BaseResponseFactory.create(miInsightsService.getDataCatalogAutoComplete(cNo, keyword));
-    // }
-
-    @ApiOrder(3)
+    @ApiOrder(2)
     @Operation(summary = "Insights 검색에서 사용할 고급필터", description = "Insights 검색에서 사용할 고급필터 데이타를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/insights/advancedfilter")
-    // @RequirePermission(roles = { Role.ADMIN, Role.USER })
+    @RequiredPermission(roles = { Role.ADMIN, Role.USER })
     public BaseResponse<GoodsDataFilterRes> getAdvancedFilter() {
 
         return BaseResponseFactory.create(miInsightsService.getAdvancedFilter());
@@ -117,17 +100,17 @@ public class MiInsightsController {
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/insights")
-    // @RequirePermission(roles = { Role.ADMIN, Role.USER })
+    @RequiredPermission(roles = { Role.ADMIN, Role.USER })
     public BaseResponse<PaginationRes<IGoodsDataRes>> getDataCatalog(
             @RequestParam(value = "customerCompanyNo", required = true) @Min(value = 1) Integer customerCompanyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") InsightsSortType sort,
-            @RequestParam(value = "period", required = false, defaultValue = "ALL_DAY") InsightsSearchType period,
-            @RequestParam(value = "docTypes", required = false, defaultValue = "") InsightsSearchType docTypes,
-            @RequestParam(value = "providers", required = false, defaultValue = "") InsightsSearchType providers,
-            @RequestParam(value = "languages", required = false, defaultValue = "") InsightsSearchType languages) {
+            @RequestParam(value = "period", required = false, defaultValue = "ALL_DATES") InsightsSearchType period,
+            @RequestParam(value = "docTypes", required = false, defaultValue = "") String docTypes,
+            @RequestParam(value = "providers", required = false, defaultValue = "") String providers,
+            @RequestParam(value = "languages", required = false, defaultValue = "") String languages) {
 
         System.err.println(" ======== >>> " + keyword);
         System.err.println(" ======== >>> " + sort);
@@ -137,40 +120,5 @@ public class MiInsightsController {
         int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory.create(miInsightsService.getInsights(cNo, page, size, keyword));
-    }
-
-    @ApiOrder(4)
-    @Parameters({
-            @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
-            @Parameter(name = "goodsDataNo", description = "상품데이타번호")
-    })
-    @Operation(summary = "상품 데이타 상세 조회", description = "상품 데이타 상세를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/insights/detail")
-    // @RequirePermission(roles = { Role.ADMIN, Role.USER })
-    public BaseResponse<String> getGoodsData(
-            @RequestParam(value = "customerCompanyNo", required = true) @Min(value = 1) Integer customerCompanyNo,
-            @RequestParam(value = "goodsDataNo", required = true) @Min(value = 1) Integer goodsDataNo) {
-
-        Role role = authorizationService.getCurrentRole();
-        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
-
-        return BaseResponseFactory.create("todo");
-    }
-
-    @ApiOrder(5)
-    @Parameters({
-
-    })
-    @Operation(summary = "카테고리 목록 조회", description = "카테고리 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/category")
-    // @RequirePermission(roles = { Role.ADMIN, Role.USER })
-    public BaseResponse<String> getCategory() {
-
-        // Role role = authorizationService.getCurrentRole();
-        // int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
-
-        return BaseResponseFactory.create("todo");
     }
 }

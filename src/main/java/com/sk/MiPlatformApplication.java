@@ -17,7 +17,6 @@ import com.sk.common.utils.Properties.JwtProperties;
 public class MiPlatformApplication {
 
     public static void main(String[] args) {
-        System.setProperty("java.net.preferIPv4Stack", "true");
         SpringApplication.run(MiPlatformApplication.class, args);
     }
 

@@ -240,7 +240,7 @@ public class AdminGoodsDataService {
                                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
                 if (!goods1.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
                 internalCreateGoodsData(goods1, null, dto);
@@ -262,7 +262,7 @@ public class AdminGoodsDataService {
                                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
                 if (goods2.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
                 CustomerCompany customerCompany2 = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
@@ -279,7 +279,7 @@ public class AdminGoodsDataService {
                                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
                 if (!goods3.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
                 internalCreateGoodsData(goods3, null, dto);
@@ -301,7 +301,7 @@ public class AdminGoodsDataService {
                                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
                 if (goods4.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
                 CustomerCompany customerCompany4 = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
@@ -390,7 +390,7 @@ public class AdminGoodsDataService {
                                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
                 if (!goods1.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
                 GoodsData goodsData1 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
@@ -416,7 +416,7 @@ public class AdminGoodsDataService {
                                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
                 if (goods2.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
                 GoodsData goodsData2 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)

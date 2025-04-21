@@ -14,6 +14,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataDetailRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataRes;
@@ -43,7 +44,7 @@ public class MiInsightsService {
      * @param companyNo
      * @return List<GoodsDataRes>
      */
-    public List<GoodsDataRes> getFocused(int companyNo) {
+    public List<FocusedDataRes> getFocused(int companyNo) {
 
         // Page<MyEntity> entityPage = myEntityRepository.findAll(pageable);
         // Page<MyDto> dtoPage = entityPage.map(entity -> new MyDto(entity));
