@@ -2,14 +2,13 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
-import com.sk.domain.mi.conversion.UnitConversionService;
-import com.sk.domain.mi.dto.response.chart.ChartData;
+import com.sk.domain.mi.dto.response.charts.ChartRes;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataUnitConvert;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
+import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.ChartSettingConditionCd;
-import com.sk.domain.shared.enums.Interval;
+import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,27 +45,27 @@ public class ChartGenerationService {
      * @param interval The time currentInterval for data aggregation
      * @return ChartData containing the processed chart data
      */
-    public ChartData generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, Integer unitConversionNo) {
+    public ChartRes generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert) {
 
         Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
-        List<String> selectedColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
+        List<String> tartgetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
 
-        String dateColumnName = selectedColumns.get(DATE_COLUMN_INDEX);
+        String dateColumnName = tartgetColumns.get(DATE_COLUMN_INDEX);
         boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
 
         // Retrieve and process data
         List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
         if (rawData.isEmpty()) {
             // Return empty chart data by passing empty list to the factory
-            return ChartBundleFactory.toChartData(isCandleChartPossible, Collections.emptyList(), selectedColumns, columnExpressions);
+            return ChartBundleFactory.toChart(isCandleChartPossible, Collections.emptyList(), tartgetColumns, columnExpressions);
         }
 
-        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, goodsDataSourceDetail);
+        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, tartgetColumns, goodsDataSourceDetail);
 
-        List<Map<String, Object>> convertedData = chartUnitConversionService.convertUnit(isCandleChartPossible, aggregatedData, selectedColumns, unitConversionNo);
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, tartgetColumns, unitConvert);
 
         // Convert to chart data format
-        return ChartBundleFactory.toChartData(isCandleChartPossible, convertedData, selectedColumns, columnExpressions);
+        return ChartBundleFactory.toChart(isCandleChartPossible, convertedData, tartgetColumns, columnExpressions);
     }
 
     /**
@@ -104,7 +103,7 @@ public class ChartGenerationService {
      * @param interval The time currentInterval for data aggregation
      * @return List of chart data for comparison sources
      */
-    public List<ChartData> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public List<ChartRes> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
         if (mainDataSource == null) {
             return Collections.emptyList();

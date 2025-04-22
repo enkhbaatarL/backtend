@@ -5,10 +5,11 @@ import com.sk.common.exception.SystemErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
-import com.sk.domain.mi.dto.response.chart.ChartData;
-import com.sk.domain.mi.dto.response.chart.IndicatorData;
-import com.sk.domain.mi.dto.response.chart.SchemaEntry;
-import com.sk.domain.shared.enums.ChartRenderType;
+import com.sk.domain.mi.dto.response.charts.ChartRes;
+import com.sk.domain.mi.dto.response.charts.IndicatorRes;
+import com.sk.domain.mi.dto.response.charts.Series;
+import com.sk.domain.shared.enums.chart.IndicatorType;
+import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.ChartSettingConditionCd;
 import org.springframework.stereotype.Service;
 
@@ -38,80 +39,58 @@ public class TechnicalIndicatorService {
     }
 
 
-    public List<IndicatorData> generateIndicators(ChartData mainChart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
-        if (mainChart == null) {
+    public List<IndicatorRes> generateIndicators(com.sk.domain.mi.dto.response.charts.ChartRes chart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+
+        if (chart == null) {
             return Collections.emptyList();
         }
 
-        List<BigDecimal> priceSeries = extractMajorMetricSeries(mainChart);
-        List<LocalDate> dates = extractDateMetricSeries(mainChart);
+        List<BigDecimal> mainSeries = extractMajorMetricSeries(chart);
+        List<String> timestamps = chart.timestamps();
 
-        if (priceSeries.isEmpty() || dates.isEmpty()) {
+        if (mainSeries.isEmpty() || timestamps.isEmpty()) {
             return Collections.emptyList();
         }
 
-        IndicatorData maData = createMovingAverageData(dates, priceSeries, personalizedMap);
-        IndicatorData bbData = createBollingerBandData(dates, priceSeries, personalizedMap);
+        IndicatorRes maData = createMovingAverageData(timestamps, mainSeries, personalizedMap);
+        IndicatorRes bbData = createBollingerBandData(timestamps, mainSeries, personalizedMap);
 
         return List.of(maData, bbData);
     }
 
-    private IndicatorData createMovingAverageData(List<LocalDate> dates, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    private IndicatorRes createMovingAverageData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BigDecimal> maShort = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_SHORT);
         List<BigDecimal> maMedium = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_MEDIUM);
         List<BigDecimal> maLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_LONG);
         List<BigDecimal> maExtraLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_EXTRA_LONG);
 
-        return ChartBundleFactory.createMovingAverageIndicator(dates, maShort, maMedium, maLong, maExtraLong, personalizedMap);
+        List<Series> movingAverageIndicator = ChartBundleFactory.createMovingAverageIndicator(maShort, maMedium, maLong, maExtraLong, personalizedMap);
+
+        return IndicatorRes.of(IndicatorType.MOVING_AVERAGE, timestamps, movingAverageIndicator);
     }
 
-    private IndicatorData createBollingerBandData(List<LocalDate> dates, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    private IndicatorRes createBollingerBandData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, PERIOD_MEDIUM);
-        return ChartBundleFactory.createBollingerBandsIndicator(dates, results, personalizedMap);
-    }
 
-    /**
-     * ChartData 객체에서 renderAs 'date' 해당하는 시계열 데이터를 추출한다.
-     */
-    public List<LocalDate> extractDateMetricSeries(ChartData chartData) {
+        List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, personalizedMap);
 
-        String dateColumnName = chartData.schema().stream()
-            .filter(entry -> ChartRenderType.DATE == entry.renderAs())
-            .map(SchemaEntry::name)
-            .findFirst()
-            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No 'date' column(renderAs) names found"));
-
-        List<?> rawDataList = chartData.data().get(dateColumnName);
-
-        if (rawDataList == null || rawDataList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return rawDataList.stream()
-            .map(DateUtil::parseDate)
-            .collect(Collectors.toList());
+        return IndicatorRes.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
     }
 
     /**
      * ChartData 객체에서 renderAs 'close' 또는 'main' 해당하는 시계열 데이터를 추출한다.
      */
-    public List<BigDecimal> extractMajorMetricSeries(ChartData chartData) {
+    public List<BigDecimal> extractMajorMetricSeries(ChartRes chart) {
 
-        String majorColumnName = chartData.schema().stream()
-            .filter(entry -> ChartRenderType.isMajorType(entry.renderAs()))
-            .map(SchemaEntry::name)
-            .findFirst()
-            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No major column(major is 'close' or 'main' renderAs) names found"));
+        Series series = chart.series().stream()
+            .filter(entry -> RenderAs.isMajorType(entry.renderAs()))
+            .findFirst().orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No major column(major is 'close' or 'main' renderAs) names found"));
 
-        List<?> rawDataList = chartData.data().get(majorColumnName);
-
-        if (rawDataList == null || rawDataList.isEmpty()) {
+        if (series == null || series.values().isEmpty()) {
             return Collections.emptyList();
         }
 
-        return rawDataList.stream()
-            .map(s -> new BigDecimal(String.valueOf(s)))
-            .collect(Collectors.toList());
+        return series.values();
     }
 
 }

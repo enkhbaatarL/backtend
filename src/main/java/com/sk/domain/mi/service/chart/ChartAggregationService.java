@@ -3,7 +3,8 @@ package com.sk.domain.mi.service.chart;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.Interval;
+import com.sk.domain.shared.enums.chart.Interval;
+import com.sk.domain.shared.enums.chart.RenderAs;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,19 +18,6 @@ import java.util.stream.Collectors;
 @Service
 public class ChartAggregationService {
 
-    // Common indices for candle and metric charts
-    private static final int IDX_DATE = 0;
-
-    // Candle chart indices
-    private static final int IDX_CANDLE_OPEN = 1;
-    private static final int IDX_CANDLE_HIGH = 2;
-    private static final int IDX_CANDLE_LOW = 3;
-    private static final int IDX_CANDLE_CLOSE = 4;
-
-    // Metric chart indices
-    private static final int IDX_MAIN = 1;
-    private static final int IDX_REF = 2;
-
     /**
      * 원시 데이터(rawData)를 주어진 간격(currentInterval)과 소스 정보(source)에 맞춰 집계한다.
      *
@@ -38,35 +26,32 @@ public class ChartAggregationService {
      * @param source   데이터 소스 상세 정보
      * @return 집계된 데이터 포인트 목록
      */
-    public List<Map<String, Object>> aggregate(List<Map<String, Object>> rawData, Interval interval, GoodsDataSourceDetail source) {
+    public List<Map<String, Object>> aggregate(List<Map<String, Object>> rawData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail source) {
 
         if (rawData == null || rawData.isEmpty() || source == null) {
             return Collections.emptyList();
         }
 
-        String[] columns = Arrays.stream(source.getTableColumnListNm().split(","))
-            .map(String::trim)
-            .toArray(String[]::new);
-
-        String dateCol = columns[IDX_DATE];
+        String xAxis = targetColumns.get(RenderAs.DATE.getIndex());
         boolean isCandle = Boolean.TRUE.equals(source.getIsCandleChartPossible());
 
         // 일간 데이터는 그대로 반환
         if (interval == Interval.ONE_DAY) {
-            return getOneDayData(rawData, columns);
+            return getOneDayData(rawData, targetColumns);
         }
 
         // 날짜 순 정렬 후 버킷 경계 계산 및 집계
-        rawData.sort(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateCol))));
-        List<LocalDate> bucketStarts = calculateBucketStarts(rawData, interval, dateCol);
-        return aggregateByBuckets(rawData, bucketStarts, dateCol, columns, isCandle);
+        rawData.sort(Comparator.comparing(row -> DateUtil.parseDate(row.get(xAxis))));
+        List<LocalDate> bucketStarts = calculateBucketStarts(rawData, interval, xAxis);
+
+        return aggregateByBuckets(rawData, bucketStarts, xAxis, targetColumns, isCandle);
     }
 
-    private List<Map<String, Object>> getOneDayData(List<Map<String, Object>> rows, String[] columns) {
+    private List<Map<String, Object>> getOneDayData(List<Map<String, Object>> rows, List<String> targetColumns) {
         return rows.stream()
             .map(row -> {
                 Map<String, Object> result = new LinkedHashMap<>();
-                for (String col : columns) {
+                for (String col : targetColumns) {
                     if (row.containsKey(col)) {
                         result.put(col, row.get(col));
                     }
@@ -111,7 +96,7 @@ public class ChartAggregationService {
         };
     }
 
-    private List<Map<String, Object>> aggregateByBuckets(List<Map<String, Object>> rows, List<LocalDate> buckets, String dateCol, String[] columns, boolean isCandle) {
+    private List<Map<String, Object>> aggregateByBuckets(List<Map<String, Object>> rows, List<LocalDate> buckets, String dateCol, List<String> targetColumns, boolean isCandle) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (int i = 0; i < buckets.size() - 1; i++) {
             LocalDate start = buckets.get(i);
@@ -119,7 +104,7 @@ public class ChartAggregationService {
             List<Map<String, Object>> bucket = filterByDate(rows, dateCol, start, end);
             if (bucket.isEmpty()) continue;
 
-            Map<String, Object> agg = isCandle ? aggregateCandle(bucket, dateCol, columns) : aggregateMetric(bucket, dateCol, columns);
+            Map<String, Object> agg = isCandle ? aggregateCandle(bucket, dateCol, targetColumns) : aggregateMetric(bucket, dateCol, targetColumns);
             if (!agg.isEmpty()) result.add(agg);
         }
         return result;
@@ -134,33 +119,33 @@ public class ChartAggregationService {
             .collect(Collectors.toList());
     }
 
-    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, String dateCol, String[] cols) {
+    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, String dateCol, List<String> targetColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         LocalDate date = DateUtil.parseDate(bucket.get(0).get(dateCol));
         map.put(dateCol, DateUtil.toYmd(date));
-        map.put(cols[IDX_CANDLE_OPEN], toBigDecimal(bucket.get(0).get(cols[IDX_CANDLE_OPEN])));
-        map.put(cols[IDX_CANDLE_CLOSE], toBigDecimal(bucket.get(bucket.size() - 1).get(cols[IDX_CANDLE_CLOSE])));
-        map.put(cols[IDX_CANDLE_HIGH], max(bucket, cols[IDX_CANDLE_HIGH]));
-        map.put(cols[IDX_CANDLE_LOW], min(bucket, cols[IDX_CANDLE_LOW]));
+        map.put(targetColumns.get(RenderAs.OPEN.getIndex()), MathUtil.toBigDecimal(bucket.get(0).get(targetColumns.get(RenderAs.OPEN.getIndex()))));
+        map.put(targetColumns.get(RenderAs.CLOSE.getIndex()), MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(targetColumns.get(RenderAs.OPEN.getIndex()))));
+        map.put(targetColumns.get(RenderAs.HIGH.getIndex()), max(bucket, targetColumns.get(RenderAs.HIGH.getIndex())));
+        map.put(targetColumns.get(RenderAs.LOW.getIndex()), min(bucket, targetColumns.get(RenderAs.LOW.getIndex())));
         return map;
     }
 
-    private Map<String, Object> aggregateMetric(List<Map<String, Object>> bucket, String dateCol, String[] cols) {
+    private Map<String, Object> aggregateMetric(List<Map<String, Object>> bucket, String dateCol, List<String> targetColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         LocalDate date = DateUtil.parseDate(bucket.get(0).get(dateCol));
         map.put(dateCol, DateUtil.toYmd(date));
         // main value
-        map.put(cols[IDX_MAIN], average(bucket, cols[IDX_MAIN]));
+        map.put(targetColumns.get(RenderAs.MAIN.getIndex()), average(bucket, targetColumns.get(RenderAs.MAIN.getIndex())));
         // reference series
-        for (int i = IDX_REF; i < cols.length; i++) {
-            map.put(cols[i], average(bucket, cols[i]));
+        for (int i = RenderAs.REFERENCE.getIndex(); i < targetColumns.size(); i++) {
+            map.put(targetColumns.get(RenderAs.REFERENCE.getIndex()), average(bucket, targetColumns.get(RenderAs.REFERENCE.getIndex())));
         }
         return map;
     }
 
     private BigDecimal max(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
-            .map(r -> toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .max(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO)
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
@@ -168,7 +153,7 @@ public class ChartAggregationService {
 
     private BigDecimal min(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
-            .map(r -> toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .min(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO)
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
@@ -176,20 +161,10 @@ public class ChartAggregationService {
 
     private BigDecimal average(List<Map<String, Object>> bucket, String col) {
         BigDecimal sum = bucket.stream()
-            .map(r -> toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .reduce(BigDecimal.ZERO, MathUtil::add);
 
         return MathUtil.divide(sum, BigDecimal.valueOf(bucket.size()));
-    }
-
-    private BigDecimal toBigDecimal(Object v) {
-        if (v == null) return BigDecimal.ZERO;
-        if (v instanceof BigDecimal bd) return bd;
-        try {
-            return new BigDecimal(v.toString());
-        } catch (Exception e) {
-            return BigDecimal.ZERO;
-        }
     }
 
 }

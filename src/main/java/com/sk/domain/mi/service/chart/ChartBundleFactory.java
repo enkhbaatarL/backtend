@@ -1,17 +1,15 @@
 package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
-import com.sk.domain.mi.dto.response.chart.*;
-import com.sk.domain.shared.enums.ChartRenderType;
+import com.sk.domain.mi.dto.response.charts.*;
 import com.sk.domain.shared.enums.ChartSettingConditionCd;
-import com.sk.domain.shared.enums.ChartType;
-import com.sk.domain.shared.enums.IndicatorType;
+import com.sk.domain.shared.enums.chart.ChartType;
+import com.sk.domain.shared.enums.chart.RenderAs;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -28,94 +26,93 @@ public final class ChartBundleFactory {
     /**
      * 차트 객체 생성
      */
-    public static ChartBundleRes create(ChartMetadata metadata, ChartData mainChart, List<IndicatorData> indicators, List<ChartData> comparisonCharts) {
+    public static ChartBundleRes create(ChartMetadata metadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
         return ChartBundleRes.of(metadata, mainChart, indicators, comparisonCharts);
     }
 
-    /**
-     * 원시 집계 결과를 ChartData DTO로 변환
-     *
-     * @param isCandle     캔들 차트 여부
-     * @param rawRows      집계된 원시 행 목록
-     * @param labels       컬럼명→레이블 매핑
-     */
-    public static ChartData toChartData(boolean isCandle, List<Map<String, Object>> rawRows, List<String> selectedColumns, Map<String, String> labels) {
+    public static ChartRes toChart(boolean isCandle, List<Map<String, Object>> rawRows, List<String> targetColumns, Map<String, String> labels) {
         ChartType chartType = isCandle ? ChartType.CANDLE : ChartType.METRIC;
 
-        List<SchemaEntry> schema = buildSchema(selectedColumns, chartType, labels);
-        Map<String, List<?>> data = buildDataMap(rawRows, selectedColumns);
+        String xAxis = targetColumns.get(IDX_DATE);
+        List<String> yAxisList = targetColumns.subList(1, targetColumns.size());
 
-        return ChartData.of(chartType, selectedColumns, schema, data);
+        List<String> timestamps = buildTimestamps(xAxis, rawRows);
+        List<Series> series = buildSeries(yAxisList, chartType, rawRows, labels);
+
+        return ChartRes.of(chartType, timestamps, series);
     }
 
-    private static List<SchemaEntry> buildSchema(List<String> columns, ChartType chartType, Map<String, String> labels) {
-        return IntStream.range(0, columns.size())
-            .mapToObj(i -> {
-                String name = columns.get(i);
-                ChartRenderType renderAs = chartType.resolveRenderType(i);
-                String label = labels.getOrDefault(name, name);
-                return SchemaEntry.of(name, renderAs, label, Boolean.TRUE);
-            })
+    private static List<String> buildTimestamps(String xAxis, List<Map<String, Object>> rawRows) {
+        return rawRows.stream()
+            .map(row -> String.valueOf(row.get(xAxis)))
+            .map(DateUtil::fromYmd)
+            .map(DateUtil::toYmd)
             .toList();
     }
 
-    private static Map<String, List<?>> buildDataMap(List<Map<String, Object>> rawRows, List<String> columns) {
-        Map<String, List<?>> data = new LinkedHashMap<>();
-        for (String col : columns) {
-            List<Object> values = rawRows.stream()
-                .map(row -> row.get(col))
-                .toList();
-            data.put(col, values);
-        }
-        return data;
+    private static List<Series> buildSeries(List<String> yAxisList, ChartType chartType, List<Map<String, Object>> rawRows, Map<String, String> labels) {
+        return IntStream.range(0, yAxisList.size())
+            .mapToObj(index -> {
+                String columnName = yAxisList.get(index);
+                RenderAs renderAs = chartType.resolveRenderAs(index);
+                String label = labels.getOrDefault(columnName, columnName);
+                List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(columnName))).toList();
+                return Series.of(renderAs.getRenderingId(String.valueOf(index + 1)), label, renderAs, values, true);
+            })
+            .toList();
     }
 
     /**
      * 이동평균선 지표 DTO 생성
      */
-    public static IndicatorData createMovingAverageIndicator(List<LocalDate> dates, List<BigDecimal> ma5, List<BigDecimal> ma20, List<BigDecimal> ma60, List<BigDecimal> ma120, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public static List<Series> createMovingAverageIndicator(List<BigDecimal> ma5, List<BigDecimal> ma20, List<BigDecimal> ma60, List<BigDecimal> ma120, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
         Map<String, List<BigDecimal>> series = Map.of(
-            "ma5", ma5,
-            "ma20", ma20,
-            "ma60", ma60,
-            "ma120", ma120
+            "5", ma5,
+            "20", ma20,
+            "60", ma60,
+            "120", ma120
         );
 
-        return createIndicator(IndicatorType.MOVING_AVERAGE, dates, series, ChartRenderType.MA, personalizedMap);
+        RenderAs renderAs = RenderAs.MA;
+
+        List<Series> seriesList = new ArrayList<>();
+
+        List<String> indicatorValues = personalizedMap.get(ChartSettingConditionCd.INDICATOR);
+
+        series.forEach((key, value) -> {
+            String renderingId = renderAs.getRenderingId(key);
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), key);
+            seriesList.add(Series.of(renderingId, label, renderAs, value, indicatorValues.contains(renderingId)));
+        });
+
+        return seriesList;
     }
 
     /**
      * 볼린저 밴드 지표 DTO 생성
      */
-    public static IndicatorData createBollingerBandsIndicator(List<LocalDate> dates, List<BollingerBandResult> results, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
-        Map<String, List<BigDecimal>> series = new LinkedHashMap<>();
-        series.put("upper", results.stream().map(BollingerBandResult::upper).toList());
-        series.put("middle", results.stream().map(BollingerBandResult::middle).toList());
-        series.put("lower", results.stream().map(BollingerBandResult::lower).toList());
+    public static List<Series> createBollingerBandsIndicator(List<BollingerBandResult> results, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
-        return createIndicator(IndicatorType.BOLLINGER_BANDS, dates, series, ChartRenderType.BB, personalizedMap);
-    }
+        Map<String, List<BigDecimal>> series = Map.of(
+            "upper", results.stream().map(BollingerBandResult::upper).toList(),
+            "middle", results.stream().map(BollingerBandResult::middle).toList(),
+            "lower", results.stream().map(BollingerBandResult::lower).toList()
+        );
 
-    /**
-     * 보조지표 공통 생성 헬퍼
-     */
-    private static IndicatorData createIndicator(IndicatorType type, List<LocalDate> dates, Map<String, List<BigDecimal>> seriesMap, ChartRenderType renderType, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
-        List<String> columns = new ArrayList<>();
-        columns.add("date");
-        columns.addAll(seriesMap.keySet());
+        RenderAs renderAs = RenderAs.BB;
 
-        List<SchemaEntry> schema = new ArrayList<>();
-        schema.add(SchemaEntry.of("date", ChartRenderType.DATE, "날짜", Boolean.TRUE));
-        for (String key : seriesMap.keySet()) {
-            schema.add(SchemaEntry.of(key, renderType, String.format("%s(%s)", renderType.getDisplayDescription(), key), Boolean.TRUE));
-        }
+        List<Series> seriesList = new ArrayList<>();
 
-        Map<String, List<?>> data = new LinkedHashMap<>();
-        data.put("date", dates.stream().map(DateUtil::toYmd).toList());
-        data.putAll(seriesMap);
+        List<String> indicatorValues = personalizedMap.get(ChartSettingConditionCd.INDICATOR);
 
-        return IndicatorData.of(type, columns, schema, data);
+        series.forEach((key, value) -> {
+            String renderingId = renderAs.getRenderingId(key);
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), key);
+            seriesList.add(Series.of(renderingId, label, renderAs, value, indicatorValues.contains("bb")));
+        });
+
+        return seriesList;
     }
 
 }

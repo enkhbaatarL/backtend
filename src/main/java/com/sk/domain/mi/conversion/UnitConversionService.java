@@ -48,6 +48,27 @@ public class UnitConversionService {
     /**
      * 시계열데이터 변환
      *
+     * @param unitConvert 단위변환객체
+     * @param timeSeriesValues 변환시킬 시계열데이터
+     * @return List<BigDecimal>
+     */
+    public List<BigDecimal> convertTimeSeries(UnitConvert unitConvert, List<BigDecimal> timeSeriesValues) {
+
+        if (StringUtils.isNotEmpty(unitConvert.getCalculateFormulaServiceNm())) {
+            FormulaService formulaService = FormulaService.findByFormulaServiceNm(unitConvert.getCalculateFormulaServiceNm());
+            // 전략 패턴 사용 - 복잡한 공식이 필요한 경우
+            return unitConversionContext.convertTimeSeries(formulaService, timeSeriesValues, 20);
+        }
+
+        // 단순 변환 계수 사용 - DB에 저장된 단위 변환
+        return timeSeriesValues.stream()
+            .map(value -> MathUtil.multiply(value, unitConvert.getConvertCoef()))
+            .toList();
+    }
+
+    /**
+     * 시계열데이터 변환
+     *
      * @param unitConversionNo 단위변환번호
      * @param timeSeriesValues 변환시킬 시계열데이터
      * @return List<BigDecimal>
@@ -135,7 +156,7 @@ public class UnitConversionService {
     private UnitConvert findActiveUnitConvert(Integer unitConversionNo) {
         return unitConvertRepository.findByUnitConvNoAndIsDeletedFalse(unitConversionNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [currentUnit-conversion]. unitConversionNo: %s".formatted(unitConversionNo)));
+                "It doesn't exist in the [currentUnitCd-conversion]. unitConversionNo: %s".formatted(unitConversionNo)));
     }
 
 }
