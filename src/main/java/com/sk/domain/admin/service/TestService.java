@@ -14,8 +14,8 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
 import com.sk.common.utils.Properties.JwtProperties;
-import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.dto.request.TestReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
@@ -139,16 +139,13 @@ public class TestService {
     }
 
 
-    public List<Map<String, Object>> getDynamicData(TestReq.uploadStructuredDataFile testReq) {
-        ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
-        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
+    // public List<Map<String, Object>> getDynamicData(TestReq.uploadStructuredDataFile testReq) {
+    //     ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
+    //     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    //             String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
 
-        // 데이터 소스 설정
-        DataSourceContextHolder.setDataSourceKey(componentInfo.getTargetDbNm());
-
-        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
-    }
+    //     return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
+    // }
 
     /**
      * 정형 데이터 파일 검수 후 업로드
@@ -166,19 +163,6 @@ public class TestService {
 
             // 엑셀 파일 검수 후 업로드
             boolean isUploaded = excelService.uploadStructuredData(file, componentInfo);
-
-
-            // TODO: 호영: 데아터 소스 저장,
-            
-            // TODO: 호영: 데이터 소스 저장시에 예외처리: 날짜 겹치면 overwrite 처리 였나??
-
-            // 데이터 소스 저장
-
-            // 파일 S3에 저장
-
-            // 파일 내용 DB 테이블에 저장
-
-            //TODO:  상품 데이터 단위 변환 내역 저장 => 이건 컴포넌트 저장시에?!
 
             return null;
         } catch (IOException e) {

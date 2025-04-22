@@ -1,0 +1,71 @@
+package com.sk.domain.shared.template.query;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class MybatisQueryTemplate {
+    private final String CREATED_DATE_COLUMN = "crt_dtm"; //모든 TABLE 고정, 데이터 생성 일자
+
+    /**
+     * 알림 조회 쿼리 테이블 별칭 템플릿
+     * @param tableName
+     * @return
+     */
+    public String getTableAliasForAlarm(String tableName) {
+        return tableName + " AS t1";
+    }
+
+    /**
+     * 알림 조회 쿼리 SELECT 컬럼 템플릿
+     * @param columns
+     * @param tableName
+     * @param dateColumn
+     * @param defaultSelectColumn
+     * @param alias
+     * @return
+     */
+    public String getSelectQueryForAlarm(String columns, String tableName, String dateColumn, String defaultSelectColumn, String alias) {
+        return String.format("""
+                %s
+                ,(
+                    SELECT %s
+                    FROM %s t2
+                    WHERE
+                    (
+                        t2.%s < t1.%s
+                        OR (t2.%s = t1.%s AND t2.%s < t1.%s)
+                        OR (t2.%s = t1.%s AND t2.%s = t1.%s AND t2.%s < t1.%s)
+                    )
+                    AND t2.del_yn = 'N'
+                    ORDER BY t2.%s DESC, t2.%s DESC, t2.%s DESC
+                    LIMIT 1
+                ) AS %s
+                """, columns, defaultSelectColumn, tableName, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN,
+                dateColumn, dateColumn, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, dateColumn, dateColumn, defaultSelectColumn, defaultSelectColumn,
+                CREATED_DATE_COLUMN, dateColumn, defaultSelectColumn, alias);
+    }
+
+    /**
+     * 알림 조회 쿼리 WHERE 조건 템플릿
+     * @param hours
+     * @return
+     */
+    public String getWhereQueryForAlarm(int hours) {
+        return String.format("""
+                t1.%s >= DATE_SUB(NOW(), INTERVAL %d HOUR)
+                AND t1.del_yn = 'N'
+                """, CREATED_DATE_COLUMN, hours);
+    }
+
+    /**
+     * 알림 조회 쿼리 ORDER BY 템플릿
+     * @param dateColumn
+     * @param defaultSelectColumn
+     * @return
+     */
+    public String getOrderByQueryForAlarm(String dateColumn, String defaultSelectColumn) {
+        return String.format("""
+                t1.%s ASC, t1.%s ASC
+                """, dateColumn, defaultSelectColumn);
+    }
+}

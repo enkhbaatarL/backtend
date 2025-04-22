@@ -39,9 +39,10 @@ public class MailService {
         MimeMessage message = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            //TODO: 메일 템플릿 필요
             helper.setFrom(mailProperties.getFrom());
             helper.setTo(to);
-            helper.setSubject(subject);
+            helper.setSubject(setTitle(subject));
             helper.setText(setContext(data), true);
             javaMailSender.send(message);
 
@@ -57,10 +58,15 @@ public class MailService {
         }
     }
 
+    //TODO: 메일 템플릿 필요
     public String setContext(String data) {
         Context context = new Context();
         context.setVariable("data", data);
         return templateEngine.process("sample", context);
     }
 
+    //TODO: 메일 제목 필요
+    public String setTitle(String data) {
+        return data;
+    }
 }

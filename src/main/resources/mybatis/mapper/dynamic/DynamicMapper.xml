@@ -20,6 +20,9 @@
         <if test="additionalWhereClause != null and additionalWhereClause != ''">
             AND ${additionalWhereClause}
         </if>
+        <if test="orderByColumns != null and orderByColumns != ''">
+            ORDER BY ${orderByColumns}
+        </if>
     </select>
 
     <insert id="saveDynamic" parameterType="map">

@@ -17,6 +17,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+//TODO: 삭제 예정 => Datasource 설정은 mybatis 호출 직전에
+/**
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -56,3 +58,4 @@ public class TenantInterceptor implements HandlerInterceptor {
         DataSourceContextHolder.clearDataSourceKey();
     }
 }
+ */
