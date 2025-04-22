@@ -38,8 +38,8 @@ import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.PairUtil;
-import com.sk.domain.admin.dto.request.DynamicDataSaveAll;
 import com.sk.domain.admin.dto.request.ExcelReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 
 import jakarta.servlet.http.HttpServletResponse;

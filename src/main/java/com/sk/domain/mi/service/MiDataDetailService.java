@@ -2,7 +2,7 @@ package com.sk.domain.mi.service;
 
 import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.admin.dto.request.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.ChartBundleFactory;
 import com.sk.domain.mi.conversion.UnitConversionService;

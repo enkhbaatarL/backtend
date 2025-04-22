@@ -1,7 +1,7 @@
-package com.sk.domain.admin.dto.request;
+package com.sk.domain.admin.dto.request.dynamicData;
 
-import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Builder;
