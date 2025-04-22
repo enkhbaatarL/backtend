@@ -327,9 +327,7 @@ public class AdminCompanyService {
         CustomerCompanyGoodsMapping ccg = ccgResult.getOrThrow();
 
         if (GoodsAuthManagementSeparateCd.COMPANY == ccg.getId().getGoodsAuthManagementSeparateCd()) {
-            List<AuthManageGoodsMapping> companyAuth = authManageGoodsMappingRepository.findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(
-                    companyNo, goodsNo,
-                    GoodsAuthManagementSeparateCd.COMPANY);
+            List<AuthManageGoodsMapping> companyAuth = authManageGoodsMappingRepository.findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(companyNo, goodsNo, GoodsAuthManagementSeparateCd.COMPANY);
             return CompanyGoodsMapDetailRes.of(ccg, companyAuth);
         }
 
