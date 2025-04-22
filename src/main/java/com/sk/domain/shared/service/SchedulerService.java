@@ -21,6 +21,7 @@ import org.thymeleaf.util.StringUtils;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataForAlarmReq;
@@ -71,7 +72,7 @@ public class SchedulerService {
         List<UserInfo> deletedUserInfos = userInfoRepository.findByIsDeletedTrue();
 
         if (deletedUserInfos.isEmpty()) {
-            return true;
+            return Boolean.TRUE;
         }
 
         List<User> users = userRepository.findByUserInfosAndIsDeletedFalse(deletedUserInfos);
@@ -82,7 +83,7 @@ public class SchedulerService {
                     .collect(Collectors.toList());
         }
 
-        return true;
+        return Boolean.TRUE;
     }
 
     /**
@@ -91,12 +92,13 @@ public class SchedulerService {
      * @return 알림 발송 결과
      */
     @Transactional
-    public List<Map<String, Object>> createNotification() {
+    public Boolean createNotification() {
         List<GoodsCriticalValueSetting> goodsCriticalValueSettings = goodsCriticalValueSettingRepository
                 .findAllByIsDeletedFalse();
 
         /** 
-         * 배치는 24시간 기준으로 작동하며 조회 데이터역시 현재 기준 최근 24시간 이내에 등록된 데이터만을 조회 비교한다. ()
+         * 배치는 24시간 기준으로 작동하며 조회 데이터역시 현재 기준 최근 24시간 이내에 등록된 데이터만을 조회 비교한다.
+         * 임계치 설정별 데이터 리스트 조회
          */
         for (GoodsCriticalValueSetting goodsCriticalValueSettingData : goodsCriticalValueSettings) {
             String targetDatabaseNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
@@ -119,15 +121,14 @@ public class SchedulerService {
             String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(ALARM_BATCH_HOURS);
             String orderByQuery = mybatisQueryTemplate.getOrderByQueryForAlarm(dateColumn, defaultSelectColumn);
 
+            // 임계치 설정 1개에 대한 데이터 리스트
             List<Map<String, Object>> queryResult = mybatisDynamicQueryService
                     .getDynamicWithSubQuery(DynamicDataForAlarmReq.of(targetDatabaseNm, targetTableAlias, columns, whereQuery, orderByQuery));
 
-            // 조건에 맞는 데이터를 저장할 리스트
-            List<Map<String, Object>> matchedRecords = new ArrayList<>();
-
             for (Map<String, Object> rowData : queryResult) {
-                Object prevData = rowData.get(ALARM_PREV_DATA_ALIAS);
-                Object currentData = rowData.get(defaultSelectColumn);
+                Object createdTimeData = rowData.get(dateColumn); // 데이터 발생일 (date 칼럼)
+                Object prevData = rowData.get(ALARM_PREV_DATA_ALIAS); // 임계치 비교를 위한 이전 데이터(Default 데이터)
+                Object currentData = rowData.get(defaultSelectColumn); // 임계치 비교를 위한 기준 데이터(Default 데이터)
 
                 // prevData 또는 currentData가 null인 경우 스킵 (첫번째 row 데이터는 preData가 null)
                 if (prevData == null || currentData == null) {
@@ -148,9 +149,8 @@ public class SchedulerService {
 
                 BigDecimal criticalValueSettingVol = goodsCriticalValueSettingData.getCriticalValueSettingVol();
                 boolean isMatch = false;
-                String emailSubject;
-                String emailContent;
 
+                // 데이터, 임계치 설정 비교
                 switch (goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd()) {
                     case UPPER:
                         // currentData가 prevData보다 criticalValueSettingVol만큼 상승
@@ -178,18 +178,12 @@ public class SchedulerService {
 
                 // 조건에 맞는 데이터 추가
                 if (isMatch) {
-                    matchedRecords.add(rowData);
-                }
-
-                if (!matchedRecords.isEmpty()) {
-                    //TODO: 이메일 제목, 내용 추가 필요(테이블 구조 정리 후)
-                    // 이메일 발송    
-                    mailService.sendMail(goodsCriticalValueSettingData.getUser().getUserLoginId(), goodsCriticalValueSettingData.getGoodsDataSourceDetail().getGoodsDataSourceNm(), "알림");
+                     // 이메일 발송    
+                    mailService.sendNotificationMail(goodsCriticalValueSettingData, DateUtil.parseDate(createdTimeData));
                 }
             }
-            return queryResult;
         }
-        return List.of();
+        return Boolean.TRUE;
     }
 
     /**

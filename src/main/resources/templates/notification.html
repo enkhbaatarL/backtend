@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이메일 템플릿</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a3c5e;
+            margin-bottom: 20px;
+        }
+        .header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .content-box {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center; /* 중앙 정렬로 변경 */
+        }
+        .button {
+            display: inline-block;
+            background-color: #1a3c5e;
+            color: #fff; /* 텍스트 색상 화이트로 명시 */
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .footer {
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            SK Market Intelligence
+        </div>
+        <div class="header">
+            신규 알람 발생
+        </div>
+        <div class="header">
+            실정된 알람 조건에 의해 신규 알람이 발생하였습니다.
+        </div>
+        <div class="content-box">
+            <span th:text="${goodsDataNm}">[데이터명]</span><br>
+            <span th:text="${goodsDataSourceNm}">[산출된 정형 내역]</span><br><br>
+            <span th:text="${criticalValueSettingVol}">[5]</span><span th:text="${unit}">[%]</span>&nbsp;<span th:text="${notificationCriticalValueSeparateCd}">[하락률]</span>&nbsp;초과
+        </div>
+        <a th:href="${detailLink}" class="button">데이터 상세보기</a>
+        <div class="footer">
+            본 메일은 발신전용 메일이며 회신처리되지 않습니다. 기타 문의사항은 서비스 관리자에게 문의하세요.<br>
+            © 2025 SKT Co.,Ltd. ALL RIGHT RESERVED.
+        </div>
+    </div>
+</body>
+</html>

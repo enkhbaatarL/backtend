@@ -40,7 +40,7 @@ public class SchedulerController {
     @Operation(summary = "알림 발송 API", description = "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.")
     @PostMapping("/notification")
     @ApiResponse(responseCode = "200", description = "알림 발송 성공")
-    public BaseResponse<List<Map<String, Object>>> createNotification() {
+    public BaseResponse<Boolean> createNotification() {
         return BaseResponseFactory.create(schedulerService.createNotification());
     }
 

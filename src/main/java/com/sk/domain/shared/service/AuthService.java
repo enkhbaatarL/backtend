@@ -62,7 +62,7 @@ public class AuthService {
 
 		generateToken(user, response);
 
-		return true;
+		return Boolean.TRUE;
 	}
 
 	public GenerateTokenRes generateToken(User user, HttpServletResponse response) {

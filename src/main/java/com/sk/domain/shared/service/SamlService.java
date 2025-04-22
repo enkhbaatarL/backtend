@@ -57,6 +57,6 @@ public class SamlService {
 
         redisTemplate.delete(sessionId);
 
-        return true;
+        return Boolean.TRUE;
     }
 }
