@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.service.MiDataDetailService;
 import com.sk.domain.shared.enums.chart.Interval;
+import com.sk.domain.shared.enums.chart.Range;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -121,7 +122,7 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
         @RequestParam(value = "interval", required = false, defaultValue = "ONE_DAY") Interval interval,
-        @RequestParam(value = "range", defaultValue = "3M") Interval range,
+        @RequestParam(value = "range", defaultValue = "3M") Range range,
         @RequestParam(value = "startDate", required = false) String startDate,
         @RequestParam(value = "endDate", required = false) String endDate,
         @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd
