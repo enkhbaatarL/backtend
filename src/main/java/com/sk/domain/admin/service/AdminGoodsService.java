@@ -1,5 +1,6 @@
 package com.sk.domain.admin.service;
 
+import com.sk.domain.admin.dto.response.provider.*;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.PageRequest;
@@ -12,10 +13,6 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.GoodsCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
-import com.sk.domain.admin.dto.response.provider.GoodsCreateRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
-import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
-import com.sk.domain.admin.dto.response.provider.GoodsRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.enums.Role;
@@ -27,6 +24,8 @@ import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @Transactional(readOnly = true)
@@ -36,6 +35,18 @@ public class AdminGoodsService {
     private final GoodsRepository goodsRepository;
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
+
+    /**
+     * [고객사] part 에서 사용되는 프로바이더에 등록된 상품 목록을 페이지네이션 없이 조회한다.
+     *  - 사용여부 Y, 삭제여부 N
+     *
+     * @param providerNo 프로바이더 번호
+     * @return List<GoodsLiteRes>
+     */
+    public List<GoodsLiteRes> getGoodsNames(Integer providerNo) {
+        List<Goods> goods = goodsRepository.findByProvider_ProviderNoAndIsUsedTrueAndIsDeletedFalse(providerNo);
+        return GoodsLiteRes.ofList(goods);
+    }
 
     /**
     * 상품 목록을 페이지네이션 처리하여 조회한다.
