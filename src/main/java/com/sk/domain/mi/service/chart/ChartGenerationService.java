@@ -1,6 +1,6 @@
 package com.sk.domain.mi.service.chart;
 
-import com.sk.domain.admin.dto.request.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.dto.response.chart.ChartData;
