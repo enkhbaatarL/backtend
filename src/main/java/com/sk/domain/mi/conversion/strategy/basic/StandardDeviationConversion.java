@@ -66,11 +66,8 @@ public class StandardDeviationConversion implements ConversionStrategy {
             // 각 데이터 포인트와 평균 간의 차이의 제곱의 합 계산
             BigDecimal sumOfSquaredDifferences = BigDecimal.ZERO;
             for (BigDecimal dataPoint : windowData) {
-//                BigDecimal difference = dataPoint.subtract(mean, MathUtil.MC);
                 BigDecimal difference = MathUtil.subtract(dataPoint, mean);
-//                BigDecimal squaredDifference = difference.multiply(difference, MathUtil.MC);
                 BigDecimal squaredDifference = MathUtil.multiply(difference, difference);
-//                sumOfSquaredDifferences = sumOfSquaredDifferences.add(squaredDifference, MathUtil.MC);
                 sumOfSquaredDifferences = MathUtil.add(sumOfSquaredDifferences, squaredDifference);
             }
 
@@ -81,7 +78,6 @@ public class StandardDeviationConversion implements ConversionStrategy {
             }
 
             // 분산 계산 (차이 제곱의 평균)
-//            BigDecimal variance = sumOfSquaredDifferences.divide(new BigDecimal(windowSize), MathUtil.MC);
             BigDecimal variance = MathUtil.divide(sumOfSquaredDifferences, new BigDecimal(windowSize));
 
             // 표준편차 계산 (분산의 제곱근)

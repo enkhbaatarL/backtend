@@ -16,8 +16,8 @@ import com.sk.common.utils.Properties.JwtProperties;
 @EnableConfigurationProperties(JwtProperties.class)
 public class MiPlatformApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MiPlatformApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(MiPlatformApplication.class, args);
+    }
 
 }

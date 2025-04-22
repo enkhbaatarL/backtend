@@ -3,6 +3,10 @@ package com.sk.common.utils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 public class StringUtil {
 
     private StringUtil() {}
@@ -61,6 +65,15 @@ public class StringUtil {
             return path.substring(0, lastDotIndex);
         }
         return path;
+    }
+
+    public static String joinNonNull(String... parts) {
+        if (parts == null || parts.length == 0) {
+            return "";
+        }
+        return Arrays.stream(parts)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("-"));
     }
 
 }

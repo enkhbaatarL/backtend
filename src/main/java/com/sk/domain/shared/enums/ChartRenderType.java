@@ -9,20 +9,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public enum ChartRenderType {
 
-    DATE("DATE", false, null),
+    DATE("DATE", false, null), // description RDB로 관리됨.
     MAIN("MAIN", true, null),
     REFERENCE("REF", false, null),
     OPEN("OPEN", false, null),
     CLOSE("CLOSE", true, null),
     HIGH("HIGH", false, null),
     LOW("LOW", false, null),
-    MA("MA", false, "이동평균"),
+    MA("MA", false, "이동평균선"),
     BB("BB", false, "볼린저밴드"),
     UNKNOWN("UNKNOWN", false, null);
 
     private final String code;
     private final Boolean isMajor;
-    private final String description;
+    private final String displayDescription;
 
     private static final List<ChartRenderType> majorTypes;
 

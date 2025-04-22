@@ -20,4 +20,6 @@ public interface CustomAuthManageGoodsMapping {
 
     LatestUpdatedRes findLatestUpdated(Integer companyNo, Integer providerNo, Integer goodsNo);
 
+    List<AuthManageGoodsMapping> findPlusOperatorGoodsPermissions(Integer companyNo);
+
 }

@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 
+/**
+ * OPERATOR 권한 전략
+ */
 @RequiredArgsConstructor
 public class OperatorPermissionStrategy implements PermissionStrategy {
 

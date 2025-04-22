@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.2'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.hibernate.orm' version '6.6.5.Final'
+    id 'org.hibernate.orm' version '6.6.13.Final'
 }
 
 group = 'com.sk'
@@ -21,8 +21,7 @@ configurations {
 }
 
 hibernate {
-    enhancement  {
-        enableLazyInitialization
+    enhancement {
     }
 }
 
@@ -147,5 +146,5 @@ tasks.named('test') {
 }
 
 test {
-   enabled = false  // 테스트 비활성화
+    enabled = false  // 테스트 비활성화
 }

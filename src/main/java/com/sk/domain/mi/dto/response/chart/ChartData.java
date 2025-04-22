@@ -1,6 +1,8 @@
 package com.sk.domain.mi.dto.response.chart;
 
+import com.sk.domain.shared.enums.ChartType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,7 @@ import java.util.Map;
 public record ChartData(
 
     @Schema(description = "차트 종류", example = "CANDLE")
-    String chartType,
+    ChartType chartType,
 
     @Schema(description = "데이터 컬럼명 목록")
     List<String> columns,
@@ -28,4 +30,22 @@ public record ChartData(
     @Schema(description = "실제 차트 데이터 (Key: 컬럼명, Value: 데이터 배열)")
     Map<String, List<?>> data
 
-) {}
+) {
+
+    @Builder
+    public ChartData(ChartType chartType, List<String> columns, List<SchemaEntry> schema, Map<String, List<?>> data) {
+        this.chartType = chartType;
+        this.columns = columns;
+        this.schema = schema;
+        this.data = data;
+    }
+
+    public static ChartData of(ChartType type, List<String> columns, List<SchemaEntry> schema, Map<String, List<?>> data) {
+        return ChartData.builder()
+            .chartType(type)
+            .columns(columns)
+            .schema(schema)
+            .data(data)
+            .build();
+    }
+}

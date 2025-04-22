@@ -15,7 +15,7 @@ public record GoodsUpdateReq(
         String goodsExpn,
 
         @Schema(description = "상품 사용유무", example = "true")
-        Boolean isUsed, 
+        Boolean isUsed,
         
         @Schema(description = "회사공통사용가능여부", example = "true")
         Boolean isPublic) {

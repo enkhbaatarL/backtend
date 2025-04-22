@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.RoleUtil;
@@ -88,7 +89,8 @@ public class AdminGoodsDataService {
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param page 조회할 페이지 번호 (min 1)
     * @param size 조회할 요소 사이즈 (min 1)
     * @param keyword 검색 키워드
@@ -100,16 +102,24 @@ public class AdminGoodsDataService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 프로바이더 -> 상품 -> 상품 데이타 목록 조회
-            return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
-            // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 목록 조회
-            return PaginationRes
-                    .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
-        }
+        switch (role) {
+            case ADMIN:
+                return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+            case OPERATOR:
+                return PaginationRes
+                        .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
+
+            case API_SUB_ADMIN:
+                return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
+
+            case API_PLUS_OPERATOR:
+                return PaginationRes
+                        .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
     }
 
     /**
@@ -143,28 +153,37 @@ public class AdminGoodsDataService {
     /**
     * 데이터명 목록을 조회합니다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @return List<GoodsDataNameRes>
     */
     public List<GoodsDataNameRes> getAllGoodsDataNm(int companyNo, Role role, int providerNo, int goodsNo) {
 
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 프로바이더 -> 상품 -> 상품 데이타명 목록 조회
-            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
-            // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타명 목록 조회
-            return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
-        }
+        switch (role) {
+            case ADMIN:
+                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
 
-        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
+            case OPERATOR:
+                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
+
+            case API_SUB_ADMIN:
+                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
+
+            case API_PLUS_OPERATOR:
+                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
     }
 
     /**
     * 데이터 상세 조회합니다.
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param goodsDataNo 상품 데이타 번호
@@ -172,57 +191,58 @@ public class AdminGoodsDataService {
     */
     public GoodsDataDetailRes getGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo) {
 
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 프로바이더 -> 상품 -> 상품 데이타 조회
-            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                    "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
+        switch (role) {
+            case ADMIN:
+                GoodsData goodsData1 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
 
-            List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+                List<CategoryDataRes> goodsDataCategoryList1 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
 
-            List<StructuredDataRes> structuredDataList = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+                List<StructuredDataRes> structuredDataList1 = goodsDataCategoryRepository
+                        .findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
 
-            List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository
-                    .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+                List<UnstructuredDataRes> unstructuredDataList1 = goodsDataCategoryRepository
+                        .findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
 
-            return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
-            // 운영자: 프로바이더(등록 O) -> 상품(권한 O) -> 상품 데이타 조회
+                return GoodsDataDetailRes.of(goodsData1, goodsDataCategoryList1, structuredDataList1, unstructuredDataList1);
 
-            // 프로바이더 등록 유무 체크
-            customerCompanyProviderMappingRepository
-                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+            case OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-            // 상품 권한 유무 체크
-            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                    "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
+                GoodsData goodsData2 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
 
-            List<CategoryDataRes> goodsDataCategoryList = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+                List<CategoryDataRes> goodsDataCategoryList2 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData2.getGoodsDataNo());
 
-            List<StructuredDataRes> structuredDataList = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+                List<StructuredDataRes> structuredDataList2 = goodsDataCategoryRepository
+                        .findStructuredDataByGoodsDataNo(goodsData2.getGoodsDataNo());
 
-            List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository
-                    .findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+                List<UnstructuredDataRes> unstructuredDataList2 = goodsDataCategoryRepository
+                        .findUnstructuredDataByGoodsDataNo(goodsData2.getGoodsDataNo());
 
-            return GoodsDataDetailRes.of(goodsData, goodsDataCategoryList, structuredDataList, unstructuredDataList);
+                return GoodsDataDetailRes.of(goodsData2, goodsDataCategoryList2, structuredDataList2, unstructuredDataList2);
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
-
-        throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
     }
 
     /**
     * 데이터 등록: 신규등록
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param GoodsDataCreateReq
@@ -231,44 +251,87 @@ public class AdminGoodsDataService {
     @Transactional
     public void createGoodsData(int companyNo, Role role, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
 
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 상품이 퍼블릭일 경우 등록 가능
-            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+        switch (role) {
+            case ADMIN:
+                Goods goods1 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
-            if (!goods.getIsPublic()) {
-                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
-            }
+                if (!goods1.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
 
-            internalCreateGoodsData(goods, null, dto);
+                internalCreateGoodsData(goods1, null, dto);
+                break;
 
-        } else if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
-            // 운영자: 상품이 프라이빗일 경우 등록 가능
-            customerCompanyProviderMappingRepository
-                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+            case OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+                Goods goods2 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
-            if (goods.getIsPublic()) {
-                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
-            }
+                if (goods2.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
 
-            CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+                CustomerCompany customerCompany2 = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
 
-            internalCreateGoodsData(goods, customerCompany, dto);
+                internalCreateGoodsData(goods2, customerCompany2, dto);
+                break;
+
+            case API_SUB_ADMIN:
+                Goods goods3 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (!goods3.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                internalCreateGoodsData(goods3, null, dto);
+                break;
+
+            case API_PLUS_OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+                Goods goods4 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (goods4.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                CustomerCompany customerCompany4 = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+
+                internalCreateGoodsData(goods4, customerCompany4, dto);
+                break;
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -333,7 +396,8 @@ public class AdminGoodsDataService {
     /**
     * 데이터 등록: 기존 데이타 업데이트
     *
-    * @param user 사용자 정보
+    * @param companyNo 사용자가 속한 고객사 번호
+    * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
     * @param GoodsDataUpdateReq
@@ -341,51 +405,97 @@ public class AdminGoodsDataService {
     */
     @Transactional
     public void updateGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
-        if (RoleUtil.isAdmin(role)) {
-            // 관리자: 상품이 퍼블릭일 경우 수정 가능
-            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
-            if (!goods.getIsPublic()) {
-                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
-            }
+        switch (role) {
+            case ADMIN:
+                Goods goods1 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
-            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+                if (!goods1.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
 
-            internalUpdateGoodsData(goodsData, dto);
+                GoodsData goodsData1 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+                internalUpdateGoodsData(goodsData1, dto);
+                break;
+
+            case OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+                Goods goods2 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (goods2.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                GoodsData goodsData2 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+                internalUpdateGoodsData(goodsData2, dto);
+                break;
+
+            case API_SUB_ADMIN:
+                Goods goods3 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (!goods3.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                GoodsData goodsData3 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+                internalUpdateGoodsData(goodsData3, dto);
+                break;
+
+            case API_PLUS_OPERATOR:
+                customerCompanyProviderMappingRepository
+                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+                Goods goods4 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+
+                if (goods4.getIsPublic()) {
+                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                }
+
+                GoodsData goodsData4 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+                internalUpdateGoodsData(goodsData4, dto);
+                break;
+
+            default:
+                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
-
-        if (RoleUtil.isOperator(role) || RoleUtil.isPlusOperator(role)) {
-            // 운영자: 상품이 프라이빗일 경우 수정 가능
-            customerCompanyProviderMappingRepository
-                    .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-            customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
-            Goods goods = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                    "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-            if (goods.getIsPublic()) {
-                throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED);
-            }
-
-            GoodsData goodsData = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                    .orElseThrow(
-                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-            internalUpdateGoodsData(goodsData, dto);
-        }
-
     }
 
     private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
@@ -436,14 +546,15 @@ public class AdminGoodsDataService {
                             FileRelationshipObjectSeparateCode.GDATS.getCode(),
                             DateUtil.endYmd());
 
-					ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-							.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-									String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
+                    ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
+                            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    String.format("Component information could not be found. componentTypeId: %s",
+                                            structuredData.componentTypeId())));
 
-					GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-					.save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
-							componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
-							componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                    GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
+                    .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                                    componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
+                                    componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
 
                     List<UnitConvert> unitConverts = unitConvertRepository.findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
 

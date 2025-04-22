@@ -50,4 +50,10 @@ public class MiUserService {
         return PermissionRes.fromAuthorityMappings(goodsMappings);
     }
 
+    // todo 캐시
+    public PermissionRes getPlusOperatorGoodsPermissions(Integer companyNo) {
+        List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findPlusOperatorGoodsPermissions(companyNo);
+        return PermissionRes.fromAuthorityMappings(goodsMappings);
+    }
+
 }

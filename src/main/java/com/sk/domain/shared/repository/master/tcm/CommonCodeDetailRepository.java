@@ -51,4 +51,16 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             ORDER BY ccd.codeRnk
             """)
     List<GoodsDataCategoryRes> findGoodsDataSubCategorysByCodeId(@Param("codeId") String codeId);
+
+    @Query(value = """
+            SELECT MAX(ccd.codeRnk)
+            FROM CommonCodeDetail ccd
+            WHERE ccd.isDeleted = false
+            AND ccd.isUsed = true
+            AND ccd.useBeginDt <= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
+            AND ccd.useEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
+            AND ccd.highCodeGroupId = :highCodeGroupId
+            AND ccd.highCodeId = :highCodeId
+            """)
+    Integer findMaxCodeRnkByHighCodeId(@Param("highCodeGroupId") String highCodeGroupId, @Param("highCodeId") String highCodeId);
 }

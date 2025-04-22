@@ -30,6 +30,14 @@ public class PermissionStrategyFactory {
             return new OperatorPermissionStrategy();
         }
 
+        if (role == Role.API_SUB_ADMIN) {
+            return new ApiSubAdminPermissionStrategy();
+        }
+
+        if (role == Role.API_PLUS_OPERATOR) {
+            return new ApiPlusOperatorPermissionStrategy(userService, authorizationService);
+        }
+
         return new UserPermissionStrategy(userService, authorizationService);
     }
 

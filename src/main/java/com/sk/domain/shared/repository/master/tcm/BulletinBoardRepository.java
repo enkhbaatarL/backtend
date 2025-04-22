@@ -178,8 +178,6 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             """)
     Optional<BulletinBoard> findByIsPopupUseTrue();
 
-    Page<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(Specification<BulletinBoard> spec, Pageable page, String bulletinTypeCode);
-
     /*******************************************************************
     *
     * FAQ
