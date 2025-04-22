@@ -1,5 +1,8 @@
 package com.sk.common.utils;
 
+import com.sk.domain.shared.enums.chart.Range;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -96,6 +99,46 @@ public final class DateUtil {
         }
     }
 
+    /**
+     * 주어진 Range를 기준으로 (fromDate, toDate) 쌍을 yyyyMMdd 형식 문자열로 반환.
+     * toDate는 현재 날짜, fromDate는 Range만큼 과거 날짜.
+     */
+    public static Pair<String, String> getDateRange(Range range, String customStart, String customEnd) {
+
+        if (range == Range.CUSTOM) {
+            return Pair.of(customStart, customEnd);
+        }
+
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = switch (range) {
+            case ONE_WEEK -> endDate.minusWeeks(1);
+            case ONE_MONTH -> endDate.minusMonths(1);
+            case THREE_MONTHS -> endDate.minusMonths(3);
+            case SIX_MONTHS -> endDate.minusMonths(6);
+            case ONE_YEAR -> endDate.minusYears(1);
+            case TWO_YEARS -> endDate.minusYears(2);
+            default -> endDate;
+        };
+        String from = toYmd(startDate);
+        String to = toYmd(endDate);
+        return Pair.of(from, to);
+    }
+
+    public static Pair<String, String> getDateRange(Range range) {
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = switch (range) {
+            case ONE_WEEK -> endDate.minusWeeks(1);
+            case ONE_MONTH -> endDate.minusMonths(1);
+            case THREE_MONTHS -> endDate.minusMonths(3);
+            case SIX_MONTHS -> endDate.minusMonths(6);
+            case ONE_YEAR -> endDate.minusYears(1);
+            case TWO_YEARS -> endDate.minusYears(2);
+            default -> endDate;
+        };
+        String from = toYmd(startDate);
+        String to = toYmd(endDate);
+        return Pair.of(from, to);
+    }
 
     /**
      * 마지막 날짜를 "yyyyMMdd"로 반환

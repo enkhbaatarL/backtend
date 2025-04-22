@@ -1,7 +1,7 @@
 package com.sk.domain.mi.dto.response.chart;
 
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
-import com.sk.domain.shared.enums.ChartSettingConditionCd;
+import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 

@@ -1,4 +1,4 @@
-package com.sk.domain.shared.enums;
+package com.sk.domain.shared.enums.chart;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.sk.domain.mi.dto.request;
 
-import com.sk.domain.shared.enums.ChartSettingConditionCd;
+import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ChartsPersonalizeReq(
