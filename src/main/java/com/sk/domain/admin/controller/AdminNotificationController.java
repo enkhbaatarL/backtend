@@ -9,7 +9,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.notification.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.AdminNotificationRes;
 import com.sk.domain.admin.service.AdminNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +37,7 @@ public class AdminNotificationController {
     })
     @Operation(summary = "알림 조회 API", description = "알림 조회 API 입니다.")
     @GetMapping("/notifications")
-    public BaseResponse<PaginationRes<NotificationRes>> getNotifications(
+    public BaseResponse<PaginationRes<AdminNotificationRes>> getNotifications(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "search", required = false) String search) {

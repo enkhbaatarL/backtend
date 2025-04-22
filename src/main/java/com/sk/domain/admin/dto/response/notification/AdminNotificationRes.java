@@ -11,7 +11,7 @@ import com.sk.domain.shared.enums.UserRoleCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-public record NotificationRes(
+public record AdminNotificationRes(
 
         @Schema(description = "이메일 발송 일련번호", example = "1") Integer emailSendSn,
 
@@ -48,7 +48,7 @@ public record NotificationRes(
 ) {
 
     @QueryProjection
-    public NotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
+    public AdminNotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
             EmailSendStatusName emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, String userNm,
             UserRoleCd userRoleCd, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
             Integer customerCompanyNo, String customerCompanyNm, String createUserId, LocalDateTime createDt,
@@ -59,7 +59,7 @@ public record NotificationRes(
     }
 
     @Builder
-    public NotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
+    public AdminNotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
             EmailSendStatusName emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, String userNm,
             UserRoleCd userRoleCd, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
             Integer customerCompanyNo, String customerCompanyNm, AuditInfo auditInfo) {

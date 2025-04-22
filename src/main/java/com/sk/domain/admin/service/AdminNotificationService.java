@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.notification.NotificationRes;
+import com.sk.domain.admin.dto.response.notification.AdminNotificationRes;
 import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class AdminNotificationService {
      * @param size   페이지 크기
      * @return 알림 목록
      */
-    public PaginationRes<NotificationRes> getNotifications(int page, int size, String search) {
+    public PaginationRes<AdminNotificationRes> getNotifications(int page, int size, String search) {
         return PaginationRes.toRes(emailAccessLogRepository.findNotificationsByConditions(page, size, search));
     }
 

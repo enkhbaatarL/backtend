@@ -29,7 +29,7 @@ public class SamlUserServiceProviderConfig {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http
             .cors(withDefaults())
-            .securityMatcher("/login/saml2/user", "/saml2/sso/mi ", "/saml2/authenticate/**", "/login/saml2/saml-callback") // SAML 로그인
+            .securityMatcher("/login/saml2/user", "/saml2/sso/mi", "/saml2/authenticate/**", "/login/saml2/saml-callback", "/saml2/service-provider-metadata/mi") // SAML 로그인
             .authorizeHttpRequests(authorize -> authorize
                 .anyRequest().permitAll())
             .saml2Login(saml2 -> saml2
