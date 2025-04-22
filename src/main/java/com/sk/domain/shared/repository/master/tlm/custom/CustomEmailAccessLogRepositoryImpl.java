@@ -20,6 +20,7 @@ import com.sk.domain.admin.dto.response.notification.AdminNotificationRes;
 import com.sk.domain.admin.dto.response.notification.QAdminNotificationRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
 import com.sk.domain.mi.dto.response.notification.QMiNotificationRes;
+import com.sk.domain.shared.entity.master.tmd.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,13 +31,18 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<AdminNotificationRes> findNotificationsByConditions(int page, int size, String search) {
+    public Page<AdminNotificationRes> findNotificationsByConditions(int page, int size, Boolean isSendSuccess, String startDate, String endDate) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(emailAccessLog.isDeleted.isFalse());
-        if (search != null && !search.isEmpty()) {
-            builder.and(user.userNm.contains(search).or(emailAccessLog.emailCntt.contains(search)));
+
+        if (isSendSuccess != null) {
+            builder.and(emailAccessLog.isSendSuccess.eq(isSendSuccess));
+        }
+
+        if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+            builder.and(emailAccessLog.emailSendDtm.between(LocalDateTime.parse(startDate), LocalDateTime.parse(endDate)));
         }
 
         List<AdminNotificationRes> content = queryFactory.select(new QAdminNotificationRes(
@@ -47,6 +53,7 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 emailAccessLog.emailSendStatusNm,
                 emailAccessLog.emailSendErrCntt,
                 emailAccessLog.emailSendDtm,
+                emailAccessLog.isSendSuccess,
                 user.userNm,
                 user.userRoleCd,
                 user.positionNm,
@@ -55,6 +62,8 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 user.departmentNm,
                 customerCompany.customerCompanyNo,
                 customerCompany.customerCompanyNm,
+                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNo,
+                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNm,
                 emailAccessLog.createUserId,
                 emailAccessLog.createDt,
                 emailAccessLog.modifyUserId,
@@ -62,11 +71,12 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 .from(emailAccessLog)
                 .leftJoin(user).on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId))
                 .leftJoin(user.customerCompany, customerCompany)
+                .leftJoin(emailAccessLog.goodsCriticalValueSetting).fetchJoin()
+                .leftJoin(emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail).fetchJoin()
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .where(builder)
                 .orderBy(emailAccessLog.emailSendSn.desc())
-                .groupBy(emailAccessLog.emailSendSn)
                 .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory.select(emailAccessLog.count())
@@ -77,49 +87,38 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
     }
 
     @Override
-    public Page<MiNotificationRes> findNotificationsWithinSevenDays(int page, int size) {
-        // Pageable pageable = PageRequest.of(page - 1, size);
+    public Page<MiNotificationRes> findNotificationsWithinSevenDays(int page, int size, User user) {
+        Pageable pageable = PageRequest.of(page - 1, size);
 
-        // BooleanBuilder builder = new BooleanBuilder();
-        // builder.and(emailAccessLog.isDeleted.isFalse());
-        // builder.and(emailAccessLog.emailSendDtm.between(LocalDateTime.now().minusDays(7), LocalDateTime.now()));
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(emailAccessLog.isDeleted.isFalse())
+                .and(emailAccessLog.emailSendDtm.goe(LocalDateTime.now().minusDays(7)))
+                .and(emailAccessLog.emailReceiveUserLoginId.eq(user.getUserLoginId()));
 
-        // List<MiNotificationRes> content = queryFactory.select(new QMiNotificationRes(
-        //         emailAccessLog.emailSendSn,
-        //         emailAccessLog.emailReceiveUserLoginId,
-        //         emailAccessLog.emailTitleNm,
-        //         emailAccessLog.emailCntt,
-        //         emailAccessLog.emailSendStatusNm,
-        //         emailAccessLog.emailSendErrCntt,
-        //         emailAccessLog.emailSendDtm,
-        //         user.userNm,
-        //         user.userRoleCd,
-        //         user.positionNm,
-        //         user.jobGradeNm,
-        //         user.onDutyNm,
-        //         user.departmentNm,
-        //         customerCompany.customerCompanyNo,
-        //         customerCompany.customerCompanyNm,
-        //         emailAccessLog.createUserId,
-        //         emailAccessLog.createDt,
-        //         emailAccessLog.modifyUserId,
-        //         emailAccessLog.modifyDt))
-        //         .from(emailAccessLog)
-        //         .leftJoin(user).on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId))
-        //         .leftJoin(user.customerCompany, customerCompany)
-        //         .offset(pageable.getOffset())
-        //         .limit(pageable.getPageSize())
-        //         .where(builder)
-        //         .orderBy(emailAccessLog.emailSendSn.desc())
-        //         .groupBy(emailAccessLog.emailSendSn)
-        //         .fetch();
+        List<MiNotificationRes> content = queryFactory.select(new QMiNotificationRes(
+                emailAccessLog.emailSendSn,
+                emailAccessLog.emailTitleNm,
+                emailAccessLog.emailCntt,
+                emailAccessLog.emailSendDtm,
+                emailAccessLog.isEmailInquiry,
+                emailAccessLog.goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
+                emailAccessLog.goodsCriticalValueSetting.criticalValueSettingVol,
+                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceUnitNm,
+                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNm,
+                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNo))
+                .from(emailAccessLog)
+                .leftJoin(emailAccessLog.goodsCriticalValueSetting).fetchJoin()
+                .leftJoin(emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail).fetchJoin()
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .where(builder)
+                .orderBy(emailAccessLog.emailSendSn.desc(), emailAccessLog.emailSendDtm.desc())
+                .fetch();
 
-        // JPQLQuery<Long> countQuery = queryFactory.select(emailAccessLog.count())
-        //         .from(emailAccessLog)
-        //         .where(builder);
+        JPQLQuery<Long> countQuery = queryFactory.select(emailAccessLog.count())
+                .from(emailAccessLog)
+                .where(builder);
 
-        // return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
-        return null;
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
-
 }

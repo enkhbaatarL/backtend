@@ -27,6 +27,8 @@ public record AdminNotificationRes(
 
         @Schema(description = "이메일 발송 일시", example = "2025-01-01 00:00:00") LocalDateTime emailSendDtm,
 
+        @Schema(description = "이메일 발송 성공 여부", example = "true") Boolean isSendSuccess,
+
         @Schema(description = "이메일 수신 사용자명", example = "홍길동") String userNm,
 
         @Schema(description = "사용자역할코드", example = "ADMIN") UserRoleCd userRoleCd,
@@ -43,26 +45,30 @@ public record AdminNotificationRes(
 
         @Schema(description = "고객사명", example = "테스트 고객사") String customerCompanyNm,
 
+        @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
+
+        @Schema(description = "상품데이터명", example = "상품데이터명") String goodsDataNm,
+
         @JsonUnwrapped @Schema(description = "감사 정보") AuditInfo auditInfo
 
 ) {
 
     @QueryProjection
     public AdminNotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
-            EmailSendStatusName emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, String userNm,
+            EmailSendStatusName emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess, String userNm,
             UserRoleCd userRoleCd, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
-            Integer customerCompanyNo, String customerCompanyNm, String createUserId, LocalDateTime createDt,
+            Integer customerCompanyNo, String customerCompanyNm, Integer goodsDataNo, String goodsDataNm, String createUserId, LocalDateTime createDt,
             String modifyUserId, LocalDateTime modifyDt) {
         this(emailSendSn, emailReceiveUserLoginId, emailTitleNm, emailCntt, emailSendStatusNm, emailSendErrorCntt,
-                emailSendDtm, userNm, userRoleCd, positionNm, jobGradeNm, onDutyNm, departmentNm, customerCompanyNo,
-                customerCompanyNm, AuditInfo.ofSimple(createUserId, createDt, modifyUserId, modifyDt));
+                emailSendDtm, isSendSuccess, userNm, userRoleCd, positionNm, jobGradeNm, onDutyNm, departmentNm, customerCompanyNo,
+                customerCompanyNm, goodsDataNo, goodsDataNm, AuditInfo.ofSimple(createUserId, createDt, modifyUserId, modifyDt));
     }
 
     @Builder
     public AdminNotificationRes(Integer emailSendSn, String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
-            EmailSendStatusName emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, String userNm,
+            EmailSendStatusName emailSendStatusNm, String emailSendErrorCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess, String userNm,
             UserRoleCd userRoleCd, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
-            Integer customerCompanyNo, String customerCompanyNm, AuditInfo auditInfo) {
+            Integer customerCompanyNo, String customerCompanyNm, Integer goodsDataNo, String goodsDataNm, AuditInfo auditInfo) {
         this.emailSendSn = emailSendSn;
         this.emailReceiveUserLoginId = emailReceiveUserLoginId;
         this.emailTitleNm = emailTitleNm;
@@ -70,6 +76,7 @@ public record AdminNotificationRes(
         this.emailSendStatusNm = emailSendStatusNm;
         this.emailSendErrorCntt = emailSendErrorCntt;
         this.emailSendDtm = emailSendDtm;
+        this.isSendSuccess = isSendSuccess;
         this.userNm = userNm;
         this.userRoleCd = userRoleCd;
         this.positionNm = positionNm;
@@ -78,6 +85,8 @@ public record AdminNotificationRes(
         this.departmentNm = departmentNm;
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
+        this.goodsDataNo = goodsDataNo;
+        this.goodsDataNm = goodsDataNm;
         this.auditInfo = auditInfo;
     }
 }

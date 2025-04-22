@@ -51,19 +51,18 @@ spring:
       relyingparty:
         registration:
           mi:
-            entity-id: http://localhost:8080/saml2/service-provider-metadata/mi
+            entity-id: http://localhost:8080/saml2/metadata
             acs:
               location: http://localhost:8080/saml2/sso/mi
               binding: POST
+            signing:
+              credentials:
+                - private-key-location: classpath:saml/key/sp-private.key
+                  certificate-location: classpath:saml/key/sp-cert.crt
+            singlelogout:
+              url: http://localhost:8080/saml/single-logout
             assertingparty:
-              metadata-uri: classpath:saml/mi-metadata-sample.xml
-          mi-admin:
-            entity-id: http://localhost:8080/saml2/service-provider-metadata/mi-admin
-            acs:
-              location: http://localhost:8080/saml2/sso/mi-admin
-              binding: POST
-            assertingparty:
-              metadata-uri: https://dev-25395713.okta.com/app/exknqq0r1bABpMTN55d7/sso/saml/metadata
+              metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
 
 cache:
   redis:
