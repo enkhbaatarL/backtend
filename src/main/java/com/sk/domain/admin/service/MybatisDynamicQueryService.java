@@ -7,9 +7,12 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.request.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataForAlarmReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
 import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -21,12 +24,16 @@ import lombok.extern.slf4j.Slf4j;
 public class MybatisDynamicQueryService {
 
     private final DynamicMapper dynamicMapper;
+
     /**
      * Where 절에서 금지된 토큰 목록
      */
     private static final Set<String> FORBIDDEN_TOKENS = Set.of(";", "--", "#", "UNION");
 
     public List<Map<String, Object>> getDynamicData(DynamicDataReq dynamicDataReq) {
+
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.tartgetDataSource());
 
         String tableName = dynamicDataReq.tableName();
         String columns = dynamicDataReq.columns();
@@ -57,6 +64,48 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("whereClause", whereClause);
         params.put("additionalWhereClause", additionalWhereClause);
+        return dynamicMapper.selectDynamic(params);
+    }
+
+    /**
+     * 정형 데이터 저장
+     * @param dynamicDataSaveAll
+     */
+    public void saveAllDynamicData(DynamicDataSaveAll dynamicDataSaveAll) {
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataSaveAll.tartgetDataSource());
+
+        String tableName = dynamicDataSaveAll.tableName();
+        List<String> columns = dynamicDataSaveAll.columns();
+        List<Object[]> values = dynamicDataSaveAll.values();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("values", values);
+
+        dynamicMapper.saveAllDynamic(params);
+    }
+
+    /**
+     * 정형 데이터 조회
+     * @param dynamicDataReq
+     * @return
+     */
+    public List<Map<String, Object>> getDynamicWithSubQuery(DynamicDataForAlarmReq dynamicDataForAlarmReq) {
+
+        DataSourceContextHolder.setDataSourceKey(dynamicDataForAlarmReq.tartgetDataSource());
+
+        String tableName = dynamicDataForAlarmReq.tableName();
+        String columns = dynamicDataForAlarmReq.columns();
+        String whereClause = dynamicDataForAlarmReq.whereClause();
+        String orderByColumns = dynamicDataForAlarmReq.orderByColumns();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("whereClause", whereClause);
+        params.put("orderByColumns", orderByColumns);
         return dynamicMapper.selectDynamic(params);
     }
 }

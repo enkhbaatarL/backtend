@@ -25,7 +25,7 @@ public enum UnitType {
         return Arrays.stream(UnitType.values())
             .filter(unitType -> unitType.getCode().equals(code))
             .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Unknown unit name: " + code));
+            .orElseThrow(() -> new IllegalArgumentException("Unknown currentUnit name: " + code));
     }
 
 }

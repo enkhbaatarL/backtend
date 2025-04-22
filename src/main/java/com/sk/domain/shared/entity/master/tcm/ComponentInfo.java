@@ -60,11 +60,15 @@ public class ComponentInfo extends BaseEntity {
     @Comment("엑셀조건내용")
     private String excelConditionCntt;
 
+    @Column(name = "gds_data_src_unit_nm", length = 50)
+    @Comment("상품데이터소스단위명")
+    private String goodsDataSourceUnitNm;
+
     @Builder
     public ComponentInfo(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, String componentTypeId, String componentTypeNm, String goodsDataSourceNm,
             String targetDbNm, String targetTableNm, String queryConditionCntt,
-            String tableColumnListNm, String excelColumnListNm, String excelConditionCntt) {
+            String tableColumnListNm, String excelColumnListNm, String excelConditionCntt, String goodsDataSourceUnitNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.componentTypeId = componentTypeId;
         this.componentTypeNm = componentTypeNm;
@@ -75,6 +79,7 @@ public class ComponentInfo extends BaseEntity {
         this.tableColumnListNm = tableColumnListNm;
         this.excelColumnListNm = excelColumnListNm;
         this.excelConditionCntt = excelConditionCntt;
+        this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
     }
 
     public static ComponentInfo of(ComponentInfoReq.Insert dto) {
@@ -88,6 +93,7 @@ public class ComponentInfo extends BaseEntity {
                 .tableColumnListNm(dto.tableColumnListNm())
                 .excelColumnListNm(dto.excelColumnListNm())
                 .excelConditionCntt(dto.excelConditionCntt())
+                .goodsDataSourceUnitNm(dto.goodsDataSourceUnitNm())
                 .build();
     }
 }

@@ -1,17 +1,21 @@
 package com.sk.domain.mi.service.chart;
 
-import com.sk.domain.admin.dto.request.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.dto.response.chart.ChartData;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataUnitConvert;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
+import com.sk.domain.shared.enums.ChartSettingConditionCd;
 import com.sk.domain.shared.enums.Interval;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +34,7 @@ public class ChartGenerationService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     private final ChartAggregationService chartAggregationService;
+    private final ChartUnitConversionService chartUnitConversionService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
 
     /**
@@ -38,28 +43,30 @@ public class ChartGenerationService {
      * @param goodsDataSourceDetail The data source details
      * @param startDate The start date for the data range
      * @param endDate The end date for the data range
-     * @param interval The time interval for data aggregation
+     * @param interval The time currentInterval for data aggregation
      * @return ChartData containing the processed chart data
      */
-    public ChartData generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval) {
+    public ChartData generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, Integer unitConversionNo) {
 
         Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
-        String[] columns = goodsDataSourceDetail.getTableColumnListNm().split(",");
+        List<String> selectedColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
 
-        String dateColumnName = columns[DATE_COLUMN_INDEX];
+        String dateColumnName = selectedColumns.get(DATE_COLUMN_INDEX);
         boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
 
         // Retrieve and process data
         List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
         if (rawData.isEmpty()) {
             // Return empty chart data by passing empty list to the factory
-            return ChartBundleFactory.toChartData(isCandleChartPossible, Collections.emptyList(), goodsDataSourceDetail.getTableColumnListNm(), columnExpressions);
+            return ChartBundleFactory.toChartData(isCandleChartPossible, Collections.emptyList(), selectedColumns, columnExpressions);
         }
 
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, goodsDataSourceDetail);
 
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convertUnit(isCandleChartPossible, aggregatedData, selectedColumns, unitConversionNo);
+
         // Convert to chart data format
-        return ChartBundleFactory.toChartData(isCandleChartPossible, aggregatedData, goodsDataSourceDetail.getTableColumnListNm(), columnExpressions);
+        return ChartBundleFactory.toChartData(isCandleChartPossible, convertedData, selectedColumns, columnExpressions);
     }
 
     /**
@@ -94,10 +101,10 @@ public class ChartGenerationService {
      * @param mainDataSource The main data source to find comparisons for
      * @param startDate The start date for the data range
      * @param endDate The end date for the data range
-     * @param interval The time interval for data aggregation
+     * @param interval The time currentInterval for data aggregation
      * @return List of chart data for comparison sources
      */
-    public List<ChartData> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval) {
+    public List<ChartData> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
         if (mainDataSource == null) {
             return Collections.emptyList();
@@ -113,7 +120,7 @@ public class ChartGenerationService {
         // Generate chart data for each comparison source
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
-            .map(comparison -> generateChartData(comparison.getCompareGoodsDataSourceDetail(), startDate, endDate, interval))
+            .map(comparison -> generateChartData(comparison.getCompareGoodsDataSourceDetail(), startDate, endDate, interval, null))
             .toList();
     }
 

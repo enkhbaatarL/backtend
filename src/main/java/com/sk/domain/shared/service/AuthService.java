@@ -70,16 +70,24 @@ public class AuthService {
 		String renewedRefreshToken = jwtUtil.generateRefreshToken(user);
 
 		// 리프레시 토큰을 쿠키에 설정
-		ResponseCookie responseCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
+		ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
 				.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
 				.path("/")
 				.secure(true)
 				.httpOnly(true)
 				.build();
 
-		response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+		response.addHeader(HttpHeaders.SET_COOKIE, responseRefreshCookie.toString());
 
-		// 액세스 토큰을 Authorization 헤더에 설정
+		// ResponseCookie responseAccessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken)
+		// 		.maxAge(jwtProperties.getAccessTokenExpiry() / 1000)
+		// 		.path("/")
+		// 		.secure(true)
+		// 		.httpOnly(true)
+		// 		.build();
+
+		// response.addHeader(HttpHeaders.SET_COOKIE, responseAccessTokenCookie.toString());
+
 		response.addHeader(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken);
 
 		return GenerateTokenRes.of(renewedAccessToken);

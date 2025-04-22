@@ -7,31 +7,11 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.provider.FileDownloadReq;
-import com.sk.domain.admin.dto.request.provider.GoodsCreateReq;
-import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
-import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
-import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
-import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
-import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
-import com.sk.domain.admin.dto.request.provider.StructuredDataFileReq;
+import com.sk.domain.admin.dto.request.provider.*;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
-import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
-import com.sk.domain.admin.dto.response.provider.GoodsCreateRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
-import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
-import com.sk.domain.admin.dto.response.provider.GoodsRes;
-import com.sk.domain.admin.dto.response.provider.ProviderCreateRes;
-import com.sk.domain.admin.dto.response.provider.ProviderDetailRes;
-import com.sk.domain.admin.dto.response.provider.ProviderLatestUpdatedRes;
-import com.sk.domain.admin.dto.response.provider.ProviderNameRes;
-import com.sk.domain.admin.dto.response.provider.ProviderRes;
+import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
@@ -58,6 +38,19 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -224,6 +217,19 @@ public class AdminProviderController {
     * Goods 관리 API
     *
     *********************************************************************************************************************/
+
+    @ApiOrder(8)
+    @Parameters({
+        @Parameter(name = "providerNo", description = "데이타 프로바이더번호")
+    })
+    @Operation(summary = "상품 목록 조회 - without pagination", description = "상품 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/name")
+    public BaseResponse<List<GoodsLiteRes>> getGoodsNames(
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
+        return BaseResponseFactory.create(goodsService.getGoodsNames(providerNo));
+    }
 
     @ApiOrder(8)
     @Parameters({

@@ -36,7 +36,7 @@ public class MiNotificationService {
     private final EmailAccessLogRepository emailAccessLogRepository;
 
     /**
-     * 알림 등록
+     * 알림 설정 등록
      * 
      * @param notification
      * @param goodsDataSourceNo
@@ -60,7 +60,7 @@ public class MiNotificationService {
     }
 
     /**
-     * 상품 데이터의 알림 리스트를 조회
+     * 상품 데이터의 알림설정 리스트를 조회
      * 
      * @param goodsDataSourceNo
      * @param user
@@ -77,7 +77,7 @@ public class MiNotificationService {
     }
 
     /**
-     * 상품 데이터의 알림 상세를 조회
+     * 상품 데이터의 알림설정 상세를 조회
      * 
      * @param goodsDataSourceNo
      * @param notificationSettingNo
@@ -101,7 +101,7 @@ public class MiNotificationService {
     }
 
     /**
-     * 알림 삭제
+     * 알림설정 삭제
      * 
      * @param goodsDataSourceNo
      * @param user
