@@ -3,11 +3,14 @@ package com.sk.domain.shared.entity.master.tmd;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -63,10 +66,16 @@ public class UnitConvert extends BaseEntity {
     @Comment("단위변환설명")
     private String unitConvertExpn;
 
+    @Column(name = "use_yn", length = 1, columnDefinition = "char(1)")
+    @Comment("사용여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isUsed;
+
     @Builder
     public UnitConvert(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer unitConvNo, String unitConvNm, String convertTargetCategoryNm, String convertTargetDetailTypeNm, String convertPreviousUnitNm,
-            String convertAfterUnitNm, BigDecimal convertCoef, String calculateFormulaServiceNm, String unitConvertExpn) {
+            String convertAfterUnitNm, BigDecimal convertCoef, String calculateFormulaServiceNm, String unitConvertExpn, Boolean isUsed) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.unitConvNo = unitConvNo;
         this.unitConvNm = unitConvNm;
@@ -77,6 +86,7 @@ public class UnitConvert extends BaseEntity {
         this.convertCoef = convertCoef;
         this.calculateFormulaServiceNm = calculateFormulaServiceNm;
         this.unitConvertExpn = unitConvertExpn;
+        this.isUsed = isUsed;
     }
 
     public void softDelete() {

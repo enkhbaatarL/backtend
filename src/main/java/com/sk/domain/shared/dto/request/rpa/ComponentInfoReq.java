@@ -36,6 +36,9 @@ public record ComponentInfoReq() {
         String excelColumnListNm,
 
         @Schema(description = "엑셀조건내용", example = "date >= '2024-01-01'")
-        String excelConditionCntt
+        String excelConditionCntt,
+
+        @Schema(description = "상품데이터소스단위명", example = "kg")
+        String goodsDataSourceUnitNm
     ) {}
 }

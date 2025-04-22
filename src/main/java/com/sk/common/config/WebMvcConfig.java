@@ -11,7 +11,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.sk.common.interceptor.ApiAccessLogInterceptor;
-import com.sk.common.interceptor.TenantInterceptor;
 import com.sk.common.resolver.UserArgumentResolver;
 
 import lombok.RequiredArgsConstructor;
@@ -22,15 +21,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final UserArgumentResolver userArgumentResolver;
     private final ApiAccessLogInterceptor apiAccessLogInterceptor;
-    private final TenantInterceptor tenantInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(apiAccessLogInterceptor)
             .addPathPatterns("/api/**"); // API 경로에만 적용
-
-        registry.addInterceptor(tenantInterceptor)
-            .addPathPatterns("/api/**");
     }
 
     @Override

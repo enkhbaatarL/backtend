@@ -27,6 +27,8 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataUnitConvert;
+import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.Role;
@@ -38,8 +40,10 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataUnitConvertRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
+import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import java.io.IOException;
 import java.util.HashSet;
@@ -72,6 +76,8 @@ public class AdminGoodsDataService {
     private final ComponentInfoRepository componentInfoRepository;
     private final AdminFileService adminFileService;
     private final ExcelService excelService;
+    private final UnitConvertRepository unitConvertRepository;
+    private final GoodsDataUnitConvertRepository goodsDataUnitConvertRepository;
     private final UserRepository userRepository;
     private final PlatformTransactionManager masterTransactionManager;
     private final PlatformTransactionManager myBatisTransactionManager;
@@ -292,11 +298,16 @@ public class AdminGoodsDataService {
                         .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                                 String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
 
-                // todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
                         .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
                                 componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
-                                "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                                componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+
+                List<UnitConvert> unitConverts = unitConvertRepository.findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
+
+                goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
+                        .map(unitConvert -> GoodsDataUnitConvert.of(savedGoodsDataSourceDetail, unitConvert))
+                        .toList());
 
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), null,
@@ -421,16 +432,20 @@ public class AdminGoodsDataService {
                                     String.format("Component information could not be found. componentTypeId: %s",
                                             structuredData.componentTypeId())));
 
-                    // todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
                     GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                            .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                    .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
                                     componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
-                                    "goodsDataSourceUnitNm", componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                                    componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+
+                    List<UnitConvert> unitConverts = unitConvertRepository.findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
+
+                    goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
+                            .map(unitConvert -> GoodsDataUnitConvert.of(savedGoodsDataSourceDetail, unitConvert))
+                            .toList());
 
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                     goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), null,
                             GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
-
                 }
             }
         }

@@ -1,5 +1,8 @@
 package com.sk.domain.shared.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +40,7 @@ public class SchedulerController {
     @Operation(summary = "알림 발송 API", description = "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.")
     @PostMapping("/notification")
     @ApiResponse(responseCode = "200", description = "알림 발송 성공")
-    public BaseResponse<Boolean> createNotification() {
+    public BaseResponse<List<Map<String, Object>>> createNotification() {
         return BaseResponseFactory.create(schedulerService.createNotification());
     }
 

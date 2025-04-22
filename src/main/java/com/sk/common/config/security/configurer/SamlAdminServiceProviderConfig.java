@@ -29,7 +29,7 @@ public class SamlAdminServiceProviderConfig {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http
             .cors(withDefaults())
-            .securityMatcher("/login/saml2/admin", "/login/saml2/sso/mi-admin") // SAML 로그인
+            .securityMatcher("/login/saml2/admin", "/saml2/sso/mi -admin") // SAML 로그인
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/login/saml2/admin").authenticated()
                 .anyRequest().permitAll())

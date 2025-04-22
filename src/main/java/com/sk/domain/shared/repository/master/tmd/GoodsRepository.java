@@ -10,11 +10,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface GoodsRepository extends JpaRepository<Goods, Integer> {
     /**
-     * 
+     *
      * 기본적으로 고객사나 사용자의 사용가능 상태는 체크 하지 않는다. 로그인 단에서 체크하는걸로 처리
      *
      */
@@ -164,4 +165,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                 AND g.goodsNo = :goodsNo
             """)
     Optional<Goods> findByGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+
+    List<Goods> findByProvider_ProviderNoAndIsUsedTrueAndIsDeletedFalse(Integer providerNo);
+
 }

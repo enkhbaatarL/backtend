@@ -12,4 +12,5 @@ public interface UnitConvertRepository extends JpaRepository<UnitConvert, Intege
 
     Optional<UnitConvert> findByUnitConvNoAndIsDeletedFalse(int unitConvNo);
 
+    List<UnitConvert> findByConvertPreviousUnitNmAndIsDeletedFalse(String convertPreviousUnitNm);
 }
