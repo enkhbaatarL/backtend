@@ -2,6 +2,7 @@ package com.sk.domain.mi.conversion;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.conversion.dto.ConversionResult;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
@@ -49,6 +50,29 @@ public class UnitConversionService {
      *
      * @param unitConversionNo 단위변환번호
      * @param timeSeriesValues 변환시킬 시계열데이터
+     * @return List<BigDecimal>
+     */
+    public List<BigDecimal> convertTimeSeries(Integer unitConversionNo, List<BigDecimal> timeSeriesValues) {
+
+        UnitConvert unitConvert = findActiveUnitConvert(unitConversionNo);
+
+        if (StringUtils.isNotEmpty(unitConvert.getCalculateFormulaServiceNm())) {
+            FormulaService formulaService = FormulaService.findByFormulaServiceNm(unitConvert.getCalculateFormulaServiceNm());
+            // 전략 패턴 사용 - 복잡한 공식이 필요한 경우
+            return unitConversionContext.convertTimeSeries(formulaService, timeSeriesValues, 20);
+        }
+
+        // 단순 변환 계수 사용 - DB에 저장된 단위 변환
+        return timeSeriesValues.stream()
+            .map(value -> MathUtil.multiply(value, unitConvert.getConvertCoef()))
+            .toList();
+    }
+
+    /**
+     * 시계열데이터 변환
+     *
+     * @param unitConversionNo 단위변환번호
+     * @param timeSeriesValues 변환시킬 시계열데이터
      * @param windowSize       윈도우사이즈
      * @return List<BigDecimal>
      */
@@ -64,7 +88,7 @@ public class UnitConversionService {
 
         // 단순 변환 계수 사용 - DB에 저장된 단위 변환
         return timeSeriesValues.stream()
-            .map(value -> value.multiply(unitConvert.getConvertCoef()))
+            .map(value -> MathUtil.multiply(value, unitConvert.getConvertCoef()))
             .toList();
     }
 
@@ -111,7 +135,7 @@ public class UnitConversionService {
     private UnitConvert findActiveUnitConvert(Integer unitConversionNo) {
         return unitConvertRepository.findByUnitConvNoAndIsDeletedFalse(unitConversionNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [unit-conversion]. unitConversionNo: %s".formatted(unitConversionNo)));
+                "It doesn't exist in the [currentUnit-conversion]. unitConversionNo: %s".formatted(unitConversionNo)));
     }
 
 }
