@@ -1,6 +1,6 @@
 package com.sk.domain.admin.service;
 
-import com.sk.common.enums.ResultCode;
+import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
@@ -101,7 +101,7 @@ public class AdminGoodsDataService {
                         .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
 
             default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -152,7 +152,7 @@ public class AdminGoodsDataService {
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
 
             default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -177,7 +177,7 @@ public class AdminGoodsDataService {
             .orElseThrow(
                 () ->
                     AppErrorException.of(
-                        ResultCode.Error.RSC_NOT_FOUND,
+                        Error.RSC_NOT_FOUND,
                         "provider no: %d, goods no: %d, goodsdata no: %d"
                             .formatted(providerNo, goodsNo, goodsDataNo)));
 
@@ -200,14 +200,14 @@ public class AdminGoodsDataService {
         .orElseThrow(
             () ->
                 AppErrorException.of(
-                    ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+                    Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
     customerCompanyGoodsMappingRepository
         .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
         .orElseThrow(
             () ->
                 AppErrorException.of(
-                    ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+                    Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
   }
 
     /**
@@ -217,7 +217,7 @@ public class AdminGoodsDataService {
     * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
-    * @param GoodsDataCreateReq
+    * @param dto
     * @return
     */
     @Transactional
@@ -232,13 +232,13 @@ public class AdminGoodsDataService {
             .orElseThrow(
                 () ->
                     AppErrorException.of(
-                        ResultCode.Error.RSC_NOT_FOUND,
+                        Error.RSC_NOT_FOUND,
                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
         switch (role) {
       case ADMIN, API_SUB_ADMIN:
         if (!goods.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
         internalCreateGoodsData(goods, null, dto);
@@ -246,7 +246,7 @@ public class AdminGoodsDataService {
 
       case OPERATOR, API_PLUS_OPERATOR:
         if (goods.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
         CustomerCompany customerCompany =
@@ -255,14 +255,14 @@ public class AdminGoodsDataService {
                 .orElseThrow(
                     () ->
                         AppErrorException.of(
-                            ResultCode.Error.RSC_NOT_FOUND,
+                            Error.RSC_NOT_FOUND,
                             "customer company no: %d".formatted(companyNo)));
 
         internalCreateGoodsData(goods, customerCompany, dto);
                 break;
 
             default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -289,7 +289,7 @@ public class AdminGoodsDataService {
 
                 // 컴포넌트 타입 조회
                 ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-                        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                                 String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
 
                 // todo: 호영 추가 goodsDataSourceUnitNm 값 추가 필요
@@ -326,7 +326,7 @@ public class AdminGoodsDataService {
     * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
-    * @param GoodsDataUpdateReq
+    * @param dto
     * @return
     */
     @Transactional
@@ -341,19 +341,19 @@ public class AdminGoodsDataService {
             .orElseThrow(
                 () ->
                     AppErrorException.of(
-                        ResultCode.Error.RSC_NOT_FOUND,
+                        Error.RSC_NOT_FOUND,
                         "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
         switch (role) {
       case ADMIN, API_SUB_ADMIN:
         if (!goods.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
                 break;
 
       case OPERATOR, API_PLUS_OPERATOR:
         if (goods.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
         }
 
@@ -363,7 +363,7 @@ public class AdminGoodsDataService {
             .orElseThrow(
                 () ->
                     AppErrorException.of(
-                        ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+                        Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
     internalUpdateGoodsData(goodsData, dto);
     }
@@ -417,7 +417,7 @@ public class AdminGoodsDataService {
                             DateUtil.endYmd());
 
                     ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-                            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                                     String.format("Component information could not be found. componentTypeId: %s",
                                             structuredData.componentTypeId())));
 
@@ -507,7 +507,7 @@ public class AdminGoodsDataService {
         // 1. JPA: 조회 (Select는 )
         ComponentInfo componentInfo = componentInfoRepository
                 .findByComponentTypeIdAndIsDeletedFalse(structuredDataFileReq.componentTypeId())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                         String.format("Component information could not be found. componentTypeId: %s",
                                 structuredDataFileReq.componentTypeId())));
 
