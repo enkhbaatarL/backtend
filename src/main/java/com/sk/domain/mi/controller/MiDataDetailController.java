@@ -4,10 +4,11 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
-import com.sk.domain.mi.dto.response.chart.ChartBundleRes;
+import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.service.MiDataDetailService;
-import com.sk.domain.shared.enums.Interval;
+import com.sk.domain.shared.enums.chart.Interval;
+import com.sk.domain.shared.enums.chart.Range;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -62,7 +63,7 @@ public class MiDataDetailController {
 //    })
 //    @Operation(summary = "데이터소스 단위 변환 목록 조회 API", description = "데이터소스에서 변환이 가능한 단위 목록을 조회합니다.")
 //    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-//    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/currentUnit-conversion")
+//    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/currentUnitCd-conversion")
 //    public BaseResponse<List<UnitConversionRes>> getGoodsDataSourcesUnitConversion(
 //        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
 //        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
@@ -121,11 +122,12 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
         @RequestParam(value = "interval", required = false, defaultValue = "ONE_DAY") Interval interval,
-        @RequestParam(value = "startDate") String startDate,
-        @RequestParam(value = "endDate") String endDate,
+        @RequestParam(value = "range", defaultValue = "3M") Range range,
+        @RequestParam(value = "startDate", required = false) String startDate,
+        @RequestParam(value = "endDate", required = false) String endDate,
         @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getDynamicCharts(goodsDataNo, goodsDataSourceNo, interval, startDate, endDate, unitConversionCd));
+        return BaseResponseFactory.create(miDataDetailService.getDynamicCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd));
     }
 
 }

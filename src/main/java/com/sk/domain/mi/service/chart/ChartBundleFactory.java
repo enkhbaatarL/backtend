@@ -1,17 +1,15 @@
 package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
-import com.sk.domain.mi.dto.response.chart.*;
-import com.sk.domain.shared.enums.ChartRenderType;
-import com.sk.domain.shared.enums.ChartSettingConditionCd;
-import com.sk.domain.shared.enums.ChartType;
-import com.sk.domain.shared.enums.IndicatorType;
+import com.sk.domain.mi.dto.response.charts.*;
+import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
+import com.sk.domain.shared.enums.chart.ChartType;
+import com.sk.domain.shared.enums.chart.RenderAs;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -26,96 +24,125 @@ public final class ChartBundleFactory {
     private static final int IDX_DATE = 0;
 
     /**
-     * 차트 객체 생성
+     * 차트 묶음 객체를 생성한다.
+     * 차트 메타데이터, 메인 차트, 지표, 비교 차트를 묶어서 하나의 차트 묶음 응답 객체를 생성한다.
+     *
+     * @param metadata 차트 메타데이터
+     * @param mainChart 메인 차트 데이터
+     * @param indicators 지표 데이터 목록
+     * @param comparisonCharts 비교 차트 데이터 목록
+     * @return 생성된 차트 묶음 응답 객체
      */
-    public static ChartBundleRes create(ChartMetadata metadata, ChartData mainChart, List<IndicatorData> indicators, List<ChartData> comparisonCharts) {
+    public static ChartBundleRes create(ChartMetadata metadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
         return ChartBundleRes.of(metadata, mainChart, indicators, comparisonCharts);
     }
 
     /**
-     * 원시 집계 결과를 ChartData DTO로 변환
+     * 원시 데이터를 차트 객체로 변환한다.
+     * 캔들 차트 여부에 따라 차트 타입을 결정하고, 원시 데이터에서 시간 데이터와 시리즈 데이터를 추출하여
+     * 차트 응답 객체를 생성한다.
      *
-     * @param isCandle     캔들 차트 여부
-     * @param rawRows      집계된 원시 행 목록
-     * @param labels       컬럼명→레이블 매핑
+     * @param isCandle 캔들 차트 여부
+     * @param rawRows 원시 데이터 행 목록
+     * @param targetColumns 대상 컬럼 목록
+     * @param labels 컬럼명과 표시 레이블을 매핑한 맵
+     * @param isVisible 차트 표시 여부
+     * @return 생성된 차트 응답 객체
      */
-    public static ChartData toChartData(boolean isCandle, List<Map<String, Object>> rawRows, List<String> selectedColumns, Map<String, String> labels) {
+    public static ChartRes toChart(boolean isCandle, List<Map<String, Object>> rawRows, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
         ChartType chartType = isCandle ? ChartType.CANDLE : ChartType.METRIC;
 
-        List<SchemaEntry> schema = buildSchema(selectedColumns, chartType, labels);
-        Map<String, List<?>> data = buildDataMap(rawRows, selectedColumns);
+        String xAxis = targetColumns.get(IDX_DATE);
+        List<String> yAxisList = targetColumns.subList(1, targetColumns.size());
 
-        return ChartData.of(chartType, selectedColumns, schema, data);
+        List<String> timestamps = buildTimestamps(xAxis, rawRows);
+        List<Series> series = buildSeries(yAxisList, chartType, rawRows, labels, isVisible);
+
+        return ChartRes.of(chartType, timestamps, series);
     }
 
-    private static List<SchemaEntry> buildSchema(List<String> columns, ChartType chartType, Map<String, String> labels) {
-        return IntStream.range(0, columns.size())
-            .mapToObj(i -> {
-                String name = columns.get(i);
-                ChartRenderType renderAs = chartType.resolveRenderType(i);
-                String label = labels.getOrDefault(name, name);
-                return SchemaEntry.of(name, renderAs, label, Boolean.TRUE);
+    private static List<String> buildTimestamps(String xAxis, List<Map<String, Object>> rawRows) {
+        return rawRows.stream()
+            .map(row -> String.valueOf(row.get(xAxis)))
+            .map(DateUtil::fromYmd)
+            .map(DateUtil::toYmd)
+            .toList();
+    }
+
+    private static List<Series> buildSeries(List<String> yAxisList, ChartType chartType, List<Map<String, Object>> rawRows, Map<String, String> labels, boolean isVisible) {
+        return IntStream.range(0, yAxisList.size())
+            .mapToObj(index -> {
+                String columnName = yAxisList.get(index);
+                RenderAs renderAs = chartType.resolveRenderAs(index);
+                String label = labels.getOrDefault(columnName, columnName);
+                List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(columnName))).toList();
+                return Series.of(renderAs.getRenderingId(String.valueOf(index + 1)), label, renderAs, values, isVisible);
             })
             .toList();
     }
 
-    private static Map<String, List<?>> buildDataMap(List<Map<String, Object>> rawRows, List<String> columns) {
-        Map<String, List<?>> data = new LinkedHashMap<>();
-        for (String col : columns) {
-            List<Object> values = rawRows.stream()
-                .map(row -> row.get(col))
-                .toList();
-            data.put(col, values);
-        }
-        return data;
-    }
-
     /**
-     * 이동평균선 지표 DTO 생성
+     * 이동평균선 지표 시리즈 목록을 생성한다.
+     * 5일, 20일, 60일, 120일 이동평균선 데이터를 받아 시리즈 객체로 변환한다.
+     * 개인화 설정에 따라 각 이동평균선의 표시 여부를 결정한다.
+     *
+     * @param ma5 5일 이동평균선 데이터
+     * @param ma20 20일 이동평균선 데이터
+     * @param ma60 60일 이동평균선 데이터
+     * @param ma120 120일 이동평균선 데이터
+     * @param indicatorValues 개인화된 지표 값 목록
+     * @return 이동평균선 시리즈 목록
      */
-    public static IndicatorData createMovingAverageIndicator(List<LocalDate> dates, List<BigDecimal> ma5, List<BigDecimal> ma20, List<BigDecimal> ma60, List<BigDecimal> ma120, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public static List<Series> createMovingAverageIndicator(List<BigDecimal> ma5, List<BigDecimal> ma20, List<BigDecimal> ma60, List<BigDecimal> ma120, List<String> indicatorValues) {
 
         Map<String, List<BigDecimal>> series = Map.of(
-            "ma5", ma5,
-            "ma20", ma20,
-            "ma60", ma60,
-            "ma120", ma120
+            "5", ma5,
+            "20", ma20,
+            "60", ma60,
+            "120", ma120
         );
 
-        return createIndicator(IndicatorType.MOVING_AVERAGE, dates, series, ChartRenderType.MA, personalizedMap);
+        RenderAs renderAs = RenderAs.MA;
+
+        List<Series> seriesList = new ArrayList<>();
+
+        series.forEach((key, value) -> {
+            String renderingId = renderAs.getRenderingId(key);
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), key);
+            seriesList.add(Series.of(renderingId, label, renderAs, value, indicatorValues.contains(renderingId)));
+        });
+
+        return seriesList;
     }
 
     /**
-     * 볼린저 밴드 지표 DTO 생성
+     * 볼린저 밴드 지표 시리즈 목록을 생성한다.
+     * 볼린저 밴드 결과(상단, 중간, 하단) 데이터를 받아 시리즈 객체로 변환한다.
+     * 개인화 설정에 따라 볼린저 밴드의 표시 여부를 결정한다.
+     *
+     * @param results 볼린저 밴드 결과 목록
+     * @param indicatorValues 개인화된 지표 값 목록
+     * @return 볼린저 밴드 시리즈 목록
      */
-    public static IndicatorData createBollingerBandsIndicator(List<LocalDate> dates, List<BollingerBandResult> results, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
-        Map<String, List<BigDecimal>> series = new LinkedHashMap<>();
-        series.put("upper", results.stream().map(BollingerBandResult::upper).toList());
-        series.put("middle", results.stream().map(BollingerBandResult::middle).toList());
-        series.put("lower", results.stream().map(BollingerBandResult::lower).toList());
+    public static List<Series> createBollingerBandsIndicator(List<BollingerBandResult> results, List<String> indicatorValues) {
 
-        return createIndicator(IndicatorType.BOLLINGER_BANDS, dates, series, ChartRenderType.BB, personalizedMap);
-    }
+        Map<String, List<BigDecimal>> series = Map.of(
+            "upper", results.stream().map(BollingerBandResult::upper).toList(),
+            "middle", results.stream().map(BollingerBandResult::middle).toList(),
+            "lower", results.stream().map(BollingerBandResult::lower).toList()
+        );
 
-    /**
-     * 보조지표 공통 생성 헬퍼
-     */
-    private static IndicatorData createIndicator(IndicatorType type, List<LocalDate> dates, Map<String, List<BigDecimal>> seriesMap, ChartRenderType renderType, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
-        List<String> columns = new ArrayList<>();
-        columns.add("date");
-        columns.addAll(seriesMap.keySet());
+        RenderAs renderAs = RenderAs.BB;
 
-        List<SchemaEntry> schema = new ArrayList<>();
-        schema.add(SchemaEntry.of("date", ChartRenderType.DATE, "날짜", Boolean.TRUE));
-        for (String key : seriesMap.keySet()) {
-            schema.add(SchemaEntry.of(key, renderType, String.format("%s(%s)", renderType.getDisplayDescription(), key), Boolean.TRUE));
-        }
+        List<Series> seriesList = new ArrayList<>();
 
-        Map<String, List<?>> data = new LinkedHashMap<>();
-        data.put("date", dates.stream().map(DateUtil::toYmd).toList());
-        data.putAll(seriesMap);
+        series.forEach((key, value) -> {
+            String renderingId = renderAs.getRenderingId(key);
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), key);
+            seriesList.add(Series.of(renderingId, label, renderAs, value, indicatorValues.contains("bb")));
+        });
 
-        return IndicatorData.of(type, columns, schema, data);
+        return seriesList;
     }
 
 }

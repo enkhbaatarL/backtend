@@ -60,6 +60,14 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("상품데이터소스단위명")
     private String goodsDataSourceUnitNm;
 
+    @Column(name = "gds_data_src_crcy_unit_nm", length = 50)
+    @Comment("상품데이터소스통화단위명")
+    private String goodsDataSourceCurrencyUnitNm;
+
+    @Column(name = "conv_tgt_dtl_type_nm", length = 50)
+    @Comment("변환대상상세유형명")
+    private String convertTargetDetailTypeNm;
+
     @Column(name = "tbl_colm_list_nm", length = 255)
     @Comment("테이블컬럼목록명")
     private String tableColumnListNm;

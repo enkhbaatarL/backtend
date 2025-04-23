@@ -1,24 +1,10 @@
 package com.sk.domain.admin.service;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.sk.common.enums.ResultCode;
+import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
-import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
@@ -59,9 +45,19 @@ import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
-
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -103,22 +99,15 @@ public class AdminGoodsDataService {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         switch (role) {
-            case ADMIN:
+      case ADMIN, API_SUB_ADMIN:
                 return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
 
-            case OPERATOR:
-                return PaginationRes
-                        .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
-
-            case API_SUB_ADMIN:
-                return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
-
-            case API_PLUS_OPERATOR:
+      case OPERATOR, API_PLUS_OPERATOR:
                 return PaginationRes
                         .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
 
             default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -162,20 +151,14 @@ public class AdminGoodsDataService {
     public List<GoodsDataNameRes> getAllGoodsDataNm(int companyNo, Role role, int providerNo, int goodsNo) {
 
         switch (role) {
-            case ADMIN:
+      case ADMIN, API_SUB_ADMIN:
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
 
-            case OPERATOR:
-                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
-
-            case API_SUB_ADMIN:
-                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
-
-            case API_PLUS_OPERATOR:
+      case OPERATOR, API_PLUS_OPERATOR:
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
 
             default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -190,53 +173,48 @@ public class AdminGoodsDataService {
     * @return GoodsDataDetailRes
     */
     public GoodsDataDetailRes getGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo) {
-
-        switch (role) {
-            case ADMIN:
-                GoodsData goodsData1 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
-
-                List<CategoryDataRes> goodsDataCategoryList1 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
-
-                List<StructuredDataRes> structuredDataList1 = goodsDataCategoryRepository
-                        .findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
-
-                List<UnstructuredDataRes> unstructuredDataList1 = goodsDataCategoryRepository
-                        .findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
-
-                return GoodsDataDetailRes.of(goodsData1, goodsDataCategoryList1, structuredDataList1, unstructuredDataList1);
-
-            case OPERATOR:
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
-                GoodsData goodsData2 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d, goodsdata no: %d".formatted(providerNo, goodsNo, goodsDataNo)));
-
-                List<CategoryDataRes> goodsDataCategoryList2 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData2.getGoodsDataNo());
-
-                List<StructuredDataRes> structuredDataList2 = goodsDataCategoryRepository
-                        .findStructuredDataByGoodsDataNo(goodsData2.getGoodsDataNo());
-
-                List<UnstructuredDataRes> unstructuredDataList2 = goodsDataCategoryRepository
-                        .findUnstructuredDataByGoodsDataNo(goodsData2.getGoodsDataNo());
-
-                return GoodsDataDetailRes.of(goodsData2, goodsDataCategoryList2, structuredDataList2, unstructuredDataList2);
-
-            default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-        }
+    if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+      validateOperatorAccess(companyNo, providerNo, goodsNo);
     }
+
+    GoodsData goodsData1 =
+        goodsDataRepository
+            .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+            .orElseThrow(
+                () ->
+                    AppErrorException.of(
+                        Error.RSC_NOT_FOUND,
+                        "provider no: %d, goods no: %d, goodsdata no: %d"
+                            .formatted(providerNo, goodsNo, goodsDataNo)));
+
+    List<CategoryDataRes> goodsDataCategoryList1 =
+        goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+
+    List<StructuredDataRes> structuredDataList1 =
+        goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+
+    List<UnstructuredDataRes> unstructuredDataList1 =
+        goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+
+    return GoodsDataDetailRes.of(
+        goodsData1, goodsDataCategoryList1, structuredDataList1, unstructuredDataList1);
+    }
+
+  private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {
+    customerCompanyProviderMappingRepository
+        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+        .orElseThrow(
+            () ->
+                AppErrorException.of(
+                    Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+    customerCompanyGoodsMappingRepository
+        .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+        .orElseThrow(
+            () ->
+                AppErrorException.of(
+                    Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+  }
 
     /**
     * 데이터 등록: 신규등록
@@ -245,93 +223,52 @@ public class AdminGoodsDataService {
     * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
-    * @param GoodsDataCreateReq
+    * @param dto
     * @return
     */
     @Transactional
     public void createGoodsData(int companyNo, Role role, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
+    if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+      validateOperatorAccess(companyNo, providerNo, goodsNo);
+    }
+
+    Goods goods =
+        goodsRepository
+            .findByGoodsNo(providerNo, goodsNo)
+            .orElseThrow(
+                () ->
+                    AppErrorException.of(
+                        Error.RSC_NOT_FOUND,
+                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
         switch (role) {
-            case ADMIN:
-                Goods goods1 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (!goods1.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+      case ADMIN, API_SUB_ADMIN:
+        if (!goods.getIsPublic()) {
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
-                internalCreateGoodsData(goods1, null, dto);
+        internalCreateGoodsData(goods, null, dto);
                 break;
 
-            case OPERATOR:
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
-                Goods goods2 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (goods2.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+      case OPERATOR, API_PLUS_OPERATOR:
+        if (goods.getIsPublic()) {
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
-                CustomerCompany customerCompany2 = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+        CustomerCompany customerCompany =
+            customerCompanyRepository
+                .findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(
+                    () ->
+                        AppErrorException.of(
+                            Error.RSC_NOT_FOUND,
+                            "customer company no: %d".formatted(companyNo)));
 
-                internalCreateGoodsData(goods2, customerCompany2, dto);
-                break;
-
-            case API_SUB_ADMIN:
-                Goods goods3 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (!goods3.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-                }
-
-                internalCreateGoodsData(goods3, null, dto);
-                break;
-
-            case API_PLUS_OPERATOR:
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
-                Goods goods4 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (goods4.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-                }
-
-                CustomerCompany customerCompany4 = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
-
-                internalCreateGoodsData(goods4, customerCompany4, dto);
+        internalCreateGoodsData(goods, customerCompany, dto);
                 break;
 
             default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
     }
 
@@ -358,7 +295,7 @@ public class AdminGoodsDataService {
 
                 // 컴포넌트 타입 조회
                 ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-                        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                                 String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
 
                 GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
@@ -400,102 +337,46 @@ public class AdminGoodsDataService {
     * @param role 사용자 역할
     * @param providerNo 데이타 프로바이더 번호
     * @param goodsNo 상품 번호
-    * @param GoodsDataUpdateReq
+    * @param dto
     * @return
     */
     @Transactional
     public void updateGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
+    if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+      validateOperatorAccess(companyNo, providerNo, goodsNo);
+    }
+
+    Goods goods =
+        goodsRepository
+            .findByGoodsNo(providerNo, goodsNo)
+            .orElseThrow(
+                () ->
+                    AppErrorException.of(
+                        Error.RSC_NOT_FOUND,
+                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
         switch (role) {
-            case ADMIN:
-                Goods goods1 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (!goods1.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+      case ADMIN, API_SUB_ADMIN:
+        if (!goods.getIsPublic()) {
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
-
-                GoodsData goodsData1 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-                internalUpdateGoodsData(goodsData1, dto);
                 break;
 
-            case OPERATOR:
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
-                Goods goods2 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (goods2.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+      case OPERATOR, API_PLUS_OPERATOR:
+        if (goods.getIsPublic()) {
+                    throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
-
-                GoodsData goodsData2 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-                internalUpdateGoodsData(goodsData2, dto);
-                break;
-
-            case API_SUB_ADMIN:
-                Goods goods3 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (!goods3.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-                }
-
-                GoodsData goodsData3 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-                internalUpdateGoodsData(goodsData3, dto);
-                break;
-
-            case API_PLUS_OPERATOR:
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-
-                Goods goods4 = goodsRepository.findByGoodsNo(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
-
-                if (goods4.getIsPublic()) {
-                    throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-                }
-
-                GoodsData goodsData4 = goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-                internalUpdateGoodsData(goodsData4, dto);
-                break;
-
-            default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
+
+    GoodsData goodsData =
+        goodsDataRepository
+            .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+            .orElseThrow(
+                () ->
+                    AppErrorException.of(
+                        Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+    internalUpdateGoodsData(goodsData, dto);
     }
 
     private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
@@ -547,7 +428,7 @@ public class AdminGoodsDataService {
                             DateUtil.endYmd());
 
                     ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-                            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                                     String.format("Component information could not be found. componentTypeId: %s",
                                             structuredData.componentTypeId())));
 
@@ -641,7 +522,7 @@ public class AdminGoodsDataService {
         // 1. JPA: 조회 (Select는 )
         ComponentInfo componentInfo = componentInfoRepository
                 .findByComponentTypeIdAndIsDeletedFalse(structuredDataFileReq.componentTypeId())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                         String.format("Component information could not be found. componentTypeId: %s",
                                 structuredDataFileReq.componentTypeId())));
 
