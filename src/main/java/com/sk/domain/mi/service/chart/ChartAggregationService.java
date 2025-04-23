@@ -21,14 +21,14 @@ public class ChartAggregationService {
     /**
      * 원시 데이터(rawData)를 주어진 간격(currentInterval)과 소스 정보(source)에 맞춰 집계한다.
      *
-     * @param rawData  소스에서 조회한 원시 데이터 목록
-     * @param interval 집계 단위
-     * @param source   데이터 소스 상세 정보
+     * @param sortedData 소스에서 조회한 원시 데이터 목록
+     * @param interval   집계 단위
+     * @param source     데이터 소스 상세 정보
      * @return 집계된 데이터 포인트 목록
      */
-    public List<Map<String, Object>> aggregate(List<Map<String, Object>> rawData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail source) {
+    public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail source) {
 
-        if (rawData == null || rawData.isEmpty() || source == null) {
+        if (sortedData == null || sortedData.isEmpty() || source == null) {
             return Collections.emptyList();
         }
 
@@ -37,28 +37,13 @@ public class ChartAggregationService {
 
         // 일간 데이터는 그대로 반환
         if (interval == Interval.ONE_DAY) {
-            return getOneDayData(rawData, targetColumns);
+            return sortedData;
         }
 
-        // 날짜 순 정렬 후 버킷 경계 계산 및 집계
-        rawData.sort(Comparator.comparing(row -> DateUtil.parseDate(row.get(xAxis))));
-        List<LocalDate> bucketStarts = calculateBucketStarts(rawData, interval, xAxis);
+        // 버킷 경계 계산 및 집계
+        List<LocalDate> bucketStarts = calculateBucketStarts(sortedData, interval, xAxis);
 
-        return aggregateByBuckets(rawData, bucketStarts, xAxis, targetColumns, isCandle);
-    }
-
-    private List<Map<String, Object>> getOneDayData(List<Map<String, Object>> rows, List<String> targetColumns) {
-        return rows.stream()
-            .map(row -> {
-                Map<String, Object> result = new LinkedHashMap<>();
-                for (String col : targetColumns) {
-                    if (row.containsKey(col)) {
-                        result.put(col, row.get(col));
-                    }
-                }
-                return result;
-            })
-            .collect(Collectors.toList());
+        return aggregateByBuckets(sortedData, bucketStarts, xAxis, targetColumns, isCandle);
     }
 
     private List<LocalDate> calculateBucketStarts(List<Map<String, Object>> rows, Interval interval, String dateCol) {
@@ -122,7 +107,7 @@ public class ChartAggregationService {
     private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, String dateCol, List<String> targetColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         LocalDate date = DateUtil.parseDate(bucket.get(0).get(dateCol));
-        map.put(dateCol, DateUtil.toYmd(date));
+        map.put(dateCol, DateUtil.toYmd(date)); // todo 여깄었네...
         map.put(targetColumns.get(RenderAs.OPEN.getIndex()), MathUtil.toBigDecimal(bucket.get(0).get(targetColumns.get(RenderAs.OPEN.getIndex()))));
         map.put(targetColumns.get(RenderAs.CLOSE.getIndex()), MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(targetColumns.get(RenderAs.OPEN.getIndex()))));
         map.put(targetColumns.get(RenderAs.HIGH.getIndex()), max(bucket, targetColumns.get(RenderAs.HIGH.getIndex())));
@@ -133,7 +118,7 @@ public class ChartAggregationService {
     private Map<String, Object> aggregateMetric(List<Map<String, Object>> bucket, String dateCol, List<String> targetColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         LocalDate date = DateUtil.parseDate(bucket.get(0).get(dateCol));
-        map.put(dateCol, DateUtil.toYmd(date));
+        map.put(dateCol, DateUtil.toYmd(date)); // todo 여깄었네...
         // main value
         map.put(targetColumns.get(RenderAs.MAIN.getIndex()), average(bucket, targetColumns.get(RenderAs.MAIN.getIndex())));
         // reference series

@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.chart;
 
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.charts.ChartRes;
@@ -8,17 +9,13 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
-import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,11 +42,11 @@ public class ChartGenerationService {
      * 단위 변환을 적용하여 최종 차트 데이터를 생성한다.
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @param startDate 조회 시작일 (YYYYMMDD 형식)
-     * @param endDate 조회 종료일 (YYYYMMDD 형식)
-     * @param interval 데이터 집계 시간 간격
-     * @param unitConvert 단위 변환 정보
-     * @param isVisible 차트 표시 여부
+     * @param startDate             조회 시작일 (YYYYMMDD 형식)
+     * @param endDate               조회 종료일 (YYYYMMDD 형식)
+     * @param interval              데이터 집계 시간 간격
+     * @param unitConvert           단위 변환 정보
+     * @param isVisible             차트 표시 여부
      * @return 처리된 차트 데이터
      */
     public ChartRes generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
@@ -71,13 +68,15 @@ public class ChartGenerationService {
 
         // 원시 데이터 조회
         List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
-        if (rawData.isEmpty()) {
+        List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
+
+        if (sortedData.isEmpty()) {
             // 빈 차트 데이터 반환
             return ChartBundleFactory.toChart(null, isCandleChartPossible, Collections.emptyList(), targetColumns, columnExpressions, isVisible);
         }
 
         // 데이터 집계
-        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, targetColumns, goodsDataSourceDetail);
+        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, goodsDataSourceDetail);
 
         // 단위 변환
         List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
@@ -119,10 +118,10 @@ public class ChartGenerationService {
      * 메인 데이터소스와 연결된 비교군 데이터소스를 찾아 각각에 대한 차트 데이터를 생성한다.
      * 개인화 설정이 있는 경우, 개인화된 비교군 데이터소스만 포함한다.
      *
-     * @param mainDataSource 비교 대상 메인 데이터소스
-     * @param startDate 조회 시작일 (YYYYMMDD 형식)
-     * @param endDate 조회 종료일 (YYYYMMDD 형식)
-     * @param interval 데이터 집계 시간 간격
+     * @param mainDataSource  비교 대상 메인 데이터소스
+     * @param startDate       조회 시작일 (YYYYMMDD 형식)
+     * @param endDate         조회 종료일 (YYYYMMDD 형식)
+     * @param interval        데이터 집계 시간 간격
      * @param personalizedMap 개인화 설정 맵
      * @return 비교군 데이터소스에 대한 차트 데이터 목록
      */
@@ -166,9 +165,9 @@ public class ChartGenerationService {
      * 조건에 맞는 데이터가 없는 경우 빈 리스트를 반환한다.
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @param dateColumnName 필터링할 날짜 컬럼명
-     * @param startDate 데이터 범위 시작일 (포함, YYYYMMDD 형식)
-     * @param endDate 데이터 범위 종료일 (포함, YYYYMMDD 형식)
+     * @param dateColumnName        필터링할 날짜 컬럼명
+     * @param startDate             데이터 범위 시작일 (포함, YYYYMMDD 형식)
+     * @param endDate               데이터 범위 종료일 (포함, YYYYMMDD 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional(transactionManager = "myBatisTransactionManager")
@@ -179,7 +178,25 @@ public class ChartGenerationService {
         }
 
         String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, endDate);
+
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause));
     }
 
+    /**
+     * Converts the date values in the raw data to the 'YYYYDDMM' format for the specified date column.
+     *
+     * @param rawData       The list of raw data in the form of maps.
+     * @param dateColumnKey The key (column name) corresponding to the date values.
+     * @return A new list of maps with the date values converted to 'YYYYDDMM' format.
+     */
+    private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
+        return rawData.stream().map(
+                row -> {
+                    if (row.containsKey(dateColumnKey)) {
+                        row.compute(dateColumnKey, (k, dateValue) -> DateUtil.parseDate(dateValue));
+                    }
+                    return row;
+                }).sorted(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateColumnKey))))
+            .collect(Collectors.toList());
+    }
 }

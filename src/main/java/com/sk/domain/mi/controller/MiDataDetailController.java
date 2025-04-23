@@ -109,9 +109,10 @@ public class MiDataDetailController {
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
-        @Parameter(name = "interval", description = "인터벌"),
-        @Parameter(name = "startDate", description = "조회 시작일"),
-        @Parameter(name = "endDate", description = "조회 종료일"),
+        @Parameter(name = "interval", description = "인터벌 (1D, 1W, 2W, 1M, 3M, 6M, 1Y)"),
+        @Parameter(name = "range", description = "범위 (1W, 1M, 3M, 6M, 1Y, 2Y, CUSTOM)"),
+        @Parameter(name = "startDate", description = "조회 시작일 (range가 CUSTOM일 경우 필수)"),
+        @Parameter(name = "endDate", description = "조회 종료일 (range가 CUSTOM일 경우 필수)"),
         @Parameter(name = "unitConversionCd", description = "변환 단위"),
     })
     @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
@@ -121,10 +122,10 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestParam(value = "interval", required = false) Interval interval, // todo converter 추가
-        @RequestParam(value = "range", required = false) Range range, // todo converter 추가
-        @RequestParam(value = "startDate", required = false) String startDate,
-        @RequestParam(value = "endDate", required = false) String endDate,
+        @RequestParam(value = "interval", required = false) Interval interval, // todo validation
+        @RequestParam(value = "range", required = false) Range range, // todo validation
+        @RequestParam(value = "startDate", required = false) String startDate, // todo validation
+        @RequestParam(value = "endDate", required = false) String endDate, // todo validation
         @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd
     ) {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd));

@@ -31,10 +31,10 @@ public final class DateUtil {
     }
 
     /**
-     * "yyyyMMdd" 문자열을 LocalDate로 변환
+     * "yyyy-MM-dd" 문자열을 LocalDate로 변환
      */
-    public static LocalDate fromYmd(String dateStr) {
-        return dateStr == null ? null : LocalDate.parse(dateStr, YYYYMMDD);
+    public static LocalDate fromYmdHyphen(String dateStr) {
+        return dateStr == null ? null : LocalDate.parse(dateStr, YYYY_MM_DD);
     }
 
     /**
@@ -72,6 +72,9 @@ public final class DateUtil {
      * 날짜를 LocalDate(yyyyMMdd)로 반환
      */
     public static LocalDate parseDate(Object dateObj) {
+        if (dateObj == null) {
+            return null;
+        }
         if (dateObj instanceof LocalDate ld) {
             return ld;
         } else if (dateObj instanceof LocalDateTime ldt) {
@@ -80,8 +83,8 @@ public final class DateUtil {
             return ts.toLocalDateTime().toLocalDate();
         } else {
             String s = dateObj.toString();
-            String d = s.length() >= 8 ? s.substring(0, 8) : s;
-            return DateUtil.fromYmd(d);
+            String d = s.length() >= 10 ? s.substring(0, 10) : s;
+            return DateUtil.fromYmdHyphen(d);
         }
     }
 

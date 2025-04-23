@@ -43,20 +43,20 @@ public final class ChartBundleFactory {
      *
      * @param goodsDataSourceNo 데이터소스상세 번호
      * @param isCandle          캔들 차트 여부
-     * @param rawRows           원시 데이터 행 목록
+     * @param convertedData     원시 데이터 행 목록
      * @param targetColumns     대상 컬럼 목록
      * @param labels            컬럼명과 표시 레이블을 매핑한 맵
      * @param isVisible         차트 표시 여부
      * @return 생성된 차트 응답 객체
      */
-    public static ChartRes toChart(Integer goodsDataSourceNo, boolean isCandle, List<Map<String, Object>> rawRows, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
+    public static ChartRes toChart(Integer goodsDataSourceNo, boolean isCandle, List<Map<String, Object>> convertedData, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
         ChartType chartType = isCandle ? ChartType.CANDLE : ChartType.LINE;
 
         String xAxis = targetColumns.get(IDX_DATE);
         List<String> yAxisList = targetColumns.subList(1, targetColumns.size());
 
-        List<String> timestamps = buildTimestamps(xAxis, rawRows);
-        List<Series> series = buildSeries(yAxisList, chartType, rawRows, labels, isVisible);
+        List<String> timestamps = buildTimestamps(xAxis, convertedData);
+        List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, isVisible);
 
         return ChartRes.of(goodsDataSourceNo, chartType, timestamps, series);
     }
@@ -64,7 +64,6 @@ public final class ChartBundleFactory {
     private static List<String> buildTimestamps(String xAxis, List<Map<String, Object>> rawRows) {
         return rawRows.stream()
             .map(row -> String.valueOf(row.get(xAxis)))
-            .map(DateUtil::toYmd)
             .toList();
     }
 
