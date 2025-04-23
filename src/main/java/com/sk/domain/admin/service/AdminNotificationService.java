@@ -30,6 +30,7 @@ public class AdminNotificationService {
 
 
         // TODO: LastUpdated, 성공 / 실패 카운트 추가
+        // PaginationExtensionRes 이용 예정
     }
 
 }
