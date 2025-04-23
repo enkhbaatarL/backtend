@@ -2,12 +2,9 @@ package com.sk.domain.mi.dto.response.insights;
 
 import java.time.LocalDateTime;
 
-import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 // @formatter:off
@@ -29,11 +26,8 @@ public record FocusedDataRes(
         @Schema(description = "프로바이더명", example = "") 
         String providerNm) {
 
-            public static FocusedDataRes of(GoodsData goodsData) {
-                return FocusedDataRes.builder()
-                        .goodsDataNo(goodsData.getGoodsDataNo())
-                        .goodsDataNm(goodsData.getGoodsDataNm())
-                        .build();
-            }
+        public LocalDateTime getModifyDt() {
+            return modifyDt;
+        }
 }
 // @formatter:on
