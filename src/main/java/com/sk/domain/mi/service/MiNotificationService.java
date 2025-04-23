@@ -163,4 +163,23 @@ public class MiNotificationService {
                         String.format("EmailAccessLog not found: emailSendSn=%d", emailSendSn)));
         return MiNotificationRes.of(emailAccessLog);
     }
+
+    /**
+     * 알림 내역 조회 처리
+     * 
+     * @param emailSendSn
+     * @param user
+     * @return
+     */
+    @Transactional
+    public MiNotificationRes inquiryNotification(Integer emailSendSn, User user) {
+        EmailAccessLog emailAccessLog = emailAccessLogRepository
+                .findByEmailSendSnAndEmailReceiveUserLoginIdAndIsDeletedFalse(emailSendSn, user.getUserLoginId())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        String.format("EmailAccessLog not found: emailSendSn=%d", emailSendSn)));
+
+        emailAccessLog.updateInquiry();
+
+        return MiNotificationRes.of(emailAccessLog);
+    }
 }

@@ -1,6 +1,7 @@
 package com.sk.domain.shared.service;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -44,8 +45,6 @@ public class MailService {
     @Async
     @Transactional(noRollbackFor = AppErrorException.class)
     public void sendNotificationMail(GoodsCriticalValueSetting goodsCriticalValueSetting, LocalDate dataCreatedDate) {
-        //TODO: 원, % 같은 단위 처리 필요, 메일 템플릿 수정 필요
-
         // 알람 설정 정보 조회
         String goodsDataNm = goodsCriticalValueSetting.getGoodsDataSourceDetail().getGoodsData().getGoodsDataNm();
         String goodsDataSourceNm = goodsCriticalValueSetting.getGoodsDataSourceDetail().getGoodsDataSourceNm();
@@ -57,11 +56,15 @@ public class MailService {
         // 메일 제목 설정
         String mailSubject = setMailTitle(dataCreatedDate);
 
+        // 임계치 설정 내용 설정
+        String criticalValueSettingContent = setCriticalValueSettingContent(criticalValueSettingVol, criticalValueSettingUnitNm,
+                notificationCriticalValueSeparateCd);
+
         // 메일 내용 설정(html)
-        String mailContentHtml = setMailContext(goodsDataNm, goodsDataSourceNm, criticalValueSettingVol, criticalValueSettingUnitNm, notificationCriticalValueSeparateCd);
+        String mailContentHtml = setMailContext(goodsDataNm, goodsDataSourceNm, criticalValueSettingContent);
 
         // 메일 내용 설정(단순 텍스트)
-        String mailContentText = setMailSimpleContent(goodsDataNm, goodsDataSourceNm, criticalValueSettingVol, criticalValueSettingUnitNm, notificationCriticalValueSeparateCd);
+        String mailContentText = String.format("%s 이(가) %s", goodsDataSourceNm, criticalValueSettingContent);
 
         EmailAccessLog emailAccessLog = EmailAccessLog.of(to, mailSubject, mailContentText, EmailSendStatusName.PENDING,
                 goodsCriticalValueSetting);
@@ -119,17 +122,11 @@ public class MailService {
      * @param notificationCriticalValueSeparateCd
      * @return
      */
-    public String setMailContext(String goodsDataNm, String goodsDataSourceNm,String criticalValueSettingVol, String criticalValueSettingUnitNm, String notificationCriticalValueSeparateCd) {
+    public String setMailContext(String goodsDataNm, String goodsDataSourceNm, String criticalValueSettingContent) {
         Context context = new Context();
         context.setVariable("goodsDataNm", goodsDataNm); // {데이터 명}
         context.setVariable("goodsDataSourceNm", goodsDataSourceNm); // {정형 데이터 상세명}
-        context.setVariable("criticalValueSettingVol", criticalValueSettingVol); // {임계치 설정 량}
-        if(notificationCriticalValueSeparateCd.equals(NotiCrtvlSptCd.DECRATE.getDescription()) || notificationCriticalValueSeparateCd.equals(NotiCrtvlSptCd.INCRATE.getDescription())) {
-            context.setVariable("unit", "%"); // {임계치 설정 단위}
-        } else {
-            context.setVariable("unit", criticalValueSettingUnitNm); // {임계치 설정 단위}
-        }
-        context.setVariable("notificationCriticalValueSeparateCd", notificationCriticalValueSeparateCd); // {알림 임계치 구분 코드(한글v)}
+        context.setVariable("criticalValueSettingContent", criticalValueSettingContent); // {정형 데이터 상세명}
         context.setVariable("detailLink", DATA_DETAIL_LINK); // 데이터 상세보기 링크
         return templateEngine.process("notification", context);
     }
@@ -142,13 +139,21 @@ public class MailService {
      * @param detailLink
      * @return
      */
-    public String setMailSimpleContent(String goodsDataNm, String goodsDataSourceNm, String criticalValueSettingVol, String criticalValueSettingUnitNm, String notificationCriticalValueSeparateCd) {
-        String unit;
-        if(notificationCriticalValueSeparateCd.equals(NotiCrtvlSptCd.DECRATE.getDescription()) || notificationCriticalValueSeparateCd.equals(NotiCrtvlSptCd.INCRATE.getDescription())) {
-            unit = "%";
-        } else {
-            unit = criticalValueSettingUnitNm;
-        }
-        return String.format("%s : %s이(가) %s%s %s 초과", goodsDataNm, goodsDataSourceNm, criticalValueSettingVol, unit, notificationCriticalValueSeparateCd);
+    public String setCriticalValueSettingContent(String criticalValueSettingVol, String criticalValueSettingUnitNm,
+            String notificationCriticalValueSeparateCd) {
+        // 조건에 따른 단위와 변경 유형 매핑
+        Map<String, String[]> settings = Map.of(
+                NotiCrtvlSptCd.DECRATE.getDescription(), new String[] { "%", notificationCriticalValueSeparateCd + " 초과" },
+                NotiCrtvlSptCd.INCRATE.getDescription(), new String[] { "%", notificationCriticalValueSeparateCd + " 초과" },
+                NotiCrtvlSptCd.UPPER.getDescription(), new String[] { criticalValueSettingUnitNm, "이상으로 " + notificationCriticalValueSeparateCd },
+                NotiCrtvlSptCd.LOWER.getDescription(), new String[] { criticalValueSettingUnitNm, "이하로 " + notificationCriticalValueSeparateCd });
+
+        // 기본값: 빈 단위와 변경 유형
+        String[] setting = settings.getOrDefault(notificationCriticalValueSeparateCd, new String[] { "", "" });
+        String valueUnit = setting[0];
+        String changeType = setting[1];
+
+        // 출력 형식: {값}{단위} {변경유형}
+        return String.format("%s%s %s", criticalValueSettingVol, valueUnit, changeType);
     }
 }

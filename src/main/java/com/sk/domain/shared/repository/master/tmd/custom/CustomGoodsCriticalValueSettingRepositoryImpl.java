@@ -85,7 +85,7 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
                         goodsDataSourceDetail.goodsDataSourceNm,
                         goodsCriticalValueSetting.count().intValue()))
                 .from(goodsDataSourceDetail)
-                .join(goodsDataSourceDetail.goodsData, goodsData).fetchJoin()
+                .join(goodsDataSourceDetail.goodsData, goodsData)
                 .leftJoin(goodsCriticalValueSetting)
                 .on(goodsCriticalValueSetting.goodsDataSourceDetail.eq(goodsDataSourceDetail)
                         .and(goodsCriticalValueSetting.isDeleted.isFalse())

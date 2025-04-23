@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.UserResolve;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -23,6 +24,7 @@ import com.sk.domain.mi.dto.response.notification.MiNotificationSettingGoodsData
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingRes;
 import com.sk.domain.mi.service.MiNotificationService;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -43,6 +45,7 @@ public class MiNotificationController {
 
     private final MiNotificationService miNotificationService;
 
+    @RequiredPermission(roles = { Role.USER })
     @Parameters({
             @Parameter(name = "goodsDataSourceNo", description = "상품 데이터 소스 번호", required = true),
     })
@@ -65,6 +68,7 @@ public class MiNotificationController {
                 .create(miNotificationService.createNotificationSetting(goodsDataSourceNo, notifications, user));
     }
 
+    @RequiredPermission(roles = { Role.USER })
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호", required = true),
             @Parameter(name = "size", description = "페이지 크기", required = true)
@@ -83,6 +87,7 @@ public class MiNotificationController {
     }
 
     //TODO: 커서기반 페이지네이션 필요
+    @RequiredPermission(roles = { Role.USER })
     @Parameters({
             @Parameter(name = "goodsDataSourceNo", description = "상품 데이터 소스 번호(PK)", required = true),
             @Parameter(name = "page", description = "페이지 번호", required = true),
@@ -101,6 +106,7 @@ public class MiNotificationController {
                 .create(miNotificationService.getNotificationSettings(page, size, goodsDataSourceNo, user));
     }
 
+    @RequiredPermission(roles = { Role.USER })
     @Parameters({
             @Parameter(name = "goodsDataSourceNo", description = "상품 데이터 소스 번호(PK)", required = true),
             @Parameter(name = "notificationSettingNo", description = "알림 설정 번호(PK)", required = true)
@@ -134,6 +140,7 @@ public class MiNotificationController {
     }
 
     //TODO: 커서기반 페이지네이션 필요
+    @RequiredPermission(roles = { Role.USER })
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호", required = true),
             @Parameter(name = "size", description = "페이지 크기", required = true)
@@ -150,6 +157,7 @@ public class MiNotificationController {
                 .create(miNotificationService.getNotifications(page, size, user));
     }
 
+    @RequiredPermission(roles = { Role.USER })
     @Parameters({
             @Parameter(name = "emailSendSn", description = "알림 발송 내역 번호(PK)", required = true)
     })
@@ -162,5 +170,17 @@ public class MiNotificationController {
             @UserResolve User user) {
         return BaseResponseFactory
                 .create(miNotificationService.getNotification(emailSendSn, user));
+    }
+
+    @RequiredPermission(roles = { Role.USER })
+    @ApiOrder(8)
+    @Operation(summary = "알림 내역 읽음 처리", description = "알림 내역 읽음 처리를 합니다.")
+    @ApiResponse(responseCode = "200", description = "알림 내역 읽음 처리 성공")
+    @GetMapping("/notifications/{emailSendSn}/inquiry")
+    public BaseResponse<MiNotificationRes> inquiryNotification(
+            @PathVariable(value = "emailSendSn") @Min(value = 1) Integer emailSendSn,
+            @UserResolve User user) {
+        return BaseResponseFactory
+                .create(miNotificationService.inquiryNotification(emailSendSn, user));
     }
 }

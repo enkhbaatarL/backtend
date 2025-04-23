@@ -2,9 +2,12 @@ package com.sk.domain.shared.repository.master.tlm.custom;
 
 import static com.sk.domain.shared.entity.master.tlm.QEmailAccessLog.emailAccessLog;
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsCriticalValueSetting.goodsCriticalValueSetting;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -16,11 +19,15 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.response.notification.AdminNotificationCountRes;
 import com.sk.domain.admin.dto.response.notification.AdminNotificationRes;
+import com.sk.domain.admin.dto.response.notification.QAdminNotificationCountRes;
 import com.sk.domain.admin.dto.response.notification.QAdminNotificationRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
 import com.sk.domain.mi.dto.response.notification.QMiNotificationRes;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.UserRoleCd;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,7 +49,8 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
         }
 
         if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
-            builder.and(emailAccessLog.emailSendDtm.between(LocalDateTime.parse(startDate), LocalDateTime.parse(endDate)));
+            builder.and(
+                    emailAccessLog.emailSendDtm.between(DateUtil.fromYmd(startDate).atStartOfDay(), DateUtil.fromYmd(endDate).atTime(LocalTime.MAX)));
         }
 
         List<AdminNotificationRes> content = queryFactory.select(new QAdminNotificationRes(
@@ -62,17 +70,19 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 user.departmentNm,
                 customerCompany.customerCompanyNo,
                 customerCompany.customerCompanyNm,
-                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNo,
-                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNm,
+                goodsDataSourceDetail.goodsDataSourceNo,
+                goodsDataSourceDetail.goodsDataSourceNm,
                 emailAccessLog.createUserId,
                 emailAccessLog.createDt,
                 emailAccessLog.modifyUserId,
                 emailAccessLog.modifyDt))
                 .from(emailAccessLog)
-                .leftJoin(user).on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId))
+                .leftJoin(user)
+                .on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId).and(user.isDeleted.isFalse())
+                        .and(user.userRoleCd.eq(UserRoleCd.USER))) //현재 정책으로 알람 받는 이용자는 USER만 가능
                 .leftJoin(user.customerCompany, customerCompany)
-                .leftJoin(emailAccessLog.goodsCriticalValueSetting).fetchJoin()
-                .leftJoin(emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail).fetchJoin()
+                .leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
+                .leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .where(builder)
@@ -101,14 +111,14 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 emailAccessLog.emailCntt,
                 emailAccessLog.emailSendDtm,
                 emailAccessLog.isEmailInquiry,
-                emailAccessLog.goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
-                emailAccessLog.goodsCriticalValueSetting.criticalValueSettingVol,
-                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceUnitNm,
-                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNm,
-                emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNo))
+                goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
+                goodsCriticalValueSetting.criticalValueSettingVol,
+                goodsDataSourceDetail.goodsDataSourceUnitNm,
+                goodsDataSourceDetail.goodsDataSourceNm,
+                goodsDataSourceDetail.goodsDataSourceNo))
                 .from(emailAccessLog)
-                .leftJoin(emailAccessLog.goodsCriticalValueSetting).fetchJoin()
-                .leftJoin(emailAccessLog.goodsCriticalValueSetting.goodsDataSourceDetail).fetchJoin()
+                .leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
+                .leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .where(builder)
@@ -120,5 +130,26 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
                 .where(builder);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public AdminNotificationCountRes findNotificationCounts(String startDate, String endDate) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(emailAccessLog.isDeleted.isFalse());
+
+        if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+            builder.and(
+                    emailAccessLog.emailSendDtm.between(DateUtil.fromYmd(startDate).atStartOfDay(), DateUtil.fromYmd(endDate).atTime(LocalTime.MAX)));
+        }
+
+        return queryFactory
+                .select(new QAdminNotificationCountRes(
+                        emailAccessLog.count().intValue(),
+                        emailAccessLog.isSendSuccess.when(true).then(1).otherwise(0).sum().intValue(),
+                        emailAccessLog.isSendSuccess.when(false).then(1).otherwise(0).sum().intValue(),
+                        emailAccessLog.modifyDt.max()))
+                .from(emailAccessLog)
+                .where(builder)
+                .fetchOne();
     }
 }

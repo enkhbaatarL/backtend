@@ -129,5 +129,7 @@ public class EmailAccessLog extends BaseEntity {
         this.isSendSuccess = false;
     }
 
-
+    public void updateInquiry() {
+        this.isEmailInquiry = true;
+    }
 }

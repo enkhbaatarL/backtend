@@ -69,9 +69,9 @@
             실정된 알람 조건에 의해 신규 알람이 발생하였습니다.
         </div>
         <div class="content-box">
-            <span th:text="${goodsDataNm}">[데이터명]</span><br>
-            <span th:text="${goodsDataSourceNm}">[산출된 정형 내역]</span><br><br>
-            <span th:text="${criticalValueSettingVol}">[5]</span><span th:text="${unit}">[%]</span>&nbsp;<span th:text="${notificationCriticalValueSeparateCd}">[하락률]</span>&nbsp;초과
+            <span th:text="${goodsDataNm}">[데이터명]</span> 이(가)<br>
+            <span th:text="${goodsDataSourceNm}">[산출된 정형데이터]</span><br><br>
+            <span th:text="${criticalValueSettingContent}">[100 이상으로 하락]</span>
         </div>
         <a th:href="${detailLink}" class="button">데이터 상세보기</a>
         <div class="footer">
