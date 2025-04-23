@@ -1,10 +1,12 @@
 package com.sk.domain.admin.service;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.notification.NotificationRes;
+import com.sk.common.model.PaginationExtensionRes;
+import com.sk.domain.admin.dto.response.notification.AdminNotificationCountRes;
+import com.sk.domain.admin.dto.response.notification.AdminNotificationRes;
 import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,8 +27,11 @@ public class AdminNotificationService {
      * @param size   페이지 크기
      * @return 알림 목록
      */
-    public PaginationRes<NotificationRes> getNotifications(int page, int size, String search) {
-        return PaginationRes.toRes(emailAccessLogRepository.findNotificationsByConditions(page, size, search));
+    public PaginationExtensionRes<AdminNotificationRes, AdminNotificationCountRes> getNotifications(int page, int size, Boolean isSendSuccess, String startDate, String endDate) {
+        Page<AdminNotificationRes> notifications = emailAccessLogRepository.findNotificationsByConditions(page, size, isSendSuccess, startDate, endDate);
+        AdminNotificationCountRes notificationCounts = emailAccessLogRepository.findNotificationCounts(startDate, endDate);
+
+        return PaginationExtensionRes.toRes(notifications, notificationCounts);
     }
 
 }

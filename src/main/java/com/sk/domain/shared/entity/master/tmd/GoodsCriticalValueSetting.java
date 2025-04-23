@@ -83,7 +83,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
         return GoodsCriticalValueSetting.builder()
                 .notificationCriticalValueSeparateCd(dto.notificationCriticalValueSeparateCd())
                 .criticalValueSettingVol(dto.criticalValueSettingVol())
-                .criticalValueSettingUnitNm(dto.criticalValueSettingUnitNm())
+                .criticalValueSettingUnitNm(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
                 .goodsDataSourceDetail(goodsDataSourceDetail)
                 .user(user)
                 .build();
@@ -96,7 +96,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
         return GoodsCriticalValueSetting.builder()
                 .notificationCriticalValueSeparateCd(dto.notificationCriticalValueSeparateCd())
                 .criticalValueSettingVol(dto.criticalValueSettingVol())
-                .criticalValueSettingUnitNm(dto.criticalValueSettingUnitNm())
+                .criticalValueSettingUnitNm(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
                 .goodsDataSourceDetail(goodsDataSourceDetail)
                 .user(user)
                 .build();
@@ -109,10 +109,6 @@ public class GoodsCriticalValueSetting extends BaseEntity {
 
         if (ObjectUtils.isNotEmpty(dto.criticalValueSettingVol())) {
             this.criticalValueSettingVol = dto.criticalValueSettingVol();
-        }
-
-        if (ObjectUtils.isNotEmpty(dto.criticalValueSettingUnitNm())) {
-            this.criticalValueSettingUnitNm = dto.criticalValueSettingUnitNm();
         }
     }
 }

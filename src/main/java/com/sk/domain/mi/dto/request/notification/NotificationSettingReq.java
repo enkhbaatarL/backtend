@@ -18,10 +18,8 @@ public record NotificationSettingReq() {
 
         @DecimalMin(value = "0.0", message = "알림 임계치는 0.0 이상이어야 합니다.")
         @Schema(description = "알림 임계치", example = "100.0")
-        BigDecimal criticalValueSettingVol,
+        BigDecimal criticalValueSettingVol
 
-        @Schema(description = "알림 임계치 단위명", example = "USD")
-        String criticalValueSettingUnitNm
     ) {}
 
     public record UpdateSetting(
@@ -34,9 +32,7 @@ public record NotificationSettingReq() {
 
         @DecimalMin(value = "0.0", message = "알림 임계치는 0.0 이상이어야 합니다.")
         @Schema(description = "알림 임계치", example = "100.0")
-        BigDecimal criticalValueSettingVol,
+        BigDecimal criticalValueSettingVol
 
-        @Schema(description = "알림 임계치 단위명", example = "USD")
-        String criticalValueSettingUnitNm
     ) {}
 }

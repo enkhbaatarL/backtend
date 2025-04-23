@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum NotiCrtvlSptCd {
     
-    UPPER("UPPER", "상한"),
-    LOWER("LOWER", "하한"),
+    UPPER("UPPER", "상승"),
+    LOWER("LOWER", "하락"),
     INCRATE("INCRATE", "상승률"),
     DECRATE("DECRATE", "하락률");
 

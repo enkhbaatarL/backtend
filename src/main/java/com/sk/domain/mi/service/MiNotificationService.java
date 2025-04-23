@@ -1,10 +1,6 @@
 package com.sk.domain.mi.service;
 
-import java.util.Collections;
-
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +9,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
 import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
+import com.sk.domain.mi.dto.response.notification.MiNotificationSettingGoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
@@ -58,6 +55,19 @@ public class MiNotificationService {
 
         return MiNotificationSettingRes.of(savedGoodsCriticalValueSetting, goodsDataSourceDetail);
     }
+
+    /**
+     * 알림 설정한 정형 데이터 목록 조회
+     * 
+     * @param user
+     * @param page
+     * @param size
+     * @return
+     */
+    public PaginationRes<MiNotificationSettingGoodsDataSourceRes> getNotificationSettingsGoodsDataSource(int page, int size, String search, User user) {
+        return PaginationRes.toRes(goodsCriticalValueSettingRepository.findNotificationSettingGoodsDataSourceByConditions(page, size, search, user));
+    }
+
 
     /**
      * 상품 데이터의 알림설정 리스트를 조회
@@ -135,12 +145,8 @@ public class MiNotificationService {
      * @return
      */
     public PaginationRes<MiNotificationRes> getNotifications(int page, int size, User user) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-
-        Page<EmailAccessLog> emailAccessLogs = emailAccessLogRepository.findAllByEmailReceiveUserLoginIdAndIsDeletedFalse(pageable,
-                user.getUserLoginId());
-
-        return PaginationRes.toRes(emailAccessLogs.map(MiNotificationRes::of));
+        Page<MiNotificationRes> emailAccessLogs = emailAccessLogRepository.findNotificationsWithinSevenDays(page, size, user);
+        return PaginationRes.toRes(emailAccessLogs);
     }
 
     /**
@@ -155,6 +161,25 @@ public class MiNotificationService {
                 .findByEmailSendSnAndEmailReceiveUserLoginIdAndIsDeletedFalse(emailSendSn, user.getUserLoginId())
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("EmailAccessLog not found: emailSendSn=%d", emailSendSn)));
+        return MiNotificationRes.of(emailAccessLog);
+    }
+
+    /**
+     * 알림 내역 조회 처리
+     * 
+     * @param emailSendSn
+     * @param user
+     * @return
+     */
+    @Transactional
+    public MiNotificationRes inquiryNotification(Integer emailSendSn, User user) {
+        EmailAccessLog emailAccessLog = emailAccessLogRepository
+                .findByEmailSendSnAndEmailReceiveUserLoginIdAndIsDeletedFalse(emailSendSn, user.getUserLoginId())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        String.format("EmailAccessLog not found: emailSendSn=%d", emailSendSn)));
+
+        emailAccessLog.updateInquiry();
+
         return MiNotificationRes.of(emailAccessLog);
     }
 }

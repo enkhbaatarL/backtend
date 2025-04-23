@@ -637,7 +637,7 @@ public class ExcelService {
 
             mybatisDynamicQueryService.saveAllDynamicData(DynamicDataSaveAll.of(tartgetDataSource, tableName, columns, batchData));
         }
-        return true;
+        return Boolean.TRUE;
     }
 
     // 비표준 문자 제거

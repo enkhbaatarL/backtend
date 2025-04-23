@@ -43,11 +43,11 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 		 * 사용자 / 운영자는 고객사에서 조회
 		 */
 		BooleanExpression existsExpression = queryFactory.selectFrom(customerCompany)
-		.where(customerCompany.customerCompanyCd.eq(companyCd)
-				.and(customerCompany.isUsed.isTrue())
-				.and(customerCompany.isDeleted.isFalse())
-				.and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
-		.exists();
+				.where(customerCompany.customerCompanyCd.eq(companyCd)
+						.and(customerCompany.isUsed.isTrue())
+						.and(customerCompany.isDeleted.isFalse())
+						.and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
+				.exists();
 
 		BooleanBuilder builder = new BooleanBuilder();
 		builder.and(userInfo.isDeleted.isFalse())
@@ -62,7 +62,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 			builder.and(userInfo.emailAddress.lower().contains(emailAddress.toLowerCase())); // 대소문자 구분 무시
 		}
 
-		BooleanExpression isRegistered = user.userLoginId.isNotNull().and(user.isDeleted.isFalse());
+		// BooleanExpression isRegistered = user.userLoginId.isNotNull().and(user.isDeleted.isFalse());
 
 		List<UserInfoRes> content = queryFactory.select(new QUserInfoRes(
 				userInfo.imCd,
@@ -81,9 +81,10 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 				userInfo.jobGradeNm,
 				userInfo.onDutyCd,
 				userInfo.onDutyNm,
-				isRegistered))
+				user.userLoginId.isNotNull()))
 				.from(userInfo)
-				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd)))
+				.leftJoin(user).on(userInfo.loginId.eq(user.userLoginId).and(user.userRoleCd.eq(userRoleCd))
+						.and(user.isDeleted.isFalse()))
 				.where(builder)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())
@@ -100,7 +101,7 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 
 	@Override
 	public List<UserInfoWithCompany> findAllUserByInfoIds(List<String> imCds, UserRoleCd userRoleCd) {
-		
+
 		return queryFactory.select(new QUserInfoWithCompany(
 				userInfo.userNm,
 				userInfo.loginId,

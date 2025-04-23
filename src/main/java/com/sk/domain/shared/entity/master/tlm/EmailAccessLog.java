@@ -7,6 +7,7 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.enums.EmailSendStatusName;
 
 import jakarta.persistence.Column;
@@ -14,10 +15,13 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -70,11 +74,23 @@ public class EmailAccessLog extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isSendSuccess;
 
+    @Column(name = "eml_inqr_yn", nullable = false, columnDefinition = "char(1)")
+    @Comment("이메일조회여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isEmailInquiry;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usr_gds_noti_set_no", referencedColumnName = "usr_gds_noti_set_no", nullable = true)
+    @Comment("사용자상품알림설정번호")
+    private GoodsCriticalValueSetting goodsCriticalValueSetting;
+
     @Builder
     public EmailAccessLog(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer emailSendSn, String emailReceiveUserLoginId,
             String emailTitleNm, String emailCntt, EmailSendStatusName emailSendStatusNm,
-            String emailSendErrCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess) {
+            String emailSendErrCntt, LocalDateTime emailSendDtm, Boolean isSendSuccess,
+            Boolean isEmailInquiry, GoodsCriticalValueSetting goodsCriticalValueSetting) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.emailSendSn = emailSendSn;
         this.emailReceiveUserLoginId = emailReceiveUserLoginId;
@@ -84,10 +100,12 @@ public class EmailAccessLog extends BaseEntity {
         this.emailSendErrCntt = emailSendErrCntt;
         this.emailSendDtm = emailSendDtm != null ? emailSendDtm : LocalDateTime.now();
         this.isSendSuccess = isSendSuccess;
+        this.isEmailInquiry = isEmailInquiry;
+        this.goodsCriticalValueSetting = goodsCriticalValueSetting;
     }
 
     public static EmailAccessLog of(String emailReceiveUserLoginId, String emailTitleNm, String emailCntt,
-            EmailSendStatusName emailSendStatusNm) {
+            EmailSendStatusName emailSendStatusNm, GoodsCriticalValueSetting goodsCriticalValueSetting) {
         return EmailAccessLog.builder()
                 .emailReceiveUserLoginId(emailReceiveUserLoginId)
                 .emailTitleNm(emailTitleNm)
@@ -95,17 +113,23 @@ public class EmailAccessLog extends BaseEntity {
                 .emailSendStatusNm(emailSendStatusNm)
                 .emailSendDtm(LocalDateTime.now())
                 .isSendSuccess(false)
+                .isEmailInquiry(false)
+                .goodsCriticalValueSetting(goodsCriticalValueSetting)
                 .build();
     }
 
-    public void successUpdate(EmailSendStatusName emailSendStatusNm) {
+    public void sendEmailSuccessUpdate(EmailSendStatusName emailSendStatusNm) {
         this.emailSendStatusNm = emailSendStatusNm;
         this.isSendSuccess = true;
     }
 
-    public void failUpdate(EmailSendStatusName emailSendStatusNm, String emailSendErrCntt) {
+    public void sendEmailFailUpdate(EmailSendStatusName emailSendStatusNm, String emailSendErrCntt) {
         this.emailSendStatusNm = emailSendStatusNm;
         this.emailSendErrCntt = emailSendErrCntt;
         this.isSendSuccess = false;
+    }
+
+    public void updateInquiry() {
+        this.isEmailInquiry = true;
     }
 }
