@@ -121,13 +121,13 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestParam(value = "interval", required = false, defaultValue = "ONE_DAY") Interval interval,
-        @RequestParam(value = "range", defaultValue = "3M") Range range,
+        @RequestParam(value = "interval", required = false) Interval interval, // todo converter 추가
+        @RequestParam(value = "range", required = false) Range range, // todo converter 추가
         @RequestParam(value = "startDate", required = false) String startDate,
         @RequestParam(value = "endDate", required = false) String endDate,
         @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getDynamicCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd));
     }
 
 }

@@ -343,8 +343,7 @@ public class AdminCompanyService {
      * @param goodsNo    상품 번호
      * @return PaginationExtensionRes<AuthGoodsMappingRes>
      */
-    public PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo,
-            Integer goodsNo) {
+    public PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo, Integer goodsNo) {
 
         companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo).validOrThrow();
 

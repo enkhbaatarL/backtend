@@ -8,6 +8,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
+import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,26 +53,37 @@ public class ChartGenerationService {
      * @return 처리된 차트 데이터
      */
     public ChartRes generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
-
-        Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
-        List<String> tartgetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
-
-        String dateColumnName = tartgetColumns.get(DATE_COLUMN_INDEX);
-        boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
-
-        // Retrieve and process data
-        List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
-        if (rawData.isEmpty()) {
-            // Return empty chart data by passing empty list to the factory
-            return ChartBundleFactory.toChart(isCandleChartPossible, Collections.emptyList(), tartgetColumns, columnExpressions, isVisible);
+        // 유효성 검증
+        if (goodsDataSourceDetail == null || goodsDataSourceDetail.getTableColumnListNm() == null) {
+            return ChartRes.of(null, null, Collections.emptyList(), Collections.emptyList());
         }
 
-        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, tartgetColumns, goodsDataSourceDetail);
+        // 컬럼 정보 추출
+        Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
+        List<String> targetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
 
-        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, tartgetColumns, unitConvert);
+        if (targetColumns.isEmpty()) {
+            return ChartRes.of(null, null, Collections.emptyList(), Collections.emptyList());
+        }
 
-        // Convert to chart data format
-        return ChartBundleFactory.toChart(isCandleChartPossible, convertedData, tartgetColumns, columnExpressions, isVisible);
+        String dateColumnName = targetColumns.get(DATE_COLUMN_INDEX);
+        boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
+
+        // 원시 데이터 조회
+        List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
+        if (rawData.isEmpty()) {
+            // 빈 차트 데이터 반환
+            return ChartBundleFactory.toChart(null, isCandleChartPossible, Collections.emptyList(), targetColumns, columnExpressions, isVisible);
+        }
+
+        // 데이터 집계
+        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, targetColumns, goodsDataSourceDetail);
+
+        // 단위 변환
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
+
+        // 차트 데이터 형식으로 변환
+        return ChartBundleFactory.toChart(goodsDataSourceDetail.getGoodsDataSourceNo(), isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
 
     /**
@@ -116,23 +128,35 @@ public class ChartGenerationService {
      */
     public List<ChartRes> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
+        // 유효성 검증
         if (mainDataSource == null) {
             return Collections.emptyList();
         }
 
-        // Find all comparison data sources for the main source
+        // 비교 데이터소스 조회
         List<DataSourceGroupMapping> comparisons = dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainDataSource);
 
         if (comparisons.isEmpty()) {
             return Collections.emptyList();
         }
 
+        // 비교군데이터 개인화 설정 확인
         List<Integer> personalizedCompDataSources = personalizationService.getPersonalizedCompDataSources(personalizedMap);
 
-        // Generate chart data for each comparison source, filtering by personalized settings if available
+        // 각 비교 데이터소스에 대한 차트 데이터 생성
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
-            .map(comparison -> generateChartData(comparison.getCompareGoodsDataSourceDetail(), startDate, endDate, interval, null, personalizedCompDataSources.contains(comparison.getId().getCompareGoodsDataSourceNo())))
+            .map(comparison -> {
+                boolean isVisible = personalizedCompDataSources.contains(comparison.getId().getCompareGoodsDataSourceNo());
+                return generateChartData(
+                    comparison.getCompareGoodsDataSourceDetail(),
+                    startDate,
+                    endDate,
+                    interval,
+                    null, // '비교군 차트'는 단위변환 없음
+                    isVisible // 화면 노출 여부
+                );
+            })
             .toList();
     }
 
