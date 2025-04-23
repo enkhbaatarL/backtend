@@ -2,27 +2,28 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
-import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
-import com.sk.domain.mi.dto.response.chart.ChartData;
-import com.sk.domain.mi.dto.response.chart.IndicatorData;
-import com.sk.domain.mi.dto.response.chart.SchemaEntry;
-import com.sk.domain.shared.enums.ChartRenderType;
-import com.sk.domain.shared.enums.ChartSettingConditionCd;
+import com.sk.domain.mi.dto.response.charts.ChartRes;
+import com.sk.domain.mi.dto.response.charts.IndicatorRes;
+import com.sk.domain.mi.dto.response.charts.Series;
+import com.sk.domain.shared.enums.chart.IndicatorType;
+import com.sk.domain.shared.enums.chart.RenderAs;
+import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
- * Service responsible for generating technical indicators such as Moving Averages and Bollinger Bands.
+ * 이동평균선, 볼린저 밴드와 같은 기술적 지표를 생성하는 서비스
+ * 차트 데이터를 기반으로 다양한 기술적 지표를 계산하고 생성한다.
  */
 @Service
+@RequiredArgsConstructor
 public class TechnicalIndicatorService {
 
     // Period constants
@@ -32,86 +33,102 @@ public class TechnicalIndicatorService {
     private static final int PERIOD_EXTRA_LONG = 120;
 
     private final UnitConversionService unitConversionService;
-
-    public TechnicalIndicatorService(UnitConversionService unitConversionService) {
-        this.unitConversionService = unitConversionService;
-    }
+    private final PersonalizationService personalizationService;
 
 
-    public List<IndicatorData> generateIndicators(ChartData mainChart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
-        if (mainChart == null) {
+    /**
+     * 차트 데이터를 기반으로 기술적 지표를 생성한다.
+     * 이동평균선과 볼린저 밴드 지표를 계산하고, 개인화 설정에 따라 표시 여부를 결정한다.
+     * 차트 데이터가 없거나 시계열 데이터가 비어있는 경우 빈 리스트를 반환한다.
+     *
+     * @param chart 기술적 지표를 생성할 차트 데이터
+     * @param personalizedMap 개인화 설정 맵
+     * @return 생성된 기술적 지표 목록
+     */
+    public List<IndicatorRes> generateIndicators(com.sk.domain.mi.dto.response.charts.ChartRes chart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+
+        if (chart == null) {
             return Collections.emptyList();
         }
 
-        List<BigDecimal> priceSeries = extractMajorMetricSeries(mainChart);
-        List<LocalDate> dates = extractDateMetricSeries(mainChart);
+        List<BigDecimal> mainSeries = extractMajorMetricSeries(chart);
+        List<String> timestamps = chart.timestamps();
 
-        if (priceSeries.isEmpty() || dates.isEmpty()) {
+        if (mainSeries.isEmpty() || timestamps.isEmpty()) {
             return Collections.emptyList();
         }
 
-        IndicatorData maData = createMovingAverageData(dates, priceSeries, personalizedMap);
-        IndicatorData bbData = createBollingerBandData(dates, priceSeries, personalizedMap);
+        IndicatorRes maData = createMovingAverageData(timestamps, mainSeries, personalizedMap);
+        IndicatorRes bbData = createBollingerBandData(timestamps, mainSeries, personalizedMap);
 
         return List.of(maData, bbData);
     }
 
-    private IndicatorData createMovingAverageData(List<LocalDate> dates, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    /**
+     * 이동평균선 지표 데이터를 생성한다.
+     * 시계열 데이터를 기반으로 5일, 20일, 60일, 120일 이동평균선을 계산하고,
+     * 개인화 설정에 따라 표시 여부를 결정하여 지표 데이터를 생성한다.
+     *
+     * @param timestamps 시간 데이터 목록
+     * @param series 시계열 데이터 목록
+     * @param personalizedMap 개인화 설정 맵
+     * @return 이동평균선 지표 데이터
+     */
+    private IndicatorRes createMovingAverageData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BigDecimal> maShort = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_SHORT);
         List<BigDecimal> maMedium = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_MEDIUM);
         List<BigDecimal> maLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_LONG);
         List<BigDecimal> maExtraLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_EXTRA_LONG);
 
-        return ChartBundleFactory.createMovingAverageIndicator(dates, maShort, maMedium, maLong, maExtraLong, personalizedMap);
+        // Get personalized indicators using the PersonalizationService
+        List<String> personalizedIndicators = personalizationService.getPersonalizedIndicators(personalizedMap);
+
+        List<Series> movingAverageIndicator = ChartBundleFactory.createMovingAverageIndicator(maShort, maMedium, maLong, maExtraLong, personalizedIndicators);
+
+        return IndicatorRes.of(IndicatorType.MOVING_AVERAGE, timestamps, movingAverageIndicator);
     }
 
-    private IndicatorData createBollingerBandData(List<LocalDate> dates, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    /**
+     * 볼린저 밴드 지표 데이터를 생성한다.
+     * 시계열 데이터를 기반으로 볼린저 밴드(상단, 중간, 하단)를 계산하고,
+     * 개인화 설정에 따라 표시 여부를 결정하여 지표 데이터를 생성한다.
+     *
+     * @param timestamps 시간 데이터 목록
+     * @param series 시계열 데이터 목록
+     * @param personalizedMap 개인화 설정 맵
+     * @return 볼린저 밴드 지표 데이터
+     */
+    private IndicatorRes createBollingerBandData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, PERIOD_MEDIUM);
-        return ChartBundleFactory.createBollingerBandsIndicator(dates, results, personalizedMap);
+
+        // Get personalized indicators using the PersonalizationService
+        List<String> personalizedIndicators = personalizationService.getPersonalizedIndicators(personalizedMap);
+
+        List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, personalizedIndicators);
+
+        return IndicatorRes.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
     }
 
     /**
-     * ChartData 객체에서 renderAs 'date' 해당하는 시계열 데이터를 추출한다.
+     * ChartData 객체에서 renderAs 'close' 또는 'main'에 해당하는 시계열 데이터를 추출한다.
+     * 차트 데이터에서 주요 시계열 데이터(종가 또는 메인 데이터)를 찾아 반환한다.
+     * 주요 시계열 데이터가 없는 경우 예외를 발생시킨다.
+     *
+     * @param chart 시계열 데이터를 추출할 차트 데이터
+     * @return 추출된 시계열 데이터 목록
+     * @throws SystemErrorException 주요 시계열 데이터를 찾지 못한 경우
      */
-    public List<LocalDate> extractDateMetricSeries(ChartData chartData) {
+    public List<BigDecimal> extractMajorMetricSeries(ChartRes chart) {
 
-        String dateColumnName = chartData.schema().stream()
-            .filter(entry -> ChartRenderType.DATE == entry.renderAs())
-            .map(SchemaEntry::name)
-            .findFirst()
-            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No 'date' column(renderAs) names found"));
+        Series series = chart.series().stream()
+            .filter(entry -> RenderAs.isMajorType(entry.renderAs()))
+            .findFirst().orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No major column(major is 'close' or 'main' renderAs) names found"));
 
-        List<?> rawDataList = chartData.data().get(dateColumnName);
-
-        if (rawDataList == null || rawDataList.isEmpty()) {
+        if (series == null || series.values().isEmpty()) {
             return Collections.emptyList();
         }
 
-        return rawDataList.stream()
-            .map(DateUtil::parseDate)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * ChartData 객체에서 renderAs 'close' 또는 'main' 해당하는 시계열 데이터를 추출한다.
-     */
-    public List<BigDecimal> extractMajorMetricSeries(ChartData chartData) {
-
-        String majorColumnName = chartData.schema().stream()
-            .filter(entry -> ChartRenderType.isMajorType(entry.renderAs()))
-            .map(SchemaEntry::name)
-            .findFirst()
-            .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "No major column(major is 'close' or 'main' renderAs) names found"));
-
-        List<?> rawDataList = chartData.data().get(majorColumnName);
-
-        if (rawDataList == null || rawDataList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return rawDataList.stream()
-            .map(s -> new BigDecimal(String.valueOf(s)))
-            .collect(Collectors.toList());
+        return series.values();
     }
 
 }

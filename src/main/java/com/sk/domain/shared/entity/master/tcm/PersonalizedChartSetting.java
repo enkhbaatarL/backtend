@@ -3,7 +3,7 @@ package com.sk.domain.shared.entity.master.tcm;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.ChartSettingConditionCd;
+import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

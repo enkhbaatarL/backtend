@@ -15,6 +15,7 @@ import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.enums.UserRoleCd;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -208,10 +209,15 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                 .fetch();
 
         Map<Integer, Boolean[]> individualAuthMap = new HashMap<>();
+        Map<Integer, Pair<String, String>> individualDateMap = new HashMap<>();
+
         Boolean[] companyAuth = new Boolean[] { Boolean.FALSE, Boolean.FALSE };
+        Pair<String, String> companyDate = Pair.of(null, null);
+
 
         for (AuthManageGoodsMapping mapping : authGoodsMappings) {
 
+            // 개별
             if (mapping.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd() == GoodsAuthManagementSeparateCd.INDIVIDUAL) {
 
                 Integer userNo = mapping.getUser().getUserNo();
@@ -225,7 +231,13 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                     goodsAuthBool[1] = Boolean.TRUE;
                 }
 
+                // 해당 사용자의 권한 시작일과 종료일을 가져오기
+                individualDateMap.put(userNo, Pair.of(mapping.getUseBeginDate(), mapping.getUseEndDate()));
+
+            // 회사
             } else {
+
+                companyDate = Pair.of(mapping.getUseBeginDate(), mapping.getUseEndDate());
 
                 if (mapping.getGoodsAuthCd() == GoodsAuthCd.VIEW) {
                     companyAuth[0] = Boolean.TRUE;
@@ -245,13 +257,15 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
                 .and(ccgMapping.goods.goodsNo.eq(goodsNo)))
             .fetchOne();
 
+        Pair<String, String> finalCompanyDate = companyDate;
+
         List<AuthGoodsMapRes> result = users.stream().map(user -> {
 
             if (ccgm.getId().getGoodsAuthManagementSeparateCd() == GoodsAuthManagementSeparateCd.COMPANY) {
-                return AuthGoodsMapRes.of(user, companyAuth);
+                return AuthGoodsMapRes.of(user, companyAuth, finalCompanyDate);
             } else {
                 Boolean[] authArrays = individualAuthMap.getOrDefault(user.getUserNo(), new Boolean[] { Boolean.FALSE, Boolean.FALSE });
-                return AuthGoodsMapRes.of(user, authArrays);
+                return AuthGoodsMapRes.of(user, authArrays, individualDateMap.getOrDefault(user.getUserNo(), Pair.of(null, null)));
             }
 
         }).toList();

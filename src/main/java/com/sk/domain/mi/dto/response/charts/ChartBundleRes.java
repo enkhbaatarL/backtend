@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.chart;
+package com.sk.domain.mi.dto.response.charts;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -19,25 +19,25 @@ public record ChartBundleRes(
     ChartMetadata chartMetadata,
 
     @Schema(description = "메인 차트")
-    ChartData mainChart,
+    ChartRes mainChart,
 
     @Schema(description = "메인 차트 보조지표")
-    List<IndicatorData> indicators,
+    List<IndicatorRes> indicators,
 
     @Schema(description = "비교군 차트")
-    List<ChartData> comparisonCharts
+    List<ChartRes> comparisonCharts
 
 ) {
 
     @Builder
-    public ChartBundleRes(ChartMetadata chartMetadata, ChartData mainChart, List<IndicatorData> indicators, List<ChartData> comparisonCharts) {
+    public ChartBundleRes(ChartMetadata chartMetadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
         this.chartMetadata = chartMetadata;
         this.mainChart = mainChart;
         this.indicators = indicators;
         this.comparisonCharts = comparisonCharts;
     }
 
-    public static ChartBundleRes of(ChartMetadata chartMetadata, ChartData mainChart, List<IndicatorData> indicators, List<ChartData> comparisonCharts) {
+    public static ChartBundleRes of(ChartMetadata chartMetadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
         return ChartBundleRes.builder()
             .chartMetadata(chartMetadata)
             .mainChart(mainChart)

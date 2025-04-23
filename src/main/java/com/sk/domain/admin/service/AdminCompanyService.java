@@ -346,8 +346,7 @@ public class AdminCompanyService {
     public PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo,
             Integer goodsNo) {
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-//        ccpResult.validOrThrow();
+        companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo).validOrThrow();
 
         Page<AuthGoodsMapRes> paged = authManageGoodsMappingRepository.findByAuthGoodsByConditions(page, size, companyNo, goodsNo);
 

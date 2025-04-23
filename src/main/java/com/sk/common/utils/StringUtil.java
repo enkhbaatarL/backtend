@@ -67,13 +67,13 @@ public class StringUtil {
         return path;
     }
 
-    public static String joinNonNull(String... parts) {
+    public static String joinPoundSignNonNull(String... parts) {
         if (parts == null || parts.length == 0) {
             return "";
         }
         return Arrays.stream(parts)
             .filter(Objects::nonNull)
-            .collect(Collectors.joining("-"));
+            .collect(Collectors.joining("#"));
     }
 
 }

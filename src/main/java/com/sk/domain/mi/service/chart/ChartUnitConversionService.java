@@ -1,6 +1,9 @@
 package com.sk.domain.mi.service.chart;
 
+import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.UnitConversionService;
+import com.sk.domain.shared.entity.master.tmd.UnitConvert;
+import com.sk.domain.shared.enums.chart.RenderAs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,19 +17,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChartUnitConversionService {
 
-    // Common index for date column
-    private static final int IDX_DATE = 0;
-
-    // Candle chart indices
-    private static final int IDX_CANDLE_CLOSE = 1;
-    private static final int IDX_CANDLE_OPEN = 2;
-    private static final int IDX_CANDLE_HIGH = 3;
-    private static final int IDX_CANDLE_LOW = 4;
-
-    // Metric chart indices
-    private static final int IDX_METRIC_MAIN = 1;
-    private static final int IDX_METRIC_REF = 2;
-
     private final UnitConversionService unitConversionService;
 
     /**
@@ -34,44 +24,42 @@ public class ChartUnitConversionService {
      *
      * @param isCandleChartPossible 캔들 차트 여부
      * @param aggregatedData       집계된 원시 데이터
-     * @param selectedColumns      컬럼명 리스트 (date 컬럼이 0번)
-     * @param unitConversionNo     단위 변환 번호 (null이거나 빈 데이터면 변환하지 않고 원본 반환)
+     * @param targetColumns      컬럼명 리스트 (date 컬럼이 0번)
      * @return 변환된 값이 반영된 데이터 리스트
      */
-    public List<Map<String, Object>> convertUnit(boolean isCandleChartPossible, List<Map<String, Object>> aggregatedData, List<String> selectedColumns, Integer unitConversionNo) {
+    public List<Map<String, Object>> convert(boolean isCandleChartPossible, List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert) {
 
-        if (aggregatedData == null || aggregatedData.isEmpty() || unitConversionNo == null) {
+        if (aggregatedData == null || aggregatedData.isEmpty() || unitConvert == null) {
             return aggregatedData;
         }
 
-        List<String> columns = selectedColumns;
-        String dateCol = columns.get(IDX_DATE);
+        String dateCol = targetColumns.get(RenderAs.DATE.getIndex());
         int size = aggregatedData.size();
 
         // 캔들 차트일 경우, open/high/low/close 컬럼만 변환
         if (isCandleChartPossible) {
-            String closeCol = columns.get(IDX_CANDLE_CLOSE);
-            String openCol = columns.get(IDX_CANDLE_OPEN);
-            String highCol = columns.get(IDX_CANDLE_HIGH);
-            String lowCol = columns.get(IDX_CANDLE_LOW);
+            String closeCol = targetColumns.get(RenderAs.CLOSE.getIndex());
+            String openCol = targetColumns.get(RenderAs.OPEN.getIndex());
+            String highCol = targetColumns.get(RenderAs.HIGH.getIndex());
+            String lowCol = targetColumns.get(RenderAs.LOW.getIndex());
 
             List<BigDecimal> closeSeries = aggregatedData.stream()
-                .map(r -> toBigDecimal(r.get(closeCol)))
+                .map(r -> MathUtil.toBigDecimal(r.get(closeCol)))
                 .toList();
             List<BigDecimal> openSeries = aggregatedData.stream()
-                .map(r -> toBigDecimal(r.get(openCol)))
+                .map(r -> MathUtil.toBigDecimal(r.get(openCol)))
                 .toList();
             List<BigDecimal> highSeries = aggregatedData.stream()
-                .map(r -> toBigDecimal(r.get(highCol)))
+                .map(r -> MathUtil.toBigDecimal(r.get(highCol)))
                 .toList();
             List<BigDecimal> lowSeries = aggregatedData.stream()
-                .map(r -> toBigDecimal(r.get(lowCol)))
+                .map(r -> MathUtil.toBigDecimal(r.get(lowCol)))
                 .toList();
 
-            List<BigDecimal> convertedClose = unitConversionService.convertTimeSeries(unitConversionNo, closeSeries);
-            List<BigDecimal> convertedOpen = unitConversionService.convertTimeSeries(unitConversionNo, openSeries);
-            List<BigDecimal> convertedHigh = unitConversionService.convertTimeSeries(unitConversionNo, highSeries);
-            List<BigDecimal> convertedLow = unitConversionService.convertTimeSeries(unitConversionNo, lowSeries);
+            List<BigDecimal> convertedClose = unitConversionService.convertTimeSeries(unitConvert, closeSeries);
+            List<BigDecimal> convertedOpen = unitConversionService.convertTimeSeries(unitConvert, openSeries);
+            List<BigDecimal> convertedHigh = unitConversionService.convertTimeSeries(unitConvert, highSeries);
+            List<BigDecimal> convertedLow = unitConversionService.convertTimeSeries(unitConvert, lowSeries);
 
             List<Map<String, Object>> result = new ArrayList<>();
             for (int i = 0; i < size; i++) {
@@ -87,11 +75,11 @@ public class ChartUnitConversionService {
         }
 
         // 메트릭 차트일 경우, 메인과 레퍼런스 컬럼 변환
-        String mainCol = columns.get(IDX_METRIC_MAIN);
+        String mainCol = targetColumns.get(RenderAs.MAIN.getIndex());
         List<BigDecimal> mainSeries = aggregatedData.stream()
-            .map(r -> toBigDecimal(r.get(mainCol)))
+            .map(r -> MathUtil.toBigDecimal(r.get(mainCol)))
             .toList();
-        List<BigDecimal> convertedMain = unitConversionService.convertTimeSeries(unitConversionNo, mainSeries);
+        List<BigDecimal> convertedMain = unitConversionService.convertTimeSeries(unitConvert, mainSeries);
 
         // 결과 생성
         List<Map<String, Object>> result = new ArrayList<>();
@@ -100,8 +88,8 @@ public class ChartUnitConversionService {
             row.put(dateCol, aggregatedData.get(i).get(dateCol));
             row.put(mainCol, convertedMain.get(i));
             // 나머지 ref 컬럼은 원본 값 그대로 복사
-            for (int j = IDX_METRIC_REF; j < columns.size(); j++) {
-                String col = columns.get(j);
+            for (int j = RenderAs.REFERENCE.getIndex(); j < targetColumns.size(); j++) {
+                String col = targetColumns.get(j);
                 row.put(col, aggregatedData.get(i).get(col));
             }
             result.add(row);
@@ -109,13 +97,4 @@ public class ChartUnitConversionService {
         return result;
     }
 
-    private BigDecimal toBigDecimal(Object v) {
-        if (v == null) return BigDecimal.ZERO;
-        if (v instanceof BigDecimal bd) return bd;
-        try {
-            return new BigDecimal(v.toString());
-        } catch (Exception e) {
-            return BigDecimal.ZERO;
-        }
-    }
 }

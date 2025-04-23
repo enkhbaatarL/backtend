@@ -22,7 +22,7 @@ public class UnitConvertValidator {
             return ValidationResult.success(entity.get());
         } else {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                    "It doesn't exist in the [currentUnit-conversion]. unitConversionNo: %s".formatted(unitConversionNo)));
+                    "It doesn't exist in the [currentUnitCd-conversion]. unitConversionNo: %s".formatted(unitConversionNo)));
         }
     }
 
