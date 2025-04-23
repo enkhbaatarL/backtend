@@ -17,6 +17,8 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
+import com.sk.domain.shared.enums.insights.InsightsSearchType;
+import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 
@@ -39,11 +41,11 @@ public class MiInsightsService {
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
 
-        List<FocusedDataRes> listI = goodsDataRepository.findFocusedDataByCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 5));
+        List<FocusedDataRes> list = goodsDataRepository.findFocusedDataByCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 5));
 
-        List<FocusedDataRes> listNotI = goodsDataRepository.findFocusedDataByNotCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 3));
+        List<FocusedDataRes> listNot = goodsDataRepository.findFocusedDataByNotCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 3));
 
-        return Stream.concat(listI.stream(), listNotI.stream())
+        return Stream.concat(list.stream(), listNot.stream())
                 .sorted(Comparator.comparing(FocusedDataRes::getModifyDt).reversed())
                 .collect(Collectors.toList());
     }
@@ -71,7 +73,8 @@ public class MiInsightsService {
      * @param keyword
      * @return PaginationRes<GoodsDataRes>
      */
-    public PaginationRes<IGoodsDataRes> getInsights(int companyNo, int page, int size, String keyword) {
+    public PaginationRes<IGoodsDataRes> getInsights(int companyNo, int page, int size, String keyword, InsightsSortType sort,
+            InsightsSearchType period, String documentTypes, String providers, String languages) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
