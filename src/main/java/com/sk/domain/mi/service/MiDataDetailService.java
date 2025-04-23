@@ -120,18 +120,16 @@ public class MiDataDetailService {
      * @param unitConversionCd  단위 변환 코드 (상세유형명#변환후단위명)
      * @return 생성된 차트 묶음 응답 데이터
      */
-    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsDataNo, Integer goodsDataSourceNo, Interval interval, Range range, String startDate, String endDate, String unitConversionCd) {
+    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsDataNo, Integer goodsDataSourceNo, Interval interval, Range range, String startDate, String endDate, String unitConversionCd, String userLoginId) {
 
-        // todo ThreadLocal
-        String userLoginId = "testUser001";
-
-        // 데이터 유효성 검증
+        // 상품-데이터 유효성 검증
         goodsDataValidator.ensureExists(goodsDataNo).validOrThrow();
 
+        // 상품-데이터 상품-데이터-소스(GDS) 유효성 검증 및 조회
         ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(goodsDataSourceNo);
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceResult.getOrThrow();
 
-        // 단위변환 가능한 객체 조회 (기본단위 포함)
+        // 변환 가능한 단위 조회 (GDS 기본 단위 포함)
         Map<String, UnitConvert> unitCdMap = chartUnitConversionService.getUnitConvertCdMap(goodsDataSourceDetail);
 
         // 개인화 설정 조회

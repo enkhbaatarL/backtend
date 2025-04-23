@@ -6,6 +6,7 @@ import com.sk.domain.shared.enums.chart.Range;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,6 +29,13 @@ public final class DateUtil {
      */
     public static String toYmd(LocalDate date) {
         return date == null ? null : date.format(YYYYMMDD);
+    }
+
+    /**
+     * "yyyyMMdd" 문자열을 LocalDate로 변환
+     */
+    public static LocalDate fromYmd(String dateStr) {
+        return dateStr == null ? null : LocalDate.parse(dateStr, YYYYMMDD);
     }
 
     /**

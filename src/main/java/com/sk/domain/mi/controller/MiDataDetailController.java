@@ -12,11 +12,16 @@ import com.sk.domain.shared.enums.chart.Range;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,7 +35,7 @@ public class MiDataDetailController {
 
     private final MiDataDetailService miDataDetailService;
 
-//    @ApiOrder(1)
+    //    @ApiOrder(1)
 //    @Parameters({
 //        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
 //    })
@@ -109,13 +114,23 @@ public class MiDataDetailController {
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
-        @Parameter(name = "interval", description = "인터벌 (1D, 1W, 2W, 1M, 3M, 6M, 1Y)"),
-        @Parameter(name = "range", description = "범위 (1W, 1M, 3M, 6M, 1Y, 2Y, CUSTOM)"),
+        @Parameter(name = "interval", description = "인터벌 (1D, 1W, 2W, 1M, 3M, 6M, 1Y)", schema = @Schema(
+            type = "string",
+            allowableValues = {
+                "1D", "1W", "2W", "1M", "3M", "6M", "1Y"
+            }
+        )),
+        @Parameter(name = "range", description = "범위 (1W, 1M, 3M, 6M, 1Y, 2Y, CUSTOM)", schema = @Schema(
+            type = "string",
+            allowableValues = {
+                "1W", "1M", "3M", "6M", "1Y", "2Y", "CUSTOM"
+            }
+        )),
         @Parameter(name = "startDate", description = "조회 시작일 (range가 CUSTOM일 경우 필수)"),
         @Parameter(name = "endDate", description = "조회 종료일 (range가 CUSTOM일 경우 필수)"),
         @Parameter(name = "unitConversionCd", description = "변환 단위"),
     })
-    @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다.")
+    @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다. (상품 `VIEW`권한이 필요합니다.)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
     public BaseResponse<ChartBundleRes> getGoodsDataSourceChart(
@@ -126,9 +141,10 @@ public class MiDataDetailController {
         @RequestParam(value = "range", required = false) Range range, // todo validation
         @RequestParam(value = "startDate", required = false) String startDate, // todo validation
         @RequestParam(value = "endDate", required = false) String endDate, // todo validation
-        @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd
+        @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd,
+        Authentication authentication
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd, authentication.getName()));
     }
 
 }

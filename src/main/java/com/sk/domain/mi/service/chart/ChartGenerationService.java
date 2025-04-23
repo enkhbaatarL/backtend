@@ -1,7 +1,7 @@
 package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.admin.dto.request.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.charts.ChartRes;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
@@ -183,11 +183,7 @@ public class ChartGenerationService {
     }
 
     /**
-     * Converts the date values in the raw data to the 'YYYYDDMM' format for the specified date column.
-     *
-     * @param rawData       The list of raw data in the form of maps.
-     * @param dateColumnKey The key (column name) corresponding to the date values.
-     * @return A new list of maps with the date values converted to 'YYYYDDMM' format.
+     * 원시 데이터의 날짜 값을 한 번만 LocalDate로 파싱하고, 정렬
      */
     private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
         return rawData.stream().map(

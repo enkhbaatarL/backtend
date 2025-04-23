@@ -107,9 +107,9 @@ public class ChartAggregationService {
     private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, String dateCol, List<String> targetColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         LocalDate date = DateUtil.parseDate(bucket.get(0).get(dateCol));
-        map.put(dateCol, DateUtil.toYmd(date)); // todo 여깄었네...
+        map.put(dateCol, date);
         map.put(targetColumns.get(RenderAs.OPEN.getIndex()), MathUtil.toBigDecimal(bucket.get(0).get(targetColumns.get(RenderAs.OPEN.getIndex()))));
-        map.put(targetColumns.get(RenderAs.CLOSE.getIndex()), MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(targetColumns.get(RenderAs.OPEN.getIndex()))));
+        map.put(targetColumns.get(RenderAs.CLOSE.getIndex()), MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(targetColumns.get(RenderAs.CLOSE.getIndex()))));
         map.put(targetColumns.get(RenderAs.HIGH.getIndex()), max(bucket, targetColumns.get(RenderAs.HIGH.getIndex())));
         map.put(targetColumns.get(RenderAs.LOW.getIndex()), min(bucket, targetColumns.get(RenderAs.LOW.getIndex())));
         return map;
@@ -118,12 +118,13 @@ public class ChartAggregationService {
     private Map<String, Object> aggregateMetric(List<Map<String, Object>> bucket, String dateCol, List<String> targetColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         LocalDate date = DateUtil.parseDate(bucket.get(0).get(dateCol));
-        map.put(dateCol, DateUtil.toYmd(date)); // todo 여깄었네...
+        map.put(dateCol, date);
         // main value
         map.put(targetColumns.get(RenderAs.MAIN.getIndex()), average(bucket, targetColumns.get(RenderAs.MAIN.getIndex())));
         // reference series
         for (int i = RenderAs.REFERENCE.getIndex(); i < targetColumns.size(); i++) {
-            map.put(targetColumns.get(RenderAs.REFERENCE.getIndex()), average(bucket, targetColumns.get(RenderAs.REFERENCE.getIndex())));
+            String col = targetColumns.get(i);
+            map.put(col, average(bucket, col));
         }
         return map;
     }

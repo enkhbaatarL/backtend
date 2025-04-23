@@ -26,6 +26,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChartUnitConversionService {
 
+    public static final UnitConvert IDENTITY;
+
+    static {
+        IDENTITY = UnitConvert.of(BigDecimal.ONE);
+    }
+
     private final UnitConversionService unitConversionService;
     private final GoodsDataUnitConvertRepository goodsDataUnitConvertRepository;
 
@@ -48,14 +54,14 @@ public class ChartUnitConversionService {
      * 단위 변환을 수행하고, 변환된 값을 포함한 새로운 데이터 리스트를 반환한다.
      *
      * @param isCandleChartPossible 캔들 차트 여부
-     * @param aggregatedData 집계된 원시 데이터
-     * @param targetColumns 컬럼명 리스트 (date 컬럼이 0번)
-     * @param unitConvert 단위 변환 정보
+     * @param aggregatedData        집계된 원시 데이터
+     * @param targetColumns         컬럼명 리스트 (date 컬럼이 0번)
+     * @param unitConvert           단위 변환 정보
      * @return 변환된 값이 반영된 데이터 리스트
      */
     public List<Map<String, Object>> convert(boolean isCandleChartPossible, List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert) {
         // 유효성 검증
-        if (aggregatedData == null || aggregatedData.isEmpty() || unitConvert == null || targetColumns == null || targetColumns.isEmpty()) {
+        if (aggregatedData == null || aggregatedData.isEmpty() || unitConvert == ChartUnitConversionService.IDENTITY || targetColumns == null || targetColumns.isEmpty()) {
             return aggregatedData;
         }
 
@@ -74,10 +80,10 @@ public class ChartUnitConversionService {
      * open, high, low, close 값에 대해 단위 변환을 적용한다.
      *
      * @param aggregatedData 집계된 원시 데이터
-     * @param targetColumns 컬럼명 리스트
-     * @param unitConvert 단위 변환 정보
-     * @param dateCol 날짜 컬럼명
-     * @param size 데이터 크기
+     * @param targetColumns  컬럼명 리스트
+     * @param unitConvert    단위 변환 정보
+     * @param dateCol        날짜 컬럼명
+     * @param size           데이터 크기
      * @return 변환된 캔들 차트 데이터
      */
     private List<Map<String, Object>> convertCandleChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, int size) {
@@ -125,10 +131,10 @@ public class ChartUnitConversionService {
      * 메인 값에 대해 단위 변환을 적용하고, 참조 값은 그대로 유지한다.
      *
      * @param aggregatedData 집계된 원시 데이터
-     * @param targetColumns 컬럼명 리스트
-     * @param unitConvert 단위 변환 정보
-     * @param dateCol 날짜 컬럼명
-     * @param size 데이터 크기
+     * @param targetColumns  컬럼명 리스트
+     * @param unitConvert    단위 변환 정보
+     * @param dateCol        날짜 컬럼명
+     * @param size           데이터 크기
      * @return 변환된 메트릭 차트 데이터
      */
     private List<Map<String, Object>> convertMetricChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, int size) {
@@ -164,7 +170,7 @@ public class ChartUnitConversionService {
      * 기본 단위도 맵에 포함시킨다.
      *
      * @param goodsDataSourceDetail 상품 데이터소스 상세 정보
-     * @param unitConversions 단위 변환 목록
+     * @param unitConversions       단위 변환 목록
      * @return 변환 가능한 단위 맵 (key: 변환타입#변환단위, value: 단위변환기본 객체)
      */
     private Map<String, UnitConvert> generateChangeableUnit(GoodsDataSourceDetail goodsDataSourceDetail, List<GoodsDataUnitConvert> unitConversions) {
@@ -173,8 +179,7 @@ public class ChartUnitConversionService {
             Collectors.toMap(s -> StringUtil.joinPoundSignNonNull(s.getUnitConvert().getConvertTargetDetailTypeNm(), s.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert,
                 (v1, v2) -> v2));
 
-        // default unit
-        unitCdMap.put(StringUtil.joinPoundSignNonNull(goodsDataSourceDetail.getConvertTargetDetailTypeNm(), goodsDataSourceDetail.getGoodsDataSourceUnitNm()), null);
+        unitCdMap.put(StringUtil.joinPoundSignNonNull(goodsDataSourceDetail.getConvertTargetDetailTypeNm(), goodsDataSourceDetail.getGoodsDataSourceUnitNm()), IDENTITY);
 
         return unitCdMap;
 

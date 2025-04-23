@@ -63,7 +63,8 @@ public final class ChartBundleFactory {
 
     private static List<String> buildTimestamps(String xAxis, List<Map<String, Object>> rawRows) {
         return rawRows.stream()
-            .map(row -> String.valueOf(row.get(xAxis)))
+            .map(row -> DateUtil.parseDate(row.get(xAxis)))
+            .map(DateUtil::toYmd)
             .toList();
     }
 
