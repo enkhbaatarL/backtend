@@ -147,7 +147,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     //
     @Query(value = """
-            SELECT com.sk.domain.mi.dto.response.insights.FocusedDataRes(
+            SELECT new com.sk.domain.mi.dto.response.insights.FocusedDataRes(
                 gd.goodsDataNo,
                 gdc.goodsDataCategoryCd,
                 gd.goodsDataNm,
@@ -178,7 +178,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             Pageable pageable);
 
     @Query(value = """
-            SELECT com.sk.domain.mi.dto.response.insights.FocusedDataRes(
+            SELECT new com.sk.domain.mi.dto.response.insights.FocusedDataRes(
                 gd.goodsDataNo,
                 gdc.goodsDataCategoryCd,
                 gd.goodsDataNm,
