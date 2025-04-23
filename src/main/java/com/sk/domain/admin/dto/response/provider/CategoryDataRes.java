@@ -1,7 +1,5 @@
 package com.sk.domain.admin.dto.response.provider;
 
-import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 

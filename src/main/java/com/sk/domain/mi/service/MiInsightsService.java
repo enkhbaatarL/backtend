@@ -54,15 +54,12 @@ public class MiInsightsService {
      * @return List<GoodsDataFilterRes>
      */
     public GoodsDataFilterRes getAdvancedFilter() {
-        List<List<GoodsDataCategoryRes>> filter = new ArrayList<>();
 
-        // List<GoodsDataCategoryRes> a = commonCodeDetailRepository.findGoodsDataMainCategorys();
-        // for (GoodsDataCategoryRes goodsDataCategoryRes : a) {
-        // List<GoodsDataCategoryRes> b = commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(goodsDataCategoryRes.codeId());
-        // filter.add(b);
-        // }
+        List<GoodsDataCategoryRes> documentTypes = commonCodeDetailRepository.findDocTypeCategory();
+        List<GoodsDataCategoryRes> providers = commonCodeDetailRepository.findProviderTypeCategory();
+        List<GoodsDataCategoryRes> languages = commonCodeDetailRepository.findLangTypeCategory();
 
-        return null;
+        return GoodsDataFilterRes.of(documentTypes, providers, languages);
     }
 
     /**

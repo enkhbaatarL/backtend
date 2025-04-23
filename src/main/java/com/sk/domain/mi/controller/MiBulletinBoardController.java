@@ -28,7 +28,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "04. 게시판 API", description = "게시판 API 입니다.")
+@Tag(name = "07. 게시판 API", description = "게시판 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/bulletinboard")
@@ -53,7 +53,7 @@ public class MiBulletinBoardController {
     @Operation(summary = "공지사항 목록 조회 - with pagination", description = "공지사항 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice")
-    @RequiredPermission(roles = { Role.ADMIN, Role.USER })
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<PaginationRes<MiNoticeRes>> getAllNotices(
             @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,

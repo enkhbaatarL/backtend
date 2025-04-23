@@ -179,7 +179,7 @@ public class AdminGoodsDataService {
             validateOperatorAccess(companyNo, providerNo, goodsNo);
         }
 
-        GoodsData goodsData1 = goodsDataRepository
+        GoodsData goodsData = goodsDataRepository
                 .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
                 .orElseThrow(
                         () -> AppErrorException.of(
@@ -187,14 +187,16 @@ public class AdminGoodsDataService {
                                 "provider no: %d, goods no: %d, goodsdata no: %d"
                                         .formatted(providerNo, goodsNo, goodsDataNo)));
 
-        List<CategoryDataRes> goodsDataCategoryList1 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+        List<CategoryDataRes> docCategoryList = goodsDataCategoryRepository.findDocCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-        List<StructuredDataRes> structuredDataList1 = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+        List<CategoryDataRes> langCategoryList = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
-        List<UnstructuredDataRes> unstructuredDataList1 = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+        List<StructuredDataRes> structuredDataList = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
+        List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
         return GoodsDataDetailRes.of(
-                goodsData1, goodsDataCategoryList1, structuredDataList1, unstructuredDataList1);
+                goodsData, docCategoryList, langCategoryList, structuredDataList, unstructuredDataList);
     }
 
     private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {
@@ -389,7 +391,7 @@ public class AdminGoodsDataService {
 
         // 문서 타입 카테고리 수정
         if (dto.docCategoryList() != null) {
-            List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
+            List<String> oldCategoryCodes = goodsDataCategoryRepository.findDocCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
                     .map(category -> category.codeId())
                     .toList();
 
@@ -411,7 +413,7 @@ public class AdminGoodsDataService {
 
         // 언어 타입 카테고리 수정
         if (dto.langCategoryList() != null) {
-            List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
+            List<String> oldCategoryCodes = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
                     .map(category -> category.codeId())
                     .toList();
 
