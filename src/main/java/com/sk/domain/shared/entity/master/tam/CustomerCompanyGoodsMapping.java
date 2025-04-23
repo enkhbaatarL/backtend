@@ -2,7 +2,6 @@ package com.sk.domain.shared.entity.master.tam;
 
 import java.time.LocalDateTime;
 
-import com.sk.domain.admin.dto.request.company.CompanyGoodsMapReq;
 import com.sk.domain.admin.dto.request.company.AuthGoodsMapReq;
 import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.listener.CustomerCompanyGoodsMappingListener;

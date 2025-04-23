@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
+import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
@@ -141,34 +142,71 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     Optional<GoodsData> findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
             @Param("goodsDataNo") int goodsDataNo);
 
-    @EntityGraph(attributePaths = { "goods", "goods.provider" })
+    @EntityGraph(attributePaths = {"goods", "goods.provider"})
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
     //
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
-            gd.goodsDataNo,
-            gd.goodsDataNm
+            SELECT com.sk.domain.mi.dto.response.insights.FocusedDataRes(
+                gd.goodsDataNo,
+                gdc.goodsDataCategoryCd,
+                gd.goodsDataNm,
+                gd.modifyDt,
+                p.providerNm
             )
-            FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-            WHERE gd.isDeleted = false
-                AND gd.goods.provider.providerNo = :providerNo
-                AND gd.goods.goodsNo = :goodsNo
-            ORDER BY gd.goodsDataNm ASC
+            FROM CustomerCompanyProviderMapping cpm
+            LEFT JOIN CustomerCompanyGoodsMapping cgm ON cgm.id.customerCompanyNo = cpm.id.customerCompanyNo
+            LEFT JOIN Provider p ON p.providerNo = cpm.id.providerNo
+            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = cgm.id.goodsNo
+            LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
+            WHERE gdc.goodsDataManagementSeparateCd = 'GDAT'
+                AND cpm.isDeleted = false
+                AND cpm.isUsed = true
+                AND cgm.isDeleted = false
+                AND cgm.isUsed = true
+                AND p.isDeleted = false
+                AND p.isUsed = true
+                AND gd.isDeleted = false
+                AND gdc.isDeleted = false
+                AND cpm.id.customerCompanyNo = :customerCompanyNo
+                AND gdc.goodsDataCategoryCd = :categoryCd
+            ORDER BY gd.modifyDt DESC
                         """, countQuery = """
-            SELECT COUNT(DISTINCT gd.goodsDataNo)
-            FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-            WHERE gd.isDeleted = false
-                AND gd.goods.provider.providerNo = :providerNo
-                AND gd.goods.goodsNo = :goodsNo
-              """)
-    List<GoodsDataNameRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd);
+
+            """)
+    List<FocusedDataRes> findFocusedDataByCategoryCd(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd,
+            Pageable pageable);
+
+    @Query(value = """
+            SELECT com.sk.domain.mi.dto.response.insights.FocusedDataRes(
+                gd.goodsDataNo,
+                gdc.goodsDataCategoryCd,
+                gd.goodsDataNm,
+                gd.modifyDt,
+                p.providerNm
+            )
+            FROM CustomerCompanyProviderMapping cpm
+            LEFT JOIN CustomerCompanyGoodsMapping cgm ON cgm.id.customerCompanyNo = cpm.id.customerCompanyNo
+            LEFT JOIN Provider p ON p.providerNo = cpm.id.providerNo
+            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = cgm.id.goodsNo
+            LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
+            WHERE gdc.goodsDataManagementSeparateCd = 'GDAT'
+                AND cpm.isDeleted = false
+                AND cpm.isUsed = true
+                AND cgm.isDeleted = false
+                AND cgm.isUsed = true
+                AND p.isDeleted = false
+                AND p.isUsed = true
+                AND gd.isDeleted = false
+                AND gdc.isDeleted = false
+                AND cpm.id.customerCompanyNo = :customerCompanyNo
+                AND gdc.goodsDataCategoryCd <> :categoryCd
+            ORDER BY gd.modifyDt DESC
+                        """, countQuery = """
+
+            """)
+    List<FocusedDataRes> findFocusedDataByNotCategoryCd(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd,
+            Pageable pageable);
 
     @Query(value = """
             SELECT

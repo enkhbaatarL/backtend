@@ -12,8 +12,11 @@ public record GoodsDataUpdateReq(
     @Schema(description = "Summary", example = "") 
     String goodsDataSummaryCntt,
 
-    @Schema(description = "카테고리 데이타 리스트", example = "")
-    List<CategoryDataReq> categoryDataList,
+    @Schema(description = "문서 타입 카테고리 리스트", example = "")
+    List<CategoryDataReq> docCategoryList,
+
+    @Schema(description = "언어 타입 카테고리 리스트", example = "")
+    List<CategoryDataReq> langCategoryList,
 
     @Schema(description = "정형 데이타 리스트", example = "")
     List<StructuredDataReq> structuredDataList,

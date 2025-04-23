@@ -1,7 +1,10 @@
 package com.sk.domain.mi.service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,9 +39,13 @@ public class MiInsightsService {
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
 
-        // Page<MyEntity> entityPage = myEntityRepository.findAll(pageable);
-        // Page<MyDto> dtoPage = entityPage.map(entity -> new MyDto(entity));
-        return null;
+        List<FocusedDataRes> listI = goodsDataRepository.findFocusedDataByCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 5));
+
+        List<FocusedDataRes> listNotI = goodsDataRepository.findFocusedDataByNotCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 3));
+
+        return Stream.concat(listI.stream(), listNotI.stream())
+                .sorted(Comparator.comparing(FocusedDataRes::getModifyDt).reversed())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -49,11 +56,11 @@ public class MiInsightsService {
     public GoodsDataFilterRes getAdvancedFilter() {
         List<List<GoodsDataCategoryRes>> filter = new ArrayList<>();
 
-        List<GoodsDataCategoryRes> a = commonCodeDetailRepository.findGoodsDataMainCategorys();
-        for (GoodsDataCategoryRes goodsDataCategoryRes : a) {
-            List<GoodsDataCategoryRes> b = commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(goodsDataCategoryRes.codeId());
-            filter.add(b);
-        }
+        // List<GoodsDataCategoryRes> a = commonCodeDetailRepository.findGoodsDataMainCategorys();
+        // for (GoodsDataCategoryRes goodsDataCategoryRes : a) {
+        // List<GoodsDataCategoryRes> b = commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(goodsDataCategoryRes.codeId());
+        // filter.add(b);
+        // }
 
         return null;
     }
