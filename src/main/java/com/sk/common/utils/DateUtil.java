@@ -28,6 +28,13 @@ public final class DateUtil {
     }
 
     /**
+     * LocalDate를 "yyyyMMdd" 문자열로 변환
+     */
+    public static String toYmdAfter10y(LocalDate date) {
+        return date == null ? null : date.plusYears(10).format(YYYYMMDD);
+    }
+
+    /**
      * LocalDate를 "yyyy-MM-dd" 문자열로 변환
      */
     public static String toYmdHyphen(LocalDate date) {
@@ -39,13 +46,6 @@ public final class DateUtil {
      */
     public static LocalDate fromYmd(String dateStr) {
         return dateStr == null ? null : LocalDate.parse(dateStr, YYYYMMDD);
-    }
-
-    /**
-     * "yyyy-MM-dd" 문자열을 LocalDate로 변환
-     */
-    public static LocalDate fromYmdHyphen(String dateStr) {
-        return dateStr == null ? null : LocalDate.parse(dateStr, YYYY_MM_DD);
     }
 
     /**
@@ -73,6 +73,13 @@ public final class DateUtil {
      */
     public static String currentYmd() {
         return LocalDate.now().format(YYYYMMDD);
+    }
+
+    /**
+     * 10년 후 날짜를 "yyyyMMdd"로 반환
+     */
+    public static String after10yYmd() {
+        return LocalDate.now().plusYears(10).format(YYYYMMDD);
     }
 
     /**
