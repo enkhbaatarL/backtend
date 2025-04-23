@@ -21,7 +21,6 @@ public record GoodsDataCreateReq(
     @Schema(description = "상품데이터 Summary", example = "") 
     String goodsDataSummaryCntt,
 
-    @NotNull
     @Schema(description = "카테고리 데이타 리스트", example = "")
     List<CategoryDataReq> categoryDataList,
 
