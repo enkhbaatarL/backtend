@@ -352,33 +352,29 @@ public class AdminProviderController {
     }
 
     @ApiOrder(15)
-    @Operation(summary = "데이타 카테고리 조회-대분류", description = "데이타 카테고리 대분류를 조회합니다.")
+    @Operation(summary = "문서 타입 카테고리 조회", description = "문서 타입 카테고리를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods-data/category")
+    @GetMapping("/goods-data/category/doc")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
 
-        return BaseResponseFactory.create(goodsDataService.getGoodsDataMainCategorys());
+        return BaseResponseFactory.create(goodsDataService.getDocTypeCategorys());
     }
 
     @ApiOrder(16)
-    @Parameters({
-            @Parameter(name = "codeId", description = "대분류 코드ID"),
-    })
-    @Operation(summary = "데이타 카테고리 조회-중분류", description = "데이타 카테고리 중분류를 조회합니다.")
+    @Operation(summary = "언어 타입 카테고리 조회", description = "언어 타입 카테고리를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods-data/category/{codeId}")
+    @GetMapping("/goods-data/category/lang")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys(
-            @PathVariable(value = "codeId") String codeId) {
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataSubCategorys() {
 
-        return BaseResponseFactory.create(goodsDataService.getGoodsDataSubCategorys(codeId));
+        return BaseResponseFactory.create(goodsDataService.getLangTypeCategorys());
     }
 
     @ApiOrder(17)
     @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods-data/structured-datatype")
+    @GetMapping("/goods-data/structured-data-type")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
     public BaseResponse<List<ComponentInfoRes>> getStructuredDataType() {
 

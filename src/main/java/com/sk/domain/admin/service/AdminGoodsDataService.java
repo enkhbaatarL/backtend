@@ -1,5 +1,6 @@
 package com.sk.domain.admin.service;
 
+import com.sk.common.enums.ResultCode;
 import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
@@ -28,6 +29,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataUnitConvert;
+import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
@@ -49,6 +51,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -99,10 +102,10 @@ public class AdminGoodsDataService {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         switch (role) {
-      case ADMIN, API_SUB_ADMIN:
+            case ADMIN, API_SUB_ADMIN:
                 return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
 
-      case OPERATOR, API_PLUS_OPERATOR:
+            case OPERATOR, API_PLUS_OPERATOR:
                 return PaginationRes
                         .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
 
@@ -112,22 +115,21 @@ public class AdminGoodsDataService {
     }
 
     /**
-    * 데이터 카테고리 대분류 목록을 조회한다.
+    * 문서 타입 카테고리 목록을 조회한다.
     *
     * @return List<GoodsDataCatgoryRes>
     */
-    public List<GoodsDataCategoryRes> getGoodsDataMainCategorys() {
-        return commonCodeDetailRepository.findGoodsDataMainCategorys();
+    public List<GoodsDataCategoryRes> getDocTypeCategorys() {
+        return commonCodeDetailRepository.findDocTypeCategory();
     }
 
     /**
-    * 데이터 카테고리 중분류 목록을 조회한다.
+    * 언어 타입 카테고리 목록을 조회한다.
     *
-    * @param codeId
     * @return List<GoodsDataCatgoryRes>
     */
-    public List<GoodsDataCategoryRes> getGoodsDataSubCategorys(String codeId) {
-        return commonCodeDetailRepository.findGoodsDataSubCategorysByCodeId(codeId);
+    public List<GoodsDataCategoryRes> getLangTypeCategorys() {
+        return commonCodeDetailRepository.findLangTypeCategory();
     }
 
     /**
@@ -151,10 +153,10 @@ public class AdminGoodsDataService {
     public List<GoodsDataNameRes> getAllGoodsDataNm(int companyNo, Role role, int providerNo, int goodsNo) {
 
         switch (role) {
-      case ADMIN, API_SUB_ADMIN:
+            case ADMIN, API_SUB_ADMIN:
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
 
-      case OPERATOR, API_PLUS_OPERATOR:
+            case OPERATOR, API_PLUS_OPERATOR:
                 return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
 
             default:
@@ -173,48 +175,41 @@ public class AdminGoodsDataService {
     * @return GoodsDataDetailRes
     */
     public GoodsDataDetailRes getGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo) {
-    if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
-      validateOperatorAccess(companyNo, providerNo, goodsNo);
+        if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+            validateOperatorAccess(companyNo, providerNo, goodsNo);
+        }
+
+        GoodsData goodsData1 = goodsDataRepository
+                .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(
+                                Error.RSC_NOT_FOUND,
+                                "provider no: %d, goods no: %d, goodsdata no: %d"
+                                        .formatted(providerNo, goodsNo, goodsDataNo)));
+
+        List<CategoryDataRes> goodsDataCategoryList1 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+
+        List<StructuredDataRes> structuredDataList1 = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+
+        List<UnstructuredDataRes> unstructuredDataList1 = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+
+        return GoodsDataDetailRes.of(
+                goodsData1, goodsDataCategoryList1, structuredDataList1, unstructuredDataList1);
     }
 
-    GoodsData goodsData1 =
-        goodsDataRepository
-            .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-            .orElseThrow(
-                () ->
-                    AppErrorException.of(
-                        Error.RSC_NOT_FOUND,
-                        "provider no: %d, goods no: %d, goodsdata no: %d"
-                            .formatted(providerNo, goodsNo, goodsDataNo)));
+    private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {
+        customerCompanyProviderMappingRepository
+                .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(
+                                Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-    List<CategoryDataRes> goodsDataCategoryList1 =
-        goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
-
-    List<StructuredDataRes> structuredDataList1 =
-        goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
-
-    List<UnstructuredDataRes> unstructuredDataList1 =
-        goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
-
-    return GoodsDataDetailRes.of(
-        goodsData1, goodsDataCategoryList1, structuredDataList1, unstructuredDataList1);
+        customerCompanyGoodsMappingRepository
+                .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(
+                                Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
     }
-
-  private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {
-    customerCompanyProviderMappingRepository
-        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-        .orElseThrow(
-            () ->
-                AppErrorException.of(
-                    Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
-
-    customerCompanyGoodsMappingRepository
-        .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-        .orElseThrow(
-            () ->
-                AppErrorException.of(
-                    Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
-  }
 
     /**
     * 데이터 등록: 신규등록
@@ -228,43 +223,39 @@ public class AdminGoodsDataService {
     */
     @Transactional
     public void createGoodsData(int companyNo, Role role, int providerNo, int goodsNo, GoodsDataCreateReq dto) {
-    if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
-      validateOperatorAccess(companyNo, providerNo, goodsNo);
-    }
+        if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+            validateOperatorAccess(companyNo, providerNo, goodsNo);
+        }
 
-    Goods goods =
-        goodsRepository
-            .findByGoodsNo(providerNo, goodsNo)
-            .orElseThrow(
-                () ->
-                    AppErrorException.of(
-                        Error.RSC_NOT_FOUND,
-                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+        Goods goods = goodsRepository
+                .findByGoodsNo(providerNo, goodsNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(
+                                Error.RSC_NOT_FOUND,
+                                "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
         switch (role) {
-      case ADMIN, API_SUB_ADMIN:
-        if (!goods.getIsPublic()) {
+            case ADMIN, API_SUB_ADMIN:
+                if (!goods.getIsPublic()) {
                     throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
-        internalCreateGoodsData(goods, null, dto);
+                internalCreateGoodsData(goods, null, providerNo, dto);
                 break;
 
-      case OPERATOR, API_PLUS_OPERATOR:
-        if (goods.getIsPublic()) {
+            case OPERATOR, API_PLUS_OPERATOR:
+                if (goods.getIsPublic()) {
                     throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
 
-        CustomerCompany customerCompany =
-            customerCompanyRepository
-                .findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(
-                    () ->
-                        AppErrorException.of(
-                            Error.RSC_NOT_FOUND,
-                            "customer company no: %d".formatted(companyNo)));
+                CustomerCompany customerCompany = customerCompanyRepository
+                        .findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                        .orElseThrow(
+                                () -> AppErrorException.of(
+                                        Error.RSC_NOT_FOUND,
+                                        "customer company no: %d".formatted(companyNo)));
 
-        internalCreateGoodsData(goods, customerCompany, dto);
+                internalCreateGoodsData(goods, customerCompany, providerNo, dto);
                 break;
 
             default:
@@ -272,14 +263,31 @@ public class AdminGoodsDataService {
         }
     }
 
-    private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, GoodsDataCreateReq dto) {
+    private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
                 .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt()));
 
-        // 카테고리 저장
-        if (dto.categoryDataList() != null) {
-            List<GoodsDataCategory> goodsDataCategoryList = dto.categoryDataList().stream()
+        // todo: 프로바이더 타입 카테고리 등록
+        Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+
+        goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_".concat(provider.getProviderId()), "",
+                GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+
+        // 문서 타입 카테고리 등록
+        if (dto.docCategoryList() != null) {
+            List<GoodsDataCategory> goodsDataCategoryList = dto.docCategoryList().stream()
+                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
+                            GoodsDataManagementSeparateCode.GDAT.getCode(), null))
+                    .toList();
+            goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
+        }
+
+        // 언어 타입 카테고리 등록
+        if (dto.langCategoryList() != null) {
+            List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
                     .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
                             GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                     .toList();
@@ -303,7 +311,8 @@ public class AdminGoodsDataService {
                                 componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
                                 componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
 
-                List<UnitConvert> unitConverts = unitConvertRepository.findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
+                List<UnitConvert> unitConverts = unitConvertRepository
+                        .findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
 
                 goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
                         .map(unitConvert -> GoodsDataUnitConvert.of(savedGoodsDataSourceDetail, unitConvert))
@@ -342,53 +351,71 @@ public class AdminGoodsDataService {
     */
     @Transactional
     public void updateGoodsData(int companyNo, Role role, int providerNo, int goodsNo, int goodsDataNo, GoodsDataUpdateReq dto) {
-    if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
-      validateOperatorAccess(companyNo, providerNo, goodsNo);
-    }
+        if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+            validateOperatorAccess(companyNo, providerNo, goodsNo);
+        }
 
-    Goods goods =
-        goodsRepository
-            .findByGoodsNo(providerNo, goodsNo)
-            .orElseThrow(
-                () ->
-                    AppErrorException.of(
-                        Error.RSC_NOT_FOUND,
-                        "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
+        Goods goods = goodsRepository
+                .findByGoodsNo(providerNo, goodsNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(
+                                Error.RSC_NOT_FOUND,
+                                "provider no: %d, goods no: %d".formatted(providerNo, goodsNo)));
 
         switch (role) {
-      case ADMIN, API_SUB_ADMIN:
-        if (!goods.getIsPublic()) {
+            case ADMIN, API_SUB_ADMIN:
+                if (!goods.getIsPublic()) {
                     throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
                 break;
 
-      case OPERATOR, API_PLUS_OPERATOR:
-        if (goods.getIsPublic()) {
+            case OPERATOR, API_PLUS_OPERATOR:
+                if (goods.getIsPublic()) {
                     throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
         }
 
-    GoodsData goodsData =
-        goodsDataRepository
-            .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-            .orElseThrow(
-                () ->
-                    AppErrorException.of(
-                        Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+        GoodsData goodsData = goodsDataRepository
+                .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(
+                                Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
-    internalUpdateGoodsData(goodsData, dto);
+        internalUpdateGoodsData(goodsData, dto);
     }
 
     private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
         goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt());
 
-        // 카테고리 수정
-        if (dto.categoryDataList() != null) {
+        // 문서 타입 카테고리 수정
+        if (dto.docCategoryList() != null) {
             List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
                     .map(category -> category.codeId())
                     .toList();
 
-            List<String> newCategoryCodes = dto.categoryDataList().stream().map(CategoryDataReq::CodeId).toList();
+            List<String> newCategoryCodes = dto.docCategoryList().stream().map(CategoryDataReq::CodeId).toList();
+
+            Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
+            codesToDelete.removeAll(newCategoryCodes);
+            for (String codeId : codesToDelete) {
+                goodsDataCategoryRepository.findByCategoryCode(goodsData.getGoodsDataNo(), codeId).ifPresent(category -> category.softDelete());
+            }
+
+            Set<String> codesToAdd = new HashSet<>(newCategoryCodes);
+            codesToAdd.removeAll(oldCategoryCodes);
+            for (String codeId : codesToAdd) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, codeId, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            }
+        }
+
+        // 언어 타입 카테고리 수정
+        if (dto.langCategoryList() != null) {
+            List<String> oldCategoryCodes = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
+                    .map(category -> category.codeId())
+                    .toList();
+
+            List<String> newCategoryCodes = dto.langCategoryList().stream().map(CategoryDataReq::CodeId).toList();
 
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);
@@ -433,11 +460,12 @@ public class AdminGoodsDataService {
                                             structuredData.componentTypeId())));
 
                     GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                    .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                            .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
                                     componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
                                     componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
 
-                    List<UnitConvert> unitConverts = unitConvertRepository.findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
+                    List<UnitConvert> unitConverts = unitConvertRepository
+                            .findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
 
                     goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
                             .map(unitConvert -> GoodsDataUnitConvert.of(savedGoodsDataSourceDetail, unitConvert))
