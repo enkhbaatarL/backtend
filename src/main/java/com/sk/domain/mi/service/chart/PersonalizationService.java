@@ -25,43 +25,40 @@ public class PersonalizationService {
 
     /**
      * 개인화 차트 설정을 Map 형태로 변환한다.
-     * 개인화 설정 목록을 ChartSettingConditionCd를 키로 하고 설정값 리스트를 값으로 하는 맵으로 변환한다.
+     * 개인화 설정 ChartSettingConditionCd를 키로 하고 설정값 리스트를 값으로 하는 맵으로 변환한다.
      * 설정이 없는 경우에도 모든 ChartSettingConditionCd에 대해 빈 리스트를 가진 맵을 반환한다.
      *
-     * @param goodsDataSourceDetail 데이터소스상품상세 객체
-     * @param userLoginId           로그인 아이디
+     * @param gds         데이터소스상품상세 객체
+     * @param userLoginId 로그인 아이디
      * @return 개인화 차트 설정 Map (ChartSettingConditionCd -> List<String>)
      */
-    public Map<ChartSettingConditionCd, List<String>> convertToPersonalizedMap(GoodsDataSourceDetail goodsDataSourceDetail, String userLoginId) {
+    public Map<ChartSettingConditionCd, List<String>> getConvertPersonalizedMap(GoodsDataSourceDetail gds, String userLoginId) {
 
         if (StringUtils.isEmpty(userLoginId)) {
             return createEmptyPersonalizedMap();
         }
 
         // 개인화 설정 조회
-        List<PersonalizedChartSetting> personalSettings = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(goodsDataSourceDetail, userLoginId);
+        List<PersonalizedChartSetting> personalSettings = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, userLoginId);
 
         // 기본 맵 생성 (모든 ChartSettingConditionCd에 대해 빈 리스트 초기화)
         Map<ChartSettingConditionCd, List<String>> personalizedMap = createEmptyPersonalizedMap();
 
-        // 설정이 없는 경우 기본 맵 반환
+        // 설정이 없는 경우 기본 맵 반환, ADMIN(타사접속가능), API_PLUS_OPERATOR Role로 접근 시, 기본 설정 값으로 반환 됨. -> 개인화 설정을 할 수 없음.
         if (personalSettings == null || personalSettings.isEmpty()) {
             return personalizedMap;
         }
 
-        // 설정을 Map으로 그룹화하고 값 리스트 생성
         personalSettings.stream()
             .filter(setting -> setting != null && setting.getChartSettingConditionCd() != null)
             .collect(Collectors.groupingBy(PersonalizedChartSetting::getChartSettingConditionCd))
             .forEach((key, valueList) -> {
-                List<String> values = valueList.stream()
-                    .map(PersonalizedChartSetting::getChartSettingConditionVal)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                List<String> values = valueList.stream().map(PersonalizedChartSetting::getChartSettingConditionVal).filter(Objects::nonNull).collect(Collectors.toList());
                 personalizedMap.put(key, values);
             });
 
         return personalizedMap;
+
     }
 
     /**
@@ -84,29 +81,34 @@ public class PersonalizationService {
      * 개인화 설정 맵에서 RANGE 키에 해당하는 값 목록의 첫 번째 값을 기준으로 Range enum을 찾는다.
      * 설정이 없거나 일치하는 enum을 찾지 못한 경우 기본값(ONE_YEAR)을 반환한다.
      *
-     * @param personalizedMap 개인화 설정 Map
-     * @param reqRange        요청된 Range 값
-     * @param customStartDate 사용자 지정 시작일 (YYYYMMDD 형식)
-     * @param customEndDate   사용자 지정 종료일 (YYYYMMDD 형식)
+     * @param pMap         개인화 설정 Map
+     * @param reqRange     요청된 Range 값
+     * @param reqStartDate 사용자 지정 시작일 (YYYYMMDD 형식)
+     * @param reqEndDate   사용자 지정 종료일 (YYYYMMDD 형식)
      * @return 시작일과 종료일 쌍 (Pair<String, String>)
      */
-    public Pair<String, String> getPersonalizedRangeOrDefault(Map<ChartSettingConditionCd, List<String>> personalizedMap, Range reqRange, String customStartDate, String customEndDate) {
+    public Pair<String, String> getPsRangeOrDefault(Map<ChartSettingConditionCd, List<String>> pMap, Range reqRange, String reqStartDate, String reqEndDate) {
 
         // 1. 요청된 범위가 있으면 우선 사용
         if (ObjectUtils.isNotEmpty(reqRange)) {
-            return DateUtil.getDateRange(reqRange, customStartDate, customEndDate);
+            if (reqRange == Range.CUSTOM) {
+                if (StringUtils.isEmpty(reqStartDate) || StringUtils.isEmpty(reqEndDate)) {
+                    throw new IllegalArgumentException("The 'startDate' and 'endDate' are required for the [CUSTOM] range.");
+                }
+                return Pair.of(reqStartDate, reqEndDate);
+            }
+            return DateUtil.getDateRange(reqRange);
         }
 
         // 2. 개인화 설정이 없다면 default 값 사용
-        List<String> rangeValues = personalizedMap.get(ChartSettingConditionCd.RANGE);
-        if (rangeValues == null || rangeValues.isEmpty()) {
+        List<String> rangeValues = pMap.get(ChartSettingConditionCd.RANGE);
+        if (ObjectUtils.isEmpty(rangeValues)) {
             return DateUtil.getDateRange(Range.ONE_YEAR);
         }
 
         // 3. 개인화 설정에 따른 범위 값 조회
         String rangeValue = rangeValues.get(0);
-        Range personalizedRange = Range.findByCode(rangeValue);
-        return DateUtil.getDateRange(personalizedRange);
+        return DateUtil.getDateRange(Range.findByCode(rangeValue));
 
     }
 
@@ -120,7 +122,7 @@ public class PersonalizationService {
      * @param reqInterval     요청된 Interval 값
      * @return 개인화된 Interval 값 또는 기본값
      */
-    public Interval getPersonalizedIntervalOrDefault(Map<ChartSettingConditionCd, List<String>> personalizedMap, Interval reqInterval) {
+    public Interval getPsIntervalOrDefault(Map<ChartSettingConditionCd, List<String>> personalizedMap, Interval reqInterval) {
 
         // 1. 요청된 인터벌이 있으면 우선 사용
         if (ObjectUtils.isNotEmpty(reqInterval)) {
@@ -129,13 +131,12 @@ public class PersonalizationService {
 
         // 2. 개인화 설정이 없다면 default 인터벌 사용
         List<String> intervalValues = personalizedMap.get(ChartSettingConditionCd.INTERVAL);
-        if (intervalValues == null || intervalValues.isEmpty()) {
+        if (ObjectUtils.isEmpty(intervalValues)) {
             return Interval.ONE_DAY;
         }
 
         // 3. 개인화 설정에 따른 인터벌 사용
         String intervalValue = intervalValues.get(0);
-
         return Interval.findByCode(intervalValue);
     }
 
@@ -147,10 +148,10 @@ public class PersonalizationService {
      * @param personalizedMap 개인화 설정 Map
      * @return 개인화된 ChartType 값 또는 기본값
      */
-    public ChartType getPersonalizedChartType(Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public ChartType getPsChartTypeOrDefault(Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
         List<String> chartTypeValues = personalizedMap.get(ChartSettingConditionCd.CHART);
-        if (chartTypeValues == null || chartTypeValues.isEmpty()) {
+        if (ObjectUtils.isEmpty(chartTypeValues)) {
             return ChartType.LINE;
         }
 
@@ -166,10 +167,10 @@ public class PersonalizationService {
      *
      * @param personalizedMap 개인화 설정 Map
      * @param reqUnitCd       요청받은 Unit 값
-     * @param defaultUnitCd   기본 Unit 값
+     * @param defaultUnitCd   기본 Unit 값(by. gds)
      * @return 개인화된 Unit 값 또는 기본값
      */
-    public String getPersonalizedUnitOrDefault(Map<ChartSettingConditionCd, List<String>> personalizedMap, String reqUnitCd, String defaultUnitCd) {
+    public String getPsUnitCdOrDefault(Map<ChartSettingConditionCd, List<String>> personalizedMap, String reqUnitCd, String defaultUnitCd) {
 
         // 1. 요청된 단위가 있으면 우선 사용
         if (ObjectUtils.isNotEmpty(reqUnitCd)) {
@@ -178,7 +179,7 @@ public class PersonalizationService {
 
         // 2. 개인화 설정이 없다면 기본값 사용
         List<String> unitValues = personalizedMap.get(ChartSettingConditionCd.UNIT);
-        if (unitValues == null || unitValues.isEmpty()) {
+        if (ObjectUtils.isEmpty(unitValues)) {
             return defaultUnitCd;
         }
 

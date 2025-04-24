@@ -5,6 +5,7 @@ import com.sk.common.utils.MathUtil;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,17 +29,17 @@ public class ChartAggregationService {
      */
     public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail source) {
 
-        if (sortedData == null || sortedData.isEmpty() || source == null) {
+        if (ObjectUtils.isEmpty(sortedData)) {
             return Collections.emptyList();
         }
-
-        String xAxis = targetColumns.get(RenderAs.DATE.getIndex());
-        boolean isCandle = Boolean.TRUE.equals(source.getIsCandleChartPossible());
 
         // 일간 데이터는 그대로 반환
         if (interval == Interval.ONE_DAY) {
             return sortedData;
         }
+
+        String xAxis = targetColumns.get(RenderAs.DATE.getIndex());
+        boolean isCandle = Boolean.TRUE.equals(source.getIsCandleChartPossible());
 
         // 버킷 경계 계산 및 집계
         List<LocalDate> bucketStarts = calculateBucketStarts(sortedData, interval, xAxis);
