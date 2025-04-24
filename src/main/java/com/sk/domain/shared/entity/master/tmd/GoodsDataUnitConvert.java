@@ -51,6 +51,7 @@ public class GoodsDataUnitConvert extends BaseEntity {
 
     public static GoodsDataUnitConvert of(GoodsDataSourceDetail goodsDataSourceDetail, UnitConvert unitConvert) {
         return GoodsDataUnitConvert.builder()
+                .id(GoodsDataSourceDetailUnitConvertMappingId.of(goodsDataSourceDetail.getGoodsDataSourceNo(), unitConvert.getUnitConvNo()))
                 .goodsDataSourceDetail(goodsDataSourceDetail)
                 .unitConvert(unitConvert)
                 .build();

@@ -3,10 +3,11 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsDataSourceDetail, Integer> {
@@ -34,4 +35,5 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             """)
     List<GoodsDataSourceDetail> findByGoodsDataAndIsDeletedFalse(GoodsData goodsData);
 
+    Optional<GoodsDataSourceDetail> findByGoodsDataAndComponentInfoAndIsDeletedFalse(GoodsData goodsData, ComponentInfo componentInfo);
 }

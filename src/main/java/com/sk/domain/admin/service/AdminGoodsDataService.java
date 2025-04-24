@@ -1,5 +1,18 @@
 package com.sk.domain.admin.service;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.sk.common.enums.ResultCode;
 import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
@@ -47,20 +60,9 @@ import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.ArrayList;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -263,6 +265,14 @@ public class AdminGoodsDataService {
         }
     }
 
+    /**
+     * 데이터 저장
+     *
+     * @param goods 상품
+     * @param customerCompany 고객사
+     * @param providerNo 프로바이더 번호
+     * @param dto 데이터 등록 요청 정보
+     */
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
@@ -306,21 +316,43 @@ public class AdminGoodsDataService {
                         .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                                 String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
 
-                GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                        .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
-                                componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), "goodsDataSourceExpn",
-                                componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                /**
+                 * 정책 : 컴포넌트타입 + 상품데이터 => Unique Key 로서의 역할 (1 데이터소스상세 => 1 정형 그래프) 250424
+                 * 그래프 하나를 그리기 위한 데이터는 엑셀 컴포넌트 하나와 매핑(하나의 그래프에서 엑셀 컴포넌트가 2개 이상일 수 없다)
+                 */
+                GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+                        .findByGoodsDataAndComponentInfoAndIsDeletedFalse(savedGoodsData, componentInfo)
+                        .orElseGet(() -> goodsDataSourceDetailRepository
+                                .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                                        componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
+                                        componentInfo.getGoodsDataSourceUnitNm(),
+                                        componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
+                                        componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
 
+                /**
+                 * 데이터소스상세 조회 후 데이터소스상세 없는 경우 생성
+                 */
+
+                /** 
+                 * 단위 변환 기본 매핑 기준 
+                 * 1. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 아닌 경우
+                 *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 중
+                 *        단위변환기본에서 convertTargetDetailTypeNm 값이 Null 이거나 convertTargetDetailTypeNm 값이 데이터소스상세 convertTargetDetailTypeNm 값과 일치하는 데이터 조회
+                 * 2. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 경우
+                 *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 조회
+                 */
                 List<UnitConvert> unitConverts = unitConvertRepository
-                        .findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
+                        .findUnitConvertsByConditions(goodsDataSourceDetail);
 
-                goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
-                        .map(unitConvert -> GoodsDataUnitConvert.of(savedGoodsDataSourceDetail, unitConvert))
-                        .toList());
+                if (!unitConverts.isEmpty()) {
+                    goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
+                            .map(unitConvert -> GoodsDataUnitConvert.of(goodsDataSourceDetail, unitConvert))
+                            .toList());
+                }
 
                 // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), null,
-                        GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
+                        GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(goodsDataSourceDetail.getGoodsDataSourceNo())));
             }
         }
 
@@ -459,21 +491,37 @@ public class AdminGoodsDataService {
                                     String.format("Component information could not be found. componentTypeId: %s",
                                             structuredData.componentTypeId())));
 
-                    GoodsDataSourceDetail savedGoodsDataSourceDetail = goodsDataSourceDetailRepository
-                            .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
-                                    componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
-                                    componentInfo.getGoodsDataSourceUnitNm(), componentInfo.getTableColumnListNm(), componentInfo, null, "backend"));
+                    /**
+                     * 정책 : 컴포넌트타입 + 상품데이터 => Unique Key 로서의 역할 (1 데이터소스상세 => 1 정형 그래프) 250424
+                     * 그래프 하나를 그리기 위한 데이터는 엑셀 컴포넌트 하나와 매핑(하나의 그래프에서 엑셀 컴포넌트가 2개 이상일 수 없다)
+                     */
+                    GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+                            .findByGoodsDataAndComponentInfoAndIsDeletedFalse(goodsData, componentInfo)
+                            .orElseGet(() -> goodsDataSourceDetailRepository
+                                    .save(GoodsDataSourceDetail.of(goodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
+                                            componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
+                                            componentInfo.getGoodsDataSourceUnitNm(),
+                                            componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
+                                            componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
 
+                    /** 
+                     * 단위 변환 기본 매핑 기준 
+                     * 1. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 아닌 경우
+                     *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 중
+                     *        단위변환기본에서 convertTargetDetailTypeNm 값이 Null 이거나 convertTargetDetailTypeNm 값이 데이터소스상세 convertTargetDetailTypeNm 값과 일치하는 데이터 조회
+                     * 2. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 경우
+                     *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 조회
+                     */
                     List<UnitConvert> unitConverts = unitConvertRepository
-                            .findByConvertPreviousUnitNmAndIsDeletedFalse(savedGoodsDataSourceDetail.getGoodsDataSourceUnitNm());
+                            .findUnitConvertsByConditions(goodsDataSourceDetail);
 
                     goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
-                            .map(unitConvert -> GoodsDataUnitConvert.of(savedGoodsDataSourceDetail, unitConvert))
+                            .map(unitConvert -> GoodsDataUnitConvert.of(goodsDataSourceDetail, unitConvert))
                             .toList());
 
                     // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
                     goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, structuredData.componentTypeId(), null,
-                            GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(savedGoodsDataSourceDetail.getGoodsDataSourceNo())));
+                            GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(goodsDataSourceDetail.getGoodsDataSourceNo())));
                 }
             }
         }
