@@ -15,10 +15,10 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
-import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
+import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.mi.service.MiInsightsService;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.enums.insights.InsightsSearchType;
+import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
@@ -107,42 +107,40 @@ public class MiInsightsController {
      * @param docTypes          문서 유형 필터
      * @param providers         프로바이더 유형 필터
      * @param languages         언어 유형 필터
-     * @return PaginationRes<IGoodsDataRes>
+     * @return PaginationRes<InsightsDataRes>
      */
     @ApiOrder(3)
     @Parameters({
             @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-            @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
-            @Parameter(name = "sort", description = "정렬 기준 (NEWEST, OLDEST)", schema = @Schema(implementation = InsightsSortType.class)),
-            @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간 필터 (ALL_DAY, ONE_DAY, ONE_WEEK, ONE_MONTH, THREE_MONTH, SIX_MONTH, TWELVE_MONTH)", schema = @Schema(implementation = InsightsSearchType.class)),
-            @Parameter(name = "docTypes", description = ""),
-            @Parameter(name = "providers", description = ""),
-            @Parameter(name = "languages", description = ""),
+            @Parameter(name = "keyword", description = "데이타명 검색"),
+            @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = InsightsSortType.class)),
+            @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간 필터", schema = @Schema(implementation = InsightsPeriodType.class)),
+            @Parameter(name = "documentTypes", description = "문서 타입 코드", example = "A_INSIGHT, A_CMMDT_MRKT_RPT"),
+            @Parameter(name = "providers", description = "프로바이더 타입 코드", example = "A_LSEG, A_WOODMAC"),
+            @Parameter(name = "languages", description = "언어 타입 코드", example = "A_KOR, A_ENG"),
     })
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/insights-data")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<PaginationRes<IGoodsDataRes>> getDataCatalog(
+    public BaseResponse<PaginationRes<InsightsDataRes>> getDataCatalog(
             @RequestParam(value = "customerCompanyNo", required = true) @Min(value = 1) Integer customerCompanyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") InsightsSortType sort,
-            @RequestParam(value = "period", required = false, defaultValue = "ALL_DATES") InsightsSearchType period,
-            @RequestParam(value = "docTypes", required = false, defaultValue = "") String docTypes,
+            @RequestParam(value = "period", required = false, defaultValue = "ALL_DATES") InsightsPeriodType period,
+            @RequestParam(value = "documentTypes", required = false, defaultValue = "") String documentTypes,
             @RequestParam(value = "providers", required = false, defaultValue = "") String providers,
             @RequestParam(value = "languages", required = false, defaultValue = "") String languages) {
-
-        System.err.println(" ======== >>> " + keyword);
-        System.err.println(" ======== >>> " + sort);
-        System.err.println(" ======== >>> " + period);
 
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(miInsightsService.getInsights(cNo, page, size, keyword));
+        return BaseResponseFactory.create(
+                miInsightsService.getInsights(cNo, page, size, keyword, sort, period, documentTypes != null ? documentTypes.toUpperCase() : null,
+                        providers != null ? providers.toUpperCase() : null, languages != null ? languages.toUpperCase() : null));
     }
 }
