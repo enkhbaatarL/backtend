@@ -14,7 +14,6 @@ import org.springframework.data.repository.query.Param;
 import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
-import com.sk.domain.mi.dto.response.insights.IGoodsDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -207,40 +206,4 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """)
     List<FocusedDataRes> findFocusedDataByNotCategoryCd(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd,
             Pageable pageable);
-
-    @Query(value = """
-            SELECT
-                tg.prvd_no AS providerNo,
-                tc.gds_no AS goodsNo,
-                tg2.gds_data_no AS goodsDataNo,
-                tg2.gds_data_nm AS goodsDataNm,
-                tg2.gds_data_expn AS goodsDataExpn,
-                tg2.gds_data_smry_cntt AS goodsDataSummaryCntt
-            FROM tam_custcpnygdsmappl AS tc
-            LEFT JOIN tmd_gdsm AS tg ON tg.gds_no = tc.gds_no
-            LEFT JOIN tmd_gdsdatam AS tg2 ON tg2.gds_no = tg.gds_no
-            WHERE tc.cust_cpny_no = :customerCompanyNo
-              AND tc.del_yn = 'N'
-              AND tc.use_yn = 'Y'
-              AND tg.del_yn = 'N'
-              AND tg.use_yn = 'Y'
-              AND tg2.del_yn = 'N'
-              AND (:keyword IS NULL OR MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE))
-            ORDER BY tg2.crt_dtm DESC
-                        """, countQuery = """
-            SELECT
-                COUNT(*)
-            FROM tam_custcpnygdsmappl AS tc
-            LEFT JOIN tmd_gdsm AS tg ON tg.gds_no = tc.gds_no
-            LEFT JOIN tmd_gdsdatam AS tg2 ON tg2.gds_no = tg.gds_no
-            WHERE tc.cust_cpny_no = :customerCompanyNo
-              AND tc.del_yn = 'N'
-              AND tc.use_yn = 'Y'
-              AND tg.del_yn = 'N'
-              AND tg.use_yn = 'Y'
-              AND tg2.del_yn = 'N'
-              AND (:keyword IS NULL OR MATCH(tg2.gds_data_nm, tg2.gds_data_smry_cntt) AGAINST(:keyword IN BOOLEAN MODE))
-            """, nativeQuery = true)
-    Page<IGoodsDataRes> findByNameContainingOrSmryCntteContaining(@Param("customerCompanyNo") Integer customerCompanyNo,
-            @Param("keyword") String keyword, Pageable pageable);
 }
