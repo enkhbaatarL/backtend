@@ -13,31 +13,24 @@ import java.util.List;
  * @param indicators    보조 지표 데이터 목록 (이동평균선, 볼린저밴드 등) - IndicatorDto 사용
  * @param comparisonCharts 비교 차트 데이터 목록 (다른 상품 가격, 지수 등) - ChartDataDto 사용
  */
+@Builder
 public record ChartBundleRes(
 
     @Schema(description = "차트 메타데이터")
     ChartMetadata chartMetadata,
 
     @Schema(description = "메인 차트")
-    ChartRes mainChart,
+    Chart mainChart,
 
     @Schema(description = "메인 차트 보조지표")
-    List<IndicatorRes> indicators,
+    List<Indicator> indicators,
 
     @Schema(description = "비교군 차트")
-    List<ChartRes> comparisonCharts
+    List<Chart> comparisonCharts
 
 ) {
 
-    @Builder
-    public ChartBundleRes(ChartMetadata chartMetadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
-        this.chartMetadata = chartMetadata;
-        this.mainChart = mainChart;
-        this.indicators = indicators;
-        this.comparisonCharts = comparisonCharts;
-    }
-
-    public static ChartBundleRes of(ChartMetadata chartMetadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
+    public static ChartBundleRes of(ChartMetadata chartMetadata, Chart mainChart, List<Indicator> indicators, List<Chart> comparisonCharts) {
         return ChartBundleRes.builder()
             .chartMetadata(chartMetadata)
             .mainChart(mainChart)

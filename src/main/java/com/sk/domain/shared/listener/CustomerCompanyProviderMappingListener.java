@@ -7,6 +7,7 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostUpdate;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -31,7 +32,7 @@ public class CustomerCompanyProviderMappingListener {
     @PostUpdate
     public void checkDisabled(CustomerCompanyProviderMapping ccpm) {
 
-        if (!ccpm.getIsUsed() || ccpm.getIsDeleted()) {
+        if (BooleanUtils.isFalse(ccpm.getIsUsed()) || BooleanUtils.isTrue(ccpm.getIsDeleted())) {
 
             CacheService cacheService = applicationContext.getBean(CacheService.class);
 

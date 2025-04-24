@@ -13,7 +13,7 @@ public record AuthGoodsMapReq(
         Boolean isUsed,
 
         @NotNull
-        @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = {"INDIVIDUAL", "COMPANY" })
+        @Schema(description = "상품권한주체구분코드", example = "INDIVIDUAL", allowableValues = { "INDIVIDUAL", "COMPANY" })
         GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd,
 
         @Schema(description = "회사 상품권한 설정")

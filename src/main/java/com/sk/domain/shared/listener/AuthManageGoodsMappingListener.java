@@ -7,6 +7,7 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostUpdate;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -29,7 +30,7 @@ public class AuthManageGoodsMappingListener {
     @PostUpdate
     public void checkDisabled(AuthManageGoodsMapping amgm) {
 
-        if (amgm.getIsDeleted() && ObjectUtils.isNotEmpty(amgm.getUser())) {
+        if (BooleanUtils.isTrue(amgm.getIsDeleted()) && ObjectUtils.isNotEmpty(amgm.getUser())) {
 
             CacheService cacheService = applicationContext.getBean(CacheService.class);
 

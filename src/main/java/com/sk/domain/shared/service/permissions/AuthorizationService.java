@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * JWT 토큰 기반 인증, 권한 관련 기능을 제공하는 서비스
+ * JWT 인증/권한 서비스
  */
 @Slf4j
 @Service
@@ -28,9 +28,7 @@ public class AuthorizationService {
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
 
     /**
-     * 현재 인증된 사용자의 JWT 토큰을 반환합니다.
-     *
-     * @return JWT 토큰
+     * JWT 토큰 조회
      */
     public Jwt getCurrentJwt() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -41,137 +39,123 @@ public class AuthorizationService {
     }
 
     /**
-     * 현재 인증된 사용자의 회사 번호를 반환합니다.
-     *
-     * @return 회사 번호
+     * 회사번호 조회
      */
     public Integer getCompanyNo() {
         Jwt jwt = getCurrentJwt();
         Object companyNoObj = jwt.getClaim("companyNo");
         if (companyNoObj == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Company information not found in token");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Company not found");
         }
         try {
             return Integer.parseInt(companyNoObj.toString());
         } catch (NumberFormatException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid company number format");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid company number");
         }
     }
 
     /**
-     * 현재 인증된 사용자 번호를 반환합니다.
-     *
-     * @return 사용자 번호
+     * 사용자번호 조회
      */
     public Integer getUserNo() {
         Jwt jwt = getCurrentJwt();
         Object userNoObj = jwt.getClaim("userNo");
         if (userNoObj == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "user information not found in token");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "User not found");
         }
         try {
             return Integer.parseInt(userNoObj.toString());
         } catch (NumberFormatException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid user number format");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid user number");
         }
     }
 
     /**
-     * 현재 인증된 사용자의 역할을 반환합니다.
-     *
-     * @return 사용자 역할
+     * 역할 조회
      */
     public Role getCurrentRole() {
         Jwt jwt = getCurrentJwt();
         String role = jwt.getClaimAsString("role");
         if (role == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Role information not found in token");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Role not found");
         }
         try {
             return Role.valueOf(role);
         } catch (IllegalArgumentException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role: %s".formatted(role));
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role");
         }
     }
 
     /**
-     * 현재 인증된 사용자의 타사접속 가능 여부를 반환합니다.
-     *
-     * @return 타사접속가능여부
+     * 타사접속 가능여부 조회
      */
     public boolean isThirdPartyAccessAllowed() {
         Jwt jwt = getCurrentJwt();
         Object isOtherServiceAccessPossible = jwt.getClaim("isOtherServiceAccessPossible");
         if (isOtherServiceAccessPossible == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "'isOtherServiceAccessPossible' information not found in token");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Third party access info not found");
         }
         try {
             return Boolean.parseBoolean(isOtherServiceAccessPossible.toString());
         } catch (NumberFormatException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid 'isOtherServiceAccessPossible' format");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid third party access format");
         }
     }
 
     /**
-     * 현재 사용자가 관리자인지 확인합니다.
-     *
-     * @return 관리자 여부
+     * Subject 조회
+     */
+    public String getSubject() {
+        Jwt jwt = getCurrentJwt();
+        String subject = jwt.getSubject();
+        if (subject == null) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Subject not found");
+        }
+        try {
+            return subject;
+        } catch (NumberFormatException e) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid subject format");
+        }
+    }
+
+    /**
+     * 관리자여부 조회
      */
     public boolean isAdmin() {
         return Role.ADMIN.equals(getCurrentRole());
     }
 
-
     /**
-     * 현재 사용자가 특정 회사에 접근할 권한이 있는지 확인하고, 권한이 없으면 예외를 발생시킵니다.
-     *
-     * @param companyNo 접근하려는 회사 번호
-     * @param allowedPermissions 허용된 권한
-     * @throws CustomAuthorizationException 권한이 없는 경우 발생
+     * 회사 접근권한 검증
      */
     public void validateCompanyAccess(Integer companyNo, PermissionRes allowedPermissions) {
-
         if (!allowedPermissions.getPermittedCompanies().contains(companyNo)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "You don't have permission to access company: %s".formatted(companyNo));
+                "No permission for company: %d".formatted(companyNo));
         }
-
     }
 
     /**
-     * 현재 사용자가 관리자인지 확인하고, 관리자가 아니면 예외를 발생시킵니다.
-     *
-     * @throws CustomAuthorizationException 관리자가 아닌 경우 발생
+     * 관리자권한 검증
      */
     public void validateAdmin() {
         if (!isAdmin()) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "'ADMIN' permission required.");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Admin permission required");
         }
     }
 
     /**
-     * 현재 사용자가 특정 프로바이더 관련 리소스에 접근할 권한이 있는지 확인합니다.
-     * 관리자만 프로바이더 관리 권한이 있다고 가정합니다.
-     *
-     * @param providerNo 접근하려는 프로바이더 번호
-     * @throws CustomAuthorizationException 권한이 없는 경우 발생
+     * 프로바이더 접근권한 검증
      */
     public void validateProviderAccess(Integer providerNo, PermissionRes allowedPermissions) {
-
         if (!allowedPermissions.getPermittedProviders().contains(providerNo)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                    "You don't have permission to access provider: %s".formatted(providerNo));
+                "No permission for provider: %d".formatted(providerNo));
         }
-
     }
 
     /**
-     * 특정 사용자가 특정 상품에 대한 권한이 있는지 확인합니다.
-     *
-     * @param userNo 사용자 번호
-     * @param goodsNo 상품 번호
-     * @param authCd 권한 코드 (VIEW, DOWNLOAD)
-     * @return 권한 여부
+     * 특정상품 권한여부 조회
      */
     private boolean checkPermission(Integer userNo, Integer goodsNo, GoodsAuthCd authCd) {
         List<AuthManageGoodsMapping> userPermissions = authManageGoodsMappingRepository.findUserGoodsPermissions(userNo);
@@ -183,28 +167,22 @@ public class AuthorizationService {
     }
 
     /**
-     * 현재 인증된 사용자가 특정 상품에 대한 VIEW 권한이 있는지 확인하고, 권한이 없으면 예외를 발생시킵니다.
-     *
-     * @param goodsNo 상품 번호
-     * @throws CustomAuthorizationException 권한이 없는 경우 발생
+     * 상품 조회권한 검증
      */
     public void validateViewPermission(Integer goodsNo, PermissionRes allowedPermissions) {
         if (!allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "You don't have VIEW permission for goods: " + goodsNo);
+                "No view permission for goods: %d".formatted(goodsNo));
         }
     }
 
     /**
-     * 현재 인증된 사용자가 특정 상품에 대한 DOWNLOAD 권한이 있는지 확인하고, 권한이 없으면 예외를 발생시킵니다.
-     *
-     * @param goodsNo 상품 번호
-     * @throws CustomAuthorizationException 권한이 없는 경우 발생
+     * 상품 다운로드권한 검증
      */
     public void validateDownloadPermission(Integer goodsNo, PermissionRes allowedPermissions) {
         if (!allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "You don't have DOWNLOAD permission for goods: " + goodsNo);
+                "No download permission for goods: %d".formatted(goodsNo));
         }
     }
 

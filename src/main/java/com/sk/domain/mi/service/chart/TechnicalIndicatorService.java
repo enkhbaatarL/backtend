@@ -4,8 +4,8 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
-import com.sk.domain.mi.dto.response.charts.ChartRes;
-import com.sk.domain.mi.dto.response.charts.IndicatorRes;
+import com.sk.domain.mi.dto.response.charts.Chart;
+import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.shared.enums.chart.IndicatorType;
 import com.sk.domain.shared.enums.chart.RenderAs;
@@ -45,7 +45,7 @@ public class TechnicalIndicatorService {
      * @param personalizedMap 개인화 설정 맵
      * @return 생성된 기술적 지표 목록
      */
-    public List<IndicatorRes> generateIndicators(com.sk.domain.mi.dto.response.charts.ChartRes chart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public List<Indicator> generateIndicators(Chart chart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
         if (chart == null) {
             return Collections.emptyList();
@@ -58,8 +58,8 @@ public class TechnicalIndicatorService {
             return Collections.emptyList();
         }
 
-        IndicatorRes maData = createMovingAverageData(timestamps, mainSeries, personalizedMap);
-        IndicatorRes bbData = createBollingerBandData(timestamps, mainSeries, personalizedMap);
+        Indicator maData = createMovingAverageData(timestamps, mainSeries, personalizedMap);
+        Indicator bbData = createBollingerBandData(timestamps, mainSeries, personalizedMap);
 
         return List.of(maData, bbData);
     }
@@ -74,7 +74,7 @@ public class TechnicalIndicatorService {
      * @param personalizedMap 개인화 설정 맵
      * @return 이동평균선 지표 데이터
      */
-    private IndicatorRes createMovingAverageData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    private Indicator createMovingAverageData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BigDecimal> maShort = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_SHORT);
         List<BigDecimal> maMedium = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_MEDIUM);
         List<BigDecimal> maLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_LONG);
@@ -85,7 +85,7 @@ public class TechnicalIndicatorService {
 
         List<Series> movingAverageIndicator = ChartBundleFactory.createMovingAverageIndicator(maShort, maMedium, maLong, maExtraLong, personalizedIndicators);
 
-        return IndicatorRes.of(IndicatorType.MOVING_AVERAGE, timestamps, movingAverageIndicator);
+        return Indicator.of(IndicatorType.MOVING_AVERAGE, timestamps, movingAverageIndicator);
     }
 
     /**
@@ -98,7 +98,7 @@ public class TechnicalIndicatorService {
      * @param personalizedMap 개인화 설정 맵
      * @return 볼린저 밴드 지표 데이터
      */
-    private IndicatorRes createBollingerBandData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    private Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
         List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, PERIOD_MEDIUM);
 
         // Get personalized indicators using the PersonalizationService
@@ -106,7 +106,7 @@ public class TechnicalIndicatorService {
 
         List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, personalizedIndicators);
 
-        return IndicatorRes.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
+        return Indicator.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
     }
 
     /**
@@ -118,7 +118,7 @@ public class TechnicalIndicatorService {
      * @return 추출된 시계열 데이터 목록
      * @throws SystemErrorException 주요 시계열 데이터를 찾지 못한 경우
      */
-    public List<BigDecimal> extractMajorMetricSeries(ChartRes chart) {
+    public List<BigDecimal> extractMajorMetricSeries(Chart chart) {
 
         Series series = chart.series().stream()
             .filter(entry -> RenderAs.isMajorType(entry.renderAs()))

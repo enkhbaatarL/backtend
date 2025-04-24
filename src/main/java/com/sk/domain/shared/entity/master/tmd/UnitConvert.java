@@ -89,7 +89,14 @@ public class UnitConvert extends BaseEntity {
         this.isUsed = isUsed;
     }
 
+    public static UnitConvert of(BigDecimal convertCoef) {
+        return UnitConvert.builder()
+                .convertCoef(convertCoef)
+                .build();
+    }
+
     public void softDelete() {
         super.softDelete();
     }
+
 }
