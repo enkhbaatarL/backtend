@@ -93,7 +93,7 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("캔들차트가능여부")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isCandleChartPossible;
-
+    
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,

@@ -2,12 +2,15 @@ package com.sk.domain.shared.entity.master.tcm;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.dto.request.rpa.ComponentInfoReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -64,11 +67,26 @@ public class ComponentInfo extends BaseEntity {
     @Comment("상품데이터소스단위명")
     private String goodsDataSourceUnitNm;
 
+    @Column(name = "gds_data_src_crcy_unit_nm", length = 50)
+    @Comment("상품데이터소스통화단위명")
+    private String goodsDataSourceCurrencyUnitNm;
+
+    @Column(name = "cndlc_psbl_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @ColumnDefault("'N'")
+    @Comment("캔들차트가능여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isCandleChartPossible;
+
+    @Column(name = "conv_tgt_dtl_type_nm", length = 50)
+    @Comment("변환대상상세유형명")
+    private String convertTargetDetailTypeNm;
+
     @Builder
     public ComponentInfo(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, String componentTypeId, String componentTypeNm, String goodsDataSourceNm,
             String targetDbNm, String targetTableNm, String queryConditionCntt,
-            String tableColumnListNm, String excelColumnListNm, String excelConditionCntt, String goodsDataSourceUnitNm) {
+            String tableColumnListNm, String excelColumnListNm, String excelConditionCntt, String goodsDataSourceUnitNm,
+            String goodsDataSourceCurrencyUnitNm, Boolean isCandleChartPossible, String convertTargetDetailTypeNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.componentTypeId = componentTypeId;
         this.componentTypeNm = componentTypeNm;
@@ -80,6 +98,9 @@ public class ComponentInfo extends BaseEntity {
         this.excelColumnListNm = excelColumnListNm;
         this.excelConditionCntt = excelConditionCntt;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
+        this.goodsDataSourceCurrencyUnitNm = goodsDataSourceCurrencyUnitNm;
+        this.isCandleChartPossible = isCandleChartPossible;
+        this.convertTargetDetailTypeNm = convertTargetDetailTypeNm;
     }
 
     public static ComponentInfo of(ComponentInfoReq.Insert dto) {
@@ -94,6 +115,9 @@ public class ComponentInfo extends BaseEntity {
                 .excelColumnListNm(dto.excelColumnListNm())
                 .excelConditionCntt(dto.excelConditionCntt())
                 .goodsDataSourceUnitNm(dto.goodsDataSourceUnitNm())
+                .goodsDataSourceCurrencyUnitNm(dto.goodsDataSourceCurrencyUnitNm())
+                .isCandleChartPossible(dto.isCandleChartPossible())
+                .convertTargetDetailTypeNm(dto.convertTargetDetailTypeNm())
                 .build();
     }
 }
