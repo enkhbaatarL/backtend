@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChartUnitConversionService {
 
+    // 기본 단위 유지
     public static final UnitConvert IDENTITY;
 
     static {
@@ -68,7 +69,7 @@ public class ChartUnitConversionService {
         String dateCol = targetColumns.get(RenderAs.DATE.getIndex());
         int size = aggregatedData.size();
 
-        if (isCandleChartPossible) {
+         if (isCandleChartPossible) {
             return convertCandleChart(aggregatedData, targetColumns, unitConvert, dateCol, size);
         } else {
             return convertMetricChart(aggregatedData, targetColumns, unitConvert, dateCol, size);
@@ -185,14 +186,14 @@ public class ChartUnitConversionService {
 
     }
 
-    public String generateDefaultUnitCd(GoodsDataSourceDetail goodsDataSourceDetail) {
-        return StringUtil.joinPoundSignNonNull(goodsDataSourceDetail.getConvertTargetDetailTypeNm(), goodsDataSourceDetail.getGoodsDataSourceUnitNm());
-    }
-
     public void validateUnitCd(Map<String, UnitConvert> unitConvertMap, String personalizedUnit) {
         if (!unitConvertMap.containsKey(personalizedUnit)) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitConversionCd' cannot be applied to the current data source. unitConversionCd: %s".formatted(personalizedUnit));
         }
+    }
+
+    public static String generateDefaultUnitCd(GoodsDataSourceDetail goodsDataSourceDetail) {
+        return StringUtil.joinPoundSignNonNull(goodsDataSourceDetail.getConvertTargetDetailTypeNm(), goodsDataSourceDetail.getGoodsDataSourceUnitNm());
     }
 
 }

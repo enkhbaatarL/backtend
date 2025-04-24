@@ -7,7 +7,11 @@ import lombok.Builder;
 
 import java.util.Set;
 
+@Builder
 public record ChartMetadata(
+
+    @Schema(description = "화폐", example = "$")
+    String currency,
 
     @Schema(description = "현재 값 단위", example = "MMBtu")
     String currentUnitCd,
@@ -23,16 +27,9 @@ public record ChartMetadata(
 
 ) {
 
-    @Builder
-    public ChartMetadata(String currentUnitCd, Interval currentInterval, ChartType visibleChartType, Set<String> changeableUnitCd) {
-        this.currentUnitCd = currentUnitCd;
-        this.currentInterval = currentInterval;
-        this.visibleChartType = visibleChartType;
-        this.changeableUnitCd = changeableUnitCd;
-    }
-
-    public static ChartMetadata of(ChartType chartType, String unitConversionCd, Set<String> changeable, Interval interval) {
+    public static ChartMetadata of(String currency, ChartType chartType, String unitConversionCd, Set<String> changeable, Interval interval) {
         return ChartMetadata.builder()
+            .currency(currency)
             .visibleChartType(chartType)
             .currentUnitCd(unitConversionCd)
             .currentInterval(interval)

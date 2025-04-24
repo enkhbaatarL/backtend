@@ -5,8 +5,8 @@ import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.ChartMetadata;
-import com.sk.domain.mi.dto.response.charts.ChartRes;
-import com.sk.domain.mi.dto.response.charts.IndicatorRes;
+import com.sk.domain.mi.dto.response.charts.Chart;
+import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.service.chart.*;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
 import com.sk.domain.mi.validator.GoodsDataValidator;
@@ -111,22 +111,22 @@ public class MiDataDetailService {
      * 사용자의 개인화 설정에 따라 차트의 범위, 인터벌, 단위 등이 조정된다.
      * 개인화 설정이 없는 경우 기본값을 사용한다.
      *
-     * @param goodsDataNo       상품 데이터 번호
-     * @param goodsDataSourceNo 상품 데이터소스 번호
-     * @param interval          인터벌 (예: 하루, 일주일 등 시간 간격)
-     * @param range             범위 (예: 1주, 1개월, 3개월 등)
-     * @param startDate         커스텀 범위 조회 시작일 (YYYYMMDD 형식)
-     * @param endDate           커스텀 범위 조회 종료일 (YYYYMMDD 형식)
-     * @param unitConversionCd  단위 변환 코드 (상세유형명#변환후단위명)
+     * @param goodsDataNo 상품 데이터 번호
+     * @param gdsNo       상품 데이터소스 번호
+     * @param interval    인터벌 (예: 하루, 일주일 등 시간 간격)
+     * @param range       범위 (예: 1주, 1개월, 3개월 등)
+     * @param startDate   커스텀 범위 조회 시작일 (YYYYMMDD 형식)
+     * @param endDate     커스텀 범위 조회 종료일 (YYYYMMDD 형식)
+     * @param unitCd      단위 변환 코드 (상세유형명#변환후단위명)
      * @return 생성된 차트 묶음 응답 데이터
      */
-    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsDataNo, Integer goodsDataSourceNo, Interval interval, Range range, String startDate, String endDate, String unitConversionCd, String userLoginId) {
+    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsDataNo, Integer gdsNo, Interval interval, Range range, String startDate, String endDate, String unitCd, String userLoginId) {
 
         // 상품-데이터 유효성 검증
         goodsDataValidator.ensureExists(goodsDataNo).validOrThrow();
 
         // 상품-데이터 상품-데이터-소스(GDS) 유효성 검증 및 조회
-        ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(goodsDataSourceNo);
+        ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(gdsNo);
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceResult.getOrThrow();
 
         // 변환 가능한 단위 조회 (GDS 기본 단위 포함)
@@ -138,16 +138,16 @@ public class MiDataDetailService {
         // 개인화 설정에 따른 파라미터 조정
         Pair<String, String> personalizedRange = personalizationService.getPersonalizedRangeOrDefault(personalizedMap, range, startDate, endDate);
         Interval personalizedInterval = personalizationService.getPersonalizedIntervalOrDefault(personalizedMap, interval);
-        String personalizedUnit = personalizationService.getPersonalizedUnitOrDefault(personalizedMap, unitConversionCd, chartUnitConversionService.generateDefaultUnitCd(goodsDataSourceDetail));
+        String personalizedUnit = personalizationService.getPersonalizedUnitOrDefault(personalizedMap, unitCd, ChartUnitConversionService.generateDefaultUnitCd(goodsDataSourceDetail));
         ChartType personalizedChartType = personalizationService.getPersonalizedChartType(personalizedMap);
 
         chartUnitConversionService.validateUnitCd(unitCdMap, personalizedUnit);
 
         // 메타데이터 생성
-        ChartMetadata metadata = ChartMetadata.of(personalizedChartType, personalizedUnit, unitCdMap.keySet(), personalizedInterval);
+        ChartMetadata metadata = ChartMetadata.of(goodsDataSourceDetail.getGoodsDataSourceCurrencyUnitNm(), personalizedChartType, personalizedUnit, unitCdMap.keySet(), personalizedInterval);
 
         // 메인 차트 생성
-        ChartRes mainChart = chartGenerationService.generateChartData(
+        Chart mainChart = chartGenerationService.generateChartData(
             goodsDataSourceDetail,
             personalizedRange.getLeft(),
             personalizedRange.getRight(),
@@ -157,13 +157,13 @@ public class MiDataDetailService {
         );
 
         // 기술적 지표 생성
-        List<IndicatorRes> indicators = technicalIndicatorService.generateIndicators(
+        List<Indicator> indicators = technicalIndicatorService.generateIndicators(
             mainChart,
             personalizedMap
         );
 
         // 비교 차트 생성
-        List<ChartRes> comparisonCharts = chartGenerationService.generateComparisonCharts(
+        List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
             goodsDataSourceDetail,
             personalizedRange.getLeft(),
             personalizedRange.getRight(),

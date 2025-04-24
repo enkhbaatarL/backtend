@@ -3,7 +3,8 @@ package com.sk.domain.mi.service.chart;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
-import com.sk.domain.mi.dto.response.charts.ChartRes;
+import com.sk.domain.mi.conversion.UnitConversionService;
+import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
@@ -35,6 +36,7 @@ public class ChartGenerationService {
     private final ChartAggregationService chartAggregationService;
     private final ChartUnitConversionService chartUnitConversionService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
+    private final UnitConversionService unitConversionService;
 
     /**
      * 특정 데이터소스와 시간 범위에 대한 차트 데이터를 생성한다.
@@ -49,19 +51,11 @@ public class ChartGenerationService {
      * @param isVisible             차트 표시 여부
      * @return 처리된 차트 데이터
      */
-    public ChartRes generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
-        // 유효성 검증
-        if (goodsDataSourceDetail == null || goodsDataSourceDetail.getTableColumnListNm() == null) {
-            return ChartRes.of(null, null, Collections.emptyList(), Collections.emptyList());
-        }
+    public Chart generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
         List<String> targetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
-
-        if (targetColumns.isEmpty()) {
-            return ChartRes.of(null, null, Collections.emptyList(), Collections.emptyList());
-        }
 
         String dateColumnName = targetColumns.get(DATE_COLUMN_INDEX);
         boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
@@ -70,11 +64,6 @@ public class ChartGenerationService {
         List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
         List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
 
-        if (sortedData.isEmpty()) {
-            // 빈 차트 데이터 반환
-            return ChartBundleFactory.toChart(null, isCandleChartPossible, Collections.emptyList(), targetColumns, columnExpressions, isVisible);
-        }
-
         // 데이터 집계
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, goodsDataSourceDetail);
 
@@ -82,7 +71,7 @@ public class ChartGenerationService {
         List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
 
         // 차트 데이터 형식으로 변환
-        return ChartBundleFactory.toChart(goodsDataSourceDetail.getGoodsDataSourceNo(), isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
+        return ChartBundleFactory.combineCharts(goodsDataSourceDetail, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
 
     /**
@@ -125,7 +114,7 @@ public class ChartGenerationService {
      * @param personalizedMap 개인화 설정 맵
      * @return 비교군 데이터소스에 대한 차트 데이터 목록
      */
-    public List<ChartRes> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public List<Chart> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
         // 유효성 검증
         if (mainDataSource == null) {
@@ -152,7 +141,7 @@ public class ChartGenerationService {
                     startDate,
                     endDate,
                     interval,
-                    null, // '비교군 차트'는 단위변환 없음
+                    ChartUnitConversionService.IDENTITY,
                     isVisible // 화면 노출 여부
                 );
             })

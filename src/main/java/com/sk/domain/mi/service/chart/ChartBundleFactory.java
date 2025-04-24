@@ -4,6 +4,7 @@ import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.charts.*;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.RenderAs;
 
@@ -32,7 +33,7 @@ public final class ChartBundleFactory {
      * @param comparisonCharts 비교 차트 데이터 목록
      * @return 생성된 차트 묶음 응답 객체
      */
-    public static ChartBundleRes create(ChartMetadata metadata, ChartRes mainChart, List<IndicatorRes> indicators, List<ChartRes> comparisonCharts) {
+    public static ChartBundleRes create(ChartMetadata metadata, Chart mainChart, List<Indicator> indicators, List<Chart> comparisonCharts) {
         return ChartBundleRes.of(metadata, mainChart, indicators, comparisonCharts);
     }
 
@@ -41,15 +42,15 @@ public final class ChartBundleFactory {
      * 캔들 차트 여부에 따라 차트 타입을 결정하고, 원시 데이터에서 시간 데이터와 시리즈 데이터를 추출하여
      * 차트 응답 객체를 생성한다.
      *
-     * @param goodsDataSourceNo 데이터소스상세 번호
-     * @param isCandle          캔들 차트 여부
-     * @param convertedData     원시 데이터 행 목록
-     * @param targetColumns     대상 컬럼 목록
-     * @param labels            컬럼명과 표시 레이블을 매핑한 맵
-     * @param isVisible         차트 표시 여부
+     * @param gds           데이터소스상세 번호
+     * @param isCandle      캔들 차트 여부
+     * @param convertedData 원시 데이터 행 목록
+     * @param targetColumns 대상 컬럼 목록
+     * @param labels        컬럼명과 표시 레이블을 매핑한 맵
+     * @param isVisible     차트 표시 여부
      * @return 생성된 차트 응답 객체
      */
-    public static ChartRes toChart(Integer goodsDataSourceNo, boolean isCandle, List<Map<String, Object>> convertedData, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
+    public static Chart combineCharts(GoodsDataSourceDetail gds, boolean isCandle, List<Map<String, Object>> convertedData, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
         ChartType chartType = isCandle ? ChartType.CANDLE : ChartType.LINE;
 
         String xAxis = targetColumns.get(IDX_DATE);
@@ -58,7 +59,7 @@ public final class ChartBundleFactory {
         List<String> timestamps = buildTimestamps(xAxis, convertedData);
         List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, isVisible);
 
-        return ChartRes.of(goodsDataSourceNo, chartType, timestamps, series);
+        return Chart.of(gds.getGoodsDataSourceNo(), ChartUnitConversionService.generateDefaultUnitCd(gds), chartType, timestamps, series);
     }
 
     private static List<String> buildTimestamps(String xAxis, List<Map<String, Object>> rawRows) {

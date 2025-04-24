@@ -19,9 +19,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -141,10 +138,10 @@ public class MiDataDetailController {
         @RequestParam(value = "range", required = false) Range range, // todo validation
         @RequestParam(value = "startDate", required = false) String startDate, // todo validation
         @RequestParam(value = "endDate", required = false) String endDate, // todo validation
-        @RequestParam(value = "unitConversionCd", required = false) String unitConversionCd,
+        @RequestParam(value = "unitCd", required = false) String unitCd,
         Authentication authentication
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitConversionCd, authentication.getName()));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd, authentication.getName()));
     }
 
 }
