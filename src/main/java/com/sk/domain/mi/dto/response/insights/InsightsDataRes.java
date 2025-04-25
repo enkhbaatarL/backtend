@@ -9,7 +9,6 @@ public record InsightsDataRes(
         int goodsDataNo,
         String goodsDataNm,
         String goodsDataExpn,
-        LocalDateTime modifyDt,
-        String categoryCd) {
+        LocalDateTime modifyDt) {
 
 }

@@ -77,9 +77,7 @@ public class MiInsightsService {
      * @param keyword   검색어
      * @param sort     정렬 타입
      * @param period    기간 타입
-     * @param documentTypes 문서 타입
-     * @param providers 프로바이더 타입
-     * @param languages 언어 타입
+     * @param filter 고급 필터
      * @return PaginationRes<InsightsDataRes>
      */
     public PaginationRes<InsightsDataRes> getInsights(
@@ -89,9 +87,7 @@ public class MiInsightsService {
             String keyword,
             InsightsSortType sort,
             InsightsPeriodType period,
-            String documentTypes,
-            String providers,
-            String languages) {
+            String filters) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
@@ -102,8 +98,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
-                .append(" tgd.mod_dtm AS modifyDt,")
-                .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS categoryCd");
+                .append(" tgd.mod_dtm AS modifyDt");
 
         StringBuilder where = new StringBuilder()
                 .append(" tc.cust_cpny_no = :companyNo")
@@ -114,8 +109,7 @@ public class MiInsightsService {
                 .append(" AND tp.del_yn = 'N'")
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
-                .append(" AND tgdc.del_yn = 'N'")
-                .append(" AND (tgdc.gds_data_mnagt_spt_cd = 'GDAT' OR tgdc.gds_data_mnagt_spt_cd = 'GUDAT')");
+                .append(" AND tgdc.del_yn = 'N'");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -127,16 +121,8 @@ public class MiInsightsService {
             }
         }
 
-        if (documentTypes != null && !documentTypes.isBlank()) {
-            where.append(" AND tgdc.gds_data_ctgr_cd IN (:documentTypes)");
-        }
-
-        if (providers != null && !providers.isBlank()) {
-            where.append(" AND tgdc.gds_data_ctgr_cd IN (:providers)");
-        }
-
-        if (languages != null && !languages.isBlank()) {
-            where.append(" AND tgdc.gds_data_ctgr_cd IN (:languages)");
+        if (filters != null && !filters.isBlank()) {
+            where.append(" AND tgdc.gds_data_ctgr_cd IN (:filters)");
         }
 
         switch (period) {
@@ -169,6 +155,12 @@ public class MiInsightsService {
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                JOIN (
+                    SELECT DISTINCT gds_data_no
+                    FROM midb.tmd_gdsdatactgrl
+                    WHERE del_yn = 'N'
+                    AND gds_data_mnagt_spt_cd = 'GUDAT'
+                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -181,6 +173,12 @@ public class MiInsightsService {
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                JOIN (
+                    SELECT DISTINCT gds_data_no
+                    FROM midb.tmd_gdsdatactgrl
+                    WHERE del_yn = 'N'
+                    AND gds_data_mnagt_spt_cd = 'GUDAT'
+                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where;
 
@@ -190,7 +188,6 @@ public class MiInsightsService {
         contentQuery.setParameter("companyNo", companyNo);
         countQuery.setParameter("companyNo", companyNo);
 
-        // 검색어
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
                 contentQuery.setParameter("keyword", keyword);
@@ -201,34 +198,14 @@ public class MiInsightsService {
             }
         }
 
-        // 문서 필터
-        if (documentTypes != null && !documentTypes.isBlank()) {
-            List<String> docs = Arrays.stream(documentTypes.split(","))
+        if (filters != null && !filters.isBlank()) {
+            List<String> filterList = Arrays.stream(filters.split(","))
                     .map(String::trim)
+                    .map(String::toUpperCase)
                     .filter(s -> !s.isEmpty())
                     .toList();
-            contentQuery.setParameter("documentTypes", docs);
-            countQuery.setParameter("documentTypes", docs);
-        }
-
-        // 프로바이더 필터
-        if (providers != null && !providers.isBlank()) {
-            List<String> prvs = Arrays.stream(providers.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            contentQuery.setParameter("providers", prvs);
-            countQuery.setParameter("providers", prvs);
-        }
-
-        // 언어 필터
-        if (languages != null && !languages.isBlank()) {
-            List<String> langs = Arrays.stream(languages.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            contentQuery.setParameter("languages", langs);
-            countQuery.setParameter("languages", langs);
+            contentQuery.setParameter("filters", filterList);
+            countQuery.setParameter("filters", filterList);
         }
 
         contentQuery.setFirstResult((page - 1) * size);
@@ -243,8 +220,7 @@ public class MiInsightsService {
                         (Integer) row[3], // goodsDataNo
                         (String) row[4], // goodsDataNm
                         (String) row[5], // goodsDataExpn
-                        ((Timestamp) row[6]).toLocalDateTime(), // modifyDt
-                        (String) row[7] // categoryCd
+                        ((Timestamp) row[6]).toLocalDateTime() // modifyDt
                 ))
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
