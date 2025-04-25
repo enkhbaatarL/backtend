@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.chart;
+package com.sk.domain.mi.dto.response.charts;
 
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;

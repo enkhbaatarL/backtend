@@ -3,9 +3,14 @@ package com.sk.domain.mi.controller;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.model.PaginationRes;
+import com.sk.common.model.TableRes;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
-import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
+import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
+import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
+import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
+import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.MiDataDetailService;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
@@ -40,70 +45,63 @@ public class MiDataDetailController {
     @ApiOrder(1)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
-        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호")
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
     })
-    @Operation(summary = "상품 데이터소스 메타데이터 조회 API", description = "상품 데이터소스 메타데이터를 조회합니다.")
+    @Operation(summary = "상품 데이터 조회 API", description = "상품 데이터소스를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/metadata")
-    public BaseResponse<?> getGoodsDataSourcesMetadata(
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}")
+    public BaseResponse<GoodsDataRes> getGoodsData(
         @PathVariable(value = "goodsNo") Integer goodsNo,
-        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
     ) {
-        return null;
-    }
-
-    /**
-     * todo 1. myBatis 페이지네이션 ㅋㅋㅋㅋ
-     */
-    @ApiOrder(2)
-    @Parameters({
-        @Parameter(name = "goodsNo", description = "상품 번호"),
-        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호")
-    })
-    @Operation(summary = "상품 데이터소스 raw 데이터 조회 API (with pagination)", description = "페이지네이션을 통해 상품 데이터소스 raw 데이터를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/raw-data")
-    public BaseResponse<?> getGoodsDataSourcesRawData(
-        @PathVariable(value = "goodsNo") Integer goodsNo,
-        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
-    ) {
-        return null;
+        return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsNo, goodsDataNo));
     }
 
     /**
      * todo 1.어디서 어떻게 데이터 가져오는지 확인 할 것.
      */
+    @ApiOrder(2)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
+    })
+    @Operation(summary = "상품 비정형 데이터 목록 조회 API", description = "상품 데이터 비정형데이터 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/unstructured-data")
+    public BaseResponse<UnstructuredDataRes> getGoodsDataUnstructuredData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
+    ) {
+        return null;
+    }
+
     @ApiOrder(3)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
-        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호")
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
     })
-    @Operation(summary = "상품 데이터소스 문서 목록 조회 API", description = "상품 데이터소스 문서 목록을 조회합니다.")
+    @Operation(summary = "상품 정형 데이터(데이터소스) 목록 조회 API", description = "상품 정형 데이터(데이터소스) 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/documents")
-    public BaseResponse<?> getGoodsDataSourcesDocuments(
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources")
+    public BaseResponse<GoodsDataSourceRes> getGoodsDataSources(
         @PathVariable(value = "goodsNo") Integer goodsNo,
-        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
     ) {
         return null;
     }
 
     @ApiOrder(4)
     @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
         @Parameter(name = "chartsPersonalizeReqs", description = "차트 개인화 정보")
     })
     @Operation(summary = "데이터소스 차트 개인화 설정 API", description = "상품 데이터소스 차트를 개인 설정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PutMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
+    @PutMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
     public BaseResponse<List<ChartsPersonalizeRes>> putGoodsDataSourcesChartsPersonalize(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
         @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs
@@ -154,6 +152,26 @@ public class MiDataDetailController {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd, authentication.getName()));
     }
 
-    // todo 비정형 데이터 파일 다운로드 API
+    /**
+     * todo 1. myBatis 페이지네이션 ㅋㅋㅋㅋ
+     */
+    @ApiOrder(6)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호")
+    })
+    @Operation(summary = "상품 데이터소스 raw 데이터 조회 API (with pagination)", description = "페이지네이션을 통해 상품 데이터소스 raw 데이터를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/raw-data")
+    public BaseResponse<PaginationRes<TableRes>> getGoodsDataSourcesRawData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+    ) {
+        return null;
+    }
+
+    // raw-data 테이블 엑셀 다운로드?
 
 }

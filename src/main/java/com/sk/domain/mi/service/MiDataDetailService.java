@@ -2,16 +2,18 @@ package com.sk.domain.mi.service;
 
 import com.sk.common.model.ValidationResult;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
-import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
+import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.ChartMetadata;
 import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.mi.dto.response.charts.Indicator;
+import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
 import com.sk.domain.mi.service.chart.*;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
 import com.sk.domain.mi.validator.GoodsDataValidator;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
@@ -19,6 +21,7 @@ import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,8 @@ public class MiDataDetailService {
     private final GoodsDataValidator goodsDataValidator;
     private final GoodsDataSourceValidator goodsDataSourceDetailValidator;
 
+    private final GoodsDataCategoryRepository goodsDataCategoryRepository;
+
     private final ChartGenerationService chartGenerationService;
     private final PersonalizationService personalizationService;
     private final TechnicalIndicatorService technicalIndicatorService;
@@ -45,6 +50,15 @@ public class MiDataDetailService {
     private final ChartUnitConversionService chartUnitConversionService;
     private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
+    public GoodsDataRes getGoodsData(Integer goodsNo, Integer goodsDataNo) {
+
+        ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
+        GoodsData goodsData = goodsDataResult.getOrThrow();
+
+        String providerNm = goodsData.getGoods().getProvider().getProviderNm();
+
+        return null;
+    }
 
     /**
      * 차트 개인화를 설정합니다.

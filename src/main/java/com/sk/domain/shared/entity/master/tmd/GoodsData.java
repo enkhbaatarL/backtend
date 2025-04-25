@@ -49,7 +49,7 @@ public class GoodsData extends BaseEntity {
     private String goodsDataExpn;
 
     @Column(name = "gds_data_smry_cntt", columnDefinition = "text")
-    @Comment("상품데이터베이스명")
+    @Comment("상품데이터요약내용")
     private String goodsDataSummaryCntt;
 
     @ManyToOne(fetch = FetchType.LAZY)
