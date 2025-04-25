@@ -12,8 +12,6 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
-import com.sk.domain.admin.dto.request.provider.ProviderCreateReq;
-import com.sk.domain.admin.dto.request.provider.ProviderUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import lombok.AccessLevel;

@@ -1,9 +1,9 @@
 package com.sk.domain.shared.repository.master.tmd;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import org.antlr.v4.runtime.atn.SemanticContext.AND;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -11,9 +11,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
+import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
+import com.sk.domain.mi.dto.response.insights.IFocusedDataRes;
+import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -146,64 +147,58 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     //
     @Query(value = """
-            SELECT new com.sk.domain.mi.dto.response.insights.FocusedDataRes(
-                gd.goodsDataNo,
-                gdc.goodsDataCategoryCd,
-                gd.goodsDataNm,
-                gd.modifyDt,
-                p.providerNm
-            )
-            FROM CustomerCompanyProviderMapping cpm
-            LEFT JOIN CustomerCompanyGoodsMapping cgm ON cgm.id.customerCompanyNo = cpm.id.customerCompanyNo
-            LEFT JOIN Provider p ON p.providerNo = cpm.id.providerNo
-            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = cgm.id.goodsNo
+            SELECT
+                p.providerNo as providerNo,
+                p.providerNm as providerNm,
+                g.goodsNo as goodsNo,
+                g.goodsNm as goodsNm,
+                gd.goodsDataNo as goodsDataNo,
+                gd.goodsDataNm as goodsDataNm,
+                gd.modifyDt as modifyDt,
+                FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd) as goodsDataCategoryCd
+            FROM CustomerCompanyGoodsMapping ccgm
+            LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
+            LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
+            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
             LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            WHERE gdc.goodsDataManagementSeparateCd = 'GDAT'
-                AND cpm.isDeleted = false
-                AND cpm.isUsed = true
-                AND cgm.isDeleted = false
-                AND cgm.isUsed = true
+            LEFT JOIN CommonCodeDetail ccd ON ccd.id.codeId = gdc.goodsDataCategoryCd
+            JOIN (
+                SELECT DISTINCT gdc.goodsData.goodsDataNo as goodsDataNo
+                FROM GoodsDataCategory gdc
+                WHERE gdc.isDeleted = false
+                AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
+            ) gud ON gud.goodsDataNo = gd.goodsDataNo
+            WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
+                AND ccgm.isDeleted = false
+                AND ccgm.isUsed = true
+                AND g.isDeleted = false
+                AND g.isUsed = true
                 AND p.isDeleted = false
                 AND p.isUsed = true
                 AND gd.isDeleted = false
                 AND gdc.isDeleted = false
-                AND cpm.id.customerCompanyNo = :customerCompanyNo
-                AND gdc.goodsDataCategoryCd = :categoryCd
-            ORDER BY gd.modifyDt DESC
-                        """, countQuery = """
-
+                AND ccd.highCodeId = 'A_TYPES'
+            GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
+            ORDER BY gd.goodsDataNo DESC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT gd.goodsDataNo)
+            FROM CustomerCompanyGoodsMapping ccgm
+            LEFT JOIN Goods                   g   ON g.goodsNo = ccgm.id.goodsNo
+            LEFT JOIN Provider                p   ON p.providerNo = g.provider.providerNo
+            LEFT JOIN GoodsData               gd  ON gd.goods.goodsNo = g.goodsNo
+            LEFT JOIN GoodsDataCategory       gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
+            LEFT JOIN CommonCodeDetail        ccd ON ccd.id.codeId = gdc.goodsDataCategoryCd
+            WHERE ccgm.id.customerCompanyNo                = :customerCompanyNo
+                AND ccgm.isDeleted                           = false
+                AND ccgm.isUsed                              = true
+                AND g.isDeleted                              = false
+                AND g.isUsed                                 = true
+                AND p.isDeleted                              = false
+                AND p.isUsed                                 = true
+                AND gd.isDeleted                             = false
+                AND gdc.isDeleted                            = false
+                AND ccd.highCodeId                            = 'A_TYPES'
+                AND gdc.goodsDataManagementSeparateCd         = 'GUDAT'
             """)
-    List<FocusedDataRes> findFocusedDataByCategoryCd(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd,
-            Pageable pageable);
-
-    @Query(value = """
-            SELECT new com.sk.domain.mi.dto.response.insights.FocusedDataRes(
-                gd.goodsDataNo,
-                gdc.goodsDataCategoryCd,
-                gd.goodsDataNm,
-                gd.modifyDt,
-                p.providerNm
-            )
-            FROM CustomerCompanyProviderMapping cpm
-            LEFT JOIN CustomerCompanyGoodsMapping cgm ON cgm.id.customerCompanyNo = cpm.id.customerCompanyNo
-            LEFT JOIN Provider p ON p.providerNo = cpm.id.providerNo
-            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = cgm.id.goodsNo
-            LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            WHERE gdc.goodsDataManagementSeparateCd = 'GDAT'
-                AND cpm.isDeleted = false
-                AND cpm.isUsed = true
-                AND cgm.isDeleted = false
-                AND cgm.isUsed = true
-                AND p.isDeleted = false
-                AND p.isUsed = true
-                AND gd.isDeleted = false
-                AND gdc.isDeleted = false
-                AND cpm.id.customerCompanyNo = :customerCompanyNo
-                AND gdc.goodsDataCategoryCd <> :categoryCd
-            ORDER BY gd.modifyDt DESC
-                        """, countQuery = """
-
-            """)
-    List<FocusedDataRes> findFocusedDataByNotCategoryCd(@Param("customerCompanyNo") int customerCompanyNo, @Param("categoryCd") String categoryCd,
-            Pageable pageable);
+    List<IFocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") Pageable pageable);
 }

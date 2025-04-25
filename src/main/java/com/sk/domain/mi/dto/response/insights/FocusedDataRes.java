@@ -8,31 +8,40 @@ import lombok.Builder;
 // @formatter:off
 @Builder
 public record FocusedDataRes(
-        @Schema(description = "상품데이터번호", example = "") 
-        Integer goodsDataNo,
+    @Schema(description = "프로바이더 번호", example = "")
+    int providerNo,
 
-        @Schema(description = "자동으로 분류된 'Document Type' 라벨 노출", example = "Insight, Commodity Market Report 등") 
-        String subCategoryNm,
+    @Schema(description = "프로바이더 이름", example = "")
+    String providerNm,
 
-        @Schema(description = "상품데이터명", example = "C&F Financial Corporation") 
-        String goodsDataNm,
+    @Schema(description = "상품 번호", example = "")
+    int goodsNo,
 
-        @Schema(description = "마지막 업데이트일", example = "2025-02-12 15:00:00")
-        LocalDateTime modifyDt,
+    @Schema(description = "상품 이름", example = "")
+    String goodsNm,
 
-        @Schema(description = "프로바이더명", example = "") 
-        String providerNm) {
+    @Schema(description = "상품데이터번호", example = "") 
+    int goodsDataNo,
 
-        public FocusedDataRes(Integer goodsDataNo, String subCategoryNm, String goodsDataNm, LocalDateTime modifyDt, String providerNm) {
+    @Schema(description = "상품데이터명", example = "") 
+    String goodsDataNm,
+
+    @Schema(description = "상품데이터 수정 시간", example = "") 
+    LocalDateTime modifyDt,
+    
+    @Schema(description = "상품데이터 카테고리 코드", example = "")
+    String goodsDataCategoryCd) {
+    
+        public FocusedDataRes(int providerNo, String providerNm, int goodsNo, String goodsNm, int goodsDataNo,
+                String goodsDataNm, LocalDateTime modifyDt, String goodsDataCategoryCd) {
+            this.providerNo = providerNo;
+            this.providerNm = providerNm;
+            this.goodsNo = goodsNo;
+            this.goodsNm = goodsNm;
             this.goodsDataNo = goodsDataNo;
-            this.subCategoryNm = subCategoryNm;
             this.goodsDataNm = goodsDataNm;
             this.modifyDt = modifyDt;
-            this.providerNm = providerNm;
-        }
-
-        public LocalDateTime getModifyDt() {
-            return modifyDt;
+            this.goodsDataCategoryCd = goodsDataCategoryCd;
         }
 }
 // @formatter:on
