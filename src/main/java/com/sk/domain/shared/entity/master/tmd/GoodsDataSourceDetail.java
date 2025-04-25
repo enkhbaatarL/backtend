@@ -64,10 +64,6 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("상품데이터소스통화단위명")
     private String goodsDataSourceCurrencyUnitNm;
 
-    @Column(name = "conv_tgt_dtl_type_nm", length = 50)
-    @Comment("변환대상상세유형명")
-    private String convertTargetDetailTypeNm;
-
     @Column(name = "tbl_colm_list_nm", length = 255)
     @Comment("테이블컬럼목록명")
     private String tableColumnListNm;
@@ -94,11 +90,17 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isCandleChartPossible;
 
+    @Column(name = "conv_tgt_dtl_type_nm", length = 50)
+    @Comment("변환대상상세유형명")
+    private String convertTargetDetailTypeNm;
+
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm, GoodsData goodsData,
-            ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String goodsDataSourceCurrencyUnitNm,
+            String tableColumnListNm, GoodsData goodsData,
+            ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd, Boolean isCandleChartPossible,
+            String convertTargetDetailTypeNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -107,28 +109,34 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.queryConditionCntt = queryConditionCntt;
         this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
+        this.goodsDataSourceCurrencyUnitNm = goodsDataSourceCurrencyUnitNm;
         this.tableColumnListNm = tableColumnListNm;
         this.goodsData = goodsData;
         this.componentInfo = componentInfo;
         this.goodsDataSourceRmk = goodsDataSourceRmk;
         this.goodsDataUseManagementCd = goodsDataUseManagementCd;
+        this.isCandleChartPossible = isCandleChartPossible;
+        this.convertTargetDetailTypeNm = convertTargetDetailTypeNm;
     }
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
-            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String tableColumnListNm,
-            ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd) {
+            String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String goodsDataSourceCurrencyUnitNm,
+            String tableColumnListNm,
+            ComponentInfo componentInfo, Boolean isCandleChartPossible, String convertTargetDetailTypeNm) {
         return GoodsDataSourceDetail.builder()
+                .goodsData(goodsData)
                 .goodsDataSourceNm(goodsDataSourceNm)
                 .targetDbNm(targetDbNm)
                 .targetTableNm(targetTableNm)
                 .queryConditionCntt(queryConditionCntt)
                 .goodsDataSourceExpn(goodsDataSourceExpn)
                 .goodsDataSourceUnitNm(goodsDataSourceUnitNm)
+                .goodsDataSourceCurrencyUnitNm(goodsDataSourceCurrencyUnitNm)
                 .tableColumnListNm(tableColumnListNm)
-                .goodsData(goodsData)
                 .componentInfo(componentInfo)
-                .goodsDataSourceRmk(goodsDataSourceRmk)
-                .goodsDataUseManagementCd(goodsDataUseManagementCd)
+                .goodsDataUseManagementCd("backend")
+                .isCandleChartPossible(isCandleChartPossible)
+                .convertTargetDetailTypeNm(convertTargetDetailTypeNm)
                 .build();
     }
 

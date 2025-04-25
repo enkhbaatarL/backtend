@@ -32,7 +32,8 @@ public record TestReq() {
 	}
 
 	public record uploadStructuredDataFile(
-			@NotNull @Schema(description = "컴포넌트 타입 ID", example = "TYPE_ID") String componentTypeId
+			@NotNull @Schema(description = "컴포넌트 타입 ID", example = "TYPE_ID") String componentTypeId,
+			@Schema(description = "기준일자", example = "20250424") String criteriaDt
 	) {
 	}
 
