@@ -1,12 +1,16 @@
 package com.sk.common.utils;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.enums.chart.Range;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * LocalDate 관련 유틸리티 클래스
@@ -28,24 +32,17 @@ public final class DateUtil {
     }
 
     /**
-     * LocalDate를 "yyyyMMdd" 문자열로 변환
-     */
-    public static String toYmdAfter10y(LocalDate date) {
-        return date == null ? null : date.plusYears(10).format(YYYYMMDD);
-    }
-
-    /**
-     * LocalDate를 "yyyy-MM-dd" 문자열로 변환
-     */
-    public static String toYmdHyphen(LocalDate date) {
-        return date == null ? null : date.format(YYYY_MM_DD);
-    }
-
-    /**
      * "yyyyMMdd" 문자열을 LocalDate로 변환
      */
     public static LocalDate fromYmd(String dateStr) {
         return dateStr == null ? null : LocalDate.parse(dateStr, YYYYMMDD);
+    }
+
+    /**
+     * "yyyy-MM-dd" 문자열을 LocalDate로 변환
+     */
+    public static LocalDate fromYmdHyphen(String dateStr) {
+        return dateStr == null ? null : LocalDate.parse(dateStr, YYYY_MM_DD);
     }
 
     /**
@@ -56,16 +53,6 @@ public final class DateUtil {
             return null;
         }
         return date.format(DateTimeFormatter.ofPattern(pattern));
-    }
-
-    /**
-     * 사용자 지정 포맷 문자열을 LocalDate로 변환
-     */
-    public static LocalDate parse(String dateStr, String pattern) {
-        if (dateStr == null || pattern == null) {
-            return null;
-        }
-        return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(pattern));
     }
 
     /**
@@ -93,6 +80,9 @@ public final class DateUtil {
      * 날짜를 LocalDate(yyyyMMdd)로 반환
      */
     public static LocalDate parseDate(Object dateObj) {
+        if (dateObj == null) {
+            return null;
+        }
         if (dateObj instanceof LocalDate ld) {
             return ld;
         } else if (dateObj instanceof LocalDateTime ldt) {
@@ -101,10 +91,34 @@ public final class DateUtil {
             return ts.toLocalDateTime().toLocalDate();
         } else {
             String s = dateObj.toString();
-            String d = s.length() >= 8 ? s.substring(0, 8) : s;
-            return DateUtil.fromYmd(d);
+            String d = s.length() >= 10 ? s.substring(0, 10) : s;
+            return DateUtil.fromYmdHyphen(d);
         }
     }
+
+    public static String toYmd(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+
+        try {
+            // ISO-8601 형식 처리 (예: 2024-01-01T00:00)
+            LocalDateTime ldt = LocalDateTime.parse(dateTimeStr);
+            return ldt.format(YYYYMMDD);
+
+        } catch (DateTimeParseException e1) {
+            try {
+                // 기존 포맷 시도 (예: 2024-01-01 00:00:00)
+                String trimmed = dateTimeStr.length() > 19
+                    ? dateTimeStr.substring(0, 19)
+                    : dateTimeStr;
+                LocalDateTime ldt = LocalDateTime.parse(trimmed, YYYY_MM_DD_HH_MM_SS);
+                return ldt.format(YYYYMMDD);
+            } catch (DateTimeParseException e2) {
+                throw new IllegalArgumentException("Invalid date format: " + dateTimeStr);
+            }
+        }
+    }
+
+
 
     /**
      * 주어진 Range를 기준으로 (fromDate, toDate) 쌍을 yyyyMMdd 형식 문자열로 반환.
@@ -113,26 +127,19 @@ public final class DateUtil {
     public static Pair<String, String> getDateRange(Range range, String customStart, String customEnd) {
 
         if (range == Range.CUSTOM) {
+            if (customStart == null || customEnd == null) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "The 'startDate' and 'endDate' are required for the [CUSTOM] range.");
+            }
             return Pair.of(customStart, customEnd);
         }
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = switch (range) {
-            case ONE_WEEK -> endDate.minusWeeks(1);
-            case ONE_MONTH -> endDate.minusMonths(1);
-            case THREE_MONTHS -> endDate.minusMonths(3);
-            case SIX_MONTHS -> endDate.minusMonths(6);
-            case ONE_YEAR -> endDate.minusYears(1);
-            case TWO_YEARS -> endDate.minusYears(2);
-            default -> endDate;
-        };
-        String from = toYmd(startDate);
-        String to = toYmd(endDate);
-        return Pair.of(from, to);
+        return getDateRange(range);
     }
 
     public static Pair<String, String> getDateRange(Range range) {
+
         LocalDate endDate = LocalDate.now();
+
         LocalDate startDate = switch (range) {
             case ONE_WEEK -> endDate.minusWeeks(1);
             case ONE_MONTH -> endDate.minusMonths(1);
@@ -142,6 +149,7 @@ public final class DateUtil {
             case TWO_YEARS -> endDate.minusYears(2);
             default -> endDate;
         };
+
         String from = toYmd(startDate);
         String to = toYmd(endDate);
         return Pair.of(from, to);

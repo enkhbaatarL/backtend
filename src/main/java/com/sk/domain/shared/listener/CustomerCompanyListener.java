@@ -6,6 +6,7 @@ import com.sk.domain.shared.service.CacheService;
 import jakarta.persistence.PostUpdate;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class CustomerCompanyListener {
     @PostUpdate
     public void checkDisabled(CustomerCompany customerCompany) {
 
-        if (!customerCompany.getIsUsed() || customerCompany.getIsDeleted()) {
+        if (BooleanUtils.isFalse(customerCompany.getIsUsed()) || BooleanUtils.isTrue(customerCompany.getIsDeleted())) {
             CacheService cacheService = applicationContext.getBean(CacheService.class);
             log.info("The companyNo({}) has been disabled. Subsequently, the related user cache will be invalidated", customerCompany.getCustomerCompanyNo());
             cacheService.invalidateUsersForTagEntity(CacheType.TAG_COMPANY, customerCompany.getCustomerCompanyNo());

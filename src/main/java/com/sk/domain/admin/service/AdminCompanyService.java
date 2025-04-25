@@ -343,8 +343,7 @@ public class AdminCompanyService {
      * @param goodsNo    상품 번호
      * @return PaginationExtensionRes<AuthGoodsMappingRes>
      */
-    public PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo,
-            Integer goodsNo) {
+    public PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes> getAuthGoods(int page, int size, Integer companyNo, Integer providerNo, Integer goodsNo) {
 
         companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo).validOrThrow();
 
@@ -388,9 +387,7 @@ public class AdminCompanyService {
         if (hasChangedSupportCd) {
             // 권한 구분 코드가 변경된 경우 기존 매핑을 삭제하고 새로 생성
             ccg.softDelete();
-            return customerCompanyGoodsMappingRepository
-                    .save(CustomerCompanyGoodsMapping.of(ccg.getCustomerCompany(), ccg.getGoods(), req.goodsAuthManagementSeparateCd(),
-                            req.isUsed()));
+            return customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(ccg.getCustomerCompany(), ccg.getGoods(), req.goodsAuthManagementSeparateCd(), req.isUsed()));
         } else {
             // 권한 구분 코드가 동일한 경우 기존 매핑 업데이트
             ccg.update(req);
@@ -401,13 +398,11 @@ public class AdminCompanyService {
     /**
      * 권한 매핑 처리
      */
-    private void processAuthMappings(CustomerCompanyGoodsMapping ccg, List<AuthManageGoodsMapping> existingMappings, AuthGoodsMapReq req,
-            boolean hasChangedSupportCd) {
+    private void processAuthMappings(CustomerCompanyGoodsMapping ccg, List<AuthManageGoodsMapping> existingMappings, AuthGoodsMapReq req, boolean hasChangedSupportCd) {
         switch (req.goodsAuthManagementSeparateCd()) {
             case COMPANY -> handleCompanyLevelPermissions(ccg, existingMappings, req, hasChangedSupportCd);
             case INDIVIDUAL -> handleIndividualLevelPermissions(ccg, existingMappings, req, hasChangedSupportCd);
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
-                    "goodsAuthManageCd value is invalid: %s".formatted(req.goodsAuthManagementSeparateCd()));
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "goodsAuthManageCd value is invalid: %s".formatted(req.goodsAuthManagementSeparateCd()));
         }
     }
 

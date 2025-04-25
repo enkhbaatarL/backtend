@@ -3,6 +3,11 @@ package com.sk.domain.shared.enums.chart;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 @Getter
 @RequiredArgsConstructor
 public enum Interval {
@@ -17,5 +22,15 @@ public enum Interval {
 
     private final String code;
     private final String description;
+
+    private static final Map<String, Interval> INTERVAL_CODE_MAP;
+
+    static {
+        INTERVAL_CODE_MAP = Arrays.stream(values()).collect(Collectors.toMap(Interval::getCode, Function.identity()));
+    }
+
+    public static Interval findByCode(String code) {
+        return INTERVAL_CODE_MAP.getOrDefault(code, null);
+    }
 
 }

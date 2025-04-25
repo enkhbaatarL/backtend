@@ -13,7 +13,7 @@ public enum ChartType {
 
     CANDLE(of(RenderAs.CLOSE, RenderAs.OPEN, RenderAs.HIGH, RenderAs.LOW)),
 
-    METRIC(of(RenderAs.MAIN, RenderAs.REFERENCE));
+    LINE(of(RenderAs.MAIN, RenderAs.REFERENCE));
 
     private final List<RenderAs> orderOfIndex;
 

@@ -1,8 +1,10 @@
 package com.sk.domain.mi.service.chart;
 
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
-import com.sk.domain.mi.dto.response.charts.ChartRes;
+import com.sk.domain.mi.conversion.UnitConversionService;
+import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
@@ -14,10 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +36,7 @@ public class ChartGenerationService {
     private final ChartAggregationService chartAggregationService;
     private final ChartUnitConversionService chartUnitConversionService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
+    private final UnitConversionService unitConversionService;
 
     /**
      * 특정 데이터소스와 시간 범위에 대한 차트 데이터를 생성한다.
@@ -44,34 +44,34 @@ public class ChartGenerationService {
      * 단위 변환을 적용하여 최종 차트 데이터를 생성한다.
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @param startDate 조회 시작일 (YYYYMMDD 형식)
-     * @param endDate 조회 종료일 (YYYYMMDD 형식)
-     * @param interval 데이터 집계 시간 간격
-     * @param unitConvert 단위 변환 정보
-     * @param isVisible 차트 표시 여부
+     * @param startDate             조회 시작일 (YYYYMMDD 형식)
+     * @param endDate               조회 종료일 (YYYYMMDD 형식)
+     * @param interval              데이터 집계 시간 간격
+     * @param unitConvert           단위 변환 정보
+     * @param isVisible             차트 표시 여부
      * @return 처리된 차트 데이터
      */
-    public ChartRes generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
+    public Chart generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
 
+        // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
-        List<String> tartgetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
+        List<String> targetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
 
-        String dateColumnName = tartgetColumns.get(DATE_COLUMN_INDEX);
+        String dateColumnName = targetColumns.get(DATE_COLUMN_INDEX);
         boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
 
-        // Retrieve and process data
+        // 원시 데이터 조회
         List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
-        if (rawData.isEmpty()) {
-            // Return empty chart data by passing empty list to the factory
-            return ChartBundleFactory.toChart(isCandleChartPossible, Collections.emptyList(), tartgetColumns, columnExpressions, isVisible);
-        }
+        List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
 
-        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(rawData, interval, tartgetColumns, goodsDataSourceDetail);
+        // 데이터 집계
+        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, goodsDataSourceDetail);
 
-        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, tartgetColumns, unitConvert);
+        // 단위 변환
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
 
-        // Convert to chart data format
-        return ChartBundleFactory.toChart(isCandleChartPossible, convertedData, tartgetColumns, columnExpressions, isVisible);
+        // 차트 데이터 형식으로 변환
+        return ChartBundleFactory.combineCharts(goodsDataSourceDetail, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
 
     /**
@@ -107,32 +107,44 @@ public class ChartGenerationService {
      * 메인 데이터소스와 연결된 비교군 데이터소스를 찾아 각각에 대한 차트 데이터를 생성한다.
      * 개인화 설정이 있는 경우, 개인화된 비교군 데이터소스만 포함한다.
      *
-     * @param mainDataSource 비교 대상 메인 데이터소스
-     * @param startDate 조회 시작일 (YYYYMMDD 형식)
-     * @param endDate 조회 종료일 (YYYYMMDD 형식)
-     * @param interval 데이터 집계 시간 간격
+     * @param mainDataSource  비교 대상 메인 데이터소스
+     * @param startDate       조회 시작일 (YYYYMMDD 형식)
+     * @param endDate         조회 종료일 (YYYYMMDD 형식)
+     * @param interval        데이터 집계 시간 간격
      * @param personalizedMap 개인화 설정 맵
      * @return 비교군 데이터소스에 대한 차트 데이터 목록
      */
-    public List<ChartRes> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public List<Chart> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, String startDate, String endDate, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
 
+        // 유효성 검증
         if (mainDataSource == null) {
             return Collections.emptyList();
         }
 
-        // Find all comparison data sources for the main source
+        // 비교 데이터소스 조회
         List<DataSourceGroupMapping> comparisons = dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainDataSource);
 
         if (comparisons.isEmpty()) {
             return Collections.emptyList();
         }
 
+        // 비교군데이터 개인화 설정 확인
         List<Integer> personalizedCompDataSources = personalizationService.getPersonalizedCompDataSources(personalizedMap);
 
-        // Generate chart data for each comparison source, filtering by personalized settings if available
+        // 각 비교 데이터소스에 대한 차트 데이터 생성
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
-            .map(comparison -> generateChartData(comparison.getCompareGoodsDataSourceDetail(), startDate, endDate, interval, null, personalizedCompDataSources.contains(comparison.getId().getCompareGoodsDataSourceNo())))
+            .map(comparison -> {
+                boolean isVisible = personalizedCompDataSources.contains(comparison.getId().getCompareGoodsDataSourceNo());
+                return generateChartData(
+                    comparison.getCompareGoodsDataSourceDetail(),
+                    startDate,
+                    endDate,
+                    interval,
+                    ChartUnitConversionService.IDENTITY,
+                    isVisible // 화면 노출 여부
+                );
+            })
             .toList();
     }
 
@@ -142,9 +154,9 @@ public class ChartGenerationService {
      * 조건에 맞는 데이터가 없는 경우 빈 리스트를 반환한다.
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @param dateColumnName 필터링할 날짜 컬럼명
-     * @param startDate 데이터 범위 시작일 (포함, YYYYMMDD 형식)
-     * @param endDate 데이터 범위 종료일 (포함, YYYYMMDD 형식)
+     * @param dateColumnName        필터링할 날짜 컬럼명
+     * @param startDate             데이터 범위 시작일 (포함, YYYYMMDD 형식)
+     * @param endDate               데이터 범위 종료일 (포함, YYYYMMDD 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional(transactionManager = "myBatisTransactionManager")
@@ -155,7 +167,21 @@ public class ChartGenerationService {
         }
 
         String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, endDate);
+
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause));
     }
 
+    /**
+     * 원시 데이터의 날짜 값을 한 번만 LocalDate로 파싱하고, 정렬
+     */
+    private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
+        return rawData.stream().map(
+                row -> {
+                    if (row.containsKey(dateColumnKey)) {
+                        row.compute(dateColumnKey, (k, dateValue) -> DateUtil.parseDate(dateValue));
+                    }
+                    return row;
+                }).sorted(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateColumnKey))))
+            .collect(Collectors.toList());
+    }
 }

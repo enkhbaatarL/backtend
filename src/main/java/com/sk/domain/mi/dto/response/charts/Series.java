@@ -6,6 +6,7 @@ import lombok.Builder;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Builder
 public record Series(
 
     String seriesId,
@@ -15,15 +16,6 @@ public record Series(
     boolean isVisible
 
 ) {
-
-    @Builder
-    public Series(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible) {
-        this.seriesId = seriesId;
-        this.label = label;
-        this.renderAs = renderAs;
-        this.values = values;
-        this.isVisible = isVisible;
-    }
 
     public static Series of(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible) {
         return Series.builder()

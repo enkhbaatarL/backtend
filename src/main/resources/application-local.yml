@@ -29,6 +29,14 @@ spring:
         hikari:
           maximum-pool-size: 5
           max-lifetime: 60000
+      midb:
+          jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: mipapp
+          password: skccmipapp11@@
+          hikari:
+              maximum-pool-size: 5
+              max-lifetime: 60000
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect

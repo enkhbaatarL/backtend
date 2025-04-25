@@ -6,6 +6,7 @@ import com.sk.domain.shared.service.CacheService;
 import jakarta.persistence.PostUpdate;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class ProviderListener {
     @PostUpdate
     public void checkDisabled(Provider provider) {
 
-        if (!provider.getIsUsed() || provider.getIsDeleted()) {
+        if (BooleanUtils.isFalse(provider.getIsUsed()) || BooleanUtils.isTrue(provider.getIsDeleted())) {
             CacheService cacheService = applicationContext.getBean(CacheService.class);
             log.info("The providerNo({}) has been disabled. Subsequently, the related user cache will be invalidated", provider.getProviderNo());
             cacheService.invalidateUsersForTagEntity(CacheType.TAG_PROVIDER, provider.getProviderNo());

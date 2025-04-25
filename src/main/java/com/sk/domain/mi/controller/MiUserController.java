@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "01. 사용자 API", description = "사용자 API 입니다.")
+@Tag(name = "00. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/user-info")
@@ -27,8 +27,7 @@ public class MiUserController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/user/{userNo}/permissions")
     public BaseResponse<PermissionRes> getUserGoodsPermissions(
-        @PathVariable(value = "userNo") Integer userNo
-    ) {
+            @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(miUserService.getUserGoodsPermissions(userNo));
     }
 
