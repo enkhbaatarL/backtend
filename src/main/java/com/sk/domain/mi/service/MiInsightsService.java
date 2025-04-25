@@ -1,12 +1,13 @@
 package com.sk.domain.mi.service;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -17,11 +18,18 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
+import com.sk.domain.mi.dto.response.insights.IFocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
+import com.sk.domain.shared.entity.master.tmd.Goods;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -36,6 +44,8 @@ public class MiInsightsService {
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final GoodsDataRepository goodsDataRepository;
     private final EntityManager entityManager;
+    private final GoodsRepository goodsRepository;
+    private final GoodsDataCategoryRepository goodsDataCategoryRepository;
 
     /**
      * Focused 목록 조회
@@ -44,14 +54,15 @@ public class MiInsightsService {
      * @return List<GoodsDataRes>
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
+        // LocalDateTime threshold = LocalDateTime.now().minusDays(1);
 
-        List<FocusedDataRes> list = goodsDataRepository.findFocusedDataByCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 5));
+        List<IFocusedDataRes> list = goodsDataRepository.findFocusedData(companyNo, PageRequest.of(0, 100));
+        list.stream().forEach(d -> {
+            System.out.println("FocusedDataRes : " + d.getGoodsDataNm());
+            System.out.println("FocusedDataRes : " + d.getGoodsDataCategoryCd());
+        });
 
-        List<FocusedDataRes> listNot = goodsDataRepository.findFocusedDataByNotCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 3));
-
-        return Stream.concat(list.stream(), listNot.stream())
-                .sorted(Comparator.comparing(FocusedDataRes::getModifyDt).reversed())
-                .collect(Collectors.toList());
+        return null;
     }
 
     /**
@@ -95,6 +106,7 @@ public class MiInsightsService {
                 .append(" tp.prvd_no AS providerNo,")
                 .append(" tp.prvd_nm AS providerNm,")
                 .append(" tg.gds_no AS goodsNo,")
+                .append(" tg.gds_nm AS goodsNm,")
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
@@ -217,14 +229,67 @@ public class MiInsightsService {
                         (Integer) row[0], // providerNo
                         (String) row[1], // providerNm
                         (Integer) row[2], // goodsNo
-                        (Integer) row[3], // goodsDataNo
-                        (String) row[4], // goodsDataNm
-                        (String) row[5], // goodsDataExpn
-                        ((Timestamp) row[6]).toLocalDateTime() // modifyDt
+                        (String) row[3], // goodsNm
+                        (Integer) row[4], // goodsDataNo
+                        (String) row[5], // goodsDataNm
+                        (String) row[6], // goodsDataExpn
+                        ((Timestamp) row[7]).toLocalDateTime() // modifyDt
                 ))
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
+    }
+
+    /**
+     * 
+     * debug용 더미 데이터 생성
+     *
+     */
+    @Transactional
+    public void createDummyData() {
+        List<String> A_TYPES = List.of(
+                "A_INSIGHT",
+                "A_CMMDT_MRKT_RPT",
+                "A_CMPY_RPT",
+                "A_ASST_RPT",
+                "A_DEAL_INSIGHT",
+                "A_INFORM");
+
+        List<String> A_LANGUAGES = List.of(
+                "A_ENG",
+                "A_KOR",
+                "A_OTHERS");
+
+        for (int i = 0; i < 100; i++) {
+            Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
+
+            GoodsData savedGoodsData = goodsDataRepository
+                    .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i)));
+
+            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
+                    GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+
+            List<String> copy1 = new ArrayList<>(A_TYPES);
+            Collections.shuffle(copy1);
+            List<String> results1 = copy1.subList(0, 3);
+            for (String result : results1) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            }
+
+            List<String> copy2 = new ArrayList<>(A_LANGUAGES);
+            Collections.shuffle(copy2);
+            List<String> results2 = copy2.subList(0, 2);
+            for (String result : results2) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            }
+
+            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
+                    GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
+
+        }
+
     }
 }

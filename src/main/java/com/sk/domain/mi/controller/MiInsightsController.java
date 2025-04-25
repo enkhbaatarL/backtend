@@ -117,7 +117,7 @@ public class MiInsightsController {
             @Parameter(name = "keyword", description = "데이타명 검색"),
             @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = InsightsSortType.class)),
             @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간 필터", schema = @Schema(implementation = InsightsPeriodType.class)),
-            @Parameter(name = "filters", description = "고급 필터(A_INSIGHT, A_CMMDT_MRKT_RPT, A_LSEG, A_WOODMAC, A_KOR, A_ENG)", example = ""),
+            @Parameter(name = "filters", description = "고급 필터(A_INSIGHT, A_CMMDT_MRKT_RPT, A_LSEG, A_WOODMAC, A_KOR, A_ENG 등)"),
     })
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -137,5 +137,17 @@ public class MiInsightsController {
 
         return BaseResponseFactory
                 .create(miInsightsService.getInsights(cNo, page, size, keyword, sort, period, filters));
+    }
+
+    @ApiOrder(4)
+    @Operation(summary = "", description = "")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/insights/create-dummy")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    public BaseResponse<String> createDummy() {
+
+        miInsightsService.createDummyData();
+
+        return BaseResponseFactory.create("success");
     }
 }
