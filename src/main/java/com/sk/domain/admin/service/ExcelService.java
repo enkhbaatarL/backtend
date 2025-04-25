@@ -56,6 +56,7 @@ public class ExcelService {
     private final int DEFAULT_HEADER_ROW_INDEX = 0; // 기본 엑셀 헤더 행 인덱스 (파일에서 1행 => 인덱스 0)
     private final int DEFAULT_DATA_START_ROW_INDEX = 1; // 기본 엑셀 데이터 시작 행 인덱스 (파일에서 2행 => 인덱스 1)
     private final int MAX_CONSECUTIVE_EMPTY_ROWS = 5; // 최대 허용 빈 행 수 (엑셀 검수 시 연속 빈 행 수가 5개 이상이면 종료)
+    private final String CRITERIA_DT_COLUMN_NAME = "crtr_dt"; // 기준일자 칼럼명 (엑셀에는 없지만 테이블에는 저장이 필요할 때 사용, 나중에 동적으로 받아야 한다면 수정 필요)
 
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
@@ -164,11 +165,12 @@ public class ExcelService {
      * 
      * @param file
      * @param componentInfo
+     * @param criteriaDt 기준일자 (엑셀에는 없지만 DB 테이블에는 저장이 필요할 때 따로 받는다, 현재는 crtr_dt 칼럼에만 저장한다)
      * @return
      * @throws IOException
      */
     @Transactional
-    public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo) throws IOException {
+    public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt) throws IOException {
         if(componentInfo.getTargetDbNm() == null || componentInfo.getTargetDbNm().isBlank()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Target database name is null or blank");
         }
@@ -222,7 +224,7 @@ public class ExcelService {
                 }
             }
 
-            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), componentInfo.getTargetTableNm(), columnNames, mappingColumnMap, headerRowIndex, dataStartRowIndex);
+            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), componentInfo.getTargetTableNm(), columnNames, mappingColumnMap, headerRowIndex, dataStartRowIndex, criteriaDt);
 
         } catch (Exception e) {
             log.error("Exception", e);
@@ -252,7 +254,7 @@ public class ExcelService {
      * @return 저장 성공 여부
      * @throws IOException 파일 처리 중 오류 발생 시
      */
-    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String tableName, String[] expectedColumnNames, Map<String, String> mappingColumnMap, int headerRowIndex, int dataStartRowIndex) {
+    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String tableName, String[] expectedColumnNames, Map<String, String> mappingColumnMap, int headerRowIndex, int dataStartRowIndex, String criteriaDt) {
             try {
                 String fileName = file.getOriginalFilename();
                 if (fileName == null) {
@@ -269,13 +271,13 @@ public class ExcelService {
 
                 if (extension.endsWith(".csv")) {
                     // CSV 처리
-                    PairUtil<List<String>, List<Object[]>> result = processCsvData(file, expectedColumnNames, headerRowIndex, dataStartRowIndex);
+                    PairUtil<List<String>, List<Object[]>> result = processCsvData(file, expectedColumnNames, headerRowIndex, dataStartRowIndex, criteriaDt);
                     actualColumns = result.getFirst();
                     values = result.getSecond();
                 } else if (extension.endsWith(".xlsx") || extension.endsWith(".xls")) {
                     // Excel 처리
                     actualColumns = validateExcelStructure(file, expectedColumnNames, headerRowIndex);
-                    values = collectExcelData(file, actualColumns, dataStartRowIndex);
+                    values = collectExcelData(file, actualColumns, dataStartRowIndex, criteriaDt);
                 } else {
                     throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported file type: " + fileName);
                 }
@@ -288,6 +290,10 @@ public class ExcelService {
                         mappingColumnList.add(mappedColumnName);
                     }
                     actualColumns = mappingColumnList;
+                }
+
+                if (criteriaDt != null) {
+                    actualColumns.add(CRITERIA_DT_COLUMN_NAME);
                 }
 
                 // 공통 DB 배치 삽입
@@ -386,7 +392,7 @@ public class ExcelService {
      * @return 수집된 데이터
      * @throws IOException 파일 처리 중 오류 발생 시
      */
-    private List<Object[]> collectExcelData(MultipartFile file, List<String> actualColumns, int dataStartRowIndex) {
+    private List<Object[]> collectExcelData(MultipartFile file, List<String> actualColumns, int dataStartRowIndex, String criteriaDt) {
         Workbook workbook = null;
         try (InputStream is = file.getInputStream()) {
             String fileName = file.getOriginalFilename();
@@ -418,7 +424,7 @@ public class ExcelService {
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 if (row.getLastCellNum() > 0) { // 데이터가 있는 행
-                    Object[] rowData = parseRowToArray(row, actualColumns);
+                    Object[] rowData = parseRowToArray(row, actualColumns, criteriaDt);
                     if (rowData.length == 0) {
                         log.warn("Parsed empty row data for row: {}", row.getRowNum());
                     } else {
@@ -431,7 +437,9 @@ public class ExcelService {
                     log.debug("Empty row detected at row: {}, consecutive empty rows: {}", row.getRowNum(), consecutiveEmptyRows);
                     if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
                         log.info("Terminating data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
-
+                        
+                        // 데이터 수집 종료
+                        break;
                     }
                 }
             }
@@ -533,8 +541,10 @@ public class ExcelService {
      * @param columnNames
      * @return
      */
-    private Object[] parseRowToArray(Row row, List<String> columnNames) {
-        Object[] rowData = new Object[columnNames.size()];
+    private Object[] parseRowToArray(Row row, List<String> columnNames, String criteriaDt) {
+        int arraySize = criteriaDt == null ? columnNames.size() : columnNames.size() + 1;
+        Object[] rowData = new Object[arraySize];
+        
         for (int i = 0; i < columnNames.size(); i++) {
             Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
             Object value = null;
@@ -567,6 +577,12 @@ public class ExcelService {
             }
             rowData[i] = value;
         }
+
+        // criteriaDt가 null이 아니면 마지막에 값 추가
+        if (criteriaDt != null) {
+            rowData[columnNames.size()] = criteriaDt;
+        }
+
         return rowData;
     }
 
@@ -580,7 +596,7 @@ public class ExcelService {
      * @return
      * @throws IOException
      */
-    private PairUtil<List<String>, List<Object[]>> processCsvData(MultipartFile file, String[] expectedColumnNames, int headerRowIndex, int dataStartRowIndex) throws IOException {
+    private PairUtil<List<String>, List<Object[]>> processCsvData(MultipartFile file, String[] expectedColumnNames, int headerRowIndex, int dataStartRowIndex, String criteriaDt) throws IOException {
         // 구분자 감지
         char delimiter = detectDelimiter(file);
         log.info("Detected CSV delimiter: '{}'", delimiter == ',' ? "comma" : delimiter == ';' ? "semicolon" : delimiter == '\t' ? "tab" : delimiter);
@@ -620,10 +636,15 @@ public class ExcelService {
                 // 데이터 행 처리
                 if (currentRow >= dataStartRowIndex) {
                     if (record.size() > 0) {
-                        Object[] rowData = new Object[actualColumns.size()];
+                        int arraySize = criteriaDt == null ? actualColumns.size() : actualColumns.size() + 1;
+                        Object[] rowData = new Object[arraySize];
                         for (int i = 0; i < actualColumns.size(); i++) {
                             String value = i < record.size() ? record.get(i) : null;
                             rowData[i] = value != null && !value.trim().isEmpty() ? value.trim() : null;
+                        }
+                        // criteriaDt가 null이 아니면 마지막에 값 추가
+                        if (criteriaDt != null) {
+                            rowData[actualColumns.size()] = criteriaDt;
                         }
                         data.add(rowData);
                         consecutiveEmptyRows = 0;

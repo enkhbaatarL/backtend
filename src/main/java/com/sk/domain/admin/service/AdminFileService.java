@@ -77,6 +77,8 @@ public class AdminFileService {
     /**
     * 파일을 업로드 한다.
     *
+    * @param companyCd 회사코드
+    * @param role 역할
     * @param file 단일 파일 업로드
     * @return FileUploadRes
     */

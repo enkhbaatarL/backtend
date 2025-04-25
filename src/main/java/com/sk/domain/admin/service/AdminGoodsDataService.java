@@ -191,7 +191,7 @@ public class AdminGoodsDataService {
 
         List<CategoryDataRes> goodsDataCategoryList1 = goodsDataCategoryRepository.findCategoryDataByGoodsDataNo(goodsData1.getGoodsDataNo());
 
-        List<StructuredDataRes> structuredDataList1 = goodsDataCategoryRepository.findStructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
+        List<StructuredDataRes> structuredDataList1 = goodsDataSourceDetailRepository.findGoodsDataSourceStructuredDatasByConditions(goodsData1);
 
         List<UnstructuredDataRes> unstructuredDataList1 = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData1.getGoodsDataNo());
 
@@ -307,10 +307,6 @@ public class AdminGoodsDataService {
         // 정형 데이타 저장
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
-
-                adminFileService.updateFile(structuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
-                        FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
-
                 // 컴포넌트 타입 조회
                 ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
                         .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
@@ -328,6 +324,9 @@ public class AdminGoodsDataService {
                                         componentInfo.getGoodsDataSourceUnitNm(),
                                         componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
                                         componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
+
+                adminFileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
+                        FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
                 /**
                  * 데이터소스상세 조회 후 데이터소스상세 없는 경우 생성
@@ -636,7 +635,7 @@ public class AdminGoodsDataService {
         // throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
         // }
 
-        excelService.uploadStructuredData(file, componentInfo);
+        excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt());
 
         FileUploadRes fileUploadRes = adminFileService.uploadFile(companyCd, role, file, isPublic);
 
