@@ -117,9 +117,7 @@ public class MiInsightsController {
             @Parameter(name = "keyword", description = "데이타명 검색"),
             @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = InsightsSortType.class)),
             @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간 필터", schema = @Schema(implementation = InsightsPeriodType.class)),
-            @Parameter(name = "documentTypes", description = "문서 타입 코드", example = "A_INSIGHT, A_CMMDT_MRKT_RPT"),
-            @Parameter(name = "providers", description = "프로바이더 타입 코드", example = "A_LSEG, A_WOODMAC"),
-            @Parameter(name = "languages", description = "언어 타입 코드", example = "A_KOR, A_ENG"),
+            @Parameter(name = "filters", description = "고급 필터(A_INSIGHT, A_CMMDT_MRKT_RPT, A_LSEG, A_WOODMAC, A_KOR, A_ENG)", example = ""),
     })
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -132,15 +130,12 @@ public class MiInsightsController {
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") InsightsSortType sort,
             @RequestParam(value = "period", required = false, defaultValue = "ALL_DATES") InsightsPeriodType period,
-            @RequestParam(value = "documentTypes", required = false, defaultValue = "") String documentTypes,
-            @RequestParam(value = "providers", required = false, defaultValue = "") String providers,
-            @RequestParam(value = "languages", required = false, defaultValue = "") String languages) {
+            @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
 
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(
-                miInsightsService.getInsights(cNo, page, size, keyword, sort, period, documentTypes != null ? documentTypes.toUpperCase() : null,
-                        providers != null ? providers.toUpperCase() : null, languages != null ? languages.toUpperCase() : null));
+        return BaseResponseFactory
+                .create(miInsightsService.getInsights(cNo, page, size, keyword, sort, period, filters));
     }
 }
