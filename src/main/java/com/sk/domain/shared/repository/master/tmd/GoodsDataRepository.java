@@ -13,8 +13,6 @@ import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
-import com.sk.domain.mi.dto.response.insights.IFocusedDataRes;
-import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -178,6 +176,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.isDeleted = false
                 AND gdc.isDeleted = false
                 AND ccd.highCodeId = 'A_TYPES'
+                AND gd.modifyDt >= :threshold
             GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
             ORDER BY gd.goodsDataNo DESC
             """, countQuery = """
@@ -199,6 +198,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gdc.isDeleted                            = false
                 AND ccd.highCodeId                            = 'A_TYPES'
                 AND gdc.goodsDataManagementSeparateCd         = 'GUDAT'
+                AND gd.modifyDt >= :threshold
             """)
-    List<IFocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") Pageable pageable);
+    List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
+
+    // Pageable pageable);
 }
