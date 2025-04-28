@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.detail;
 
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -55,7 +56,7 @@ public record GoodsDataRes(
 
     }
 
-    public static GoodsDataRes of(GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections) {
+    public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes) {
         return GoodsDataRes.builder()
             .goodsDataNm(entity.getGoodsDataNm())
             .goodsDataExpn(entity.getGoodsDataExpn())
@@ -64,8 +65,8 @@ public record GoodsDataRes(
             .categoryDataInfo(categoryProjections.stream()
                 .map(CategoryDataInfo::of)
                 .toList())
-            .isViewable(Boolean.TRUE)
-            .isDownloadable(Boolean.TRUE)
+            .isViewable(permissionRes.getGoodsViewableMap().getOrDefault(goodsNo, Boolean.FALSE))
+            .isDownloadable(permissionRes.getGoodsDownloadableMap().getOrDefault(goodsNo, Boolean.FALSE))
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),

@@ -33,7 +33,7 @@ public class MybatisDynamicQueryService {
     public List<Map<String, Object>> getDynamicData(DynamicDataReq dynamicDataReq) {
 
         // 데이터 소스 설정
-        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.tartgetDataSource());
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
 
         String tableName = dynamicDataReq.tableName();
         String columns = dynamicDataReq.columns();
@@ -44,6 +44,7 @@ public class MybatisDynamicQueryService {
         if (columns != null) {
             String[] columnArray = columns.split(",");
             for (String col : columnArray) {
+                if (col.trim().equalsIgnoreCase("count(*)")) continue; // count 쿼리 허용
                 if (!col.trim().matches("^[a-zA-Z0-9_]+$")) {
                     throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "Invalid column name: " + col);
                 }
@@ -64,6 +65,9 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("whereClause", whereClause);
         params.put("additionalWhereClause", additionalWhereClause);
+        params.put("orderByColumns", dynamicDataReq.orderBy());
+        params.put("limit", dynamicDataReq.limit());
+        params.put("offset", dynamicDataReq.offset());
         return dynamicMapper.selectDynamic(params);
     }
 
