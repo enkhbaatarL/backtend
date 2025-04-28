@@ -109,7 +109,7 @@ public class MiInsightsService {
     /**
      * Insights 고급 필터 목록 조회
      *
-     * @return List<GoodsDataFilterRes>
+     * @return GoodsDataFilterRes
      */
     public GoodsDataFilterRes getAdvancedFilter() {
 
