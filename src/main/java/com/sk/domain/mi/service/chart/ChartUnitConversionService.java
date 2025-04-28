@@ -11,6 +11,7 @@ import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataUnitConvertRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChartUnitConversionService {
 
-    // 기본 단위 유지
+    // GDS 기본 단위 유지를 위한 객체
     public static final UnitConvert IDENTITY;
 
     static {
@@ -37,18 +38,26 @@ public class ChartUnitConversionService {
     private final GoodsDataUnitConvertRepository goodsDataUnitConvertRepository;
 
     /**
-     * 데이터소스에 대한 단위 변환 맵을 조회한다.
-     * 데이터소스 번호를 기준으로 단위 변환 목록을 조회하고, 변환 가능한 단위 맵을 생성한다.
+     * 상품-데이터-소스에 대한 단위 변환 맵을 조회한다.
+     * 상품-데이터-소스 번호를 기준으로 단위 변환 목록을 조회하고, 변환 가능한 단위 맵을 생성한다.
      *
-     * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @return 단위 변환 맵 (key: 변환타입#변환단위, value: 단위변환기본 객체)
+     * @param gds 데이터소스 상세 정보
+     * @return 단위 변환 맵 (key: 변환타입#단위, value: 단위변환기본 객체)
      */
-    public Map<String, UnitConvert> getUnitConvertCdMap(GoodsDataSourceDetail goodsDataSourceDetail) {
-        // 단위 변환 목록 조회
-        List<GoodsDataUnitConvert> unitConversions = goodsDataUnitConvertRepository.findByGoodsDataSourceDetailAndIsDeletedFalse(goodsDataSourceDetail);
+    public Map<String, UnitConvert> getConvertUnitCdMap(GoodsDataSourceDetail gds) {
 
-        // 변환 가능한 단위 맵 생성
-        return generateChangeableUnit(goodsDataSourceDetail, unitConversions);
+        // 단위 변환 목록 조회
+        List<GoodsDataUnitConvert> unitConversions = goodsDataUnitConvertRepository.findByGoodsDataSourceDetailAndIsDeletedFalse(gds);
+
+        Map<String, UnitConvert> unitCdMap = unitConversions.stream().collect(
+            Collectors.toMap(uc -> StringUtil.joinPoundSignNonNull(uc.getUnitConvert().getConvertTargetDetailTypeNm(), uc.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert,
+                (v1, v2) -> v2)
+        );
+
+        unitCdMap.put(StringUtil.joinPoundSignNonNull(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()), IDENTITY);
+
+        return unitCdMap;
+
     }
 
     /**
@@ -61,18 +70,17 @@ public class ChartUnitConversionService {
      * @return 변환된 값이 반영된 데이터 리스트
      */
     public List<Map<String, Object>> convert(boolean isCandleChartPossible, List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert) {
-        // 유효성 검증
-        if (aggregatedData == null || aggregatedData.isEmpty() || unitConvert == ChartUnitConversionService.IDENTITY || targetColumns == null || targetColumns.isEmpty()) {
+
+        if (ObjectUtils.isEmpty(aggregatedData) || unitConvert == ChartUnitConversionService.IDENTITY) {
             return aggregatedData;
         }
 
         String dateCol = targetColumns.get(RenderAs.DATE.getIndex());
-        int size = aggregatedData.size();
 
-         if (isCandleChartPossible) {
-            return convertCandleChart(aggregatedData, targetColumns, unitConvert, dateCol, size);
+        if (isCandleChartPossible) {
+            return convertCandleChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
         } else {
-            return convertMetricChart(aggregatedData, targetColumns, unitConvert, dateCol, size);
+            return convertMetricChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
         }
     }
 
@@ -164,31 +172,9 @@ public class ChartUnitConversionService {
         return result;
     }
 
-    /**
-     * 단위 변환 가능한 단위 Map 객체를 생성한다.
-     * 상품 데이터소스 상세 정보와 단위 변환 목록을 기반으로 변환 가능한 단위 맵을 생성한다.
-     * 맵의 키는 '변환타입#변환단위' 형식이고, 값은 단위변환기본 객체다.
-     * 기본 단위도 맵에 포함시킨다.
-     *
-     * @param goodsDataSourceDetail 상품 데이터소스 상세 정보
-     * @param unitConversions       단위 변환 목록
-     * @return 변환 가능한 단위 맵 (key: 변환타입#변환단위, value: 단위변환기본 객체)
-     */
-    private Map<String, UnitConvert> generateChangeableUnit(GoodsDataSourceDetail goodsDataSourceDetail, List<GoodsDataUnitConvert> unitConversions) {
-
-        Map<String, UnitConvert> unitCdMap = unitConversions.stream().collect(
-            Collectors.toMap(s -> StringUtil.joinPoundSignNonNull(s.getUnitConvert().getConvertTargetDetailTypeNm(), s.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert,
-                (v1, v2) -> v2));
-
-        unitCdMap.put(StringUtil.joinPoundSignNonNull(goodsDataSourceDetail.getConvertTargetDetailTypeNm(), goodsDataSourceDetail.getGoodsDataSourceUnitNm()), IDENTITY);
-
-        return unitCdMap;
-
-    }
-
-    public void validateUnitCd(Map<String, UnitConvert> unitConvertMap, String personalizedUnit) {
-        if (!unitConvertMap.containsKey(personalizedUnit)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitConversionCd' cannot be applied to the current data source. unitConversionCd: %s".formatted(personalizedUnit));
+    public void validateUnitCd(Map<String, UnitConvert> unitConvertMap, String determinedUnitCd) {
+        if (!unitConvertMap.containsKey(determinedUnitCd)) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitCd' cannot be applied to the current goods-data-source. unitCd: %s".formatted(determinedUnitCd));
         }
     }
 

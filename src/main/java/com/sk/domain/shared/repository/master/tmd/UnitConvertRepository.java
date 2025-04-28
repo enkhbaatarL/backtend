@@ -1,12 +1,14 @@
 package com.sk.domain.shared.repository.master.tmd;
 
-import com.sk.domain.shared.entity.master.tmd.UnitConvert;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
 
-public interface UnitConvertRepository extends JpaRepository<UnitConvert, Integer> {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.sk.domain.shared.entity.master.tmd.UnitConvert;
+import com.sk.domain.shared.repository.master.tmd.custom.CustomUnitConvertRepository;
+
+public interface UnitConvertRepository extends JpaRepository<UnitConvert, Integer>, CustomUnitConvertRepository {
 
     List<UnitConvert> findByIsDeletedFalse();
 

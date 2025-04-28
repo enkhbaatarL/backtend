@@ -24,4 +24,14 @@ public enum Extension {
 
     private final String code;
 
+    /**
+     * PDF 파일이면 PDF 뷰어로 해당 내용을 미리보기 할 수 있다.
+     *
+     * @param fileExtNm 확장자 명
+     * @return Boolean
+     */
+    public static Boolean isPdfViewable(String fileExtNm) {
+        return Extension.PDF.getCode().equalsIgnoreCase(fileExtNm);
+    }
+
 }

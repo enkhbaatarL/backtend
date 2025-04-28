@@ -39,6 +39,15 @@ public record ComponentInfoReq() {
         String excelConditionCntt,
 
         @Schema(description = "상품데이터소스단위명", example = "kg")
-        String goodsDataSourceUnitNm
+        String goodsDataSourceUnitNm,
+
+        @Schema(description = "상품데이터소스통화단위명", example = "USD")
+        String goodsDataSourceCurrencyUnitNm,
+
+        @Schema(description = "캔들차트가능여부", example = "true")
+        Boolean isCandleChartPossible,
+
+        @Schema(description = "변환대상상세유형명", example = "캔들차트")
+        String convertTargetDetailTypeNm
     ) {}
 }

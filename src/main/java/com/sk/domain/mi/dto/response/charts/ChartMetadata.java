@@ -19,8 +19,8 @@ public record ChartMetadata(
     @Schema(description = "차트 간격", example = "1M")
     Interval currentInterval,
 
-    @Schema(description = "개인화 설정 차트 타입", example = "CANDLE")
-    ChartType visibleChartType,
+    @Schema(description = "초기 차트 타입", example = "CANDLE", allowableValues = {"CANDLE", "LINE"})
+    ChartType initialChartType,
 
     @Schema(description = "변경할 수 있는 단위코드 목록", example = "Brent#kbbl")
     Set<String> changeableUnitCd
@@ -30,7 +30,7 @@ public record ChartMetadata(
     public static ChartMetadata of(String currency, ChartType chartType, String unitConversionCd, Set<String> changeable, Interval interval) {
         return ChartMetadata.builder()
             .currency(currency)
-            .visibleChartType(chartType)
+            .initialChartType(chartType)
             .currentUnitCd(unitConversionCd)
             .currentInterval(interval)
             .changeableUnitCd(changeable)

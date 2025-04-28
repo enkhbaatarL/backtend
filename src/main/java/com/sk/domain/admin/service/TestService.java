@@ -162,7 +162,7 @@ public class TestService {
                             String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
 
             // 엑셀 파일 검수 후 업로드
-            boolean isUploaded = excelService.uploadStructuredData(file, componentInfo);
+            boolean isUploaded = excelService.uploadStructuredData(file, componentInfo, testReq.criteriaDt());
 
             return null;
         } catch (IOException e) {
