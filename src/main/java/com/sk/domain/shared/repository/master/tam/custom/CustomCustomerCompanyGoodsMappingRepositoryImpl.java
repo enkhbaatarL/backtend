@@ -19,6 +19,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import java.util.List;
 
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
+import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
 
 @RequiredArgsConstructor
@@ -70,14 +71,17 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
             .limit(pageable.getPageSize())
             .where(customerCompanyGoodsMapping.isDeleted.eq(false),
                 customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo),
+                customerCompanyGoodsMapping.goods.provider.providerNo.eq(providerNo),
                 searchCondition(search))
             .orderBy(customerCompanyGoodsMapping.goods.goodsNm.asc())
             .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
             .select(customerCompanyGoodsMapping.count())
+            .from(customerCompanyGoodsMapping)
             .where(customerCompanyGoodsMapping.isDeleted.eq(false),
                 customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo),
+                customerCompanyGoodsMapping.goods.provider.providerNo.eq(providerNo),
                 searchCondition(search));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
