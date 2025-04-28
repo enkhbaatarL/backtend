@@ -38,16 +38,15 @@ public class MiDataDetailController {
     private final MiDataDetailService miDataDetailService;
 
     /**
-     * todo 1. 상품 데이터소스 상세 메인 페이지 전체 정보
-     * todo 2. 상품 접근 권한 미리 내려주면 좋을듯?
-     * todo 3. Data info ? 이 부분도 같이 내리면 좋을듯
+     * todo 1. role에 따른 권한 같이 내릴 것
+     * todo 2. 카테고리코드 상세 체크
      */
     @ApiOrder(1)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
     })
-    @Operation(summary = "상품 데이터 조회 API", description = "상품 데이터소스를 조회합니다.")
+    @Operation(summary = "상품 데이터 조회 API", description = "상품 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}")
     public BaseResponse<GoodsDataRes> getGoodsData(
@@ -68,11 +67,11 @@ public class MiDataDetailController {
     @Operation(summary = "상품 비정형 데이터 목록 조회 API", description = "상품 데이터 비정형데이터 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/unstructured-data")
-    public BaseResponse<UnstructuredDataRes> getGoodsDataUnstructuredData(
+    public BaseResponse<List<UnstructuredDataRes>> getGoodsDataUnstructuredData(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo
     ) {
-        return null;
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataUnstructuredData(goodsNo, goodsDataNo));
     }
 
     @ApiOrder(3)

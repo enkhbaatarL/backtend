@@ -7,20 +7,25 @@ import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.ChartMetadata;
 import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.mi.dto.response.charts.Indicator;
+import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
+import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.chart.*;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
 import com.sk.domain.mi.validator.GoodsDataValidator;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
+import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
+import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,6 +46,7 @@ public class MiDataDetailService {
     private final GoodsDataValidator goodsDataValidator;
     private final GoodsDataSourceValidator goodsDataSourceDetailValidator;
 
+    private final UploadedFileRepository uploadedFileRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
 
     private final ChartGenerationService chartGenerationService;
@@ -55,9 +61,16 @@ public class MiDataDetailService {
         ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
         GoodsData goodsData = goodsDataResult.getOrThrow();
 
-        String providerNm = goodsData.getGoods().getProvider().getProviderNm();
+        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
 
-        return null;
+        // todo 권한 보기/다운로드 추가 (버튼 disabled 때문에..)
+
+        return GoodsDataRes.of(goodsData, categoryProjections);
+    }
+
+    public List<UnstructuredDataRes> getGoodsDataUnstructuredData(Integer goodsNo, Integer goodsDataNo) {
+        List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsDataNo);
+        return UnstructuredDataRes.ofList(documents);
     }
 
     /**
