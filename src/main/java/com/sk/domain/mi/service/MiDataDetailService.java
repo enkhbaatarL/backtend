@@ -9,6 +9,7 @@ import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
+import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.chart.*;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
@@ -27,7 +28,9 @@ import com.sk.domain.shared.enums.chart.Range;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +51,7 @@ public class MiDataDetailService {
 
     private final UploadedFileRepository uploadedFileRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
+    private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
 
     private final ChartGenerationService chartGenerationService;
     private final PersonalizationService personalizationService;
@@ -73,37 +77,50 @@ public class MiDataDetailService {
         return UnstructuredDataRes.ofList(documents);
     }
 
+    public List<GoodsDataSourceRes> getGoodsDataSources(Integer goodsNo, Integer goodsDataNo) {
+
+        ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
+        GoodsData goodsData = goodsDataResult.getOrThrow();
+
+        List<GoodsDataSourceDetail> goodsDataSources = goodsDataSourceDetailRepository.findByGoodsDataAndIsDeletedFalse(goodsData);
+
+        return GoodsDataSourceRes.ofList(goodsDataSources);
+
+    }
+
     /**
      * 차트 개인화를 설정합니다.
      *
-     * @param goodsDataNo           상품 데이터 번호
-     * @param goodsDataSourceNo     상품 데이터소스 번호
+     * @param gdNo                  상품 데이터 번호
+     * @param gdsNo                 상품 데이터소스 번호
      * @param chartsPersonalizeReqs 차트 개인화 요청 데이터 리스트
      * @return 개인화된 차트 응답 데이터 리스트
      */
     @Transactional
-    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsDataNo, Integer goodsDataSourceNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs) {
+    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
 
-        ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(goodsDataSourceNo);
+        ValidationResult<GoodsDataSourceDetail> goodsDataSourceResult = goodsDataSourceDetailValidator.ensureExists(gdsNo);
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceResult.getOrThrow();
 
-        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(goodsDataSourceDetail, "testUser001");
+        // 데이터 값 유효성 체크
+        chartsPersonalizeReqs = chartsPersonalizeReqs.stream()
+            .map(ChartsPersonalizeReq::validThen)
+            .filter(ObjectUtils::isNotEmpty)
+            .toList();
 
-        // --- 2) incoming을 (code,val) 키로 묶기 ---
-        // 이 키로 lookup 용 Map 생성
+        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(goodsDataSourceDetail, subject);
 
-        Map<String, ChartsPersonalizeReq> incomingMap = chartsPersonalizeReqs.stream()
-            .collect(Collectors.toMap(s -> s.chartSettingConditionCd().name() + ":" + s.chartConditionValue(), Function.identity()
-                , (old, latest) -> latest));
+        Map<String, ChartsPersonalizeReq> personalizeReqMap = chartsPersonalizeReqs.stream()
+            .collect(Collectors.toMap(p -> p.chartSettingConditionCd().name() + ":" + p.chartConditionValue(), Function.identity(), (old, latest) -> latest));
 
         // --- 3) existing 순회하면서 update or delete 후보 분리 ---
         List<PersonalizedChartSetting> toDelete = new ArrayList<>();
 
         for (PersonalizedChartSetting curr : existing) {
             String key = curr.getChartSettingConditionCd().name() + ":" + curr.getChartSettingConditionVal();
-            if (incomingMap.containsKey(key)) {
+            if (personalizeReqMap.containsKey(key)) {
                 // 3-1) 키가 그대로 존재한다면 → “갱신”이 필요 없다(값도 이미 같으니)
-                incomingMap.remove(key);
+                personalizeReqMap.remove(key);
             } else {
                 // 3-2) DB엔 있는데 요청엔 없는 조합 → delete
                 toDelete.add(curr);
@@ -117,20 +134,15 @@ public class MiDataDetailService {
 
         // --- 5) 남은 incoming → insert 대상 ---
         List<PersonalizedChartSetting> toInsert = new ArrayList<>();
-        for (ChartsPersonalizeReq req : incomingMap.values()) {
-            toInsert.add(PersonalizedChartSetting.builder()
-                .userLoginId("testUser001")
-                .goodsDataSourceDetail(goodsDataSourceDetail)
-                .chartSettingConditionCd(req.chartSettingConditionCd())
-                .chartSettingConditionVal(req.chartConditionValue())
-                .build()
-            );
+        for (ChartsPersonalizeReq req : personalizeReqMap.values()) {
+            toInsert.add(PersonalizedChartSetting.of(req, goodsDataSourceDetail, subject));
         }
+
         if (!toInsert.isEmpty()) {
             personalizedChartSettingRepository.saveAll(toInsert);
         }
 
-        return null;
+        return ChartsPersonalizeRes.ofList(chartsPersonalizeReqs);
     }
 
     /**

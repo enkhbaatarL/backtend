@@ -56,9 +56,6 @@ public class MiDataDetailController {
         return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsNo, goodsDataNo));
     }
 
-    /**
-     * todo 1.어디서 어떻게 데이터 가져오는지 확인 할 것.
-     */
     @ApiOrder(2)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
@@ -82,11 +79,11 @@ public class MiDataDetailController {
     @Operation(summary = "상품 정형 데이터(데이터소스) 목록 조회 API", description = "상품 정형 데이터(데이터소스) 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources")
-    public BaseResponse<GoodsDataSourceRes> getGoodsDataSources(
+    public BaseResponse<List<GoodsDataSourceRes>> getGoodsDataSources(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo
     ) {
-        return null;
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSources(goodsNo, goodsDataNo));
     }
 
     @ApiOrder(4)
@@ -96,16 +93,17 @@ public class MiDataDetailController {
         @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
         @Parameter(name = "chartsPersonalizeReqs", description = "차트 개인화 정보")
     })
-    @Operation(summary = "데이터소스 차트 개인화 설정 API", description = "상품 데이터소스 차트를 개인 설정합니다.")
+    @Operation(summary = "상품 정형 데이터(데이터소스) 차트 개인화 설정 API", description = "상품 정형 데이터(데이터소스) 차트를 개인 설정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PutMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
     public BaseResponse<List<ChartsPersonalizeRes>> putGoodsDataSourcesChartsPersonalize(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs
+        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs,
+        Authentication authentication
     ) {
-        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs));
+        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs, authentication.getName()));
     }
 
     /**
