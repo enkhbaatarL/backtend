@@ -53,7 +53,7 @@ public class MiInsightsService {
      * 
      * 최신 등록된 데이터 조회
      * 조회결과 000개 있음
-     * a. 000개중 Insight: 5ro cnffur
+     * a. 000개중 Insight: 5개 출력
      * b. 그외 아래 순서대로 최신순: 3개출력
      *  (A) Commodity Market Report
      *  (B) Company Report
@@ -63,22 +63,24 @@ public class MiInsightsService {
      * 8개 정렬은 최신 등록순
      * 
      * @param companyNo
-     * @return List<GoodsDataRes>
+     * @return List<FocusedDataRes>
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
-        LocalDateTime threshold = LocalDateTime.now().minusDays(15);
+        LocalDateTime threshold = LocalDateTime.now().minusDays(5);
 
         List<FocusedDataRes> result = new ArrayList<>();
-        // List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold, PageRequest.of(0, 50));
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
         Map<String, Integer> quotas = new LinkedHashMap<>();
-        quotas.put("A_INSIGHT", 5);
-        quotas.put("A_CMMDT_MRKT_RPT", 1);
-        quotas.put("A_CMPY_RPT", 1);
-        quotas.put("A_ASST_RPT", 1);
-        quotas.put("A_DEAL_INSIGHT", 1);
-        quotas.put("A_INFORM", 1);
+
+        List<GoodsDataCategoryRes> documentTypes = commonCodeDetailRepository.findDocTypeCategory();
+        for (GoodsDataCategoryRes documentType : documentTypes) {
+            if (documentType.codeId().equals("A_INSIGHT")) {
+                quotas.put(documentType.codeId(), 5);
+            } else {
+                quotas.put(documentType.codeId(), 1);
+            }
+        }
 
         for (Map.Entry<String, Integer> entry : quotas.entrySet()) {
             String type = entry.getKey();
