@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +20,6 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
-import com.sk.domain.mi.dto.response.insights.IFocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -49,26 +50,66 @@ public class MiInsightsService {
 
     /**
      * Focused 목록 조회
-     *
+     * 
+     * 최신 등록된 데이터 조회
+     * 조회결과 000개 있음
+     * a. 000개중 Insight: 5개 출력
+     * b. 그외 아래 순서대로 최신순: 3개출력
+     *  (A) Commodity Market Report
+     *  (B) Company Report
+     *  (C) Asset Report
+     *  (D) Deal Insight
+     *  (E) Inform
+     * 8개 정렬은 최신 등록순
+     * 
      * @param companyNo
-     * @return List<GoodsDataRes>
+     * @return List<FocusedDataRes>
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
-        // LocalDateTime threshold = LocalDateTime.now().minusDays(1);
+        LocalDateTime threshold = LocalDateTime.now().minusDays(5);
 
-        List<IFocusedDataRes> list = goodsDataRepository.findFocusedData(companyNo, PageRequest.of(0, 100));
-        list.stream().forEach(d -> {
-            System.out.println("FocusedDataRes : " + d.getGoodsDataNm());
-            System.out.println("FocusedDataRes : " + d.getGoodsDataCategoryCd());
-        });
+        List<FocusedDataRes> result = new ArrayList<>();
+        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
-        return null;
+        Map<String, Integer> quotas = new LinkedHashMap<>();
+
+        List<GoodsDataCategoryRes> documentTypes = commonCodeDetailRepository.findDocTypeCategory();
+        for (GoodsDataCategoryRes documentType : documentTypes) {
+            if (documentType.codeId().equals("A_INSIGHT")) {
+                quotas.put(documentType.codeId(), 5);
+            } else {
+                quotas.put(documentType.codeId(), 1);
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : quotas.entrySet()) {
+            String type = entry.getKey();
+            int limit = entry.getValue();
+
+            Iterator<FocusedDataRes> it = dataList.iterator();
+            int count = 0;
+
+            while (it.hasNext() && count < limit && result.size() < 8) {
+                FocusedDataRes data = it.next();
+                if (data.getGoodsDataCategoryCd().contains(type)) {
+                    result.add(data);
+                    it.remove();
+                    count++;
+                }
+            }
+
+            if (result.size() >= 8) {
+                break;
+            }
+        }
+
+        return result;
     }
 
     /**
      * Insights 고급 필터 목록 조회
      *
-     * @return List<GoodsDataFilterRes>
+     * @return GoodsDataFilterRes
      */
     public GoodsDataFilterRes getAdvancedFilter() {
 

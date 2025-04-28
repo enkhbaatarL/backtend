@@ -2,46 +2,21 @@ package com.sk.domain.mi.dto.response.insights;
 
 import java.time.LocalDateTime;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
+// GROUP_CONCAT 관련 처리로 인해 interface 로 작성
+public interface FocusedDataRes {
+    int getProviderNo();
 
-// @formatter:off
-@Builder
-public record FocusedDataRes(
-    @Schema(description = "프로바이더 번호", example = "")
-    int providerNo,
+    String getProviderNm();
 
-    @Schema(description = "프로바이더 이름", example = "")
-    String providerNm,
+    int getGoodsNo();
 
-    @Schema(description = "상품 번호", example = "")
-    int goodsNo,
+    String getGoodsNm();
 
-    @Schema(description = "상품 이름", example = "")
-    String goodsNm,
+    int getGoodsDataNo();
 
-    @Schema(description = "상품데이터번호", example = "") 
-    int goodsDataNo,
+    String getGoodsDataNm();
 
-    @Schema(description = "상품데이터명", example = "") 
-    String goodsDataNm,
+    LocalDateTime getModifyDt();
 
-    @Schema(description = "상품데이터 수정 시간", example = "") 
-    LocalDateTime modifyDt,
-    
-    @Schema(description = "상품데이터 카테고리 코드", example = "")
-    String goodsDataCategoryCd) {
-    
-        public FocusedDataRes(int providerNo, String providerNm, int goodsNo, String goodsNm, int goodsDataNo,
-                String goodsDataNm, LocalDateTime modifyDt, String goodsDataCategoryCd) {
-            this.providerNo = providerNo;
-            this.providerNm = providerNm;
-            this.goodsNo = goodsNo;
-            this.goodsNm = goodsNm;
-            this.goodsDataNo = goodsDataNo;
-            this.goodsDataNm = goodsDataNm;
-            this.modifyDt = modifyDt;
-            this.goodsDataCategoryCd = goodsDataCategoryCd;
-        }
+    String getGoodsDataCategoryCd();
 }
-// @formatter:on
