@@ -50,12 +50,12 @@ public class PersonalizedChartSetting extends BaseEntity {
         this.chartSettingConditionVal = chartSettingConditionVal;
     }
 
-    public static PersonalizedChartSetting of(ChartsPersonalizeReq req, GoodsDataSourceDetail goodsDataSourceDetail) {
+    public static PersonalizedChartSetting of(ChartsPersonalizeReq req, GoodsDataSourceDetail goodsDataSourceDetail, String userLoginId) {
         return PersonalizedChartSetting.builder()
             .chartSettingConditionCd(req.chartSettingConditionCd())
             .chartSettingConditionVal(req.chartConditionValue())
             .goodsDataSourceDetail(goodsDataSourceDetail)
-            .userLoginId("todo")
+            .userLoginId(userLoginId)
             .build();
     }
 

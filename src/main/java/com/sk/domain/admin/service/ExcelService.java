@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -38,7 +37,6 @@ import com.github.pjfanning.xlsx.StreamingReader;
 import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.common.utils.JsonUtil;
 import com.sk.common.utils.PairUtil;
 import com.sk.domain.admin.dto.request.ExcelReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
@@ -171,60 +169,55 @@ public class ExcelService {
      */
     @Transactional
     public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt) throws IOException {
-        if(componentInfo.getTargetDbNm() == null || componentInfo.getTargetDbNm().isBlank()) {
+        if (componentInfo.getTargetDbNm() == null || componentInfo.getTargetDbNm().isBlank()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Target database name is null or blank");
         }
         try {
-            // 컴포넌트 엑셀 칼럼 추출
+            
+            // 컴포넌트 엑셀 칼럼 추출 TODO: 테이블 칼럼으로 변경해야함
             String columnName = componentInfo.getExcelColumnListNm();
 
             if (columnName == null || columnName.isBlank()) {
                 throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Column name is null or blank");
             }
-
-            String[] columnNames = Arrays.stream(columnName.split(",")).map(String::trim).filter(name -> !name.isEmpty()).toArray(String[]::new);
+            List<String> columnNames = Arrays.stream(columnName.split(","))
+                .map(String::trim)
+                .filter(name -> !name.isEmpty())
+                .collect(Collectors.toCollection(ArrayList::new));
 
             int headerRowIndex = DEFAULT_HEADER_ROW_INDEX;
             int dataStartRowIndex = DEFAULT_DATA_START_ROW_INDEX;
-            Map<String, String> mappingColumnMap = null; // 엑셀 칼럼명과 Insert 테이블 칼럼명이 다를 때 칼럼명 매핑하기 위한 MAP, 조건이 없다면 엑셀에서 추출한 칼럼명으로 사용하기 위해 Default 값은 null
 
             // 컴포넌트 조건절에 HEADER_ROW_INDEX, DATA_START_ROW_INDEX 값 있는지 확인
             // 조건절 형식 : HEADER_ROW_INDEX=1;DATA_START_ROW_INDEX=2 (엑셀파일의 1행이면 )
-            //          : 입력 예시 : HEADER_ROW_INDEX=0;DATA_START_ROW_INDEX=1;
-            if(componentInfo.getExcelConditionCntt() != null && !componentInfo.getExcelConditionCntt().isBlank()) {
+            // : 입력 예시 : HEADER_ROW_INDEX=0;DATA_START_ROW_INDEX=1;
+            if (componentInfo.getExcelConditionCntt() != null && !componentInfo.getExcelConditionCntt().isBlank()) {
                 String[] condition = componentInfo.getExcelConditionCntt().split(";");
-                for(String cond : condition) {
-                    if(cond.contains("HEADER_ROW_INDEX") || cond.contains("DATA_START_ROW_INDEX")) {
+                for (String cond : condition) {
+                    if (cond.contains("HEADER_ROW_INDEX") || cond.contains("DATA_START_ROW_INDEX")) {
                         String[] keyValue = cond.split("=");
-                        if(keyValue[0].equals("HEADER_ROW_INDEX")) {
+                        if (keyValue[0].equals("HEADER_ROW_INDEX")) {
                             int conditionHeaderRowIndex = Integer.parseInt(keyValue[1]); // 엑셀파일의 1행이면 0행
-                            if(conditionHeaderRowIndex <= 0) {
+                            if (conditionHeaderRowIndex <= 0) {
                                 headerRowIndex = 0; // headerRowIndex의 기본값은 0
                             } else {
                                 headerRowIndex = conditionHeaderRowIndex - 1;
                             }
                         }
-                        if(keyValue[0].equals("DATA_START_ROW_INDEX")) {
+                        if (keyValue[0].equals("DATA_START_ROW_INDEX")) {
                             int conditionDataStartRowIndex = Integer.parseInt(keyValue[1]); // 엑셀파일의 2행이면 1행
-                            if(conditionDataStartRowIndex <= 1) {
+                            if (conditionDataStartRowIndex <= 1) {
                                 dataStartRowIndex = 1; // dataStartRowIndex의 기본값은 1
                             } else {
                                 dataStartRowIndex = conditionDataStartRowIndex - 1;
                             }
                         }
                     }
-
-                    // 엑셀 칼럼명과 Insert 테이블 칼럼명이 다를 때 조건 확인 후 칼럼명 매핑하기 위한 MAP
-                    if(cond.contains("EXCEL_TO_TABLE_MAPPING_COLUMN")) {
-                        String[] keyValue = cond.split("=");
-                        String mappingColumnString = keyValue[1];
-                        // JSON-like 문자열을 Map으로 파싱
-                        mappingColumnMap = JsonUtil.getInstance().fromJson(mappingColumnString, Map.class);
-                    }
                 }
             }
 
-            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), componentInfo.getTargetTableNm(), columnNames, mappingColumnMap, headerRowIndex, dataStartRowIndex, criteriaDt);
+            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), componentInfo.getTargetTableNm(), columnNames, headerRowIndex,
+                    dataStartRowIndex, criteriaDt);
 
         } catch (Exception e) {
             log.error("Exception", e);
@@ -254,54 +247,52 @@ public class ExcelService {
      * @return 저장 성공 여부
      * @throws IOException 파일 처리 중 오류 발생 시
      */
-    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String tableName, String[] expectedColumnNames, Map<String, String> mappingColumnMap, int headerRowIndex, int dataStartRowIndex, String criteriaDt) {
-            try {
-                String fileName = file.getOriginalFilename();
-                if (fileName == null) {
-                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "File name is null");
-                }
-
-                // 엑셀 구조 검증
-                List<String> actualColumns;
-                // 데이터 수집
-                List<Object[]> values;
-
-                // 파일 확장자 검증
-                String extension = fileName.toLowerCase();
-
-                if (extension.endsWith(".csv")) {
-                    // CSV 처리
-                    PairUtil<List<String>, List<Object[]>> result = processCsvData(file, expectedColumnNames, headerRowIndex, dataStartRowIndex, criteriaDt);
-                    actualColumns = result.getFirst();
-                    values = result.getSecond();
-                } else if (extension.endsWith(".xlsx") || extension.endsWith(".xls")) {
-                    // Excel 처리
-                    actualColumns = validateExcelStructure(file, expectedColumnNames, headerRowIndex);
-                    values = collectExcelData(file, actualColumns, dataStartRowIndex, criteriaDt);
-                } else {
-                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported file type: " + fileName);
-                }
-
-                if(mappingColumnMap != null) {
-                    List<String> mappingColumnList = new ArrayList<>();
-                    // 칼럼명 매핑
-                    for(String columnName : actualColumns) {
-                        String mappedColumnName = mappingColumnMap.get(columnName);
-                        mappingColumnList.add(mappedColumnName);
-                    }
-                    actualColumns = mappingColumnList;
-                }
-
-                if (criteriaDt != null) {
-                    actualColumns.add(CRITERIA_DT_COLUMN_NAME);
-                }
-
-                // 공통 DB 배치 삽입
-                return saveBatchData(tartgetDataSource, actualColumns, values, tableName);
-            } catch (Exception e) {
-                log.error("Exception during upload: {}", e.getMessage(), e);
-                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String tableName, List<String> actualColumns,
+            int headerRowIndex, int dataStartRowIndex, String criteriaDt) {
+        try {
+            String fileName = file.getOriginalFilename();
+            if (fileName == null) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "File name is null");
             }
+
+            // 데이터 수집
+            List<Object[]> values;
+
+            // 파일 확장자 검증
+            String extension = fileName.toLowerCase();
+            // Excel Data 파싱
+            if (extension.endsWith(".csv")) {
+                // CSV 처리
+
+                // TODO: 타입에 따른 분기 처리 필요
+
+                // 일반 타입
+                values = processCsvData(file, headerRowIndex, dataStartRowIndex, criteriaDt);
+                // 피벗 타입
+                // values = collectPivotCsvData(file);
+            } else if (extension.endsWith(".xlsx") || extension.endsWith(".xls")) {
+                // xlsx xls 처리
+
+                // TODO: 타입에 따른 분기 처리 필요
+
+                // 일반 타입
+                values = collectExcelData(file, actualColumns, dataStartRowIndex, criteriaDt);
+                // 피벗 타입
+                // values = collectPivotExcelData(file, headerRowIndex, dataStartRowIndex);
+            } else {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported file type: " + fileName);
+            }
+
+            if (criteriaDt != null) {
+                actualColumns.add(CRITERIA_DT_COLUMN_NAME);
+            }
+
+            // 공통 DB 배치 삽입
+            return saveBatchData(tartgetDataSource, actualColumns, values, tableName);
+        } catch (Exception e) {
+            log.error("Exception during upload: {}", e.getMessage(), e);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        }
     }
 
     /**
@@ -349,7 +340,7 @@ public class ExcelService {
             if (headerRow == null) {
                 throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Header row not found at index " + headerRowIndex);
             }
-            
+
             List<String> actualColumns = extractColumnNames(headerRow);
 
             // 3. 기대 칼럼과 실제 칼럼 검증
@@ -407,7 +398,7 @@ public class ExcelService {
             } else {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported Excel file type: " + fileName);
             }
-            
+
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
 
@@ -437,7 +428,7 @@ public class ExcelService {
                     log.debug("Empty row detected at row: {}, consecutive empty rows: {}", row.getRowNum(), consecutiveEmptyRows);
                     if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
                         log.info("Terminating data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
-                        
+
                         // 데이터 수집 종료
                         break;
                     }
@@ -489,9 +480,9 @@ public class ExcelService {
         }
 
         boolean isValidMimeType = contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") || // xlsx
-            contentType.equals("application/vnd.ms-excel") || // xls
-            contentType.equals("text/csv") || // csv
-            contentType.equals("text/plain"); // csv (일부 클라이언트에서)
+                contentType.equals("application/vnd.ms-excel") || // xls
+                contentType.equals("text/csv") || // csv
+                contentType.equals("text/plain"); // csv (일부 클라이언트에서)
 
         if (!isValidMimeType) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
@@ -525,8 +516,8 @@ public class ExcelService {
 
         // actualColumns에만 있는 칼럼(엑셀 칼럼에만 있는 경우) 체크
         List<String> extra = actualSet.stream()
-        .filter(col -> !expectedSet.contains(col))
-        .collect(Collectors.toList());
+                .filter(col -> !expectedSet.contains(col))
+                .collect(Collectors.toList());
 
         if (!extra.isEmpty()) {
             String errorMessage = "Column mismatch: Extra columns found in Excel: " + extra;
@@ -539,16 +530,17 @@ public class ExcelService {
      * 
      * @param row
      * @param columnNames
+     * @param criteriaDt
      * @return
      */
     private Object[] parseRowToArray(Row row, List<String> columnNames, String criteriaDt) {
         int arraySize = criteriaDt == null ? columnNames.size() : columnNames.size() + 1;
         Object[] rowData = new Object[arraySize];
-        
+
         for (int i = 0; i < columnNames.size(); i++) {
             Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
             Object value = null;
-            
+
             if (cell == null || cell.getCellType() == CellType.BLANK) {
                 value = null;
             } else {
@@ -582,75 +574,65 @@ public class ExcelService {
         if (criteriaDt != null) {
             rowData[columnNames.size()] = criteriaDt;
         }
-
         return rowData;
     }
 
     /**
-     * CSV 데이터 처리 (헤더 검증 및 데이터 수집)
-     * 
+     * CSV 데이터 처리 (데이터 수집)
+     *
      * @param file
-     * @param expectedColumnNames
      * @param headerRowIndex
      * @param dataStartRowIndex
-     * @return
+     * @param criteriaDt
+     * @return List<Object[]> 데이터 리스트
      * @throws IOException
      */
-    private PairUtil<List<String>, List<Object[]>> processCsvData(MultipartFile file, String[] expectedColumnNames, int headerRowIndex, int dataStartRowIndex, String criteriaDt) throws IOException {
+    private List<Object[]> processCsvData(MultipartFile file, int headerRowIndex, int dataStartRowIndex, String criteriaDt)
+            throws IOException {
         // 구분자 감지
         char delimiter = detectDelimiter(file);
         log.info("Detected CSV delimiter: '{}'", delimiter == ',' ? "comma" : delimiter == ';' ? "semicolon" : delimiter == '\t' ? "tab" : delimiter);
-        try (Reader reader = new InputStreamReader(file.getInputStream());
-                CSVParser csvParser = CSVParser.parse(reader, CSVFormat.Builder.create(CSVFormat.DEFAULT)
-                .setDelimiter(delimiter)
-                .setTrim(true)
-                .setAllowMissingColumnNames(true)
-                .get())) {
+        
+        try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             CSVParser csvParser = CSVParser.parse(reader, CSVFormat.Builder.create(CSVFormat.DEFAULT)
+                     .setDelimiter(delimiter)
+                     .setTrim(true)
+                     .setAllowMissingColumnNames(true)
+                     .get())) {
 
-            List<String> actualColumns = null;
             List<Object[]> data = new ArrayList<>();
             int currentRow = 0;
             int consecutiveEmptyRows = 0;
+            int columnCount = -1; // 첫 번째 데이터 행에서 열 개수를 동적으로 결정
 
             for (CSVRecord record : csvParser) {
-                // 헤더 행 처리
-                if (currentRow == headerRowIndex && actualColumns == null) {
-                    actualColumns = new ArrayList<>();
-                    for (int i = 0; i < record.size(); i++) {
-                        String header = record.get(i);
-                        if (header == null) {
-                            header = "";
-                        }
-                        String rawHeader = header; // 원시 값 저장
-                        // 비표준 문자 제거
-                        header = cleanHeader(rawHeader);
-                        actualColumns.add(header);
-                    }
-                    try {
-                        validateColumns(actualColumns, expectedColumnNames);
-                    } catch (Exception e) {
-                        throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, e.getMessage());
-                    }
-                }
-
                 // 데이터 행 처리
                 if (currentRow >= dataStartRowIndex) {
                     if (record.size() > 0) {
-                        int arraySize = criteriaDt == null ? actualColumns.size() : actualColumns.size() + 1;
+                        // 첫 번째 데이터 행에서 열 개수 결정
+                        if (columnCount == -1) {
+                            columnCount = record.size(); // 첫 데이터 행의 열 개수로 고정
+                            log.debug("Determined column count from first data row: {}", columnCount);
+                        }
+
+                        // 열 개수에 따라 데이터 배열 크기 결정
+                        int arraySize = criteriaDt == null ? columnCount : columnCount + 1;
                         Object[] rowData = new Object[arraySize];
-                        for (int i = 0; i < actualColumns.size(); i++) {
+                        for (int i = 0; i < columnCount; i++) {
                             String value = i < record.size() ? record.get(i) : null;
                             rowData[i] = value != null && !value.trim().isEmpty() ? value.trim() : null;
                         }
                         // criteriaDt가 null이 아니면 마지막에 값 추가
                         if (criteriaDt != null) {
-                            rowData[actualColumns.size()] = criteriaDt;
+                            rowData[columnCount] = criteriaDt;
                         }
                         data.add(rowData);
                         consecutiveEmptyRows = 0;
                     } else {
                         consecutiveEmptyRows++;
+                        log.debug("Empty row detected, consecutive empty rows: {}", consecutiveEmptyRows);
                         if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                            log.info("Terminating data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
                             break;
                         }
                     }
@@ -658,10 +640,10 @@ public class ExcelService {
                 currentRow++;
             }
 
-            if (actualColumns == null) {
-                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Header row not found at index " + headerRowIndex);
+            if (data.isEmpty()) {
+                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "No data found starting at index " + dataStartRowIndex);
             }
-            return new PairUtil<>(actualColumns, data);
+            return data;
 
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
@@ -699,8 +681,8 @@ public class ExcelService {
         }
         // BOM, 공백, 줄바꿈, 비표준 공백 제거
         String cleaned = header.replaceAll("^[\\uFEFF\\u200B\\u00A0]+", "") // BOM, Zero-width space, NBSP 제거
-                            .replaceAll("[\\r\\n\\t\\u00A0]+", "") // 줄바꿈, 탭, NBSP 제거
-                            .trim(); // 양쪽 공백 제거
+                .replaceAll("[\\r\\n\\t\\u00A0]+", "") // 줄바꿈, 탭, NBSP 제거
+                .trim(); // 양쪽 공백 제거
         if (cleaned.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Header cleaned to empty string. Original: '" + header + "'");
         }
@@ -725,6 +707,201 @@ public class ExcelService {
                 return '\t';
             }
             return ',';
+        }
+    }
+
+    private List<Object[]> collectPivotExcelData(MultipartFile file, int headerRowIndex, int dataStartRowIndex) {
+        Workbook workbook = null;
+        List<Object[]> result = new ArrayList<>();
+        List<String> periodCodes = new ArrayList<>();
+        String headerFirstCell = null; // 헤더의 첫 번째 셀 값 저장 (칼럼 명이 여러번 들어오는 파일에 대한 예외 처리용)
+
+        try (InputStream inputStream = file.getInputStream()) {
+            String fileName = file.getOriginalFilename();
+
+            // 엑셀 파일 형식에 따라 Workbook 생성
+            if (fileName.toLowerCase().endsWith(".xlsx")) {
+                workbook = StreamingReader.builder()
+                        .rowCacheSize(100)
+                        .bufferSize(4096)
+                        .open(inputStream);
+            } else if (fileName.toLowerCase().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(inputStream);
+            } else {
+                throw new IllegalArgumentException("Unsupported Excel file type: " + fileName);
+            }
+
+            // 첫 번째 시트 가져오기
+            Sheet sheet = workbook.getSheetAt(0);
+
+            // iterator를 사용하여 행 순회
+            Iterator<Row> rowIterator = sheet.iterator();
+            if (!rowIterator.hasNext()) {
+                throw new IllegalStateException("Excel sheet is empty");
+            }
+
+            // 헤더 행까지 이동
+            int currentRow = 0;
+            Row headerRow = null;
+            while (rowIterator.hasNext() && currentRow <= headerRowIndex) {
+                headerRow = rowIterator.next();
+                currentRow++;
+            }
+
+            if (headerRow == null) {
+                throw new IllegalStateException("Header row not found at index " + headerRowIndex);
+            }
+
+            // 헤더 행에서 PeriodCode 추출
+            headerFirstCell = headerRow.getCell(0) != null ? headerRow.getCell(0).getStringCellValue().trim() : null;
+            for (int colIndex = 1; colIndex < headerRow.getLastCellNum(); colIndex++) {
+                Cell headerCell = headerRow.getCell(colIndex);
+                if (headerCell != null) {
+                    periodCodes.add(headerCell.getStringCellValue().trim());
+                }
+            }
+
+            // 데이터 시작 행까지 이동
+            while (rowIterator.hasNext() && currentRow < dataStartRowIndex) {
+                rowIterator.next();
+                currentRow++;
+            }
+
+            // 데이터 행 처리
+            int consecutiveEmptyRows = 0;
+            while (rowIterator.hasNext()) {
+                Row row = rowIterator.next();
+                if (row == null || row.getLastCellNum() <= 1) { // 빈 행 체크
+                    consecutiveEmptyRows++;
+                    log.debug("Empty row detected, consecutive empty rows: {}", consecutiveEmptyRows);
+                    if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                        log.info("Terminating data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
+                        break;
+                    }
+                    continue;
+                }
+
+                // 헤더 행인지 확인 (첫 번째 셀이 "Year"와 동일한 경우)
+                Cell firstCell = row.getCell(0);
+                if (firstCell != null && firstCell.getCellType() == CellType.STRING &&
+                        firstCell.getStringCellValue().trim().equals(headerFirstCell)) {
+                    log.debug("Skipping repeated header row: {}", firstCell.getStringCellValue());
+                    continue; // 헤더 행이면 건너뜀
+                }
+
+                // 연속 빈 행 카운터 초기화
+                consecutiveEmptyRows = 0;
+
+                // 첫 번째 열(Year) 읽기
+                Cell yearCell = row.getCell(0);
+                if (yearCell == null || yearCell.getCellType() != CellType.NUMERIC)
+                    continue;
+                int year = (int) yearCell.getNumericCellValue();
+
+                // 나머지 열(PeriodCode에 해당하는 값) 읽기
+                for (int colIndex = 1; colIndex < row.getLastCellNum(); colIndex++) {
+                    Cell valueCell = row.getCell(colIndex);
+                    if (valueCell == null || colIndex - 1 >= periodCodes.size())
+                        continue;
+
+                    double value = valueCell.getNumericCellValue();
+                    String periodCode = periodCodes.get(colIndex - 1);
+
+                    // DB 저장을 위한 Object[] 생성: [Year, PeriodCode, Value]
+                    Object[] rowData = new Object[] {year, periodCode, value};
+                    result.add(rowData);
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("Exception during data collection: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to parse Excel file: " + e.getMessage());
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (Exception e) {
+                    log.warn("Failed to close workbook: {}", e.getMessage());
+                }
+            }
+        }
+    }
+
+    public List<Object[]> collectPivotCsvData(MultipartFile file) {
+        List<Object[]> result = new ArrayList<>();
+        List<String> periodCodes = new ArrayList<>();
+        String headerFirstCell = null;
+
+        try (InputStream inputStream = file.getInputStream();
+             InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+
+            // CSVFormat 설정 (헤더 자동 처리)
+            CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT)
+                    .setHeader() // 첫 번째 행을 헤더로 설정
+                    .setSkipHeaderRecord(true) // 헤더 행 건너뛰기
+                    .get(); // build() 대신 get() 사용
+
+            // CSVParser 생성
+            try (CSVParser csvParser = CSVParser.parse(reader, csvFormat)) {
+                // 헤더 추출
+                List<String> headers = csvParser.getHeaderNames();
+                if (headers == null || headers.isEmpty()) {
+                    throw new IllegalStateException("CSV file is empty or has no headers");
+                }
+
+                headerFirstCell = headers.get(0) != null ? headers.get(0).trim() : null;
+                periodCodes.addAll(headers.subList(1, headers.size()));
+
+                // 데이터 행 처리
+                int consecutiveEmptyRows = 0;
+                for (CSVRecord row : csvParser) {
+                    // 빈 행 체크
+                    if (row.size() <= 1 || row.toList().stream().allMatch(cell -> cell == null || cell.trim().isEmpty())) {
+                        consecutiveEmptyRows++;
+                        log.debug("Empty row detected in CSV, consecutive empty rows: {}", consecutiveEmptyRows);
+                        if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                            log.info("Terminating CSV data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
+                            break;
+                        }
+                        continue;
+                    }
+
+                    // 헤더 행인지 확인 (첫 번째 셀이 "Year"와 동일한 경우)
+                    String firstCell = row.get(0) != null ? row.get(0).trim() : null;
+                    if (firstCell != null && firstCell.equals(headerFirstCell)) {
+                        log.debug("Skipping repeated header row in CSV: {}", firstCell);
+                        continue;
+                    }
+
+                    // 연속 빈 행 카운터 초기화
+                    consecutiveEmptyRows = 0;
+
+                    // 첫 번째 열(Year) 읽기
+                    if (firstCell == null || !firstCell.matches("\\d+")) continue; // 숫자가 아닌 경우 건너뜀
+                    int year = Integer.parseInt(firstCell);
+
+                    // 나머지 열(PeriodCode에 해당하는 값) 읽기
+                    for (int colIndex = 1; colIndex < row.size(); colIndex++) {
+                        String valueStr = row.get(colIndex) != null ? row.get(colIndex).trim() : null;
+                        if (valueStr == null || valueStr.isEmpty() || colIndex - 1 >= periodCodes.size()) continue;
+
+                        double value = Double.parseDouble(valueStr);
+                        String periodCode = periodCodes.get(colIndex - 1);
+
+                        // DB 저장을 위한 Object[] 생성: [Year, PeriodCode, Value]
+                        Object[] rowData = new Object[]{year, periodCode, value};
+                        result.add(rowData);
+                    }
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("Exception during CSV data collection: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to parse CSV file: " + e.getMessage());
         }
     }
 }
