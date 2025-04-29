@@ -1,14 +1,7 @@
 package com.sk.domain.mi.service;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,25 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.enums.ResultCode;
-import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
-import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
-import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
-import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
-import com.sk.domain.shared.entity.master.tmd.Goods;
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
-import com.sk.domain.shared.enums.insights.InsightsPeriodType;
-import com.sk.domain.shared.enums.insights.InsightsSortType;
-import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import jakarta.persistence.EntityManager;
@@ -49,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TempService {
     private final UserRepository userRepository;
-    private final GoodsDataRepository goodsDataRepository;
     private final EntityManager entityManager;
     private final MiGoodsDataInqueryUserService miGoodsDataInqueryUserService;
 
@@ -155,23 +133,17 @@ public class TempService {
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
     }
 
-    public void getRecentViewed(int companyNo, int userNo) {
-        //
-    }
-
-    public void createGoodsDataInqueryUser(int userNo, int providerNo, int goodsNo, int goodsDataNo) {
+    /**
+     * Market Data - Recent Viewed 최신 5개 조회
+     *
+     * @param userNo 사용자 번호
+     * @return List<RecentViewedRes>
+     */
+    public List<RecentViewedRes> getRecentViewed(int userNo) {
         User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "사용자 정보를 찾을 수 없습니다."));
 
-        String userLoginId = user.getUserLoginId();
-
-        GoodsData goodsData = goodsDataRepository
-                .findGoodsDataByProviderNoAndGoodsNoAndGoodsDataNo(providerNo, goodsNo, goodsDataNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(
-                                Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
-
-        miGoodsDataInqueryUserService.createGoodsDataInqueryUser(goodsData, userLoginId);
+        return miGoodsDataInqueryUserService.getGoodsDataInqueryUser(user.getUserLoginId(), PageRequest.of(0, 5));
     }
 }
