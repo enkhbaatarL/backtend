@@ -1,6 +1,6 @@
 package com.sk.domain.shared.entity.master.tlm;
 
-import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInquiryUserId;
+import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInqueryUserId;
 import org.hibernate.annotations.Comment;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.EmbeddedId;
@@ -15,13 +15,13 @@ import lombok.NoArgsConstructor;
 @Comment("TLM_상품데이터조회사용자내역")
 @Table(name = "tlm_gdsdatainqrusrl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class GoodsDataInquiryUser extends BaseEntity {
+public class GoodsDataInqueryUser extends BaseEntity {
 
     @EmbeddedId
-    private GoodsDataInquiryUserId id;
+    private GoodsDataInqueryUserId id;
 
-    public static GoodsDataInquiryUser of(GoodsDataInquiryUserId id) {
-        GoodsDataInquiryUser goodsDataInquiryUser = new GoodsDataInquiryUser();
+    public static GoodsDataInqueryUser of(GoodsDataInqueryUserId id) {
+        GoodsDataInqueryUser goodsDataInquiryUser = new GoodsDataInqueryUser();
         goodsDataInquiryUser.id = id;
         return goodsDataInquiryUser;
     }

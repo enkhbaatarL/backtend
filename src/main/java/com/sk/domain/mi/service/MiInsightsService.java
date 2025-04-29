@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,17 +20,10 @@ import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
-import com.sk.domain.shared.entity.master.tmd.Goods;
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
-import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +37,6 @@ public class MiInsightsService {
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final GoodsDataRepository goodsDataRepository;
     private final EntityManager entityManager;
-    private final GoodsRepository goodsRepository;
-    private final GoodsDataCategoryRepository goodsDataCategoryRepository;
 
     /**
      * Focused 목록 조회
@@ -166,10 +156,8 @@ public class MiInsightsService {
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
-                // select.append(", MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN NATURAL LANGUAGE MODE) AS score");
                 where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN NATURAL LANGUAGE MODE)");
             } else {
-                // select.append(", MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE) AS score");
                 where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)");
             }
         }
@@ -281,57 +269,5 @@ public class MiInsightsService {
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
-    }
-
-    /**
-     * 
-     * debug용 더미 데이터 생성
-     *
-     */
-    @Transactional
-    public void createDummyData() {
-        List<String> A_TYPES = List.of(
-                "A_INSIGHT",
-                "A_CMMDT_MRKT_RPT",
-                "A_CMPY_RPT",
-                "A_ASST_RPT",
-                "A_DEAL_INSIGHT",
-                "A_INFORM");
-
-        List<String> A_LANGUAGES = List.of(
-                "A_ENG",
-                "A_KOR",
-                "A_OTHERS");
-
-        for (int i = 0; i < 100; i++) {
-            Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
-
-            GoodsData savedGoodsData = goodsDataRepository
-                    .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i)));
-
-            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
-                    GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-
-            List<String> copy1 = new ArrayList<>(A_TYPES);
-            Collections.shuffle(copy1);
-            List<String> results1 = copy1.subList(0, 3);
-            for (String result : results1) {
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
-                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-            }
-
-            List<String> copy2 = new ArrayList<>(A_LANGUAGES);
-            Collections.shuffle(copy2);
-            List<String> results2 = copy2.subList(0, 2);
-            for (String result : results2) {
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
-                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-            }
-
-            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
-                    GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
-
-        }
-
     }
 }
