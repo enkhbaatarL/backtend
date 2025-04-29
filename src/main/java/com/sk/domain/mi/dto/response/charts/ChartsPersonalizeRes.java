@@ -15,20 +15,20 @@ public record ChartsPersonalizeRes(
         description = "개인화 차트 조건 타입(RANGE, INTERVAL, INDICATOR, CHART, UNIT, COMP_DATA_SOURCE)",
         example = "RANGE"
     )
-    ChartSettingConditionCd chartSettingConditionCd,
+    ChartSettingConditionCd chartConditionCd,
 
     @Schema(
         description = "개인화 차트 조건 값",
-        example = "1WEEK"
+        example = "1W"
     )
-    String chartConditionValue
+    String chartConditionVal
 
 ) {
 
     public static ChartsPersonalizeRes of(ChartsPersonalizeReq request) {
         return ChartsPersonalizeRes.builder()
-            .chartSettingConditionCd(request.chartSettingConditionCd())
-            .chartConditionValue(request.chartConditionValue())
+            .chartConditionCd(request.chartConditionCd())
+            .chartConditionVal(request.chartConditionVal())
             .build();
     }
 

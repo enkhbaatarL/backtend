@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TempService {
     private final UserRepository userRepository;
     private final EntityManager entityManager;
-    private final MiGoodsDataInqueryUserService miGoodsDataInqueryUserService;
+    private final MiGoodsDataInquiryUserService miGoodsDataInqueryUserService;
 
     /**
      * Market Data - Data Catalog 목록 조회

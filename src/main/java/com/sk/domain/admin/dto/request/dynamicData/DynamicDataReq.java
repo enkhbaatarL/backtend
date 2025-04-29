@@ -7,29 +7,60 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.Builder;
 
 public record DynamicDataReq(
-	@NotEmpty @Schema(description = "데이터 소스 번호", example = "1") String tartgetDataSource,
+    @NotEmpty @Schema(description = "데이터 소스 번호", example = "1") String targetDataSource,
     @NotEmpty @Schema(description = "컬럼 명", example = "id, name") String columns,
-	@NotEmpty @Schema(description = "테이블 명", example = "user") String tableName,
-	@Schema(description = "조건 절", example = "id = 1") String whereClause,
-	@Schema(description = "추가 조건 절", example = "id = 1") String additionalWhereClause
+    @NotEmpty @Schema(description = "테이블 명", example = "user") String tableName,
+    @Schema(description = "조건 절", example = "id = 1") String whereClause,
+    @Schema(description = "추가 조건 절", example = "id = 1") String additionalWhereClause,
+    @Schema(description = "정렬 기준", example = "order by date") String orderBy,
+    @Schema(description = "조회 건수", example = "10") int limit,
+    @Schema(description = "오프셋", example = "0") int offset
 ) {
 
     @Builder
-    public DynamicDataReq(String tartgetDataSource, String columns, String tableName, String whereClause, String additionalWhereClause) {
-        this.tartgetDataSource = tartgetDataSource;
+    public DynamicDataReq(String targetDataSource, String columns, String tableName, String whereClause, String additionalWhereClause, String orderBy, int limit, int offset) {
+        this.targetDataSource = targetDataSource;
         this.columns = columns;
         this.tableName = tableName;
         this.whereClause = whereClause;
         this.additionalWhereClause = additionalWhereClause;
+        this.orderBy = orderBy;
+        this.limit = limit;
+        this.offset = offset;
     }
 
-    public static DynamicDataReq of(GoodsDataSourceDetail goodsDataSourceDetail, String additionalWhere) {
+
+    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere) {
         return DynamicDataReq.builder()
-            .tartgetDataSource(goodsDataSourceDetail.getTargetDbNm())
-            .columns(goodsDataSourceDetail.getTableColumnListNm())
-            .tableName(goodsDataSourceDetail.getTargetTableNm())
-            .whereClause(goodsDataSourceDetail.getQueryConditionCntt())
+            .targetDataSource(gds.getTargetDbNm())
+            .columns(gds.getTableColumnListNm())
+            .tableName(gds.getTargetTableNm())
+            .whereClause(gds.getQueryConditionCntt())
             .additionalWhereClause(additionalWhere)
             .build();
     }
+
+    public static DynamicDataReq ofCountQuery(GoodsDataSourceDetail gds, String additionalWhere) {
+        return DynamicDataReq.builder()
+            .targetDataSource(gds.getTargetDbNm())
+            .columns("count(*)")
+            .tableName(gds.getTargetTableNm())
+            .whereClause(gds.getQueryConditionCntt())
+            .additionalWhereClause(additionalWhere)
+            .build();
+    }
+
+    public static DynamicDataReq ofPagingQuery(GoodsDataSourceDetail gds, String additionalWhere, String orderByColumn, int page, int size) {
+        return DynamicDataReq.builder()
+            .targetDataSource(gds.getTargetDbNm())
+            .columns(gds.getTableColumnListNm())
+            .tableName(gds.getTargetTableNm())
+            .whereClause(gds.getQueryConditionCntt())
+            .additionalWhereClause(additionalWhere)
+            .orderBy(orderByColumn)
+            .limit(size)
+            .offset((page - 1) * size)
+            .build();
+    }
+
 }
