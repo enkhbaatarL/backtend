@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
+import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -202,5 +203,38 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """)
     List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
 
-    // Pageable pageable);
+    @Query(value = """
+            SELECT
+                tp.prvd_no AS providerNo,
+                tp.prvd_nm AS providerNm,
+                tg.gds_no AS goodsNo,
+                tg.gds_nm AS goodsNm,
+                tgd.gds_data_no AS goodsDataNo,
+                tgd.gds_data_nm AS goodsDataNm,
+                tgd.gds_data_expn AS goodsDataExpn,
+                tgd.mod_dtm AS modifyDt
+            FROM midb.tam_custcpnygdsmappl tc
+            LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
+            LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
+            LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+            WHERE tc.cust_cpny_no = 2014
+                AND tc.del_yn = 'N'
+                AND tc.use_yn = 'Y'
+                AND tg.del_yn = 'N'
+                AND tg.use_yn = 'Y'
+                AND tp.del_yn = 'N'
+                AND tp.use_yn = 'Y'
+                AND tgd.del_yn = 'N'
+                AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)
+            GROUP BY
+                tg.prvd_no,
+                tc.gds_no,
+                tgd.gds_data_no
+            ORDER BY
+                tgd.mod_dtm DESC
+                    """, countQuery = """
+
+            """, nativeQuery = true)
+    List<DataCatalogRes> findDataCatalog(@Param("customerCompanyNo") int customerCompanyNo, @Param("keyword") String keyword, Pageable pageable);
+
 }
