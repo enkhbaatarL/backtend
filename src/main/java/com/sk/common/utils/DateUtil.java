@@ -118,8 +118,6 @@ public final class DateUtil {
         }
     }
 
-
-
     /**
      * 주어진 Range를 기준으로 (fromDate, toDate) 쌍을 yyyyMMdd 형식 문자열로 반환.
      * toDate는 현재 날짜, fromDate는 Range만큼 과거 날짜.

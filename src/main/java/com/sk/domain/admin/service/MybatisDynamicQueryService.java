@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataForAlarmReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -88,18 +88,18 @@ public class MybatisDynamicQueryService {
     }
 
     /**
-     * 정형 데이터 조회
+     * 정형 데이터 조회 서브쿼리도 함께 조회 하기 때문에 Split후에 검사 하지 않는다
      * @param dynamicDataReq
      * @return
      */
-    public List<Map<String, Object>> getDynamicWithSubQuery(DynamicDataForAlarmReq dynamicDataForAlarmReq) {
+    public List<Map<String, Object>> getDynamicRawQuery(DynamicDataDetailReq dynamicDataDetailReq) {
 
-        DataSourceContextHolder.setDataSourceKey(dynamicDataForAlarmReq.tartgetDataSource());
+        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.tartgetDataSource());
 
-        String tableName = dynamicDataForAlarmReq.tableName();
-        String columns = dynamicDataForAlarmReq.columns();
-        String whereClause = dynamicDataForAlarmReq.whereClause();
-        String orderByColumns = dynamicDataForAlarmReq.orderByColumns();
+        String tableName = dynamicDataDetailReq.tableName();
+        String columns = dynamicDataDetailReq.columns();
+        String whereClause = dynamicDataDetailReq.whereClause();
+        String orderByColumns = dynamicDataDetailReq.orderByColumns();
 
         Map<String, Object> params = new HashMap<>();
         params.put("tableName", tableName);
