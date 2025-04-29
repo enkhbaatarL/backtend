@@ -264,6 +264,7 @@ public class MiInsightsService {
         contentQuery.setFirstResult((page - 1) * size);
         contentQuery.setMaxResults(size);
 
+        @SuppressWarnings("unchecked")
         List<Object[]> rows = contentQuery.getResultList();
         List<InsightsDataRes> content = rows.stream()
                 .map(row -> new InsightsDataRes(
