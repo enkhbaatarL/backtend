@@ -77,7 +77,14 @@ public final class DateUtil {
     }
 
     /**
-     * 날짜를 LocalDate(yyyyMMdd)로 반환
+     * 현재 날짜를 "yyyy-MM-dd HH:mm:ss"로 반환
+     */
+    public static String currentYmdHms() {
+        return LocalDate.now().format(YYYY_MM_DD_HH_MM_SS);
+    }
+
+    /**
+     * string 날짜를 LocalDate 타입으로 반환
      */
     public static LocalDate parseDate(Object dateObj) {
         if (dateObj == null) {

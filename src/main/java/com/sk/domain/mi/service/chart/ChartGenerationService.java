@@ -3,7 +3,6 @@ package com.sk.domain.mi.service.chart;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
-import com.sk.domain.mi.conversion.UnitConversionService;
 import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -11,6 +10,7 @@ import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import com.sk.domain.shared.enums.chart.Interval;
+import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,50 +28,47 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ChartGenerationService {
 
-    private static final int DATE_COLUMN_INDEX = 0;
-
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     private final PersonalizationService personalizationService;
     private final ChartAggregationService chartAggregationService;
     private final ChartUnitConversionService chartUnitConversionService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
-    private final UnitConversionService unitConversionService;
 
     /**
      * 특정 데이터소스와 시간 범위에 대한 차트 데이터를 생성한다.
      * 데이터소스로부터 원시 데이터를 조회하고, 인터벌에 따라 데이터를 집계한 후,
      * 단위 변환을 적용하여 최종 차트 데이터를 생성한다.
      *
-     * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @param startDate             조회 시작일 (YYYYMMDD 형식)
-     * @param endDate               조회 종료일 (YYYYMMDD 형식)
-     * @param interval              데이터 집계 시간 간격
-     * @param unitConvert           단위 변환 정보
-     * @param isVisible             차트 표시 여부
+     * @param gds         데이터소스 상세 정보
+     * @param startDate   조회 시작일 (YYYYMMDD 형식)
+     * @param endDate     조회 종료일 (YYYYMMDD 형식)
+     * @param interval    데이터 집계 시간 간격
+     * @param unitConvert 단위 변환 객체
+     * @param isVisible   차트 표시 여부
      * @return 처리된 차트 데이터
      */
-    public Chart generateChartData(GoodsDataSourceDetail goodsDataSourceDetail, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
+    public Chart generateChartData(GoodsDataSourceDetail gds, String startDate, String endDate, Interval interval, UnitConvert unitConvert, boolean isVisible) {
 
         // 컬럼 정보 추출
-        Map<String, String> columnExpressions = getColumnExpressions(goodsDataSourceDetail);
-        List<String> targetColumns = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).toList();
+        Map<String, String> columnExpressions = getColumnExpressions(gds);
+        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).toList();
 
-        String dateColumnName = targetColumns.get(DATE_COLUMN_INDEX);
-        boolean isCandleChartPossible = goodsDataSourceDetail.getIsCandleChartPossible();
+        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex());
+        boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 조회
-        List<Map<String, Object>> rawData = getRows(goodsDataSourceDetail, dateColumnName, startDate, endDate);
+        List<Map<String, Object>> rawData = getRows(gds, dateColumnName, startDate, endDate);
+        // 원시 데이터 정렬 및 날짜 변환
         List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
 
-        // 데이터 집계
-        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, goodsDataSourceDetail);
+        // 원시 데이터 데이터 집계 todo check 그루핑 체크 필요
+        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
 
-        // 단위 변환
+        // 원시 데이터 단위 변환
         List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
 
-        // 차트 데이터 형식으로 변환
-        return ChartBundleFactory.combineCharts(goodsDataSourceDetail, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
+        return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
 
     /**
@@ -172,16 +169,16 @@ public class ChartGenerationService {
     }
 
     /**
-     * 원시 데이터의 날짜 값을 한 번만 LocalDate로 파싱하고, 정렬
+     * 원시 데이터의 날짜 값을 LocalDate 타입으로 파싱하고, 정렬한다.
      */
     private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
-        return rawData.stream().map(
-                row -> {
-                    if (row.containsKey(dateColumnKey)) {
-                        row.compute(dateColumnKey, (k, dateValue) -> DateUtil.parseDate(dateValue));
-                    }
-                    return row;
-                }).sorted(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateColumnKey))))
+        return rawData.stream().map(row -> {
+                Map<String, Object> copy = new HashMap<>(row);
+                if (row.containsKey(dateColumnKey)) {
+                    copy.put(dateColumnKey, DateUtil.parseDate(row.get(dateColumnKey)));
+                }
+                return copy;
+            }).sorted(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateColumnKey))))
             .collect(Collectors.toList());
     }
 }

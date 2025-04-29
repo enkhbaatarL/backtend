@@ -1,8 +1,8 @@
 package com.sk.domain.shared.entity.master.tlm;
 
+import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInqueryUserId;
 import org.hibernate.annotations.Comment;
 import com.sk.domain.shared.entity.base.BaseEntity;
-import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInqueryUserId;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -21,8 +21,9 @@ public class GoodsDataInqueryUser extends BaseEntity {
     private GoodsDataInqueryUserId id;
 
     public static GoodsDataInqueryUser of(GoodsDataInqueryUserId id) {
-        GoodsDataInqueryUser goodsDataInqueryUser = new GoodsDataInqueryUser();
-        goodsDataInqueryUser.id = id;
-        return goodsDataInqueryUser;
+        GoodsDataInqueryUser goodsDataInquiryUser = new GoodsDataInqueryUser();
+        goodsDataInquiryUser.id = id;
+        return goodsDataInquiryUser;
     }
+
 }

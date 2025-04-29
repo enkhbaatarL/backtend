@@ -1,5 +1,6 @@
 package com.sk.common.config.security.jwt;
 
+import com.sk.domain.shared.enums.Claim;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,7 +17,7 @@ public class CustomJwtGrantedAuthoritiesConverter implements Converter<Jwt, Coll
     public Collection<GrantedAuthority> convert(Jwt jwt) {
         List<GrantedAuthority> authorities = new ArrayList<>();
 
-        String role = jwt.getClaimAsString("role");
+        String role = jwt.getClaimAsString(Claim.ROLE.getCode());
         if (role != null) {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
         }

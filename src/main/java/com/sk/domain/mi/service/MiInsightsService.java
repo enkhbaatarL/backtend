@@ -1,12 +1,14 @@
 package com.sk.domain.mi.service;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -22,7 +24,6 @@ import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
@@ -39,25 +40,66 @@ public class MiInsightsService {
 
     /**
      * Focused 목록 조회
-     *
+     * 
+     * 최신 등록된 데이터 조회
+     * 조회결과 000개 있음
+     * a. 000개중 Insight: 5개 출력
+     * b. 그외 아래 순서대로 최신순: 3개출력
+     *  (A) Commodity Market Report
+     *  (B) Company Report
+     *  (C) Asset Report
+     *  (D) Deal Insight
+     *  (E) Inform
+     * 8개 정렬은 최신 등록순
+     * 
      * @param companyNo
-     * @return List<GoodsDataRes>
+     * @return List<FocusedDataRes>
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(5);
 
-        List<FocusedDataRes> list = goodsDataRepository.findFocusedDataByCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 5));
+        List<FocusedDataRes> result = new ArrayList<>();
+        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
-        List<FocusedDataRes> listNot = goodsDataRepository.findFocusedDataByNotCategoryCd(companyNo, "A_INSIGHT", PageRequest.of(0, 3));
+        Map<String, Integer> quotas = new LinkedHashMap<>();
 
-        return Stream.concat(list.stream(), listNot.stream())
-                .sorted(Comparator.comparing(FocusedDataRes::getModifyDt).reversed())
-                .collect(Collectors.toList());
+        List<GoodsDataCategoryRes> documentTypes = commonCodeDetailRepository.findDocTypeCategory();
+        for (GoodsDataCategoryRes documentType : documentTypes) {
+            if (documentType.codeId().equals("A_INSIGHT")) {
+                quotas.put(documentType.codeId(), 5);
+            } else {
+                quotas.put(documentType.codeId(), 1);
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : quotas.entrySet()) {
+            String type = entry.getKey();
+            int limit = entry.getValue();
+
+            Iterator<FocusedDataRes> it = dataList.iterator();
+            int count = 0;
+
+            while (it.hasNext() && count < limit && result.size() < 8) {
+                FocusedDataRes data = it.next();
+                if (data.getGoodsDataCategoryCd().contains(type)) {
+                    result.add(data);
+                    it.remove();
+                    count++;
+                }
+            }
+
+            if (result.size() >= 8) {
+                break;
+            }
+        }
+
+        return result;
     }
 
     /**
      * Insights 고급 필터 목록 조회
      *
-     * @return List<GoodsDataFilterRes>
+     * @return GoodsDataFilterRes
      */
     public GoodsDataFilterRes getAdvancedFilter() {
 
@@ -95,6 +137,7 @@ public class MiInsightsService {
                 .append(" tp.prvd_no AS providerNo,")
                 .append(" tp.prvd_nm AS providerNm,")
                 .append(" tg.gds_no AS goodsNo,")
+                .append(" tg.gds_nm AS goodsNm,")
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
@@ -113,10 +156,8 @@ public class MiInsightsService {
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
-                // select.append(", MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN NATURAL LANGUAGE MODE) AS score");
                 where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN NATURAL LANGUAGE MODE)");
             } else {
-                // select.append(", MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE) AS score");
                 where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)");
             }
         }
@@ -211,16 +252,18 @@ public class MiInsightsService {
         contentQuery.setFirstResult((page - 1) * size);
         contentQuery.setMaxResults(size);
 
+        @SuppressWarnings("unchecked")
         List<Object[]> rows = contentQuery.getResultList();
         List<InsightsDataRes> content = rows.stream()
                 .map(row -> new InsightsDataRes(
                         (Integer) row[0], // providerNo
                         (String) row[1], // providerNm
                         (Integer) row[2], // goodsNo
-                        (Integer) row[3], // goodsDataNo
-                        (String) row[4], // goodsDataNm
-                        (String) row[5], // goodsDataExpn
-                        ((Timestamp) row[6]).toLocalDateTime() // modifyDt
+                        (String) row[3], // goodsNm
+                        (Integer) row[4], // goodsDataNo
+                        (String) row[5], // goodsDataNm
+                        (String) row[6], // goodsDataExpn
+                        ((Timestamp) row[7]).toLocalDateTime() // modifyDt
                 ))
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();

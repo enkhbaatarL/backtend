@@ -3,6 +3,9 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
+import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -94,4 +97,20 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
                 AND gdc.goodsDataManagementSeparateCd = :codeId
             """)
     Optional<GoodsDataCategory> findByCategoryCode(@Param("goodsDataNo") Integer goodsDataNo, @Param("codeId") String codeId);
+
+    @Query("""
+            SELECT
+                ccd.id.codeId as codeId,
+                ccd.codeNm as codeNm
+            FROM GoodsDataCategory gdc
+            LEFT JOIN CommonCodeDetail ccd
+                ON ccd.id.codeId = gdc.goodsDataCategoryCd
+            WHERE gdc.isDeleted = false
+                AND ccd.isDeleted = false
+                AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
+                AND gdc.goodsDataManagementSeparateCd = :goodsDataManagementSeparateCode
+                AND gdc.goodsData.goodsDataNo = :goodsDataNo
+    """)
+    List<GoodsDataCategoryProjection> findGoodsDataAndIsDeleted(Integer goodsDataNo, String goodsDataManagementSeparateCode);
+
 }

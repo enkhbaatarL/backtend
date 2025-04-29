@@ -35,12 +35,21 @@ public class GoodsDataInqueryUserId implements Serializable {
 
     @Column(name = "inqr_dtm")
     @Comment("조회일시")
-    private LocalDateTime inquerytDtm;
+    private LocalDateTime inquiryDtm;
 
     @Builder
-    public GoodsDataInqueryUserId(GoodsData goodsData, String userLoginId) {
-        this.goodsData = goodsData;
+    public GoodsDataInqueryUserId(LocalDateTime inquiryDtm, String userLoginId, GoodsData goodsData) {
+        this.inquiryDtm = inquiryDtm;
         this.userLoginId = userLoginId;
-        this.inquerytDtm = LocalDateTime.now();
+        this.goodsData = goodsData;
     }
+
+    public static GoodsDataInqueryUserId of(GoodsData goodsData, String userLoginId) {
+        return GoodsDataInqueryUserId.builder()
+                .goodsData(goodsData)
+                .userLoginId(userLoginId)
+                .inquiryDtm(LocalDateTime.now())
+                .build();
+    }
+
 }

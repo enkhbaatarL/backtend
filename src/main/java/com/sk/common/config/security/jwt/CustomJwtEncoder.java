@@ -5,6 +5,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
 import com.sk.common.utils.Properties.JwtProperties;
 
+import com.sk.domain.shared.enums.Claim;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -51,9 +52,9 @@ public class CustomJwtEncoder implements JwtEncoder {
         String token = Jwts.builder()
             .header().add("typ", "JWT").and()
             .subject(clientId)
-            .claim("companyNo", registeredClient.getClientSettings().getSetting("companyNo")) // 회사번호
-            .claim("companyCd", registeredClient.getClientSettings().getSetting("companyCd")) // 회사코드
-            .claim("role", registeredClient.getClientSettings().getSetting("role")) // 역할
+            .claim(Claim.COMPANY_NO.getCode(), registeredClient.getClientSettings().getSetting("companyNo")) // 회사번호
+            .claim(Claim.COMPANY_CD.getCode(), registeredClient.getClientSettings().getSetting("companyCd")) // 회사코드
+            .claim(Claim.ROLE.getCode(), registeredClient.getClientSettings().getSetting("role")) // 역할
             .issuedAt(new Date())
             .expiration(expiryDate)
             .signWith(jwtUtil.getSecretKey(), Jwts.SIG.HS256)

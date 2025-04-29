@@ -26,6 +26,9 @@
         <if test="limit != null and limit != ''">
             LIMIT ${limit}
         </if>
+        <if test="offset != null and offset != ''">
+            OFFSET ${offset}
+        </if>
     </select>
 
     <insert id="saveDynamic" parameterType="map">

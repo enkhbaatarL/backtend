@@ -1,5 +1,6 @@
 package com.sk.common.resolver;
 
+import com.sk.domain.shared.enums.Claim;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -45,7 +46,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
         }
 
         if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            userNo = jwtToken.getToken().getClaimAsString("userNo");
+            userNo = jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode());
 
         }
 

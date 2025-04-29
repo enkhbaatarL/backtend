@@ -50,17 +50,17 @@ public class PersonalizedChartSetting extends BaseEntity {
         this.chartSettingConditionVal = chartSettingConditionVal;
     }
 
-    public static PersonalizedChartSetting of(ChartsPersonalizeReq req, GoodsDataSourceDetail goodsDataSourceDetail) {
+    public static PersonalizedChartSetting of(ChartsPersonalizeReq req, GoodsDataSourceDetail goodsDataSourceDetail, String userLoginId) {
         return PersonalizedChartSetting.builder()
-            .chartSettingConditionCd(req.chartSettingConditionCd())
-            .chartSettingConditionVal(req.chartConditionValue())
+            .chartSettingConditionCd(req.chartConditionCd())
+            .chartSettingConditionVal(req.chartConditionVal())
             .goodsDataSourceDetail(goodsDataSourceDetail)
-            .userLoginId("todo")
+            .userLoginId(userLoginId)
             .build();
     }
 
     public void update(ChartsPersonalizeReq req) {
-        this.chartSettingConditionVal = req.chartConditionValue();
+        this.chartSettingConditionVal = req.chartConditionVal();
     }
 
 }

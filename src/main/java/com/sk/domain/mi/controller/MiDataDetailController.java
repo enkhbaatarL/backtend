@@ -1,12 +1,21 @@
 package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.model.PaginationTableRes;
+import com.sk.common.model.TableRes;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
-import com.sk.domain.mi.dto.response.chart.ChartsPersonalizeRes;
+import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
+import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
+import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
+import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.MiDataDetailService;
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,11 +25,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
 @Tag(name = "05. 상품 데이터 상세 API", description = "상품 데이터 상세 API 입니다.")
@@ -32,105 +48,122 @@ public class MiDataDetailController {
 
     private final MiDataDetailService miDataDetailService;
 
-    //    @ApiOrder(1)
-//    @Parameters({
-//        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-//    })
-//    @Operation(summary = "상품 데이터 상세 조회 API", description = "상품 데이터를 상세조회 한다.")
-//    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-//    @GetMapping("/goods-data/{goodsDataNo}")
-//    public BaseResponse<GoodsDataDetailRes> getGoodsData(
-//        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
-//    ) {
-//        return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsDataNo));
-//    }
-//
-//    @ApiOrder(2)
-//    @Parameters({
-//        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-//    })
-//    @Operation(summary = "데이터소스 목록 조회 API", description = "상품 데이터 번호에 매핑된 데이터소스 목록을 조회합니다.")
-//    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-//    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources")
-//    public BaseResponse<List<GoodsDataSourceRes>> getGoodsDataSources(
-//        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
-//    ) {
-//        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSources(goodsDataNo));
-//    }
-//
-//    @ApiOrder(3)
-//    @Parameters({
-//        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-//        @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호")
-//    })
-//    @Operation(summary = "데이터소스 단위 변환 목록 조회 API", description = "데이터소스에서 변환이 가능한 단위 목록을 조회합니다.")
-//    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-//    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/currentUnitCd-conversion")
-//    public BaseResponse<List<UnitConversionRes>> getGoodsDataSourcesUnitConversion(
-//        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-//        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
-//    ) {
-//        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourcesUnitConversion(goodsDataNo, goodsDataSourceNo));
-//    }
-//
-//    @ApiOrder(4)
-//    @Parameters({
-//        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
-//        @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
-//        @Parameter(name = "chartsPersonalizeReqs", description = "차트 개인화 정보")
-//    })
-//    @Operation(summary = "데이터소스 차트 개인화 조회 API", description = "상품 데이터소스 차트를 개인 설정을 조회합니다.")
-//    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-//    @GetMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
-//    public BaseResponse<List<ChartsPersonalizeRes>> getChartsPersonalize(
-//        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-//        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
-//    ) {
-//        return BaseResponseFactory.create(miDataDetailService.getChartsPersonalize(goodsDataNo, goodsDataSourceNo));
-//    }
-//
-    @ApiOrder(5)
+    @ApiOrder(1)
     @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
+    })
+    @Operation(summary = "상품 데이터 조회 API", description = "상품 데이터를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<GoodsDataRes> getGoodsData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        Authentication authentication
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsNo, goodsDataNo, authentication));
+    }
+
+    @ApiOrder(2)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
+    })
+    @Operation(summary = "상품 비정형 데이터 목록 조회 API", description = "상품 데이터 비정형데이터 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/unstructured-data")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<List<UnstructuredDataRes>> getGoodsDataUnstructuredData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataUnstructuredData(goodsNo, goodsDataNo));
+    }
+
+    @ApiOrder(3)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
+    })
+    @Operation(summary = "상품 정형 데이터(데이터소스) 목록 조회 API", description = "상품 정형 데이터(데이터소스) 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<List<GoodsDataSourceRes>> getGoodsDataSources(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSources(goodsNo, goodsDataNo));
+    }
+
+    @ApiOrder(4)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "dataSourceNo", description = "상품 데이터소스 번호"),
         @Parameter(name = "chartsPersonalizeReqs", description = "차트 개인화 정보")
     })
-    @Operation(summary = "데이터소스 차트 개인화 설정 API", description = "상품 데이터소스 차트를 개인 설정합니다.")
+    @Operation(summary = "상품 정형 데이터(데이터소스) 차트 개인화 설정 API", description = "상품 정형 데이터(데이터소스) 차트를 개인 설정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PutMapping("/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
-    public BaseResponse<List<ChartsPersonalizeRes>> putChartsPersonalize(
+    @PutMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
+    @RequiredPermission(
+        roles = {Role.USER}
+    )
+    public BaseResponse<List<ChartsPersonalizeRes>> putGoodsDataSourcesChartsPersonalize(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs
+        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs,
+        Authentication authentication
     ) {
-        return BaseResponseFactory.create(miDataDetailService.putChartsPersonalize(goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs));
+        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs, authentication.getName()));
     }
 
-    @ApiOrder(6)
+    /**
+     * todo 1. 쿼리 개선
+     * todo 2. 인터벌 집계 로직 변경
+     * todo 3. 파라미터 validation 체크 추가
+     */
+    @ApiOrder(5)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
-        @Parameter(name = "interval", description = "인터벌 (1D, 1W, 2W, 1M, 3M, 6M, 1Y)", schema = @Schema(
+        @Parameter(name = "interval", description = "차트 인터벌 (1D, 1W, 2W, 1M, 3M, 6M, 1Y)", schema = @Schema(
             type = "string",
             allowableValues = {
                 "1D", "1W", "2W", "1M", "3M", "6M", "1Y"
             }
         )),
-        @Parameter(name = "range", description = "범위 (1W, 1M, 3M, 6M, 1Y, 2Y, CUSTOM)", schema = @Schema(
+        @Parameter(name = "range", description = "차트 범위 (1W, 1M, 3M, 6M, 1Y, 2Y, CUSTOM)", schema = @Schema(
             type = "string",
             allowableValues = {
                 "1W", "1M", "3M", "6M", "1Y", "2Y", "CUSTOM"
             }
         )),
-        @Parameter(name = "startDate", description = "조회 시작일 (range가 CUSTOM일 경우 필수)"),
-        @Parameter(name = "endDate", description = "조회 종료일 (range가 CUSTOM일 경우 필수)"),
-        @Parameter(name = "unitConversionCd", description = "변환 단위"),
+        @Parameter(name = "startDate", description = "조회 시작일 (range가 'CUSTOM' 일 경우 필수)"),
+        @Parameter(name = "endDate", description = "조회 종료일 (range가 'CUSTOM' 일 경우 필수)"),
+        @Parameter(name = "unitCd", description = "변환 단위 코드"),
     })
-    @Operation(summary = "데이터소스 차트 조회 API", description = "데이터소스 차트를 조회합니다. (상품 `VIEW`권한이 필요합니다.)")
+    @Operation(summary = "상품 정형 데이터(데이터소스) 차트 조회 API", description = "상품 정형 데이터(데이터소스) 차트를 조회합니다. (상품 `VIEW`권한이 필요합니다.)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
-    public BaseResponse<ChartBundleRes> getGoodsDataSourceChart(
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsParam = "goodsNo", requireViewPermission = true
+    )
+    public BaseResponse<ChartBundleRes> getGoodsDataSourceCharts(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
@@ -141,7 +174,71 @@ public class MiDataDetailController {
         @RequestParam(value = "unitCd", required = false) String unitCd,
         Authentication authentication
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd, authentication.getName()));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd, authentication.getName()));
+    }
+
+    @ApiOrder(6)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
+        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+        @Parameter(name = "startDate", description = "조회 시작일 (format: YYYYMMDD)"),
+        @Parameter(name = "endDate", description = "조회 종료일 (format: YYYYMMDD)")
+    })
+    @Operation(summary = "상품 정형 데이터(데이터소스) raw 데이터 조회 API (with pagination)", description = "페이지네이션을 통해 상품 정형 데이터(데이터소스) raw 데이터를 조회합니다. (상품 `VIEW`권한이 필요합니다.)")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/raw-data")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsParam = "goodsNo", requireViewPermission = true
+    )
+    public BaseResponse<PaginationTableRes<TableRes.Row, TableRes.Column>> getGoodsDataSourcesRawData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+        @RequestParam(value = "startDate") String startDate,
+        @RequestParam(value = "endDate") String endDate
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, page, size, startDate, endDate));
+    }
+
+    @ApiOrder(7)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
+        @Parameter(name = "startDate", description = "조회 시작일 (format: YYYYMMDD)"),
+        @Parameter(name = "endDate", description = "조회 종료일 (format: YYYYMMDD)")
+    })
+    @Operation(summary = "상품 정형 데이터(데이터소스) raw 데이터 다운로드 API", description = "상품 정형 데이터(데이터소스) raw 데이터를 다운로드 합니다. (상품 `DOWNLOAD`권한이 필요합니다.)")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/raw-data/download")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsParam = "goodsNo", requireDownloadPermission = true
+    )
+    public ResponseEntity<InputStreamResource> downloadGoodsDataSourcesRawData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
+        @RequestParam(value = "startDate") String startDate,
+        @RequestParam(value = "endDate") String endDate
+    ) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment().filename("%s.xlsx".formatted(DateUtil.currentYmdHms())).build());
+
+        ByteArrayInputStream in = miDataDetailService.downloadGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, startDate, endDate);
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(new InputStreamResource(in));
     }
 
 }
