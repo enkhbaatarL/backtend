@@ -37,10 +37,10 @@ import com.github.pjfanning.xlsx.StreamingReader;
 import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.common.utils.PairUtil;
 import com.sk.domain.admin.dto.request.ExcelReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
+import com.sk.domain.shared.enums.ComponentType;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -173,17 +173,15 @@ public class ExcelService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Target database name is null or blank");
         }
         try {
-            
-            // 컴포넌트 엑셀 칼럼 추출 TODO: 테이블 칼럼으로 변경해야함
-            String columnName = componentInfo.getExcelColumnListNm();
+            String columnName = componentInfo.getExcelTableColumnListNm();
 
             if (columnName == null || columnName.isBlank()) {
                 throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Column name is null or blank");
             }
             List<String> columnNames = Arrays.stream(columnName.split(","))
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .collect(Collectors.toCollection(ArrayList::new));
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .collect(Collectors.toCollection(ArrayList::new));
 
             int headerRowIndex = DEFAULT_HEADER_ROW_INDEX;
             int dataStartRowIndex = DEFAULT_DATA_START_ROW_INDEX;
@@ -216,7 +214,7 @@ public class ExcelService {
                 }
             }
 
-            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), componentInfo.getTargetTableNm(), columnNames, headerRowIndex,
+            return uploadStructuredExcelData(file, componentInfo.getTargetDbNm(), componentInfo.getTargetTableNm(), componentInfo.getDataStructureConvertNm(), columnNames, headerRowIndex,
                     dataStartRowIndex, criteriaDt);
 
         } catch (Exception e) {
@@ -247,7 +245,7 @@ public class ExcelService {
      * @return 저장 성공 여부
      * @throws IOException 파일 처리 중 오류 발생 시
      */
-    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String tableName, List<String> actualColumns,
+    public boolean uploadStructuredExcelData(MultipartFile file, String tartgetDataSource, String tableName, ComponentType componentType, List<String> actualColumns,
             int headerRowIndex, int dataStartRowIndex, String criteriaDt) {
         try {
             String fileName = file.getOriginalFilename();
@@ -263,22 +261,30 @@ public class ExcelService {
             // Excel Data 파싱
             if (extension.endsWith(".csv")) {
                 // CSV 처리
-
-                // TODO: 타입에 따른 분기 처리 필요
-
-                // 일반 타입
-                values = processCsvData(file, headerRowIndex, dataStartRowIndex, criteriaDt);
-                // 피벗 타입
-                // values = collectPivotCsvData(file);
+                // TODO: 타입에 따른 분기 처리 필요 => 클래스 분리 + 전략패턴 적용 필요
+                switch (componentType) {
+                    case PIVOT:
+                        values = collectPivotCsvData(file);
+                        break;
+                    case CPC_NINO_SST:
+                        values = collectNinoRegionsSstCsvData(file, headerRowIndex, dataStartRowIndex);
+                        break;
+                    default:
+                        values = processCsvData(file, headerRowIndex, dataStartRowIndex, criteriaDt);
+                }
             } else if (extension.endsWith(".xlsx") || extension.endsWith(".xls")) {
                 // xlsx xls 처리
-
                 // TODO: 타입에 따른 분기 처리 필요
-
-                // 일반 타입
-                values = collectExcelData(file, actualColumns, dataStartRowIndex, criteriaDt);
-                // 피벗 타입
-                // values = collectPivotExcelData(file, headerRowIndex, dataStartRowIndex);
+                switch (componentType) {
+                    case PIVOT:
+                        values = collectPivotExcelData(file, headerRowIndex, dataStartRowIndex);
+                        break;
+                    case CPC_NINO_SST:
+                        values = collectNinoRegionsSstExcelData(file, headerRowIndex, dataStartRowIndex);
+                        break;
+                    default:
+                        values = collectExcelData(file, actualColumns, dataStartRowIndex, criteriaDt);
+                }
             } else {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Unsupported file type: " + fileName);
             }
@@ -592,13 +598,13 @@ public class ExcelService {
         // 구분자 감지
         char delimiter = detectDelimiter(file);
         log.info("Detected CSV delimiter: '{}'", delimiter == ',' ? "comma" : delimiter == ';' ? "semicolon" : delimiter == '\t' ? "tab" : delimiter);
-        
+
         try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
-             CSVParser csvParser = CSVParser.parse(reader, CSVFormat.Builder.create(CSVFormat.DEFAULT)
-                     .setDelimiter(delimiter)
-                     .setTrim(true)
-                     .setAllowMissingColumnNames(true)
-                     .get())) {
+                CSVParser csvParser = CSVParser.parse(reader, CSVFormat.Builder.create(CSVFormat.DEFAULT)
+                        .setDelimiter(delimiter)
+                        .setTrim(true)
+                        .setAllowMissingColumnNames(true)
+                        .get())) {
 
             List<Object[]> data = new ArrayList<>();
             int currentRow = 0;
@@ -835,7 +841,7 @@ public class ExcelService {
         String headerFirstCell = null;
 
         try (InputStream inputStream = file.getInputStream();
-             InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
 
             // CSVFormat 설정 (헤더 자동 처리)
             CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT)
@@ -879,19 +885,21 @@ public class ExcelService {
                     consecutiveEmptyRows = 0;
 
                     // 첫 번째 열(Year) 읽기
-                    if (firstCell == null || !firstCell.matches("\\d+")) continue; // 숫자가 아닌 경우 건너뜀
+                    if (firstCell == null || !firstCell.matches("\\d+"))
+                        continue; // 숫자가 아닌 경우 건너뜀
                     int year = Integer.parseInt(firstCell);
 
                     // 나머지 열(PeriodCode에 해당하는 값) 읽기
                     for (int colIndex = 1; colIndex < row.size(); colIndex++) {
                         String valueStr = row.get(colIndex) != null ? row.get(colIndex).trim() : null;
-                        if (valueStr == null || valueStr.isEmpty() || colIndex - 1 >= periodCodes.size()) continue;
+                        if (valueStr == null || valueStr.isEmpty() || colIndex - 1 >= periodCodes.size())
+                            continue;
 
                         double value = Double.parseDouble(valueStr);
                         String periodCode = periodCodes.get(colIndex - 1);
 
                         // DB 저장을 위한 Object[] 생성: [Year, PeriodCode, Value]
-                        Object[] rowData = new Object[]{year, periodCode, value};
+                        Object[] rowData = new Object[] {year, periodCode, value};
                         result.add(rowData);
                     }
                 }
@@ -902,6 +910,205 @@ public class ExcelService {
         } catch (Exception e) {
             log.error("Exception during CSV data collection: {}", e.getMessage(), e);
             throw new IllegalStateException("Failed to parse CSV file: " + e.getMessage());
+        }
+    }
+
+
+    /**
+     * CSV 파일에서 NINO SST 데이터를 수집하여 변환
+     *
+     * @param file CSV 파일
+     * @param headerRowIndex 헤더 행 인덱스
+     * @param dataStartRowIndex 데이터 시작 행 인덱스
+     * @return 변환된 데이터 리스트 (YR, MON, sst_pstn_spt_cd, sst_idx, sst_avg_dvat)
+     * @throws Exception 파일 처리 중 오류 발생 시
+     */
+    public List<Object[]> collectNinoRegionsSstCsvData(MultipartFile file, int headerRowIndex, int dataStartRowIndex) throws Exception {
+        List<Object[]> result = new ArrayList<>();
+        List<String> ninoRegions = List.of("NINO1+2", "NINO3", "NINO4", "NINO3.4");
+
+        // 구분자 감지
+        char delimiter = detectDelimiter(file);
+        log.info("Detected CSV delimiter: '{}'", delimiter == ',' ? "comma" : delimiter == ';' ? "semicolon" : delimiter == '\t' ? "tab" : delimiter);
+
+        try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             CSVParser csvParser = CSVParser.parse(reader, CSVFormat.Builder.create(CSVFormat.DEFAULT)
+                     .setDelimiter(delimiter)
+                     .setTrim(true)
+                     .setAllowMissingColumnNames(true)
+                     .get())) {
+
+            int currentRow = 0;
+            int consecutiveEmptyRows = 0;
+
+            for (CSVRecord record : csvParser) {
+                // 헤더 행 건너뛰기
+                if (currentRow < headerRowIndex) {
+                    currentRow++;
+                    continue;
+                }
+
+                // 데이터 시작 행까지 이동
+                if (currentRow < dataStartRowIndex) {
+                    currentRow++;
+                    continue;
+                }
+
+                // 빈 행 체크
+                if (record.size() <= 1 || record.toList().stream().allMatch(cell -> cell == null || cell.trim().isEmpty())) {
+                    consecutiveEmptyRows++;
+                    log.debug("Empty row detected in CSV, consecutive empty rows: {}", consecutiveEmptyRows);
+                    if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                        log.info("Terminating CSV data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
+                        break;
+                    }
+                    currentRow++;
+                    continue;
+                }
+
+                consecutiveEmptyRows = 0;
+
+                // 데이터 파싱 (YR, MON, NINO1+2, ANOM, NINO3, ANOM, NINO4, ANOM, NINO3.4, ANOM)
+                String yr = record.get(0);
+                String mon = record.get(1);
+
+                // 각 NINO 지역별로 데이터 변환
+                for (int i = 0; i < ninoRegions.size(); i++) {
+                    String ninoRegion = ninoRegions.get(i);
+                    String sstValue = record.get(2 + i * 2); // NINO 값 (2, 4, 6, 8)
+                    String anomValue = record.get(3 + i * 2); // ANOM 값 (3, 5, 7, 9)
+
+                    // sst_idx 변환: 소수점 제거 (예: 24.28 -> 2428)
+                    String sstIdx = String.valueOf((int) (Double.parseDouble(sstValue) * 100));
+
+                    // 결과 행 생성: [YR, MON, sst_pstn_spt_cd, sst_idx, sst_avg_dvat]
+                    Object[] rowData = new Object[]{yr, mon, ninoRegion, sstIdx, anomValue};
+                    result.add(rowData);
+                }
+
+                currentRow++;
+            }
+
+            if (result.isEmpty()) {
+                throw new IllegalStateException("No data found starting at index " + dataStartRowIndex);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("Exception during CSV data collection: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to parse CSV file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Excel 파일에서 NINO SST 데이터를 수집하여 변환
+     *
+     * @param file Excel 파일
+     * @param headerRowIndex 헤더 행 인덱스
+     * @param dataStartRowIndex 데이터 시작 행 인덱스
+     * @return 변환된 데이터 리스트 (YR, MON, sst_pstn_spt_cd, sst_idx, sst_avg_dvat)
+     * @throws Exception 파일 처리 중 오류 발생 시
+     */
+    public List<Object[]> collectNinoRegionsSstExcelData(MultipartFile file, int headerRowIndex, int dataStartRowIndex) throws Exception {
+        List<Object[]> result = new ArrayList<>();
+        List<String> ninoRegions = List.of("NINO1+2", "NINO3", "NINO4", "NINO3.4");
+
+        Workbook workbook = null;
+        try (InputStream is = file.getInputStream()) {
+            String fileName = file.getOriginalFilename();
+
+            if (fileName.toLowerCase().endsWith(".xlsx")) {
+                workbook = StreamingReader.builder()
+                        .rowCacheSize(100)
+                        .bufferSize(4096)
+                        .open(is);
+            } else if (fileName.toLowerCase().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(is);
+            } else {
+                throw new IllegalStateException("Unsupported Excel file type: " + fileName);
+            }
+
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = sheet.iterator();
+
+            // 헤더 행까지 이동
+            int currentRow = 0;
+            while (rowIterator.hasNext() && currentRow < headerRowIndex) {
+                rowIterator.next();
+                currentRow++;
+            }
+
+            // 데이터 시작 행까지 이동
+            while (rowIterator.hasNext() && currentRow < dataStartRowIndex) {
+                rowIterator.next();
+                currentRow++;
+            }
+
+            // 데이터 수집
+            int consecutiveEmptyRows = 0;
+            while (rowIterator.hasNext()) {
+                Row row = rowIterator.next();
+                if (row == null || row.getLastCellNum() <= 1) {
+                    consecutiveEmptyRows++;
+                    log.debug("Empty row detected, consecutive empty rows: {}", consecutiveEmptyRows);
+                    if (consecutiveEmptyRows >= MAX_CONSECUTIVE_EMPTY_ROWS) {
+                        log.info("Terminating data collection: {} consecutive empty rows reached", MAX_CONSECUTIVE_EMPTY_ROWS);
+                        break;
+                    }
+                    continue;
+                }
+
+                consecutiveEmptyRows = 0;
+
+                // 데이터 파싱 (YR, MON, NINO1+2, ANOM, NINO3, ANOM, NINO4, ANOM, NINO3.4, ANOM)
+                Cell yrCell = row.getCell(0);
+                Cell monCell = row.getCell(1);
+                if (yrCell == null || monCell == null) {
+                    continue;
+                }
+
+                String yr = String.valueOf((int) yrCell.getNumericCellValue());
+                String mon = String.valueOf((int) monCell.getNumericCellValue());
+
+                // 각 NINO 지역별로 데이터 변환
+                for (int i = 0; i < ninoRegions.size(); i++) {
+                    String ninoRegion = ninoRegions.get(i);
+                    Cell sstCell = row.getCell(2 + i * 2); // NINO 값 (2, 4, 6, 8)
+                    Cell anomCell = row.getCell(3 + i * 2); // ANOM 값 (3, 5, 7, 9)
+                    if (sstCell == null || anomCell == null) {
+                        continue;
+                    }
+
+                    double sstValue = sstCell.getNumericCellValue();
+                    String anomValue = String.valueOf(anomCell.getNumericCellValue());
+
+                    // sst_idx 변환: 소수점 제거 (예: 24.28 -> 2428)
+                    String sstIdx = String.valueOf((int) (sstValue * 100));
+
+                    // 결과 행 생성: [YR, MON, sst_pstn_spt_cd, sst_idx, sst_avg_dvat]
+                    Object[] rowData = new Object[]{yr, mon, ninoRegion, sstIdx, anomValue};
+                    result.add(rowData);
+                }
+            }
+
+            if (result.isEmpty()) {
+                throw new IllegalStateException("No data found starting at index " + dataStartRowIndex);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("Exception during data collection: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to parse Excel file: " + e.getMessage());
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (Exception e) {
+                    log.warn("Failed to close workbook: {}", e.getMessage());
+                }
+            }
         }
     }
 }
