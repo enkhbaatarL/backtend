@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
+import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.GoodsAuthCd;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.AuthManageGoodsMappingRepository;
@@ -43,7 +44,7 @@ public class AuthorizationService {
      */
     public Integer getCompanyNo() {
         Jwt jwt = getCurrentJwt();
-        Object companyNoObj = jwt.getClaim("companyNo");
+        Object companyNoObj = jwt.getClaim(Claim.COMPANY_NO.getCode());
         if (companyNoObj == null) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Company not found");
         }
@@ -59,7 +60,7 @@ public class AuthorizationService {
      */
     public Integer getUserNo() {
         Jwt jwt = getCurrentJwt();
-        Object userNoObj = jwt.getClaim("userNo");
+        Object userNoObj = jwt.getClaim(Claim.USER_NO.getCode());
         if (userNoObj == null) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "User not found");
         }
@@ -75,7 +76,7 @@ public class AuthorizationService {
      */
     public Role getCurrentRole() {
         Jwt jwt = getCurrentJwt();
-        String role = jwt.getClaimAsString("role");
+        String role = jwt.getClaimAsString(Claim.ROLE.getCode());
         if (role == null) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Role not found");
         }
@@ -91,7 +92,7 @@ public class AuthorizationService {
      */
     public boolean isThirdPartyAccessAllowed() {
         Jwt jwt = getCurrentJwt();
-        Object isOtherServiceAccessPossible = jwt.getClaim("isOtherServiceAccessPossible");
+        Object isOtherServiceAccessPossible = jwt.getClaim(Claim.OTHER_SERVICE_ACCESS.getCode());
         if (isOtherServiceAccessPossible == null) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Third party access info not found");
         }

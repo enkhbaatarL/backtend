@@ -28,14 +28,8 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
 
 @Tag(name = "05. 상품 데이터 상세 API", description = "상품 데이터 상세 API 입니다.")
@@ -211,5 +205,7 @@ public class MiDataDetailController {
     }
 
     // todo raw-data 엑셀 다운로드
+
+    // todo 최신 API 조회 -> 적재
 
 }

@@ -24,6 +24,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
+import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
@@ -79,13 +80,13 @@ public class MiDataDetailService {
         PermissionRes permissionRes = switch (role) {
             case USER -> {
                 JwtAuthenticationToken jwtToken = (JwtAuthenticationToken) authentication;
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaim("userNo")); // todo check
+                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
                 yield userService.getUserGoodsPermissions(userNo);
             }
             case ADMIN -> userService.getAdminGoodsPermissions();
             case API_PLUS_OPERATOR -> {
                 JwtAuthenticationToken jwtToken = (JwtAuthenticationToken) authentication;
-                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaim("companyNo")); // todo check
+                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
                 yield userService.getPlusOperatorGoodsPermissions(companyNo);
             }
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");

@@ -2,6 +2,7 @@ package com.sk.common.interceptor;
 
 import java.util.Optional;
 
+import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +48,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
         String role = null;
         if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
             if (authentication instanceof JwtAuthenticationToken jwtToken) {
-                role = jwtToken.getToken().getClaimAsString("role"); // "role" 클레임
+                role = jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()); // "role" 클레임
             }
         }
 
