@@ -187,7 +187,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
     }
 
     private boolean isDownloadResponse(String requestUri) {
-        return requestUri.matches(".*/(download(s)?|export(s)?|file(s)?|attachment(s)?|image(s)?)/.*")
+        return requestUri.matches(".*/(download(s)?|export(s)?|file(s)?|attachment(s)?|image(s)?)(/.*)?$")
             || requestUri.matches(".*\\.(xlsx|xls|csv|pdf|zip|tar|7z|exe|jpg|png|mp4|mp3)$");
     }
 

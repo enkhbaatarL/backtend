@@ -5,6 +5,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
 import com.sk.common.model.ValidationResult;
+import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
@@ -42,6 +43,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -63,6 +65,7 @@ public class MiDataDetailService {
     private final PersonalizationService personalizationService;
     private final TechnicalIndicatorService technicalIndicatorService;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
+    private final MiGoodsDataInquiryUserService goodsDataInquiryUserService;
 
     private final ChartUnitConversionService chartUnitConversionService;
     private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
@@ -91,6 +94,9 @@ public class MiDataDetailService {
             }
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
+
+        // 상품-데이터 조회 이력
+        goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authentication.getName());
 
         return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes);
     }
@@ -248,6 +254,42 @@ public class MiDataDetailService {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
 
         return getRowsWithPagination(gds, page, size, columnExpressions, startDate, endDate);
+    }
+
+    public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, String startDate, String endDate) {
+
+        // 상품-데이터 유효성 검증
+        goodsDataValidator.ensureExists(gdNo).validOrThrow();
+
+        GoodsDataSourceDetail gds = goodsDataSourceDetailValidator.ensureExists(gdsNo).getOrThrow();
+
+        // 컬럼 정보 추출
+        Map<String, String> columnExpressions = getColumnExpressions(gds);
+
+        List<String> columns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
+        String whereClause = "%s between '%s' and '%s'".formatted(columns.get(0), startDate, endDate);
+
+        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, whereClause));
+
+        List<String> fields = dataQuery.isEmpty() ? List.of() : new ArrayList<>(dataQuery.get(0).keySet());
+
+        // headers 생성
+        List<TableRes.Column> headers = fields.stream()
+            .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
+            .toList();
+
+        // rows 생성
+        List<TableRes.Row> rows = dataQuery.stream()
+            .map(rowMap -> TableRes.Row.of(
+                fields.stream()
+                    .map(key -> Optional.ofNullable(rowMap.get(key))
+                        .map(Object::toString)
+                        .orElse(null))
+                    .toList()
+            ))
+            .toList();
+
+        return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), headers, rows);
     }
 
     @Transactional(transactionManager = "myBatisTransactionManager")
