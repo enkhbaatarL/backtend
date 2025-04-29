@@ -5,6 +5,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.utils.Properties.JwtProperties;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.service.RefreshTokenService;
 
 import io.jsonwebtoken.*;
@@ -46,11 +47,11 @@ public class JwtUtil {
     // 액세스 토큰 생성
     public String generateAccessToken(User user) {
         return createTokenBuilder(user.getUserLoginId())
-            .claim("userNo", user.getUserNo())
-            .claim("companyNo", user.getCustomerCompany().getCustomerCompanyNo())
-            .claim("companyCd", user.getCustomerCompany().getCustomerCompanyCd())
-            .claim("role", user.getUserRoleCd().getCode())
-            .claim("isOtherServiceAccessPossible", ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
+            .claim(Claim.USER_NO.getCode(), user.getUserNo())
+            .claim(Claim.COMPANY_NO.getCode(), user.getCustomerCompany().getCustomerCompanyNo())
+            .claim(Claim.COMPANY_CD.getCode(), user.getCustomerCompany().getCustomerCompanyCd())
+            .claim(Claim.ROLE.getCode(), user.getUserRoleCd().getCode())
+            .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
             .compact();
     }

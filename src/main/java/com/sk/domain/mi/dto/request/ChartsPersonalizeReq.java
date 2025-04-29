@@ -6,23 +6,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ChartsPersonalizeReq(
 
     @Schema(
-        description = "개인화 차트 조건 타입(RANGE, INTERVAL, INDICATOR, CHART, UNIT, COMP_DATA_SOURCE)",
+        description = "개인화 차트 조건 타입(RANGE, INTERVAL, INDICATOR, CHART, UNIT_CD, COMP_DATA_SOURCE)",
         example = "RANGE"
     )
-    ChartSettingConditionCd chartSettingConditionCd,
+    ChartSettingConditionCd chartConditionCd,
 
     @Schema(
         description = "개인화 차트 조건 값",
-        example = "1WEEK"
+        example = "1W"
     )
-    String chartConditionValue
+    String chartConditionVal
 
 ) {
 
     public ChartsPersonalizeReq validThen() {
-        if (this.chartSettingConditionCd == ChartSettingConditionCd.UNIT || this.chartSettingConditionCd == ChartSettingConditionCd.COMP_DATA_SOURCE) {
+        if (this.chartConditionCd == ChartSettingConditionCd.UNIT || this.chartConditionCd == ChartSettingConditionCd.COMP_DATA_SOURCE) {
             return this;
-        } else if (this.chartSettingConditionCd.getAllowedValues().contains(this.chartConditionValue)) {
+        } else if (this.chartConditionCd.getAllowedValues().contains(this.chartConditionVal)) {
             return this;
         } else {
             return null;

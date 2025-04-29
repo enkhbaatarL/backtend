@@ -4,7 +4,7 @@ import java.util.List;
 
 public record TableRes(
 
-    List<String> headers,
+    List<Column> headers,
     List<Row> rows
 
 ) {
@@ -12,9 +12,13 @@ public record TableRes(
     public record Column(
 
         String field,
-        String ColumnName
+        String name
 
     ) {
+
+        public static Column of(String field, String name) {
+            return new Column(field, name);
+        }
 
     }
 
@@ -24,6 +28,14 @@ public record TableRes(
 
     ) {
 
+        public static Row of(List<String> cells) {
+            return new Row(cells);
+        }
+
+    }
+
+    public static TableRes of(List<Column> headers, List<Row> rows) {
+        return new TableRes(headers, rows);
     }
 
 }
