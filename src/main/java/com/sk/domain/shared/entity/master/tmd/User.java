@@ -91,11 +91,17 @@ public class User extends BaseEntity {
     @Comment("고객회사번호")
     private CustomerCompany customerCompany;
 
+    @Column(name = "usr_noti_set_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("사용자알림설정여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isUserNotificationSetting;
+
     @Builder
     public User(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
             String positionNm, String jobGradeNm, String onDutyNm, String departmentNm,
             Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
-            LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany) {
+            LocalDateTime individualInfoAgreementDtm, CustomerCompany customerCompany, Boolean isUserNotificationSetting) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
@@ -108,6 +114,7 @@ public class User extends BaseEntity {
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
         this.individualInfoAgreementDtm = individualInfoAgreementDtm;
         this.customerCompany = customerCompany;
+        this.isUserNotificationSetting = isUserNotificationSetting;
     }
 
     public static User of(UserInfoWithCompany userInfoWithCompany, UserRoleCd userRoleCd) {
@@ -130,5 +137,9 @@ public class User extends BaseEntity {
         if(dto.isOtherServiceAccessPossible() != null) {
             this.isOtherServiceAccessPossible = dto.isOtherServiceAccessPossible();
         }
+    }
+
+    public void updateNotificationSetting(Boolean isUserNotificationSetting) {
+        this.isUserNotificationSetting = isUserNotificationSetting;
     }
 }

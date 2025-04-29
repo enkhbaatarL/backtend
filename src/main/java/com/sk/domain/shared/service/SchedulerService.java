@@ -24,7 +24,7 @@ import com.sk.common.exception.SystemErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataForAlarmReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
@@ -101,85 +101,88 @@ public class SchedulerService {
          * 임계치 설정별 데이터 리스트 조회
          */
         for (GoodsCriticalValueSetting goodsCriticalValueSettingData : goodsCriticalValueSettings) {
-            String targetDatabaseNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
-            String targetTableNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetTableNm();
+            // 알림 설정이 되어있는 경우에만 알림 발송
+            if (goodsCriticalValueSettingData.getUser().getIsUserNotificationSetting()) {
+                String targetDatabaseNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
+                String targetTableNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetTableNm();
 
-            String selectColumns = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTableColumnListNm();
-            String[] selectQueryArray = selectColumns.split(",");
+                String selectColumns = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTableColumnListNm();
+                String[] selectQueryArray = selectColumns.split(",");
 
-            /**
-             * 현재 정책으로 TableColumnListNm의 칼럼 순서는
-             * 메트릭 : 날짜(date), 기본 컬럼(x), 컬럼1(y1), 컬럼2(y2), 컬럼3(y3), ...
-             * 캔들 : 날짜(date), 종가(close), 시가(open), 고가(high), 저가(low)
-             */
-            String dateColumn = selectQueryArray[0].trim(); // 날짜 컬럼(eg: 'date')
-            String defaultSelectColumn = selectQueryArray[1].trim(); // 기본 컬럼(알람 기준 컬럼)(eg: 'trdprc_1')
+                /**
+                 * 현재 정책으로 TableColumnListNm의 칼럼 순서는
+                 * 메트릭 : 날짜(date), 기본 컬럼(x), 컬럼1(y1), 컬럼2(y2), 컬럼3(y3), ...
+                 * 캔들 : 날짜(date), 종가(close), 시가(open), 고가(high), 저가(low)
+                 */
+                String dateColumn = selectQueryArray[0].trim(); // 날짜 컬럼(eg: 'date')
+                String defaultSelectColumn = selectQueryArray[1].trim(); // 기본 컬럼(알람 기준 컬럼)(eg: 'trdprc_1')
 
-            String columns = mybatisQueryTemplate.getSelectQueryForAlarm(selectColumns, targetTableNm, dateColumn, defaultSelectColumn,
-                    ALARM_PREV_DATA_ALIAS);
-            String targetTableAlias = mybatisQueryTemplate.getTableAliasForAlarm(targetTableNm);
-            String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(ALARM_BATCH_HOURS);
-            String orderByQuery = mybatisQueryTemplate.getOrderByQueryForAlarm(dateColumn, defaultSelectColumn);
+                String columns = mybatisQueryTemplate.getSelectQueryForAlarm(selectColumns, targetTableNm, dateColumn, defaultSelectColumn,
+                        ALARM_PREV_DATA_ALIAS);
+                String targetTableAlias = mybatisQueryTemplate.getTableAliasForAlarm(targetTableNm);
+                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(ALARM_BATCH_HOURS);
+                String orderByQuery = mybatisQueryTemplate.getOrderByQueryForAlarm(dateColumn, defaultSelectColumn);
 
-            // 임계치 설정 1개에 대한 데이터 리스트
-            List<Map<String, Object>> queryResult = mybatisDynamicQueryService
-                    .getDynamicWithSubQuery(DynamicDataForAlarmReq.of(targetDatabaseNm, targetTableAlias, columns, whereQuery, orderByQuery));
+                // 임계치 설정 1개에 대한 데이터 리스트
+                List<Map<String, Object>> queryResult = mybatisDynamicQueryService
+                        .getDynamicRawQuery(DynamicDataDetailReq.ofOrderBy(targetDatabaseNm, targetTableAlias, columns, whereQuery, orderByQuery));
 
-            for (Map<String, Object> rowData : queryResult) {
-                Object createdTimeData = rowData.get(dateColumn); // 데이터 발생일 (date 칼럼)
-                Object prevData = rowData.get(ALARM_PREV_DATA_ALIAS); // 임계치 비교를 위한 이전 데이터(Default 데이터)
-                Object currentData = rowData.get(defaultSelectColumn); // 임계치 비교를 위한 기준 데이터(Default 데이터)
+                for (Map<String, Object> rowData : queryResult) {
+                    Object createdTimeData = rowData.get(dateColumn); // 데이터 발생일 (date 칼럼)
+                    Object prevData = rowData.get(ALARM_PREV_DATA_ALIAS); // 임계치 비교를 위한 이전 데이터(Default 데이터)
+                    Object currentData = rowData.get(defaultSelectColumn); // 임계치 비교를 위한 기준 데이터(Default 데이터)
 
-                // prevData 또는 currentData가 null인 경우 스킵 (첫번째 row 데이터는 preData가 null)
-                if (prevData == null || currentData == null) {
-                    log.warn("Skipping row due to null data: prevData={}, currentData={}", prevData, currentData);
-                    continue;
-                }
+                    // prevData 또는 currentData가 null인 경우 스킵 (첫번째 row 데이터는 preData가 null)
+                    if (prevData == null || currentData == null) {
+                        log.warn("Skipping row due to null data: prevData={}, currentData={}", prevData, currentData);
+                        continue;
+                    }
 
-                // Object를 BigDecimal로 변환 (int 또는 decimal 처리)
-                BigDecimal prevValue;
-                BigDecimal currentValue;
-                try {
-                    prevValue = new BigDecimal(prevData.toString());
-                    currentValue = new BigDecimal(currentData.toString());
-                } catch (NumberFormatException e) {
-                    log.error("Failed to convert data to BigDecimal: prevData={}, currentData={}", prevData, currentData, e);
-                    continue;
-                }
+                    // Object를 BigDecimal로 변환 (int 또는 decimal 처리)
+                    BigDecimal prevValue;
+                    BigDecimal currentValue;
+                    try {
+                        prevValue = new BigDecimal(prevData.toString());
+                        currentValue = new BigDecimal(currentData.toString());
+                    } catch (NumberFormatException e) {
+                        log.error("Failed to convert data to BigDecimal: prevData={}, currentData={}", prevData, currentData, e);
+                        continue;
+                    }
 
-                BigDecimal criticalValueSettingVol = goodsCriticalValueSettingData.getCriticalValueSettingVol();
-                boolean isMatch = false;
+                    BigDecimal criticalValueSettingVol = goodsCriticalValueSettingData.getCriticalValueSettingVol();
+                    boolean isMatch = false;
 
-                // 데이터, 임계치 설정 비교
-                switch (goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd()) {
-                    case UPPER:
-                        // currentData가 prevData보다 criticalValueSettingVol만큼 상승
-                        isMatch = currentValue.subtract(prevValue).compareTo(criticalValueSettingVol) >= 0;
-                        break;
-                    case LOWER:
-                        // currentData가 prevData보다 criticalValueSettingVol만큼 하락
-                        isMatch = prevValue.subtract(currentValue).compareTo(criticalValueSettingVol) >= 0;
-                        break;
-                    case INCRATE:
-                        // currentData가 prevData보다 criticalValueSettingVol% 상승
-                        BigDecimal percentIncrease = calculatePercentChange(currentValue, prevValue);
-                        isMatch = percentIncrease.compareTo(criticalValueSettingVol) >= 0;
-                        break;
-                    case DECRATE:
-                        // currentData가 prevData보다 criticalValueSettingVol% 하락
-                        BigDecimal percentDecrease = calculatePercentChange(currentValue, prevValue);
-                        isMatch = percentDecrease.compareTo(criticalValueSettingVol.negate()) <= 0;
-                        break;
-                    default:
-                        log.warn("Unknown notification critical value separate code: {}",
-                                goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd());
-                        break;
-                }
+                    // 데이터, 임계치 설정 비교
+                    switch (goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd()) {
+                        case UPPER:
+                            // currentData가 prevData보다 criticalValueSettingVol만큼 상승
+                            isMatch = currentValue.subtract(prevValue).compareTo(criticalValueSettingVol) >= 0;
+                            break;
+                        case LOWER:
+                            // currentData가 prevData보다 criticalValueSettingVol만큼 하락
+                            isMatch = prevValue.subtract(currentValue).compareTo(criticalValueSettingVol) >= 0;
+                            break;
+                        case INCRATE:
+                            // currentData가 prevData보다 criticalValueSettingVol% 상승
+                            BigDecimal percentIncrease = calculatePercentChange(currentValue, prevValue);
+                            isMatch = percentIncrease.compareTo(criticalValueSettingVol) >= 0;
+                            break;
+                        case DECRATE:
+                            // currentData가 prevData보다 criticalValueSettingVol% 하락
+                            BigDecimal percentDecrease = calculatePercentChange(currentValue, prevValue);
+                            isMatch = percentDecrease.compareTo(criticalValueSettingVol.negate()) <= 0;
+                            break;
+                        default:
+                            log.warn("Unknown notification critical value separate code: {}",
+                                    goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd());
+                            break;
+                    }
 
-                // 조건에 맞는 데이터 추가
-                if (isMatch) {
-                     // 이메일 발송    
-                    mailService.sendNotificationMail(goodsCriticalValueSettingData, DateUtil.parseDate(createdTimeData));
+                    // 조건에 맞는 데이터 추가
+                    if (isMatch) {
+                        // 이메일 발송
+                        mailService.sendNotificationMail(goodsCriticalValueSettingData, DateUtil.parseDate(createdTimeData));
+                    }
                 }
             }
         }
@@ -198,8 +201,8 @@ public class SchedulerService {
             return BigDecimal.ZERO;
         }
         return current.subtract(previous)
-                     .divide(previous, 4, RoundingMode.HALF_UP)
-                     .multiply(new BigDecimal("100"));
+                .divide(previous, 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
     }
 
     /**
