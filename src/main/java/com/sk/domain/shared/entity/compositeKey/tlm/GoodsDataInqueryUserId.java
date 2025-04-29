@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode
-public class GoodsDataInquiryUserId implements Serializable {
+public class GoodsDataInqueryUserId implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gds_data_no", referencedColumnName = "gds_data_no", nullable = false)
@@ -38,18 +38,18 @@ public class GoodsDataInquiryUserId implements Serializable {
     private LocalDateTime inquiryDtm;
 
     @Builder
-    public GoodsDataInquiryUserId(LocalDateTime inquiryDtm, String userLoginId, GoodsData goodsData) {
+    public GoodsDataInqueryUserId(LocalDateTime inquiryDtm, String userLoginId, GoodsData goodsData) {
         this.inquiryDtm = inquiryDtm;
         this.userLoginId = userLoginId;
         this.goodsData = goodsData;
     }
 
-    public static GoodsDataInquiryUserId of(GoodsData goodsData, String userLoginId) {
-        return GoodsDataInquiryUserId.builder()
-            .goodsData(goodsData)
-            .userLoginId(userLoginId)
-            .inquiryDtm(LocalDateTime.now())
-            .build();
+    public static GoodsDataInqueryUserId of(GoodsData goodsData, String userLoginId) {
+        return GoodsDataInqueryUserId.builder()
+                .goodsData(goodsData)
+                .userLoginId(userLoginId)
+                .inquiryDtm(LocalDateTime.now())
+                .build();
     }
 
 }

@@ -65,20 +65,21 @@ public class MiDataDetailService {
     private final PersonalizationService personalizationService;
     private final TechnicalIndicatorService technicalIndicatorService;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
-    private final MiGoodsDataInquiryUserService goodsDataInquiryUserService;
+    private final MiGoodsDataInqueryUserService goodsDataInquiryUserService;
 
     private final ChartUnitConversionService chartUnitConversionService;
     private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
-
     public GoodsDataRes getGoodsData(Integer goodsNo, Integer goodsDataNo, Authentication authentication) {
 
-        Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString("role")) : Role.SYSTEM;
+        Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString("role"))
+                : Role.SYSTEM;
 
         ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
         GoodsData goodsData = goodsDataResult.getOrThrow();
 
-        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
+        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(),
+                GoodsDataManagementSeparateCode.GDAT.getCode());
 
         PermissionRes permissionRes = switch (role) {
             case USER -> {
@@ -126,46 +127,48 @@ public class MiDataDetailService {
      * @return 개인화된 차트 응답 데이터 리스트
      */
     @Transactional
-    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
+    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer gdNo, Integer gdsNo,
+            List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
 
         // 1) 유효성 검증 & 필터링
         GoodsDataSourceDetail gds = goodsDataSourceDetailValidator
-            .ensureExists(gdsNo)
-            .getOrThrow();
+                .ensureExists(gdsNo)
+                .getOrThrow();
 
         List<ChartsPersonalizeReq> validReqs = chartsPersonalizeReqs.stream()
-            .map(ChartsPersonalizeReq::validThen)
-            .filter(Objects::nonNull)
-            .toList();
+                .map(ChartsPersonalizeReq::validThen)
+                .filter(Objects::nonNull)
+                .toList();
 
         // 2) 기존 DB 설정을 key → 엔티티 맵으로 변환
-        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, subject);
+        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds,
+                subject);
 
         Function<ChartsPersonalizeReq, String> keyOfReq = req -> req.chartConditionCd().name() + ":" + req.chartConditionVal();
-        Function<PersonalizedChartSetting, String> keyOfEntity = ent -> ent.getChartSettingConditionCd().name() + ":" + ent.getChartSettingConditionVal();
+        Function<PersonalizedChartSetting, String> keyOfEntity = ent -> ent.getChartSettingConditionCd().name() + ":"
+                + ent.getChartSettingConditionVal();
 
         Map<String, PersonalizedChartSetting> existingMap = existing.stream()
-            .collect(Collectors.toMap(
-                keyOfEntity,
-                Function.identity(),
-                (v1, v2) -> v2
-            ));
+                .collect(Collectors.toMap(
+                        keyOfEntity,
+                        Function.identity(),
+                        (v1, v2) -> v2));
 
         Set<String> incomingKeys = validReqs.stream()
-            .map(keyOfReq)
-            .collect(Collectors.toSet());
+                .map(keyOfReq)
+                .collect(Collectors.toSet());
 
         // 삭제 대상: 기존 키 중에 incomingKeys에 없는 것
         existingMap.entrySet().stream()
-            .filter(e -> !incomingKeys.contains(e.getKey()))
-            .map(Map.Entry::getValue)
-            .forEach(BaseEntity::softDelete);
+                .filter(e -> !incomingKeys.contains(e.getKey()))
+                .map(Map.Entry::getValue)
+                .forEach(BaseEntity::softDelete);
 
         // 삽입 대상: incomingKeys 중에 existingMap에 없는 것
         List<PersonalizedChartSetting> toInsert = validReqs.stream()
-            .filter(req -> !existingMap.containsKey(keyOfReq.apply(req)))
-            .map(req -> PersonalizedChartSetting.of(req, gds, subject))
-            .toList();
+                .filter(req -> !existingMap.containsKey(keyOfReq.apply(req)))
+                .map(req -> PersonalizedChartSetting.of(req, gds, subject))
+                .toList();
 
         if (!toInsert.isEmpty()) {
             personalizedChartSettingRepository.saveAll(toInsert);
@@ -189,7 +192,8 @@ public class MiDataDetailService {
      * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명)
      * @return 생성된 차트 묶음 응답 데이터
      */
-    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, String startDate, String endDate, String unitCd, String userLoginId) {
+    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, String startDate,
+            String endDate, String unitCd, String userLoginId) {
 
         // 상품-데이터 유효성 검증
         goodsDataValidator.ensureExists(gdNo).validOrThrow();
@@ -206,44 +210,45 @@ public class MiDataDetailService {
 
         Pair<String, String> determinedRange = personalizationService.getPsRangeOrDefault(personalizedMap, range, startDate, endDate);
         Interval determinedInterval = personalizationService.getPsIntervalOrDefault(personalizedMap, interval);
-        String determinedUnitCd = personalizationService.getPsUnitCdOrDefault(personalizedMap, unitCd, ChartUnitConversionService.generateDefaultUnitCd(gds));
+        String determinedUnitCd = personalizationService.getPsUnitCdOrDefault(personalizedMap, unitCd,
+                ChartUnitConversionService.generateDefaultUnitCd(gds));
         ChartType determinedChartType = personalizationService.getPsChartTypeOrDefault(personalizedMap);
 
         // 결정된 단위코드 유효성 검증
         chartUnitConversionService.validateUnitCd(unitCdMap, determinedUnitCd);
 
         // 메타데이터 생성
-        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(), determinedInterval);
+        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(),
+                determinedInterval);
 
         // 메인 차트 생성
         Chart mainChart = chartGenerationService.generateChartData(
-            gds,
-            determinedRange.getLeft(),
-            determinedRange.getRight(),
-            determinedInterval,
-            unitCdMap.get(determinedUnitCd),
-            Boolean.TRUE // 메인 차트는 항상 visible 상태
+                gds,
+                determinedRange.getLeft(),
+                determinedRange.getRight(),
+                determinedInterval,
+                unitCdMap.get(determinedUnitCd),
+                Boolean.TRUE // 메인 차트는 항상 visible 상태
         );
 
         // 기술적 지표 생성
         List<Indicator> indicators = technicalIndicatorService.generateIndicators(
-            mainChart,
-            personalizedMap
-        );
+                mainChart,
+                personalizedMap);
 
         // 비교 차트 생성
         List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
-            gds,
-            determinedRange.getLeft(),
-            determinedRange.getRight(),
-            determinedInterval,
-            personalizedMap
-        );
+                gds,
+                determinedRange.getLeft(),
+                determinedRange.getRight(),
+                determinedInterval,
+                personalizedMap);
 
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }
 
-    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, String startDate, String endDate) {
+    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page,
+            Integer size, String startDate, String endDate) {
 
         // 상품-데이터 유효성 검증
         goodsDataValidator.ensureExists(gdNo).validOrThrow();
@@ -275,56 +280,55 @@ public class MiDataDetailService {
 
         // headers 생성
         List<TableRes.Column> headers = fields.stream()
-            .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
-            .toList();
+                .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
+                .toList();
 
         // rows 생성
         List<TableRes.Row> rows = dataQuery.stream()
-            .map(rowMap -> TableRes.Row.of(
-                fields.stream()
-                    .map(key -> Optional.ofNullable(rowMap.get(key))
-                        .map(Object::toString)
-                        .orElse(null))
-                    .toList()
-            ))
-            .toList();
+                .map(rowMap -> TableRes.Row.of(
+                        fields.stream()
+                                .map(key -> Optional.ofNullable(rowMap.get(key))
+                                        .map(Object::toString)
+                                        .orElse(null))
+                                .toList()))
+                .toList();
 
         return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), headers, rows);
     }
 
     @Transactional(transactionManager = "myBatisTransactionManager")
-    public PaginationTableRes<TableRes.Row, TableRes.Column> getRowsWithPagination(GoodsDataSourceDetail gds, Integer page, Integer size, Map<String, String> columnExpressions, String startDate, String endDate) {
+    public PaginationTableRes<TableRes.Row, TableRes.Column> getRowsWithPagination(GoodsDataSourceDetail gds, Integer page, Integer size,
+            Map<String, String> columnExpressions, String startDate, String endDate) {
 
         List<String> columns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
 
         String whereClause = "%s between '%s' and '%s'".formatted(columns.get(0), startDate, endDate);
 
         List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, whereClause));
-        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofPagingQuery(gds, whereClause, columns.get(0), page, size));
+        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService
+                .getDynamicData(DynamicDataReq.ofPagingQuery(gds, whereClause, columns.get(0), page, size));
 
         int totalElements = countQuery.stream()
-            .findFirst()
-            .map(m -> ((Number) m.get("count(*)")).intValue())
-            .orElse(0);
-
+                .findFirst()
+                .map(m -> ((Number) m.get("count(*)")).intValue())
+                .orElse(0);
 
         List<String> fields = dataQuery.isEmpty() ? List.of() : new ArrayList<>(dataQuery.get(0).keySet());
 
         // headers 생성
         List<TableRes.Column> headers = fields.stream()
-            .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
-            .toList();
+                .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
+                .toList();
 
         // rows 생성
         List<TableRes.Row> rows = dataQuery.stream()
-            .map(rowMap -> TableRes.Row.of(
-                fields.stream()
-                    .map(key -> Optional.ofNullable(rowMap.get(key))
-                        .map(Object::toString)
-                        .orElse(null))
-                    .toList()
-            ))
-            .toList();
+                .map(rowMap -> TableRes.Row.of(
+                        fields.stream()
+                                .map(key -> Optional.ofNullable(rowMap.get(key))
+                                        .map(Object::toString)
+                                        .orElse(null))
+                                .toList()))
+                .toList();
 
         TableRes table = TableRes.of(headers, rows);
         return PaginationTableRes.toRes(page, size, totalElements, table.rows(), table.headers());
@@ -332,22 +336,21 @@ public class MiDataDetailService {
 
     private Map<String, String> getColumnExpressions(GoodsDataSourceDetail goodsDataSourceDetail) {
         if (goodsDataSourceDetail == null ||
-            goodsDataSourceDetail.getGoodsData() == null ||
-            goodsDataSourceDetail.getGoodsData().getGoods() == null ||
-            goodsDataSourceDetail.getGoodsData().getGoods().getProvider() == null ||
-            goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns() == null) {
+                goodsDataSourceDetail.getGoodsData() == null ||
+                goodsDataSourceDetail.getGoodsData().getGoods() == null ||
+                goodsDataSourceDetail.getGoodsData().getGoods().getProvider() == null ||
+                goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns() == null) {
             return Collections.emptyMap();
         }
 
         return goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns()
-            .stream()
-            .filter(c -> c != null && c.getId() != null)
-            .collect(Collectors.toMap(
-                c -> c.getId().getProviderDataColumnNm(),
-                ProviderDataColumn::getDataColumnExpn,
-                // In case of duplicate keys, keep the first one
-                (first, second) -> first
-            ));
+                .stream()
+                .filter(c -> c != null && c.getId() != null)
+                .collect(Collectors.toMap(
+                        c -> c.getId().getProviderDataColumnNm(),
+                        ProviderDataColumn::getDataColumnExpn,
+                        // In case of duplicate keys, keep the first one
+                        (first, second) -> first));
     }
 
 }

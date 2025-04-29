@@ -3,6 +3,8 @@ package com.sk.domain.mi.service;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -29,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TempService {
     private final UserRepository userRepository;
     private final EntityManager entityManager;
-    private final MiGoodsDataInquiryUserService miGoodsDataInqueryUserService;
+    private final MiGoodsDataInqueryUserService miGoodsDataInqueryUserService;
 
     /**
      * Market Data - Data Catalog 목록 조회

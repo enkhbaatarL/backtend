@@ -1,17 +1,18 @@
 package com.sk.domain.shared.repository.master.tlm;
 
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
-import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInquiryUserId;
-import com.sk.domain.shared.entity.master.tlm.GoodsDataInquiryUser;
+import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInqueryUserId;
+import com.sk.domain.shared.entity.master.tlm.GoodsDataInqueryUser;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataInquiryUser, GoodsDataInquiryUserId> {
+public interface GoodsDataInqueryUserRepository extends JpaRepository<GoodsDataInqueryUser, GoodsDataInqueryUserId> {
 
     @Query(value = """
                 SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
