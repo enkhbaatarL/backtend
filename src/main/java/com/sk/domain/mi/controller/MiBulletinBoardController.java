@@ -11,6 +11,8 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
+import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
@@ -44,6 +46,16 @@ public class MiBulletinBoardController {
      *******************************************************************/
 
     @ApiOrder(1)
+    @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/notice/filter")
+    @RequiredPermission(roles = {Role.ADMIN})
+    public BaseResponse<NoticeFilterRes> getNoticeFilter() {
+
+        return BaseResponseFactory.create(miBulletinBoardService.getNoticeFilter());
+    }
+
+    @ApiOrder(2)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
@@ -67,7 +79,7 @@ public class MiBulletinBoardController {
         return BaseResponseFactory.create(miBulletinBoardService.getAllNotices(cNo, role, page, size, category, keyword));
     }
 
-    @ApiOrder(2)
+    @ApiOrder(3)
     @Parameters({
             @Parameter(name = "noticeNo", description = "공지사항번호 (기본값: 1)")
     })
@@ -89,8 +101,17 @@ public class MiBulletinBoardController {
      * FAQ
      *
      *******************************************************************/
+    @ApiOrder(4)
+    @Operation(summary = "FAQ 필터 조회", description = "FAQ 필터를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/faq/filter")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
+    public BaseResponse<FaqFilterRes> getFaqFilter() {
 
-    @ApiOrder(3)
+        return BaseResponseFactory.create(miBulletinBoardService.getFaqFilter());
+    }
+
+    @ApiOrder(5)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
