@@ -111,7 +111,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
               ))
             """)
-    Page<NoticeRes> findAllNoticeForAdmin(
+    Page<NoticeRes> findAllNoticeForAdminPage(
             @Param("category") String category,
             @Param("status") String status,
             @Param("target") Integer target,
@@ -161,7 +161,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                   OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')
               ))
             """)
-    Page<MiNoticeRes> findAllNoticeForService(
+    Page<MiNoticeRes> findAllNoticeForServicePage(
             @Param("customerCompanyNo") int customerCompanyNo,
             @Param("category") String category,
             @Param("keyword") String keyword,
@@ -223,7 +223,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
             AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
                         """)
-    Page<FaqRes> findAllFaqForAdmin(
+    Page<FaqRes> findAllFaqForAdminPage(
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);
@@ -248,7 +248,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             AND (:category IS NULL OR (b.bulletinCategorySeparateCd = :category))
             AND (:keyword IS NULL OR (LOWER(b.bulletinTitleNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(b.bulletinCntt) LIKE CONCAT('%', LOWER(:keyword), '%')))
                         """)
-    Page<MiFaqRes> findAllFaqForService(
+    Page<MiFaqRes> findAllFaqForServicePage(
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);
