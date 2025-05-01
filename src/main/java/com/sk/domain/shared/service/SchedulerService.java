@@ -289,4 +289,13 @@ public class SchedulerService {
         return Boolean.TRUE;
     }
 
+    /**
+     * TIF_Futures Spread 계산 후 업로드
+     * 
+     * @return Boolean
+     */
+    @Transactional
+    public Boolean processTifFuturesSpread() {
+        return Boolean.TRUE;
+    }
 }
