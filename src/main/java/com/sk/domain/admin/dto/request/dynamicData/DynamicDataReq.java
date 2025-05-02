@@ -30,13 +30,14 @@ public record DynamicDataReq(
     }
 
 
-    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere) {
+    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere, String orderByColumn) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
             .columns(gds.getTableColumnListNm())
             .tableName(gds.getTargetTableNm())
             .whereClause(gds.getQueryConditionCntt())
             .additionalWhereClause(additionalWhere)
+            .orderBy(orderByColumn)
             .build();
     }
 

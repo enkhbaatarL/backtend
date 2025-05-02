@@ -165,7 +165,7 @@ public class ChartGenerationService {
 
         String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, endDate);
 
-        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause));
+        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
 
     /**

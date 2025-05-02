@@ -26,6 +26,13 @@ public @interface RequiredPermission {
     String goodsParam() default "";
 
     /**
+     * 상품 하위 엔티티 번호를 파라미터에서 가져올 경우 파라미터 이름
+     * - ex) fileNo, goodsDataSourceNo
+     *
+     */
+    String goodsNestedParam() default "";
+
+    /**
      * 상품 VIEW 권한 필요 여부
      * - true: 해당 상품에 대한 VIEW 권한이 필요함
      */
