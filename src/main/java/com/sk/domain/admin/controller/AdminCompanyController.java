@@ -83,7 +83,8 @@ public class AdminCompanyController {
     public BaseResponse<PaginationRes<CompanyRes>> getOwnerCompanies(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-        @RequestParam(value = "companyNm", required = false) String companyNm) {
+        @RequestParam(value = "companyNm", required = false) String companyNm
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getOwnerCompanies(page, size, companyNm));
     }
 
@@ -105,7 +106,8 @@ public class AdminCompanyController {
     @DeleteMapping("/owner-companies/{companyNo}")
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> deleteOwnerCompany(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.deleteOwnerCompany(companyNo));
     }
 
@@ -124,7 +126,8 @@ public class AdminCompanyController {
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
         @RequestParam(value = "companyNm", required = false) String companyNm,
-        @RequestParam(value = "activationSts", required = false) ActivationStatus activationSts) {
+        @RequestParam(value = "activationSts", required = false) ActivationStatus activationSts
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanies(page, size, companyNm, activationSts));
     }
 
@@ -146,7 +149,8 @@ public class AdminCompanyController {
     @GetMapping("/companies/{companyNo}")
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> getCompanyDetail(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanyDetail(companyNo));
     }
 
@@ -160,7 +164,8 @@ public class AdminCompanyController {
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> patchCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @RequestBody @Valid CompanyReq.Update companyReq) {
+        @RequestBody @Valid CompanyReq.Update companyReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.patchCompany(companyNo, companyReq));
     }
 
@@ -173,7 +178,8 @@ public class AdminCompanyController {
     @GetMapping("/companies/{companyNo}/latest-updated")
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<LatestUpdatedRes> getCompanyLatestUpdated(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanyLatestUpdated(companyNo));
     }
 
@@ -200,7 +206,8 @@ public class AdminCompanyController {
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyProviderMapRes> postProviderMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @RequestBody @Valid CompanyProviderMapReq.Insert companyProviderMapReq) {
+        @RequestBody @Valid CompanyProviderMapReq.Insert companyProviderMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.postProviderMappedToCompany(companyNo, companyProviderMapReq));
     }
 
@@ -231,7 +238,8 @@ public class AdminCompanyController {
     public BaseResponse<CompanyProviderMapRes> patchProviderMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @RequestBody @Valid CompanyProviderMapReq.Update companyProviderMapReq) {
+        @RequestBody @Valid CompanyProviderMapReq.Update companyProviderMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.patchProviderMappedToCompany(companyNo, providerNo, companyProviderMapReq));
     }
 
@@ -246,7 +254,8 @@ public class AdminCompanyController {
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<LatestUpdatedRes> getProviderLatestUpdated(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getProviderLatestUpdated(companyNo, providerNo));
     }
 
@@ -267,7 +276,8 @@ public class AdminCompanyController {
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
         @RequestParam(value = "search", required = false) String search,
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsMappedToCompany(page, size, companyNo, providerNo, search));
     }
 
@@ -283,7 +293,8 @@ public class AdminCompanyController {
     public BaseResponse<CompanyGoodsMapRes> postGoodsMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @RequestBody @Valid CompanyGoodsMapReq companyGoodsMapReq) {
+        @RequestBody @Valid CompanyGoodsMapReq companyGoodsMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.postGoodsMappedToCompany(companyNo, providerNo, companyGoodsMapReq));
     }
 
@@ -300,7 +311,8 @@ public class AdminCompanyController {
     public BaseResponse<CompanyGoodsMapDetailRes> getGoodsDetail(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsDetail(companyNo, providerNo, goodsNo));
     }
 
@@ -317,7 +329,8 @@ public class AdminCompanyController {
     public BaseResponse<LatestUpdatedRes> getGoodsLatestUpdated(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsLatestUpdated(companyNo, providerNo, goodsNo));
     }
 
@@ -338,7 +351,8 @@ public class AdminCompanyController {
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getAuthGoods(page, size, companyNo, providerNo, goodsNo));
     }
 
@@ -356,7 +370,8 @@ public class AdminCompanyController {
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
         @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
-        @RequestBody @Valid AuthGoodsMapReq authGoodsMapReq) {
+        @RequestBody @Valid AuthGoodsMapReq authGoodsMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.patchGoodsAuth(companyNo, providerNo, goodsNo, authGoodsMapReq));
     }
 

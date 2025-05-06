@@ -1,6 +1,7 @@
 package com.sk.domain.admin.dto.response.company;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
 import com.sk.domain.shared.enums.GoodsAuthCd;
@@ -95,18 +96,26 @@ public record CompanyGoodsMapDetailRes(
         this.companySetting = companySetting;
     }
 
-    public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping) {
+    public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping, AuditInfo auditInfo) {
         return CompanyGoodsMapDetailRes.builder()
-            .companyGoodsMapRes(CompanyGoodsMapRes.of(goodsMapping))
+            .companyGoodsMapRes(
+                CompanyGoodsMapRes
+                    .of(goodsMapping)
+                    .withAuditor(auditInfo)
+            )
             .goodsNm(goodsMapping.getGoods().getGoodsNm())
             .goodsExpn(goodsMapping.getGoods().getGoodsExpn())
             .build();
 
     }
 
-    public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping, List<AuthManageGoodsMapping> userAuthMapping) {
+    public static CompanyGoodsMapDetailRes of(CustomerCompanyGoodsMapping goodsMapping, AuditInfo auditInfo, List<AuthManageGoodsMapping> userAuthMapping) {
         return CompanyGoodsMapDetailRes.builder()
-            .companyGoodsMapRes(CompanyGoodsMapRes.of(goodsMapping))
+            .companyGoodsMapRes(
+                CompanyGoodsMapRes
+                    .of(goodsMapping)
+                    .withAuditor(auditInfo)
+            )
             .goodsNm(goodsMapping.getGoods().getGoodsNm())
             .goodsExpn(goodsMapping.getGoods().getGoodsExpn())
             .companySetting(CompanySetting.of(userAuthMapping))

@@ -4,7 +4,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
-import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
@@ -16,8 +15,6 @@ import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.chart.*;
-import com.sk.domain.mi.validator.GoodsDataSourceValidator;
-import com.sk.domain.mi.validator.GoodsDataValidator;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
@@ -82,8 +79,7 @@ public class MiDataDetailService {
 
         Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode())) : Role.SYSTEM;
 
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(goodsDataNo, goodsNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data]. goodsDataNo: %s, goodsNo: %s".formatted(goodsDataNo, goodsNo)));
+        GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
 
         List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
 
@@ -116,9 +112,7 @@ public class MiDataDetailService {
      * @return 비정형 데이터 응답 목록
      */
     public List<UnstructuredDataRes> getGoodsDataUnstructuredData(Integer goodsNo, Integer goodsDataNo) {
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(goodsDataNo, goodsNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data]. goodsDataNo: %s, goodsNo: %s".formatted(goodsDataNo, goodsNo)));
-
+        GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsData.getGoodsDataNo());
         return UnstructuredDataRes.ofList(documents);
     }
@@ -131,9 +125,7 @@ public class MiDataDetailService {
      * @return 상품 데이터 소스 응답 목록
      */
     public List<GoodsDataSourceRes> getGoodsDataSources(Integer goodsNo, Integer goodsDataNo) {
-        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(goodsDataNo, goodsNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data]. goodsDataNo: %s, goodsNo: %s".formatted(goodsDataNo, goodsNo)));
-
+        GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<GoodsDataSourceDetail> goodsDataSources = goodsDataSourceDetailRepository.findByGoodsDataAndIsDeletedFalse(goodsData);
         return GoodsDataSourceRes.ofList(goodsDataSources);
     }
@@ -150,8 +142,7 @@ public class MiDataDetailService {
     @Transactional
     public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsNo, Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
 
-        GoodsDataSourceDetail gds = goodsDataSourceDetailRepository.findGoodsDataSourceWithGoodsTree(gdsNo, gdNo, goodsNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data-source]. goodsDataSource: %s, goodsDataNo: %s, goodsNo: %s".formatted(gdsNo, gdNo, goodsNo)));
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
         List<ChartsPersonalizeReq> validReqs = chartsPersonalizeReqs.stream()
             .map(ChartsPersonalizeReq::validThen)
@@ -209,8 +200,7 @@ public class MiDataDetailService {
      */
     public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, String startDate, String endDate, String unitCd, String userLoginId) {
 
-        GoodsDataSourceDetail gds = goodsDataSourceDetailRepository.findGoodsDataSourceWithGoodsTree(gdsNo, gdNo, goodsNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data-source]. goodsDataSource: %s, goodsDataNo: %s, goodsNo: %s".formatted(gdsNo, gdNo, goodsNo)));
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
         // 변환 가능한 단위 맵 조회 (GDS 기본 단위 포함)
         Map<String, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
@@ -228,8 +218,7 @@ public class MiDataDetailService {
         chartUnitConversionService.validateUnitCd(unitCdMap, determinedUnitCd);
 
         // 메타데이터 생성
-        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(),
-            determinedInterval);
+        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(), determinedInterval);
 
         // 메인 차트 생성
         Chart mainChart = chartGenerationService.generateChartData(
@@ -273,7 +262,7 @@ public class MiDataDetailService {
      */
     public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, String startDate, String endDate) {
 
-        GoodsDataSourceDetail gds = findAndValidateGds(gdsNo, gdNo, goodsNo);
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
         RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
 
         // Count 쿼리 실행
@@ -302,7 +291,7 @@ public class MiDataDetailService {
      */
     public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, String startDate, String endDate) {
 
-        GoodsDataSourceDetail gds = findAndValidateGds(gdsNo, gdNo, goodsNo);
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
         RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
 
         List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, queryContext.whereClause(), queryContext.dateColumn()));
@@ -314,11 +303,18 @@ public class MiDataDetailService {
         return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), table.headers(), table.rows());
     }
 
+    /**
+     * GoodsData를 조회하고 유효성을 검사합니다.
+     */
+    private GoodsData getValidatedGoodsData(Integer gdNo, Integer goodsNo) {
+        return goodsDataRepository.findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(gdNo, goodsNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data]. goodsDataNo: %s, goodsNo: %s".formatted(gdNo, goodsNo)));
+    }
 
     /**
      * GoodsDataSourceDetail을 조회하고 유효성을 검사합니다.
      */
-    private GoodsDataSourceDetail findAndValidateGds(Integer gdsNo, Integer gdNo, Integer goodsNo) {
+    private GoodsDataSourceDetail getValidatedGoodsDataSource(Integer gdsNo, Integer gdNo, Integer goodsNo) {
         return goodsDataSourceDetailRepository.findGoodsDataSourceWithGoodsTree(gdsNo, gdNo, goodsNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data-source]. goodsDataSource: %s, goodsDataNo: %s, goodsNo: %s".formatted(gdsNo, gdNo, goodsNo)));
     }

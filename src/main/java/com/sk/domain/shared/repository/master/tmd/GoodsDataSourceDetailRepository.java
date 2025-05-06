@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmd;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -25,6 +26,9 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
                 AND gdsd.goodsDataUseManagementCd = 'backend'
                 AND gdsd.goodsDataSourceNo = :goodsDataSourceNo
             """)
+    Optional<GoodsDataSourceDetail> findGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
+
+    @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
 
     @Query(value = """

@@ -33,7 +33,7 @@ public class GoodsNestedEntityResolver {
                 yield goodsData.getGoods().getGoodsNo();
             }
 
-            case "goodsDatasourceNo" -> {
+            case "goodsDataSourceNo" -> {
                 GoodsDataSourceDetail gds = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(id)
                     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [goods-datasource]. goodsDatasourceNo: %s".formatted(id)));
 

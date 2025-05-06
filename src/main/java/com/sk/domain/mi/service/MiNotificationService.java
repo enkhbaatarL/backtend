@@ -34,7 +34,7 @@ public class MiNotificationService {
 
     /**
      * 알림 설정 등록
-     * 
+     *
      * @param notification
      * @param goodsDataSourceNo
      * @param user
@@ -44,7 +44,7 @@ public class MiNotificationService {
     public MiNotificationSettingRes createNotificationSetting(Integer goodsDataSourceNo, NotificationSettingReq.Insert notifications, User user) {
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
-                .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .findGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("GoodsDataSourceDetail not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
 
@@ -58,7 +58,7 @@ public class MiNotificationService {
 
     /**
      * 알림 설정한 정형 데이터 목록 조회
-     * 
+     *
      * @param user
      * @param page
      * @param size
@@ -71,14 +71,14 @@ public class MiNotificationService {
 
     /**
      * 상품 데이터의 알림설정 리스트를 조회
-     * 
+     *
      * @param goodsDataSourceNo
      * @param user
      * @return
      */
     public PaginationRes<MiNotificationSettingRes> getNotificationSettings(int page, int size, Integer goodsDataSourceNo, User user) {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
-                .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .findGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("GoodsDataSourceDetail not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
 
@@ -88,7 +88,7 @@ public class MiNotificationService {
 
     /**
      * 상품 데이터의 알림설정 상세를 조회
-     * 
+     *
      * @param goodsDataSourceNo
      * @param notificationSettingNo
      * @param user
@@ -96,7 +96,7 @@ public class MiNotificationService {
      */
     public MiNotificationSettingRes getNotificationSetting(Integer goodsDataSourceNo, Integer notificationSettingNo, User user) {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
-                .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .findGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d",
                                 notificationSettingNo)));
@@ -112,7 +112,7 @@ public class MiNotificationService {
 
     /**
      * 알림설정 삭제
-     * 
+     *
      * @param goodsDataSourceNo
      * @param user
      * @return
@@ -121,7 +121,7 @@ public class MiNotificationService {
     public MiNotificationSettingRes deleteNotificationSetting(Integer goodsDataSourceNo, Integer notificationSettingNo,
             User user) {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
-                .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .findGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("GoodsCriticalValueSetting not found: goodsDataSourceNo=%d", goodsDataSourceNo)));
 
@@ -138,7 +138,7 @@ public class MiNotificationService {
 
     /**
      * 알림 발송 내역 리스트 조회
-     * 
+     *
      * @param user
      * @param page
      * @param size
@@ -151,7 +151,7 @@ public class MiNotificationService {
 
     /**
      * 알림 발송 내역 상세보기
-     * 
+     *
      * @param emailSendSn
      * @param user
      * @return
@@ -166,7 +166,7 @@ public class MiNotificationService {
 
     /**
      * 알림 내역 조회 처리
-     * 
+     *
      * @param emailSendSn
      * @param user
      * @return
