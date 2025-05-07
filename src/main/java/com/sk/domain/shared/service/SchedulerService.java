@@ -8,7 +8,6 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +30,7 @@ import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.shared.dto.response.rpa.CrackSpreadDataRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
@@ -76,8 +76,13 @@ public class SchedulerService {
     // brentTimeSpreadCalculate 계산용
     private static final String LLCC_01 = "LLCC.01";
     private static final String LLCC_03 = "LLCC.03";
-    private static final String SPREAD_CODE = "LLCC.01-LLCC.03";
-    private static final int BATCH_SIZE = 1000;
+    private static final String TIME_SPREAD_CODE = "LLCC.01-LLCC.03";
+    private static final String CRACK_SPREAD_CODE = "WTI3-2-1SP";
+    private static final int RB_WEIGHT = 2; // CRACK SPREAD 계산 시 RB 가중치
+    private static final int HO_WEIGHT = 1; // CRACK SPREAD 계산 시 HO 가중치
+    private static final int CL_WEIGHT = 3; // CRACK SPREAD 계산 시 CL 가중치
+    private static final int BARREL_CONVERSION_FACTOR = 42; // 배럴 변환 계수
+    private static final int BATCH_SIZE = 10000;
 
     /**
      * GDI 탈퇴 유저 soft delete 처리
@@ -322,8 +327,83 @@ public class SchedulerService {
     /*
      * SK 에너지 Crack Spread 계산 후 저장 (비동기 처리)
      */
+    @Async
+    @Transactional
     public void crackSpreadCalculate() {
+        // 마지막 날짜 조회
+        LocalDateTime lastDate = futuresSpreadRepository.findLastDateByCode(CRACK_SPREAD_CODE);
+        log.info("Last date for code {}: {}", CRACK_SPREAD_CODE, lastDate);
 
+        // 데이터 조회
+        List<CrackSpreadDataRes> dataList = futuresSpreadRepository.calculateCrackSpreadData(lastDate);
+
+        // 기존 FuturesSpread 레코드 배치 조회 (중복 체크)
+        List<LocalDateTime> dates = dataList.stream().map(CrackSpreadDataRes::date).collect(Collectors.toList());
+        List<FuturesSpread> existingSpreads = futuresSpreadRepository.findByCodeAndDateIn(CRACK_SPREAD_CODE, dates);
+        Map<LocalDateTime, FuturesSpread> existingByDate = existingSpreads.stream()
+                .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
+        log.debug("Existing spreads by date: {}", existingByDate);
+
+        List<FuturesSpread> spreadsToSave = new ArrayList<>();
+
+        // 계산 및 UPSERT 로직
+        for (CrackSpreadDataRes dto : dataList) {
+            // 계산: ps = (RB_WEIGHT * BARREL_CONVERSION_FACTOR * RB) + (HO_WEIGHT * BARREL_CONVERSION_FACTOR * HO) - (CL_WEIGHT * CL)
+            BigDecimal ps = null;
+            if (dto.clPs() != null && dto.hoPs() != null && dto.rbSettle() != null) {
+                ps = BigDecimal.valueOf(RB_WEIGHT * BARREL_CONVERSION_FACTOR).multiply(dto.rbSettle())
+                        .add(BigDecimal.valueOf(HO_WEIGHT * BARREL_CONVERSION_FACTOR).multiply(dto.hoPs()))
+                        .subtract(BigDecimal.valueOf(CL_WEIGHT).multiply(dto.clPs()));
+            }
+
+            // 타입 변환: vm, oi
+            Integer vm = (dto.clVm() != null && dto.rbTotCntrVol() != null) ? dto.rbTotCntrVol().intValue() : null;
+            Integer oi = (dto.clOi() != null && dto.rbOpint1() != null) ? dto.rbOpint1().intValue() : null;
+
+            // 매핑: po, ph, pl
+            BigDecimal po = (dto.clPo() != null && dto.rbOpenPrc() != null) ? dto.rbOpenPrc() : null;
+            BigDecimal ph = (dto.clPh() != null && dto.rbHigh1() != null) ? dto.rbHigh1() : null;
+            BigDecimal pl = (dto.clPl() != null && dto.rbLow1() != null) ? dto.rbLow1() : null;
+
+            // UPSERT 로직
+            FuturesSpread target;
+            if (existingByDate.containsKey(dto.date())) {
+                // 기존 레코드 업데이트
+                FuturesSpread existing = existingByDate.get(dto.date());
+                target = FuturesSpread.builder()
+                        .dataRegistrationSn(existing.getDataRegistrationSn())
+                        .code(existing.getCode())
+                        .date(existing.getDate())
+                        .ps(ps)
+                        .vm(vm)
+                        .oi(oi)
+                        .po(po)
+                        .ph(ph)
+                        .pl(pl)
+                        .build();
+            } else {
+                // 새 레코드 생성
+                target = FuturesSpread.builder()
+                        .code(CRACK_SPREAD_CODE)
+                        .date(dto.date())
+                        .ps(ps)
+                        .vm(vm)
+                        .oi(oi)
+                        .po(po)
+                        .ph(ph)
+                        .pl(pl)
+                        .build();
+            }
+            spreadsToSave.add(target);
+        }
+
+        log.debug("Prepared {} spreads to save, first date: {}, last date: {}",
+                spreadsToSave.size(),
+                spreadsToSave.isEmpty() ? null : spreadsToSave.get(0).getDate(),
+                spreadsToSave.isEmpty() ? null : spreadsToSave.get(spreadsToSave.size() - 1).getDate());
+
+        // 배치 저장
+        saveInBatches(spreadsToSave);
     }
 
     /*
@@ -332,15 +412,22 @@ public class SchedulerService {
     @Async
     @Transactional
     public void brentTimeSpreadCalculate() {
+        // 마지막 날짜 조회
+        LocalDateTime lastDate = futuresSpreadRepository.findLastDateByCode(TIME_SPREAD_CODE);
+        log.info("Last date for code {}: {}", TIME_SPREAD_CODE, lastDate);
         // LLCC.01, LLCC.03 데이터 조회
-        Map<LocalDateTime, List<Futures>> futuresByDate = futuresRepository.findPendingByCodes(Arrays.asList(LLCC_01, LLCC_03));
+        Map<LocalDateTime, List<Futures>> futuresByDate = futuresRepository.findByCodesAfterDate(
+                Arrays.asList(LLCC_01, LLCC_03), lastDate);
+        log.debug("Fetched {} date groups, first date: {}, last date: {}",
+                futuresByDate.size(),
+                futuresByDate.keySet().stream().min(LocalDateTime::compareTo).orElse(null),
+                futuresByDate.keySet().stream().max(LocalDateTime::compareTo).orElse(null));
 
         List<FuturesSpread> spreadsToSave = new ArrayList<>();
-        List<Futures> futuresToUpdate = new ArrayList<>();
 
         // 기존 FuturesSpread 레코드 배치 조회 (중복 체크)
         List<LocalDateTime> dates = new ArrayList<>(futuresByDate.keySet());
-        List<FuturesSpread> existingSpreads = futuresSpreadRepository.findByCodeAndDateIn(SPREAD_CODE, dates);
+        List<FuturesSpread> existingSpreads = futuresSpreadRepository.findByCodeAndDateIn(TIME_SPREAD_CODE, dates);
         Map<LocalDateTime, FuturesSpread> existingByDate = existingSpreads.stream()
                 .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
 
@@ -372,9 +459,10 @@ public class SchedulerService {
                 // Upsert 로직: 기존 레코드 있으면 builder로 업데이트, 없으면 새 레코드
                 FuturesSpread spread;
                 if (existingByDate.containsKey(date)) {
-                    // 기존 레코드 업데이트 (builder로 새 객체 생성)
+                    // 기존 레코드 업데이트
                     FuturesSpread existing = existingByDate.get(date);
                     spread = FuturesSpread.builder()
+                            .dataRegistrationSn(existing.getDataRegistrationSn())
                             .code(existing.getCode())
                             .date(existing.getDate())
                             .ps(ps)
@@ -383,12 +471,11 @@ public class SchedulerService {
                             .po(po)
                             .ph(ph)
                             .pl(pl)
-                            .dataRegistrationSn(existing.getDataRegistrationSn()) // 기존 ID 유지
                             .build();
                 } else {
                     // 새 레코드 생성
                     spread = FuturesSpread.builder()
-                            .code(SPREAD_CODE)
+                            .code(TIME_SPREAD_CODE)
                             .date(date)
                             .ps(ps)
                             .vm(vm)
@@ -400,29 +487,22 @@ public class SchedulerService {
                 }
 
                 spreadsToSave.add(spread);
-                futuresToUpdate.add(llcc01);
-                futuresToUpdate.add(llcc03);
             }
         }
+
+        log.debug("Prepared {} spreads to save, first date: {}, last date: {}",
+                spreadsToSave.size(),
+                spreadsToSave.isEmpty() ? null : spreadsToSave.get(0).getDate(),
+                spreadsToSave.isEmpty() ? null : spreadsToSave.get(spreadsToSave.size() - 1).getDate());
+
         // 배치 저장
         saveInBatches(spreadsToSave);
-        updateFuturesInBatches(futuresToUpdate);
     }
 
-    private BigDecimal safeSubtract(BigDecimal a, BigDecimal b) {
-        if (a == null || b == null) {
-            return null;
-        }
-        return a.subtract(b);
-    }
-
-    private Integer safeSubtract(Integer a, Integer b) {
-        if (a == null || b == null) {
-            return null;
-        }
-        return a - b;
-    }
-
+    /**
+     * 배치 저장
+     * @param spreads
+     */
     private void saveInBatches(List<FuturesSpread> spreads) {
         for (int i = 0; i < spreads.size(); i += BATCH_SIZE) {
             List<FuturesSpread> batch = spreads.subList(i, Math.min(i + BATCH_SIZE, spreads.size()));
@@ -431,13 +511,29 @@ public class SchedulerService {
         }
     }
 
-    private void updateFuturesInBatches(List<Futures> futures) {
-        for (int i = 0; i < futures.size(); i += BATCH_SIZE) {
-            List<Futures> batch = futures.subList(i, Math.min(i + BATCH_SIZE, futures.size()));
-            batch.forEach(Futures::updateIsModifiedLoad);
-            futuresRepository.saveAll(batch);
-            futuresRepository.flush();
+    /**
+     * BigDecimal 빼기 (null 처리)
+     * @param a
+     * @param b
+     * @return
+     */
+    private BigDecimal safeSubtract(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
         }
+        return a.subtract(b);
     }
 
+    /**
+     * 정수 빼기 (null 처리)
+     * @param a
+     * @param b
+     * @return
+     */
+    private Integer safeSubtract(Integer a, Integer b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a - b;
+    }
 }

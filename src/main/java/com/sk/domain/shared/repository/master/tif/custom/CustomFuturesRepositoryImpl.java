@@ -5,6 +5,7 @@ import static com.sk.domain.shared.entity.master.tif.QFutures.futures;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -15,19 +16,23 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomFuturesRepositoryImpl implements CustomFuturesRepository {
 
-    private final JPAQueryFactory queryFactory;
+	private final JPAQueryFactory queryFactory;
 
-    @Override
-    public Map<LocalDateTime, List<Futures>> findPendingByCodes(List<String> codes) {
+	@Override
+	public Map<LocalDateTime, List<Futures>> findByCodesAfterDate(List<String> codes, LocalDateTime lastDate) {
+		List<Futures> futuresList = queryFactory
+				.selectFrom(futures)
+				.where(
+						futures.code.in(codes)
+								.and(futures.isDeleted.isFalse())
+								.and(lastDate == null ? null : futures.date.gt(lastDate)))
+				.orderBy(futures.date.asc())
+				.fetch();
 
-        List<Futures> futuresList = queryFactory
-                .selectFrom(futures)
-                .where(futures.isModifiedLoad.eq(false)
-                        .and(futures.code.in(codes)))
-                .orderBy(futures.date.asc()) // date 기준 오름차순 정렬
-                .fetch();
-
-        return futuresList.stream()
-                .collect(Collectors.groupingBy(Futures::getDate));
-    }
+		return futuresList.stream()
+				.collect(Collectors.groupingBy(
+						Futures::getDate,
+						TreeMap::new,
+						Collectors.toList()));
+	}
 }

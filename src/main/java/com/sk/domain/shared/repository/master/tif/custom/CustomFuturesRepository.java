@@ -7,5 +7,5 @@ import java.util.Map;
 import com.sk.domain.shared.entity.master.tif.Futures;
 
 public interface CustomFuturesRepository {
-    Map<LocalDateTime, List<Futures>> findPendingByCodes(List<String> codes);
+    Map<LocalDateTime, List<Futures>> findByCodesAfterDate(List<String> codes, LocalDateTime lastDate);
 }

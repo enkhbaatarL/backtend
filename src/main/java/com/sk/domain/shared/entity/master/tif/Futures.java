@@ -70,8 +70,4 @@ public class Futures extends BaseEntity {
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isModifiedLoad;
-
-    public void updateIsModifiedLoad() {
-        this.isModifiedLoad = true;
-    }
 }
