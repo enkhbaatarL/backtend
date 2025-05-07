@@ -12,6 +12,7 @@ import com.sk.domain.admin.dto.request.company.CompanyProviderMapReq;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.admin.dto.response.company.*;
 import com.sk.domain.admin.validator.CompanyValidator;
+import com.sk.domain.shared.dto.Audited;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
@@ -32,6 +33,8 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +103,7 @@ public class AdminCompanyService {
 
         CustomerCompany savedEntity = customerCompanyRepository.save(CustomerCompany.ofOwner(companyReq, companyInfo.getCompanyNm()));
 
-        return CompanyRes.ofDefault(savedEntity);
+        return CompanyRes.of(savedEntity);
 
     }
 
@@ -132,7 +135,7 @@ public class AdminCompanyService {
 
         company.softDelete();
 
-        return CompanyRes.ofDefault(company);
+        return CompanyRes.of(company);
 
     }
 
@@ -167,7 +170,7 @@ public class AdminCompanyService {
 
         CustomerCompany savedEntity = customerCompanyRepository.save(CustomerCompany.of(companyReq, companyInfo.getCompanyNm()));
 
-        return CompanyRes.ofDefault(savedEntity);
+        return CompanyRes.of(savedEntity);
 
     }
 
@@ -178,9 +181,10 @@ public class AdminCompanyService {
      * @return CompanyRes
      */
     public CompanyRes getCompanyDetail(Integer companyNo) {
-        ValidationResult<CustomerCompany> valid = companyValidator.ensureCompanyExistsByCompanyNo(companyNo);
-        CustomerCompany company = valid.getOrThrow();
-        return CompanyRes.of(company);
+        Audited<CustomerCompany> companyAudited = companyValidator.ensureCompanyExistsByCompanyNoWithAuditor(companyNo).getOrThrow();
+        return CompanyRes
+            .of(companyAudited.target())
+            .withAuditor(companyAudited.auditInfo());
     }
 
     /**
@@ -198,7 +202,7 @@ public class AdminCompanyService {
 
         company.update(companyReq);
 
-        return CompanyRes.ofDefault(company);
+        return CompanyRes.of(company);
 
     }
 
@@ -232,7 +236,7 @@ public class AdminCompanyService {
         ValidationResult<CustomerCompanyProviderMapping> ccpmValid = companyValidator.ensureCcpmNotExistsByCompanyAndProvider(company, provider);
         ccpmValid.validOrThrow();
 
-        return CompanyProviderMapRes.ofDefault(customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider)));
+        return CompanyProviderMapRes.of(customerCompanyProviderMappingRepository.save(CustomerCompanyProviderMapping.of(company, provider)));
 
     }
 
@@ -244,9 +248,8 @@ public class AdminCompanyService {
      * @return ProviderMappingDetailRes
      */
     public CompanyProviderMapDetailRes getProviderDetail(Integer companyNo, Integer providerNo) {
-        ValidationResult<CustomerCompanyProviderMapping> ccpValid = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-        CustomerCompanyProviderMapping ccp = ccpValid.getOrThrow();
-        return CompanyProviderMapDetailRes.of(ccp);
+        Audited<CustomerCompanyProviderMapping> companyProviderMappingAudited = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNoWithAuditor(companyNo, providerNo).getOrThrow();
+        return CompanyProviderMapDetailRes.of(companyProviderMappingAudited.target(), companyProviderMappingAudited.auditInfo());
     }
 
     /**
@@ -265,7 +268,7 @@ public class AdminCompanyService {
 
         ccp.update(companyProviderMapReq);
 
-        return CompanyProviderMapRes.ofDefault(ccp);
+        return CompanyProviderMapRes.of(ccp);
 
     }
 
@@ -307,7 +310,7 @@ public class AdminCompanyService {
         ValidationResult<Goods> goodsResult = companyValidator.ensureGoodsExistsByGoodsNo(companyGoodsMapReq.goodsNo());
         Goods goods = goodsResult.getOrThrow();
 
-        return CompanyGoodsMapRes.ofDefault(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManagementSeparateCd())));
+        return CompanyGoodsMapRes.of(customerCompanyGoodsMappingRepository.save(CustomerCompanyGoodsMapping.of(company, goods, companyGoodsMapReq.goodsAuthManagementSeparateCd())));
     }
 
     /**
@@ -320,18 +323,16 @@ public class AdminCompanyService {
      */
     public CompanyGoodsMapDetailRes getGoodsDetail(Integer companyNo, Integer providerNo, Integer goodsNo) {
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-        ccpResult.validOrThrow();
+        companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo).validOrThrow();
 
-        ValidationResult<CustomerCompanyGoodsMapping> ccgResult = companyValidator.ensureCcgmExistsByCompanyNoAndGoodsNo(companyNo, goodsNo);
-        CustomerCompanyGoodsMapping ccg = ccgResult.getOrThrow();
+        Audited<CustomerCompanyGoodsMapping> ccgm = companyValidator.ensureCcgmExistsByCompanyNoAndGoodsNoWithAuditor(companyNo, goodsNo).getOrThrow();
 
-        if (GoodsAuthManagementSeparateCd.COMPANY == ccg.getId().getGoodsAuthManagementSeparateCd()) {
+        if (GoodsAuthManagementSeparateCd.COMPANY == ccgm.target().getId().getGoodsAuthManagementSeparateCd()) {
             List<AuthManageGoodsMapping> companyAuth = authManageGoodsMappingRepository.findByCompanyNoAndGoodsNoAndGoodsAuthManagementSeparateCd(companyNo, goodsNo, GoodsAuthManagementSeparateCd.COMPANY);
-            return CompanyGoodsMapDetailRes.of(ccg, companyAuth);
+            return CompanyGoodsMapDetailRes.of(ccgm.target(), ccgm.auditInfo(), companyAuth);
         }
 
-        return CompanyGoodsMapDetailRes.of(ccg);
+        return CompanyGoodsMapDetailRes.of(ccgm.target(), ccgm.auditInfo());
     }
 
     /**
@@ -359,20 +360,18 @@ public class AdminCompanyService {
     @Transactional
     public AuthGoodsMapSettingRes patchGoodsAuth(Integer companyNo, Integer providerNo, Integer goodsNo, AuthGoodsMapReq authGoodsMapReq) {
 
-        ValidationResult<CustomerCompanyProviderMapping> ccpResult = companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo);
-        ccpResult.validOrThrow();
+        companyValidator.ensureCcpmExistsByCompanyNoAndProviderNo(companyNo, providerNo).validOrThrow();
 
-        ValidationResult<CustomerCompanyGoodsMapping> ccgResult = companyValidator.ensureCcgmExistsByCompanyNoAndGoodsNo(companyNo, goodsNo);
-        CustomerCompanyGoodsMapping ccg = ccgResult.getOrThrow();
+        CustomerCompanyGoodsMapping ccgm = companyValidator.ensureCcgmExistsByCompanyNoAndGoodsNo(companyNo, goodsNo).getOrThrow();
 
         // 기존 권한 매핑 조회
-        List<AuthManageGoodsMapping> existingAuthMappings = authManageGoodsMappingRepository.findByCustomerCompanyGoodsMappingAndIsDeletedFalse(ccg);
+        List<AuthManageGoodsMapping> existingAuthMappings = authManageGoodsMappingRepository.findByCustomerCompanyGoodsMappingAndIsDeletedFalse(ccgm);
 
         // 권한 구분 코드 변경 여부 확인
-        boolean hasChangedSupportCd = authGoodsMapReq.goodsAuthManagementSeparateCd() != ccg.getId().getGoodsAuthManagementSeparateCd();
+        boolean hasChangedSupportCd = ObjectUtils.notEqual(authGoodsMapReq.goodsAuthManagementSeparateCd(), ccgm.getId().getGoodsAuthManagementSeparateCd());
 
         // 고객사-상품 매핑 처리
-        CustomerCompanyGoodsMapping targetMapping = updateCompanyGoodsMapping(ccg, authGoodsMapReq, hasChangedSupportCd);
+        CustomerCompanyGoodsMapping targetMapping = updateCompanyGoodsMapping(ccgm, authGoodsMapReq, hasChangedSupportCd);
 
         // 권한 매핑 처리
         processAuthMappings(targetMapping, existingAuthMappings, authGoodsMapReq, hasChangedSupportCd);

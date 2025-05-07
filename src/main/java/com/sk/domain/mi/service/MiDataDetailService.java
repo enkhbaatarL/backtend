@@ -4,7 +4,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
-import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
@@ -16,8 +15,6 @@ import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.chart.*;
-import com.sk.domain.mi.validator.GoodsDataSourceValidator;
-import com.sk.domain.mi.validator.GoodsDataValidator;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
@@ -35,8 +32,10 @@ import com.sk.domain.shared.enums.chart.Range;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -53,33 +52,36 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MiDataDetailService {
 
-    private final GoodsDataValidator goodsDataValidator;
-    private final GoodsDataSourceValidator goodsDataSourceDetailValidator;
-
+    private final GoodsDataRepository goodsDataRepository;
     private final UploadedFileRepository uploadedFileRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
     private final MiUserService userService;
     private final ChartGenerationService chartGenerationService;
     private final PersonalizationService personalizationService;
     private final TechnicalIndicatorService technicalIndicatorService;
+    private final ChartUnitConversionService chartUnitConversionService;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final MiGoodsDataInqueryUserService goodsDataInquiryUserService;
 
-    private final ChartUnitConversionService chartUnitConversionService;
-    private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
+    /**
+     * 상품 데이터 정보를 조회합니다.
+     *
+     * @param goodsNo        상품 번호
+     * @param goodsDataNo    상품 데이터 번호
+     * @param authentication 인증 정보
+     * @return 상품 데이터 응답
+     */
     public GoodsDataRes getGoodsData(Integer goodsNo, Integer goodsDataNo, Authentication authentication) {
 
-        Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString("role"))
-                : Role.SYSTEM;
+        Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode())) : Role.SYSTEM;
 
-        ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
-        GoodsData goodsData = goodsDataResult.getOrThrow();
+        GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
 
-        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(),
-                GoodsDataManagementSeparateCode.GDAT.getCode());
+        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
 
         PermissionRes permissionRes = switch (role) {
             case USER -> {
@@ -96,81 +98,85 @@ public class MiDataDetailService {
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
 
-        // 상품-데이터 조회 이력
+        // 상품-데이터 조회 이력 적재
         goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authentication.getName());
 
         return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes);
     }
 
+    /**
+     * 상품 데이터의 비정형 데이터를 조회합니다.
+     *
+     * @param goodsNo     상품 번호
+     * @param goodsDataNo 상품 데이터 번호
+     * @return 비정형 데이터 응답 목록
+     */
     public List<UnstructuredDataRes> getGoodsDataUnstructuredData(Integer goodsNo, Integer goodsDataNo) {
-        List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsDataNo);
+        GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
+        List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsData.getGoodsDataNo());
         return UnstructuredDataRes.ofList(documents);
     }
 
+    /**
+     * 상품 데이터 소스 목록을 조회합니다.
+     *
+     * @param goodsNo     상품 번호
+     * @param goodsDataNo 상품 데이터 번호
+     * @return 상품 데이터 소스 응답 목록
+     */
     public List<GoodsDataSourceRes> getGoodsDataSources(Integer goodsNo, Integer goodsDataNo) {
-
-        ValidationResult<GoodsData> goodsDataResult = goodsDataValidator.ensureExists(goodsDataNo);
-        GoodsData goodsData = goodsDataResult.getOrThrow();
-
+        GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<GoodsDataSourceDetail> goodsDataSources = goodsDataSourceDetailRepository.findByGoodsDataAndIsDeletedFalse(goodsData);
-
         return GoodsDataSourceRes.ofList(goodsDataSources);
-
     }
 
     /**
      * 차트 개인화를 설정합니다.
      *
+     * @param goodsNo               상품 번호
      * @param gdNo                  상품 데이터 번호
      * @param gdsNo                 상품 데이터소스 번호
      * @param chartsPersonalizeReqs 차트 개인화 요청 데이터 리스트
      * @return 개인화된 차트 응답 데이터 리스트
      */
     @Transactional
-    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer gdNo, Integer gdsNo,
-            List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
+    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsNo, Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
 
-        // 1) 유효성 검증 & 필터링
-        GoodsDataSourceDetail gds = goodsDataSourceDetailValidator
-                .ensureExists(gdsNo)
-                .getOrThrow();
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
         List<ChartsPersonalizeReq> validReqs = chartsPersonalizeReqs.stream()
-                .map(ChartsPersonalizeReq::validThen)
-                .filter(Objects::nonNull)
-                .toList();
+            .map(ChartsPersonalizeReq::validThen)
+            .filter(Objects::nonNull)
+            .toList();
 
-        // 2) 기존 DB 설정을 key → 엔티티 맵으로 변환
-        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds,
-                subject);
+        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, subject);
 
         Function<ChartsPersonalizeReq, String> keyOfReq = req -> req.chartConditionCd().name() + ":" + req.chartConditionVal();
-        Function<PersonalizedChartSetting, String> keyOfEntity = ent -> ent.getChartSettingConditionCd().name() + ":"
-                + ent.getChartSettingConditionVal();
+        Function<PersonalizedChartSetting, String> keyOfEntity = ent -> ent.getChartSettingConditionCd().name() + ":" + ent.getChartSettingConditionVal();
 
         Map<String, PersonalizedChartSetting> existingMap = existing.stream()
-                .collect(Collectors.toMap(
-                        keyOfEntity,
-                        Function.identity(),
-                        (v1, v2) -> v2));
+            .collect(Collectors.toMap(
+                keyOfEntity,
+                Function.identity(),
+                (v1, v2) -> v2));
 
         Set<String> incomingKeys = validReqs.stream()
-                .map(keyOfReq)
-                .collect(Collectors.toSet());
+            .map(keyOfReq)
+            .collect(Collectors.toSet());
 
         // 삭제 대상: 기존 키 중에 incomingKeys에 없는 것
         existingMap.entrySet().stream()
-                .filter(e -> !incomingKeys.contains(e.getKey()))
-                .map(Map.Entry::getValue)
-                .forEach(BaseEntity::softDelete);
+            .filter(e -> BooleanUtils.isFalse(incomingKeys.contains(e.getKey())))
+            .map(Map.Entry::getValue)
+            .forEach(BaseEntity::softDelete);
 
         // 삽입 대상: incomingKeys 중에 existingMap에 없는 것
         List<PersonalizedChartSetting> toInsert = validReqs.stream()
-                .filter(req -> !existingMap.containsKey(keyOfReq.apply(req)))
-                .map(req -> PersonalizedChartSetting.of(req, gds, subject))
-                .toList();
+            .filter(req -> BooleanUtils.isFalse(existingMap.containsKey(keyOfReq.apply(req))))
+            .map(req -> PersonalizedChartSetting.of(req, gds, subject))
+            .toList();
 
-        if (!toInsert.isEmpty()) {
+        if (BooleanUtils.isFalse(toInsert.isEmpty())) {
             personalizedChartSettingRepository.saveAll(toInsert);
         }
 
@@ -192,15 +198,9 @@ public class MiDataDetailService {
      * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명)
      * @return 생성된 차트 묶음 응답 데이터
      */
-    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, String startDate,
-            String endDate, String unitCd, String userLoginId) {
+    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, String startDate, String endDate, String unitCd, String userLoginId) {
 
-        // 상품-데이터 유효성 검증
-        goodsDataValidator.ensureExists(gdNo).validOrThrow();
-
-        // 상품-데이터-소스 유효성 검증 및 조회
-        ValidationResult<GoodsDataSourceDetail> gdsResult = goodsDataSourceDetailValidator.ensureExists(gdsNo);
-        GoodsDataSourceDetail gds = gdsResult.getOrThrow();
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
         // 변환 가능한 단위 맵 조회 (GDS 기본 단위 포함)
         Map<String, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
@@ -211,146 +211,212 @@ public class MiDataDetailService {
         Pair<String, String> determinedRange = personalizationService.getPsRangeOrDefault(personalizedMap, range, startDate, endDate);
         Interval determinedInterval = personalizationService.getPsIntervalOrDefault(personalizedMap, interval);
         String determinedUnitCd = personalizationService.getPsUnitCdOrDefault(personalizedMap, unitCd,
-                ChartUnitConversionService.generateDefaultUnitCd(gds));
+            ChartUnitConversionService.generateDefaultUnitCd(gds));
         ChartType determinedChartType = personalizationService.getPsChartTypeOrDefault(personalizedMap);
 
         // 결정된 단위코드 유효성 검증
         chartUnitConversionService.validateUnitCd(unitCdMap, determinedUnitCd);
 
         // 메타데이터 생성
-        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(),
-                determinedInterval);
+        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(), determinedInterval);
 
         // 메인 차트 생성
         Chart mainChart = chartGenerationService.generateChartData(
-                gds,
-                determinedRange.getLeft(),
-                determinedRange.getRight(),
-                determinedInterval,
-                unitCdMap.get(determinedUnitCd),
-                Boolean.TRUE // 메인 차트는 항상 visible 상태
+            gds,
+            determinedRange.getLeft(),
+            determinedRange.getRight(),
+            determinedInterval,
+            unitCdMap.get(determinedUnitCd),
+            Boolean.TRUE // 메인 차트는 항상 visible 상태
         );
 
         // 기술적 지표 생성
         List<Indicator> indicators = technicalIndicatorService.generateIndicators(
-                mainChart,
-                personalizedMap);
+            mainChart,
+            personalizedMap
+        );
 
         // 비교 차트 생성
         List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
-                gds,
-                determinedRange.getLeft(),
-                determinedRange.getRight(),
-                determinedInterval,
-                personalizedMap);
+            gds,
+            determinedRange.getLeft(),
+            determinedRange.getRight(),
+            determinedInterval,
+            personalizedMap
+        );
 
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }
 
-    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page,
-            Integer size, String startDate, String endDate) {
+    /**
+     * 상품 데이터 소스의 원천 데이터를 조회합니다. (리팩토링됨)
+     *
+     * @param goodsNo   상품 번호
+     * @param gdNo      상품 데이터 번호
+     * @param gdsNo     상품 데이터소스 번호
+     * @param page      페이지 번호
+     * @param size      페이지 크기
+     * @param startDate 조회 시작일
+     * @param endDate   조회 종료일
+     * @return 페이징된 원천 데이터 테이블 응답
+     */
+    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, String startDate, String endDate) {
 
-        // 상품-데이터 유효성 검증
-        goodsDataValidator.ensureExists(gdNo).validOrThrow();
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
 
-        GoodsDataSourceDetail gds = goodsDataSourceDetailValidator.ensureExists(gdsNo).getOrThrow();
+        // Count 쿼리 실행
+        List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, queryContext.whereClause()));
+        int totalElements = extractTotalElements(countQuery);
 
-        // 컬럼 정보 추출
-        Map<String, String> columnExpressions = getColumnExpressions(gds);
+        // Paging 데이터 쿼리 실행
+        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofPagingQuery(gds, queryContext.whereClause(), queryContext.dateColumn(), page, size));
 
-        return getRowsWithPagination(gds, page, size, columnExpressions, startDate, endDate);
-    }
+        // 테이블 응답 생성
+        TableRes table = buildTableResponse(dataQuery, queryContext.columnExpressions());
 
-    public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, String startDate, String endDate) {
-
-        // 상품-데이터 유효성 검증
-        goodsDataValidator.ensureExists(gdNo).validOrThrow();
-
-        GoodsDataSourceDetail gds = goodsDataSourceDetailValidator.ensureExists(gdsNo).getOrThrow();
-
-        // 컬럼 정보 추출
-        Map<String, String> columnExpressions = getColumnExpressions(gds);
-
-        List<String> columns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
-        String whereClause = "%s between '%s' and '%s'".formatted(columns.get(0), startDate, endDate);
-
-        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, whereClause));
-
-        List<String> fields = dataQuery.isEmpty() ? List.of() : new ArrayList<>(dataQuery.get(0).keySet());
-
-        // headers 생성
-        List<TableRes.Column> headers = fields.stream()
-                .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
-                .toList();
-
-        // rows 생성
-        List<TableRes.Row> rows = dataQuery.stream()
-                .map(rowMap -> TableRes.Row.of(
-                        fields.stream()
-                                .map(key -> Optional.ofNullable(rowMap.get(key))
-                                        .map(Object::toString)
-                                        .orElse(null))
-                                .toList()))
-                .toList();
-
-        return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), headers, rows);
-    }
-
-    @Transactional(transactionManager = "myBatisTransactionManager")
-    public PaginationTableRes<TableRes.Row, TableRes.Column> getRowsWithPagination(GoodsDataSourceDetail gds, Integer page, Integer size,
-            Map<String, String> columnExpressions, String startDate, String endDate) {
-
-        List<String> columns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
-
-        String whereClause = "%s between '%s' and '%s'".formatted(columns.get(0), startDate, endDate);
-
-        List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, whereClause));
-        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService
-                .getDynamicData(DynamicDataReq.ofPagingQuery(gds, whereClause, columns.get(0), page, size));
-
-        int totalElements = countQuery.stream()
-                .findFirst()
-                .map(m -> ((Number) m.get("count(*)")).intValue())
-                .orElse(0);
-
-        List<String> fields = dataQuery.isEmpty() ? List.of() : new ArrayList<>(dataQuery.get(0).keySet());
-
-        // headers 생성
-        List<TableRes.Column> headers = fields.stream()
-                .map(f -> TableRes.Column.of(f, columnExpressions.getOrDefault(f, f)))
-                .toList();
-
-        // rows 생성
-        List<TableRes.Row> rows = dataQuery.stream()
-                .map(rowMap -> TableRes.Row.of(
-                        fields.stream()
-                                .map(key -> Optional.ofNullable(rowMap.get(key))
-                                        .map(Object::toString)
-                                        .orElse(null))
-                                .toList()))
-                .toList();
-
-        TableRes table = TableRes.of(headers, rows);
+        // 최종 페이징 응답 반환
         return PaginationTableRes.toRes(page, size, totalElements, table.rows(), table.headers());
     }
 
+    /**
+     * 상품 데이터 소스의 원천 데이터를 엑셀 파일로 다운로드합니다. (리팩토링됨)
+     *
+     * @param goodsNo   상품 번호
+     * @param gdNo      상품 데이터 번호
+     * @param gdsNo     상품 데이터소스 번호
+     * @param startDate 조회 시작일
+     * @param endDate   조회 종료일
+     * @return 엑셀 파일 스트림
+     */
+    public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, String startDate, String endDate) {
+
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
+
+        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, queryContext.whereClause(), queryContext.dateColumn()));
+
+        // 테이블 응답 생성
+        TableRes table = buildTableResponse(dataQuery, queryContext.columnExpressions());
+
+        // 엑셀 파일 생성 및 반환
+        return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), table.headers(), table.rows());
+    }
+
+    /**
+     * GoodsData를 조회하고 유효성을 검사합니다.
+     */
+    private GoodsData getValidatedGoodsData(Integer gdNo, Integer goodsNo) {
+        return goodsDataRepository.findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(gdNo, goodsNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data]. goodsDataNo: %s, goodsNo: %s".formatted(gdNo, goodsNo)));
+    }
+
+    /**
+     * GoodsDataSourceDetail을 조회하고 유효성을 검사합니다.
+     */
+    private GoodsDataSourceDetail getValidatedGoodsDataSource(Integer gdsNo, Integer gdNo, Integer goodsNo) {
+        return goodsDataSourceDetailRepository.findGoodsDataSourceWithGoodsTree(gdsNo, gdNo, goodsNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data-source]. goodsDataSource: %s, goodsDataNo: %s, goodsNo: %s".formatted(gdsNo, gdNo, goodsNo)));
+    }
+
+    /**
+     * 쿼리에 필요한 컨텍스트 정보 (컬럼 표현식, 날짜 컬럼, WHERE 절)를 준비합니다.
+     */
+    private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
+        Map<String, String> columnExpressions = getColumnExpressions(gds);
+
+        // 컬럼 목록 파싱 및 날짜 컬럼 결정 (null 또는 빈 문자열 처리 추가 고려)
+        List<String> columns = Optional.ofNullable(gds.getTableColumnListNm())
+            .map(s -> Arrays.stream(s.split(",")).map(String::trim).toList())
+            .orElse(Collections.emptyList());
+
+        if (columns.isEmpty()) {
+            // 적절한 예외 처리 또는 기본값 설정
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Table column list is not defined for goodsDataSourceNo: %s".formatted(gds.getGoodsDataSourceNo()));
+        }
+
+        String dateColumn = columns.get(0);
+        String whereClause = "%s between '%s' and '%s'".formatted(dateColumn, startDate, endDate);
+
+        return new RawDataQueryContext(columnExpressions, dateColumn, whereClause);
+    }
+
+    /**
+     * 조회된 데이터와 컬럼 표현식을 기반으로 TableRes 객체를 생성합니다.
+     */
+    private TableRes buildTableResponse(List<Map<String, Object>> dataQuery, Map<String, String> columnExpressions) {
+
+        if (dataQuery == null || dataQuery.isEmpty()) {
+            return TableRes.of(Collections.emptyList(), Collections.emptyList());
+        }
+
+        // 필드명 추출 (첫 번째 데이터 기준)
+        List<String> fields = new ArrayList<>(dataQuery.get(0).keySet());
+
+        // Headers 생성
+        List<TableRes.Column> headers = fields.stream()
+            .map(field -> TableRes.Column.of(field, columnExpressions.getOrDefault(field, field)))
+            .toList();
+
+        // Rows 생성
+        List<TableRes.Row> rows = dataQuery.stream()
+            .map(rowMap -> TableRes.Row.of(
+                fields.stream()
+                    .map(key -> Optional.ofNullable(rowMap.get(key)).map(Object::toString).orElse(null))
+                    .toList()))
+            .toList();
+
+        return TableRes.of(headers, rows);
+    }
+
+    /**
+     * Count 쿼리 결과에서 총 개수를 추출합니다.
+     */
+    private int extractTotalElements(List<Map<String, Object>> countQueryResult) {
+        return countQueryResult.stream()
+            .findFirst()
+            .map(m -> m.get("count(*)")) // 키 이름 확인 필요
+            .filter(Number.class::isInstance)
+            .map(Number.class::cast)
+            .map(Number::intValue)
+            .orElse(0);
+    }
+
+    /**
+     * 상품 데이터 소스의 컬럼 표현식을 조회합니다. (기존 메소드 유지)
+     *
+     * @param goodsDataSourceDetail 상품 데이터 소스 상세 정보
+     * @return 컬럼명과 컬럼 표현식 맵
+     */
     private Map<String, String> getColumnExpressions(GoodsDataSourceDetail goodsDataSourceDetail) {
+        // null 체크 강화
         if (goodsDataSourceDetail == null ||
-                goodsDataSourceDetail.getGoodsData() == null ||
-                goodsDataSourceDetail.getGoodsData().getGoods() == null ||
-                goodsDataSourceDetail.getGoodsData().getGoods().getProvider() == null ||
-                goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns() == null) {
+            goodsDataSourceDetail.getGoodsData() == null ||
+            goodsDataSourceDetail.getGoodsData().getGoods() == null ||
+            goodsDataSourceDetail.getGoodsData().getGoods().getProvider() == null ||
+            goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns() == null) {
             return Collections.emptyMap();
         }
 
         return goodsDataSourceDetail.getGoodsData().getGoods().getProvider().getProviderDataColumns()
-                .stream()
-                .filter(c -> c != null && c.getId() != null)
-                .collect(Collectors.toMap(
-                        c -> c.getId().getProviderDataColumnNm(),
-                        ProviderDataColumn::getDataColumnExpn,
-                        // In case of duplicate keys, keep the first one
-                        (first, second) -> first));
+            .stream()
+            // ProviderDataColumn 및 ID null 체크 추가
+            .filter(c -> c != null && c.getId() != null && c.getId().getProviderDataColumnNm() != null && c.getDataColumnExpn() != null)
+            .collect(Collectors.toMap(
+                c -> c.getId().getProviderDataColumnNm(),
+                ProviderDataColumn::getDataColumnExpn,
+                (existing, replacement) -> existing // 중복 키 발생 시 기존 값 유지
+            ));
+    }
+
+    /**
+     * 원천 데이터 쿼리 컨텍스트 정보를 담는 record.
+     */
+    private record RawDataQueryContext(
+        Map<String, String> columnExpressions,
+        String dateColumn,
+        String whereClause
+    ) {
     }
 
 }

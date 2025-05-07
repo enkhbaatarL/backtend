@@ -2,6 +2,9 @@ package com.sk.domain.admin.controller;
 
 import java.util.List;
 
+import com.sk.common.annotation.RequiredPermission;
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -62,6 +65,7 @@ public class AdminCompanyController {
     @Operation(summary = "그룹사 목록 조회 API (without pagination)", description = "그룹사 목록을 조회합니다. <br>'companyNm' 필드를 기준으로 오름차순(ASC) 정렬되며, 우선순위는 숫자 > 알파벳 > 한국어 순입니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/group-companies")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<List<GroupCompanyRes>> getGroupCompanies() {
         return BaseResponseFactory.create(adminCompanyService.getGroupCompanies());
     }
@@ -75,10 +79,12 @@ public class AdminCompanyController {
     @Operation(summary = "관리사 목록 조회 API (with pagination)", description = "관리사 목록을 조회합니다. <br>페이지네이션 처리되어 'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/owner-companies")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<CompanyRes>> getOwnerCompanies(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-        @RequestParam(value = "companyNm", required = false) String companyNm) {
+        @RequestParam(value = "companyNm", required = false) String companyNm
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getOwnerCompanies(page, size, companyNm));
     }
 
@@ -86,6 +92,7 @@ public class AdminCompanyController {
     @Operation(summary = "관리사 등록 API", description = "관리사를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/owner-company")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> postCompany(@RequestBody @Valid CompanyReq.OwnerInsert companyReq) {
         return BaseResponseFactory.create(adminCompanyService.postOwnerCompany(companyReq));
     }
@@ -97,8 +104,10 @@ public class AdminCompanyController {
     @Operation(summary = "관리사 삭제 API", description = "관리사를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/owner-companies/{companyNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> deleteOwnerCompany(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.deleteOwnerCompany(companyNo));
     }
 
@@ -112,11 +121,13 @@ public class AdminCompanyController {
     @Operation(summary = "고객사 목록 조회 API (with pagination)", description = "고객사 목록을 조회합니다. <br>페이지네이션 처리되어 'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<CompanyRes>> getCompanies(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
         @RequestParam(value = "companyNm", required = false) String companyNm,
-        @RequestParam(value = "activationSts", required = false) ActivationStatus activationSts) {
+        @RequestParam(value = "activationSts", required = false) ActivationStatus activationSts
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanies(page, size, companyNm, activationSts));
     }
 
@@ -124,6 +135,7 @@ public class AdminCompanyController {
     @Operation(summary = "고객사 등록 API", description = "고객사를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/company")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> postCompany(@RequestBody @Valid CompanyReq.Insert companyReq) {
         return BaseResponseFactory.create(adminCompanyService.postCompany(companyReq));
     }
@@ -135,8 +147,10 @@ public class AdminCompanyController {
     @Operation(summary = "고객사 상세 조회 API", description = "고객사를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> getCompanyDetail(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanyDetail(companyNo));
     }
 
@@ -147,9 +161,11 @@ public class AdminCompanyController {
     @Operation(summary = "고객사 수정 API", description = "고객사를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/companies/{companyNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyRes> patchCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @RequestBody @Valid CompanyReq.Update companyReq) {
+        @RequestBody @Valid CompanyReq.Update companyReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.patchCompany(companyNo, companyReq));
     }
 
@@ -160,8 +176,10 @@ public class AdminCompanyController {
     @Operation(summary = "고객사 최신 수정 데이터 조회 API", description = "고객사 상세 화면에서 고객사 정보, 프로바이더 정보, 회원 정보를 포함하여 최신 수정 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/latest-updated")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<LatestUpdatedRes> getCompanyLatestUpdated(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getCompanyLatestUpdated(companyNo));
     }
 
@@ -172,6 +190,7 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더 매핑 목록 조회 API (without pagination)", description = "고객사와 매핑된 프로바이더 목록을 조회합니다.<br>'providerNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<List<ProviderWithGoodsCntRes>> getProvidersMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
         return BaseResponseFactory.create(adminCompanyService.getProvidersMappedToCompany(companyNo));
@@ -184,9 +203,11 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더 매핑 등록 API", description = "고객사와 프로바이더를 매핑하여 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/companies/{companyNo}/provider")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyProviderMapRes> postProviderMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @RequestBody @Valid CompanyProviderMapReq.Insert companyProviderMapReq) {
+        @RequestBody @Valid CompanyProviderMapReq.Insert companyProviderMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.postProviderMappedToCompany(companyNo, companyProviderMapReq));
     }
 
@@ -198,6 +219,7 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더 매핑 상세 조회 API", description = "고객사와 매핑되어 있는 프로바이더를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers/{providerNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyProviderMapDetailRes> getProviderDetail(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
@@ -212,10 +234,12 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더 매핑 수정 API", description = "고객사와 프로바이더 매핑을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/companies/{companyNo}/providers/{providerNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyProviderMapRes> patchProviderMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @RequestBody @Valid CompanyProviderMapReq.Update companyProviderMapReq) {
+        @RequestBody @Valid CompanyProviderMapReq.Update companyProviderMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.patchProviderMappedToCompany(companyNo, providerNo, companyProviderMapReq));
     }
 
@@ -227,9 +251,11 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더 최신 수정 데이터 조회 API", description = "고객사-프로바이더 상세 화면에서 프로바이더 정보, 상품 정보를 포함하여 최신 수정 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers/{providerNo}/latest-updated")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<LatestUpdatedRes> getProviderLatestUpdated(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getProviderLatestUpdated(companyNo, providerNo));
     }
 
@@ -244,12 +270,14 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더-상품 매핑 목록 조회 API (with pagination)", description = "고객사와 매핑되어있는 프로바이더의 상품 내역 중에 고객사가 등록한 상품 목록을 조회합니다.<br>'goodsNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<GoodsWithDataCntRes>> getGoodsMappedToCompany(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
         @RequestParam(value = "search", required = false) String search,
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsMappedToCompany(page, size, companyNo, providerNo, search));
     }
 
@@ -261,10 +289,12 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더-상품 매핑 등록 API", description = "고객사와 상품을 매핑하여 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/companies/{companyNo}/providers/{providerNo}/goods")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyGoodsMapRes> postGoodsMappedToCompany(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @RequestBody @Valid CompanyGoodsMapReq companyGoodsMapReq) {
+        @RequestBody @Valid CompanyGoodsMapReq companyGoodsMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.postGoodsMappedToCompany(companyNo, providerNo, companyGoodsMapReq));
     }
 
@@ -277,10 +307,12 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더-상품 매핑 상세 조회 API", description = "고객사와 매핑되어 있는 상품을 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<CompanyGoodsMapDetailRes> getGoodsDetail(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsDetail(companyNo, providerNo, goodsNo));
     }
 
@@ -293,10 +325,12 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더-상품 최신 수정 데이터 조회 API", description = "고객사-프로바이더-상품 상세 화면에서 고객사 정보, 프로바이더 정보, 회원 정보를 포함하여 최신 수정 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/latest-updated")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<LatestUpdatedRes> getGoodsLatestUpdated(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getGoodsLatestUpdated(companyNo, providerNo, goodsNo));
     }
 
@@ -311,12 +345,14 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 조회 API (with pagination)", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 조회합니다.<br>'userNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/permissions")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationExtensionRes<AuthGoodsMapRes, AuthGoodsMapCntRes>> getAuthGoods(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getAuthGoods(page, size, companyNo, providerNo, goodsNo));
     }
 
@@ -329,11 +365,13 @@ public class AdminCompanyController {
     @Operation(summary = "고객사-프로바이더-상품 사용자 권한 설정 수정 API", description = "고객사와 매핑되어 있는 상품에 대한 사용자 권한 설정을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/companies/{companyNo}/providers/{providerNo}/goods/{goodsNo}/permissions")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<AuthGoodsMapSettingRes> patchAuthGoods(
         @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
         @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
-        @RequestBody @Valid AuthGoodsMapReq authGoodsMapReq) {
+        @RequestBody @Valid AuthGoodsMapReq authGoodsMapReq
+    ) {
         return BaseResponseFactory.create(adminCompanyService.patchGoodsAuth(companyNo, providerNo, goodsNo, authGoodsMapReq));
     }
 
@@ -341,6 +379,7 @@ public class AdminCompanyController {
     @Operation(summary = "고객사별 부서 목록 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 부서 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/department/all")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<List<CompanyDepartmentRes>> getCompaniesAndDepartments() {
         return BaseResponseFactory.create(adminCompanyService.getCompaniesAndDepartments());
     }
@@ -349,6 +388,7 @@ public class AdminCompanyController {
     @Operation(summary = "고객사, 관리사 목록 일괄 조회 API", description = "드랍다운 메뉴 필터에 쓰일 테이블 고객사, 관리사 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/all")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<List<CompanyTypeAndCompanyRes>> getCompanyTypeAndCompanies() {
         return BaseResponseFactory.create(adminCompanyService.getCompanyTypeAndCompanies());
     }

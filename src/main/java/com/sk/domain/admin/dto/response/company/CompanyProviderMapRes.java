@@ -5,9 +5,6 @@ import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 public record CompanyProviderMapRes(
 
     @Schema(description = "프로바이더 번호", example = "159")
@@ -47,34 +44,23 @@ public record CompanyProviderMapRes(
             .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
             .isUsed(entity.getIsUsed())
-            .auditInfo(AuditInfo.ofDetail(
-                entity.getCreateUserId(),
-                entity.getCreateDt(),
-                entity.getModifyUserId(),
-                entity.getModifyDt(),
-                entity.accessCreatorNm(),
-                entity.accessCreatorDeptNm(),
-                entity.accessCreatorCompanyNm(),
-                entity.accessModifierNm(),
-                entity.accessModifierDeptNm(),
-                entity.accessModifierCompanyNm()
-            ))
-            .build();
-    }
-
-    public static CompanyProviderMapRes ofDefault(CustomerCompanyProviderMapping entity) {
-        return CompanyProviderMapRes.builder()
-            .providerNo(entity.getProvider().getProviderNo())
-            .providerNm(entity.getProvider().getProviderNm())
-            .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
-            .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
-            .isUsed(entity.getIsUsed())
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
                 entity.getModifyUserId(),
                 entity.getModifyDt()
             ))
+            .build();
+    }
+
+    public CompanyProviderMapRes withAuditor(AuditInfo auditInfo) {
+        return CompanyProviderMapRes.builder()
+            .providerNo(this.providerNo)
+            .providerNm(this.providerNm)
+            .companyNo(this.companyNo)
+            .companyNm(this.companyNm)
+            .isUsed(this.isUsed)
+            .auditInfo(auditInfo)
             .build();
     }
 

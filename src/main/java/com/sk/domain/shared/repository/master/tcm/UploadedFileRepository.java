@@ -61,6 +61,6 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
         FROM UploadedFile u
         WHERE u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
         AND u.isDeleted = false
-            """)
+        """)
     List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(Integer fileRelationshipObjectDistinguishNo);
 }

@@ -1,8 +1,44 @@
 root = true
 
+# 공통 기본 설정
 [*]
 charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
-trim_trailing_whitespace = true
+
+# Java 코드 스타일 (4 spaces)
+[*.java]
+indent_style = space
+indent_size = 4
+
+# YAML (2 spaces)
+[*.yml]
+indent_style = space
+indent_size = 2
+
+[*.yaml]
+indent_style = space
+indent_size = 2
+
+# JSON (2 spaces)
+[*.json]
+indent_style = space
+indent_size = 2
+
+# XML
+[*.xml]
+indent_style = space
+indent_size = 4
+
+# Markdown 파일
+[*.md]
+trim_trailing_whitespace = false
 insert_final_newline = true
+
+# Git 관련 설정
+[*.{gitignore,gitattributes}]
+insert_final_newline = true
+trim_trailing_whitespace = true

@@ -17,7 +17,7 @@ public class GoodsDataSourceValidator {
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
 
     public ValidationResult<GoodsDataSourceDetail> ensureExists(Integer goodsDataSourceNo) {
-        Optional<GoodsDataSourceDetail> entity = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo);
+        Optional<GoodsDataSourceDetail> entity = goodsDataSourceDetailRepository.findGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {

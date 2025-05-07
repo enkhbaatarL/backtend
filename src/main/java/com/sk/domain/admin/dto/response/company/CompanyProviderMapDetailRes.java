@@ -1,6 +1,7 @@
 package com.sk.domain.admin.dto.response.company;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -21,9 +22,13 @@ public record CompanyProviderMapDetailRes(
         this.providerExpn = providerExpn;
     }
 
-    public static CompanyProviderMapDetailRes of(CustomerCompanyProviderMapping entity) {
+    public static CompanyProviderMapDetailRes of(CustomerCompanyProviderMapping entity, AuditInfo auditInfo) {
         return CompanyProviderMapDetailRes.builder()
-            .companyProviderMapRes(CompanyProviderMapRes.of(entity))
+            .companyProviderMapRes(
+                CompanyProviderMapRes
+                    .of(entity)
+                    .withAuditor(auditInfo)
+            )
             .providerExpn(entity.getProvider().getProviderExpn())
             .build();
     }

@@ -44,34 +44,23 @@ public record CompanyGoodsMapRes(
             .isUsed(entity.getIsUsed())
             .goodsAuthManagementSeparateCd(entity.getId().getGoodsAuthManagementSeparateCd().getCode())
             .goodsAuthManagementSeparateNm(entity.getId().getGoodsAuthManagementSeparateCd().getDescription())
-            .auditInfo(AuditInfo.ofDetail(
-                entity.getCreateUserId(),
-                entity.getCreateDt(),
-                entity.getModifyUserId(),
-                entity.getModifyDt(),
-                entity.accessCreatorNm(),
-                entity.accessCreatorDeptNm(),
-                entity.accessCreatorCompanyNm(),
-                entity.accessModifierNm(),
-                entity.accessModifierDeptNm(),
-                entity.accessModifierCompanyNm()
-            ))
-            .build();
-    }
-
-    public static CompanyGoodsMapRes ofDefault(CustomerCompanyGoodsMapping entity) {
-        return CompanyGoodsMapRes.builder()
-            .companyNo(entity.getId().getCustomerCompanyNo())
-            .goodsNo(entity.getId().getGoodsNo())
-            .isUsed(entity.getIsUsed())
-            .goodsAuthManagementSeparateCd(entity.getId().getGoodsAuthManagementSeparateCd().getCode())
-            .goodsAuthManagementSeparateNm(entity.getId().getGoodsAuthManagementSeparateCd().getDescription())
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
                 entity.getModifyUserId(),
                 entity.getModifyDt()
             ))
+            .build();
+    }
+
+    public CompanyGoodsMapRes withAuditor(AuditInfo auditor) {
+        return CompanyGoodsMapRes.builder()
+            .companyNo(this.companyNo)
+            .goodsNo(this.goodsNo)
+            .isUsed(this.isUsed)
+            .goodsAuthManagementSeparateCd(this.goodsAuthManagementSeparateCd)
+            .goodsAuthManagementSeparateNm(this.goodsAuthManagementSeparateNm)
+            .auditInfo(auditor)
             .build();
     }
 

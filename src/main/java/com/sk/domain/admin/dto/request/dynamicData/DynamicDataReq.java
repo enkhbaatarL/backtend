@@ -29,7 +29,6 @@ public record DynamicDataReq(
         this.offset = offset;
     }
 
-
     public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
@@ -37,6 +36,17 @@ public record DynamicDataReq(
             .tableName(gds.getTargetTableNm())
             .whereClause(gds.getQueryConditionCntt())
             .additionalWhereClause(additionalWhere)
+            .build();
+    }
+
+    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere, String orderByColumn) {
+        return DynamicDataReq.builder()
+            .targetDataSource(gds.getTargetDbNm())
+            .columns(gds.getTableColumnListNm())
+            .tableName(gds.getTargetTableNm())
+            .whereClause(gds.getQueryConditionCntt())
+            .additionalWhereClause(additionalWhere)
+            .orderBy(orderByColumn)
             .build();
     }
 

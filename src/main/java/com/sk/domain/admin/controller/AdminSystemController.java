@@ -1,6 +1,7 @@
 package com.sk.domain.admin.controller;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -8,6 +9,7 @@ import com.sk.domain.admin.dto.request.client.ClientAccessInfoReq;
 import com.sk.domain.admin.dto.response.client.ClientAccessInfoRes;
 import com.sk.domain.admin.dto.response.client.ClientAccessSecretRes;
 import com.sk.domain.admin.service.AdminSystemService;
+import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -36,6 +38,7 @@ public class AdminSystemController {
     @Operation(summary = "클라이언트 정보 정보 목록 조회 API (with pagination)", description = "클라이언트 접속 정보 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/client-access")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<ClientAccessInfoRes>> getClientAccessInfos(
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
@@ -47,6 +50,7 @@ public class AdminSystemController {
     @Operation(summary = "클라이언트 접속 정보 등록 API", description = "클라이언트 접송 정보를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/client-access")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<ClientAccessInfoRes> postClientAccessInfo(
         @RequestBody @Valid ClientAccessInfoReq.Insert dto
     ) {
@@ -60,6 +64,7 @@ public class AdminSystemController {
     @Operation(summary = "클라이언트 Secret-Key 재발급 API", description = "클라이언트 Secret-Key를 재발급합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/client-access/{clientAccessRegNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<ClientAccessInfoRes> patchClientAccessInfo(
         @PathVariable Integer clientAccessRegNo
     ) {
@@ -73,6 +78,7 @@ public class AdminSystemController {
     @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근 권한을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/client-access/{clientAccessRegNo}")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<ClientAccessInfoRes> deleteClientAccessInfo(
         @PathVariable @Valid Integer clientAccessRegNo
     ) {
@@ -86,6 +92,7 @@ public class AdminSystemController {
     @Operation(summary = "클라이언트 Secret-Key(복호화) 조회 API", description = "복호화된 클라이언트 Secret-Key를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/client-access/client-access/{clientAccessRegNo}/reveal-secret")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<ClientAccessSecretRes> getClientAccessInfoSecret(
         @PathVariable Integer clientAccessRegNo
     ) {

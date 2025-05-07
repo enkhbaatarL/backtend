@@ -51,7 +51,7 @@ public record CompanyRes(
             AuditInfo.ofDetail(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
-    public static CompanyRes ofDefault(CustomerCompany entity) {
+    public static CompanyRes of(CustomerCompany entity) {
         return CompanyRes.builder()
             .companyNo(entity.getCustomerCompanyNo())
             .companyCd(entity.getCustomerCompanyCd())
@@ -68,26 +68,15 @@ public record CompanyRes(
             .build();
     }
 
-    public static CompanyRes of(CustomerCompany entity) {
+    public CompanyRes withAuditor(AuditInfo auditInfo) {
         return CompanyRes.builder()
-            .companyNo(entity.getCustomerCompanyNo())
-            .companyCd(entity.getCustomerCompanyCd())
-            .companyNm(entity.getCustomerCompanyNm())
-            .usageBeginDate(entity.getUseBeginDt())
-            .usageEndDate(entity.getUseEndDt())
-            .auditInfo(AuditInfo.ofDetail(
-                entity.getCreateUserId(),
-                entity.getCreateDt(),
-                entity.getModifyUserId(),
-                entity.getModifyDt(),
-                entity.accessCreatorNm(),
-                entity.accessCreatorDeptNm(),
-                entity.accessCreatorCompanyNm(),
-                entity.accessModifierNm(),
-                entity.accessModifierDeptNm(),
-                entity.accessModifierCompanyNm()
-            ))
-            .isActivated(entity.getIsUsed())
+            .companyNo(this.companyNo)
+            .companyCd(this.companyCd)
+            .companyNm(this.companyNm)
+            .usageBeginDate(this.usageBeginDate)
+            .usageEndDate(this.usageEndDate)
+            .auditInfo(auditInfo)
+            .isActivated(this.isActivated)
             .build();
     }
 
