@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service;
 
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.SystemErrorException;
@@ -10,6 +11,8 @@ import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.mi.dto.response.PdfMetadataRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.Extension;
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +54,7 @@ public class MiPdfService {
      * PDF 파일 이미지를 조회한다.
      *
      * @param fileNo 파일 번호
-     * @param page 페이지
+     * @param page   페이지
      * @return byte[]
      */
     public byte[] getImagePageFromPdf(Long fileNo, int page) {

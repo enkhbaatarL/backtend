@@ -5,8 +5,9 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.service.permissions.strategy.PermissionStrategy;
+import com.sk.domain.shared.service.permissions.GoodsNestedEntityResolver;
 import com.sk.domain.shared.service.permissions.PermissionStrategyFactory;
+import com.sk.domain.shared.service.permissions.strategy.PermissionStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -27,6 +28,7 @@ import java.util.List;
 public class PermissionAspect {
 
     private final PermissionStrategyFactory strategyFactory;
+    private final GoodsNestedEntityResolver goodsNestedEntityResolver;
 
     /**
      * Performs a permission check for methods annotated with @RequiredPermission.
@@ -58,20 +60,25 @@ public class PermissionAspect {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "This API is allowed only for the following roles: %s".formatted(allowedRoleCode));
         }
 
-        // 2. 상품 권한이 필요한 경우
+        // 2-1. 상품 권한이 필요한 경우 (상품 하위 엔티티 식별자를 통해 접근)
+        if (StringUtils.hasText(requiredPermission.goodsNestedParam())) {
+
+            Integer goodsNestedNo = extractParameterValue(joinPoint, requiredPermission.goodsNestedParam());
+            Integer goodsNo = goodsNestedEntityResolver.resolve(requiredPermission.goodsNestedParam(), goodsNestedNo);
+
+            if (goodsNo != null) {
+                checkViewOrDownload(strategy, goodsNo, requiredPermission);
+            }
+
+        }
+
+        // 2-2. 상품 권한이 필요한 경우 (상품 엔티티 식별자를 통해 접근)
         if (StringUtils.hasText(requiredPermission.goodsParam())) {
+
             Integer goodsNo = extractParameterValue(joinPoint, requiredPermission.goodsParam());
 
             if (goodsNo != null) {
-                // 2-1. VIEW 권한 체크
-                if (requiredPermission.requireViewPermission() && !strategy.canViewGoods(goodsNo)) {
-                    throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsNo: %s)".formatted(goodsNo));
-                }
-
-                // 2-2. DOWNLOAD 권한 체크
-                if (requiredPermission.requireDownloadPermission() && !strategy.canDownloadGoods(goodsNo)) {
-                    throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'DOWNLOAD' the goods(goodsNo: %s)".formatted(goodsNo));
-                }
+                checkViewOrDownload(strategy, goodsNo, requiredPermission);
             }
 
         }
@@ -84,6 +91,17 @@ public class PermissionAspect {
                     throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to access the company(companyNo: %s)".formatted(companyNo));
                 }
             }
+        }
+    }
+
+    private void checkViewOrDownload(PermissionStrategy strat, Integer goodsNo, RequiredPermission rp) {
+        // [VIEW] 권한 체크
+        if (rp.requireViewPermission() && BooleanUtils.isFalse(strat.canViewGoods(goodsNo))) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsNo: %s)".formatted(goodsNo));
+        }
+        // [DOWNLOAD] 권한 체크
+        if (rp.requireDownloadPermission() && BooleanUtils.isFalse(strat.canDownloadGoods(goodsNo))) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'DOWNLOAD' the goods(goodsNo: %s)".formatted(goodsNo));
         }
     }
 

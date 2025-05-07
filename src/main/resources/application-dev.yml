@@ -30,4 +30,4 @@ api:
     read-timeout: 20s
 
 aes:
-    secret-key: mysecretmysecret
+  secret-key: mysecretmysecret

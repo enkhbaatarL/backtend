@@ -57,7 +57,7 @@ public class MiDataDetailController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}")
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<GoodsDataRes> getGoodsData(
@@ -77,7 +77,7 @@ public class MiDataDetailController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/unstructured-data")
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<List<UnstructuredDataRes>> getGoodsDataUnstructuredData(
@@ -96,7 +96,7 @@ public class MiDataDetailController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources")
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<List<GoodsDataSourceRes>> getGoodsDataSources(
@@ -116,9 +116,7 @@ public class MiDataDetailController {
     @Operation(summary = "상품 정형 데이터(데이터소스) 차트 개인화 설정 API", description = "상품 정형 데이터(데이터소스) 차트를 개인 설정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PutMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
-    @RequiredPermission(
-        roles = {Role.USER}
-    )
+    @RequiredPermission(roles = {Role.USER})
     public BaseResponse<List<ChartsPersonalizeRes>> putGoodsDataSourcesChartsPersonalize(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
@@ -126,7 +124,7 @@ public class MiDataDetailController {
         @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs,
         Authentication authentication
     ) {
-        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs, authentication.getName()));
+        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsNo, goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs, authentication.getName()));
     }
 
     /**
@@ -159,9 +157,9 @@ public class MiDataDetailController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/chart")
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
-        goodsParam = "goodsNo", requireViewPermission = true
+        goodsNestedParam = "goodsDataSourceNo", requireViewPermission = true
     )
     public BaseResponse<ChartBundleRes> getGoodsDataSourceCharts(
         @PathVariable(value = "goodsNo") Integer goodsNo,
@@ -191,9 +189,9 @@ public class MiDataDetailController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/raw-data")
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
-        goodsParam = "goodsNo", requireViewPermission = true
+        goodsNestedParam = "goodsDataSourceNo", requireViewPermission = true
     )
     public BaseResponse<PaginationTableRes<TableRes.Row, TableRes.Column>> getGoodsDataSourcesRawData(
         @PathVariable(value = "goodsNo") Integer goodsNo,
@@ -219,9 +217,9 @@ public class MiDataDetailController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/raw-data/download")
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
-        goodsParam = "goodsNo", requireDownloadPermission = true
+        goodsNestedParam = "goodsDataSourceNo", requireDownloadPermission = true
     )
     public ResponseEntity<InputStreamResource> downloadGoodsDataSourcesRawData(
         @PathVariable(value = "goodsNo") Integer goodsNo,

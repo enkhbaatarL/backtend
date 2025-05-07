@@ -3,6 +3,7 @@ package com.sk.domain.admin.validator;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.ValidationResult;
+import com.sk.domain.shared.dto.Audited;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyGoodsMapping;
 import com.sk.domain.shared.entity.master.tam.CustomerCompanyProviderMapping;
 import com.sk.domain.shared.entity.master.tif.CompanyInfo;
@@ -71,6 +72,16 @@ public class CompanyValidator {
         }
     }
 
+    public ValidationResult<Audited<CustomerCompany>> ensureCompanyExistsByCompanyNoWithAuditor(Integer companyNo) {
+        Optional<Audited<CustomerCompany>> entity = customerCompanyRepository.queryByCustomerCompanyNoAndIsDeletedFalseWithAuditor(companyNo);
+        if (entity.isPresent()) {
+            return ValidationResult.success(entity.get());
+        } else {
+            return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
+        }
+    }
+
     public ValidationResult<CustomerCompany> ensureOwnerCompanyExistsByCompanyNo(Integer companyNo) {
         Optional<CustomerCompany> entity = customerCompanyRepository.findByCustomerCompanyNoAndIsMipManagementCompanyTrueAndIsDeletedFalse(companyNo);
         if (entity.isPresent()) {
@@ -92,8 +103,7 @@ public class CompanyValidator {
     }
 
     public ValidationResult<CustomerCompanyProviderMapping> ensureCcpmNotExistsByCompanyAndProvider(CustomerCompany company, Provider provider) {
-        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository
-            .findByCustomerCompanyAndProviderAndIsDeletedFalse(company, provider);
+        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository.findByCustomerCompanyAndProviderAndIsDeletedFalse(company, provider);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
                 "It already exists in the [company-provider-mapping]. companyNo : %s, providerNo : %s".formatted(company.getCustomerCompanyNo(), provider.getProviderNo())));
@@ -103,8 +113,17 @@ public class CompanyValidator {
     }
 
     public ValidationResult<CustomerCompanyProviderMapping> ensureCcpmExistsByCompanyNoAndProviderNo(Integer companyNo, Integer providerNo) {
-        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository
-            .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo);
+        Optional<CustomerCompanyProviderMapping> entity = customerCompanyProviderMappingRepository.findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo);
+        if (entity.isPresent()) {
+            return ValidationResult.success(entity.get());
+        } else {
+            return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the [company-provider-mapping]. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo)));
+        }
+    }
+
+    public ValidationResult<Audited<CustomerCompanyProviderMapping>> ensureCcpmExistsByCompanyNoAndProviderNoWithAuditor(Integer companyNo, Integer providerNo) {
+        Optional<Audited<CustomerCompanyProviderMapping>> entity = customerCompanyProviderMappingRepository.queryById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {
@@ -114,8 +133,7 @@ public class CompanyValidator {
     }
 
     public ValidationResult<CustomerCompanyGoodsMapping> ensureCcgmNotExistsByCompanyNoAndGoodsNo(Integer companyNo, Integer goodsNo) {
-        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository
-            .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
+        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
         if (entity.isPresent()) {
             return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS,
                 "It already exists in the [company-goods-mapping]. companyNo : %s, goodsNo : %s".formatted(companyNo, goodsNo)));
@@ -125,8 +143,17 @@ public class CompanyValidator {
     }
 
     public ValidationResult<CustomerCompanyGoodsMapping> ensureCcgmExistsByCompanyNoAndGoodsNo(Integer companyNo, Integer goodsNo) {
-        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository
-            .findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
+        Optional<CustomerCompanyGoodsMapping> entity = customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo);
+        if (entity.isPresent()) {
+            return ValidationResult.success(entity.get());
+        } else {
+            return ValidationResult.failure(AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo)));
+        }
+    }
+
+    public ValidationResult<Audited<CustomerCompanyGoodsMapping>> ensureCcgmExistsByCompanyNoAndGoodsNoWithAuditor(Integer companyNo, Integer goodsNo) {
+        Optional<Audited<CustomerCompanyGoodsMapping>> entity = customerCompanyGoodsMappingRepository.queryById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalseWithAuditor(companyNo, goodsNo);
         if (entity.isPresent()) {
             return ValidationResult.success(entity.get());
         } else {

@@ -237,4 +237,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """, nativeQuery = true)
     List<DataCatalogRes> findDataCatalog(@Param("customerCompanyNo") int customerCompanyNo, @Param("keyword") String keyword, Pageable pageable);
 
+    Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
+
 }
