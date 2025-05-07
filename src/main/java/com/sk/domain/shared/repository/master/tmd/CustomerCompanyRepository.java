@@ -53,5 +53,4 @@ public interface CustomerCompanyRepository extends JpaRepository<CustomerCompany
     List<CustomerCompany> findByIsDeletedFalseAndIsMipManagementCompanyFalseOrderByCustomerCompanyNmAsc();
 
     Long countByIsMipManagementCompanyTrueAndIsDeletedFalse();
-
 }

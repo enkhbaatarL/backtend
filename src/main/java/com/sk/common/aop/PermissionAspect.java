@@ -80,7 +80,6 @@ public class PermissionAspect {
             if (goodsNo != null) {
                 checkViewOrDownload(strategy, goodsNo, requiredPermission);
             }
-
         }
 
         // 3. 회사 권한이 필요한 경우

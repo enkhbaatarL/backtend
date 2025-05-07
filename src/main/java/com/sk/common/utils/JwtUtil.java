@@ -1,5 +1,14 @@
 package com.sk.common.utils;
 
+import java.time.Instant;
+import java.util.Date;
+
+import javax.crypto.SecretKey;
+
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthenticationException;
@@ -8,23 +17,23 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.service.RefreshTokenService;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
-import java.time.Instant;
-import java.util.Date;
-import java.util.stream.Collectors;
 
 @Getter
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
+
+    @Value("${server.domain}")
+    private String miDefaultDomain;
 
     private SecretKey secretKey;
     private final RefreshTokenService refreshTokenService;
@@ -52,6 +61,7 @@ public class JwtUtil {
             .claim(Claim.COMPANY_CD.getCode(), user.getCustomerCompany().getCustomerCompanyCd())
             .claim(Claim.ROLE.getCode(), user.getUserRoleCd().getCode())
             .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
+            .claim(Claim.COMPANY_DOMAIN.getCode(), ObjectUtils.defaultIfNull(user.getCustomerCompany().getCustomerCompanyMipUrl(), miDefaultDomain))
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
             .compact();
     }

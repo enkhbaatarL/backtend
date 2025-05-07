@@ -98,30 +98,5 @@ public record AdminRes(
                         .collect(Collectors.toList()))
                 .build();
     }
-
-	public static AdminRes ofDetail(User user, List<AdminPermission> accessAllowedIpAddress) {
-        return AdminRes.builder()
-                .userNo(user.getUserNo())
-                .userNm(user.getUserNm())
-                .userLoginId(user.getUserLoginId())
-                .userRoleCd(user.getUserRoleCd())
-                .onDutyNm(user.getOnDutyNm())
-                .departmentNm(user.getDepartmentNm())
-                .isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
-                .isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
-                .individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
-                .customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
-                .customerCompanyNm(user.getCustomerCompany().getCustomerCompanyNm())
-                .auditInfo(AuditInfo.ofDetail(
-			            user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
-                        user.getModifyDt(), user.accessCreatorNm(), user.accessCreatorDeptNm(),
-                        user.accessCreatorCompanyNm(), user.accessModifierNm(), user.accessModifierDeptNm(),
-                        user.accessModifierCompanyNm()))
-                .accessAllowedIpAddress(accessAllowedIpAddress.stream()
-                        .map(AdminPermission::getId)
-                        .map(AdminPermissionId::getIpAddress)
-                        .collect(Collectors.toList()))
-                .build();
-	}
 }
 // @formatter:on

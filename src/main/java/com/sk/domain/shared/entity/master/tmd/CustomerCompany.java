@@ -54,7 +54,7 @@ public class CustomerCompany extends BaseEntity {
 
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
-    @ColumnDefault("'N'")
+    @ColumnDefault("'Y'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
@@ -63,6 +63,10 @@ public class CustomerCompany extends BaseEntity {
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isMipManagementCompany;
+
+    @Column(name = "cust_cpny_mip_urlad", length = 255)
+    @Comment("고객회사MI플랫폼URL주소")
+    private String customerCompanyMipUrl;
 
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();

@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.dto.AuditInfo;
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -94,28 +93,5 @@ public record UserDetailRes(
 						modifyUserNm, modifyDepartmentNm, modifyCompanyNm)
 
 		);
-	}
-
-	public static UserDetailRes of(User user) {
-		return UserDetailRes.builder()
-				.userNo(user.getUserNo())
-				.userNm(user.getUserNm())
-				.userLoginId(user.getUserLoginId())
-				.userRoleCd(user.getUserRoleCd())
-				.positionNm(user.getPositionNm())
-				.jobGradeNm(user.getJobGradeNm())
-				.onDutyNm(user.getOnDutyNm())
-				.departmentNm(user.getDepartmentNm())
-				.isOtherServiceAccessPossible(user.getIsOtherServiceAccessPossible())
-				.isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
-				.individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
-				.customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
-				.customerCompanyNm(user.getCustomerCompany().getCustomerCompanyNm())
-				.auditInfo(AuditInfo.ofDetail(
-						user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
-						user.getModifyDt(), user.accessCreatorNm(), user.accessCreatorDeptNm(),
-						user.accessCreatorCompanyNm(), user.accessModifierNm(), user.accessModifierDeptNm(),
-						user.accessModifierCompanyNm()))
-				.build();
 	}
 }

@@ -11,7 +11,8 @@ public enum Claim {
     COMPANY_NO("companyNo", "고객사번호"),
     COMPANY_CD("companyCd", "고객사명"),
     ROLE("role", "역할"),
-    OTHER_SERVICE_ACCESS("isOtherServiceAccessPossible", "타사서비스정보가능여부");
+    OTHER_SERVICE_ACCESS("isOtherServiceAccessPossible", "타사서비스정보가능여부"),
+    COMPANY_DOMAIN("companyDomain", "고객사도메인");
 
     private final String code;
     private final String description;
