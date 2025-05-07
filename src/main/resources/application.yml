@@ -5,9 +5,10 @@ spring:
     name: mi
   flyway:
     enabled: false
-  devtools:
-    restart:
-        enabled: off
+  data:
+    redis:
+      repositories:
+        enabled: false
 
   jpa:
     hibernate:
