@@ -5,8 +5,6 @@ import java.time.LocalDateTime;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
-import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
-import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;

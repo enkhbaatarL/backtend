@@ -47,4 +47,11 @@ public class SchedulerController {
         return BaseResponseFactory.create(schedulerService.processPdfToImages());
     }
 
+    @ApiOrder(4)
+    @Operation(summary = "TIF_Futures Spread 계산 후 업로드", description = "TIF_Futures Spread 계산 후 업로드 API 입니다.")
+    @PostMapping("/tif-futures-spread")
+    @ApiResponse(responseCode = "200", description = "TIF_Futures Spread 계산 후 업로드 성공")
+    public BaseResponse<Boolean> processTifFuturesSpread() {
+        return BaseResponseFactory.create(schedulerService.processTifFuturesSpread());
+    }
 }

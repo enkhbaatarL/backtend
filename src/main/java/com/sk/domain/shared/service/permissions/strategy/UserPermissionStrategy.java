@@ -57,5 +57,9 @@ public class UserPermissionStrategy implements PermissionStrategy {
             .findFirst();
     }
 
+    @Override
+    public boolean canAccessCompany(Integer companyNo) {
+        return companyNo.equals(authService.getCompanyNo());
+    }
 }
 

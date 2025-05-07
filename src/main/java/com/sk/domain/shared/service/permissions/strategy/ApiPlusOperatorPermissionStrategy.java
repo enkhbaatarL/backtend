@@ -1,14 +1,15 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.service.MiUserService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 /**
  * API_PLUS_OPERATOR 권한 전략
@@ -19,7 +20,7 @@ import java.util.Optional;
 public class ApiPlusOperatorPermissionStrategy implements PermissionStrategy {
 
     private final MiUserService userService;
-    private final AuthorizationService authorizationService;
+    private final AuthorizationService authService;
 
     @Override
     public boolean canAccessApi(Role[] allowedRoles, PermissionCondition condition) {
@@ -41,12 +42,17 @@ public class ApiPlusOperatorPermissionStrategy implements PermissionStrategy {
     }
 
     private Optional<PermissionRes.GoodsAuthRes> getGoodsAuth(Integer goodsNo) {
-        Integer companyNo = authorizationService.getCompanyNo();
+        Integer companyNo = authService.getCompanyNo();
         return userService.getPlusOperatorGoodsPermissions(companyNo).companies().stream()
             .flatMap(company -> company.providers().stream())
             .flatMap(provider -> provider.goods().stream())
             .filter(goods -> goods.goodsNo().equals(goodsNo))
             .findFirst();
+    }
+
+    @Override
+    public boolean canAccessCompany(Integer companyNo) {
+        return companyNo.equals(authService.getCompanyNo());
     }
 
 }

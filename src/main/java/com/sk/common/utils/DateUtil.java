@@ -103,6 +103,44 @@ public final class DateUtil {
         }
     }
 
+    public static String toYmd(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+
+        try {
+            // ISO-8601 형식 처리 (예: 2024-01-01T00:00)
+            LocalDateTime ldt = LocalDateTime.parse(dateTimeStr);
+            return ldt.format(YYYYMMDD);
+
+        } catch (DateTimeParseException e1) {
+            try {
+                // 기존 포맷 시도 (예: 2024-01-01 00:00:00)
+                String trimmed = dateTimeStr.length() > 19
+                    ? dateTimeStr.substring(0, 19)
+                    : dateTimeStr;
+                LocalDateTime ldt = LocalDateTime.parse(trimmed, YYYY_MM_DD_HH_MM_SS);
+                return ldt.format(YYYYMMDD);
+            } catch (DateTimeParseException e2) {
+                throw new IllegalArgumentException("Invalid date format: " + dateTimeStr);
+            }
+        }
+    }
+
+    /**
+     * 주어진 Range를 기준으로 (fromDate, toDate) 쌍을 yyyyMMdd 형식 문자열로 반환.
+     * toDate는 현재 날짜, fromDate는 Range만큼 과거 날짜.
+     */
+    public static Pair<String, String> getDateRange(Range range, String customStart, String customEnd) {
+
+        if (range == Range.CUSTOM) {
+            if (customStart == null || customEnd == null) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "The 'startDate' and 'endDate' are required for the [CUSTOM] range.");
+            }
+            return Pair.of(customStart, customEnd);
+        }
+
+        return getDateRange(range);
+    }
+
     public static Pair<String, String> getDateRange(Range range) {
 
         LocalDate endDate = LocalDate.now();

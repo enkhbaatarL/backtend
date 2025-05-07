@@ -8,10 +8,13 @@ import org.hibernate.annotations.Comment;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.dto.request.rpa.ComponentInfoReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.ComponentType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -51,15 +54,19 @@ public class ComponentInfo extends BaseEntity {
     @Comment("쿼리조건내용")
     private String queryConditionCntt;
 
-    @Column(name = "tbl_colm_list_nm", length = 255)
+    @Column(name = "tbl_colm_list_nm", length = 500)
     @Comment("테이블컬럼목록명")
     private String tableColumnListNm;
 
-    @Column(name = "exl_colm_list_nm", length = 255)
+    @Column(name = "exl_colm_list_nm", length = 500)
     @Comment("엑셀컬럼목록명")
     private String excelColumnListNm;
 
-    @Column(name = "exl_cdtn_cntt", length = 500)
+    @Column(name = "exl_tbl_colm_list_nm", length = 500)
+    @Comment("엑셀테이블컬럼목록명")
+    private String excelTableColumnListNm;
+
+    @Column(name = "exl_cdtn_cntt", length = 1000)
     @Comment("엑셀조건내용")
     private String excelConditionCntt;
 
@@ -79,14 +86,20 @@ public class ComponentInfo extends BaseEntity {
 
     @Column(name = "conv_tgt_dtl_type_nm", length = 50)
     @Comment("변환대상상세유형명")
-    private String convertTargetDetailTypeNm;
+    private String convertTargetDetailTypeNm;  
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "data_strt_conv_nm", length = 50)
+    @Comment("데이터구조변환명")
+    private ComponentType dataStructureConvertNm;
 
     @Builder
     public ComponentInfo(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, String componentTypeId, String componentTypeNm, String goodsDataSourceNm,
             String targetDbNm, String targetTableNm, String queryConditionCntt,
-            String tableColumnListNm, String excelColumnListNm, String excelConditionCntt, String goodsDataSourceUnitNm,
-            String goodsDataSourceCurrencyUnitNm, Boolean isCandleChartPossible, String convertTargetDetailTypeNm) {
+            String tableColumnListNm, String excelColumnListNm, String excelTableColumnListNm, String excelConditionCntt, String goodsDataSourceUnitNm,
+            String goodsDataSourceCurrencyUnitNm, Boolean isCandleChartPossible, String convertTargetDetailTypeNm,
+            ComponentType dataStructureConvertNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.componentTypeId = componentTypeId;
         this.componentTypeNm = componentTypeNm;
@@ -96,11 +109,13 @@ public class ComponentInfo extends BaseEntity {
         this.queryConditionCntt = queryConditionCntt;
         this.tableColumnListNm = tableColumnListNm;
         this.excelColumnListNm = excelColumnListNm;
+        this.excelTableColumnListNm = excelTableColumnListNm;
         this.excelConditionCntt = excelConditionCntt;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
         this.goodsDataSourceCurrencyUnitNm = goodsDataSourceCurrencyUnitNm;
         this.isCandleChartPossible = isCandleChartPossible;
         this.convertTargetDetailTypeNm = convertTargetDetailTypeNm;
+        this.dataStructureConvertNm = dataStructureConvertNm;
     }
 
     public static ComponentInfo of(ComponentInfoReq.Insert dto) {
@@ -113,11 +128,13 @@ public class ComponentInfo extends BaseEntity {
                 .queryConditionCntt(dto.queryConditionCntt())
                 .tableColumnListNm(dto.tableColumnListNm())
                 .excelColumnListNm(dto.excelColumnListNm())
+                .excelTableColumnListNm(dto.excelTableColumnListNm())
                 .excelConditionCntt(dto.excelConditionCntt())
                 .goodsDataSourceUnitNm(dto.goodsDataSourceUnitNm())
                 .goodsDataSourceCurrencyUnitNm(dto.goodsDataSourceCurrencyUnitNm())
                 .isCandleChartPossible(dto.isCandleChartPossible())
                 .convertTargetDetailTypeNm(dto.convertTargetDetailTypeNm())
+                .dataStructureConvertNm(dto.dataStructureConvertNm())
                 .build();
     }
 }

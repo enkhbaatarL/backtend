@@ -82,6 +82,16 @@ public class PermissionAspect {
             }
 
         }
+
+        // 3. 회사 권한이 필요한 경우
+        if (StringUtils.hasText(requiredPermission.companyParam())) {
+            Integer companyNo = extractParameterValue(joinPoint, requiredPermission.companyParam());
+            if (companyNo != null) {
+                if (!strategy.canAccessCompany(companyNo)) {
+                    throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to access the company(companyNo: %s)".formatted(companyNo));
+                }
+            }
+        }
     }
 
     private void checkViewOrDownload(PermissionStrategy strat, Integer goodsNo, RequiredPermission rp) {
