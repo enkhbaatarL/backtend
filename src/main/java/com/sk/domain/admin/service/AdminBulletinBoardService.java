@@ -90,7 +90,7 @@ public class AdminBulletinBoardService {
     public PaginationRes<NoticeRes> getAllNotices(int page, int size, String category, String status, Integer target, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<NoticeRes> noticePage = bulletinBoardRepository.findAllNoticeForAdmin(category, status, target, keyword, pageable);
+        Page<NoticeRes> noticePage = bulletinBoardRepository.findAllNoticeForAdminPage(category, status, target, keyword, pageable);
 
         return PaginationRes.toRes(noticePage);
     }
@@ -336,7 +336,7 @@ public class AdminBulletinBoardService {
     public PaginationRes<FaqRes> getAllFaq(int page, int size, String category, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<FaqRes> BulletinBoardPage = bulletinBoardRepository.findAllFaqForAdmin(category, keyword, pageable);
+        Page<FaqRes> BulletinBoardPage = bulletinBoardRepository.findAllFaqForAdminPage(category, keyword, pageable);
 
         return PaginationRes.toRes(BulletinBoardPage);
     }
