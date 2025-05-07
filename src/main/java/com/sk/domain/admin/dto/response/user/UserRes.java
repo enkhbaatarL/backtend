@@ -35,6 +35,8 @@ public record UserRes(
 
 		@Schema(description = "고객사번호", example = "1") Integer customerCompanyNo,
 
+		@Schema(description = "사용자 알림 설정 여부", example = "true") Boolean isUserNotificationSetting,
+
 		@Schema(description = "감사 정보") AuditInfo auditInfo
 
 ) {
@@ -42,7 +44,8 @@ public record UserRes(
 	public UserRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd,
 			String positionNm, String jobGradeNm, String onDutyNm,
 			String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement,
-			LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, AuditInfo auditInfo) {
+			LocalDateTime individualInfoAgreementDtm, Integer customerCompanyNo, Boolean isUserNotificationSetting,
+			AuditInfo auditInfo) {
 		this.userNo = userNo;
 		this.userNm = userNm;
 		this.userLoginId = userLoginId;
@@ -55,6 +58,7 @@ public record UserRes(
 		this.isIndividualInfoAgreement = isIndividualInfoAgreement;
 		this.individualInfoAgreementDtm = individualInfoAgreementDtm;
 		this.customerCompanyNo = customerCompanyNo;
+		this.isUserNotificationSetting = isUserNotificationSetting;
 		this.auditInfo = auditInfo;
 	}
 
@@ -72,6 +76,7 @@ public record UserRes(
 				.isIndividualInfoAgreement(user.getIsIndividualInfoAgreement())
 				.individualInfoAgreementDtm(user.getIndividualInfoAgreementDtm())
 				.customerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo())
+				.isUserNotificationSetting(user.getIsUserNotificationSetting())
 				.auditInfo(AuditInfo.ofSimple(user.getCreateUserId(), user.getCreateDt(), user.getModifyUserId(),
 						user.getModifyDt()))
 				.build();

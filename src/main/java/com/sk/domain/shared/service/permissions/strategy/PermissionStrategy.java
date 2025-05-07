@@ -11,4 +11,5 @@ public interface PermissionStrategy {
 
     boolean canDownloadGoods(Integer goodsNo);
 
+    boolean canAccessCompany(Integer companyNo);
 }

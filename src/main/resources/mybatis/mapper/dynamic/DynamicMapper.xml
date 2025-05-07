@@ -24,10 +24,10 @@
             ORDER BY ${orderByColumns}
         </if>
         <if test="limit != null and limit != ''">
-        LIMIT ${limit}
+            LIMIT ${limit}
         </if>
         <if test="offset != null and offset != ''">
-        OFFSET ${offset}
+            OFFSET ${offset}
         </if>
     </select>
 

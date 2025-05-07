@@ -1,8 +1,6 @@
 package com.sk.domain.admin.service;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -13,9 +11,7 @@ import com.sk.common.config.database.dataSource.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
-import com.sk.common.utils.Properties.JwtProperties;
 import com.sk.domain.admin.dto.request.TestReq;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
@@ -138,13 +134,12 @@ public class TestService {
         return "ok";
     }
 
-
     // public List<Map<String, Object>> getDynamicData(TestReq.uploadStructuredDataFile testReq) {
-    //     ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
-    //     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-    //             String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
+    // ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(testReq.componentTypeId())
+    // .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+    // String.format("Component information could not be found. componentTypeId: %s", testReq.componentTypeId())));
 
-    //     return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
+    // return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(componentInfo));
     // }
 
     /**
@@ -165,7 +160,7 @@ public class TestService {
             boolean isUploaded = excelService.uploadStructuredData(file, componentInfo, testReq.criteriaDt());
 
             return null;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, e.getMessage());
         } finally {
             DataSourceContextHolder.clearDataSourceKey();

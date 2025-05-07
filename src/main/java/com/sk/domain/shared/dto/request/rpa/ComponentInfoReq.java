@@ -1,5 +1,7 @@
 package com.sk.domain.shared.dto.request.rpa;
 
+import com.sk.domain.shared.enums.ComponentType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
@@ -38,6 +40,9 @@ public record ComponentInfoReq() {
         @Schema(description = "엑셀조건내용", example = "date >= '2024-01-01'")
         String excelConditionCntt,
 
+        @Schema(description = "엑셀테이블컬럼목록명", example = "po,co,ph,ad,aavt")
+        String excelTableColumnListNm,
+
         @Schema(description = "상품데이터소스단위명", example = "kg")
         String goodsDataSourceUnitNm,
 
@@ -48,6 +53,9 @@ public record ComponentInfoReq() {
         Boolean isCandleChartPossible,
 
         @Schema(description = "변환대상상세유형명", example = "캔들차트")
-        String convertTargetDetailTypeNm
+        String convertTargetDetailTypeNm,
+
+        @Schema(description = "데이터구조변환명", example = "GENERAL")
+        ComponentType dataStructureConvertNm
     ) {}
 }

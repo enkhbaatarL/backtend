@@ -1,10 +1,12 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
+import java.util.Arrays;
+
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
-import lombok.RequiredArgsConstructor;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
-import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
 
 /**
  * OPERATOR 권한 전략
@@ -12,6 +14,8 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class OperatorPermissionStrategy implements PermissionStrategy {
 
+    private final AuthorizationService authService;
+    
     @Override
     public boolean canAccessApi(Role[] allowedRoles, PermissionCondition condition) {
         return Arrays.stream(allowedRoles).anyMatch(role -> role == Role.OPERATOR);
@@ -29,5 +33,9 @@ public class OperatorPermissionStrategy implements PermissionStrategy {
         return false;
     }
 
+    @Override
+    public boolean canAccessCompany(Integer companyNo) {
+        return companyNo.equals(authService.getCompanyNo());
+    }
 }
 

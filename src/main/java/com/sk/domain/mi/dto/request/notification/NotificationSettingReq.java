@@ -35,4 +35,9 @@ public record NotificationSettingReq() {
         BigDecimal criticalValueSettingVol
 
     ) {}
+    public record UpdateUserSetting(
+        @NotNull
+        @Schema(description = "사용자알림설정여부", example = "true or false")
+        Boolean isUserNotificationSetting
+    ) {}
 }
