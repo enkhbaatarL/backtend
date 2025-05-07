@@ -73,7 +73,6 @@ public class PermissionAspect {
                     throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'DOWNLOAD' the goods(goodsNo: %s)".formatted(goodsNo));
                 }
             }
-
         }
 
         // 3. 회사 권한이 필요한 경우

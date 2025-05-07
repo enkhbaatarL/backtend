@@ -64,6 +64,10 @@ public class CustomerCompany extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isMipManagementCompany;
 
+    @Column(name = "cust_cpny_mip_urlad", length = 255)
+    @Comment("고객회사MI플랫폼URL주소")
+    private String customerCompanyMipUrl;
+
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
 

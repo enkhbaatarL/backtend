@@ -58,7 +58,6 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 		UserAccessLog userAccessLog = UserAccessLog.of(principal.getName());
 		userAccessLogRepository.save(userAccessLog);
 
-
 		String sessionId = UUID.randomUUID().toString();
 
 		redisTemplate.opsForValue().set(sessionId, principal.getName(), Duration.ofSeconds(LOGIN_SESSION_EXPIRE_TIME));
