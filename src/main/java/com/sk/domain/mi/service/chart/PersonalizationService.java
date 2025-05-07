@@ -14,6 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,15 +88,15 @@ public class PersonalizationService {
      * @param reqEndDate   사용자 지정 종료일 (YYYYMMDD 형식)
      * @return 시작일과 종료일 쌍 (Pair<String, String>)
      */
-    public Pair<String, String> getPsRangeOrDefault(Map<ChartSettingConditionCd, List<String>> pMap, Range reqRange, String reqStartDate, String reqEndDate) {
+    public Pair<String, String> getPsRangeOrDefault(Map<ChartSettingConditionCd, List<String>> pMap, Range reqRange, LocalDate reqStartDate, LocalDate reqEndDate) {
 
         // 1. 요청된 범위가 있으면 우선 사용
         if (ObjectUtils.isNotEmpty(reqRange)) {
             if (reqRange == Range.CUSTOM) {
-                if (StringUtils.isEmpty(reqStartDate) || StringUtils.isEmpty(reqEndDate)) {
+                if (ObjectUtils.isEmpty(reqStartDate) || ObjectUtils.isEmpty(reqEndDate)) {
                     throw new IllegalArgumentException("The 'startDate' and 'endDate' are required for the [CUSTOM] range.");
                 }
-                return Pair.of(reqStartDate, reqEndDate);
+                return Pair.of(DateUtil.toYmd(reqStartDate), DateUtil.toYmd(reqEndDate));
             }
             return DateUtil.getDateRange(reqRange);
         }

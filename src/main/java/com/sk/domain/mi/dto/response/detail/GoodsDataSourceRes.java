@@ -1,10 +1,12 @@
 package com.sk.domain.mi.dto.response.detail;
 
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.Optional;
 
 @Builder
 public record GoodsDataSourceRes(
@@ -13,7 +15,14 @@ public record GoodsDataSourceRes(
     Integer goodsDataSourceNo,
 
     @Schema(description = "상품 데이터 소스 명", example = "structured data 1234")
-    String goodsDataSourceNm
+    String goodsDataSourceNm,
+
+    @Schema(
+        description = "데이터 최소 주기 (D: 일간, W: 주간, M: 월간, Y: 연간)",
+        allowableValues = {"D", "W", "M", "Y"},
+        example = "D"
+    )
+    PeriodUnitSeparateCd minInterval
 
 ) {
 
@@ -21,6 +30,7 @@ public record GoodsDataSourceRes(
         return GoodsDataSourceRes.builder()
             .goodsDataSourceNo(entity.getGoodsDataSourceNo())
             .goodsDataSourceNm(entity.getGoodsDataSourceNm())
+            .minInterval(Optional.ofNullable(entity.getPeriodUnitSeparateCd()).orElse(PeriodUnitSeparateCd.D))
             .build();
     }
 
