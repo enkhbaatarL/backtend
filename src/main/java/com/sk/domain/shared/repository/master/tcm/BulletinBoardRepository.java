@@ -54,12 +54,12 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                     b.modifyUserId,
                     b.modifyDt,
                     new com.sk.domain.shared.dto.AuditExtension(
-                        cu.userNm,
-                        cu.departmentNm,
-                        cuc.customerCompanyNm,
-                        mu.userNm,
-                        mu.departmentNm,
-                        muc.customerCompanyNm
+                        COALESCE(cu.userNm, null),
+                        COALESCE(cu.departmentNm, null),
+                        COALESCE(cuc.customerCompanyNm, null),
+                        COALESCE(mu.userNm, null),
+                        COALESCE(mu.departmentNm, null),
+                        COALESCE(muc.customerCompanyNm, null)
                     )
                 )
             )
@@ -194,12 +194,12 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                     b.modifyUserId,
                     b.modifyDt,
                     new com.sk.domain.shared.dto.AuditExtension(
-                        cu.userNm,
-                        cu.departmentNm,
-                        cuc.customerCompanyNm,
-                        mu.userNm,
-                        mu.departmentNm,
-                        muc.customerCompanyNm
+                        COALESCE(cu.userNm, null),
+                        COALESCE(cu.departmentNm, null),
+                        COALESCE(cuc.customerCompanyNm, null),
+                        COALESCE(mu.userNm, null),
+                        COALESCE(mu.departmentNm, null),
+                        COALESCE(muc.customerCompanyNm, null)
                     )
                 )
             )
