@@ -12,6 +12,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.*;
+import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
+import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -93,7 +95,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
             ORDER BY gd.goodsDataNm ASC
-                        """, countQuery = """
+            """, countQuery = """
             SELECT COUNT(gd.goodsDataNo)
             FROM GoodsData gd
             WHERE gd.isDeleted = false
@@ -115,7 +117,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
             ORDER BY gd.goodsDataNm ASC
-                        """, countQuery = """
+            """, countQuery = """
             SELECT COUNT(DISTINCT gd.goodsDataNo)
             FROM GoodsData gd
             LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
@@ -217,7 +219,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
             LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
             LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-            WHERE tc.cust_cpny_no = 2014
+            WHERE tc.cust_cpny_no = :customerCompanyNo
                 AND tc.del_yn = 'N'
                 AND tc.use_yn = 'Y'
                 AND tg.del_yn = 'N'
@@ -232,11 +234,85 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 tgd.gds_data_no
             ORDER BY
                 tgd.mod_dtm DESC
-                    """, countQuery = """
-
+            """, countQuery = """
+            SELECT COUNT(DISTINCT tg.prvd_no, tc.gds_no, tgd.gds_data_no)
+            FROM midb.tam_custcpnygdsmappl tc
+            LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
+            LEFT JOIN midb.tmd_prvdm tp ON tp.prvd_no = tg.prvd_no
+            LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+            WHERE tc.cust_cpny_no = :customerCompanyNo
+                AND tc.del_yn = 'N'
+                AND tc.use_yn = 'Y'
+                AND tg.del_yn = 'N'
+                AND tg.use_yn = 'Y'
+                AND tp.del_yn = 'N'
+                AND tp.use_yn = 'Y'
+                AND tgd.del_yn = 'N'
+                AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)
             """, nativeQuery = true)
     List<DataCatalogRes> findDataCatalog(@Param("customerCompanyNo") int customerCompanyNo, @Param("keyword") String keyword, Pageable pageable);
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
+
+    @Query(value = """
+            SELECT new com.sk.domain.mi.dto.response.dashboard.LatestDataRes(
+                p.providerNo,
+                p.providerNm,
+                g.goodsNo,
+                g.goodsNm,
+                gd.goodsDataNo,
+                gd.goodsDataNm,
+                gd.modifyDt
+            )
+            FROM CustomerCompanyGoodsMapping ccgm
+            LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
+            LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
+            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
+            WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
+                AND ccgm.isDeleted = false
+                AND ccgm.isUsed = true
+                AND g.isDeleted = false
+                AND g.isUsed = true
+                AND p.isDeleted = false
+                AND p.isUsed = true
+                AND gd.isDeleted = false
+            ORDER BY gd.modifyDt DESC
+                    """)
+    List<LatestDataRes> findLatestData(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
+
+    @Query(value = """
+            SELECT new com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes(
+                p.providerNo,
+                p.providerNm,
+                g.goodsNo,
+                g.goodsNm,
+                gd.goodsDataNo,
+                gd.goodsDataNm,
+                gd.modifyDt
+            )
+            FROM CustomerCompanyGoodsMapping ccgm
+            LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
+            LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
+            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
+            LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
+            JOIN (
+                SELECT DISTINCT gdc.goodsData.goodsDataNo as goodsDataNo
+                FROM GoodsDataCategory gdc
+                WHERE gdc.isDeleted = false
+                AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
+            ) gud ON gud.goodsDataNo = gd.goodsDataNo
+            WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
+                AND ccgm.isDeleted = false
+                AND ccgm.isUsed = true
+                AND g.isDeleted = false
+                AND g.isUsed = true
+                AND p.isDeleted = false
+                AND p.isUsed = true
+                AND gd.isDeleted = false
+                AND gdc.isDeleted = false
+            GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
+            ORDER BY gd.modifyDt DESC
+                    """)
+    List<LatestInsightsRes> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
 }
