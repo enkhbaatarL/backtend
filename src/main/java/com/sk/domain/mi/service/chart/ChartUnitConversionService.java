@@ -80,7 +80,7 @@ public class ChartUnitConversionService {
         if (isCandleChartPossible) {
             return convertCandleChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
         } else {
-            return convertMetricChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
+            return convertLineChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
         }
     }
 
@@ -146,7 +146,7 @@ public class ChartUnitConversionService {
      * @param size           데이터 크기
      * @return 변환된 메트릭 차트 데이터
      */
-    private List<Map<String, Object>> convertMetricChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, int size) {
+    private List<Map<String, Object>> convertLineChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, int size) {
         String mainCol = targetColumns.get(RenderAs.MAIN.getIndex());
 
         // 메인 시계열 데이터 추출 및 변환

@@ -17,7 +17,8 @@ public enum RenderAs {
     HIGH("high", 3, false, null),
     LOW("low", 4, false, null),
     MA("ma_%s", null, false, "이동평균선"),
-    BB("bb_%s", null, false, "볼린저밴드");
+    BB("bb_%s", null, false, "볼린저밴드"),
+    VOLUME("volume", null, false, "거래량");
 
     private final String id;
     private final Integer index;

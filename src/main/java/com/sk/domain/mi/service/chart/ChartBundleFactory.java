@@ -2,16 +2,19 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
+import com.sk.common.utils.StringUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.charts.*;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.RenderAs;
+import io.micrometer.common.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -57,7 +60,7 @@ public final class ChartBundleFactory {
         List<String> yAxisList = targetColumns.subList(1, targetColumns.size());
 
         List<String> timestamps = buildTimestamps(xAxis, convertedData);
-        List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, isVisible);
+        List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, gds.getTradeVolumeColumnNm(), isVisible);
 
         return Chart.of(gds.getGoodsDataSourceNo(), ChartUnitConversionService.generateDefaultUnitCd(gds), chartType, timestamps, series);
     }
@@ -69,8 +72,9 @@ public final class ChartBundleFactory {
             .toList();
     }
 
-    private static List<Series> buildSeries(List<String> yAxisList, ChartType chartType, List<Map<String, Object>> rawRows, Map<String, String> labels, boolean isVisible) {
-        return IntStream.range(0, yAxisList.size())
+    private static List<Series> buildSeries(List<String> yAxisList, ChartType chartType, List<Map<String, Object>> rawRows, Map<String, String> labels, String volumeColumn, boolean isVisible) {
+
+        List<Series> series = IntStream.range(0, yAxisList.size())
             .mapToObj(index -> {
                 String columnName = yAxisList.get(index);
                 RenderAs renderAs = chartType.resolveRenderAs(index);
@@ -78,7 +82,14 @@ public final class ChartBundleFactory {
                 List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(columnName))).toList();
                 return Series.of(renderAs.getRenderingId(String.valueOf(index + 1)), label, renderAs, values, isVisible);
             })
-            .toList();
+            .collect(Collectors.toList());
+
+        if (StringUtils.isNotEmpty(volumeColumn)) {
+            List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(volumeColumn))).toList();
+            series.add(Series.of(RenderAs.VOLUME.getId(), RenderAs.VOLUME.getDisplayDescription(), RenderAs.VOLUME, values, isVisible));
+        }
+
+        return series;
     }
 
     /**

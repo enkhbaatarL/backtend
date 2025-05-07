@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Builder;
 
+import java.util.Optional;
+
 public record DynamicDataReq(
     @NotEmpty @Schema(description = "데이터 소스 번호", example = "1") String targetDataSource,
     @NotEmpty @Schema(description = "컬럼 명", example = "id, name") String columns,
@@ -29,44 +31,55 @@ public record DynamicDataReq(
         this.offset = offset;
     }
 
-    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere) {
+    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhereClause) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
             .columns(gds.getTableColumnListNm())
             .tableName(gds.getTargetTableNm())
             .whereClause(gds.getQueryConditionCntt())
-            .additionalWhereClause(additionalWhere)
+            .additionalWhereClause(additionalWhereClause)
             .build();
     }
 
-    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhere, String orderByColumn) {
+    public static DynamicDataReq of(GoodsDataSourceDetail gds, String selectClause, String additionalWhereClause, String orderByColumn) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
-            .columns(gds.getTableColumnListNm())
+            .columns(selectClause)
             .tableName(gds.getTargetTableNm())
             .whereClause(gds.getQueryConditionCntt())
-            .additionalWhereClause(additionalWhere)
+            .additionalWhereClause(additionalWhereClause)
             .orderBy(orderByColumn)
             .build();
     }
 
-    public static DynamicDataReq ofCountQuery(GoodsDataSourceDetail gds, String additionalWhere) {
+    public static DynamicDataReq of(GoodsDataSourceDetail gds, String additionalWhereClause, String orderByColumn) {
+        return DynamicDataReq.builder()
+            .targetDataSource(gds.getTargetDbNm())
+            .columns(gds.getTableColumnListNm())
+            .tableName(gds.getTargetTableNm())
+            .whereClause(gds.getQueryConditionCntt())
+            .additionalWhereClause(additionalWhereClause)
+            .orderBy(orderByColumn)
+            .build();
+    }
+
+    public static DynamicDataReq ofCountQuery(GoodsDataSourceDetail gds, String additionalWhereClause) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
             .columns("count(*)")
             .tableName(gds.getTargetTableNm())
             .whereClause(gds.getQueryConditionCntt())
-            .additionalWhereClause(additionalWhere)
+            .additionalWhereClause(additionalWhereClause)
             .build();
     }
 
-    public static DynamicDataReq ofPagingQuery(GoodsDataSourceDetail gds, String additionalWhere, String orderByColumn, int page, int size) {
+    public static DynamicDataReq ofPagingQuery(GoodsDataSourceDetail gds, String additionalWhereClause, String orderByColumn, int page, int size) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
             .columns(gds.getTableColumnListNm())
             .tableName(gds.getTargetTableNm())
             .whereClause(gds.getQueryConditionCntt())
-            .additionalWhereClause(additionalWhere)
+            .additionalWhereClause(additionalWhereClause)
             .orderBy(orderByColumn)
             .limit(size)
             .offset((page - 1) * size)

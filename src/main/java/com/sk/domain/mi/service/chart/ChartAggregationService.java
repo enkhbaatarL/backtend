@@ -2,9 +2,11 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
+import com.sk.common.utils.StringUtil;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
+import io.micrometer.common.util.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +26,8 @@ public class ChartAggregationService {
     private record BucketBoundary(
         LocalDate start,
         LocalDate exclusiveEnd
-    ) { }
+    ) {
+    }
 
     /**
      * 원시 데이터(rawData)를 주어진 간격(interval)에 맞춰 집계한다.
@@ -33,10 +36,10 @@ public class ChartAggregationService {
      * @param sortedData    소스에서 조회한 원시 데이터 목록 (시간순 오름차순 정렬 가정)
      * @param interval      집계 단위 (ONE_DAY 제외)
      * @param targetColumns 차트 렌더링에 사용될 컬럼명 리스트 (DATE, OPEN/MAIN, HIGH, LOW, CLOSE, REFERENCE...)
-     * @param source        데이터 소스 상세 정보
+     * @param gds           데이터 소스 상세 정보
      * @return 집계된 데이터 포인트 목록 (시간순 오름차순 정렬)
      */
-    public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail source) {
+    public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail gds) {
 
         if (ObjectUtils.isEmpty(sortedData)) {
             return Collections.emptyList();
@@ -48,13 +51,14 @@ public class ChartAggregationService {
         }
 
         String dateColumn = targetColumns.get(RenderAs.DATE.getIndex());
-        boolean isCandleChart = Boolean.TRUE.equals(source.getIsCandleChartPossible());
+        String volumeColumn = gds.getTradeVolumeColumnNm();
+        boolean isCandleChart = Boolean.TRUE.equals(gds.getIsCandleChartPossible());
 
         // 데이터의 마지막 날짜를 기준으로 과거 방향으로 버킷 경계 계산
         List<BucketBoundary> boundaries = calculateBucketBoundariesBackward(sortedData, interval, dateColumn);
 
         // 계산된 버킷 경계를 사용하여 데이터 집계
-        List<Map<String, Object>> aggregatedData = aggregateUsingBoundaries(sortedData, boundaries, dateColumn, targetColumns, isCandleChart);
+        List<Map<String, Object>> aggregatedData = aggregateUsingBoundaries(sortedData, boundaries, dateColumn, volumeColumn, targetColumns, isCandleChart);
 
         // 최종 결과를 시간순(오름차순)으로 정렬하여 반환
         // aggregateUsingBoundaries 결과가 이미 역순(최신->과거)이므로 뒤집어줌
@@ -144,7 +148,7 @@ public class ChartAggregationService {
      * @param isCandleChart 캔들 차트 여부
      * @return 집계된 데이터 목록 (역순: 최신 버킷 결과가 첫 번째 요소)
      */
-    private List<Map<String, Object>> aggregateUsingBoundaries(List<Map<String, Object>> rows, List<BucketBoundary> boundaries, String dateCol, List<String> targetColumns, boolean isCandleChart) {
+    private List<Map<String, Object>> aggregateUsingBoundaries(List<Map<String, Object>> rows, List<BucketBoundary> boundaries, String dateCol, String volumeCol, List<String> targetColumns, boolean isCandleChart) {
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (BucketBoundary boundary : boundaries) {
@@ -159,8 +163,8 @@ public class ChartAggregationService {
             LocalDate representativeDate = boundary.start();
 
             Map<String, Object> aggregatedMap = isCandleChart
-                ? aggregateCandle(bucketData, representativeDate, dateCol, targetColumns)
-                : aggregateLine(bucketData, representativeDate, dateCol, targetColumns);
+                ? aggregateCandle(bucketData, representativeDate, dateCol, volumeCol, targetColumns)
+                : aggregateLine(bucketData, representativeDate, dateCol, volumeCol, targetColumns);
 
             if (!aggregatedMap.isEmpty()) {
                 result.add(aggregatedMap);
@@ -187,7 +191,7 @@ public class ChartAggregationService {
      * 캔들 차트 데이터 집계 (시가, 종가, 고가, 저가)
      * 대표 날짜는 버킷의 시작일 사용.
      */
-    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucketData, LocalDate representativeDate, String dateCol, List<String> targetColumns) {
+    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucketData, LocalDate representativeDate, String dateCol, String volumeCol, List<String> targetColumns) {
         if (bucketData.isEmpty()) return Collections.emptyMap();
 
         // 버킷 내 데이터는 이미 시간순 정렬되어 있다고 가정
@@ -200,14 +204,18 @@ public class ChartAggregationService {
         String lowCol = targetColumns.get(RenderAs.LOW.getIndex());
         String closeCol = targetColumns.get(RenderAs.CLOSE.getIndex());
 
-        // 시가 (Open): 버킷의 첫 번째 데이터 값
+        // 시가 (Open): 버킷의 첫 번째 데이터 값 -> todo 평균
         map.put(openCol, MathUtil.toBigDecimal(bucketData.get(0).get(openCol)));
-        // 종가 (Close): 버킷의 마지막 데이터 값
+        // 종가 (Close): 버킷의 마지막 데이터 값 -> todo 평균
         map.put(closeCol, MathUtil.toBigDecimal(bucketData.get(bucketData.size() - 1).get(closeCol)));
-        // 고가 (High): 버킷 내 최대값
+        // 고가 (High): 버킷 내 최대값 -> todo 평균
         map.put(highCol, max(bucketData, highCol));
-        // 저가 (Low): 버킷 내 최소값
+        // 저가 (Low): 버킷 내 최소값 -> todo 평균
         map.put(lowCol, min(bucketData, lowCol));
+
+        if (StringUtils.isNotEmpty(volumeCol)) {
+            map.put(volumeCol, sum(bucketData, volumeCol));
+        }
 
         return map;
     }
@@ -216,7 +224,7 @@ public class ChartAggregationService {
      * 라인/영역 차트 데이터 집계 (주요 값 및 참조 시리즈 평균)
      * 대표 날짜는 버킷의 시작일 사용.
      */
-    private Map<String, Object> aggregateLine(List<Map<String, Object>> bucketData, LocalDate representativeDate, String dateCol, List<String> targetColumns) {
+    private Map<String, Object> aggregateLine(List<Map<String, Object>> bucketData, LocalDate representativeDate, String dateCol, String volumeCol, List<String> targetColumns) {
         if (bucketData.isEmpty()) return Collections.emptyMap();
 
         Map<String, Object> map = new LinkedHashMap<>();
@@ -232,6 +240,11 @@ public class ChartAggregationService {
             // 참조 컬럼이 실제로 bucketData에 존재하는지 확인하는 로직 추가 고려 가능
             map.put(refCol, average(bucketData, refCol));
         }
+
+        if (StringUtils.isNotEmpty(volumeCol)) {
+            map.put(volumeCol, sum(bucketData, volumeCol));
+        }
+
         return map;
     }
 
@@ -269,4 +282,13 @@ public class ChartAggregationService {
         BigDecimal sum = values.stream().reduce(BigDecimal.ZERO, MathUtil::add);
         return MathUtil.divide(sum, BigDecimal.valueOf(values.size())); // null 제외한 개수로 나눔
     }
+
+    private BigDecimal sum(List<Map<String, Object>> bucket, String col) {
+        return bucket.stream()
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
+            .filter(Objects::nonNull) // null 값 제외
+            .reduce(BigDecimal.ZERO, MathUtil::add)
+            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
+    }
+
 }

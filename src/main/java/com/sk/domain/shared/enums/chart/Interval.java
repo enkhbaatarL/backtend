@@ -1,27 +1,33 @@
 package com.sk.domain.shared.enums.chart;
 
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Getter
-@RequiredArgsConstructor
+@AllArgsConstructor
 public enum Interval {
 
-    ONE_DAY("1D", "1일"),
-    ONE_WEEK("1W", "1주"),
-    TWO_WEEK("2W", "2주"),
-    ONE_MONTH("1M", "1개월"),
-    THREE_MONTH("3M", "3개월"),
-    SIX_MONTH("6M", "6개월"),
-    ONE_YEAR("1Y", "1년");
+    ONE_DAY("1D", "1일", PeriodUnitSeparateCd.D, List.of(Range.ONE_WEEK, Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+    ONE_WEEK("1W", "1주", PeriodUnitSeparateCd.W, List.of(Range.ONE_WEEK, Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+    TWO_WEEK("2W", "2주", PeriodUnitSeparateCd.W, List.of(Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+    ONE_MONTH("1M", "1개월", PeriodUnitSeparateCd.M, List.of(Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+    THREE_MONTH("3M", "3개월", PeriodUnitSeparateCd.M, List.of(Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+    SIX_MONTH("6M", "6개월", PeriodUnitSeparateCd.M, List.of(Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+    ONE_YEAR("1Y", "1년", PeriodUnitSeparateCd.Y, List.of(Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM));
 
     private final String code;
     private final String description;
+    private final PeriodUnitSeparateCd periodUnitSeparateCd;
+    private final List<Range> allowedRanges;
 
     private static final Map<String, Interval> INTERVAL_CODE_MAP;
 
@@ -31,6 +37,15 @@ public enum Interval {
 
     public static Interval findByCode(String code) {
         return INTERVAL_CODE_MAP.getOrDefault(code, null);
+    }
+
+    public boolean isAllowedRange(Range range, LocalDate startDate, LocalDate endDate) {
+        if (range == Range.CUSTOM) {
+            Duration requestDuration = Duration.between(startDate.atStartOfDay(), endDate.atStartOfDay());
+            return requestDuration.compareTo(this.periodUnitSeparateCd.getTemporalUnit().getDuration()) >= 0;
+        } else {
+            return this.allowedRanges.contains(range);
+        }
     }
 
 }

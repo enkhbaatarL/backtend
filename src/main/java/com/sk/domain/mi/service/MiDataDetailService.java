@@ -35,6 +35,7 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.security.core.Authentication;
@@ -43,10 +44,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -198,9 +201,17 @@ public class MiDataDetailService {
      * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명)
      * @return 생성된 차트 묶음 응답 데이터
      */
-    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, String startDate, String endDate, String unitCd, String userLoginId) {
+    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd, String userLoginId) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+
+        if (BooleanUtils.isFalse(interval.getPeriodUnitSeparateCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd()))) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "The 'interval' is greater than the minInterval of the goods-data-source. interval: %s, minInterval: %s".formatted(interval, gds.getPeriodUnitSeparateCd()));
+        }
+
+        if (BooleanUtils.isFalse(interval.isAllowedRange(range, startDate, endDate))) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "The 'range' is not allowed in the 'interval'. interval: %s, range: %s".formatted(interval, range));
+        }
 
         // 변환 가능한 단위 맵 조회 (GDS 기본 단위 포함)
         Map<String, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
@@ -210,8 +221,7 @@ public class MiDataDetailService {
 
         Pair<String, String> determinedRange = personalizationService.getPsRangeOrDefault(personalizedMap, range, startDate, endDate);
         Interval determinedInterval = personalizationService.getPsIntervalOrDefault(personalizedMap, interval);
-        String determinedUnitCd = personalizationService.getPsUnitCdOrDefault(personalizedMap, unitCd,
-            ChartUnitConversionService.generateDefaultUnitCd(gds));
+        String determinedUnitCd = personalizationService.getPsUnitCdOrDefault(personalizedMap, unitCd, ChartUnitConversionService.generateDefaultUnitCd(gds));
         ChartType determinedChartType = personalizationService.getPsChartTypeOrDefault(personalizedMap);
 
         // 결정된 단위코드 유효성 검증
@@ -223,11 +233,11 @@ public class MiDataDetailService {
         // 메인 차트 생성
         Chart mainChart = chartGenerationService.generateChartData(
             gds,
-            determinedRange.getLeft(),
-            determinedRange.getRight(),
+            determinedRange,
             determinedInterval,
             unitCdMap.get(determinedUnitCd),
-            Boolean.TRUE // 메인 차트는 항상 visible 상태
+            Boolean.TRUE, // 메인 차트는 항상 visible 상태
+            Boolean.TRUE
         );
 
         // 기술적 지표 생성
@@ -239,8 +249,7 @@ public class MiDataDetailService {
         // 비교 차트 생성
         List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
             gds,
-            determinedRange.getLeft(),
-            determinedRange.getRight(),
+            determinedRange,
             determinedInterval,
             personalizedMap
         );
@@ -249,7 +258,7 @@ public class MiDataDetailService {
     }
 
     /**
-     * 상품 데이터 소스의 원천 데이터를 조회합니다. (리팩토링됨)
+     * 상품 데이터 소스의 원천 데이터를 조회합니다.
      *
      * @param goodsNo   상품 번호
      * @param gdNo      상품 데이터 번호
@@ -280,7 +289,7 @@ public class MiDataDetailService {
     }
 
     /**
-     * 상품 데이터 소스의 원천 데이터를 엑셀 파일로 다운로드합니다. (리팩토링됨)
+     * 상품 데이터 소스의 원천 데이터를 엑셀 파일로 다운로드합니다.
      *
      * @param goodsNo   상품 번호
      * @param gdNo      상품 데이터 번호
