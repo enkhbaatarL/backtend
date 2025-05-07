@@ -54,7 +54,7 @@ public class CustomerCompany extends BaseEntity {
 
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("사용여부")
-    @ColumnDefault("'N'")
+    @ColumnDefault("'Y'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 

@@ -4,6 +4,7 @@ import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMap
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,23 +14,25 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.company.CompanyDepartmentRes;
 import com.sk.domain.admin.dto.response.company.CompanyRes;
 import com.sk.domain.admin.dto.response.company.CompanyTypeAndCompanyRes;
 import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.admin.dto.response.company.QCompanyRes;
+import com.sk.domain.mi.dto.response.MiCompanyRes;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QCustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QUser;
@@ -41,6 +44,8 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompanyRepository {
+    @Value("${server.domain}")
+    private String miDefaultDomain;
 
     private final JPAQueryFactory queryFactory;
 
@@ -82,20 +87,18 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 .leftJoin(modifier.customerCompany, modifierCompany)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411):  고객사만 조회
-                    containsCompanyName(companyNm),
-                    equalIsUsed(activationSts)
-                )
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411): 고객사만 조회
+                        containsCompanyName(companyNm),
+                        equalIsUsed(activationSts))
                 .orderBy(customerCompany.customerCompanyNm.asc())
                 .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
                 .select(customerCompany.count())
                 .from(customerCompany)
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411):  고객사만 조회
-                    containsCompanyName(companyNm),
-                    equalIsUsed(activationSts)
-                );
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411): 고객사만 조회
+                        containsCompanyName(companyNm),
+                        equalIsUsed(activationSts));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -114,42 +117,40 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
 
         List<CompanyRes> content = queryFactory
-            .select(new QCompanyRes(
-                customerCompany.customerCompanyNo,
-                customerCompany.customerCompanyCd,
-                customerCompany.customerCompanyNm,
-                customerCompany.useBeginDt,
-                customerCompany.useEndDt,
-                customerCompany.isUsed,
-                customerCompany.createUserId,
-                customerCompany.createDt,
-                customerCompany.modifyUserId,
-                customerCompany.modifyDt,
-                creator.userNm,
-                creator.departmentNm,
-                creatorCompany.customerCompanyNm,
-                modifier.userNm,
-                modifier.departmentNm,
-                modifierCompany.customerCompanyNm))
-            .from(customerCompany)
-            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
-            .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
-            .leftJoin(modifier.customerCompany, modifierCompany)
-            .offset(pageable.getOffset())
-            .limit(pageable.getPageSize())
-            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411):  관리사만 조회
-                containsCompanyName(companyNm)
-            )
-            .orderBy(customerCompany.customerCompanyNm.asc())
-            .fetch();
+                .select(new QCompanyRes(
+                        customerCompany.customerCompanyNo,
+                        customerCompany.customerCompanyCd,
+                        customerCompany.customerCompanyNm,
+                        customerCompany.useBeginDt,
+                        customerCompany.useEndDt,
+                        customerCompany.isUsed,
+                        customerCompany.createUserId,
+                        customerCompany.createDt,
+                        customerCompany.modifyUserId,
+                        customerCompany.modifyDt,
+                        creator.userNm,
+                        creator.departmentNm,
+                        creatorCompany.customerCompanyNm,
+                        modifier.userNm,
+                        modifier.departmentNm,
+                        modifierCompany.customerCompanyNm))
+                .from(customerCompany)
+                .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+                .leftJoin(creator.customerCompany, creatorCompany)
+                .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+                .leftJoin(modifier.customerCompany, modifierCompany)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411): 관리사만 조회
+                        containsCompanyName(companyNm))
+                .orderBy(customerCompany.customerCompanyNm.asc())
+                .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
-            .select(customerCompany.count())
-            .from(customerCompany)
-            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411):  관리사만 조회
-                containsCompanyName(companyNm)
-            );
+                .select(customerCompany.count())
+                .from(customerCompany)
+                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411): 관리사만 조회
+                        containsCompanyName(companyNm));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -275,27 +276,39 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
     @Override
     public List<CompanyTypeAndCompanyRes> findCompaniesByTypeWithSubCompanies() {
         List<CustomerCompany> companies = queryFactory
-            .selectFrom(customerCompany)
-            .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse())
-            .orderBy(customerCompany.customerCompanyNo.asc())
-            .fetch();
+                .selectFrom(customerCompany)
+                .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse())
+                .orderBy(customerCompany.customerCompanyNo.asc())
+                .fetch();
 
         Map<CompanyType, List<CompanyTypeAndCompanyRes.Company>> grouped = companies.stream()
-            .collect(Collectors.groupingBy(
-                company -> company.getIsMipManagementCompany() ? CompanyType.MANAGER : CompanyType.CUSTOMER,
-                Collectors.mapping(
-                    company -> new CompanyTypeAndCompanyRes.Company(
-                        company.getCustomerCompanyNo(),
-                        company.getCustomerCompanyCd(),
-                        company.getCustomerCompanyNm()
-                    ),
-                    Collectors.toList()
-                )
-            ));
+                .collect(Collectors.groupingBy(
+                        company -> company.getIsMipManagementCompany() ? CompanyType.MANAGER : CompanyType.CUSTOMER,
+                        Collectors.mapping(
+                                company -> new CompanyTypeAndCompanyRes.Company(
+                                        company.getCustomerCompanyNo(),
+                                        company.getCustomerCompanyCd(),
+                                        company.getCustomerCompanyNm()),
+                                Collectors.toList())));
 
         return Arrays.stream(CompanyType.values())
-            .map(type -> new CompanyTypeAndCompanyRes(type, grouped.getOrDefault(type, Collections.emptyList())))
-            .filter(res -> !res.companies().isEmpty())
-            .toList();
+                .map(type -> new CompanyTypeAndCompanyRes(type, grouped.getOrDefault(type, Collections.emptyList())))
+                .filter(res -> !res.companies().isEmpty())
+                .toList();
+    }
+
+    @Override
+    public List<MiCompanyRes> findAllMiCompanies() {
+        List<CustomerCompany> companies = queryFactory
+                .selectFrom(customerCompany)
+                .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse(), customerCompany.isMipManagementCompany.isFalse(),
+                        customerCompany.useBeginDt.loe(DateUtil.toYmd(LocalDate.now()))
+                                .and(customerCompany.useEndDt.goe(DateUtil.toYmd(LocalDate.now()))))
+                .orderBy(customerCompany.customerCompanyNo.asc())
+                .fetch();
+
+        return companies.stream()
+                .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain))
+                .collect(Collectors.toList());
     }
 }
