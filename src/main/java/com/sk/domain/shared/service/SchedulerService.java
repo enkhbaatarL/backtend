@@ -5,7 +5,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,6 +18,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
@@ -28,12 +32,16 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.entity.master.tif.Futures;
+import com.sk.domain.shared.entity.master.tif.FuturesSpread;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
+import com.sk.domain.shared.repository.master.tif.FuturesRepository;
+import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
 import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
@@ -59,9 +67,17 @@ public class SchedulerService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final MybatisQueryTemplate mybatisQueryTemplate;
     private final MailService mailService;
+    private final FuturesRepository futuresRepository;
+    private final FuturesSpreadRepository futuresSpreadRepository;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_HOURS = 24;
+
+    // brentTimeSpreadCalculate 계산용
+    private static final String LLCC_01 = "LLCC.01";
+    private static final String LLCC_03 = "LLCC.03";
+    private static final String SPREAD_CODE = "LLCC.01-LLCC.03";
+    private static final int BATCH_SIZE = 1000;
 
     /**
      * GDI 탈퇴 유저 soft delete 처리
@@ -296,6 +312,132 @@ public class SchedulerService {
      */
     @Transactional
     public Boolean processTifFuturesSpread() {
+
+        crackSpreadCalculate();
+        brentTimeSpreadCalculate();
+
         return Boolean.TRUE;
     }
+
+    /*
+     * SK 에너지 Crack Spread 계산 후 저장 (비동기 처리)
+     */
+    public void crackSpreadCalculate() {
+
+    }
+
+    /*
+     * Brent 1-3 Time Spread 계산 후 저장 (비동기 처리)
+     */
+    @Async
+    @Transactional
+    public void brentTimeSpreadCalculate() {
+        // LLCC.01, LLCC.03 데이터 조회
+        Map<LocalDateTime, List<Futures>> futuresByDate = futuresRepository.findPendingByCodes(Arrays.asList(LLCC_01, LLCC_03));
+
+        List<FuturesSpread> spreadsToSave = new ArrayList<>();
+        List<Futures> futuresToUpdate = new ArrayList<>();
+
+        // 기존 FuturesSpread 레코드 배치 조회 (중복 체크)
+        List<LocalDateTime> dates = new ArrayList<>(futuresByDate.keySet());
+        List<FuturesSpread> existingSpreads = futuresSpreadRepository.findByCodeAndDateIn(SPREAD_CODE, dates);
+        Map<LocalDateTime, FuturesSpread> existingByDate = existingSpreads.stream()
+                .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
+
+        // 동일 date의 LLCC.01과 LLCC.03 데이터 매칭 및 계산
+        for (Map.Entry<LocalDateTime, List<Futures>> entry : futuresByDate.entrySet()) {
+            LocalDateTime date = entry.getKey();
+            List<Futures> futuresForDate = entry.getValue();
+
+            // LLCC.01과 LLCC.03 찾기
+            Futures llcc01 = futuresForDate.stream()
+                    .filter(f -> LLCC_01.equals(f.getCode()))
+                    .findFirst()
+                    .orElse(null);
+            Futures llcc03 = futuresForDate.stream()
+                    .filter(f -> LLCC_03.equals(f.getCode()))
+                    .findFirst()
+                    .orElse(null);
+
+            // 둘 다 존재해야 계산
+            if (llcc01 != null && llcc03 != null) {
+                // 계산
+                BigDecimal ps = safeSubtract(llcc01.getPs(), llcc03.getPs());
+                Integer vm = safeSubtract(llcc01.getVm(), llcc03.getVm());
+                Integer oi = safeSubtract(llcc01.getOi(), llcc03.getOi());
+                BigDecimal po = safeSubtract(llcc01.getPo(), llcc03.getPo());
+                BigDecimal ph = safeSubtract(llcc01.getPh(), llcc03.getPh());
+                BigDecimal pl = safeSubtract(llcc01.getPl(), llcc03.getPl());
+
+                // Upsert 로직: 기존 레코드 있으면 builder로 업데이트, 없으면 새 레코드
+                FuturesSpread spread;
+                if (existingByDate.containsKey(date)) {
+                    // 기존 레코드 업데이트 (builder로 새 객체 생성)
+                    FuturesSpread existing = existingByDate.get(date);
+                    spread = FuturesSpread.builder()
+                            .code(existing.getCode())
+                            .date(existing.getDate())
+                            .ps(ps)
+                            .vm(vm)
+                            .oi(oi)
+                            .po(po)
+                            .ph(ph)
+                            .pl(pl)
+                            .dataRegistrationSn(existing.getDataRegistrationSn()) // 기존 ID 유지
+                            .build();
+                } else {
+                    // 새 레코드 생성
+                    spread = FuturesSpread.builder()
+                            .code(SPREAD_CODE)
+                            .date(date)
+                            .ps(ps)
+                            .vm(vm)
+                            .oi(oi)
+                            .po(po)
+                            .ph(ph)
+                            .pl(pl)
+                            .build();
+                }
+
+                spreadsToSave.add(spread);
+                futuresToUpdate.add(llcc01);
+                futuresToUpdate.add(llcc03);
+            }
+        }
+        // 배치 저장
+        saveInBatches(spreadsToSave);
+        updateFuturesInBatches(futuresToUpdate);
+    }
+
+    private BigDecimal safeSubtract(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.subtract(b);
+    }
+
+    private Integer safeSubtract(Integer a, Integer b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a - b;
+    }
+
+    private void saveInBatches(List<FuturesSpread> spreads) {
+        for (int i = 0; i < spreads.size(); i += BATCH_SIZE) {
+            List<FuturesSpread> batch = spreads.subList(i, Math.min(i + BATCH_SIZE, spreads.size()));
+            futuresSpreadRepository.saveAll(batch);
+            futuresSpreadRepository.flush();
+        }
+    }
+
+    private void updateFuturesInBatches(List<Futures> futures) {
+        for (int i = 0; i < futures.size(); i += BATCH_SIZE) {
+            List<Futures> batch = futures.subList(i, Math.min(i + BATCH_SIZE, futures.size()));
+            batch.forEach(Futures::updateIsModifiedLoad);
+            futuresRepository.saveAll(batch);
+            futuresRepository.flush();
+        }
+    }
+
 }
