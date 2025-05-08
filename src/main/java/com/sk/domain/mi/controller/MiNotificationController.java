@@ -72,7 +72,7 @@ public class MiNotificationController {
 			@RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
 			@RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
 			@RequestParam(value = "search", required = false) String search,
-			@UserResolve User user) {
+            @UserResolve User user) {
 		return BaseResponseFactory
 				.create(miNotificationService.getNotificationSettingsGoodsDataSource(page, size, search, user));
 	}

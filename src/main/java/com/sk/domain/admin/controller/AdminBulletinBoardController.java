@@ -63,7 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "04. 게시판 관리 API", description = "게시판 관리 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/bulletinboard-manangement")
+@RequestMapping("/api/v1/admin/bulletinboard-management")
 @RequiredArgsConstructor
 public class AdminBulletinBoardController {
     private final AuthorizationService authorizationService;
