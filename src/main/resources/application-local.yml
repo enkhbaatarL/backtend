@@ -5,8 +5,8 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     master:
-#      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-      jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+#      jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: min
       password: min
@@ -15,7 +15,8 @@ spring:
         max-lifetime: 60000
     tenant-datasources:
       SKCC:
-        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+#        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: min
         password: min
@@ -23,7 +24,8 @@ spring:
           maximum-pool-size: 5
           max-lifetime: 60000
       SKT:
-        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+#        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: min
         password: min
@@ -31,7 +33,8 @@ spring:
           maximum-pool-size: 5
           max-lifetime: 60000
       midb:
-          jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+          jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+#          jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
           driver-class-name: com.mysql.cj.jdbc.Driver
           username: min
           password: min
