@@ -37,10 +37,10 @@ public class AdminFileService {
 
     private final String TEMP_DIR = "TEMP";
 
-    @Value("${ncp.storage.endPoint}")
+    @Value("${ncp.storage.end-point}")
     private String endPoint;
 
-    @Value("${ncp.storage.bucketName}")
+    @Value("${ncp.storage.bucket-name}")
     private String commBucketName;
 
     @Value("${ncp.storage.prefix}")

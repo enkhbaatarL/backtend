@@ -14,24 +14,24 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 @Configuration
 public class NCPStorageConfig {
 
-  @Value("${ncp.storage.regionName}")
-  private String regionName;
+    @Value("${ncp.storage.region-name}")
+    private String regionName;
 
-  @Value("${ncp.storage.endPoint}")
-  private String endPoint;
+    @Value("${ncp.storage.end-point}")
+    private String endPoint;
 
-  @Value("${ncp.storage.accessKey}")
-  private String accessKey;
+    @Value("${ncp.storage.access-key}")
+    private String accessKey;
 
-  @Value("${ncp.storage.secretKey}")
-  private String secretKey;
+    @Value("${ncp.storage.secret-key}")
+    private String secretKey;
 
-  @Bean
-  public AmazonS3 objectStorageClient() {
-    return (AmazonS3Client) AmazonS3ClientBuilder.standard()
-        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endPoint, regionName))
-        .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-        .build();
-  }
+    @Bean
+    public AmazonS3 objectStorageClient() {
+        return (AmazonS3Client) AmazonS3ClientBuilder.standard()
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endPoint, regionName))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+                .build();
+    }
 
 }
