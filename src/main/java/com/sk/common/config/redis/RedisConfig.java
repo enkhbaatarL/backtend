@@ -1,6 +1,8 @@
 package com.sk.common.config.redis;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -23,8 +25,23 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Configuration
 public class RedisConfig {
+
+    // Redis 헬스체크용
+    @Bean
+    public ApplicationRunner redisHealthChecker(RedisConnectionFactory cf) {
+        return args -> {
+            try {
+                String pong = cf.getConnection().ping();
+                log.info("---> Redis Health Check Success... PING = {}", pong);
+            } catch (Exception e) {
+                log.error("---> Redis Health Check Fail...", e);
+                throw e; // 실패 시 기동 중단
+            }
+        };
+    }
 
     // Redis Connection Factory 설정 (Standalone 모드)
     @Bean
