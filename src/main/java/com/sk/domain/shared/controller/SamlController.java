@@ -21,20 +21,20 @@ import lombok.extern.slf4j.Slf4j;
 // @Tag(name = "00. SAML API", description = "SAML API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/login/saml2")
+@RequestMapping("/saml2")
 @RequiredArgsConstructor
 public class SamlController {
 
     private final SamlService samlService;
 
-    @GetMapping("/user")
+    @GetMapping("/login/user")
     public ResponseEntity<Void> loginUser() {
         return ResponseEntity.status(HttpStatus.FOUND)
             .location(URI.create("/saml2/authenticate?registrationId=mi"))
             .build();
     }
 
-    @GetMapping("/saml-callback")
+    @GetMapping("/callback")
     public BaseResponse<Boolean> samlCallback(
         @RequestParam(value = "sessionId", required = true) String sessionId,
         HttpServletResponse response
