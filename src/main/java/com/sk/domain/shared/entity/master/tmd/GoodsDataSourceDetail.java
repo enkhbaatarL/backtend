@@ -2,22 +2,16 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
+import com.sk.domain.shared.converter.StringToPeriodUnitSeparateCdConverter;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+import jakarta.persistence.*;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -94,13 +88,22 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("변환대상상세유형명")
     private String convertTargetDetailTypeNm;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "perd_unit_spt_cd", length = 2)
+    @Comment("기간단위구분코드")
+    private PeriodUnitSeparateCd periodUnitSeparateCd;
+
+    @Column(name = "trde_vol_colm_nm", length = 50)
+    @Comment("거래량컬럼명")
+    private String tradeVolumeColumnNm;
+
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
             String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String goodsDataSourceCurrencyUnitNm,
             String tableColumnListNm, GoodsData goodsData,
             ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd, Boolean isCandleChartPossible,
-            String convertTargetDetailTypeNm) {
+            String convertTargetDetailTypeNm, PeriodUnitSeparateCd periodUnitSeparateCd, String tradeVolumeColumnNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -117,6 +120,8 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.goodsDataUseManagementCd = goodsDataUseManagementCd;
         this.isCandleChartPossible = isCandleChartPossible;
         this.convertTargetDetailTypeNm = convertTargetDetailTypeNm;
+        this.periodUnitSeparateCd = periodUnitSeparateCd;
+        this.tradeVolumeColumnNm = tradeVolumeColumnNm;
     }
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
@@ -143,4 +148,12 @@ public class GoodsDataSourceDetail extends BaseEntity {
     public void softDelete() {
         super.softDelete();
     }
+
+    @PostLoad
+    public void postLoad() {
+        if (ObjectUtils.isEmpty(periodUnitSeparateCd)) {
+            periodUnitSeparateCd = PeriodUnitSeparateCd.D;
+        }
+    }
+
 }

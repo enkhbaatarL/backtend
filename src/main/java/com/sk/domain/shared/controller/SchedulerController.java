@@ -48,9 +48,9 @@ public class SchedulerController {
     }
 
     @ApiOrder(4)
-    @Operation(summary = "TIF_Futures Spread 계산 후 업로드", description = "TIF_Futures Spread 계산 후 업로드 API 입니다.")
-    @PostMapping("/tif-futures-spread")
-    @ApiResponse(responseCode = "200", description = "TIF_Futures Spread 계산 후 업로드 성공")
+    @Operation(summary = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드", description = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드 API 입니다.")
+    @PostMapping("/maket-data/calculate-spread")
+    @ApiResponse(responseCode = "200", description = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드 성공")
     public BaseResponse<Boolean> processTifFuturesSpread() {
         return BaseResponseFactory.create(schedulerService.processTifFuturesSpread());
     }

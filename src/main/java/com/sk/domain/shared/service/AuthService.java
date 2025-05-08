@@ -33,7 +33,7 @@ public class AuthService {
 
 	private final String ACCESS_TOKEN_HEADER = "Authorization";
 	private final String REFRESH_TOKEN_HEADER = "X-Refresh-Token";
-	private final String ACCESS_TOKEN_RULE = "Bearer ";
+	// private final String ACCESS_TOKEN_RULE = "Bearer ";
 
 	/**
 	 * 토큰 갱신 (Refresh Token Rotation)
@@ -69,6 +69,15 @@ public class AuthService {
 		String renewedAccessToken = jwtUtil.generateAccessToken(user);
 		String renewedRefreshToken = jwtUtil.generateRefreshToken(user);
 
+		// 엑세스 토큰을 쿠키에 설정
+		ResponseCookie responseAccessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_HEADER, renewedAccessToken)
+				.maxAge(jwtProperties.getAccessTokenExpiry() / 1000)
+				.path("/")
+				.secure(true)
+				.httpOnly(true)
+				.build();
+
+
 		// 리프레시 토큰을 쿠키에 설정
 		ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
 				.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
@@ -88,7 +97,9 @@ public class AuthService {
 
 		// response.addHeader(HttpHeaders.SET_COOKIE, responseAccessTokenCookie.toString());
 
-		response.addHeader(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken);
+		// response.addHeader(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken);
+
+		response.addHeader(HttpHeaders.SET_COOKIE, responseAccessTokenCookie.toString());
 
 		return GenerateTokenRes.of(renewedAccessToken);
 	}
