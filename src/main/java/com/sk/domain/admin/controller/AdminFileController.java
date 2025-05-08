@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "09. 파일 관리 API", description = "파일 관리 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/file-manangement")
+@RequestMapping("/api/v1/admin/file-management")
 @RequiredArgsConstructor
 public class AdminFileController {
     private final AuthorizationService authorizationService;

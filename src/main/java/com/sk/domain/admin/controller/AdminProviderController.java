@@ -48,7 +48,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/provider-manangement")
+@RequestMapping("/api/v1/admin/provider-management")
 @RequiredArgsConstructor
 public class AdminProviderController {
     private final AuthorizationService authorizationService;
