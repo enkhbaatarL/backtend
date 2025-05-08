@@ -8,8 +8,8 @@ spring:
       jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
 #      jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: min
-      password: min
+      username: mipapp
+      password: skccmipapp11@@
       hikari:
         maximum-pool-size: 5
         max-lifetime: 60000
@@ -18,8 +18,8 @@ spring:
         jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
 #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: min
-        password: min
+        username: mipapp
+        password: skccmipapp11@@
         hikari:
           maximum-pool-size: 5
           max-lifetime: 60000
@@ -27,8 +27,8 @@ spring:
         jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
 #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: min
-        password: min
+        username: mipapp
+        password: skccmipapp11@@
         hikari:
           maximum-pool-size: 5
           max-lifetime: 60000
@@ -36,8 +36,8 @@ spring:
           jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
 #          jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
           driver-class-name: com.mysql.cj.jdbc.Driver
-          username: min
-          password: min
+          username: mipapp
+          password: skccmipapp11@@
           hikari:
               maximum-pool-size: 5
               max-lifetime: 60000

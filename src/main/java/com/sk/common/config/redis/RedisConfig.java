@@ -4,9 +4,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisPassword;
+import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -23,12 +26,13 @@ import java.util.Map;
 @Configuration
 public class RedisConfig {
 
-    // Redis Connection Factory 설정
+    // Redis Connection Factory 설정 (Standalone 모드)
     @Bean
-    public LettuceConnectionFactory lettuceConnectionFactory(@Value("${spring.data.redis.host}") String host,
-                                                             @Value("${spring.data.redis.port}") int port,
-                                                             @Value("${spring.data.redis.password}") String password,
-                                                             @Value("${spring.data.redis.command-timeout}") Duration commandTimeout) {
+    @Profile(value = "local")
+    public LettuceConnectionFactory lettuceConnectionFactoryLocal(@Value("${spring.data.redis.host}") String host,
+                                                                  @Value("${spring.data.redis.port}") int port,
+                                                                  @Value("${spring.data.redis.password}") String password,
+                                                                  @Value("${spring.data.redis.command-timeout}") Duration commandTimeout) {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
         redisConfig.setPort(port);
@@ -40,6 +44,25 @@ public class RedisConfig {
             .build();
 
         return new LettuceConnectionFactory(redisConfig, clientConfig);
+    }
+
+    // Redis Connection Factory 설정 (Sentinel 모드)
+    @Bean
+    @Profile(value = "dev")
+    public LettuceConnectionFactory lettuceConnectionFactoryDev(@Value("${redis.service-name}") String serviceName,
+                                                                @Value("${redis.redis-password}") String redisPassword,
+                                                                @Value("${redis.sentinel-host-node}") String sentinelHostNode,
+                                                                @Value("${redis.sentinel-port}") int sentinelPort,
+                                                                @Value("${redis.sentinel-password}") String sentinelPassword) {
+        // Sentinel 설정 (마스터 이름과 Sentinel 노드 정보 설정)
+        RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
+            .master(serviceName)
+            .sentinel(sentinelHostNode, sentinelPort);
+
+        sentinelConfig.setSentinelPassword(RedisPassword.of(sentinelPassword));
+        sentinelConfig.setPassword(RedisPassword.of(redisPassword));
+
+        return new LettuceConnectionFactory(sentinelConfig);
     }
 
 
