@@ -23,9 +23,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-
-//TODO: 호영: form-data 파일 업로드 처리 필요
-
 @Slf4j
 @Component
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {

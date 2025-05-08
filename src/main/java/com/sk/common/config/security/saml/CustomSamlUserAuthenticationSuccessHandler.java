@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,6 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 public class CustomSamlUserAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+	@Value("${spring.security.saml2.login-callback-url}")
+	private String loginCallbackUrl;
+
+	@Value("${spring.security.saml2.login-error-url}")
+	private String loginErrorUrl;
 
 	private final UserRepository userRepository;
 	private final UserAccessLogRepository userAccessLogRepository;
@@ -39,6 +45,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 	@Transactional
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException {
+		log.info("SAML 사용자 인증 시작");
 
 		Saml2Authentication saml2Authentication = (Saml2Authentication) authentication;
 		Saml2AuthenticatedPrincipal principal = (Saml2AuthenticatedPrincipal) saml2Authentication.getPrincipal();
@@ -50,8 +57,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 		List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(loginId);
 		if (users.isEmpty()) {
-			String errorUrl = "http://localhost:3000/error?error=SAML_USER_NOT_FOUND";
-			response.sendRedirect(errorUrl);
+			response.sendRedirect(loginErrorUrl);
 			throw new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId));
 		}
 
@@ -63,7 +69,6 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 		redisTemplate.opsForValue().set(sessionId, principal.getName(), Duration.ofSeconds(LOGIN_SESSION_EXPIRE_TIME));
 
 		// // 프론트엔드 콜백 URL로 리다이렉트, 액세스 토큰을 쿼리 파라미터로 전달
-		String callbackUrl = "http://localhost:3000/callback?sessionId=" + sessionId;
-		response.sendRedirect(callbackUrl);
+		response.sendRedirect(loginCallbackUrl + "?sessionId=" + sessionId);
 	}
 }
