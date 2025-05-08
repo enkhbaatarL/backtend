@@ -26,6 +26,7 @@ import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.service.KmsService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -47,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
+    private final KmsService kmsService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -131,11 +133,11 @@ public class TestController {
         return BaseResponseFactory.create(testService.delete(id));
     }
 
-    //TODO: 컴포넌트가 아닌 데이터소스를 불러와야 함
+    // TODO: 컴포넌트가 아닌 데이터소스를 불러와야 함
     // @PostMapping("/dynamic-query")
     // public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
-    //         @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
-    //     return BaseResponseFactory.create(testService.getDynamicData(testReq));
+    // @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
+    // return BaseResponseFactory.create(testService.getDynamicData(testReq));
     // }
 
     @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
@@ -155,7 +157,7 @@ public class TestController {
     }
 
     // [관리자 화면] 오직 관리자만 접근가능한 화면 = 관리자 화면은 95% 이상 이 권한으로 매칭될 것으로 생각함
-    @RequiredPermission(roles = { Role.ADMIN })
+    @RequiredPermission(roles = {Role.ADMIN})
     @GetMapping("/admin-management/goods/{goodsNo}/graph0")
     public String test1() {
         return "OK";
@@ -166,14 +168,14 @@ public class TestController {
     // 운영자(oauth 토큰 발급 / 관리회사 전용(private 데이터 업로드를 위함))
     // 서브 관리자(oauth 토큰 발급 / 운영회사 전용(public 데이터 업로드를 위함))
     // RPA? 거기서 사용되는 용도
-    @RequiredPermission(roles = { Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN })
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN})
     @GetMapping("/admin-management/goods/{goodsNo}/graph1")
     public String test2() {
         return "OK";
     }
 
     // [사용자 화면] - 사용자 화면중에서 그냥 상품에 대한 권한없이 다 볼 수 있는 화면
-    @RequiredPermission(roles = { Role.USER, Role.ADMIN }, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY // 타사권한 가진 어드민을 의미함
+    @RequiredPermission(roles = {Role.USER, Role.ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY // 타사권한 가진 어드민을 의미함
     )
     @GetMapping("/admin-management/goods/{goodsNo}/graph2")
     public String test3() {
@@ -181,7 +183,7 @@ public class TestController {
     }
 
     // [사용자 화면] - 사용자 화면중에서 그냥 상품에 대한 VIEW 권한이 필요한 화면
-    @RequiredPermission(roles = { Role.USER, Role.ADMIN }, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, // 타사권한 가진 어드민을 의미함
+    @RequiredPermission(roles = {Role.USER, Role.ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, // 타사권한 가진 어드민을 의미함
             requireViewPermission = true, goodsParam = "goodsNo" // 상품 단위로 권한을 체크하기 위함
     )
     @GetMapping("/admin-management/goods/{goodsNo}/graph3")
@@ -190,7 +192,7 @@ public class TestController {
     }
 
     // [사용자 화면] - 사용자 화면중에서 그냥 상품에 대한 DOWNLOAD 권한이 필요한 화면
-    @RequiredPermission(roles = { Role.USER, Role.ADMIN }, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, // 타사권한 가진 어드민을 의미함
+    @RequiredPermission(roles = {Role.USER, Role.ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, // 타사권한 가진 어드민을 의미함
             requireDownloadPermission = true, goodsParam = "goodsNo" // 상품 단위로 권한을 체크하기 위함
     )
     @GetMapping("/admin-management/goods/{goodsNo}/graph4")
@@ -198,4 +200,13 @@ public class TestController {
         return "OK";
     }
 
+    @GetMapping("/ncp/kms/enc")
+    public BaseResponse<String> enc(@RequestParam("plaintext") String plaintext) throws Exception {
+        return BaseResponseFactory.create(kmsService.encrypt(plaintext));
+    }
+
+    @GetMapping("/ncp/kms/dec")
+    public BaseResponse<String> dec(@RequestParam("ciphertext") String ciphertext) throws Exception {
+        return BaseResponseFactory.create(kmsService.decrypt(ciphertext));
+    }
 }

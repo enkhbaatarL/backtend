@@ -129,12 +129,17 @@ mybatis:
 
 ncp:
   storage:
-    endPoint: https://kr.object.ncloudstorage.com
-    regionName: kr-standard
-    accessKey: ncp_iam_BPASKR5qxBUswjrS1Mks
-    secretKey: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
-    bucketName: skt-mi-d-osb-01
+    end-point: https://kr.object.ncloudstorage.com
+    region-name: kr-standard
+    access-key: ncp_iam_BPASKR5qxBUswjrS1Mks
+    secret-key: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
+    bucket-name: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
+  kms:
+    base-uri: https://ocapi.ncloud.com
+    key-tag: 068aab35841c93dac1a936b826e77633da3f0fd65019a764e4ad868dff98487c
+    access-key: ncp_iam_BPAMKRs98YVwEepdOhKb
+    secret-key: ncp_iam_BPKMKRRKYkr1QTOUW8Cw88go1lYEO8iEfL
 
 aes:
     secret-key: mysecretmysecret
