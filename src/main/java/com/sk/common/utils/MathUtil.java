@@ -30,6 +30,11 @@ public class MathUtil {
      * 제곱근 함수
      */
     public static BigDecimal sqrt(BigDecimal value) {
+
+        if (value == null || value.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO.setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
+        }
+
         BigDecimal x = BigDecimal.valueOf(Math.sqrt(value.doubleValue()));
         BigDecimal last;
 

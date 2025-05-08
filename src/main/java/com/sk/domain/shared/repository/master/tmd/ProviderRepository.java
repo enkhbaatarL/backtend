@@ -124,12 +124,12 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                           p.modifyUserId,
                           p.modifyDt,
                           new com.sk.domain.shared.dto.AuditExtension(
-                              cu.userNm,
-                              cu.departmentNm,
-                              cuc.customerCompanyNm,
-                              mu.userNm,
-                              mu.departmentNm,
-                              muc.customerCompanyNm
+                              COALESCE(cu.userNm, null),
+                              COALESCE(cu.departmentNm, null),
+                              COALESCE(cuc.customerCompanyNm, null),
+                              COALESCE(mu.userNm, null),
+                              COALESCE(mu.departmentNm, null),
+                              COALESCE(muc.customerCompanyNm, null)
                           )
                       )
             )
