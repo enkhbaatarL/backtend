@@ -63,20 +63,20 @@ spring:
       relyingparty:
         registration:
           mi:
-            entity-id: http://localhost:8080/saml/metadata
+            entity-id: https://dev-mi.sk.com/saml/metadata
             acs:
-              location: http://localhost:8080/login/saml2/sso/mi
+              location: https://dev-mi.sk.com/saml2/sso/mi
               binding: POST
             singlelogout:
-              url: http://localhost:8080/saml/SingleLogout
+              url: https://dev-mi.sk.com/saml/SingleLogout
             assertingparty:
-              metadata-uri: https://dev-25395713.okta.com/app/exknog7293gkyVoqS5d7/sso/saml/metadata
+              metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
-      login-callback-url: http://localhost:8080/callback
-      login-error-url: http://localhost:8080/error
+      login-callback-url: https://dev-mi.sk.com/callback
+      login-error-url: https://dev-mi.sk.com/error
 
   web:
     resources:
