@@ -46,6 +46,7 @@ public class MiMarketDataService {
 
     private static final int DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final String INDEX_START_DATE_LIMIT = "1";
+    private static final String MARKET_DATA_INTERVAL = "1Y";
 
     private final UserRepository userRepository;
     private final EntityManager entityManager;
@@ -56,7 +57,7 @@ public class MiMarketDataService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
     public List<MiMarketDataRes> getMarketDatas(Integer customerCompanyNo, User user) {
-        String START_DATE = DateUtil.toYmd(LocalDate.now().minusMonths(1)); // 1달 전
+        String START_DATE = DateUtil.toYmd(LocalDate.now().minusYears(1)); // 1년 전
 
         CustomerCompany customerCompany = customerCompanyRepository.findById(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
@@ -82,12 +83,16 @@ public class MiMarketDataService {
             GoodsDataSourceDetail goodsDataSourceDetail = marketDataChartSetting.getGoodsDataSourceDetail();
             GoodsData goodsData = goodsDataSourceDetail.getGoodsData();
 
-            Boolean isPermitted = permissionRes.getPermittedGoods().contains(goodsData.getGoodsDataNo());
 
-            if (!isPermitted) {
-                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted));
-                continue;
-            }
+
+            // Boolean isPermitted = permissionRes.getPermittedGoods().contains(goodsData.getGoodsDataNo());
+
+            // if (!isPermitted) {
+            //     miMarketDataResponses.add(MiMarketDataRes.of(isPermitted));
+            //     continue;
+            // }
+
+
 
             // 날짜 칼럼
             String dateColumnName = goodsDataSourceDetail.getTableColumnListNm().split(",")[DATE_COLUMN_INDEX];
