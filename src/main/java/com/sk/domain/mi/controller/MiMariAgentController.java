@@ -69,7 +69,7 @@ public class MiMariAgentController {
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 3)")
     })
-    @Operation(summary = "대화 QnA 목록 조회 (pagination)", description = "로그인된 사용자의 Mari 에이전트 QnA 목록을 페이지네이션으로 조회합니다. (목록은 최신순으로 조회됩니다.)")
+    @Operation(summary = "대화 QnA 목록 조회 API (pagination)", description = "로그인된 사용자의 Mari 에이전트 QnA 목록을 페이지네이션으로 조회합니다. (목록은 최신순으로 조회됩니다.)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/talks/{talkId}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})

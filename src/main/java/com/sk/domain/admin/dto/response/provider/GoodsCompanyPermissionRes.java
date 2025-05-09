@@ -44,12 +44,12 @@ public record GoodsCompanyPermissionRes(
             // viewPermission 로직
             switch (goodsAuthManagementSeparateCd) {
                 case COMPANY -> viewExistsForCompany != null && viewExistsForCompany ? PermissionInfo.all() : PermissionInfo.none();
-                case INDIVIDUAL -> viewCountForIndividual != null && viewCountForIndividual > 0 ? PermissionInfo.some(viewCountForIndividual) : PermissionInfo.none();
+                case INDIVIDUAL -> viewCountForIndividual != null && viewCountForIndividual > 0 ? PermissionInfo.some(viewCountForIndividual) : PermissionInfo.some(0);
             },
             // downloadPermission 로직
             switch (goodsAuthManagementSeparateCd) {
                 case COMPANY -> downloadExistsForCompany != null && downloadExistsForCompany ? PermissionInfo.all() : PermissionInfo.none();
-                case INDIVIDUAL -> downloadCountForIndividual != null && downloadCountForIndividual > 0 ? PermissionInfo.some(downloadCountForIndividual) : PermissionInfo.none();
+                case INDIVIDUAL -> downloadCountForIndividual != null && downloadCountForIndividual > 0 ? PermissionInfo.some(downloadCountForIndividual) : PermissionInfo.some(0);
             },
             AuditInfo.ofDetail(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
@@ -67,9 +67,9 @@ public record GoodsCompanyPermissionRes(
     }
 
     public enum PermissionType {
-        NONE,    // 권한 없음
-        SOME,    // 일부 회원만
-        ALL      // 전체 회원
+        NONE,
+        SOME,
+        ALL
     }
 
     public record PermissionInfo(
