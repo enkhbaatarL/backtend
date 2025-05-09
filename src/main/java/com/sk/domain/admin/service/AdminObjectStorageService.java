@@ -45,10 +45,10 @@ public class AdminObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
 
-    @Value("${ncp.storage.endPoint}")
+    @Value("${ncp.storage.end-point}")
     private String endPoint;
 
-    @Value("${ncp.storage.bucketName}")
+    @Value("${ncp.storage.bucket-name}")
     private String commBucketName;
 
     @Value("${ncp.storage.prefix}")

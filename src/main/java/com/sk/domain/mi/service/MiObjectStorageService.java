@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MiObjectStorageService {
     private final AmazonS3 objectStorageClient;
 
-    @Value("${ncp.storage.endPoint}")
+    @Value("${ncp.storage.end-point}")
     private String endPoint;
 
     /**
