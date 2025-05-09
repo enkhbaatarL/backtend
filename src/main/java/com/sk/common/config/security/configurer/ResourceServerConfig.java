@@ -34,7 +34,7 @@ public class ResourceServerConfig {
     private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
         if (securityEnabled) {
@@ -46,7 +46,8 @@ public class ResourceServerConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/v1/auth/**").permitAll()
-                    .requestMatchers("/api/v1/test/login/**").permitAll()
+                    .requestMatchers("/api/v1/test/login/**").permitAll() //TODO: 테스트용 추후에 삭제 필요
+                    .requestMatchers("/api/v1/saml2/**").permitAll()
                     .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

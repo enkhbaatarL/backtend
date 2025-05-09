@@ -67,7 +67,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
             .group("ETC API")
             .displayName("기타 API")
-            .pathsToMatch("/api/**")
+            .pathsToMatch("/api/**", "/saml2/**")
             .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
