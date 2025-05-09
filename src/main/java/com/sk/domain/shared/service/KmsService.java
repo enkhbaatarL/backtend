@@ -57,6 +57,18 @@ public class KmsService {
         JSONParser parser = new JSONParser();
         JSONObject repsObj = (JSONObject) parser.parse(responseBody);
         JSONObject dataObj = (JSONObject) repsObj.get("data");
+        JSONObject errorObj = (JSONObject) repsObj.get("error");
+
+        if (dataObj == null) {
+            // error
+            System.out.println(" ==========>> error [dataObj == null]");
+        }
+
+        if (errorObj != null) {
+            // error
+            System.out.println(" ==========>> error [errorObj != null]");
+        }
+
         return dataObj;
     }
 
@@ -89,27 +101,47 @@ public class KmsService {
     }
 
     @SuppressWarnings("unchecked")
-    public String encrypt(String plaintext) throws Exception {
+    public String encrypt(String plaintext) {
         String endPoint = String.format("/kms/v1/keys/%s/encrypt", keyTag);
 
         JSONObject data = new JSONObject();
         String base64_plaintext = encodeToBase64(plaintext.getBytes(StandardCharsets.UTF_8));
         data.put("plaintext", base64_plaintext);
 
-        JSONObject respJsonObject = apiCaller(endPoint, data.toJSONString());
-        return respJsonObject.get("ciphertext").toString();
+        try {
+            JSONObject respJsonObject = apiCaller(endPoint, data.toJSONString());
+            if (respJsonObject == null) {
+                // error
+                System.out.println(" ==========>> error [respJsonObject == null]");
+            }
+            return respJsonObject.get("ciphertext").toString();
+        } catch (Exception e) {
+
+        }
+
+        return "";
     }
 
     @SuppressWarnings("unchecked")
-    public String decrypt(String ciphertext) throws Exception {
+    public String decrypt(String ciphertext) {
         String endPoint = String.format("/kms/v1/keys/%s/decrypt", keyTag);
 
         JSONObject data = new JSONObject();
         data.put("ciphertext", ciphertext);
 
-        JSONObject respJsonObject = apiCaller(endPoint, data.toJSONString());
-        String base64_plaintext = respJsonObject.get("plaintext").toString();
+        try {
+            JSONObject respJsonObject = apiCaller(endPoint, data.toJSONString());
+            if (respJsonObject == null) {
+                // error
+                System.out.println(" ==========>> error [respJsonObject == null]");
+            }
+            String base64_plaintext = respJsonObject.get("plaintext").toString();
 
-        return new String(decodeFromBase64(base64_plaintext), StandardCharsets.UTF_8);
+            return new String(decodeFromBase64(base64_plaintext), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+
+        }
+
+        return "";
     }
 }
