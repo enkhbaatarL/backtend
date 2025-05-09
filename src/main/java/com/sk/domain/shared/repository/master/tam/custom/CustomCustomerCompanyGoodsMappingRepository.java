@@ -8,6 +8,6 @@ public interface CustomCustomerCompanyGoodsMappingRepository {
 
     Page<GoodsWithDataCntRes> findGoodsMappingsByConditions(int page, int size, Integer companyNo, Integer providerNo, String search);
 
-    Page<GoodsCompanyPermissionRes> findByCompanyPermissionsByConditions(int page, int size, Integer providerNo, Integer goodsNo);
+    Page<GoodsCompanyPermissionRes> findByCompanyPermissionsByConditions(int page, int size, Integer providerNo, Integer goodsNo, String companyNm);
 
 }
