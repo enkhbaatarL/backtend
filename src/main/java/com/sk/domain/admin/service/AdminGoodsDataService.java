@@ -111,13 +111,17 @@ public class AdminGoodsDataService {
     }
 
     /**
+     * 권한 상세 목록 조회 API
      *
+     * @param page
+     * @param size
      * @param providerNo
      * @param goodsNo
+     * @param companyNm
      * @return
      */
-    public PaginationRes<GoodsCompanyPermissionRes> getCompanyPermissions(int page, int size, Integer providerNo, Integer goodsNo) {
-        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findByCompanyPermissionsByConditions(page, size, providerNo, goodsNo));
+    public PaginationRes<GoodsCompanyPermissionRes> getCompanyPermissions(int page, int size, Integer providerNo, Integer goodsNo, String companyNm) {
+        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findByCompanyPermissionsByConditions(page, size, providerNo, goodsNo, companyNm));
     }
 
     /**

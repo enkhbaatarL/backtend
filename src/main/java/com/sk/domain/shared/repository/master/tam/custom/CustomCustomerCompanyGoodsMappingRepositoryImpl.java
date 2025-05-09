@@ -101,7 +101,7 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
     }
 
     @Override
-    public Page<GoodsCompanyPermissionRes> findByCompanyPermissionsByConditions(int page, int size, Integer providerNo, Integer goodsNo) {
+    public Page<GoodsCompanyPermissionRes> findByCompanyPermissionsByConditions(int page, int size, Integer providerNo, Integer goodsNo, String companyNm) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
@@ -169,7 +169,8 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
             .limit(pageable.getPageSize())
             .where(customerCompanyGoodsMapping.isDeleted.isFalse(),
                 customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo),
-                customerCompanyGoodsMapping.goods.provider.providerNo.eq(providerNo))
+                customerCompanyGoodsMapping.goods.provider.providerNo.eq(providerNo),
+                searchConditionByCompanyNm(companyNm))
             .orderBy(customerCompanyGoodsMapping.customerCompany.customerCompanyNm.asc())
             .fetch();
 
@@ -178,7 +179,8 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
             .from(customerCompanyGoodsMapping)
             .where(customerCompanyGoodsMapping.isDeleted.isFalse(),
                 customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo),
-                customerCompanyGoodsMapping.goods.provider.providerNo.eq(providerNo));
+                customerCompanyGoodsMapping.goods.provider.providerNo.eq(providerNo),
+                searchConditionByCompanyNm(companyNm));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
 
@@ -191,6 +193,15 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
         }
 
         return customerCompanyGoodsMapping.goods.goodsNm.containsIgnoreCase(search).or(customerCompanyGoodsMapping.goods.goodsExpn.containsIgnoreCase(search));
+    }
+
+    private BooleanExpression searchConditionByCompanyNm(String search) {
+
+        if (StringUtils.isEmpty(search)) {
+            return null;
+        }
+
+        return customerCompanyGoodsMapping.customerCompany.customerCompanyNm.containsIgnoreCase(search);
     }
 
 }
