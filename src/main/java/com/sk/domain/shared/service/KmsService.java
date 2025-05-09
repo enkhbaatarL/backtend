@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class KmsService {
     // URI
-    private static String KMS_API_BASE_URI = "https://ocapi.ncloud.com";
+    private static String KMS_API_BASE_URI = "https://kms.apigw.ntruss.com";
 
     @Value("${ncp.kms.key-tag}")
     private String keyTag;
@@ -60,12 +60,13 @@ public class KmsService {
         JSONObject errorObj = (JSONObject) repsObj.get("error");
 
         if (dataObj == null) {
-            // error
+            // todo: error log
             System.out.println(" ==========>> error [dataObj == null]");
+            // log.error("[PDF-TO-IMAGES] Failed to process page {}", , e);
         }
 
         if (errorObj != null) {
-            // error
+            // todo: error log
             System.out.println(" ==========>> error [errorObj != null]");
         }
 
@@ -102,7 +103,7 @@ public class KmsService {
 
     @SuppressWarnings("unchecked")
     public String encrypt(String plaintext) {
-        String endPoint = String.format("/kms/v1/keys/%s/encrypt", keyTag);
+        String endPoint = String.format("/keys/v2/%s/encrypt", keyTag);
 
         JSONObject data = new JSONObject();
         String base64_plaintext = encodeToBase64(plaintext.getBytes(StandardCharsets.UTF_8));
@@ -111,7 +112,7 @@ public class KmsService {
         try {
             JSONObject respJsonObject = apiCaller(endPoint, data.toJSONString());
             if (respJsonObject == null) {
-                // error
+                // todo: error log
                 System.out.println(" ==========>> error [respJsonObject == null]");
             }
             return respJsonObject.get("ciphertext").toString();
@@ -124,7 +125,7 @@ public class KmsService {
 
     @SuppressWarnings("unchecked")
     public String decrypt(String ciphertext) {
-        String endPoint = String.format("/kms/v1/keys/%s/decrypt", keyTag);
+        String endPoint = String.format("/keys/v2/%s/decrypt", keyTag);
 
         JSONObject data = new JSONObject();
         data.put("ciphertext", ciphertext);
@@ -132,7 +133,7 @@ public class KmsService {
         try {
             JSONObject respJsonObject = apiCaller(endPoint, data.toJSONString());
             if (respJsonObject == null) {
-                // error
+                // todo: error log
                 System.out.println(" ==========>> error [respJsonObject == null]");
             }
             String base64_plaintext = respJsonObject.get("plaintext").toString();
