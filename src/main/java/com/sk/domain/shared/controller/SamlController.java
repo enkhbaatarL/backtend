@@ -33,7 +33,7 @@ public class SamlController {
     private final SamlService samlService;
 
     @ApiOrder(1)
-    @Operation(summary = "SAML 로그인", description = "SAML 로그인을 진행합니다.")
+    @Operation(summary = "SAML 로그인 (호출이 아닌 해당 결로로 리다이렉트)", description = "SAML 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "SAML 로그인 성공")
     @GetMapping("/login/user")
     public ResponseEntity<Void> loginUser() {
