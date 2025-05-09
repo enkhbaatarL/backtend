@@ -36,10 +36,21 @@ public record GoodsCompanyPermissionRes(
 ) {
 
     @QueryProjection
-    public GoodsCompanyPermissionRes(Integer companyNo, String companyNm, Boolean isUsed, GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd, PermissionInfo viewPermission, PermissionInfo downloadPermission,
+    public GoodsCompanyPermissionRes(Integer companyNo, String companyNm, Boolean isUsed, GoodsAuthManagementSeparateCd goodsAuthManagementSeparateCd,
+                                     Boolean viewExistsForCompany, Long viewCountForIndividual, Boolean downloadExistsForCompany, Long downloadCountForIndividual,
                                      String createUserId, LocalDateTime createDt, String modifyUserId, LocalDateTime modifyDt,
                                      String createUserNm, String createUserDeptNm, String createUserCpnyNm, String modifyUserNm, String modifyUserDeptNm, String modifyUserCpnyNm) {
-        this(companyNo, companyNm, isUsed, goodsAuthManagementSeparateCd.getCode(), goodsAuthManagementSeparateCd.getDescription(), viewPermission, downloadPermission,
+        this(companyNo, companyNm, isUsed, goodsAuthManagementSeparateCd.getCode(), goodsAuthManagementSeparateCd.getDescription(),
+            // viewPermission 로직
+            switch (goodsAuthManagementSeparateCd) {
+                case COMPANY -> viewExistsForCompany != null && viewExistsForCompany ? PermissionInfo.all() : PermissionInfo.none();
+                case INDIVIDUAL -> viewCountForIndividual != null && viewCountForIndividual > 0 ? PermissionInfo.some(viewCountForIndividual) : PermissionInfo.none();
+            },
+            // downloadPermission 로직
+            switch (goodsAuthManagementSeparateCd) {
+                case COMPANY -> downloadExistsForCompany != null && downloadExistsForCompany ? PermissionInfo.all() : PermissionInfo.none();
+                case INDIVIDUAL -> downloadCountForIndividual != null && downloadCountForIndividual > 0 ? PermissionInfo.some(downloadCountForIndividual) : PermissionInfo.none();
+            },
             AuditInfo.ofDetail(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }
 
@@ -66,7 +77,7 @@ public record GoodsCompanyPermissionRes(
         @Schema(description = "권한 상태", example = "ALL", allowableValues = {"ALL", "NONE", "SOME"})
         PermissionType type,
 
-        @Schema(description = "권한을 가진 회원 수 (type = 'SOME'일 때만 존재한다.)")
+        @Schema(description = "권한을 가진 회원 수 (type = 'SOME'일 때만 존재한다.)", example = "14")
         Long count
 
     ) {

@@ -119,8 +119,36 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
                 customerCompanyGoodsMapping.customerCompany.customerCompanyNm,
                 customerCompanyGoodsMapping.isUsed,
                 customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd,
-                Expressions.constant(GoodsCompanyPermissionRes.PermissionInfo.all()),
-                Expressions.constant(GoodsCompanyPermissionRes.PermissionInfo.none()),
+                // viewExistsForCompany: COMPANY일 때 VIEW 권한 존재 여부
+                JPAExpressions.selectOne()
+                    .from(authManageGoodsMapping)
+                    .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.eq(customerCompanyGoodsMapping.id)
+                        .and(authManageGoodsMapping.goodsAuthCd.eq(GoodsAuthCd.VIEW))
+                        .and(authManageGoodsMapping.isDeleted.isFalse())
+                        .and(customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd.eq(GoodsAuthManagementSeparateCd.COMPANY)))
+                    .exists(),
+                // viewCountForIndividual: INDIVIDUAL일 때 VIEW 권한 가진 회원 수
+                JPAExpressions.select(authManageGoodsMapping.authManagerGoodsMappingSeq.count())
+                    .from(authManageGoodsMapping)
+                    .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.eq(customerCompanyGoodsMapping.id)
+                        .and(authManageGoodsMapping.goodsAuthCd.eq(GoodsAuthCd.VIEW))
+                        .and(authManageGoodsMapping.isDeleted.isFalse())
+                        .and(customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd.eq(GoodsAuthManagementSeparateCd.INDIVIDUAL))),
+                // downloadExistsForCompany: COMPANY일 때 DOWNLOAD 권한 존재 여부
+                JPAExpressions.selectOne()
+                    .from(authManageGoodsMapping)
+                    .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.eq(customerCompanyGoodsMapping.id)
+                        .and(authManageGoodsMapping.goodsAuthCd.eq(GoodsAuthCd.DOWNLOAD))
+                        .and(authManageGoodsMapping.isDeleted.isFalse())
+                        .and(customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd.eq(GoodsAuthManagementSeparateCd.COMPANY)))
+                    .exists(),
+                // downloadCountForIndividual: INDIVIDUAL일 때 DOWNLOAD 권한 가진 회원 수
+                JPAExpressions.select(authManageGoodsMapping.authManagerGoodsMappingSeq.count())
+                    .from(authManageGoodsMapping)
+                    .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.eq(customerCompanyGoodsMapping.id)
+                        .and(authManageGoodsMapping.goodsAuthCd.eq(GoodsAuthCd.DOWNLOAD))
+                        .and(authManageGoodsMapping.isDeleted.isFalse())
+                        .and(customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd.eq(GoodsAuthManagementSeparateCd.INDIVIDUAL))),
                 customerCompanyGoodsMapping.createUserId,
                 customerCompanyGoodsMapping.createDt,
                 customerCompanyGoodsMapping.modifyUserId,
