@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 스케쥴러용 API
  */
-@Tag(name = "00. Scheduler API", description = "스케쥴러 API")
+@Tag(name = "02. Scheduler API", description = "스케쥴러 API")
 @RestController
-@RequestMapping("/api/v1/api/scheduler-management")
+@RequestMapping("/api/v1/scheduler-management")
 @RequiredArgsConstructor
 public class SchedulerController {
     private final SchedulerService schedulerService;

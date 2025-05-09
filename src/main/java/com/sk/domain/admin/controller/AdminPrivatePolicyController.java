@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Tag(name = "08. 정책약관 관리 API", description = "정책약관 관리 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/privatepolicy-manangement")
+@RequestMapping("/api/v1/admin/privatepolicy-management")
 @RequiredArgsConstructor
 public class AdminPrivatePolicyController {
     private final AdminPrivatePolicyService adminPrivatePolicyService;

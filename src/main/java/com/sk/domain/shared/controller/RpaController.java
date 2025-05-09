@@ -27,10 +27,10 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "02. RPA API", description = "RPA API")
+@Tag(name = "03. RPA API", description = "RPA API")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/api/rpa-management")
+@RequestMapping("/api/v1/rpa-management")
 @RequiredArgsConstructor
 public class RpaController {
     private final RpaService rpaService;

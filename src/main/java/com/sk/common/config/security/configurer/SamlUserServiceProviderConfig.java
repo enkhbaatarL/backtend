@@ -33,7 +33,7 @@ public class SamlUserServiceProviderConfig {
                 .cors(withDefaults())
                 // .securityMatcher("/login/saml2/user", "/saml2/sso/mi", "/saml2/authenticate/**",
                 //         "/saml2/service-provider-metadata/mi", "/saml/metadata", "/saml/SingleLogout", "/login/saml2/saml-callback")
-                .securityMatcher("/saml2/**", "/saml/**")
+                .securityMatcher("/saml2/**", "/saml/**", "/login/**")
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().permitAll())
                 .saml2Login(saml2 -> saml2
