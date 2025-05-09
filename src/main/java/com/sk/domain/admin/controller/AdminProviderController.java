@@ -351,6 +351,27 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getAllGoodsData(companyNo, role, page, size, keyword, providerNo, goodsNo));
     }
 
+    // [2025-05-09] 상품데이타 목록 조회 API 추가
+    @ApiOrder(15)
+    @Parameters({
+        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+        @Parameter(name = "providerNo", description = "프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품 번호")
+    })
+    @Operation(summary = "권한 상세 목록 조회 API (with pagination)", description = "상품을 구독하고 있는 회사의 매핑된 권한 내역을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/company-permissions")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<PaginationRes<GoodsCompanyPermissionRes>> getCompanyPermissions(
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
+    ) {
+        return BaseResponseFactory.create(goodsDataService.getCompanyPermissions(page, size, providerNo, goodsNo));
+    }
+
     @ApiOrder(15)
     @Operation(summary = "문서 타입 카테고리 조회", description = "문서 타입 카테고리를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
