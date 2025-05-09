@@ -48,7 +48,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/provider-manangement")
+@RequestMapping("/api/v1/admin/provider-management")
 @RequiredArgsConstructor
 public class AdminProviderController {
     private final AuthorizationService authorizationService;
@@ -184,7 +184,7 @@ public class AdminProviderController {
     })
     @Operation(summary = "데이타 프로바이더 최신 수정일, 수정자", description = "데이타 프로바이더의 최신 수정일과 수정자를 반납합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/providers/{providerNo}/latest-updated/")
+    @GetMapping("/providers/{providerNo}/latest-updated")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_PLUS_OPERATOR})
     public BaseResponse<ProviderLatestUpdatedRes> getProviderLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
@@ -312,7 +312,7 @@ public class AdminProviderController {
     })
     @Operation(summary = "상품 최신 수정일, 수정자", description = "상품의 최신 수정일과 수정자를 반납합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated/")
+    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/latest-updated")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN})
     public BaseResponse<GoodsLatestUpdatedRes> getGoodsLatestUpdated(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
