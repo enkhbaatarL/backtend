@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.utils.NcpSignerUtil;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import org.springframework.http.MediaType;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.model.BaseResponse;
@@ -209,4 +211,24 @@ public class TestController {
     public BaseResponse<String> dec(@RequestParam("ciphertext") String ciphertext) throws Exception {
         return BaseResponseFactory.create(kmsService.decrypt(ciphertext));
     }
+
+    @GetMapping("/secret/test")
+    public String test() throws Exception {
+        String ts = String.valueOf(System.currentTimeMillis());
+        String sig = NcpSignerUtil.sign("GET",
+            "/api/v1/secrets/fc5a140d9e2695043e0ec963749cec18344f34ddbab9eb1bb01131396b15baeb/values",
+            ts,
+            "ncp_iam_BPASKR1qyojv0uAPGtnF",
+            "ncp_iam_BPKSKRWnq57QBcVPfayA1rB8xUtQphtg4T");
+        RestClient rc = RestClient.builder()
+            .baseUrl("https://secretmanager.apigw.ntruss.com")
+            .defaultHeader("x-ncp-iam-access-key", "ncp_iam_BPASKR1qyojv0uAPGtnF")
+            .defaultHeader("x-ncp-apigw-timestamp", ts)
+            .defaultHeader("x-ncp-apigw-signature-v2", sig)
+            .build();
+
+        String body = rc.get().uri("/api/v1/secrets/fc5a140d9e2695043e0ec963749cec18344f34ddbab9eb1bb01131396b15baeb/values").retrieve().body(String.class);
+        return body;
+    }
+
 }
