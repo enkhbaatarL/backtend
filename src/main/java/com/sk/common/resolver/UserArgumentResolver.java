@@ -47,7 +47,6 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
 
         if (authentication instanceof JwtAuthenticationToken jwtToken) {
             userNo = jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode());
-
         }
 
         if (userNo == null) {

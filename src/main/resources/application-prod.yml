@@ -20,6 +20,11 @@ spring:
     hibernate:
       ddl-auto: validate # 변경 금지
 
+jwt:
+  secret-key: ${SKT_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
+  access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
+  refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
+  
 logging:
   config: classpath:logback-prod.xml
 
@@ -34,5 +39,18 @@ decorator:
     p6spy:
       enable-logging: false # 변경 금지
 
+ncp:
+  storage:
+    end-point: https://kr.object.ncloudstorage.com
+    region-name: kr-standard
+    access-key: ncp_iam_BPASKR5qxBUswjrS1Mks
+    secret-key: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
+    bucket-name: skt-mi-d-osb-01
+    prefix: skt-mi-d-osb-ss-
+  kms:
+    key-tag: 068aab35841c93dac1a936b826e77633da3f0fd65019a764e4ad868dff98487c
+    access-key: ncp_iam_BPAMKRs98YVwEepdOhKb
+    secret-key: ncp_iam_BPKMKRRKYkr1QTOUW8Cw88go1lYEO8iEfL
+
 aes:
-    secret-key: mysecretmysecret
+    secret-key: ${SKT_AES_SECRET_KEY:35f2c3fbe8388a5e}
