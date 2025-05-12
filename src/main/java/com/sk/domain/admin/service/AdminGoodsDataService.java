@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.sk.domain.admin.dto.response.provider.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,14 +28,6 @@ import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
-import com.sk.domain.admin.dto.response.provider.CategoryDataRes;
-import com.sk.domain.admin.dto.response.provider.ComponentInfoRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataNameRes;
-import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
-import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
-import com.sk.domain.admin.dto.response.provider.UnstructuredDataRes;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
@@ -69,6 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AdminGoodsDataService {
+
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final ProviderRepository providerRepository;
     private final GoodsRepository goodsRepository;
@@ -114,6 +108,20 @@ public class AdminGoodsDataService {
             default:
                 throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
         }
+    }
+
+    /**
+     * 권한 상세 목록 조회 API
+     *
+     * @param page
+     * @param size
+     * @param providerNo
+     * @param goodsNo
+     * @param companyNm
+     * @return
+     */
+    public PaginationRes<GoodsCompanyPermissionRes> getCompanyPermissions(int page, int size, Integer providerNo, Integer goodsNo, String companyNm) {
+        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findByCompanyPermissionsByConditions(page, size, providerNo, goodsNo, companyNm));
     }
 
     /**
@@ -194,7 +202,7 @@ public class AdminGoodsDataService {
         List<CategoryDataRes> langCategoryList = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
 
         List<UnstructuredDataRes> unstructuredDataList = goodsDataCategoryRepository.findUnstructuredDataByGoodsDataNo(goodsData.getGoodsDataNo());
-        
+
         List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findGoodsDataSourceStructuredDatasByConditions(goodsData);
 
         return GoodsDataDetailRes.of(
@@ -334,8 +342,8 @@ public class AdminGoodsDataService {
                  * 데이터소스상세 조회 후 데이터소스상세 없는 경우 생성
                  */
 
-                /** 
-                 * 단위 변환 기본 매핑 기준 
+                /**
+                 * 단위 변환 기본 매핑 기준
                  * 1. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 아닌 경우
                  *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 중
                  *        단위변환기본에서 convertTargetDetailTypeNm 값이 Null 이거나 convertTargetDetailTypeNm 값이 데이터소스상세 convertTargetDetailTypeNm 값과 일치하는 데이터 조회
@@ -505,8 +513,8 @@ public class AdminGoodsDataService {
                                             componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
                                             componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
 
-                    /** 
-                     * 단위 변환 기본 매핑 기준 
+                    /**
+                     * 단위 변환 기본 매핑 기준
                      * 1. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 아닌 경우
                      *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 중
                      *        단위변환기본에서 convertTargetDetailTypeNm 값이 Null 이거나 convertTargetDetailTypeNm 값이 데이터소스상세 convertTargetDetailTypeNm 값과 일치하는 데이터 조회

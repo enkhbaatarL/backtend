@@ -192,7 +192,8 @@ public class AdminCompanyController {
     @GetMapping("/companies/{companyNo}/providers")
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<List<ProviderWithGoodsCntRes>> getProvidersMappedToCompany(
-        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo) {
+        @PathVariable(value = "companyNo") @Min(value = 1) Integer companyNo
+    ) {
         return BaseResponseFactory.create(adminCompanyService.getProvidersMappedToCompany(companyNo));
     }
 
