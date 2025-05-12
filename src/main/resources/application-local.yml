@@ -139,7 +139,6 @@ ncp:
     bucket-name: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
   kms:
-    base-uri: https://ocapi.ncloud.com
     key-tag: 068aab35841c93dac1a936b826e77633da3f0fd65019a764e4ad868dff98487c
     access-key: ncp_iam_BPAMKRs98YVwEepdOhKb
     secret-key: ncp_iam_BPKMKRRKYkr1QTOUW8Cw88go1lYEO8iEfL
