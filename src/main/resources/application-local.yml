@@ -90,7 +90,7 @@ cache:
     time-to-live: 3600s
 
 jwt:
-  secret-key: 5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5
+  secret-key: ${SKT_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
   access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
   refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
 
@@ -144,7 +144,7 @@ ncp:
     secret-key: ncp_iam_BPKMKRRKYkr1QTOUW8Cw88go1lYEO8iEfL
 
 aes:
-    secret-key: 35f2c3fbe8388a5e
+    secret-key: ${SKT_AES_SECRET_KEY:35f2c3fbe8388a5e}
 
 server:
   domain: http://localhost:8080
