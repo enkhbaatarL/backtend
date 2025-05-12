@@ -210,23 +210,23 @@ public class TestController {
     // return BaseResponseFactory.create(kmsService.decrypt(ciphertext));
     // }
 
-    @GetMapping("/ncp/kms/envelopCredential")
-    public BaseResponse<String> envelopCredential() throws Exception {
-        kmsService.envelopCredential();
+    // @GetMapping("/ncp/kms/envelopCredential")
+    // public BaseResponse<String> envelopCredential() throws Exception {
+    // kmsService.envelopCredential();
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
-    @GetMapping("/ncp/kms/getCredential")
-    public BaseResponse<String> getCredential() throws Exception {
-        return BaseResponseFactory.create(kmsService.getCredential());
-    }
+    // @GetMapping("/ncp/kms/getCredential")
+    // public BaseResponse<String> getCredential() throws Exception {
+    // return BaseResponseFactory.create(kmsService.getCredential());
+    // }
 
-    @GetMapping("/ncp/kms/reenvelopCredential")
-    public BaseResponse<String> reenvelopCredential() throws Exception {
-        kmsService.reenvelopCredential();
+    // @GetMapping("/ncp/kms/reenvelopCredential")
+    // public BaseResponse<String> reenvelopCredential() throws Exception {
+    // kmsService.reenvelopCredential();
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
 }
