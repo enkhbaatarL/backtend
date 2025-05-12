@@ -200,13 +200,33 @@ public class TestController {
         return "OK";
     }
 
-    @GetMapping("/ncp/kms/enc")
-    public BaseResponse<String> enc(@RequestParam("plaintext") String plaintext) throws Exception {
-        return BaseResponseFactory.create(kmsService.encrypt(plaintext));
-    }
+    // @GetMapping("/ncp/kms/enc")
+    // public BaseResponse<String> enc(@RequestParam("plaintext") String plaintext) throws Exception {
+    // return BaseResponseFactory.create(kmsService.encrypt(plaintext));
+    // }
 
-    @GetMapping("/ncp/kms/dec")
-    public BaseResponse<String> dec(@RequestParam("ciphertext") String ciphertext) throws Exception {
-        return BaseResponseFactory.create(kmsService.decrypt(ciphertext));
-    }
+    // @GetMapping("/ncp/kms/dec")
+    // public BaseResponse<String> dec(@RequestParam("ciphertext") String ciphertext) throws Exception {
+    // return BaseResponseFactory.create(kmsService.decrypt(ciphertext));
+    // }
+
+    // @GetMapping("/ncp/kms/envelopCredential")
+    // public BaseResponse<String> envelopCredential() throws Exception {
+    // kmsService.envelopCredential();
+
+    // return BaseResponseFactory.create("success");
+    // }
+
+    // @GetMapping("/ncp/kms/getCredential")
+    // public BaseResponse<String> getCredential() throws Exception {
+    // return BaseResponseFactory.create(kmsService.getCredential());
+    // }
+
+    // @GetMapping("/ncp/kms/reenvelopCredential")
+    // public BaseResponse<String> reenvelopCredential() throws Exception {
+    // kmsService.reenvelopCredential();
+
+    // return BaseResponseFactory.create("success");
+    // }
+
 }

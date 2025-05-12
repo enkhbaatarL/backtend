@@ -121,9 +121,11 @@ public class TestService {
         return hynixEmailAccessLogMapper.getHynixEmailAccessLogs();
     }
 
+    @Transactional
     public String getToken(String loginUserId, UserRoleCd role) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(loginUserId, role)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
+
         return jwtUtil.generateAccessToken(user);
     }
 
