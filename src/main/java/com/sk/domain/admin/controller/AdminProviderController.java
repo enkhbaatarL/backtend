@@ -477,7 +477,6 @@ public class AdminProviderController {
             @Schema(implementation = StructuredDataFileReq.class) @RequestPart(value = "data", required = true) @Valid StructuredDataFileReq structuredDataFileReq)
             throws IOException {
 
-        int userNo = authorizationService.getUserNo();
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
@@ -508,7 +507,7 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(userNo, companyCd, role, file, false, structuredDataFileReq));
+        return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
     }
 
     @ApiOrder(92)

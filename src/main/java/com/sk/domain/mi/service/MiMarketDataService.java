@@ -77,11 +77,18 @@ public class MiMarketDataService {
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
+
+
+        // DataSourceGroupMapping  => 비교군 데이터소스 조회 후에 같이 그려줘야 한다
+
+
+
         List<MiMarketDataRes> miMarketDataResponses = new ArrayList<>();
 
         for (MarketDataChartSetting marketDataChartSetting : marketDataChartSettings) {
             GoodsDataSourceDetail goodsDataSourceDetail = marketDataChartSetting.getGoodsDataSourceDetail();
             GoodsData goodsData = goodsDataSourceDetail.getGoodsData();
+
 
 
 
@@ -108,6 +115,13 @@ public class MiMarketDataService {
                 indexStartDate = START_DATE;
             }
 
+
+
+            // YOY, MOM, WOW 계산 
+
+
+
+            // 
         }
         return miMarketDataResponses;
     }

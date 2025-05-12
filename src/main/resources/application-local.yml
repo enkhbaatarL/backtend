@@ -67,6 +67,9 @@ spring:
             acs:
               location: https://dev-mi.sk.com/saml2/sso/mi
               binding: POST
+            single-sign-on-service:
+              location: https://dev-mi.sk.com/saml2/authenticate/mi
+              binding: POST
             singlelogout:
               url: https://dev-mi.sk.com/saml/SingleLogout
             assertingparty:
