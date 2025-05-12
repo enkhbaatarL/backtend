@@ -26,7 +26,6 @@ import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
-import com.sk.domain.shared.service.KmsService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -48,7 +47,6 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
-    private final KmsService kmsService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -199,34 +197,5 @@ public class TestController {
     public String test5() {
         return "OK";
     }
-
-    // @GetMapping("/ncp/kms/enc")
-    // public BaseResponse<String> enc(@RequestParam("plaintext") String plaintext) throws Exception {
-    // return BaseResponseFactory.create(kmsService.encrypt(plaintext));
-    // }
-
-    // @GetMapping("/ncp/kms/dec")
-    // public BaseResponse<String> dec(@RequestParam("ciphertext") String ciphertext) throws Exception {
-    // return BaseResponseFactory.create(kmsService.decrypt(ciphertext));
-    // }
-
-    // @GetMapping("/ncp/kms/envelopCredential")
-    // public BaseResponse<String> envelopCredential() throws Exception {
-    // kmsService.envelopCredential();
-
-    // return BaseResponseFactory.create("success");
-    // }
-
-    // @GetMapping("/ncp/kms/getCredential")
-    // public BaseResponse<String> getCredential() throws Exception {
-    // return BaseResponseFactory.create(kmsService.getCredential());
-    // }
-
-    // @GetMapping("/ncp/kms/reenvelopCredential")
-    // public BaseResponse<String> reenvelopCredential() throws Exception {
-    // kmsService.reenvelopCredential();
-
-    // return BaseResponseFactory.create("success");
-    // }
 
 }
