@@ -594,7 +594,7 @@ public class AdminGoodsDataService {
      * @return
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public GoodsDataFileUploadRes uploadStructuredDataFile(int userNo, String companyCd, Role role, MultipartFile file, boolean isPublic,
+    public GoodsDataFileUploadRes uploadStructuredDataFile(String companyCd, Role role, MultipartFile file, boolean isPublic,
             StructuredDataFileReq structuredDataFileReq) throws IOException {
 
         // TODO: JPA, MyBatis 트랜잭션 통합 관리 필요(XA 도입 또는 데이터 소스 분리 등 방법 필요)
