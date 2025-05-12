@@ -11,7 +11,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.request.provider.GoodsCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsUpdateReq;
 import com.sk.domain.shared.entity.master.tmd.Goods;
@@ -168,6 +167,8 @@ public class AdminGoodsService {
         if (goods.getIsPublic()) {
             if (role == Role.ADMIN) {
                 goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+
+                return;
             }
         } else {
             if (role == Role.OPERATOR) {
@@ -181,6 +182,8 @@ public class AdminGoodsService {
                                 () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
 
                 goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+
+                return;
             }
         }
 
