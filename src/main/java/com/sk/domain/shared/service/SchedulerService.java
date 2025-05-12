@@ -31,12 +31,14 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.shared.dto.response.rpa.CrackSpreadDataRes;
+import com.sk.domain.shared.entity.compositeKey.tmd.UserHistoryId;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.entity.master.tmd.UserHistory;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -44,6 +46,7 @@ import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
 import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
+import com.sk.domain.shared.repository.master.tmd.UserHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.template.query.MybatisQueryTemplate;
 
@@ -69,6 +72,7 @@ public class SchedulerService {
     private final MailService mailService;
     private final FuturesRepository futuresRepository;
     private final FuturesSpreadRepository futuresSpreadRepository;
+    private final UserHistoryRepository userHistoryRepository;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_HOURS = 24;
@@ -102,6 +106,16 @@ public class SchedulerService {
             users.stream()
                     .peek(User::softDelete)
                     .collect(Collectors.toList());
+
+            LocalDateTime now = LocalDateTime.now();
+            List<UserHistory> histories = users.stream()
+                    .map(user -> UserHistory.builder()
+                            .id(new UserHistoryId(user.getUserNo(), now))
+                            .isOtherCompanyServiceAccessPossible(user.getIsOtherServiceAccessPossible())
+                            .user(user)
+                            .build())
+                    .toList();
+            userHistoryRepository.saveAll(histories);
         }
 
         return Boolean.TRUE;
