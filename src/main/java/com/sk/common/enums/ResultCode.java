@@ -4,7 +4,6 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
-// @formatter:off
 public class ResultCode {
 
     @Getter
@@ -98,4 +97,3 @@ public class ResultCode {
     }
 
 }
-// @formatter:on

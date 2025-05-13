@@ -67,7 +67,7 @@ public class MiDataDetailService {
     private final TechnicalIndicatorService technicalIndicatorService;
     private final ChartUnitConversionService chartUnitConversionService;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
-    private final MiGoodsDataInqueryUserService goodsDataInquiryUserService;
+    private final MiGoodsDataInquiryUserService goodsDataInquiryUserService;
 
 
     /**

@@ -17,10 +17,10 @@ public enum AuthComponent {
 
         if (uri.startsWith("/oauth2/token")) {
             return AuthComponent.OAUTH2_SERVER;
+        } else if (uri.startsWith("/api/v1/saml2")) {
+            return AuthComponent.SAML_SERVICE_PROVIDER;
         } else if (uri.startsWith("/api/")) {
             return AuthComponent.OAUTH2_RESOURCE;
-        } else if (uri.startsWith("/saml/")) {
-            return AuthComponent.SAML_SERVICE_PROVIDER;
         } else {
             return AuthComponent.GENERIC_AUTH;
         }
