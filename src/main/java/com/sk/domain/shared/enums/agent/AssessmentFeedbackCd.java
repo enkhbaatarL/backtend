@@ -17,4 +17,13 @@ public enum AssessmentFeedbackCd {
     private final String code;
     private final String description;
 
+    public static AssessmentFeedbackCd of(String code) {
+        for (AssessmentFeedbackCd value : values()) {
+            if (value.getCode().equals(code)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
 }

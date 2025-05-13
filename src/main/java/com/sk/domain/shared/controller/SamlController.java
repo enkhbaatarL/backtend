@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "00. SAML API", description = "SAML API 입니다.")
+@Tag(name = "01. SAML API", description = "SAML API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/saml2")

@@ -63,12 +63,23 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public GroupedOpenApi testApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
+        return GroupedOpenApi.builder()
+            .group("TEST API - 테스트 용")
+            .displayName("테스트 API")
+            .pathsToMatch("/api/v1/test/**")
+            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+            .addOperationCustomizer(apiOrderOperationCustomizer)
+            .build();
+    }
+
+    @Bean
     public GroupedOpenApi etcApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
             .group("ETC API")
             .displayName("기타 API")
-            .pathsToMatch("/api/**", "/saml2/**")
-            .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**")
+            .pathsToMatch("/api/**", "/saml2/**", "/oauth2/**")
+            .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**", "/api/v1/test/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();

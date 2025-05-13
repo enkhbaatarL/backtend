@@ -1,8 +1,7 @@
-package com.sk.domain.admin.controller;
+package com.sk.domain.test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -22,7 +21,6 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
-import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;

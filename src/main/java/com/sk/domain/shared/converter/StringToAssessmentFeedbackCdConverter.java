@@ -16,9 +16,9 @@ public class StringToAssessmentFeedbackCdConverter implements AttributeConverter
     @Override
     public AssessmentFeedbackCd convertToEntityAttribute(String s) {
         if (StringUtils.isEmpty(s)) {
-            return AssessmentFeedbackCd.OTHER;
+            return null;
         }
-        return AssessmentFeedbackCd.valueOf(s);
+        return AssessmentFeedbackCd.of(s);
     }
 
 }
