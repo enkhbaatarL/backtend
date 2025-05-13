@@ -2,6 +2,7 @@ package com.sk.domain.mi.service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -109,15 +110,13 @@ public class MiBulletinBoardService {
                     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
         }
 
-        UploadedFile uploadFile = uploadedFileRepository
+        Optional<UploadedFile> uploadFile = uploadedFileRepository
                 .findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
                         bulletinBoard.getBulletinNo(),
-                        FileRelationshipObjectSeparateCode.BBS.getCode())
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", bulletinBoard.getBulletinNo())));
+                        FileRelationshipObjectSeparateCode.BBS.getCode());
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), bulletinBoard.getBulletinTitleNm(),
-                bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile.getFileNo()) : null);
+                bulletinBoard.getBulletinCntt(), uploadFile.isPresent() ? miFileService.getUrl(uploadFile.get().getFileNo()) : null);
     }
 
     /**
