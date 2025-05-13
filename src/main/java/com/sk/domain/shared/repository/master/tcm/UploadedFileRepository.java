@@ -52,15 +52,15 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
             AND u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
                 """)
-    Optional<UploadedFile> findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
+    UploadedFile findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
             @Param("fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode);
 
     @Query(value = """
-        SELECT u
-        FROM UploadedFile u
-        WHERE u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
-        AND u.isDeleted = false
-        """)
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
+            AND u.isDeleted = false
+            """)
     List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(Integer fileRelationshipObjectDistinguishNo);
 }

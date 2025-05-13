@@ -64,6 +64,21 @@ public class MiFileService {
         }
     }
 
+    public String getUrl(UploadedFile uploadedFile) {
+        if (uploadedFile == null) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 파일이 없습니다.");
+        }
+
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String fileName = getFileName(uploadedFile.getStoragePathNm());
+
+            return miObjectStorageService.getUrl(bucketName, fileName);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+    }
+
     /**
      * URL에서 경로(path) 부분을 "/" 기준으로 분리한 배열을 반환합니다.
      * 예시: "/버킷명/폴더/파일명.jpg" → ["", "버킷명", "폴더", "파일명.jpg"]

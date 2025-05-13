@@ -110,13 +110,13 @@ public class MiBulletinBoardService {
                     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
         }
 
-        Optional<UploadedFile> uploadFile = uploadedFileRepository
+        UploadedFile uploadFile = uploadedFileRepository
                 .findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
                         bulletinBoard.getBulletinNo(),
                         FileRelationshipObjectSeparateCode.BBS.getCode());
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), bulletinBoard.getBulletinTitleNm(),
-                bulletinBoard.getBulletinCntt(), uploadFile.isPresent() ? miFileService.getUrl(uploadFile.get().getFileNo()) : null);
+                bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile) : null);
     }
 
     /**
