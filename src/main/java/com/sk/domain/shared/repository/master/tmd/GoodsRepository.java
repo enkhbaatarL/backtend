@@ -47,67 +47,67 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
               AND g.provider.providerNo = :providerNo
               AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsRes> findGoodsByProviderNoForAdmin(@Param("providerNo") int providerNo, @Param("keyword") String keyword, Pageable pageable);
+    Page<GoodsRes> findGoodsByProviderNo(@Param("providerNo") int providerNo, @Param("keyword") String keyword, Pageable pageable);
 
     // 운영자는 고객사와 맵핑된 상품 목록을 조회한다.
     // 고객사와 프로바이더가 맵핑 되어있는 상품 중에
     // 공개된 상품과
     // 고객사에 맵핑된 비공개 상품을 조회한다.
     // 고객사와 프로바이더가 맵핑 되어있지 않은 상품은 조회하지 않는다.
-    @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
-                g.goodsNo,
-                g.isPublic,
-                g.goodsId,
-                g.goodsNm,
-                g.goodsExpn,
-                count(gd)
-            )
-            FROM Goods g
-            LEFT JOIN GoodsData gd on g = gd.goods
-            WHERE g.isDeleted = false
-              AND g.provider.providerNo = :providerNo
-              AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%')
-                    OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-              AND g.provider IN (
-                    SELECT ccp.provider
-                    FROM CustomerCompanyProviderMapping ccp
-                    WHERE ccp.customerCompany.customerCompanyNo = :customerCompanyNo
-              )
-              AND (
-                    g.isPublic = TRUE
-                    OR (g.isPublic = FALSE AND EXISTS (
-                        SELECT 1 FROM CustomerCompanyGoodsMapping cgm
-                        WHERE cgm.customerCompany.customerCompanyNo = :customerCompanyNo
-                          AND cgm.goods = g
-                    ))
-              )
-            GROUP BY g.goodsNo, g.isPublic, g.goodsNm, g.goodsExpn
-            ORDER BY g.goodsNm ASC, g.goodsExpn ASC
-            """, countQuery = """
-            SELECT COUNT(DISTINCT g.goodsNo)
-            FROM Goods g
-            LEFT JOIN GoodsData gd on g = gd.goods
-            WHERE g.isDeleted = false
-              AND g.provider.providerNo = :providerNo
-              AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%')
-                    OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-              AND g.provider IN (
-                    SELECT ccp.provider
-                    FROM CustomerCompanyProviderMapping ccp
-                    WHERE ccp.customerCompany.customerCompanyNo = :customerCompanyNo
-              )
-              AND (
-                    g.isPublic = TRUE
-                    OR (g.isPublic = FALSE AND EXISTS (
-                        SELECT 1 FROM CustomerCompanyGoodsMapping cgm
-                        WHERE cgm.customerCompany.customerCompanyNo = :customerCompanyNo
-                          AND cgm.goods = g
-                    ))
-              )
-            """)
-    Page<GoodsRes> findGoodsByProviderNoForOperator(@Param("customerCompanyNo") int customerCompanyNo, @Param("providerNo") int providerNo,
-            @Param("keyword") String keyword, Pageable pageable);
+    // @Query(value = """
+    // SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
+    // g.goodsNo,
+    // g.isPublic,
+    // g.goodsId,
+    // g.goodsNm,
+    // g.goodsExpn,
+    // count(gd)
+    // )
+    // FROM Goods g
+    // LEFT JOIN GoodsData gd on g = gd.goods
+    // WHERE g.isDeleted = false
+    // AND g.provider.providerNo = :providerNo
+    // AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+    // OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+    // AND g.provider IN (
+    // SELECT ccp.provider
+    // FROM CustomerCompanyProviderMapping ccp
+    // WHERE ccp.customerCompany.customerCompanyNo = :customerCompanyNo
+    // )
+    // AND (
+    // g.isPublic = TRUE
+    // OR (g.isPublic = FALSE AND EXISTS (
+    // SELECT 1 FROM CustomerCompanyGoodsMapping cgm
+    // WHERE cgm.customerCompany.customerCompanyNo = :customerCompanyNo
+    // AND cgm.goods = g
+    // ))
+    // )
+    // GROUP BY g.goodsNo, g.isPublic, g.goodsNm, g.goodsExpn
+    // ORDER BY g.goodsNm ASC, g.goodsExpn ASC
+    // """, countQuery = """
+    // SELECT COUNT(DISTINCT g.goodsNo)
+    // FROM Goods g
+    // LEFT JOIN GoodsData gd on g = gd.goods
+    // WHERE g.isDeleted = false
+    // AND g.provider.providerNo = :providerNo
+    // AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+    // OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+    // AND g.provider IN (
+    // SELECT ccp.provider
+    // FROM CustomerCompanyProviderMapping ccp
+    // WHERE ccp.customerCompany.customerCompanyNo = :customerCompanyNo
+    // )
+    // AND (
+    // g.isPublic = TRUE
+    // OR (g.isPublic = FALSE AND EXISTS (
+    // SELECT 1 FROM CustomerCompanyGoodsMapping cgm
+    // WHERE cgm.customerCompany.customerCompanyNo = :customerCompanyNo
+    // AND cgm.goods = g
+    // ))
+    // )
+    // """)
+    // Page<GoodsRes> findGoodsByProviderNoForOperator(@Param("customerCompanyNo") int customerCompanyNo, @Param("providerNo") int providerNo,
+    // @Param("keyword") String keyword, Pageable pageable);
 
     //
     @Query(value = """
