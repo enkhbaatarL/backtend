@@ -18,7 +18,6 @@ import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
-import com.sk.domain.shared.enums.ActivationStatus;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
@@ -65,21 +64,6 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
             "pptx");
     private static final long MAX_SIZE = 24 * 1024 * 1024;
-
-    // ADMIN-SKCC
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0NDMDAwQFNLQ0MuY29tIiwiaWF0IjoxNzQ0Mjc0ODcxLCJ1c2VyTm8iOjEwMDAwNDQsImNvbXBhbnlObyI6MjAxMiwiY29tcGFueUNkIjoiU0tDQyIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc4MDI3NDg3MX0.hVm8KPlcTPwjxGtdRr8VH1uIrGFIfIePb_FyVkiquHc
-
-    // OPERATOR-SKHY
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAwQFNLSFkuY29tIiwiaWF0IjoxNzQ0Mjc0OTA0LCJ1c2VyTm8iOjEwMDAwNDUsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkwNH0.T0JZ5XJva9dokRGhDhipWTvlRi92kSO9cUEzpFfXgSk
-
-    // OPERATOR-SKGAS
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMEBTS0dBUy5jb20iLCJpYXQiOjE3NDQyNzQ5MjcsInVzZXJObyI6MTAwMDA1MSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJPUEVSQVRPUiIsImV4cCI6MTc4MDI3NDkyN30.p3BWi9foUIVa2LoG4GF6yBLvyoV-1ZTb7Q2S_JS2U1I
-
-    // USER-SKHY
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0hZMDAxQFNLSFkuY29tIiwiaWF0IjoxNzQ0ODUyODE4LCJ1c2VyTm8iOjEwMDAwNTMsImNvbXBhbnlObyI6MjAxNSwiY29tcGFueUNkIjoiU0tIWSIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MjgxOH0.QVEABqTE7DIwcjRP81FvxKCmThW3ImwveJKFecaiXcA
-
-    // USER-SKGAS
-    // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJTS0dBUzAwMUBTS0dBUy5jb20iLCJpYXQiOjE3NDQ4NTMwMTUsInVzZXJObyI6MTAwMDA4NSwiY29tcGFueU5vIjoyMDE0LCJjb21wYW55Q2QiOiJTS0dBUyIsInJvbGUiOiJVU0VSIiwiaXNPdGhlclNlcnZpY2VBY2Nlc3NQb3NzaWJsZSI6ZmFsc2UsImV4cCI6MTc4MDg1MzAxNX0.WcDDwXHwvXtkSITUeLE18AzFgWkwSCEEvGA_tqmx5X8
 
     /*********************************************************************************************************************
     *
@@ -207,7 +191,7 @@ public class AdminProviderController {
     @GetMapping("/providers/{providerNo}/goods/name")
     public BaseResponse<List<GoodsLiteRes>> getGoodsNames(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-        return BaseResponseFactory.create(goodsService.getGoodsNames(providerNo));
+        return BaseResponseFactory.create(goodsService.getAllGoodsNames(providerNo));
     }
 
     @ApiOrder(8)
@@ -274,7 +258,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.API_SUB_ADMIN})
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN})
     public BaseResponse<String> updateGoods(
             @RequestBody @Valid GoodsUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -355,23 +339,22 @@ public class AdminProviderController {
     // [2025-05-09] 권한 상세 목록 조회 API 추가
     @ApiOrder(15)
     @Parameters({
-        @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
-        @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
-        @Parameter(name = "providerNo", description = "프로바이더 번호"),
-        @Parameter(name = "goodsNo", description = "상품 번호"),
-        @Parameter(name = "companyNm", description = "검색할 고객사 명 (like search)"),
+            @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
+            @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
+            @Parameter(name = "providerNo", description = "프로바이더 번호"),
+            @Parameter(name = "goodsNo", description = "상품 번호"),
+            @Parameter(name = "companyNm", description = "검색할 고객사 명 (like search)"),
     })
     @Operation(summary = "권한 상세 목록 조회 API (with pagination)", description = "해당 상품을 구독하고 있는 회사 목록과 매핑된 권한 내역을 조회합니다. <br>페이지네이션 처리되어 'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/providers/{providerNo}/goods/{goodsNo}/company-permissions")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<PaginationRes<GoodsCompanyPermissionRes>> getCompanyPermissions(
-        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-        @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-        @RequestParam(value = "companyNm", required = false) String companyNm,
-        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo
-    ) {
+            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+            @RequestParam(value = "companyNm", required = false) String companyNm,
+            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
         return BaseResponseFactory.create(goodsDataService.getCompanyPermissions(page, size, providerNo, goodsNo, companyNm));
     }
 

@@ -57,7 +57,7 @@ public class CustomChatbotTalkQnaRepositoryImpl implements CustomChatbotTalkQnaR
                 chatbotTalk.chatbotTalkUuid.eq(talkId),
                 chatbotTalkQna.isDeleted.isFalse()
             )
-            .orderBy(chatbotTalkQna.createDt.desc())
+            .orderBy(chatbotTalkQna.chatbotTalkQnaNo.desc())
             .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory

@@ -7,6 +7,8 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
+import com.sk.domain.mi.dto.request.agent.TalkReq;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.TalkRes;
@@ -44,6 +46,9 @@ public class MiMariAgentController {
      */
 
     @ApiOrder(1)
+    @Parameters({
+        @Parameter(name = "talkId", description = "챗봇대화 ID")
+    })
     @Operation(summary = "주요 질의문 목록 조회 API", description = "분과 별 주요 질의문 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/major-questions")
@@ -87,24 +92,35 @@ public class MiMariAgentController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/talk")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> createConversation(@RequestBody @Valid Object request) {
-        return BaseResponseFactory.create(ResultCode.Success.OK);
-    }
-
-    @ApiOrder(5)
-    @Operation(summary = "대화 QnA 평가 API", description = "Mari 에이전트의 응답을 평가합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/talks/{talkId}/qna/{qnaNo}/assessment")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> evaluateConversation(
-            @PathVariable(value = "talkId") String talkId,
-            @PathVariable(value = "qnaNo") Integer qnaNo,
-            @RequestBody @Valid Object request
+    public BaseResponse<?> createConversation(
+        @RequestBody @Valid TalkReq talkReq,
+        @UserResolve User user
     ) {
         return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 
+    @ApiOrder(5)
+    @Parameters({
+        @Parameter(name = "talkId", description = "챗봇대화 ID"),
+        @Parameter(name = "qnaNo", description = "질의응답 번호")
+    })
+    @Operation(summary = "대화 QnA 평가 API", description = "Mari 에이전트의 응답을 평가합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/talks/{talkId}/qna/{qnaNo}/assessment")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    public BaseResponse<?> patchQnaAssessment(
+            @PathVariable(value = "talkId") String talkId,
+            @PathVariable(value = "qnaNo") Integer qnaNo,
+            @RequestBody @Valid QnaAssessmentReq qnaAssessmentReq
+    ) {
+        return BaseResponseFactory.create(mariAgentService.patchQnaAssessment(talkId, qnaNo, qnaAssessmentReq));
+    }
+
     @ApiOrder(6)
+    @Parameters({
+        @Parameter(name = "talkId", description = "챗봇대화 ID"),
+        @Parameter(name = "qnaNo", description = "질의응답 번호")
+    })
     @Operation(summary = "QnA 답변 생성 재시도 API", description = "대화를 새로고침합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/talks/{talkId}/qna/{qnaNo}/retry")
@@ -112,7 +128,7 @@ public class MiMariAgentController {
     public BaseResponse<?> refreshConversation(
         @PathVariable(value = "talkId") String talkId,
         @PathVariable(value = "qnaNo") Integer qnaNo,
-        @RequestBody @Valid Object request
+        @UserResolve User user
     ) {
         return BaseResponseFactory.create(ResultCode.Success.OK);
     }

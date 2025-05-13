@@ -5,39 +5,39 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     master:
-      jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #      jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: mipapp
-      password: skccmipapp11@@
+      username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
+      password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
       hikari:
         maximum-pool-size: 5
         max-lifetime: 60000
     tenant-datasources:
       SKCC:
-        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: ${SKT_MI_DB_URL_SKCC:jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: mipapp
-        password: skccmipapp11@@
+        username: ${SKT_MI_DB_TODO:mipapp}
+        password: ${SKT_MI_DB_TODO:skccmipapp11@@}
         hikari:
           maximum-pool-size: 5
           max-lifetime: 60000
       SKT:
-        jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: ${SKT_MI_DB_URL_SKT:jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: mipapp
-        password: skccmipapp11@@
+        username: ${SKT_MI_DB_TODO:mipapp}
+        password: ${SKT_MI_DB_TODO:skccmipapp11@@}
         hikari:
           maximum-pool-size: 5
           max-lifetime: 60000
       midb:
-          jdbc-url: jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+          jdbc-url: ${SKT_MI_DB_URL_MIDB:jdbc:mysql://db-32flpe-kr.vpc-pub-cdb.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #          jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
           driver-class-name: com.mysql.cj.jdbc.Driver
-          username: mipapp
-          password: skccmipapp11@@
+          username: ${SKT_MI_DB_TODO:mipapp}
+          password: ${SKT_MI_DB_TODO:skccmipapp11@@}
           hikari:
               maximum-pool-size: 5
               max-lifetime: 60000
@@ -90,7 +90,7 @@ cache:
     time-to-live: 3600s
 
 jwt:
-  secret-key: mysecretmysecretmysecretmysecretmysecretmysecretmysecretmysecretmysecret
+  secret-key: ${SKT_MI_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
   access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
   refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
 
@@ -134,18 +134,13 @@ ncp:
   storage:
     end-point: https://kr.object.ncloudstorage.com
     region-name: kr-standard
-    access-key: ncp_iam_BPASKR5qxBUswjrS1Mks
-    secret-key: ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM
+    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR5qxBUswjrS1Mks}
+    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM}
     bucket-name: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
-  kms:
-    base-uri: https://ocapi.ncloud.com
-    key-tag: 068aab35841c93dac1a936b826e77633da3f0fd65019a764e4ad868dff98487c
-    access-key: ncp_iam_BPAMKRs98YVwEepdOhKb
-    secret-key: ncp_iam_BPKMKRRKYkr1QTOUW8Cw88go1lYEO8iEfL
-
+  
 aes:
-    secret-key: mysecretmysecret
+    secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}
 
 server:
   domain: http://localhost:8080

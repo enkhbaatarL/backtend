@@ -7,6 +7,7 @@ import javax.crypto.SecretKey;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.stereotype.Component;
 
 import com.sk.common.enums.AuthComponent;
@@ -48,12 +49,13 @@ public class JwtUtil {
     // 공통 토큰 빌더 생성 메서드
     private JwtBuilder createTokenBuilder(String subject) {
         return Jwts.builder()
+            .header().type("JWT").and()
             .subject(subject)
             .issuedAt(new Date())
             .signWith(secretKey, Jwts.SIG.HS256); // 명시적으로 HS256 지정
     }
 
-    // 액세스 토큰 생성
+    // 액세스 토큰 생성 (By SAML2 인증 방식)
     public String generateAccessToken(User user) {
         return createTokenBuilder(user.getUserLoginId())
             .claim(Claim.USER_NO.getCode(), user.getUserNo())
@@ -62,6 +64,18 @@ public class JwtUtil {
             .claim(Claim.ROLE.getCode(), user.getUserRoleCd().getCode())
             .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
             .claim(Claim.COMPANY_DOMAIN.getCode(), ObjectUtils.defaultIfNull(user.getCustomerCompany().getCustomerCompanyMipUrl(), miDefaultDomain))
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
+            .compact();
+    }
+
+    // 액세스 토큰 생성 (By Oauth2 client_credentials 인증 방식)
+    // USER_NO, COMPANY_DOMAIN 생략됨
+    public String generateAccessToken(String clientId, RegisteredClient registeredClient) {
+        return createTokenBuilder(clientId)
+            .claim(Claim.COMPANY_NO.getCode(), registeredClient.getClientSettings().getSetting(Claim.COMPANY_NO.getCode())) // 회사번호
+            .claim(Claim.COMPANY_CD.getCode(), registeredClient.getClientSettings().getSetting(Claim.COMPANY_CD.getCode())) // 회사코드
+            .claim(Claim.ROLE.getCode(), registeredClient.getClientSettings().getSetting(Claim.ROLE.getCode()))
+            .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), Boolean.FALSE)
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
             .compact();
     }
@@ -132,7 +146,6 @@ public class JwtUtil {
     // 토큰 유효성 검사 (추가 유틸 메서드)
     public boolean isTokenValid(String token) {
         try {
-            Claims claims = extractClaims(token);
             return !isTokenExpired(token);
         } catch (IllegalArgumentException e) {
             return false;

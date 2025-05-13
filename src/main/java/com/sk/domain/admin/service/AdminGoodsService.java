@@ -43,7 +43,7 @@ public class AdminGoodsService {
      * @param providerNo 프로바이더 번호
      * @return List<GoodsLiteRes>
      */
-    public List<GoodsLiteRes> getGoodsNames(Integer providerNo) {
+    public List<GoodsLiteRes> getAllGoodsNames(Integer providerNo) {
         List<Goods> goods = goodsRepository.findByProvider_ProviderNoAndIsUsedTrueAndIsDeletedFalse(providerNo);
         return GoodsLiteRes.ofList(goods);
     }
@@ -63,22 +63,24 @@ public class AdminGoodsService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        switch (role) {
-            case ADMIN:
-                return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
+        return PaginationRes.toRes(goodsRepository.findGoodsByProviderNo(providerNo, keyword, pageable));
 
-            case OPERATOR:
-                return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
+        // switch (role) {
+        // case ADMIN:
+        // return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
 
-            case API_SUB_ADMIN:
-                return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
+        // case OPERATOR:
+        // return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
 
-            case API_PLUS_OPERATOR:
-                return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
+        // case API_SUB_ADMIN:
+        // return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForAdmin(providerNo, keyword, pageable));
 
-            default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-        }
+        // case API_PLUS_OPERATOR:
+        // return PaginationRes.toRes(goodsRepository.findGoodsByProviderNoForOperator(companyNo, providerNo, keyword, pageable));
+
+        // default:
+        // throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        // }
     }
 
     /**
@@ -120,34 +122,38 @@ public class AdminGoodsService {
     */
     public GoodsDetailRes getGoods(int companyNo, Role role, int providerNo, int goodsNo) {
 
-        switch (role) {
-            case ADMIN:
-                return goodsRepository.findGoodsDetail(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+        return goodsRepository.findGoodsDetail(providerNo, goodsNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-            case OPERATOR:
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
+        // switch (role) {
+        // case ADMIN:
+        // return goodsRepository.findGoodsDetail(providerNo, goodsNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
+        // case OPERATOR:
+        // customerCompanyProviderMappingRepository
+        // .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
 
-                return goodsRepository.findGoodsDetail(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+        // customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
 
-            case API_SUB_ADMIN:
-                return goodsRepository.findGoodsDetail(providerNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+        // return goodsRepository.findGoodsDetail(providerNo, goodsNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-            default:
-                throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
-        }
+        // case API_SUB_ADMIN:
+        // return goodsRepository.findGoodsDetail(providerNo, goodsNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
+
+        // default:
+        // throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        // }
     }
 
     /**
@@ -167,11 +173,13 @@ public class AdminGoodsService {
         if (goods.getIsPublic()) {
             if (role == Role.ADMIN) {
                 goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
-
                 return;
             }
         } else {
-            if (role == Role.OPERATOR) {
+            if (role == Role.ADMIN) {
+                goods.update("", "", "", dto.isUsed(), null);
+                return;
+            } else if (role == Role.OPERATOR) {
                 customerCompanyProviderMappingRepository
                         .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
                         .orElseThrow(
@@ -182,7 +190,6 @@ public class AdminGoodsService {
                                 () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
 
                 goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
-
                 return;
             }
         }

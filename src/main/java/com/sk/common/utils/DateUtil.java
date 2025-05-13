@@ -135,22 +135,6 @@ public final class DateUtil {
         }
     }
 
-    /**
-     * 주어진 Range를 기준으로 (fromDate, toDate) 쌍을 yyyyMMdd 형식 문자열로 반환.
-     * toDate는 현재 날짜, fromDate는 Range만큼 과거 날짜.
-     */
-    public static Pair<String, String> getDateRange(Range range, String customStart, String customEnd) {
-
-        if (range == Range.CUSTOM) {
-            if (customStart == null || customEnd == null) {
-                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "The 'startDate' and 'endDate' are required for the [CUSTOM] range.");
-            }
-            return Pair.of(customStart, customEnd);
-        }
-
-        return getDateRange(range);
-    }
-
     public static Pair<String, String> getDateRange(Range range) {
 
         LocalDate endDate = LocalDate.now();

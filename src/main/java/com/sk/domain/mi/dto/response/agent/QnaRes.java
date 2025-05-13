@@ -8,6 +8,8 @@ import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.util.Optional;
+
 public record QnaRes(
 
     @Schema(description = "질의응답 ID", example = "1004")
@@ -55,7 +57,7 @@ public record QnaRes(
             entity.getAnswerStatusCd(),
             entity.getAnswerStatusCd().getDescription(),
             entity.getAssessmentFeedbackCd(),
-            entity.getAssessmentFeedbackCd().getDescription(),
+            Optional.ofNullable(entity.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null),
             entity.getAssessmentFeedbackCntt(),
             AuditInfo.ofSimple(
                 entity.getCreateUserId(),
@@ -65,7 +67,6 @@ public record QnaRes(
             )
         );
     }
-
 
     @Builder
     public QnaRes(Integer qnaNo, String question, String answer, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd statusCd, String statusNm, AssessmentFeedbackCd feedbackCd, String feedbackNm, String feedbackComment, AuditInfo auditInfo) {
@@ -80,6 +81,10 @@ public record QnaRes(
         this.feedbackNm = feedbackNm;
         this.feedbackComment = feedbackComment;
         this.auditInfo = auditInfo;
+    }
+
+    public static QnaRes of(ChatbotTalkQna qna) {
+        return new QnaRes(qna);
     }
 
 }

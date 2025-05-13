@@ -1,7 +1,10 @@
-package com.sk.domain.admin.service;
+package com.sk.domain.test;
 
+import java.util.Base64;
 import java.util.List;
 
+import com.sk.domain.admin.service.ExcelService;
+import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -58,7 +61,7 @@ public class TestService {
 
     /**
      * 사용자 로그인
-     * 
+     *
      * @param testLoginReq
      * @return
      */
@@ -74,7 +77,7 @@ public class TestService {
 
     /**
      * 관리자 로그인
-     * 
+     *
      * @param testLoginReq
      * @return
      */
@@ -103,7 +106,7 @@ public class TestService {
 
     /**
      * 토큰 검증
-     * 
+     *
      * @param token
      * @return
      */
@@ -146,7 +149,7 @@ public class TestService {
 
     /**
      * 정형 데이터 파일 검수 후 업로드
-     * 
+     *
      * @param file
      * @param testReq
      * @return
@@ -171,5 +174,13 @@ public class TestService {
 
     public FileUploadRes uploadStructuredDataFileTest(MultipartFile file) {
         return null;
+    }
+
+    public String encodeToBase64(byte[] bytesToEncode) {
+        return Base64.getEncoder().encodeToString(bytesToEncode);
+    }
+
+    public byte[] decodeFromBase64(String stringToDecode) {
+        return Base64.getDecoder().decode(stringToDecode);
     }
 }

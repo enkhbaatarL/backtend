@@ -66,7 +66,7 @@ public class MiMarketDataService {
 
     private final UserRepository userRepository;
     private final EntityManager entityManager;
-    private final MiGoodsDataInqueryUserService miGoodsDataInqueryUserService;
+    private final MiGoodsDataInquiryUserService miGoodsDataInquiryUserService;
     private final MarketDataChartSettingRepository marketDataChartSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
@@ -597,6 +597,6 @@ public class MiMarketDataService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "사용자 정보를 찾을 수 없습니다."));
 
-        return miGoodsDataInqueryUserService.getGoodsDataInqueryUser(user.getUserLoginId(), PageRequest.of(0, 5));
+        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
     }
 }

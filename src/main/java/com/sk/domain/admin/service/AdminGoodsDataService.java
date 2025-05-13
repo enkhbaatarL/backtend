@@ -97,17 +97,19 @@ public class AdminGoodsDataService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        switch (role) {
-            case ADMIN, API_SUB_ADMIN:
-                return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
+        return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(providerNo, goodsNo, keyword, pageable));
 
-            case OPERATOR, API_PLUS_OPERATOR:
-                return PaginationRes
-                        .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
+        // switch (role) {
+        // case ADMIN, API_SUB_ADMIN:
+        // return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
 
-            default:
-                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
-        }
+        // case OPERATOR, API_PLUS_OPERATOR:
+        // return PaginationRes
+        // .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
+
+        // default:
+        // throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        // }
     }
 
     /**
@@ -121,7 +123,8 @@ public class AdminGoodsDataService {
      * @return
      */
     public PaginationRes<GoodsCompanyPermissionRes> getCompanyPermissions(int page, int size, Integer providerNo, Integer goodsNo, String companyNm) {
-        return PaginationRes.toRes(customerCompanyGoodsMappingRepository.findByCompanyPermissionsByConditions(page, size, providerNo, goodsNo, companyNm));
+        return PaginationRes
+                .toRes(customerCompanyGoodsMappingRepository.findByCompanyPermissionsByConditions(page, size, providerNo, goodsNo, companyNm));
     }
 
     /**
@@ -162,16 +165,17 @@ public class AdminGoodsDataService {
     */
     public List<GoodsDataNameRes> getAllGoodsDataNm(int companyNo, Role role, int providerNo, int goodsNo) {
 
-        switch (role) {
-            case ADMIN, API_SUB_ADMIN:
-                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
+        return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNo(providerNo, goodsNo);
+        // switch (role) {
+        // case ADMIN, API_SUB_ADMIN:
+        // return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo);
 
-            case OPERATOR, API_PLUS_OPERATOR:
-                return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
+        // case OPERATOR, API_PLUS_OPERATOR:
+        // return goodsDataRepository.findGoodsDataNamesByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo);
 
-            default:
-                throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
-        }
+        // default:
+        // throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        // }
     }
 
     /**

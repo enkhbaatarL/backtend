@@ -14,4 +14,13 @@ public enum AnswerStatusCd {
     private final String code;
     private final String description;
 
+    public static AnswerStatusCd of(String code) {
+        for (AnswerStatusCd status : AnswerStatusCd.values()) {
+            if (status.getCode().equals(code)) {
+                return status;
+            }
+        }
+        return AnswerStatusCd.FAIL;
+    }
+
 }

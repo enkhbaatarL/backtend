@@ -50,40 +50,40 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
             """)
-    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
             @Param("keyword") String keyword, Pageable pageable);
 
-    @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
-                cc.customerCompanyNm,
-                gd.goodsDataNo,
-                gd.goodsDataNm,
-                gd.goodsDataExpn
-            )
-            FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-            WHERE gd.isDeleted = false
-                AND gd.goods.provider.providerNo = :providerNo
-                AND gd.goods.goodsNo = :goodsNo
-                AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
-                  OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-            ORDER BY gd.goodsDataNm ASC
-            """, countQuery = """
-            SELECT COUNT(DISTINCT gd.goodsDataNo)
-            FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-            WHERE gd.isDeleted = false
-                AND gd.goods.provider.providerNo = :providerNo
-                AND gd.goods.goodsNo = :goodsNo
-                AND gd.customerCompany.customerCompanyNo = :customerCompanyNo
-                AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
-                  OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-            """)
-    Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
-            @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
-            @Param("keyword") String keyword, Pageable pageable);
+    // @Query(value = """
+    // SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
+    // cc.customerCompanyNm,
+    // gd.goodsDataNo,
+    // gd.goodsDataNm,
+    // gd.goodsDataExpn
+    // )
+    // FROM GoodsData gd
+    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+    // LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+    // LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+    // WHERE gd.isDeleted = false
+    // AND gd.goods.provider.providerNo = :providerNo
+    // AND gd.goods.goodsNo = :goodsNo
+    // AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+    // OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+    // ORDER BY gd.goodsDataNm ASC
+    // """, countQuery = """
+    // SELECT COUNT(DISTINCT gd.goodsDataNo)
+    // FROM GoodsData gd
+    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+    // WHERE gd.isDeleted = false
+    // AND gd.goods.provider.providerNo = :providerNo
+    // AND gd.goods.goodsNo = :goodsNo
+    // AND gd.customerCompany.customerCompanyNo = :customerCompanyNo
+    // AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
+    // OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+    // """)
+    // Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
+    // @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
+    // @Param("keyword") String keyword, Pageable pageable);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
@@ -102,33 +102,33 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
                         """)
-    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForAdmin(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
-    @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
-            gd.goodsDataNo,
-            gd.goodsDataNm
-            )
-            FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-            WHERE gd.isDeleted = false
-                AND gd.goods.provider.providerNo = :providerNo
-                AND gd.goods.goodsNo = :goodsNo
-            ORDER BY gd.goodsDataNm ASC
-            """, countQuery = """
-            SELECT COUNT(DISTINCT gd.goodsDataNo)
-            FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-            LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-            LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-            WHERE gd.isDeleted = false
-                AND gd.goods.provider.providerNo = :providerNo
-                AND gd.goods.goodsNo = :goodsNo
-              """)
-    List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
-            @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
+    // @Query(value = """
+    // SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
+    // gd.goodsDataNo,
+    // gd.goodsDataNm
+    // )
+    // FROM GoodsData gd
+    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+    // LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+    // LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+    // WHERE gd.isDeleted = false
+    // AND gd.goods.provider.providerNo = :providerNo
+    // AND gd.goods.goodsNo = :goodsNo
+    // ORDER BY gd.goodsDataNm ASC
+    // """, countQuery = """
+    // SELECT COUNT(DISTINCT gd.goodsDataNo)
+    // FROM GoodsData gd
+    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+    // LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
+    // LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
+    // WHERE gd.isDeleted = false
+    // AND gd.goods.provider.providerNo = :providerNo
+    // AND gd.goods.goodsNo = :goodsNo
+    // """)
+    // List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
+    // @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
     @Query(value = """
             SELECT gd
