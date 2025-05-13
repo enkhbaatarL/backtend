@@ -1,15 +1,20 @@
 package com.sk.domain.mi.service;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.TalkRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalk;
+import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tcm.ChatbotMajorQuestionRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,6 +44,18 @@ public class MariAgentService {
 
     public PaginationRes<QnaRes> getTalkQnaList(int page, int size, String talkId, User user) {
         return PaginationRes.toRes(chatbotTalkQnaRepository.findQnaByConditions(page, size, talkId, user));
+    }
+
+    @Transactional
+    public QnaRes patchQnaAssessment(String talkId, Integer qnaNo, QnaAssessmentReq qnaAssessmentReq) {
+
+        ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(qnaNo, talkId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the [qna]. talkId: %s, qnaNo: %s".formatted(talkId, qnaNo)));
+
+        qna.update(qnaAssessmentReq);
+
+        return QnaRes.of(qna);
     }
 
 }

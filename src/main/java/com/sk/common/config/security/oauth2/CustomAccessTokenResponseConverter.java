@@ -2,7 +2,7 @@ package com.sk.common.config.security.oauth2;
 
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.dto.response.OAuth2Res;
+import com.sk.domain.shared.dto.response.OAuth2Res;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;

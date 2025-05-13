@@ -1,8 +1,7 @@
-package com.sk.domain.admin.controller;
+package com.sk.domain.test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -22,11 +21,9 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
-import com.sk.domain.admin.service.TestService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.enums.UserRoleCd;
-import com.sk.domain.shared.service.KmsService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -48,7 +45,6 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
-    private final KmsService kmsService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")

@@ -1,6 +1,7 @@
 package com.sk.domain.shared.entity.master.tcm;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -11,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
@@ -77,6 +79,23 @@ public class ChatbotTalkQna extends BaseEntity {
         this.answerStatusCd = answerStatusCd;
         this.assessmentFeedbackCd = assessmentFeedbackCd;
         this.assessmentFeedbackCntt = assessmentFeedbackCntt;
+    }
+
+    public void update(QnaAssessmentReq dto) {
+
+        if (ObjectUtils.isNotEmpty(dto.isRecommended())) {
+            this.isRecommended = dto.isRecommended();
+            this.isNotRecommended = !dto.isRecommended();
+        }
+
+        if (ObjectUtils.isNotEmpty(dto.feedbackCd())) {
+            this.assessmentFeedbackCd = dto.feedbackCd();
+        }
+
+        if (ObjectUtils.isNotEmpty(dto.feedbackComment()) && AssessmentFeedbackCd.OTHER == dto.feedbackCd()) {
+            this.assessmentFeedbackCntt = dto.feedbackComment();
+        }
+
     }
 
 }

@@ -7,6 +7,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.TalkRes;
@@ -96,12 +97,12 @@ public class MiMariAgentController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/talks/{talkId}/qna/{qnaNo}/assessment")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> evaluateConversation(
+    public BaseResponse<?> patchQnaAssessment(
             @PathVariable(value = "talkId") String talkId,
             @PathVariable(value = "qnaNo") Integer qnaNo,
-            @RequestBody @Valid Object request
+            @RequestBody @Valid QnaAssessmentReq qnaAssessmentReq
     ) {
-        return BaseResponseFactory.create(ResultCode.Success.OK);
+        return BaseResponseFactory.create(mariAgentService.patchQnaAssessment(talkId, qnaNo, qnaAssessmentReq));
     }
 
     @ApiOrder(6)

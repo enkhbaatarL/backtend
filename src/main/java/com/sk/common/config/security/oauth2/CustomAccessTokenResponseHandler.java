@@ -4,7 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.utils.JsonUtil;
-import com.sk.domain.mi.dto.response.OAuth2Res;
+import com.sk.domain.shared.dto.response.OAuth2Res;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;

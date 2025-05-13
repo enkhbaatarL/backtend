@@ -18,7 +18,7 @@ public class StringToAnswerStatusCdConverter implements AttributeConverter<Answe
         if (StringUtils.isEmpty(s)) {
             return AnswerStatusCd.FAIL;
         }
-        return AnswerStatusCd.valueOf(s);
+        return AnswerStatusCd.of(s);
     }
 
 }
