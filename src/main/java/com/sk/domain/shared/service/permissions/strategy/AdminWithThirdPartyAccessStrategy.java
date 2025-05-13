@@ -39,7 +39,7 @@ public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
     }
 
     private Optional<PermissionRes.GoodsAuthRes> getGoodsAuth(Integer goodsNo) {
-        return userService.getAdminGoodsPermissions().companies().stream()
+        return userService.getAccessAdminGoodsPermissions().companies().stream()
             .flatMap(company -> company.providers().stream())
             .flatMap(provider -> provider.goods().stream())
             .filter(goods -> goods.goodsNo().equals(goodsNo))

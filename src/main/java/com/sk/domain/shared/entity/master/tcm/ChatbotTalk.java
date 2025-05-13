@@ -1,8 +1,11 @@
 package com.sk.domain.shared.entity.master.tcm;
 
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.mi.dto.request.agent.TalkReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.User;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -55,5 +58,15 @@ public class ChatbotTalk extends BaseEntity {
         this.finalTalkDt = finalTalkDt;
     }
 
+    public static ChatbotTalk of(TalkReq talkReq, User user) {
+        return ChatbotTalk.builder()
+                .chatbotTalkUuid(talkReq.talkId().toString())
+                .user(user)
+                .talkTitleNm(talkReq.question())
+                .talkFirstQuestionCntt(talkReq.question())
+                .talkBeginDt(DateUtil.currentYmd())
+                .finalTalkDt(DateUtil.currentYmd())
+                .build();
+    }
 }
 

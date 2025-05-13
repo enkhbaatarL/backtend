@@ -14,21 +14,34 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "00. 사용자 API", description = "사용자 API 입니다.")
+@Tag(name = "00. 상품권한 조회 API", description = "상품권한 조회 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/user-info")
+@RequestMapping("/api/v1/mi/goods-info")
 @RequiredArgsConstructor
 public class MiUserController {
 
     private final MiUserService miUserService;
 
-    @Operation(summary = "사용자 상품권한 목록 조회 API", description = "사용자번호를 통해 사용자의 상품권한 목록을 조회합니다.")
+    @Operation(summary = "사용자 상품권한 목록 조회 API", description = "사용자 번호를 통해 사용자의 상품권한 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/user/{userNo}/permissions")
-    public BaseResponse<PermissionRes> getUserGoodsPermissions(
-            @PathVariable(value = "userNo") Integer userNo) {
+    @GetMapping("/users/{userNo}/permissions")
+    public BaseResponse<PermissionRes> getUserGoodsPermissions(@PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(miUserService.getUserGoodsPermissions(userNo));
+    }
+
+    @Operation(summary = "관리자 상품권한 목록 조회 API", description = "타사접속권한이 있는 관리자의 상품권한 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/admin/permissions")
+    public BaseResponse<PermissionRes> getAccessAdminGoodsPermissions() {
+        return BaseResponseFactory.create(miUserService.getAccessAdminGoodsPermissions());
+    }
+
+    @Operation(summary = "운영자 상품권한 목록 조회 API", description = "사용자 번호를 통해 사용자의 상품권한 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/permissions")
+    public BaseResponse<PermissionRes> getPlusOperatorGoodsPermissions(@PathVariable(value = "companyNo") Integer companyNo) {
+        return BaseResponseFactory.create(miUserService.getPlusOperatorGoodsPermissions(companyNo));
     }
 
 }

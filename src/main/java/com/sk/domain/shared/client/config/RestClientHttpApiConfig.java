@@ -1,7 +1,7 @@
 package com.sk.domain.shared.client.config;
 
 import com.sk.common.http.RestClientBuilder;
-import com.sk.domain.shared.client.SampleRequestApi;
+import com.sk.domain.shared.client.ModelAgentApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +12,7 @@ import java.time.Duration;
 public class RestClientHttpApiConfig {
 
     /**
-     * 'SampleRequestApi' Service API config
+     * 'ModelAgent' Service API config
      *
      * @param url            url
      * @param connectTimeout connectTimeout
@@ -20,15 +20,15 @@ public class RestClientHttpApiConfig {
      * @return SampleRequestApi
      */
     @Bean
-    public SampleRequestApi sampleApi(@Value("${api.sample.url:http://localhost:8080}") String url,
-                                      @Value("${api.inference-pipeline.connection-timeout:1s}") Duration connectTimeout,
-                                      @Value("${api.inference-pipeline.read-timeout:10s}") Duration readTimeout) {
+    public ModelAgentApi modelAgentApi(@Value("${api.model-agent.url}") String url,
+                                       @Value("${api.model-agent.connection-timeout:1s}") Duration connectTimeout,
+                                       @Value("${api.model-agent.read-timeout:10s}") Duration readTimeout) {
 
         return new RestClientBuilder()
-                .url(url)
-                .connectionTimeout(connectTimeout)
-                .readTimeout(readTimeout)
-                .build(SampleRequestApi.class);
+            .url(url)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(ModelAgentApi.class);
     }
 
 }

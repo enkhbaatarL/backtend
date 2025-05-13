@@ -105,7 +105,7 @@ logging:
     org.springframework.context: DEBUG
 
 api:
-  sample:
+  model-agent:
     url: http://localhost:8081
     connection-timeout: 1s
     read-timeout: 20s
@@ -140,6 +140,6 @@ ncp:
     secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM}
     bucket-name: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
-  
+
 aes:
   secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}

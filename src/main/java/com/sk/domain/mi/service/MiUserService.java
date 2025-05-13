@@ -28,11 +28,11 @@ public class MiUserService {
      * @param userNo 사용자 번호
      * @return List<GoodsAuthorityRes>
      */
-    // @Cacheable(
-    //     cacheNames = CacheType.PERMISSIONS_CONSTANT,
-    //     key = "#userNo",
-    //     unless = "#result.companies == null || #result.companies.empty"
-    // )
+    @Cacheable(
+        cacheNames = CacheType.PERMISSIONS_CONSTANT,
+        key = "#userNo",
+        unless = "#result.companies == null || #result.companies.empty"
+    )
     public PermissionRes getUserGoodsPermissions(Integer userNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findUserGoodsPermissions(userNo);
 
@@ -44,13 +44,21 @@ public class MiUserService {
         return permissionRes;
     }
 
-    // todo 캐시
-    public PermissionRes getAdminGoodsPermissions() {
+//    @Cacheable(
+//        cacheNames = CacheType.PERMISSIONS_CONSTANT,
+//        key = "'acadmin'",
+//        unless = "#result.companies == null || #result.companies.empty"
+//    )
+    public PermissionRes getAccessAdminGoodsPermissions() {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findAdminGoodsPermissions();
         return PermissionRes.fromAuthorityMappings(goodsMappings);
     }
 
-    // todo 캐시
+//    @Cacheable(
+//        cacheNames = CacheType.PERMISSIONS_CONSTANT,
+//        key = "'company:'+#companyNo",
+//        unless = "#result.companies == null || #result.companies.empty"
+//    )
     public PermissionRes getPlusOperatorGoodsPermissions(Integer companyNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findPlusOperatorGoodsPermissions(companyNo);
         return PermissionRes.fromAuthorityMappings(goodsMappings);
