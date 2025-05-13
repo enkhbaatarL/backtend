@@ -49,7 +49,7 @@ public class MiBulletinBoardController {
     @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice/filter")
-    @RequiredPermission(roles = {Role.ADMIN})
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
     public BaseResponse<NoticeFilterRes> getNoticeFilter() {
 
         return BaseResponseFactory.create(miBulletinBoardService.getNoticeFilter());
@@ -65,7 +65,7 @@ public class MiBulletinBoardController {
     @Operation(summary = "공지사항 목록 조회 - with pagination", description = "공지사항 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notice")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
     public BaseResponse<PaginationRes<MiNoticeRes>> getAllNotices(
             @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
@@ -86,6 +86,7 @@ public class MiBulletinBoardController {
     @Operation(summary = "공지사항 상세 조회", description = "공지사항 1개를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/{noticeNo}")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
     public BaseResponse<MiNoticeDetailRes> getNotice(
             @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
@@ -105,7 +106,7 @@ public class MiBulletinBoardController {
     @Operation(summary = "FAQ 필터 조회", description = "FAQ 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq/filter")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
     public BaseResponse<FaqFilterRes> getFaqFilter() {
 
         return BaseResponseFactory.create(miBulletinBoardService.getFaqFilter());
@@ -121,6 +122,7 @@ public class MiBulletinBoardController {
     @Operation(summary = "FAQ 목록 조회 - with pagination", description = "FAQ 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
     public BaseResponse<PaginationRes<MiFaqRes>> getAllFaq(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
