@@ -102,6 +102,12 @@ public class MiBulletinBoardService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
+        String categoryCode = bulletinBoard.getBulletinCategorySeparateCd();
+        String categoryName = NoticeCategory.getNameByCode(categoryCode);
+        if (categoryName == null) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo));
+        }
+
         if (bulletinBoard.getIsWholePost() == false) {
             BulletinBoardCustomerCompanyMappingId bulletinBoardCustomerCompanyMappingId = new BulletinBoardCustomerCompanyMappingId(noticeNo,
                     companyNo);
@@ -115,7 +121,7 @@ public class MiBulletinBoardService {
                         bulletinBoard.getBulletinNo(),
                         FileRelationshipObjectSeparateCode.BBS.getCode());
 
-        return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), bulletinBoard.getBulletinTitleNm(),
+        return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), categoryName, bulletinBoard.getBulletinTitleNm(),
                 bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile) : null);
     }
 
