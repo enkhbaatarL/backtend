@@ -42,6 +42,8 @@ public interface CustomerCompanyRepository extends JpaRepository<CustomerCompany
 
     Optional<CustomerCompany> findByCustomerCompanyNoAndIsDeletedFalse(Integer customerCompanyNo);
 
+    Optional<CustomerCompany> findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(Integer customerCompanyNo);
+
     Optional<CustomerCompany> findByCustomerCompanyNoAndIsMipManagementCompanyTrueAndIsDeletedFalse(Integer customerCompanyNo);
 
     Optional<CustomerCompany> findByCustomerCompanyCdAndIsMipManagementCompanyFalseAndIsDeletedFalse(String customerCompanyCd);

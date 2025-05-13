@@ -1,7 +1,8 @@
 package com.sk.domain.mi.dto.response.marketData;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
+import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.ChartType;
@@ -11,6 +12,8 @@ import lombok.Builder;
 
 @Builder
 public record MarketMetaData(
+
+        @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
 
         @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
@@ -28,49 +31,22 @@ public record MarketMetaData(
 
         @Schema(description = "간격", example = "1M") String interval,
 
-        @Schema(description = "마지막 업데이트 일시", example = "2021-01-01T00:00:00") LocalDateTime lastUpdatedDt,
+        @Schema(description = "마지막 업데이트 일시", example = "2021-01-01") LocalDate lastUpdateDt,
 
-        @Schema(description = "인덱스 시작일시", example = "2021-01-01T00:00:00") LocalDateTime indexStartDate,
+        @Schema(description = "인덱스 시작일시", example = "2021-01-01") LocalDate indexStartDt,
 
-        @Schema(description = "차트 시작일시", example = "2021-01-01T00:00:00") LocalDateTime chartStartDate,
+        @Schema(description = "수치", example = "95.5") Double lastValue,
 
-        @Schema(description = "차트 종료일시", example = "2021-01-01T00:00:00") LocalDateTime chartEndDate,
+        @Schema(description = "최근 1년 변동률 (YOY)", example = "10.5") Double yoyChangeRate,
 
-        @Schema(description = "수치", example = "95.5") Double value,
+        @Schema(description = "최근 월 변동률 (MOM)", example = "10.5") Double momChangeRate,
 
-        @Schema(description = "최근 1년 변동률", example = "10.5") Double yoyChangeRate,
+        @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate) {
 
-        @Schema(description = "최근 월 변동률", example = "10.5") Double momChangeRate,
-
-        @Schema(description = "최근 주 변동률", example = "10.5") Double wowChangeRate) {
-
-    @Builder
-    public MarketMetaData(Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm, String goodsDataSourceNm, String currency,
-            String currentUnitCd, ChartType visibleChartType, String interval, LocalDateTime lastUpdatedDt, LocalDateTime indexStartDate,
-            LocalDateTime chartStartDate, LocalDateTime chartEndDate, Double value, Double yoyChangeRate, Double momChangeRate,
-            Double wowChangeRate) {
-        this.goodsDataNo = goodsDataNo;
-        this.goodsDataSourceNo = goodsDataSourceNo;
-        this.goodsDataNm = goodsDataNm;
-        this.goodsDataSourceNm = goodsDataSourceNm;
-        this.currency = currency;
-        this.currentUnitCd = currentUnitCd;
-        this.visibleChartType = visibleChartType;
-        this.interval = interval;
-        this.lastUpdatedDt = lastUpdatedDt;
-        this.indexStartDate = indexStartDate;
-        this.chartStartDate = chartStartDate;
-        this.chartEndDate = chartEndDate;
-        this.value = value;
-        this.yoyChangeRate = yoyChangeRate;
-        this.momChangeRate = momChangeRate;
-        this.wowChangeRate = wowChangeRate;
-    }
-
-    public static MarketMetaData of(GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String interval, LocalDateTime lastUpdatedDt,
-            LocalDateTime indexStartDate, LocalDateTime chartStartDate, LocalDateTime chartEndDate, Double value, Double yoyChangeRate,
-            Double momChangeRate, Double wowChangeRate) {
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, ChangeRatesRes changeRates, String interval,
+            LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
+                .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataNm(goodsData.getGoodsDataNm())
@@ -79,14 +55,18 @@ public record MarketMetaData(
                 .currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
                 .visibleChartType(ChartType.LINE)
                 .interval(interval)
-                .lastUpdatedDt(lastUpdatedDt)
-                .indexStartDate(indexStartDate)
-                .chartStartDate(chartStartDate)
-                .chartEndDate(chartEndDate)
-                .value(value)
-                .yoyChangeRate(yoyChangeRate)
-                .momChangeRate(momChangeRate)
-                .wowChangeRate(wowChangeRate)
+                .lastUpdateDt(lastUpdateDt)
+                .indexStartDt(indexStartDt)
+                .lastValue(lastValue)
+                .yoyChangeRate(changeRates.yoyChangeRate())
+                .momChangeRate(changeRates.momChangeRate())
+                .wowChangeRate(changeRates.wowChangeRate())
+                .build();
+    }
+
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting) {
+        return MarketMetaData.builder()
+                .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .build();
     }
 }
