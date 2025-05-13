@@ -3,6 +3,7 @@ package com.sk.common.utils;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -20,6 +21,8 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final DateTimeFormatter YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static final DateTimeFormatter YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter ISO_LOCAL_DATE_TIME_MINUTES = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    public static final DateTimeFormatter YYYYMM = DateTimeFormatter.ofPattern("yyyyMM");
 
     private DateUtil() {
     }
@@ -29,6 +32,13 @@ public final class DateUtil {
      */
     public static String toYmd(LocalDate date) {
         return date == null ? null : date.format(YYYYMMDD);
+    }
+
+    /**
+     * LocalDate를 "yyyy-MM-dd" 문자열로 변환
+     */
+    public static String toYmdHyphen(LocalDate date) {
+        return date == null ? null : date.format(YYYY_MM_DD);
     }
 
     /**
@@ -165,6 +175,27 @@ public final class DateUtil {
      */
     public static String endYmd() {
         return "99991231";
+    }
+
+    /**
+     * ISO 형식의 날짜 문자열을 LocalDate로 변환
+     */
+    public static LocalDate fromIsoToLocalDate(String dateStr) {
+        return dateStr == null ? null : LocalDateTime.parse(dateStr, ISO_LOCAL_DATE_TIME_MINUTES).toLocalDate();
+    }
+
+    /**
+     * LocalDate를 "yyyyMMdd" 문자열로 변환
+     */
+    public static String toIso(LocalDate date) {
+        return date == null ? null : date.atTime(LocalTime.MIDNIGHT).format(ISO_LOCAL_DATE_TIME_MINUTES);
+    }
+
+    /**
+     * LocalDateTime을 "yyyyMM" 문자열로 변환
+     */
+    public static String toYearMonth(LocalDateTime dateTime) {
+        return dateTime == null ? null : dateTime.format(YYYYMM);
     }
 
 }
