@@ -76,7 +76,7 @@ public class MiMarketDataService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
     private final MiUserService miUserService;
-    
+
     public List<MiMarketDataRes> getMarketDatas(Integer customerCompanyNo, Authentication authentication) {
         String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE)); // 2년 전
 
@@ -94,7 +94,7 @@ public class MiMarketDataService {
                 Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
                 yield miUserService.getUserGoodsPermissions(userNo);
             }
-            case ADMIN, API_SUB_ADMIN -> miUserService.getAdminGoodsPermissions();
+            case ADMIN, API_SUB_ADMIN -> miUserService.getAccessAdminGoodsPermissions();
             case API_PLUS_OPERATOR -> {
                 Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
                 yield miUserService.getPlusOperatorGoodsPermissions(companyNo);
@@ -219,7 +219,7 @@ public class MiMarketDataService {
 
     /**
      * Index Start Date 데이터 조회
-     * 
+     *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
@@ -238,7 +238,7 @@ public class MiMarketDataService {
 
     /**
      * 월별 평균 계산 및 DTO 생성
-     * 
+     *
      * @param rawData 원시 데이터
      * @param dateColumnName 날짜 컬럼명
      * @param defaultDataColumnName 기본 데이터 컬럼명
@@ -375,7 +375,7 @@ public class MiMarketDataService {
 
     /**
      * 기간 변화율 계산
-     * 
+     *
      * @param rawData 원시 데이터
      * @param dateColumnName 날짜 컬럼명
      * @param defaultDataColumnName 기본 데이터 컬럼명
@@ -429,7 +429,7 @@ public class MiMarketDataService {
 
     /**
      * 기간 변화율 계산
-     * 
+     *
      * @param rawData 원시 데이터
      * @param dateColumnName 날짜 컬럼명
      * @param defaultDataColumnName 기본 데이터 컬럼명

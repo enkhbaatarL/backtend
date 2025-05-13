@@ -4,9 +4,12 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
+import com.sk.domain.mi.dto.request.agent.TalkReq;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.TalkRes;
+import com.sk.domain.shared.client.ModelAgentApi;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalk;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
@@ -26,6 +29,8 @@ import java.util.List;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MariAgentService {
+
+    private final ModelAgentApi modelAgentApi;
 
     private final ChatbotTalkRepository chatbotTalkRepository;
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
@@ -83,6 +88,42 @@ public class MariAgentService {
         qna.update(qnaAssessmentReq);
 
         return QnaRes.of(qna);
+    }
+
+    @Transactional
+    public Object postQna(TalkReq talkReq, User user) {
+
+        ChatbotTalk talk = chatbotTalkRepository
+            .findByChatbotTalkUuidAndIsDeletedFalse(talkReq.talkId().toString())
+            .orElseGet(() -> chatbotTalkRepository.save(ChatbotTalk.of(talkReq, user)));
+
+        ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
+
+        // 모델 에이전트 질의
+        executeModelAgent(qna);
+
+        return null;
+    }
+
+    @Transactional
+    public Object postQnaRetry(String talkId, Integer qnaNo, User user) {
+
+        ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(qnaNo, talkId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. talkId: %s, qnaNo: %s".formatted(talkId, qnaNo)));
+
+        // 모델 에이전트 질의
+        executeModelAgent(qna);
+
+        return null;
+    }
+
+    private void executeModelAgent(ChatbotTalkQna qna) {
+        try {
+            ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getUserQuestionCntt());
+            qna.updateResult(modelAgentRes);
+        } catch (Exception e) {
+            qna.updateResult();
+        }
     }
 
 }
