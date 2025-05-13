@@ -1,5 +1,6 @@
 package com.sk.domain.admin.service;
 
+import java.util.Base64;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -171,5 +172,13 @@ public class TestService {
 
     public FileUploadRes uploadStructuredDataFileTest(MultipartFile file) {
         return null;
+    }
+
+    public String encodeToBase64(byte[] bytesToEncode) {
+        return Base64.getEncoder().encodeToString(bytesToEncode);
+    }
+
+    public byte[] decodeFromBase64(String stringToDecode) {
+        return Base64.getDecoder().decode(stringToDecode);
     }
 }

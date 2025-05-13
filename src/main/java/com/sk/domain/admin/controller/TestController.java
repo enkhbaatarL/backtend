@@ -200,4 +200,13 @@ public class TestController {
         return "OK";
     }
 
+    @GetMapping("/encodeToBase64")
+    public String encodeToBase64(@RequestParam("plaintext") String plaintext) {
+        return testService.encodeToBase64(plaintext.getBytes());
+    }
+
+    @GetMapping("/decodeFromBase64")
+    public String decodeFromBase64(@RequestParam("ciphertext") String ciphertext) {
+        return new String(testService.decodeFromBase64(ciphertext));
+    }
 }
