@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,10 +39,12 @@ import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
+import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.enums.Claim;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.MarketDataChartSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
@@ -72,38 +76,47 @@ public class MiMarketDataService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
     private final MiUserService miUserService;
-    public List<MiMarketDataRes> getMarketDatas(Integer customerCompanyNo, User user) {
+    
+    public List<MiMarketDataRes> getMarketDatas(Integer customerCompanyNo, Authentication authentication) {
         String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE)); // 2년 전
 
-        CustomerCompany customerCompany = customerCompanyRepository.findById(customerCompanyNo)
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
 
-        // 유저별 권한 조회
-        // PermissionRes permissionRes;
-        // if (user.getUserRoleCd() == UserRoleCd.ADMIN) {
-        //     // 관리자 권한
-        //     permissionRes = miUserService.getAdminGoodsPermissions();
-        // } else if (user.getUserRoleCd() == UserRoleCd.USER) {
-        //     // 사용자 권한
-        //     permissionRes = miUserService.getUserGoodsPermissions(user.getUserNo());
-        // } else {
-        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        // }
+        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        }
+        Role role =  Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+
+        // 권한 조회
+        PermissionRes permissionRes = switch (role) {
+            case USER -> {
+                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+                yield miUserService.getUserGoodsPermissions(userNo);
+            }
+            case ADMIN, API_SUB_ADMIN -> miUserService.getAdminGoodsPermissions();
+            case API_PLUS_OPERATOR -> {
+                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+                yield miUserService.getPlusOperatorGoodsPermissions(companyNo);
+            }
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        };
 
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
         List<MiMarketDataRes> miMarketDataResponses = new ArrayList<>();
         for (MarketDataChartSetting marketDataChartSetting : marketDataChartSettings) {
-            // Boolean isPermitted = permissionRes.getPermittedGoods().contains(goodsData.getGoodsDataNo());
-
-            // if (!isPermitted) {
-            // miMarketDataResponses.add(MiMarketDataRes.of(isPermitted));
-            // continue;
-            // }
-
             GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
             GoodsData mainGoodsData = marketDataChartSetting.getGoodsDataSourceDetail().getGoodsData();
+            Goods mainGoods = mainGoodsData.getGoods();
+
+            // 권한 조회
+            Boolean isPermitted = permissionRes.getGoodsViewableMap().get(mainGoods.getGoodsNo());
+            if (!isPermitted) {
+                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
+                continue;
+            }
 
             // 칼럼 목록 조회
             String[] tableColumnListNm = mainGoodsDataSource.getTableColumnListNm().split(",");
@@ -116,8 +129,8 @@ public class MiMarketDataService {
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE);
 
             if (rawData.isEmpty()) {
-                Boolean isPermitted = false;
-                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted));
+                isPermitted = false;
+                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
                 continue;
             }
 
@@ -173,7 +186,7 @@ public class MiMarketDataService {
                 }
             }
 
-            MarketMetaData marketMetaData = MarketMetaData.of(mainGoodsData, mainGoodsDataSource, changeRates, MARKET_DATA_INTERVAL, indexStartDate,
+            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, changeRates, MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
             miMarketDataResponses.add(MiMarketDataRes.of(true, marketMetaData, mainGraph, compareGraphs));

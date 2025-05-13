@@ -77,11 +77,11 @@ public class NymexGasolineEnergy extends BaseEntity {
 
     @Column(name = "totcntrvol", precision = 15, scale = 4)
     @Comment("상품계약총거래량")
-    private BigDecimal totCntrVol;
+    private Integer totCntrVol;
 
     @Column(name = "totcntroi", precision = 15, scale = 4)
     @Comment("상품계약총미결제약금액")
-    private BigDecimal totCntrOi;
+    private Integer totCntrOi;
 
     @Column(name = "settle", precision = 15, scale = 4)
     @Comment("정산가격")

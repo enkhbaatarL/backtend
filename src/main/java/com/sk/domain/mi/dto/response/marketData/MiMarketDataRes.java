@@ -16,9 +16,10 @@ public record MiMarketDataRes(
 
         @Schema(description = "비교 그래프") List<MarketDataGraphRes> compareGraphs) {
 
-    public static MiMarketDataRes of(Boolean isPermitted) {
+    public static MiMarketDataRes of(Boolean isPermitted, MarketMetaData marketMetaData) {
         return MiMarketDataRes.builder()
                 .isPermitted(isPermitted)
+                .marketMetaData(marketMetaData)
                 .build();
     }
 

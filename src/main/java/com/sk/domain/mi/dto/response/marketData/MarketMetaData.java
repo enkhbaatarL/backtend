@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.marketData;
 
 import java.time.LocalDate;
 
+import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.ChartType;
@@ -11,6 +12,8 @@ import lombok.Builder;
 
 @Builder
 public record MarketMetaData(
+
+        @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
 
         @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
@@ -40,9 +43,10 @@ public record MarketMetaData(
 
         @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate) {
 
-    public static MarketMetaData of(GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, ChangeRatesRes changeRates, String interval,
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, ChangeRatesRes changeRates, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
+                .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataNm(goodsData.getGoodsDataNm())
@@ -57,6 +61,12 @@ public record MarketMetaData(
                 .yoyChangeRate(changeRates.yoyChangeRate())
                 .momChangeRate(changeRates.momChangeRate())
                 .wowChangeRate(changeRates.wowChangeRate())
+                .build();
+    }
+
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting) {
+        return MarketMetaData.builder()
+                .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .build();
     }
 }

@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,11 +47,11 @@ public class MiMarketDataController {
     })
     @Operation(summary = "마켓 데이터 조회 API", description = "마켓 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "마켓 데이터 조회 성공")
-    // @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY, companyParam = "customerCompanyNo")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     @GetMapping("/company/{customerCompanyNo}/market-datas")
     public BaseResponse<List<MiMarketDataRes>> getMarketDatas(@PathVariable("customerCompanyNo") Integer customerCompanyNo,
-            @UserResolve User user) {
-        return BaseResponseFactory.create(miMarketDataService.getMarketDatas(customerCompanyNo, user));
+            Authentication authentication) {
+        return BaseResponseFactory.create(miMarketDataService.getMarketDatas(customerCompanyNo, authentication));
     }
 
     @ApiOrder(2)

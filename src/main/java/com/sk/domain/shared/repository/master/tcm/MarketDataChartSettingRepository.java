@@ -11,7 +11,7 @@ import com.sk.domain.shared.repository.master.tcm.custom.CustomMarketDataChartSe
 
 public interface MarketDataChartSettingRepository extends JpaRepository<MarketDataChartSetting, Integer>, CustomMarketDataChartSettingRepository {
 
-    @EntityGraph(attributePaths = {"goodsDataSourceDetail", "goodsDataSourceDetail.goodsData"})
+    @EntityGraph(attributePaths = {"goodsDataSourceDetail", "goodsDataSourceDetail.goodsData", "goodsDataSourceDetail.goodsData.goods"})
     List<MarketDataChartSetting> findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(
             CustomerCompany customerCompany);
 }

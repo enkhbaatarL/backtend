@@ -9,8 +9,6 @@ import java.time.format.DateTimeParseException;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.enums.chart.Range;
 
 /**
