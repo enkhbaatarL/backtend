@@ -10,9 +10,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum NoticeCategory {
 
-    CATEGORY1("CATEGORY1", "카테고리1"), 
-    CATEGORY2("CATEGORY2", "카테고리2"),
-    CATEGORY3("CATEGORY3", "카테고리3");
+    CATEGORY1("CATEGORY1", "시스템"), 
+    CATEGORY2("CATEGORY2", "데이터"),
+    CATEGORY3("CATEGORY3", "일반"),
+    CATEGORY4("CATEGORY3", "기타");
 
   private final String code;
   private final String name;
