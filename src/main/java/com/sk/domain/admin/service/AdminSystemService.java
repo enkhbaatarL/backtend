@@ -31,28 +31,27 @@ public class AdminSystemService {
     private final ClientAccessInfoValidator clientAccessInfoValidator;
 
     /**
-     * 클라이언트 접근권한 목록을 조회한다.
-     * - Sort : createDt DESC
+     * 클라이언트 접근권한 목록을 조회합니다.
+     * - 정렬 기준: 생성일자(createDt) 내림차순으로 정렬됩니다.
      *
-     * @param page          조회할 페이지 번호 (min 1)
-     * @param size          조회할 요소 사이즈 (min 1)
-     * @return List<ClientAccessInfoRes>
+     * @param page 조회할 페이지 번호 (최소값: 1)
+     * @param size 조회할 요소 개수 (최소값: 1)
+     * @return 클라이언트 접근권한 정보 목록을 포함한 PaginationRes
      */
     public PaginationRes<ClientAccessInfoRes> getClientAccessInfos(int page, int size) {
         return PaginationRes.toRes(clientAccessInfoRepository.findClientInfoByConditions(page, size));
     }
 
     /**
-     * 클라이언트 접근권한을 등록합니다.
+     * 새 클라이언트 접근권한을 등록합니다.
      *
-     * @param dto ClientAccessInfoReq.Insert
-     * @return ClientAccessInfoRes
+     * @param dto 클라이언트 접근권한 정보를 포함하는 요청 데이터 (ClientAccessInfoReq.Insert)
+     * @return 등록된 클라이언트 접근권한 정보 (ClientAccessInfoRes)
      */
     @Transactional
     public ClientAccessInfoRes postClientAccessInfo(ClientAccessInfoReq.Insert dto) {
 
-        ValidationResult<CustomerCompany> companyValid = companyValidator.ensureCompanyExistsByCompanyNo(dto.customerCompanyNo());
-        CustomerCompany customerCompany = companyValid.getOrThrow();
+        CustomerCompany customerCompany = companyValidator.ensureCompanyExistsByCompanyNo(dto.customerCompanyNo()).getOrThrow();
 
         String clientSecret = AESUtil.generateSecret();
         String encryptedClientSecret = AESUtil.encrypt(clientSecret, secretKey);
@@ -64,10 +63,10 @@ public class AdminSystemService {
     }
 
     /**
-     * 클라이언트 Secret-Key 재발급 합니다.
+     * 클라이언트 Secret-Key를 재발급합니다.
      *
-     * @param clientAccessRegNo 클라이언트 접속 등록 번호
-     * @return ClientAccessInfoRes
+     * @param clientAccessRegNo 클라이언트 접속 등록 번호 (고유 식별자)
+     * @return 재발급된 Secret-Key 및 클라이언트 접근권한 정보 (ClientAccessInfoRes)
      */
     @Transactional
     public ClientAccessInfoRes patchClientAccessInfo(Integer clientAccessRegNo) {
@@ -86,10 +85,10 @@ public class AdminSystemService {
 
 
     /**
-     * 클라이언트 접근권한을 삭제합니다.
+     * 클라이언트 접근권한 정보를 삭제(소프트 삭제)합니다.
      *
-     * @param clientAccessRegNo 클라이언트 접속 등록번호
-     * @return ClientAccessInfoRes
+     * @param clientAccessRegNo 클라이언트 접속 등록 번호
+     * @return 삭제된 상태의 클라이언트 접근권한 정보 (ClientAccessInfoRes)
      */
     @Transactional
     public ClientAccessInfoRes deleteClientAccessInfo(Integer clientAccessRegNo) {
@@ -104,10 +103,10 @@ public class AdminSystemService {
     }
 
     /**
-     * 복호화된 클라이언트 Secret-Key를 조회
+     * 복호화된 클라이언트 Secret-Key 값을 조회합니다.
      *
-     * @param clientAccessRegNo 클라이언트 접속 등록 번호
-     * @return String
+     * @param clientAccessRegNo 클라이언트 접속 등록 번호 (고유 식별자)
+     * @return 복호화된 Secret-Key를 포함한 응답 객체 (ClientAccessSecretRes)
      */
     public ClientAccessSecretRes getClientAccessInfoSecret(Integer clientAccessRegNo) {
 

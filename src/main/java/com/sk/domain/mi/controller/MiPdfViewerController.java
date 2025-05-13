@@ -2,10 +2,12 @@ package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.PdfMetadataRes;
 import com.sk.domain.mi.service.MiPdfService;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,12 +66,13 @@ public class MiPdfViewerController {
     )
     public ResponseEntity<byte[]> getImagePageFromPdf(
         @PathVariable(value = "fileNo") Long fileNo,
-        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @UserResolve User user
     ) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
 
-        byte[] imageBytes = pdfService.getImagePageFromPdf(fileNo, page);
+        byte[] imageBytes = pdfService.getImagePageFromPdf(fileNo, page, user);
 
         return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
     }

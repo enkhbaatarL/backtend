@@ -14,7 +14,6 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tcm.ChatbotMajorQuestionRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,26 +31,54 @@ public class MariAgentService {
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
 
+    /**
+     * 주어진 분과 코드로 필터링된 주요 질의문 목록을 조회합니다.
+     *
+     * @param subcommitteeCd 분과 코드
+     * @return 주요 질의문 목록
+     */
     public List<MajorQuestionRes> getMajorQuestions(String subcommitteeCd) {
         List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository.findByCompanySubcommitteeSeparateCdAndIsDeletedFalseOrderByMajorQuestionRnk(subcommitteeCd);
         return MajorQuestionRes.ofList(majorQuestions);
     }
 
+    /**
+     * 특정 사용자의 챗봇 대화 목록을 최신순으로 조회합니다.
+     *
+     * @param user 사용자 객체
+     * @return 대화 목록
+     */
     public List<TalkRes> getTalks(User user) {
         List<ChatbotTalk> chatbotTalks = chatbotTalkRepository.findByUserAndIsDeletedFalseOrderByCreateDtDesc(user);
         return TalkRes.ofList(chatbotTalks);
     }
 
+    /**
+     * 사용자의 챗봇 대화 Q&A 목록을 페이지네이션으로 조회합니다.
+     *
+     * @param page   페이지 번호
+     * @param size   페이지 당 항목 수
+     * @param talkId 챗봇 대화 ID
+     * @param user   사용자 객체
+     * @return 페이지네이션 처리된 Q&A 응답
+     */
     public PaginationRes<QnaRes> getTalkQnaList(int page, int size, String talkId, User user) {
         return PaginationRes.toRes(chatbotTalkQnaRepository.findQnaByConditions(page, size, talkId, user));
     }
 
+    /**
+     * 챗봇 Q&A의 평가 정보를 업데이트합니다.
+     *
+     * @param talkId           챗봇 대화 ID
+     * @param qnaNo            Q&A 번호
+     * @param qnaAssessmentReq 업데이트할 평가 요청 객체
+     * @return 업데이트된 Q&A 응답 객체
+     */
     @Transactional
     public QnaRes patchQnaAssessment(String talkId, Integer qnaNo, QnaAssessmentReq qnaAssessmentReq) {
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(qnaNo, talkId)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [qna]. talkId: %s, qnaNo: %s".formatted(talkId, qnaNo)));
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. talkId: %s, qnaNo: %s".formatted(talkId, qnaNo)));
 
         qna.update(qnaAssessmentReq);
 
