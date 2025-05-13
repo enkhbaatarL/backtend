@@ -191,7 +191,7 @@ public class AdminProviderController {
     @GetMapping("/providers/{providerNo}/goods/name")
     public BaseResponse<List<GoodsLiteRes>> getGoodsNames(
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo) {
-        return BaseResponseFactory.create(goodsService.getGoodsNames(providerNo));
+        return BaseResponseFactory.create(goodsService.getAllGoodsNames(providerNo));
     }
 
     @ApiOrder(8)
