@@ -31,10 +31,10 @@ public class PermissionAspect {
     private final GoodsNestedEntityResolver goodsNestedEntityResolver;
 
     /**
-     * Performs a permission check for methods annotated with @RequiredPermission.
+     * 주어진 @RequiredPermission 어노테이션을 기반으로 메서드 접근 권한을 검사합니다.
      *
-     * @param joinPoint          The join point representing the intercepted method call.
-     * @param requiredPermission The @RequiredPermission annotation specifying the required permissions.
+     * @param joinPoint          호출된 메서드의 실행 시점 정보를 포함합니다.
+     * @param requiredPermission 메서드에 요구되는 권한 정보입니다.
      */
     @Before("@annotation(requiredPermission)")
     public void checkPermission(JoinPoint joinPoint, RequiredPermission requiredPermission) {
@@ -46,14 +46,8 @@ public class PermissionAspect {
         PermissionStrategy strategy = strategyFactory.getStrategy(condition);
 
         List<String> allowedRoleCode = Arrays.stream(roles)
-            .map(role -> {
-                if (role == Role.ADMIN && condition == PermissionCondition.THIRD_PARTY_ADMIN_ONLY) {
-                    return "%s(%s)".formatted(role.getCode(), condition);
-                } else {
-                    return "%s" .formatted(role.getCode());
-                }
-            })
-            .toList();
+            .map(role -> (role == Role.ADMIN && condition == PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+                ? "%s(%s)".formatted(role.getCode(), condition) : role.getCode()).toList();
 
         // 1. API 접근 가능 여부 체크
         if (BooleanUtils.isFalse(strategy.canAccessApi(roles, condition))) {
@@ -93,17 +87,32 @@ public class PermissionAspect {
         }
     }
 
-    private void checkViewOrDownload(PermissionStrategy strat, Integer goodsNo, RequiredPermission rp) {
+    /**
+     * 주어진 상품 번호(goodsNo)에 대해 보기(View) 또는 다운로드(Download) 권한을 확인합니다.
+     *
+     * @param strategy   권한 확인에 사용할 PermissionStrategy 객체입니다.
+     * @param goodsNo 확인할 상품의 식별자 번호입니다.
+     * @param rp      권한 확인 조건을 제공하는 RequiredPermission 객체입니다.
+     */
+    private void checkViewOrDownload(PermissionStrategy strategy, Integer goodsNo, RequiredPermission rp) {
         // [VIEW] 권한 체크
-        if (rp.requireViewPermission() && BooleanUtils.isFalse(strat.canViewGoods(goodsNo))) {
+        if (rp.requireViewPermission() && BooleanUtils.isFalse(strategy.canViewGoods(goodsNo))) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsNo: %s)".formatted(goodsNo));
         }
         // [DOWNLOAD] 권한 체크
-        if (rp.requireDownloadPermission() && BooleanUtils.isFalse(strat.canDownloadGoods(goodsNo))) {
+        if (rp.requireDownloadPermission() && BooleanUtils.isFalse(strategy.canDownloadGoods(goodsNo))) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'DOWNLOAD' the goods(goodsNo: %s)".formatted(goodsNo));
         }
     }
 
+    /**
+     * 메서드 호출 시 전달된 매개변수 중 지정된 이름(paramName)을 가진 값을 추출합니다.
+     *
+     * @param joinPoint 호출된 메서드의 실행 시점 정보를 포함합니다.
+     * @param paramName 추출하려는 매개변수의 이름입니다.
+     * @param <T>       반환값의 타입입니다.
+     * @return 주어진 paramName에 해당하는 매개변수 값. 값이 없으면 null을 반환합니다.
+     */
     @SuppressWarnings("unchecked")
     private <T> T extractParameterValue(JoinPoint joinPoint, String paramName) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();

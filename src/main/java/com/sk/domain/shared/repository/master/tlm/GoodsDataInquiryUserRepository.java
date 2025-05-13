@@ -1,17 +1,16 @@
 package com.sk.domain.shared.repository.master.tlm;
 
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
-import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInqueryUserId;
-import com.sk.domain.shared.entity.master.tlm.GoodsDataInqueryUser;
-
-import java.util.List;
-
+import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInquiryUserId;
+import com.sk.domain.shared.entity.master.tlm.GoodsDataInquiryUser;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface GoodsDataInqueryUserRepository extends JpaRepository<GoodsDataInqueryUser, GoodsDataInqueryUserId> {
+import java.util.List;
+
+public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataInquiryUser, GoodsDataInquiryUserId> {
 
     @Query(value = """
                 SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
@@ -25,7 +24,7 @@ public interface GoodsDataInqueryUserRepository extends JpaRepository<GoodsDataI
                     gd.modifyDt
                 ),
                 FUNCTION('MAX',gdiu.createDt) as createDt
-                FROM GoodsDataInqueryUser gdiu
+                FROM GoodsDataInquiryUser gdiu
                 LEFT JOIN GoodsData gd ON gd.goodsDataNo = gdiu.id.goodsData.goodsDataNo
                 LEFT JOIN Goods g ON g = gdiu.id.goodsData.goods
                 LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
