@@ -20,7 +20,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Profile({"local", "dev"})
+@Profile({"local", "tech", "dev"})
 @Configuration
 @RequiredArgsConstructor
 public class SwaggerConfig {
@@ -28,61 +28,64 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-            .addSecurityItem(new SecurityRequirement().addList("BearerAuth"))
-            .components(new Components().addSecuritySchemes("BearerAuth",
-                new SecurityScheme()
-                    .type(Type.HTTP)
-                    .scheme("bearer")
-                    .bearerFormat("JWT")
-            ))
-            .info(new Info().title("Backend API Docs")
-                .description("MI Platform API Docs")
-                .version("1.0"));
+                .addSecurityItem(new SecurityRequirement().addList("BearerAuth"))
+                .components(new Components().addSecuritySchemes("BearerAuth",
+                        new SecurityScheme()
+                                .type(Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")))
+                .info(new Info().title("Backend API Docs")
+                        .description("MI Platform API Docs")
+                        .version("1.0"));
     }
 
     @Bean
-    public GroupedOpenApi miApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi miApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+            @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
-            .group("MI API")
-            .displayName("MI 서비스 API")
-            .pathsToMatch("/api/v1/mi/**")
-            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
-            .addOperationCustomizer(apiOrderOperationCustomizer)
-            .build();
+                .group("MI API")
+                .displayName("MI 서비스 API")
+                .pathsToMatch("/api/v1/mi/**")
+                .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+                .addOperationCustomizer(apiOrderOperationCustomizer)
+                .build();
     }
 
     @Bean
-    public GroupedOpenApi adminApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi adminApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+            @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
-            .group("ADMIN API")
-            .displayName("관리자 API")
-            .pathsToMatch("/api/v1/admin/**")
-            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
-            .addOperationCustomizer(apiOrderOperationCustomizer)
-            .build();
+                .group("ADMIN API")
+                .displayName("관리자 API")
+                .pathsToMatch("/api/v1/admin/**")
+                .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+                .addOperationCustomizer(apiOrderOperationCustomizer)
+                .build();
     }
 
     @Bean
-    public GroupedOpenApi testApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi testApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+            @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
-            .group("TEST API - 테스트 용")
-            .displayName("테스트 API")
-            .pathsToMatch("/api/v1/test/**")
-            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
-            .addOperationCustomizer(apiOrderOperationCustomizer)
-            .build();
+                .group("TEST API - 테스트 용")
+                .displayName("테스트 API")
+                .pathsToMatch("/api/v1/test/**")
+                .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+                .addOperationCustomizer(apiOrderOperationCustomizer)
+                .build();
     }
 
     @Bean
-    public GroupedOpenApi etcApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer, @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
+    public GroupedOpenApi etcApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+            @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
-            .group("ETC API")
-            .displayName("기타 API")
-            .pathsToMatch("/api/**", "/saml2/**", "/oauth2/**")
-            .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**", "/api/v1/test/**")
-            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
-            .addOperationCustomizer(apiOrderOperationCustomizer)
-            .build();
+                .group("ETC API")
+                .displayName("기타 API")
+                .pathsToMatch("/api/**", "/saml2/**", "/oauth2/**")
+                .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**", "/api/v1/test/**")
+                .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+                .addOperationCustomizer(apiOrderOperationCustomizer)
+                .build();
     }
 
     @Bean
@@ -105,8 +108,8 @@ public class SwaggerConfig {
             Map<String, PathItem> sortedPathsMap = new LinkedHashMap<>();
 
             originalPaths.entrySet().stream()
-                .sorted(Comparator.comparingInt(entry -> getMinOrder(entry.getValue())))
-                .forEachOrdered(entry -> sortedPathsMap.put(entry.getKey(), entry.getValue()));
+                    .sorted(Comparator.comparingInt(entry -> getMinOrder(entry.getValue())))
+                    .forEachOrdered(entry -> sortedPathsMap.put(entry.getKey(), entry.getValue()));
 
             // Map을 Paths 객체로 변환
             Paths sortedPaths = new Paths();
