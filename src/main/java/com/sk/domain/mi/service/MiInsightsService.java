@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
@@ -65,11 +66,19 @@ public class MiInsightsService {
      * @param companyNo
      * @return List<FocusedDataRes>
      */
-    public List<FocusedDataRes> getFocused(int companyNo) {
+    public List<FocusedDataDto> getFocused(int companyNo) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(5);
 
-        List<FocusedDataRes> result = new ArrayList<>();
+        List<FocusedDataDto> result = new ArrayList<>();
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
+
+        List<FocusedDataDto> mutableList = dataList.stream()
+                .map(res -> new FocusedDataDto(
+                        res.getProviderNo(), res.getProviderNm(),
+                        res.getGoodsNo(), res.getGoodsNm(),
+                        res.getGoodsDataNo(), res.getGoodsDataNm(),
+                        res.getModifyDt(), res.getGoodsDataCategoryCd()))
+                .collect(Collectors.toList());
 
         Map<String, Integer> quotas = new LinkedHashMap<>();
 
@@ -86,12 +95,14 @@ public class MiInsightsService {
             String type = entry.getKey();
             int limit = entry.getValue();
 
-            Iterator<FocusedDataRes> it = dataList.iterator();
+            // Iterator<FocusedDataRes> it = dataList.iterator();
+            Iterator<FocusedDataDto> it = mutableList.iterator();
             int count = 0;
 
             while (it.hasNext() && count < limit && result.size() < 8) {
-                FocusedDataRes data = it.next();
+                FocusedDataDto data = it.next();
                 if (data.getGoodsDataCategoryCd().contains(type)) {
+                    data.setGoodsDataCategoryCd(type);
                     result.add(data);
                     it.remove();
                     count++;

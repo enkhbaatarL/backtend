@@ -13,6 +13,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
@@ -50,7 +51,7 @@ public class MiInsightsController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/focused-data")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<List<FocusedDataRes>> getFocused(
+    public BaseResponse<List<FocusedDataDto>> getFocused(
             @RequestParam(value = "customerCompanyNo") @Min(value = 1) Integer customerCompanyNo) {
 
         Role role = authorizationService.getCurrentRole();
