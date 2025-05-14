@@ -64,8 +64,8 @@ spring:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
-        login-callback-url: https://dev-mi.sk.com/callback
-        login-error-url: https://dev-mi.sk.com/error
+      login-callback-url: https://dev-mi.sk.com/callback
+      login-error-url: https://dev-mi.sk.com/error
 
   web:
     resources:
