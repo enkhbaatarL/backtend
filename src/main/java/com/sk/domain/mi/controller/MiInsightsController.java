@@ -62,7 +62,7 @@ public class MiInsightsController {
     @ApiOrder(2)
     @Operation(summary = "Insights 검색에서 사용할 고급필터", description = "Insights 검색에서 사용할 고급필터 데이타를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/insights/advanced-filter")
+    @GetMapping("/advanced-filter")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<GoodsDataFilterRes> getAdvancedFilter() {
 
