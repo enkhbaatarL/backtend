@@ -69,7 +69,7 @@ spring:
             singlelogout:
               url: https://dev-mi.sk.com/saml/SingleLogout
             assertingparty:
-              metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
+              metadata-uri: classpath:saml/idp/devn.gdisso.sk.com.metadata.xml
             signing:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
@@ -128,10 +128,10 @@ mybatis:
 
 ncp:
   storage:
-    end-point: https://kr.object.ncloudstorage.com
-    region-name: kr-standard
-    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR5qxBUswjrS1Mks}
-    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM}
+    end-point: https://zskc.object.ncloudstorage.com
+    region-name: PCS03
+    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR1Yww6uYUF7oI10}
+    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKR8EdMChrIEAtrIgIQdXUAsZGIJqfE}
     bucket-name: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
 
