@@ -143,3 +143,6 @@ ncp:
 
 aes:
   secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}
+
+server:
+  domain: http://localhost:8080
