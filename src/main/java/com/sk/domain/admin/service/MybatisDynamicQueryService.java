@@ -104,12 +104,14 @@ public class MybatisDynamicQueryService {
         String columns = dynamicDataDetailReq.columns();
         String whereClause = dynamicDataDetailReq.whereClause();
         String orderByColumns = dynamicDataDetailReq.orderByColumns();
-
+        String limit = dynamicDataDetailReq.limit();
+        
         Map<String, Object> params = new HashMap<>();
         params.put("tableName", tableName);
         params.put("columns", columns);
         params.put("whereClause", whereClause);
         params.put("orderByColumns", orderByColumns);
+        params.put("limit", limit);
         return dynamicMapper.selectDynamic(params);
     }
 }

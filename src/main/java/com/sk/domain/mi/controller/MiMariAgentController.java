@@ -3,7 +3,6 @@ package com.sk.domain.mi.controller;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.UserResolve;
-import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -92,11 +91,11 @@ public class MiMariAgentController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/talk")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> createConversation(
+    public BaseResponse<?> postQna(
         @RequestBody @Valid TalkReq talkReq,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(ResultCode.Success.OK);
+        return BaseResponseFactory.create(mariAgentService.postQna(talkReq, user));
     }
 
     @ApiOrder(5)
@@ -125,12 +124,12 @@ public class MiMariAgentController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/talks/{talkId}/qna/{qnaNo}/retry")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> refreshConversation(
+    public BaseResponse<?> postQnaRetry(
         @PathVariable(value = "talkId") String talkId,
         @PathVariable(value = "qnaNo") Integer qnaNo,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(ResultCode.Success.OK);
+        return BaseResponseFactory.create(mariAgentService.postQnaRetry(talkId, qnaNo, user));
     }
 
 }

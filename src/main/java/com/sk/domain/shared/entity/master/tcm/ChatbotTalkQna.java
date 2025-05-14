@@ -2,12 +2,15 @@ package com.sk.domain.shared.entity.master.tcm;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
+import com.sk.domain.mi.dto.request.agent.TalkReq;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -81,6 +84,16 @@ public class ChatbotTalkQna extends BaseEntity {
         this.assessmentFeedbackCntt = assessmentFeedbackCntt;
     }
 
+    public static ChatbotTalkQna of(TalkReq talkReq, ChatbotTalk talk) {
+        return ChatbotTalkQna.builder()
+            .chatbotTalk(talk)
+            .userQuestionCntt(talkReq.question())
+            .isRecommended(Boolean.FALSE)
+            .isNotRecommended(Boolean.FALSE)
+            .answerStatusCd(AnswerStatusCd.PENDING) // default
+            .build();
+    }
+
     public void update(QnaAssessmentReq dto) {
 
         if (ObjectUtils.isNotEmpty(dto.isRecommended())) {
@@ -96,6 +109,14 @@ public class ChatbotTalkQna extends BaseEntity {
             this.assessmentFeedbackCntt = dto.feedbackComment();
         }
 
+    }
+
+    public void updateResult(ModelAgentRes modelAgentRes) {
+        this.answerStatusCd = AnswerStatusCd.COMPLETE;
+    }
+
+    public void updateResult() {
+        this.answerStatusCd = AnswerStatusCd.FAIL;
     }
 
 }

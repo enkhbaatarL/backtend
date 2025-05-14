@@ -37,7 +37,7 @@ public record CrackSpreadDataRes(
         BigDecimal clPl,
 
         @Schema(description = "RB 총 매도량", example = "10000")
-        BigDecimal rbTotCntrVol,
+        Integer rbTotCntrVol,
 
         @Schema(description = "RB 총 매도잔량", example = "10000")
         BigDecimal rbOpint1,
@@ -62,7 +62,7 @@ public record CrackSpreadDataRes(
             BigDecimal clPo,
             BigDecimal clPh,
             BigDecimal clPl,
-            BigDecimal rbTotCntrVol,
+            Integer rbTotCntrVol,
             BigDecimal rbOpint1,
             BigDecimal rbOpenPrc,
             BigDecimal rbHigh1,

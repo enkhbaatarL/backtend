@@ -92,7 +92,7 @@ public class MiDataDetailService {
                 Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
                 yield userService.getUserGoodsPermissions(userNo);
             }
-            case ADMIN -> userService.getAdminGoodsPermissions();
+            case ADMIN -> userService.getAccessAdminGoodsPermissions();
             case API_PLUS_OPERATOR -> {
                 JwtAuthenticationToken jwtToken = (JwtAuthenticationToken) authentication;
                 Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));

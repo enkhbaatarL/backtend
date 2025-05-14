@@ -1,12 +1,6 @@
 package com.sk.domain.shared.repository.master.tam.custom;
 
-import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.SubQueryExpression;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -26,12 +20,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.sk.domain.shared.entity.master.tam.QAuthManageGoodsMapping.authManageGoodsMapping;
 import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyGoodsMapping.customerCompanyGoodsMapping;
-import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMapping.customerCompanyProviderMapping;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
 
 @RequiredArgsConstructor
