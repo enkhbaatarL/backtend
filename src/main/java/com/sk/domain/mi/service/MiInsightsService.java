@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,13 +18,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
+import com.sk.domain.shared.entity.master.tmd.Goods;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +46,8 @@ public class MiInsightsService {
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final GoodsDataRepository goodsDataRepository;
     private final EntityManager entityManager;
+    private final GoodsRepository goodsRepository;
+    private final GoodsDataCategoryRepository goodsDataCategoryRepository;
 
     /**
      * Focused 목록 조회
@@ -55,11 +66,19 @@ public class MiInsightsService {
      * @param companyNo
      * @return List<FocusedDataRes>
      */
-    public List<FocusedDataRes> getFocused(int companyNo) {
+    public List<FocusedDataDto> getFocused(int companyNo) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(5);
 
-        List<FocusedDataRes> result = new ArrayList<>();
+        List<FocusedDataDto> result = new ArrayList<>();
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
+
+        List<FocusedDataDto> mutableList = dataList.stream()
+                .map(res -> new FocusedDataDto(
+                        res.getProviderNo(), res.getProviderNm(),
+                        res.getGoodsNo(), res.getGoodsNm(),
+                        res.getGoodsDataNo(), res.getGoodsDataNm(),
+                        res.getModifyDt(), res.getGoodsDataCategoryCd()))
+                .collect(Collectors.toList());
 
         Map<String, Integer> quotas = new LinkedHashMap<>();
 
@@ -76,12 +95,14 @@ public class MiInsightsService {
             String type = entry.getKey();
             int limit = entry.getValue();
 
-            Iterator<FocusedDataRes> it = dataList.iterator();
+            // Iterator<FocusedDataRes> it = dataList.iterator();
+            Iterator<FocusedDataDto> it = mutableList.iterator();
             int count = 0;
 
             while (it.hasNext() && count < limit && result.size() < 8) {
-                FocusedDataRes data = it.next();
+                FocusedDataDto data = it.next();
                 if (data.getGoodsDataCategoryCd().contains(type)) {
+                    data.setGoodsDataCategoryCd(type);
                     result.add(data);
                     it.remove();
                     count++;
@@ -270,4 +291,56 @@ public class MiInsightsService {
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
     }
+
+    /**
+     * 
+     * debug용 더미 데이터 생성
+     *
+     */
+    // @Transactional
+    // public void createDummyData() {
+    // List<String> A_TYPES = List.of(
+    // "A_INSIGHT",
+    // "A_CMMDT_MRKT_RPT",
+    // "A_CMPY_RPT",
+    // "A_ASST_RPT",
+    // "A_DEAL_INSIGHT",
+    // "A_INFORM");
+
+    // List<String> A_LANGUAGES = List.of(
+    // "A_ENG",
+    // "A_KOR",
+    // "A_OTHERS");
+
+    // for (int i = 0; i < 100; i++) {
+    // Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
+
+    // GoodsData savedGoodsData = goodsDataRepository
+    // .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i)));
+
+    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
+    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+
+    // List<String> copy1 = new ArrayList<>(A_TYPES);
+    // Collections.shuffle(copy1);
+    // List<String> results1 = copy1.subList(0, 3);
+    // for (String result : results1) {
+    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
+    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+    // }
+
+    // List<String> copy2 = new ArrayList<>(A_LANGUAGES);
+    // Collections.shuffle(copy2);
+    // List<String> results2 = copy2.subList(0, 2);
+    // for (String result : results2) {
+    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
+    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+    // }
+
+    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
+    // GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
+
+    // }
+
+    // }
 }
