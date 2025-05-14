@@ -6,7 +6,6 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-      #      jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
       password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
@@ -16,7 +15,6 @@ spring:
     tenant-datasources:
       SKCC:
         jdbc-url: ${SKT_MI_DB_URL_SKCC:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-        #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_SKCC:mipapp}
         password: ${SKT_MI_DB_PASSWORD_SKCC:skccmipapp11@@}
@@ -25,7 +23,6 @@ spring:
           max-lifetime: 60000
       SKT:
         jdbc-url: ${SKT_MI_DB_URL_SKT:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-        #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_SKT:mipapp}
         password: ${SKT_MI_DB_PASSWORD_SKT:skccmipapp11@@}
@@ -34,7 +31,6 @@ spring:
           max-lifetime: 60000
       midb:
         jdbc-url: ${SKT_MI_DB_URL_MIDB:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-        #          jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MIDB:mipapp}
         password: ${SKT_MI_DB_PASSWORD_MIDB:skccmipapp11@@}
@@ -46,13 +42,6 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: validate
-
-#  data:
-#    redis:
-#      host: bold-trout-35521.upstash.io
-#      port: 6379
-#      password: AYrBAAIjcDEzZmM2YTBkNWNmNzU0NTRjOTQzZmZhNGJiYjFkZjYxNnAxMA
-#      command-timeout: 10s
 
   security:
     oauth2:

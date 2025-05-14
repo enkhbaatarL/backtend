@@ -1,0 +1,142 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    master:
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
+      password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+      hikari:
+        maximum-pool-size: 5
+        max-lifetime: 60000
+    tenant-datasources:
+      SKCC:
+        jdbc-url: ${SKT_MI_DB_URL_SKCC:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_SKCC:mipapp}
+        password: ${SKT_MI_DB_PASSWORD_SKCC:skccmipapp11@@}
+        hikari:
+          maximum-pool-size: 5
+          max-lifetime: 60000
+      SKT:
+        jdbc-url: ${SKT_MI_DB_URL_SKT:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_SKT:mipapp}
+        password: ${SKT_MI_DB_PASSWORD_SKT:skccmipapp11@@}
+        hikari:
+          maximum-pool-size: 5
+          max-lifetime: 60000
+      midb:
+        jdbc-url: ${SKT_MI_DB_URL_MIDB:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MIDB:mipapp}
+        password: ${SKT_MI_DB_PASSWORD_MIDB:skccmipapp11@@}
+        hikari:
+          maximum-pool-size: 5
+          max-lifetime: 60000
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: not used
+      command-timeout: 10s
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret-key: ${jwt.secret-key}
+    saml2:
+      relyingparty:
+        registration:
+          mi:
+            entity-id: https://dev-mi.sk.com/saml/metadata
+            acs:
+              location: https://dev-mi.sk.com/saml2/sso/mi
+              binding: POST
+            single-sign-on-service:
+              location: https://dev-mi.sk.com/saml2/authenticate/mi
+              binding: POST
+            singlelogout:
+              url: https://dev-mi.sk.com/saml/SingleLogout
+            assertingparty:
+              metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
+            signing:
+              credentials:
+                - private-key-location: classpath:saml/sp/key/sp-private.key
+                  certificate-location: classpath:saml/sp/key/sp-cert.crt
+      login-callback-url: https://dev-mi.sk.com/callback
+      login-error-url: https://dev-mi.sk.com/error
+
+  web:
+    resources:
+      add-mappings: false
+
+cache:
+  redis:
+    time-to-live: 3600s
+
+jwt:
+  secret-key: ${SKT_MI_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
+  access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
+  refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
+
+logging:
+  config: classpath:logback-local.xml
+  level:
+    org.springframework.security.saml: TRACE
+    org.springframework.security: TRACE
+    org.springframework.boot.autoconfigure.security: TRACE
+    org.springframework.context: DEBUG
+
+api:
+  model-agent:
+    url: http://localhost:8081
+    connection-timeout: 1s
+    read-timeout: 20s
+
+mail:
+  smtp:
+    host: smtp.worksmobile.com
+    port: 465
+    username: no-reply-manure@manure.by-works.com
+    password: WT6y1MpWNyqY
+    from: no-reply-manure@manure.by-works.com
+    properties:
+      transport-protocol: smtp
+      auth: true
+      ssl-enable: true
+      starttls-enable: false
+      ssl-protocols: TLSv1.2
+      connectiontimeout: 10000
+      debug: true
+
+mybatis:
+  type-aliases-package: com.sk.domain.shared.entity
+  config-location: classpath:mybatis/mybatis-config.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+ncp:
+  storage:
+    end-point: https://kr.object.ncloudstorage.com
+    region-name: kr-standard
+    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR5qxBUswjrS1Mks}
+    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM}
+    bucket-name: skt-mi-d-osb-01
+    prefix: skt-mi-d-osb-ss-
+
+aes:
+    secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}
+
+server:
+  domain: http://localhost:8080
