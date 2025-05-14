@@ -98,4 +98,16 @@ public class MiInsightsController {
         return BaseResponseFactory
                 .create(miInsightsService.getInsights(cNo, page, size, keyword, sort, period, filters));
     }
+
+    // @ApiOrder(4)
+    // @Operation(summary = "", description = "")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/insights/create-dummy")
+    // @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    // public BaseResponse<String> createDummy() {
+
+    // miInsightsService.createDummyData();
+
+    // return BaseResponseFactory.create("success");
+    // }
 }
