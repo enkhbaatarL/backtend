@@ -32,6 +32,14 @@ public final class DateUtil {
         return date == null ? null : date.format(YYYYMMDD);
     }
 
+
+    /**
+     * LocalDateTime을 "yyyyMMdd" 문자열로 변환
+     */
+    public static String toYmd(LocalDateTime dateTime) {
+        return dateTime == null ? null : dateTime.format(YYYYMMDD);
+    }
+
     /**
      * LocalDate를 "yyyy-MM-dd" 문자열로 변환
      */

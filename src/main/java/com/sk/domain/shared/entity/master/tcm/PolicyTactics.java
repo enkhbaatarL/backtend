@@ -1,29 +1,24 @@
 package com.sk.domain.shared.entity.master.tcm;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
-
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.shared.converter.StringToPolicyTacticsSeparateCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.sk.domain.shared.enums.PolicyTacticsSeparateCd;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
 @Table(name = "tcm_poltacm")
 @Comment("TCM_정책약관기본")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PrivatePolicy extends BaseEntity {
+public class PolicyTactics extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,7 +28,8 @@ public class PrivatePolicy extends BaseEntity {
 
     @Column(name = "poltac_spt_cd", nullable = false, length = 2)
     @Comment("정책약관구분코드")
-    private String poltacSeparateCd;
+    @Convert(converter = StringToPolicyTacticsSeparateCdConverter.class)
+    private PolicyTacticsSeparateCd poltacSeparateCd;
 
     @Column(name = "poltac_ver_nm", nullable = false, length = 20)
     @Comment("정책약관버전명")
@@ -53,4 +49,5 @@ public class PrivatePolicy extends BaseEntity {
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
+
 }
