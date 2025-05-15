@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "03. Oauth2 API", description = "Oauth2 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/oauth2")
+@RequestMapping("/api/v1/oauth2")
 @RequiredArgsConstructor
 public class OauthController {
 

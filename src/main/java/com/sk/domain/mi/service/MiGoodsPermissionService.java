@@ -17,7 +17,7 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class MiUserService {
+public class MiGoodsPermissionService {
 
     private final CacheService cacheService;
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
@@ -44,7 +44,7 @@ public class MiUserService {
         return permissionRes;
     }
 
-//    @Cacheable(
+    //    @Cacheable(
 //        cacheNames = CacheType.PERMISSIONS_CONSTANT,
 //        key = "'acadmin'",
 //        unless = "#result.companies == null || #result.companies.empty"
@@ -54,7 +54,7 @@ public class MiUserService {
         return PermissionRes.fromAuthorityMappings(goodsMappings);
     }
 
-//    @Cacheable(
+    //    @Cacheable(
 //        cacheNames = CacheType.PERMISSIONS_CONSTANT,
 //        key = "'company:'+#companyNo",
 //        unless = "#result.companies == null || #result.companies.empty"
