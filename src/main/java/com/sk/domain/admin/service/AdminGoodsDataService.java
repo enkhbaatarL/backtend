@@ -1,6 +1,7 @@
 package com.sk.domain.admin.service;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +21,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.JsonFileWriter;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
@@ -28,6 +30,7 @@ import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
+import com.sk.domain.shared.client.dto.AXMetaFileDto;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
@@ -80,6 +83,7 @@ public class AdminGoodsDataService {
     private final UserRepository userRepository;
     private final PlatformTransactionManager masterTransactionManager;
     private final PlatformTransactionManager myBatisTransactionManager;
+    private final JsonFileWriter jsonFileWriter;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -376,6 +380,21 @@ public class AdminGoodsDataService {
                 adminFileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
 
+                // todo: A.X Platform 에 파일 업로드 연동
+                String uniqueFilename = String.valueOf(System.currentTimeMillis());
+                AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
+                        .gdsNo(goods.getGoodsNo())
+                        .documentId(uniqueFilename)
+                        .documentReleaseDate(Instant.now().toString())
+                        .headline("")
+                        .synopsis("")
+                        .contributor("")
+                        .authors(List.of("LSEG"))
+                        .documentFileName("")
+                        .language("")
+                        .countries(List.of("KOR"))
+                        .build();
+
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
             }
@@ -574,6 +593,8 @@ public class AdminGoodsDataService {
                         goodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(),
                         DateUtil.endYmd());
+
+                // todo: A.X Platform 에 파일 업로드 연동
 
                 dto.unstructuredDataList()
                         .stream()

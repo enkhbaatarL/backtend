@@ -69,9 +69,9 @@ public class MiInsightsService {
     public List<FocusedDataDto> getFocused(int companyNo) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(5);
 
-        List<FocusedDataDto> result = new ArrayList<>();
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
+        List<FocusedDataDto> result = new ArrayList<>();
         List<FocusedDataDto> mutableList = dataList.stream()
                 .map(res -> new FocusedDataDto(
                         res.getProviderNo(), res.getProviderNm(),
@@ -95,7 +95,6 @@ public class MiInsightsService {
             String type = entry.getKey();
             int limit = entry.getValue();
 
-            // Iterator<FocusedDataRes> it = dataList.iterator();
             Iterator<FocusedDataDto> it = mutableList.iterator();
             int count = 0;
 
