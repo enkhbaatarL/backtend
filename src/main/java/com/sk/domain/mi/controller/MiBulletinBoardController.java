@@ -13,6 +13,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
+import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
@@ -97,12 +98,21 @@ public class MiBulletinBoardController {
         return BaseResponseFactory.create(miBulletinBoardService.getNotice(cNo, noticeNo));
     }
 
+    @ApiOrder(4)
+    @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/notices/popup")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
+    public BaseResponse<PopupRes> getPopup() {
+        return BaseResponseFactory.create(miBulletinBoardService.getPopup());
+    }
+
     /*******************************************************************
      *
      * FAQ
      *
      *******************************************************************/
-    @ApiOrder(4)
+    @ApiOrder(11)
     @Operation(summary = "FAQ 필터 조회", description = "FAQ 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/faq/filter")
@@ -112,7 +122,7 @@ public class MiBulletinBoardController {
         return BaseResponseFactory.create(miBulletinBoardService.getFaqFilter());
     }
 
-    @ApiOrder(5)
+    @ApiOrder(12)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),

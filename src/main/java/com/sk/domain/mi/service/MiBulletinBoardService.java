@@ -14,9 +14,11 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.admin.dto.response.bbs.BulletinBoardFileDto;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFilterDto;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
+import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
@@ -123,6 +125,31 @@ public class MiBulletinBoardService {
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), categoryName, bulletinBoard.getBulletinTitleNm(),
                 bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile) : null);
+    }
+
+    /**
+    * 팝업용 공지사항을 조회한다.
+    *
+    * @param
+    * @return PopupRes
+    */
+    public PopupRes getPopup() {
+        BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
+        if (bulletinBoard == null) {
+            return null;
+        }
+
+        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository
+                .findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())
+                .stream()
+                .map(f -> new BulletinBoardFileDto(
+                        f.getFileNo(),
+                        f.getOriginalFileNm(),
+                        f.getFileSize(),
+                        miFileService.getUrl(f.getFileNo())))
+                .toList();
+
+        return PopupRes.of(bulletinBoard, fileInfo);
     }
 
     /**
