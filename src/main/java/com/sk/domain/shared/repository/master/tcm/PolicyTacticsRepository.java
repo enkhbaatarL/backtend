@@ -9,12 +9,6 @@ import java.util.Optional;
 
 public interface PolicyTacticsRepository extends JpaRepository<PolicyTactics, Integer> {
 
-    List<PolicyTactics> findByIsDeletedFalseAndIsUsedTrueOrderByCreateDtAsc();
-
-    Optional<PolicyTactics> findFirstByIsDeletedFalseAndIsUsedTrueOrderByCreateDtDesc();
-
-    Optional<PolicyTactics> findByPoltacNoAndIsDeletedFalseAndIsUsedTrue(Integer poltacNo);
-
     List<PolicyTactics> findByPoltacSeparateCdAndIsUsedTrueAndIsDeletedFalseOrderByCreateDtDesc(PolicyTacticsSeparateCd policyTacticsSeparateCd);
 
     Optional<PolicyTactics> findByPoltacNoAndPoltacSeparateCdAndIsUsedTrueAndIsDeletedFalse(Integer poltacNo, PolicyTacticsSeparateCd policyTacticsSeparateCd);
