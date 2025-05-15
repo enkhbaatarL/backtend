@@ -130,11 +130,11 @@ mybatis:
 
 ncp:
   storage:
-    end-point: https://zskc.object.ncloudstorage.com
+    end-point: https://zskc.object.ncpstorage.com
     region-name: PCS03
-    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR1Yww6uYUF7oI10}
-    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKR8EdMChrIEAtrIgIQdXUAsZGIJqfE}
-    bucket-name: sk-mi-d-osb-01
+    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR53zyqKIWpGz5cK}
+    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRT8RR3JuiCC5IStxaC9OaZhPzzy11}
+    bucket-name: sk-mi-d-osb-03
     prefix: sk-mi-d-osb-ss-
 
 aes:
