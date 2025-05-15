@@ -33,7 +33,7 @@ public record AXMetaFileDto(
     List<String> authors,
 
     @JsonProperty("DocumentFileName")
-    String documentFileName,
+    List<String> documentFileName,
 
     @JsonProperty("Language")
     String language,
