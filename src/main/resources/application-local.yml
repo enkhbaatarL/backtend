@@ -67,14 +67,15 @@ spring:
             acs:
               location: https://dev-mi.sk.com/saml2/sso/mi
               binding: POST
-            single-sign-on-service:
-              location: https://dev-mi.sk.com/saml2/authenticate/mi
-              binding: POST
             singlelogout:
               url: https://dev-mi.sk.com/saml/SingleLogout
             assertingparty:
               metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
+              credentials:
+                - private-key-location: classpath:saml/sp/key/sp-private.key
+                  certificate-location: classpath:saml/sp/key/sp-cert.crt
+            decryption:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
