@@ -63,42 +63,42 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
 
         List<CompanyRes> content = queryFactory
-                .select(new QCompanyRes(
-                        customerCompany.customerCompanyNo,
-                        customerCompany.customerCompanyCd,
-                        customerCompany.customerCompanyNm,
-                        customerCompany.useBeginDt,
-                        customerCompany.useEndDt,
-                        customerCompany.isUsed,
-                        customerCompany.createUserId,
-                        customerCompany.createDt,
-                        customerCompany.modifyUserId,
-                        customerCompany.modifyDt,
-                        creator.userNm,
-                        creator.departmentNm,
-                        creatorCompany.customerCompanyNm,
-                        modifier.userNm,
-                        modifier.departmentNm,
-                        modifierCompany.customerCompanyNm))
-                .from(customerCompany)
-                .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
-                .leftJoin(creator.customerCompany, creatorCompany)
-                .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
-                .leftJoin(modifier.customerCompany, modifierCompany)
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411): 고객사만 조회
-                        containsCompanyName(companyNm),
-                        equalIsUsed(activationSts))
-                .orderBy(customerCompany.customerCompanyNm.asc())
-                .fetch();
+            .select(new QCompanyRes(
+                customerCompany.customerCompanyNo,
+                customerCompany.customerCompanyCd,
+                customerCompany.customerCompanyNm,
+                customerCompany.useBeginDt,
+                customerCompany.useEndDt,
+                customerCompany.isUsed,
+                customerCompany.createUserId,
+                customerCompany.createDt,
+                customerCompany.modifyUserId,
+                customerCompany.modifyDt,
+                creator.userNm,
+                creator.departmentNm,
+                creatorCompany.customerCompanyNm,
+                modifier.userNm,
+                modifier.departmentNm,
+                modifierCompany.customerCompanyNm))
+            .from(customerCompany)
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator.customerCompany, creatorCompany)
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier.customerCompany, modifierCompany)
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411): 고객사만 조회
+                containsCompanyName(companyNm),
+                equalIsUsed(activationSts))
+            .orderBy(customerCompany.customerCompanyNm.asc())
+            .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
-                .select(customerCompany.count())
-                .from(customerCompany)
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411): 고객사만 조회
-                        containsCompanyName(companyNm),
-                        equalIsUsed(activationSts));
+            .select(customerCompany.count())
+            .from(customerCompany)
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()), // edit(20250411): 고객사만 조회
+                containsCompanyName(companyNm),
+                equalIsUsed(activationSts));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -117,40 +117,40 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         QCustomerCompany modifierCompany = new QCustomerCompany("modifierCompany");
 
         List<CompanyRes> content = queryFactory
-                .select(new QCompanyRes(
-                        customerCompany.customerCompanyNo,
-                        customerCompany.customerCompanyCd,
-                        customerCompany.customerCompanyNm,
-                        customerCompany.useBeginDt,
-                        customerCompany.useEndDt,
-                        customerCompany.isUsed,
-                        customerCompany.createUserId,
-                        customerCompany.createDt,
-                        customerCompany.modifyUserId,
-                        customerCompany.modifyDt,
-                        creator.userNm,
-                        creator.departmentNm,
-                        creatorCompany.customerCompanyNm,
-                        modifier.userNm,
-                        modifier.departmentNm,
-                        modifierCompany.customerCompanyNm))
-                .from(customerCompany)
-                .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
-                .leftJoin(creator.customerCompany, creatorCompany)
-                .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
-                .leftJoin(modifier.customerCompany, modifierCompany)
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411): 관리사만 조회
-                        containsCompanyName(companyNm))
-                .orderBy(customerCompany.customerCompanyNm.asc())
-                .fetch();
+            .select(new QCompanyRes(
+                customerCompany.customerCompanyNo,
+                customerCompany.customerCompanyCd,
+                customerCompany.customerCompanyNm,
+                customerCompany.useBeginDt,
+                customerCompany.useEndDt,
+                customerCompany.isUsed,
+                customerCompany.createUserId,
+                customerCompany.createDt,
+                customerCompany.modifyUserId,
+                customerCompany.modifyDt,
+                creator.userNm,
+                creator.departmentNm,
+                creatorCompany.customerCompanyNm,
+                modifier.userNm,
+                modifier.departmentNm,
+                modifierCompany.customerCompanyNm))
+            .from(customerCompany)
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator.customerCompany, creatorCompany)
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier.customerCompany, modifierCompany)
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411): 관리사만 조회
+                containsCompanyName(companyNm))
+            .orderBy(customerCompany.customerCompanyNm.asc())
+            .fetch();
 
         JPQLQuery<Long> countQuery = queryFactory
-                .select(customerCompany.count())
-                .from(customerCompany)
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411): 관리사만 조회
-                        containsCompanyName(companyNm));
+            .select(customerCompany.count())
+            .from(customerCompany)
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isTrue()), // edit(20250411): 관리사만 조회
+                containsCompanyName(companyNm));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -160,63 +160,65 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
 
         // 1. 고객사 마지막 수정 일시(삭제 포함)
         Tuple company = queryFactory
-                .select(customerCompany.modifyDt.max(), customerCompany.modifyUserId)
-                .from(customerCompany)
-                .where(customerCompany.customerCompanyNo.eq(companyNo))
-                .fetchOne();
+            .select(customerCompany.modifyDt, customerCompany.modifyUserId)
+            .from(customerCompany)
+            .where(customerCompany.customerCompanyNo.eq(companyNo))
+            .orderBy(customerCompany.modifyDt.desc()) // 최신순 정렬
+            .limit(1) // 가장 최근 1건
+            .fetchOne();
 
-        if (ObjectUtils.isEmpty(company.get(0, LocalDateTime.class))) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo));
+        if (company == null || company.get(customerCompany.modifyDt) == null) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company] or has no modification date. companyNo: %s".formatted(companyNo));
         }
 
         // 2. 회사-프로바이더 매핑 마지막 수정 일시(삭제 포함)
         Tuple ccpMapping = queryFactory
-                .select(customerCompanyProviderMapping.modifyDt.max(), customerCompanyProviderMapping.modifyUserId)
-                .from(customerCompanyProviderMapping)
-                .where(customerCompanyProviderMapping.id.customerCompanyNo.eq(companyNo))
-                .fetchOne();
+            .select(customerCompanyProviderMapping.modifyDt, customerCompanyProviderMapping.modifyUserId)
+            .from(customerCompanyProviderMapping)
+            .where(customerCompanyProviderMapping.id.customerCompanyNo.eq(companyNo))
+            .orderBy(customerCompanyProviderMapping.modifyDt.desc())
+            .limit(1)
+            .fetchOne();
 
         // 3. 사용자 마지막 수정 일시(삭제 포함)
         Tuple userInfo = queryFactory
-                .select(QUser.user.modifyDt.max(), QUser.user.modifyUserId)
-                .from(QUser.user)
-                .where(QUser.user.customerCompany.customerCompanyNo.eq(companyNo))
-                .fetchOne();
+            .select(QUser.user.modifyDt, QUser.user.modifyUserId)
+            .from(QUser.user)
+            .where(QUser.user.customerCompany.customerCompanyNo.eq(companyNo))
+            .orderBy(QUser.user.modifyDt.desc())
+            .limit(1)
+            .fetchOne();
 
-        // 최신 날짜와 수정자 정보 찾기
-        LocalDateTime latestModifyDt = null;
-        String latestModifyId = null;
+        LocalDateTime latestModifyDt;
+        String latestModifyId;
         String latestModifyNm = null;
 
-        if (ObjectUtils.isNotEmpty(company)) {
-            LocalDateTime date = company.get(0, LocalDateTime.class);
-            latestModifyDt = date;
-            latestModifyId = company.get(1, String.class);
-        }
+        latestModifyDt = company.get(customerCompany.modifyDt);
+        latestModifyId = company.get(customerCompany.modifyUserId);
 
-        if (ObjectUtils.isNotEmpty(ccpMapping)) {
-            LocalDateTime date = ccpMapping.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
+        if (ccpMapping != null) {
+            LocalDateTime date = ccpMapping.get(customerCompanyProviderMapping.modifyDt);
+            if (date != null && (latestModifyDt == null || date.isAfter(latestModifyDt))) {
                 latestModifyDt = date;
-                latestModifyId = ccpMapping.get(1, String.class);
+                latestModifyId = ccpMapping.get(customerCompanyProviderMapping.modifyUserId);
             }
         }
 
-        if (ObjectUtils.isNotEmpty(userInfo)) {
-            LocalDateTime date = userInfo.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
+        if (userInfo != null) {
+            LocalDateTime date = userInfo.get(QUser.user.modifyDt);
+            if (date != null && (latestModifyDt == null || date.isAfter(latestModifyDt))) {
                 latestModifyDt = date;
-                latestModifyId = userInfo.get(1, String.class);
+                latestModifyId = userInfo.get(QUser.user.modifyUserId);
             }
         }
 
-        if (ObjectUtils.isNotEmpty(latestModifyId)) {
+        if (latestModifyId != null && !latestModifyId.isEmpty()) {
             latestModifyNm = queryFactory
-                    .select(user.userNm)
-                    .from(user)
-                    .where(user.userLoginId.eq(latestModifyId).and(user.userRoleCd.eq(UserRoleCd.ADMIN)))
-                    .limit(1)
-                    .fetchOne();
+                .select(user.userNm)
+                .from(user)
+                .where(user.userLoginId.eq(latestModifyId).and(user.userRoleCd.eq(UserRoleCd.ADMIN)))
+                .limit(1)
+                .fetchOne();
         }
 
         return LatestUpdatedRes.of(latestModifyId, latestModifyNm, latestModifyDt);
@@ -238,77 +240,77 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
     public List<CompanyDepartmentRes> findAllCompaniesAndDepartments() {
         // 1. 모든 회사 조회
         List<Tuple> companies = queryFactory
-                .select(customerCompany.customerCompanyNo, customerCompany.customerCompanyCd, customerCompany.customerCompanyNm)
-                .from(customerCompany)
-                .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()))
-                .orderBy(customerCompany.customerCompanyNm.asc())
-                .fetch();
+            .select(customerCompany.customerCompanyNo, customerCompany.customerCompanyCd, customerCompany.customerCompanyNm)
+            .from(customerCompany)
+            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()))
+            .orderBy(customerCompany.customerCompanyNm.asc())
+            .fetch();
 
         // 2. 모든 회사의 부서 조회를 한 번에 수행
         List<Integer> companyNos = companies.stream()
-                .map(tuple -> tuple.get(customerCompany.customerCompanyNo))
-                .collect(Collectors.toList());
+            .map(tuple -> tuple.get(customerCompany.customerCompanyNo))
+            .collect(Collectors.toList());
 
         Map<Integer, List<String>> departmentMap = queryFactory
-                .select(user.customerCompany.customerCompanyNo, user.departmentNm)
-                .from(user)
-                .where(user.customerCompany.customerCompanyNo.in(companyNos))
-                .distinct()
-                .orderBy(user.departmentNm.asc())
-                .fetch()
-                .stream()
-                .collect(Collectors.groupingBy(
-                        tuple -> tuple.get(user.customerCompany.customerCompanyNo),
-                        Collectors.mapping(tuple -> tuple.get(user.departmentNm), Collectors.toList())));
+            .select(user.customerCompany.customerCompanyNo, user.departmentNm)
+            .from(user)
+            .where(user.customerCompany.customerCompanyNo.in(companyNos))
+            .distinct()
+            .orderBy(user.departmentNm.asc())
+            .fetch()
+            .stream()
+            .collect(Collectors.groupingBy(
+                tuple -> tuple.get(user.customerCompany.customerCompanyNo),
+                Collectors.mapping(tuple -> tuple.get(user.departmentNm), Collectors.toList())));
 
         // 3. DTO 매핑
         return companies.stream().map(tuple -> {
             Integer companyNo = tuple.get(customerCompany.customerCompanyNo);
             List<String> departments = departmentMap.getOrDefault(companyNo, List.of());
             return new CompanyDepartmentRes(
-                    companyNo,
-                    tuple.get(customerCompany.customerCompanyCd),
-                    tuple.get(customerCompany.customerCompanyNm),
-                    departments);
+                companyNo,
+                tuple.get(customerCompany.customerCompanyCd),
+                tuple.get(customerCompany.customerCompanyNm),
+                departments);
         }).collect(Collectors.toList());
     }
 
     @Override
     public List<CompanyTypeAndCompanyRes> findCompaniesByTypeWithSubCompanies() {
         List<CustomerCompany> companies = queryFactory
-                .selectFrom(customerCompany)
-                .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse())
-                .orderBy(customerCompany.customerCompanyNo.asc())
-                .fetch();
+            .selectFrom(customerCompany)
+            .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse())
+            .orderBy(customerCompany.customerCompanyNo.asc())
+            .fetch();
 
         Map<CompanyType, List<CompanyTypeAndCompanyRes.Company>> grouped = companies.stream()
-                .collect(Collectors.groupingBy(
-                        company -> company.getIsMipManagementCompany() ? CompanyType.MANAGER : CompanyType.CUSTOMER,
-                        Collectors.mapping(
-                                company -> new CompanyTypeAndCompanyRes.Company(
-                                        company.getCustomerCompanyNo(),
-                                        company.getCustomerCompanyCd(),
-                                        company.getCustomerCompanyNm()),
-                                Collectors.toList())));
+            .collect(Collectors.groupingBy(
+                company -> company.getIsMipManagementCompany() ? CompanyType.MANAGER : CompanyType.CUSTOMER,
+                Collectors.mapping(
+                    company -> new CompanyTypeAndCompanyRes.Company(
+                        company.getCustomerCompanyNo(),
+                        company.getCustomerCompanyCd(),
+                        company.getCustomerCompanyNm()),
+                    Collectors.toList())));
 
         return Arrays.stream(CompanyType.values())
-                .map(type -> new CompanyTypeAndCompanyRes(type, grouped.getOrDefault(type, Collections.emptyList())))
-                .filter(res -> !res.companies().isEmpty())
-                .toList();
+            .map(type -> new CompanyTypeAndCompanyRes(type, grouped.getOrDefault(type, Collections.emptyList())))
+            .filter(res -> !res.companies().isEmpty())
+            .toList();
     }
 
     @Override
     public List<MiCompanyRes> findAllMiCompanies() {
         List<CustomerCompany> companies = queryFactory
-                .selectFrom(customerCompany)
-                .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse(), customerCompany.isMipManagementCompany.isFalse(),
-                        customerCompany.useBeginDt.loe(DateUtil.toYmd(LocalDate.now()))
-                                .and(customerCompany.useEndDt.goe(DateUtil.toYmd(LocalDate.now()))))
-                .orderBy(customerCompany.customerCompanyNo.asc())
-                .fetch();
+            .selectFrom(customerCompany)
+            .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse(), customerCompany.isMipManagementCompany.isFalse(),
+                customerCompany.useBeginDt.loe(DateUtil.toYmd(LocalDate.now()))
+                    .and(customerCompany.useEndDt.goe(DateUtil.toYmd(LocalDate.now()))))
+            .orderBy(customerCompany.customerCompanyNo.asc())
+            .fetch();
 
         return companies.stream()
-                .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain))
-                .collect(Collectors.toList());
+            .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain))
+            .collect(Collectors.toList());
     }
 }
