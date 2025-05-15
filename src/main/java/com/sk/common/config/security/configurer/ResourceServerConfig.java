@@ -46,7 +46,7 @@ public class ResourceServerConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/v1/auth/**").permitAll()
-                    .requestMatchers("/api/v1/test/login/**").permitAll() //TODO: 테스트용 추후에 삭제 필요
+                    .requestMatchers("/api/v1/test/**").permitAll() //TODO: 테스트용 추후에 삭제 필요
                     .requestMatchers("/api/v1/saml2/**").permitAll()
                     .anyRequest().authenticated()
                 )

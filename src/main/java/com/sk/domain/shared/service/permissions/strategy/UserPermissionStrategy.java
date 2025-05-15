@@ -1,7 +1,7 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.service.MiUserService;
+import com.sk.domain.mi.service.MiGoodsPermissionService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -16,7 +16,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserPermissionStrategy implements PermissionStrategy {
 
-    private final MiUserService userService;
+    private final MiGoodsPermissionService userService;
     private final AuthorizationService authService;
 
     @Override

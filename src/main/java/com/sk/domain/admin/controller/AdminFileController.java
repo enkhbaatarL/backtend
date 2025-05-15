@@ -41,7 +41,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "09. 파일 관리 API", description = "파일 관리 API 입니다.")
+@Tag(name = "10. 파일 관리 API", description = "파일 관리 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/file-management")

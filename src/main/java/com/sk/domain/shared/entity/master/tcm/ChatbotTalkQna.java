@@ -84,7 +84,7 @@ public class ChatbotTalkQna extends BaseEntity {
         this.assessmentFeedbackCntt = assessmentFeedbackCntt;
     }
 
-    public static ChatbotTalkQna of(TalkReq talkReq, ChatbotTalk talk) {
+    public static ChatbotTalkQna of(TalkReq.Insert talkReq, ChatbotTalk talk) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
             .userQuestionCntt(talkReq.question())
