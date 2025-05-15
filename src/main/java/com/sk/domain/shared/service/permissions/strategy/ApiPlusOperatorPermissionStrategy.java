@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.service.MiUserService;
+import com.sk.domain.mi.service.MiGoodsPermissionService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ApiPlusOperatorPermissionStrategy implements PermissionStrategy {
 
-    private final MiUserService userService;
+    private final MiGoodsPermissionService userService;
     private final AuthorizationService authService;
 
     @Override

@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
@@ -58,7 +59,7 @@ public class ChatbotTalk extends BaseEntity {
         this.finalTalkDt = finalTalkDt;
     }
 
-    public static ChatbotTalk of(TalkReq talkReq, User user) {
+    public static ChatbotTalk of(TalkReq.Insert talkReq, User user) {
         return ChatbotTalk.builder()
                 .chatbotTalkUuid(talkReq.talkId().toString())
                 .user(user)
@@ -68,5 +69,14 @@ public class ChatbotTalk extends BaseEntity {
                 .finalTalkDt(DateUtil.currentYmd())
                 .build();
     }
+
+    public void update(TalkReq.Update talkReq) {
+
+        if (ObjectUtils.isNotEmpty(talkReq)) {
+            this.talkTitleNm = talkReq.title();
+        }
+
+    }
+
 }
 

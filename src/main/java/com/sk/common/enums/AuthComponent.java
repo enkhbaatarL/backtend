@@ -15,7 +15,7 @@ public enum AuthComponent {
     public static AuthComponent determineAuthComponent(HttpServletRequest request) {
         String uri = request.getRequestURI();
 
-        if (uri.startsWith("/oauth2/token")) {
+        if (uri.startsWith("/api/v1/oauth2/token")) {
             return AuthComponent.OAUTH2_SERVER;
         } else if (uri.startsWith("/api/v1/saml2")) {
             return AuthComponent.SAML_SERVICE_PROVIDER;

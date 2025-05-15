@@ -9,17 +9,14 @@ import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
 import com.sk.common.filter.ExceptionHandlerFilter;
 import com.sk.common.utils.JwtUtil;
 import com.sk.common.utils.Properties.JwtProperties;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
@@ -36,6 +33,9 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
+
+    @Value("${server.domain}")
+    private String serverDomain;
 
     @Value("${security.enabled:false}")
     private boolean securityEnabled;
@@ -68,14 +68,14 @@ public class AuthorizationServerConfig {
             http
                 .cors(withDefaults())
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-                .securityMatcher("/oauth2/token") // Authorization Server 경로 제한
+                .securityMatcher("/api/v1/oauth2/token") // Authorization Server 경로 제한
                 .with(authorizationServerConfigurer, withDefaults())
                 .exceptionHandling(exceptions -> exceptions
                     .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                     .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers("/oauth2/token").permitAll()
+                    .requestMatchers("/api/v1/oauth2/token").permitAll()
                     .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
@@ -87,7 +87,7 @@ public class AuthorizationServerConfig {
 
             http
                 .cors(withDefaults())
-                .securityMatcher("/oauth2/token")
+                .securityMatcher("/api/v1/oauth2/token")
                 .authorizeHttpRequests(authorize -> authorize
                     .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용
                 )
@@ -111,8 +111,8 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-            .issuer("http://localhost:8080") // todo
-            .tokenEndpoint("/oauth2/token") // todo
+            .issuer(serverDomain)
+            .tokenEndpoint("/api/v1/oauth2/token")
             .build();
     }
 

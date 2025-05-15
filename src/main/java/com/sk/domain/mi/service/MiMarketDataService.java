@@ -75,7 +75,7 @@ public class MiMarketDataService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
-    private final MiUserService miUserService;
+    private final MiGoodsPermissionService miGoodsPermissionService;
 
     public List<MiMarketDataRes> getMarketDatas(Integer customerCompanyNo, Authentication authentication) {
         String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE)); // 2년 전
@@ -92,12 +92,12 @@ public class MiMarketDataService {
         PermissionRes permissionRes = switch (role) {
             case USER -> {
                 Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield miUserService.getUserGoodsPermissions(userNo);
+                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
             }
-            case ADMIN, API_SUB_ADMIN -> miUserService.getAccessAdminGoodsPermissions();
+            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
             case API_PLUS_OPERATOR -> {
                 Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miUserService.getPlusOperatorGoodsPermissions(companyNo);
+                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
             }
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };

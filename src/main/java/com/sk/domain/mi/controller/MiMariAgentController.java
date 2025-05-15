@@ -35,15 +35,6 @@ public class MiMariAgentController {
 
     private final MariAgentService mariAgentService;
 
-    /**
-     * 1. [GET] 분과 별 추천 질의 목록 조회 API
-     * 2. [GET] 대화 목록 조회 API
-     * 3. [GET] 대화 조회 API (pagination)
-     * 4. [POST] 대화 API
-     * 5. [PATCH] 대화 평가 API
-     * 6. [POST] 대화 새로고침 API
-     */
-
     @ApiOrder(1)
     @Parameters({
         @Parameter(name = "talkId", description = "챗봇대화 ID")
@@ -53,7 +44,7 @@ public class MiMariAgentController {
     @GetMapping("/major-questions")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<List<MajorQuestionRes>> getMajorQuestions(
-            @RequestParam(value = "subcommitteeCd") String subcommitteeCd
+        @RequestParam(value = "subcommitteeCd") String subcommitteeCd
     ) {
         return BaseResponseFactory.create(mariAgentService.getMajorQuestions(subcommitteeCd));
     }
@@ -69,19 +60,19 @@ public class MiMariAgentController {
 
     @ApiOrder(3)
     @Parameters({
-            @Parameter(name = "talkId", description = "챗봇대화 ID"),
-            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 3)")
+        @Parameter(name = "talkId", description = "챗봇대화 ID"),
+        @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
+        @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 3)")
     })
     @Operation(summary = "대화 QnA 목록 조회 API (pagination)", description = "로그인된 사용자의 Mari 에이전트 QnA 목록을 페이지네이션으로 조회합니다. (목록은 최신순으로 조회됩니다.)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/talks/{talkId}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<PaginationRes<QnaRes>> getTalkQnaList(
-            @PathVariable(value = "talkId") String talkId,
-            @RequestParam(value = "page", required = false, defaultValue = "1") int page,
-            @RequestParam(value = "size", required = false, defaultValue = "3") int size,
-            @UserResolve User user
+        @PathVariable(value = "talkId") String talkId,
+        @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+        @RequestParam(value = "size", required = false, defaultValue = "3") int size,
+        @UserResolve User user
     ) {
         return BaseResponseFactory.create(mariAgentService.getTalkQnaList(page, size, talkId, user));
     }
@@ -91,14 +82,39 @@ public class MiMariAgentController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/talk")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> postQna(
-        @RequestBody @Valid TalkReq talkReq,
+    public BaseResponse<?> postTalk(
+        @RequestBody @Valid TalkReq.Insert talkReq,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(mariAgentService.postQna(talkReq, user));
+        return BaseResponseFactory.create(mariAgentService.postTalk(talkReq, user));
     }
 
     @ApiOrder(5)
+    @Operation(summary = "질의 수정 API", description = "질의 내용을 수정합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/talks/{talkId}")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    public BaseResponse<TalkRes> patchTalk(
+        @PathVariable(value = "talkId") String talkId,
+        @RequestBody @Valid TalkReq.Update talkReq,
+        @UserResolve User user
+    ) {
+        return BaseResponseFactory.create(mariAgentService.patchTalk(talkId, talkReq, user));
+    }
+
+    @ApiOrder(6)
+    @Operation(summary = "질의 삭제 API", description = "질의를 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @DeleteMapping("/talks/{talkId}")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    public BaseResponse<TalkRes> deleteTalk(
+        @PathVariable(value = "talkId") String talkId,
+        @UserResolve User user
+    ) {
+        return BaseResponseFactory.create(mariAgentService.deleteTalk(talkId, user));
+    }
+
+    @ApiOrder(7)
     @Parameters({
         @Parameter(name = "talkId", description = "챗봇대화 ID"),
         @Parameter(name = "qnaNo", description = "질의응답 번호")
@@ -108,14 +124,14 @@ public class MiMariAgentController {
     @PatchMapping("/talks/{talkId}/qna/{qnaNo}/assessment")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<?> patchQnaAssessment(
-            @PathVariable(value = "talkId") String talkId,
-            @PathVariable(value = "qnaNo") Integer qnaNo,
-            @RequestBody @Valid QnaAssessmentReq qnaAssessmentReq
+        @PathVariable(value = "talkId") String talkId,
+        @PathVariable(value = "qnaNo") Integer qnaNo,
+        @RequestBody @Valid QnaAssessmentReq qnaAssessmentReq
     ) {
         return BaseResponseFactory.create(mariAgentService.patchQnaAssessment(talkId, qnaNo, qnaAssessmentReq));
     }
 
-    @ApiOrder(6)
+    @ApiOrder(8)
     @Parameters({
         @Parameter(name = "talkId", description = "챗봇대화 ID"),
         @Parameter(name = "qnaNo", description = "질의응답 번호")
