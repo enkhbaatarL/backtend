@@ -59,18 +59,18 @@ spring:
             singlelogout:
               url: https://dev-mi.sk.com/saml/SingleLogout
             assertingparty:
-              metadata-uri: classpath:saml/idp/devn.gdisso.sk.com.metadata.xml
+              metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
-                        decryption:
             decryption:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
       login-callback-url: https://dev-mi.sk.com/callback
       login-error-url: https://dev-mi.sk.com/error
+
 
   web:
     resources:
