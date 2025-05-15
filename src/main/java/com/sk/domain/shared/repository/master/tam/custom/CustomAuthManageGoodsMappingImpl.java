@@ -262,45 +262,48 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         // 1. 고객사-상품 매핑 수정 일시(삭제 포함)
         Tuple ccgMappings = queryFactory
-            .select(customerCompanyGoodsMapping.modifyDt.max(), customerCompanyGoodsMapping.modifyUserId)
+            .select(customerCompanyGoodsMapping.modifyDt, customerCompanyGoodsMapping.modifyUserId)
             .from(customerCompanyGoodsMapping)
             .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo)
                 .and(customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo)))
+            .orderBy(customerCompanyGoodsMapping.modifyDt.desc()) // 최신순 정렬
+            .limit(1) // 가장 최근 1건
             .fetchOne();
 
-        if (ObjectUtils.isEmpty(ccgMappings.get(0, LocalDateTime.class))) {
+        if (ccgMappings == null || ccgMappings.get(customerCompanyGoodsMapping.modifyDt) == null) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [company-goods-mapping]. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo));
+                "It doesn't exist in the [company-goods-mapping] or has no modification date. companyNo: %s, goodsNo: %s".formatted(companyNo, goodsNo));
         }
 
         // 2. 사용자 권한-상품 매핑 수정 일시(삭제 포함)
         Tuple amgMappings = queryFactory
-            .select(authManageGoodsMapping.modifyDt.max(), authManageGoodsMapping.modifyUserId)
+            .select(authManageGoodsMapping.modifyDt, authManageGoodsMapping.modifyUserId)
             .from(authManageGoodsMapping)
-            .where(authManageGoodsMapping.customerCompanyGoodsMapping.id.customerCompanyNo.eq(companyNo)
-                .and(authManageGoodsMapping.customerCompanyGoodsMapping.id.goodsNo.eq(goodsNo)))
+            .where(authManageGoodsMapping.customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo)
+                .and(authManageGoodsMapping.customerCompanyGoodsMapping.goods.goodsNo.eq(goodsNo)))
+            .orderBy(authManageGoodsMapping.modifyDt.desc()) // 최신순 정렬
+            .limit(1) // 가장 최근 1건
             .fetchOne();
 
         // 최신 날짜와 수정자 정보 찾기
-        LocalDateTime latestModifyDt = null;
-        String latestModifyId = null;
+        LocalDateTime latestModifyDt;
+        String latestModifyId;
         String latestModifyNm = null;
 
-        if (ObjectUtils.isNotEmpty(ccgMappings) && ObjectUtils.isNotEmpty(ccgMappings.get(0, LocalDateTime.class))) {
-            LocalDateTime date = ccgMappings.get(0, LocalDateTime.class);
-            latestModifyDt = date;
-            latestModifyId = ccgMappings.get(1, String.class);
-        }
+        latestModifyDt = ccgMappings.get(customerCompanyGoodsMapping.modifyDt);
+        latestModifyId = ccgMappings.get(customerCompanyGoodsMapping.modifyUserId);
 
-        if (ObjectUtils.isNotEmpty(amgMappings) && ObjectUtils.isNotEmpty(amgMappings.get(0, LocalDateTime.class))) {
-            LocalDateTime date = amgMappings.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
+        if (amgMappings != null) {
+            LocalDateTime date = amgMappings.get(authManageGoodsMapping.modifyDt);
+            String userId = amgMappings.get(authManageGoodsMapping.modifyUserId);
+
+            if (date != null && date.isAfter(latestModifyDt)) {
                 latestModifyDt = date;
-                latestModifyId = amgMappings.get(1, String.class);
+                latestModifyId = userId;
             }
         }
 
-        if (ObjectUtils.isNotEmpty(latestModifyId)) {
+        if (latestModifyId != null && !latestModifyId.isEmpty()) {
             latestModifyNm = queryFactory
                 .select(user.userNm)
                 .from(user)

@@ -175,8 +175,7 @@ public class MariAgentService {
      */
     private void validateTalkOwnership(ChatbotTalk talk, User currentUser, String requestedTalkId) {
         if (!Objects.equals(currentUser.getUserNo(), talk.getUser().getUserNo())) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
-                "You can only control talks you started. (talkId: %s)".formatted(requestedTalkId));
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "You can only control talks you started. (talkId: %s)".formatted(requestedTalkId));
         }
     }
 
