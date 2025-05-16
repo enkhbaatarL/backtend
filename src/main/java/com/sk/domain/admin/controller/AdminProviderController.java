@@ -363,12 +363,22 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods-data/category/doc")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataMainCategorys() {
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataDocCategorys() {
 
         return BaseResponseFactory.create(goodsDataService.getDocTypeCategorys());
     }
 
     @ApiOrder(16)
+    @Operation(summary = "테마 타입 카테고리 조회", description = "테마 타입 카테고리를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods-data/category/theme")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<List<GoodsDataCategoryRes>> getGoodsDataThemeCategorys() {
+
+        return BaseResponseFactory.create(goodsDataService.getThemeTypeCategorys());
+    }
+
+    @ApiOrder(17)
     @Operation(summary = "언어 타입 카테고리 조회", description = "언어 타입 카테고리를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods-data/category/lang")
@@ -378,7 +388,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getLangTypeCategorys());
     }
 
-    @ApiOrder(17)
+    @ApiOrder(18)
     @Operation(summary = "정형 데이타 타입 목록을 조회", description = "정형 데이타 타입 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/goods-data/structured-data-type")
@@ -388,7 +398,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getStructuredDataType());
     }
 
-    @ApiOrder(18)
+    @ApiOrder(19)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호")
@@ -407,7 +417,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getAllGoodsDataNm(companyNo, role, providerNo, goodsNo));
     }
 
-    @ApiOrder(19)
+    @ApiOrder(20)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호"),
@@ -428,7 +438,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getGoodsData(companyNo, role, providerNo, goodsNo, goodsDataNo));
     }
 
-    @ApiOrder(20)
+    @ApiOrder(21)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호"),
@@ -450,7 +460,7 @@ public class AdminProviderController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(21)
+    @ApiOrder(22)
     @Parameters({
             @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
             @Parameter(name = "goodsNo", description = "상품번호"),

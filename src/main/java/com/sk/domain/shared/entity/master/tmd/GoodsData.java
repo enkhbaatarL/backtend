@@ -60,10 +60,14 @@ public class GoodsData extends BaseEntity {
     @Comment("고객회사")
     private CustomerCompany customerCompany;
 
+    @Column(name = "data_ctrb_nm", length = 50)
+    @Comment("데이터기고자명")
+    private String dataContributorNm;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
-            CustomerCompany customerCompany) {
+            CustomerCompany customerCompany, String dataContributorNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
@@ -72,25 +76,32 @@ public class GoodsData extends BaseEntity {
         this.goodsDataSummaryCntt = goodsDataSummaryCntt;
         this.goods = goods;
         this.customerCompany = customerCompany;
+        this.dataContributorNm = dataContributorNm;
     }
 
-    public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt) {
+    public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt,
+            String dataContributorNm) {
         return GoodsData.builder()
                 .goodsDataNm(goodsDataNm)
                 .goodsDataExpn(goodsDataExpn)
                 .goodsDataSummaryCntt(goodsDataSummaryCntt)
                 .goods(goods)
                 .customerCompany(customerCompany)
+                .dataContributorNm(dataContributorNm)
                 .build();
     }
 
-    public void update(String goodsDataExpn, String goodsDataSummaryCntt) {
+    public void update(String goodsDataExpn, String goodsDataSummaryCntt, String dataContributorNm) {
         if (StringUtils.isNotEmpty(goodsDataExpn)) {
             this.goodsDataExpn = goodsDataExpn;
         }
 
         if (StringUtils.isNotEmpty(goodsDataSummaryCntt)) {
             this.goodsDataSummaryCntt = goodsDataSummaryCntt;
+        }
+
+        if (StringUtils.isNotEmpty(dataContributorNm)) {
+            this.dataContributorNm = dataContributorNm;
         }
 
         this.modifyDt = LocalDateTime.now();

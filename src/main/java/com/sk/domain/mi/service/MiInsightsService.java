@@ -315,7 +315,7 @@ public class MiInsightsService {
     // Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
 
     // GoodsData savedGoodsData = goodsDataRepository
-    // .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i)));
+    // .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i), "기고자명 %d".formatted(i)));
 
     // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
     // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
