@@ -69,11 +69,15 @@ public class UploadedFile extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isImageConversionCompleted;
 
+    @Column(name = "file_hash_val", length = 20)
+    @Comment("파일해시값")
+    private String fileHashVal;
+
     @Builder
     public UploadedFile(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Long fileNo, String originalFileNm, String storageFileNm, String storagePathNm, Long fileSize,
             String fileExtNm, String mimeTypeNm, String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo,
-            String fileRelationshipObjectSeparateCd, Integer filePageCnt, Boolean isImageConversionCompleted) {
+            String fileRelationshipObjectSeparateCd, Integer filePageCnt, Boolean isImageConversionCompleted, String fileHashVal) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.fileNo = fileNo;
         this.originalFileNm = originalFileNm;
@@ -87,11 +91,12 @@ public class UploadedFile extends BaseEntity {
         this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
         this.filePageCnt = filePageCnt;
         this.isImageConversionCompleted = isImageConversionCompleted;
+        this.fileHashVal = fileHashVal;
     }
 
     public static UploadedFile of(String originalFileNm, String storageFileNm, String storagePathNm, long fileSize, String fileExtNm,
             String mimeTypeNm,
-            String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCd) {
+            String fileValidEndDt, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCd, String fileHashVal) {
         return UploadedFile.builder()
                 .originalFileNm(originalFileNm)
                 .storageFileNm(storageFileNm)
@@ -103,6 +108,7 @@ public class UploadedFile extends BaseEntity {
                 .fileRelationshipObjectDistinguishNo(fileRelationshipObjectDistinguishNo)
                 .fileRelationshipObjectSeparateCd(fileRelationshipObjectSeparateCd)
                 .isImageConversionCompleted(Boolean.FALSE)
+                .fileHashVal(fileHashVal)
                 .build();
     }
 

@@ -9,6 +9,7 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.request.provider.*;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
+import com.sk.domain.admin.dto.response.file.FileExistRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.admin.dto.response.provider.*;
@@ -533,6 +534,7 @@ public class AdminProviderController {
     @PostMapping(value = "/goods-datas/upload-file/unstructured-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
+            @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         int companyNo = authorizationService.getCompanyNo();
@@ -560,10 +562,22 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, false));
+        return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, false, fileHash));
     }
 
-    @ApiOrder(93)
+    @ApiOrder(92)
+    @Operation(summary = "같은(파일명 and 해쉬값) 비정형 데이타 파일 존재하는지 체크", description = "같은(파일명 and 해쉬값) 비정형 데이타 파일이 존재하는지 체크합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping(value = "/goods-datas/upload-file/unstructured-data/exist")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<FileExistRes> uploadUnstructuredDataFile(
+            @RequestParam(value = "fileName", required = false, defaultValue = "") String fileName,
+            @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash) {
+
+        return BaseResponseFactory.create(adminFileService.fileExist(fileName, fileHash));
+    }
+
+    @ApiOrder(99)
     @Operation(summary = "비정형 데이타 파일 다운로드", description = "비정형 데이타 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/goods-datas/download-file/unstructured-data/{fileNo}")
