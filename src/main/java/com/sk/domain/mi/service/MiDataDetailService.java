@@ -61,7 +61,7 @@ public class MiDataDetailService {
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
-    private final MiUserService userService;
+    private final MiGoodsPermissionService userService;
     private final ChartGenerationService chartGenerationService;
     private final PersonalizationService personalizationService;
     private final TechnicalIndicatorService technicalIndicatorService;

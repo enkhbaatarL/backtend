@@ -75,43 +75,47 @@ public class CustomCustomerCompanyProviderMappingRepositoryImpl implements Custo
 
         // 1. 고객사-프로바이더 매핑 수정 일시(삭제 포함)
         Tuple ccpMappings = queryFactory
-            .select(customerCompanyProviderMapping.modifyDt.max(), customerCompanyProviderMapping.modifyUserId)
+            .select(customerCompanyProviderMapping.modifyDt, customerCompanyProviderMapping.modifyUserId)
             .from(customerCompanyProviderMapping)
             .where(customerCompanyProviderMapping.customerCompany.customerCompanyNo.eq(companyNo)
                 .and(customerCompanyProviderMapping.provider.providerNo.eq(providerNo)))
+            .orderBy(customerCompanyProviderMapping.modifyDt.desc()) // 최신순 정렬
+            .limit(1) // 가장 최근 1건
             .fetchOne();
 
-        if (ObjectUtils.isEmpty(ccpMappings.get(0, LocalDateTime.class))) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company-provider-mapping]. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo));
+        if (ccpMappings == null || ccpMappings.get(customerCompanyProviderMapping.modifyDt) == null) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "It doesn't exist in the [company-provider-mapping] or has no modification date. companyNo: %s, providerNo: %s".formatted(companyNo, providerNo));
         }
 
         // 2. 고객사-상품 매핑 수정 일시(삭제 포함)
         Tuple ccgMappings = queryFactory
-            .select(customerCompanyGoodsMapping.modifyDt.max(), customerCompanyGoodsMapping.modifyUserId)
+            .select(customerCompanyGoodsMapping.modifyDt, customerCompanyGoodsMapping.modifyUserId)
             .from(customerCompanyGoodsMapping)
             .where(customerCompanyGoodsMapping.customerCompany.customerCompanyNo.eq(companyNo))
+            .orderBy(customerCompanyGoodsMapping.modifyDt.desc()) // 최신순 정렬
+            .limit(1) // 가장 최근 1건
             .fetchOne();
 
         // 최신 날짜와 수정자 정보 찾기
-        LocalDateTime latestModifyDt = null;
-        String latestModifyId = null;
+        LocalDateTime latestModifyDt;
+        String latestModifyId;
         String latestModifyNm = null;
 
-        if (ObjectUtils.isNotEmpty(ccpMappings)) {
-            LocalDateTime date = ccpMappings.get(0, LocalDateTime.class);
-            latestModifyDt = date;
-            latestModifyId = ccpMappings.get(1, String.class);
-        }
+        latestModifyDt = ccpMappings.get(customerCompanyProviderMapping.modifyDt);
+        latestModifyId = ccpMappings.get(customerCompanyProviderMapping.modifyUserId);
 
-        if (ObjectUtils.isNotEmpty(ccgMappings)) {
-            LocalDateTime date = ccgMappings.get(0, LocalDateTime.class);
-            if (latestModifyDt == null || date != null && date.isAfter(latestModifyDt)) {
+        if (ccgMappings != null) {
+            LocalDateTime date = ccgMappings.get(customerCompanyGoodsMapping.modifyDt);
+            String userId = ccgMappings.get(customerCompanyGoodsMapping.modifyUserId);
+
+            if (date != null && (latestModifyDt == null || date.isAfter(latestModifyDt))) {
                 latestModifyDt = date;
-                latestModifyId = ccgMappings.get(1, String.class);
+                latestModifyId = userId;
             }
         }
 
-        if (ObjectUtils.isNotEmpty(latestModifyId)) {
+        if (latestModifyId != null && !latestModifyId.isEmpty()) {
             latestModifyNm = queryFactory
                 .select(user.userNm)
                 .from(user)

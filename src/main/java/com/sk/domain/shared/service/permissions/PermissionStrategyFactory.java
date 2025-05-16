@@ -1,6 +1,6 @@
 package com.sk.domain.shared.service.permissions;
 
-import com.sk.domain.mi.service.MiUserService;
+import com.sk.domain.mi.service.MiGoodsPermissionService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.strategy.*;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PermissionStrategyFactory {
 
-    private final MiUserService userService;
+    private final MiGoodsPermissionService userService;
     private final AuthorizationService authService;
 
     public PermissionStrategy getStrategy(PermissionCondition condition) {

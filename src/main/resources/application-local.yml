@@ -5,7 +5,7 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     master:
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #      jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: ${SKT_MI_DB_USERNAME_MASTER:min}
@@ -15,7 +15,7 @@ spring:
         max-lifetime: 60000
     tenant-datasources:
       SKCC:
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
@@ -24,7 +24,7 @@ spring:
           maximum-pool-size: 5
           max-lifetime: 60000
       SKT:
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
 #        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
@@ -33,8 +33,8 @@ spring:
           maximum-pool-size: 5
           max-lifetime: 60000
       midb:
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-#          jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+#        jdbc-url: jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
         password: ${SKT_MI_DB_PASSWORD_MASTER:min}
@@ -67,14 +67,15 @@ spring:
             acs:
               location: https://dev-mi.sk.com/saml2/sso/mi
               binding: POST
-            single-sign-on-service:
-              location: https://dev-mi.sk.com/saml2/authenticate/mi
-              binding: POST
             singlelogout:
               url: https://dev-mi.sk.com/saml/SingleLogout
             assertingparty:
               metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
+              credentials:
+                - private-key-location: classpath:saml/sp/key/sp-private.key
+                  certificate-location: classpath:saml/sp/key/sp-cert.crt
+            decryption:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt

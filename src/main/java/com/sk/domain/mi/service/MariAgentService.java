@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -91,10 +92,14 @@ public class MariAgentService {
     }
 
     @Transactional
-    public Object postQna(TalkReq talkReq, User user) {
+    public Object postTalk(TalkReq.Insert talkReq, User user) {
 
         ChatbotTalk talk = chatbotTalkRepository
             .findByChatbotTalkUuidAndIsDeletedFalse(talkReq.talkId().toString())
+            .map(existingTalk -> {
+                validateTalkOwnership(existingTalk, user, talkReq.talkId().toString());
+                return existingTalk;
+            })
             .orElseGet(() -> chatbotTalkRepository.save(ChatbotTalk.of(talkReq, user)));
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
@@ -105,16 +110,73 @@ public class MariAgentService {
         return null;
     }
 
+
+    /**
+     * 주어진 ID에 해당하는 챗봇 대화 정보를 업데이트합니다.
+     *
+     * @param talkId  업데이트할 챗봇 대화 ID
+     * @param talkReq 업데이트 요청 객체
+     * @param user    요청한 사용자 객체
+     * @return 업데이트된 대화 응답 객체
+     */
+    @Transactional
+    public TalkRes patchTalk(String talkId, TalkReq.Update talkReq, User user) {
+
+        ChatbotTalk talk = chatbotTalkRepository.findByChatbotTalkUuidAndIsDeletedFalse(talkId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [talk]. talkId: %s".formatted(talkId)));
+
+        validateTalkOwnership(talk, user, talkId);
+
+        talk.update(talkReq);
+
+        return TalkRes.of(talk);
+    }
+
+    /**
+     * 주어진 ID에 해당하는 챗봇 대화를 소프트 삭제 처리합니다.
+     *
+     * @param talkId 삭제할 챗봇 대화 ID
+     * @param user   요청한 사용자 객체
+     * @return 삭제된 대화 응답 객체
+     */
+    @Transactional
+    public TalkRes deleteTalk(String talkId, User user) {
+
+        ChatbotTalk talk = chatbotTalkRepository.findByChatbotTalkUuidAndIsDeletedFalse(talkId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [talk]. talkId: %s".formatted(talkId)));
+
+        validateTalkOwnership(talk, user, talkId);
+
+        talk.softDelete();
+
+        return TalkRes.of(talk);
+    }
+
     @Transactional
     public Object postQnaRetry(String talkId, Integer qnaNo, User user) {
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(qnaNo, talkId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. talkId: %s, qnaNo: %s".formatted(talkId, qnaNo)));
 
+        validateTalkOwnership(qna.getChatbotTalk(), user, talkId);
+
         // 모델 에이전트 질의
         executeModelAgent(qna);
 
         return null;
+    }
+
+    /**
+     * 주어진 챗봇 대화와 사용자 정보를 기반으로 대화 소유권을 검증합니다.
+     *
+     * @param talk            검증할 챗봇 대화 객체
+     * @param currentUser     현재 사용자 객체
+     * @param requestedTalkId 요청된 챗봇 대화 ID
+     */
+    private void validateTalkOwnership(ChatbotTalk talk, User currentUser, String requestedTalkId) {
+        if (!Objects.equals(currentUser.getUserNo(), talk.getUser().getUserNo())) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "You can only control talks you started. (talkId: %s)".formatted(requestedTalkId));
+        }
     }
 
     private void executeModelAgent(ChatbotTalkQna qna) {
