@@ -27,6 +27,9 @@ public record InsightsDataRes(
         @Schema(description = "상품데이터설명", example = "") 
         String goodsDataExpn,
 
+        @Schema(description = "상품데이터카테고리", example = "") 
+        String goodsDataCategory,
+
         @Schema(description = "상품데이터 수정 시간", example = "") 
         LocalDateTime modifyDt) {
 
