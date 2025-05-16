@@ -1,11 +1,11 @@
 package com.sk.domain.shared.entity.master.tcm;
 
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.mi.dto.request.agent.TalkReq;
+import com.sk.domain.mi.dto.request.agent.ChatRoomReq;
+import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.User;
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -59,9 +59,9 @@ public class ChatbotTalk extends BaseEntity {
         this.finalTalkDt = finalTalkDt;
     }
 
-    public static ChatbotTalk of(TalkReq.Insert talkReq, User user) {
+    public static ChatbotTalk of(String chatRoomId, QnaReq.Insert talkReq, User user) {
         return ChatbotTalk.builder()
-                .chatbotTalkUuid(talkReq.talkId().toString())
+                .chatbotTalkUuid(chatRoomId)
                 .user(user)
                 .talkTitleNm(talkReq.question())
                 .talkFirstQuestionCntt(talkReq.question())
@@ -70,10 +70,10 @@ public class ChatbotTalk extends BaseEntity {
                 .build();
     }
 
-    public void update(TalkReq.Update talkReq) {
+    public void update(ChatRoomReq chatRoomReq) {
 
-        if (ObjectUtils.isNotEmpty(talkReq)) {
-            this.talkTitleNm = talkReq.title();
+        if (ObjectUtils.isNotEmpty(chatRoomReq)) {
+            this.talkTitleNm = chatRoomReq.title();
         }
 
     }

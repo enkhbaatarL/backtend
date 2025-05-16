@@ -5,12 +5,16 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.thymeleaf.util.StringUtils;
 
+import java.util.Optional;
+
 @Converter
 public class StringToAssessmentFeedbackCdConverter implements AttributeConverter<AssessmentFeedbackCd, String> {
 
     @Override
     public String convertToDatabaseColumn(AssessmentFeedbackCd assessmentFeedbackCd) {
-        return assessmentFeedbackCd.getCode();
+        return Optional.ofNullable(assessmentFeedbackCd)
+            .map(AssessmentFeedbackCd::getCode)
+            .orElse(null);
     }
 
     @Override
