@@ -96,6 +96,10 @@ public class GoodsData extends BaseEntity {
         this.modifyDt = LocalDateTime.now();
     }
 
+    public void updateGoodsDataDistinguishId(String goodsDataDistinguishId) {
+        this.goodsDataDistinguishId = goodsDataDistinguishId;
+    }
+
     public void softDelete() {
         super.softDelete();
     }

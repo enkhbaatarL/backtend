@@ -13,7 +13,7 @@ public enum NoticeCategory {
     CATEGORY1("CATEGORY1", "시스템"), 
     CATEGORY2("CATEGORY2", "데이터"),
     CATEGORY3("CATEGORY3", "일반"),
-    CATEGORY4("CATEGORY3", "기타");
+    CATEGORY4("CATEGORY4", "기타");
 
   private final String code;
   private final String name;

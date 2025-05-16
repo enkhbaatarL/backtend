@@ -45,3 +45,6 @@ bin/
 
 # OS
 .DS_Store
+
+# Temp
+temp/
