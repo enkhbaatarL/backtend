@@ -162,7 +162,7 @@ public class MariAgentService {
 
         qna.update(qnaAssessmentReq);
 
-        return QnaRes.of(qna);
+        return QnaRes.ofCompact(qna);
     }
 
     /**

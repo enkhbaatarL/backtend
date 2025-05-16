@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.agent;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
@@ -22,6 +23,7 @@ public record QnaRes(
     @Schema(description = "질의문", example = "삼성전자 주가는?")
     String question,
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "AI응답", example = "?")
     AnswerRes answer,
 
@@ -92,6 +94,26 @@ public record QnaRes(
 
     public static QnaRes of(ChatbotTalkQna qna) {
         return new QnaRes(qna);
+    }
+
+    public static QnaRes ofCompact(ChatbotTalkQna qna) {
+        return QnaRes.builder()
+            .qnaNo(qna.getChatbotTalkQnaNo())
+            .question(qna.getUserQuestionCntt())
+            .isRecommended(qna.getIsRecommended())
+            .isNotRecommended(qna.getIsNotRecommended())
+            .statusCd(qna.getAnswerStatusCd())
+            .statusNm(qna.getAnswerStatusCd().getDescription())
+            .feedbackCd(qna.getAssessmentFeedbackCd())
+            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null))
+            .feedbackComment(qna.getAssessmentFeedbackCntt())
+            .auditInfo(AuditInfo.ofSimple(
+                qna.getCreateUserId(),
+                qna.getCreateDt(),
+                qna.getModifyUserId(),
+                qna.getModifyDt()
+            ))
+            .build();
     }
 
     public static QnaRes of(ChatbotTalkQna qna, ModelAgentRes modelAgentRes) {
