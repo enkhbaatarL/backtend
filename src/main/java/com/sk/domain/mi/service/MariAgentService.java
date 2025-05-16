@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.request.agent.TalkReq;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.TalkRes;
+import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -92,7 +94,7 @@ public class MariAgentService {
     }
 
     @Transactional
-    public Object postTalk(TalkReq.Insert talkReq, User user) {
+    public QnaRes postTalk(TalkReq.Insert talkReq, User user) {
 
         ChatbotTalk talk = chatbotTalkRepository
             .findByChatbotTalkUuidAndIsDeletedFalse(talkReq.talkId().toString())
@@ -105,9 +107,9 @@ public class MariAgentService {
         ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
 
         // 모델 에이전트 질의
-        executeModelAgent(qna);
+        Optional<ModelAgentRes> modelAgentResOptional = executeModelAgent(qna);
 
-        return null;
+        return QnaRes.of(qna);
     }
 
 
@@ -161,7 +163,7 @@ public class MariAgentService {
         validateTalkOwnership(qna.getChatbotTalk(), user, talkId);
 
         // 모델 에이전트 질의
-        executeModelAgent(qna);
+        Optional<ModelAgentRes> modelAgentResOptional = executeModelAgent(qna);
 
         return null;
     }
@@ -179,12 +181,14 @@ public class MariAgentService {
         }
     }
 
-    private void executeModelAgent(ChatbotTalkQna qna) {
+    private Optional<ModelAgentRes> executeModelAgent(ChatbotTalkQna qna) {
         try {
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getUserQuestionCntt());
             qna.updateResult(modelAgentRes);
+            return Optional.of(modelAgentRes);
         } catch (Exception e) {
             qna.updateResult();
+            return Optional.empty();
         }
     }
 

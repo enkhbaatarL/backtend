@@ -40,13 +40,16 @@ public record UserDetailRes(
     @Schema(description = "개인정보동의여부")
     Boolean isIndividualInfoAgreement,
 
-    @Schema(description = "고객회사명")
+    @Schema(description = "고객회사 번호")
+    Integer companyNo,
+
+    @Schema(description = "고객회사 명")
     String companyNm
 
 ) {
 
     @Builder
-    public UserDetailRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, String companyNm) {
+    public UserDetailRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
@@ -58,6 +61,7 @@ public record UserDetailRes(
         this.departmentNm = departmentNm;
         this.isOtherServiceAccessPossible = isOtherServiceAccessPossible;
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
+        this.companyNo = companyNo;
         this.companyNm = companyNm;
     }
 
@@ -74,6 +78,7 @@ public record UserDetailRes(
             .departmentNm(entity.getDepartmentNm())
             .isOtherServiceAccessPossible(entity.getIsOtherServiceAccessPossible())
             .isIndividualInfoAgreement(entity.getIsIndividualInfoAgreement())
+            .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
             .build();
     }

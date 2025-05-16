@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.request.agent.TalkReq;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.TalkRes;
+import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.service.MariAgentService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
@@ -82,7 +83,7 @@ public class MiMariAgentController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/talk")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> postTalk(
+    public BaseResponse<QnaRes> postTalk(
         @RequestBody @Valid TalkReq.Insert talkReq,
         @UserResolve User user
     ) {

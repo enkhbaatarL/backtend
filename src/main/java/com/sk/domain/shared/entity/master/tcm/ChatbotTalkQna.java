@@ -1,6 +1,8 @@
 package com.sk.domain.shared.entity.master.tcm;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.common.utils.JsonUtil;
+import com.sk.common.utils.StringUtil;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.TalkReq;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
@@ -113,6 +115,8 @@ public class ChatbotTalkQna extends BaseEntity {
 
     public void updateResult(ModelAgentRes modelAgentRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
+        this.chatbotAnswerCntt = JsonUtil.toJson(modelAgentRes);
+        // todo 토큰 수 업데이트
     }
 
     public void updateResult() {

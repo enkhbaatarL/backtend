@@ -1,12 +1,16 @@
 package com.sk.domain.mi.dto.response.agent;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.common.utils.JsonUtil;
+import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.Optional;
 
@@ -19,7 +23,7 @@ public record QnaRes(
     String question,
 
     @Schema(description = "AI답변", example = "?")
-    String answer,
+    AnswerRes answer,
 
     @Schema(description = "추천 여부", example = "true")
     Boolean isRecommended,
@@ -27,10 +31,10 @@ public record QnaRes(
     @Schema(description = "비추천 여부", example = "false")
     Boolean isNotRecommended,
 
-    @Schema(description = "채팅 상태 코드", example = "COMPLETE", allowableValues = {"COMPLETE", "PENDING", "FAIL"})
+    @Schema(description = "답변 상태 코드", example = "COMPLETE", allowableValues = {"COMPLETE", "PENDING", "FAIL"})
     AnswerStatusCd statusCd,
 
-    @Schema(description = "채팅 상태 명", example = "완료", allowableValues = {"완료", "대기", "실패"})
+    @Schema(description = "답변 상태 명", example = "완료", allowableValues = {"완료", "대기", "실패"})
     String statusNm,
 
     @Schema(description = "피드백 코드", example = "OTHER", allowableValues = {"BUG_ISSUE", "NO_POSSIBLE_RESPONSE", "NOT_FOLLOW_REQUEST", "INACCURATE_INFORMATION", "INCOMPLETE_RESPONSE", "OTHER"})
@@ -51,7 +55,10 @@ public record QnaRes(
         this(
             entity.getChatbotTalkQnaNo(),
             entity.getUserQuestionCntt(),
-            entity.getChatbotAnswerCntt(),
+            Optional.ofNullable(entity.getChatbotAnswerCntt())
+                .map(str -> JsonUtil.fromJson(str, ModelAgentRes.class))
+                .map(AnswerRes::of)
+                .orElse(null),
             entity.getIsRecommended(),
             entity.getIsNotRecommended(),
             entity.getAnswerStatusCd(),
@@ -69,7 +76,7 @@ public record QnaRes(
     }
 
     @Builder
-    public QnaRes(Integer qnaNo, String question, String answer, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd statusCd, String statusNm, AssessmentFeedbackCd feedbackCd, String feedbackNm, String feedbackComment, AuditInfo auditInfo) {
+    public QnaRes(Integer qnaNo, String question, AnswerRes answer, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd statusCd, String statusNm, AssessmentFeedbackCd feedbackCd, String feedbackNm, String feedbackComment, AuditInfo auditInfo) {
         this.qnaNo = qnaNo;
         this.question = question;
         this.answer = answer;
