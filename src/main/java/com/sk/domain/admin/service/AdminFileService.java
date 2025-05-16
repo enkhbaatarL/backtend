@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -18,9 +19,9 @@ import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PathUtil;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
+import com.sk.domain.admin.dto.response.file.FileExistRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -121,7 +122,70 @@ public class AdminFileService {
                     mimeTypeNm,
                     DateUtil.endYmd(),
                     fileRelationshipObjectDistinguishNo,
-                    fileRelationshipObjectSeparateCd));
+                    fileRelationshipObjectSeparateCd,
+                    null));
+
+            return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
+        } catch (Exception e) {
+            log.error("Exception during upload: {}", e.getMessage(), e);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+    }
+
+    /**
+    * 파일을 업로드 한다.
+    *
+    * @param companyCd 회사코드
+    * @param role 역할
+    * @param file 단일 파일 업로드
+    * @return FileUploadRes
+    */
+    @Transactional
+    public FileUploadRes uploadFile(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash) {
+        if (file == null) {
+            throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
+        }
+
+        if (file.getSize() <= 0) {
+            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
+        }
+
+        if (uploadedFileRepository.findByFileNameAndFileHash(Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC), fileHash)
+                .size() > 0) {
+            throw AppErrorException.of(ResultCode.Error.FILE_ALREADY_EXIST);
+        }
+
+        try {
+            String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
+            String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
+            long fileSize = file.getSize();
+            String mimeTypeNm = file.getContentType();
+
+            String customerCompanyCd = companyCd.toLowerCase();
+            String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
+            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
+            String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
+                    + PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR)
+                    + storageFileNm;
+            Integer fileRelationshipObjectDistinguishNo = 0;
+            String fileRelationshipObjectSeparateCd = FileRelationshipObjectSeparateCode.TEMP.getCode();
+
+            // Object Storage 저장
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR) + storageFileNm;
+            String fileUrl = adminObjectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+
+            // DB 에 저장
+            UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
+                    originalFileNm,
+                    storageFileNm,
+                    storagePathNm,
+                    fileSize,
+                    fileExtNm,
+                    mimeTypeNm,
+                    DateUtil.endYmd(),
+                    fileRelationshipObjectDistinguishNo,
+                    fileRelationshipObjectSeparateCd,
+                    fileHash));
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
@@ -254,6 +318,13 @@ public class AdminFileService {
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
+    }
+
+    public FileExistRes fileExist(String fileName, String fileHash) {
+        List<UploadedFile> list = uploadedFileRepository.findByFileNameAndFileHash(Normalizer.normalize(fileName, Normalizer.Form.NFC),
+                fileHash);
+
+        return FileExistRes.of(list.size() > 0);
     }
 
     private String getFileExtension(String fileName) {

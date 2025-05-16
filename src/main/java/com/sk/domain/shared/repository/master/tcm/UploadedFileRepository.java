@@ -41,8 +41,10 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             AND (u.isImageConversionCompleted != true OR u.isImageConversionCompleted IS NULL)
             AND u.fileExtNm = :fileExtNm
             AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCd
+            AND u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
             """)
-    List<UploadedFile> findPdfToImagesTarget(String fileExtNm, String fileRelationshipObjectSeparateCd);
+    List<UploadedFile> findPdfToImagesTarget(@Param("fileExtNm") String fileExtNm,
+            @Param("fileRelationshipObjectSeparateCd") String fileRelationshipObjectSeparateCd);
 
     @Query(value = """
             SELECT u
@@ -61,6 +63,18 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
             AND u.isDeleted = false
+            AND u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
             """)
-    List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(Integer fileRelationshipObjectDistinguishNo);
+    List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(
+            @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo);
+
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.originalFileNm = :fileName
+                AND u.fileHashVal = :fileHash
+                AND u.isDeleted = false
+                AND u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
+            """)
+    List<UploadedFile> findByFileNameAndFileHash(@Param("fileName") String fileName, @Param("fileHash") String fileHash);
 }
