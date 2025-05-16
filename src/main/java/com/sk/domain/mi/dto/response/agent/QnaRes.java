@@ -16,13 +16,13 @@ import java.util.Optional;
 
 public record QnaRes(
 
-    @Schema(description = "질의응답 ID", example = "1004")
+    @Schema(description = "질의응답 번호", example = "1004")
     Integer qnaNo,
 
-    @Schema(description = "질문", example = "삼성전자 주가는?")
+    @Schema(description = "질의문", example = "삼성전자 주가는?")
     String question,
 
-    @Schema(description = "AI답변", example = "?")
+    @Schema(description = "AI응답", example = "?")
     AnswerRes answer,
 
     @Schema(description = "추천 여부", example = "true")
@@ -92,6 +92,27 @@ public record QnaRes(
 
     public static QnaRes of(ChatbotTalkQna qna) {
         return new QnaRes(qna);
+    }
+
+    public static QnaRes of(ChatbotTalkQna qna, ModelAgentRes modelAgentRes) {
+        return QnaRes.builder()
+            .qnaNo(qna.getChatbotTalkQnaNo())
+            .question(qna.getUserQuestionCntt())
+            .answer(AnswerRes.of(modelAgentRes))
+            .isRecommended(qna.getIsRecommended())
+            .isNotRecommended(qna.getIsNotRecommended())
+            .statusCd(qna.getAnswerStatusCd())
+            .statusNm(qna.getAnswerStatusCd().getDescription())
+            .feedbackCd(qna.getAssessmentFeedbackCd())
+            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null))
+            .feedbackComment(qna.getAssessmentFeedbackCntt())
+            .auditInfo(AuditInfo.ofSimple(
+                qna.getCreateUserId(),
+                qna.getCreateDt(),
+                qna.getModifyUserId(),
+                qna.getModifyDt()
+            ))
+            .build();
     }
 
 }
