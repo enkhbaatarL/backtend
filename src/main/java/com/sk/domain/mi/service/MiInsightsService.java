@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.antlr.v4.runtime.atn.SemanticContext.AND;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -161,6 +163,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
+                .append(" GROUP_CONCAT(DISTINCT tgdc.gds_data_ctgr_cd ORDER BY tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
                 .append(" tgd.mod_dtm AS modifyDt");
 
         StringBuilder where = new StringBuilder()
@@ -172,7 +175,8 @@ public class MiInsightsService {
                 .append(" AND tp.del_yn = 'N'")
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
-                .append(" AND tgdc.del_yn = 'N'");
+                .append(" AND tgdc.del_yn = 'N'")
+                .append(" AND tccd.high_cd_id = 'A_TYPES'");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -216,6 +220,7 @@ public class MiInsightsService {
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                LEFT JOIN midb.tcm_commcdd tccd ON tccd.cd_id = tgdc.gds_data_ctgr_cd
                 JOIN (
                     SELECT DISTINCT gds_data_no
                     FROM midb.tmd_gdsdatactgrl
@@ -234,6 +239,7 @@ public class MiInsightsService {
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                LEFT JOIN midb.tcm_commcdd tccd ON tccd.cd_id = tgdc.gds_data_ctgr_cd
                 JOIN (
                     SELECT DISTINCT gds_data_no
                     FROM midb.tmd_gdsdatactgrl
@@ -283,7 +289,8 @@ public class MiInsightsService {
                         (Integer) row[4], // goodsDataNo
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
-                        ((Timestamp) row[7]).toLocalDateTime() // modifyDt
+                        (String) row[7], // goodsDataCategory
+                        ((Timestamp) row[8]).toLocalDateTime() // modifyDt
                 ))
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
@@ -315,7 +322,7 @@ public class MiInsightsService {
     // Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
 
     // GoodsData savedGoodsData = goodsDataRepository
-    // .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i)));
+    // .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i), "기고자명 %d".formatted(i)));
 
     // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
     // GoodsDataManagementSeparateCode.GDAT.getCode(), null));

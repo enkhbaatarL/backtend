@@ -150,6 +150,15 @@ public class AdminGoodsDataService {
     }
 
     /**
+    * 테마 타입 카테고리 목록을 조회한다.
+    *
+    * @return List<GoodsDataCatgoryRes>
+    */
+    public List<GoodsDataCategoryRes> getThemeTypeCategorys() {
+        return commonCodeDetailRepository.findThemeTypeCategory();
+    }
+
+    /**
     * 언어 타입 카테고리 목록을 조회한다.
     *
     * @return List<GoodsDataCatgoryRes>
@@ -303,7 +312,8 @@ public class AdminGoodsDataService {
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
-                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt()));
+                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
+                        dto.dataContributorNm()));
 
         // todo: 프로바이더 타입 카테고리 등록
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -479,7 +489,7 @@ public class AdminGoodsDataService {
     }
 
     private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
-        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt());
+        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm());
 
         // 문서 타입 카테고리 수정
         if (dto.docCategoryList() != null) {

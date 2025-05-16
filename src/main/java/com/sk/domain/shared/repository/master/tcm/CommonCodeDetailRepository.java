@@ -99,6 +99,23 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             AND ccd.useBeginDt <= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
             AND ccd.useEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
             AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
+            AND ccd.highCodeId = 'B_THEMES'
+            ORDER BY ccd.codeRnk
+            """)
+    List<GoodsDataCategoryRes> findThemeTypeCategory();
+
+    @Query(value = """
+            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(
+            ccd.id.codeId,
+            ccd.codeNm,
+            ccd.codeExpn
+            )
+            FROM CommonCodeDetail ccd
+            WHERE ccd.isDeleted = false
+            AND ccd.isUsed = true
+            AND ccd.useBeginDt <= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
+            AND ccd.useEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))}
+            AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
             AND ccd.highCodeId = 'A_LANGUAGES'
             ORDER BY ccd.codeRnk
             """)
