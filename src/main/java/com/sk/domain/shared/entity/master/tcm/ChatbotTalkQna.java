@@ -1,8 +1,9 @@
 package com.sk.domain.shared.entity.master.tcm;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
-import com.sk.domain.mi.dto.request.agent.TalkReq;
+import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
@@ -10,7 +11,6 @@ import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +19,10 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Getter
 @Entity
@@ -70,8 +74,16 @@ public class ChatbotTalkQna extends BaseEntity {
     @Comment("챗봇평가피드백내용")
     private String assessmentFeedbackCntt;
 
+    @Column(name = "inpt_tokn_cnt", nullable = false, columnDefinition = "mediumint unsigned")
+    @Comment("입력토큰수")
+    private Integer inputTokenCnt;
+
+    @Column(name = "outp_tokn_cnt", nullable = false, columnDefinition = "mediumint unsigned")
+    @Comment("출력토큰수")
+    private Integer outputTokenCnt;
+
     @Builder
-    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt, String chatbotAnswerCntt, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd answerStatusCd, AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt) {
+    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt, String chatbotAnswerCntt, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd answerStatusCd, AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt, Integer inputTokenCnt, Integer outputTokenCnt) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.chatbotTalkQnaNo = chatbotTalkQnaNo;
         this.chatbotTalk = chatbotTalk;
@@ -82,9 +94,11 @@ public class ChatbotTalkQna extends BaseEntity {
         this.answerStatusCd = answerStatusCd;
         this.assessmentFeedbackCd = assessmentFeedbackCd;
         this.assessmentFeedbackCntt = assessmentFeedbackCntt;
+        this.inputTokenCnt = inputTokenCnt;
+        this.outputTokenCnt = outputTokenCnt;
     }
 
-    public static ChatbotTalkQna of(TalkReq.Insert talkReq, ChatbotTalk talk) {
+    public static ChatbotTalkQna of(QnaReq.Insert talkReq, ChatbotTalk talk) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
             .userQuestionCntt(talkReq.question())
@@ -111,11 +125,32 @@ public class ChatbotTalkQna extends BaseEntity {
 
     }
 
-    public void updateResult(ModelAgentRes modelAgentRes) {
+    public void updateCompleteResult(ModelAgentRes modelAgentRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
+        this.chatbotAnswerCntt = Optional.ofNullable(modelAgentRes).map(JsonUtil::toJson).orElse(null);
+        this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
+            .map(ModelAgentRes::output)
+            .map(ModelAgentRes.Output::messages)
+            .orElseGet(Collections::emptyList)
+            .stream()
+            .filter(Objects::nonNull)
+            .map(ModelAgentRes.Output.Message::usageMetadata)
+            .filter(Objects::nonNull)
+            .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::inputTokens)
+            .sum();
+        this.outputTokenCnt = Optional.ofNullable(modelAgentRes)
+            .map(ModelAgentRes::output)
+            .map(ModelAgentRes.Output::messages)
+            .orElseGet(Collections::emptyList)
+            .stream()
+            .filter(Objects::nonNull)
+            .map(ModelAgentRes.Output.Message::usageMetadata)
+            .filter(Objects::nonNull)
+            .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::outputTokens)
+            .sum();
     }
 
-    public void updateResult() {
+    public void updateFailResult() {
         this.answerStatusCd = AnswerStatusCd.FAIL;
     }
 

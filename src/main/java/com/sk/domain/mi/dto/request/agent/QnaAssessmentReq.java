@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record QnaAssessmentReq(
 
-    @Schema(description = "추천 여부", example = "true", defaultValue = "false")
+    @Schema(description = "AI 답변 추천 여부", example = "true", defaultValue = "false")
     Boolean isRecommended,
 
     @Schema(
@@ -16,7 +16,9 @@ public record QnaAssessmentReq(
     AssessmentFeedbackCd feedbackCd,
 
     @Schema(
-        description = "피드백 내용 (feedbackCd가 'OTHER'인 경우에 피드백 내용을 추가할 수 있음)", example = "너무 느림")
+        description = "피드백 내용 (feedbackCd가 'OTHER'인 경우에 피드백 내용을 추가할 수 있음)",
+        example = "너무 느림"
+    )
     String feedbackComment
 
 ) {
