@@ -74,10 +74,11 @@ public class MiBulletinBoardController {
             @RequestParam(value = "category", required = false, defaultValue = "") String category,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
 
+        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(miBulletinBoardService.getAllNotices(cNo, role, page, size, category, keyword));
+        return BaseResponseFactory.create(miBulletinBoardService.getAllNotices(cNo, userNo, role, page, size, category, keyword));
     }
 
     @ApiOrder(3)
@@ -92,10 +93,11 @@ public class MiBulletinBoardController {
             @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo,
             @PathVariable(value = "noticeNo") @Min(value = 1) Integer noticeNo) {
 
+        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(miBulletinBoardService.getNotice(cNo, noticeNo));
+        return BaseResponseFactory.create(miBulletinBoardService.getNotice(cNo, userNo, noticeNo));
     }
 
     @ApiOrder(4)
@@ -106,6 +108,8 @@ public class MiBulletinBoardController {
     public BaseResponse<PopupRes> getPopup() {
         return BaseResponseFactory.create(miBulletinBoardService.getPopup());
     }
+
+    // todo : 알림용 공지사항 리스트 조회
 
     /*******************************************************************
      *

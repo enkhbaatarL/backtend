@@ -23,7 +23,9 @@ import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
 import com.sk.domain.shared.entity.compositeKey.tcm.BulletinBoardCustomerCompanyMappingId;
+import com.sk.domain.shared.entity.compositeKey.tcm.BulletinBoardUserMappingId;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
+import com.sk.domain.shared.entity.master.tcm.BulletinBoardNotificationUser;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.FaqCategory;
@@ -32,9 +34,11 @@ import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
+import com.sk.domain.shared.repository.master.tcm.BulletinBoardNotificationUserRepository;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +52,8 @@ public class MiBulletinBoardService {
     private final UploadedFileRepository uploadedFileRepository;
     private final BulletinBoardCustomerCompanyMappingRepository bulletinBoardCustomerCompanyMappingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
+    private final BulletinBoardNotificationUserRepository bulletinBoardNotificationUserRepository;
+    private final UserRepository userRepository;
     private final MiFileService miFileService;
 
     /**
@@ -83,10 +89,10 @@ public class MiBulletinBoardService {
      * @param keyword
      * @return PaginationRes<MiNoticeRes>
      */
-    public PaginationRes<MiNoticeRes> getAllNotices(int companyNo, Role role, int page, int size, String category, String keyword) {
+    public PaginationRes<MiNoticeRes> getAllNotices(int companyNo, int userNo, Role role, int page, int size, String category, String keyword) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        return PaginationRes.toRes(bulletinBoardRepository.findAllNoticeForServicePage(companyNo, category, keyword, pageable));
+        return PaginationRes.toRes(bulletinBoardRepository.findAllNoticeForServicePage(companyNo, userNo, category, keyword, pageable));
     }
 
     /**
@@ -97,7 +103,8 @@ public class MiBulletinBoardService {
     * @param noticeNo 공지사항 번호
     * @return MiNoticeDetailRes
     */
-    public MiNoticeDetailRes getNotice(int companyNo, int noticeNo) {
+    @Transactional
+    public MiNoticeDetailRes getNotice(int companyNo, int userNo, int noticeNo) {
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
                 .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
@@ -122,6 +129,23 @@ public class MiBulletinBoardService {
                 .findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
                         bulletinBoard.getBulletinNo(),
                         FileRelationshipObjectSeparateCode.BBS.getCode());
+
+        User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "사용자 정보를 찾을 수 없습니다."));
+
+        BulletinBoardUserMappingId bulletinBoardUserMappingId = new BulletinBoardUserMappingId(bulletinBoard.getBulletinNo(), user.getUserNo());
+
+        if (!bulletinBoardNotificationUserRepository.findByIdAndIsDeletedFalse(bulletinBoardUserMappingId).isPresent()) {
+            BulletinBoardNotificationUser bulletinBoardNotificationUser = BulletinBoardNotificationUser.builder()
+                    .id(new BulletinBoardUserMappingId(bulletinBoard.getBulletinNo(), user.getUserNo()))
+                    .bulletinBoard(bulletinBoard)
+                    .user(user)
+                    .isRead(true)
+                    .build();
+
+            bulletinBoardNotificationUserRepository.save(bulletinBoardNotificationUser);
+        }
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), categoryName, bulletinBoard.getBulletinTitleNm(),
                 bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile) : null);
