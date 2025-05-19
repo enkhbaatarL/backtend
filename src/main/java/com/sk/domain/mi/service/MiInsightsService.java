@@ -186,6 +186,11 @@ public class MiInsightsService {
             }
         }
 
+        if (filters != null && !filters.isBlank()) {
+            where.append(
+                    " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND FIND_IN_SET(tgdc2.gds_data_ctgr_cd, :filters) > 0)");
+        }
+
         switch (period) {
             case ONE_DAY -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
             case ONE_WEEK -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
@@ -198,9 +203,6 @@ public class MiInsightsService {
         }
 
         String groupBy = " GROUP BY tg.prvd_no, tc.gds_no, tgd.gds_data_no ";
-
-        String having = (filters != null && !filters.isBlank()) ? " HAVING FIND_IN_SET(:filters, GROUP_CONCAT(tgdc.gds_data_ctgr_cd)) > 0 " : "";
-        String where2 = (filters != null && !filters.isBlank()) ? " AND tgdc.gds_data_ctgr_cd IN (:filters) " : "";
 
         String orderBy = switch (sort) {
             case NEWEST -> " ORDER BY tgd.mod_dtm DESC ";
@@ -229,7 +231,6 @@ public class MiInsightsService {
                 WHERE
                 """ + where + """
                 """ + groupBy + """
-                """ + having + """
                 """ + orderBy;
 
         String countSql = """
@@ -247,8 +248,7 @@ public class MiInsightsService {
                     AND gds_data_mnagt_spt_cd = 'GUDAT'
                 ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
-                """ + where + """
-                """ + where2;
+                """ + where;
 
         Query contentQuery = entityManager.createNativeQuery(contentSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
@@ -267,13 +267,8 @@ public class MiInsightsService {
         }
 
         if (filters != null && !filters.isBlank()) {
-            List<String> filterList = Arrays.stream(filters.split(","))
-                    .map(String::trim)
-                    .map(String::toUpperCase)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            contentQuery.setParameter("filters", filterList);
-            countQuery.setParameter("filters", filterList);
+            contentQuery.setParameter("filters", filters.replaceAll("\\s+", ""));
+            countQuery.setParameter("filters", filters.replaceAll("\\s+", ""));
         }
 
         contentQuery.setFirstResult((page - 1) * size);
