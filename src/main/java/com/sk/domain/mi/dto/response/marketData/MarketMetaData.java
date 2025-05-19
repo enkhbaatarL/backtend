@@ -15,6 +15,8 @@ public record MarketMetaData(
 
         @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
 
+        @Schema(description = "상품번호", example = "1") Integer goodsNo,
+
         @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
         @Schema(description = "상품데이터소스번호", example = "1") Integer goodsDataSourceNo,
@@ -43,10 +45,12 @@ public record MarketMetaData(
 
         @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate) {
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, ChangeRatesRes changeRates, String interval,
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail,
+            ChangeRatesRes changeRates, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
+                .goodsNo(goodsData.getGoods().getGoodsNo())
                 .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataNm(goodsData.getGoodsDataNm())
