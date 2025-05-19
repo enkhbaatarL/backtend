@@ -175,8 +175,8 @@ public class MiInsightsService {
                 .append(" AND tp.del_yn = 'N'")
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
-                .append(" AND tgdc.del_yn = 'N'")
-                .append(" AND tccd.high_cd_id = 'A_TYPES'");
+                .append(" AND tgdc.del_yn = 'N'");
+        // .append(" AND tccd.high_cd_id = 'A_TYPES'");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
