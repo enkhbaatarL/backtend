@@ -200,6 +200,7 @@ public class MiInsightsService {
         String groupBy = " GROUP BY tg.prvd_no, tc.gds_no, tgd.gds_data_no ";
 
         String having = (filters != null && !filters.isBlank()) ? " HAVING FIND_IN_SET(:filters, GROUP_CONCAT(tgdc.gds_data_ctgr_cd)) > 0 " : "";
+        String where2 = (filters != null && !filters.isBlank()) ? " AND tgdc.gds_data_ctgr_cd IN (:filters) " : "";
 
         String orderBy = switch (sort) {
             case NEWEST -> " ORDER BY tgd.mod_dtm DESC ";
@@ -247,7 +248,7 @@ public class MiInsightsService {
                 ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
-                """ + "AND tgdc.gds_data_ctgr_cd IN (:filters)";
+                """ + where2;
 
         Query contentQuery = entityManager.createNativeQuery(contentSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
