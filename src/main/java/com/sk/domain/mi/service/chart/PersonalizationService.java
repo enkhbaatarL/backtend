@@ -179,7 +179,7 @@ public class PersonalizationService {
         }
 
         // 2. 개인화 설정이 없다면 기본값 사용
-        List<String> unitValues = personalizedMap.get(ChartSettingConditionCd.UNIT);
+        List<String> unitValues = personalizedMap.get(ChartSettingConditionCd.UNIT_CD);
         if (ObjectUtils.isEmpty(unitValues)) {
             return defaultUnitCd;
         }
