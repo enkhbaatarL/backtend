@@ -14,6 +14,8 @@ public record MarketMetaData(
 
         @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
 
+        @Schema(description = "상품번호", example = "1") Integer goodsNo,
+
         @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
         @Schema(description = "상품데이터소스번호", example = "1") Integer goodsDataSourceNo,
@@ -43,8 +45,9 @@ public record MarketMetaData(
         @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate) {
 
     @Builder
-    public MarketMetaData(Short chartMarkRank, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm, String goodsDataSourceNm, String currency, String currentUnitCd, ChartType visibleChartType, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt, Double lastValue, Double yoyChangeRate, Double momChangeRate, Double wowChangeRate) {
+    public MarketMetaData(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm, String goodsDataSourceNm, String currency, String currentUnitCd, ChartType visibleChartType, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt, Double lastValue, Double yoyChangeRate, Double momChangeRate, Double wowChangeRate) {
         this.chartMarkRank = chartMarkRank;
+        this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataNm = goodsDataNm;
@@ -65,6 +68,7 @@ public record MarketMetaData(
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
+                .goodsNo(goodsData.getGoods().getGoodsNo())
                 .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataNm(goodsData.getGoodsDataNm())

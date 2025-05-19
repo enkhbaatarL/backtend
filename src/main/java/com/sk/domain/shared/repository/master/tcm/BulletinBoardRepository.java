@@ -124,10 +124,12 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 b.isTopFixed,
                 b.bulletinCategorySeparateCd,
                 b.bulletinTitleNm,
-                b.createDt
+                b.createDt,
+                COALESCE(u.isRead, false)
             )
             FROM BulletinBoard b
             LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
+            LEFT JOIN BulletinBoardNotificationUser u ON u.bulletinBoard = b and u.user.userNo = :userNo
             LEFT JOIN m.customerCompany c
             WHERE b.isDeleted = false
               AND b.bulletinTypeCd = 'NOTICE'
@@ -163,6 +165,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             """)
     Page<MiNoticeRes> findAllNoticeForServicePage(
             @Param("customerCompanyNo") int customerCompanyNo,
+            @Param("userNo") int userNo,
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);

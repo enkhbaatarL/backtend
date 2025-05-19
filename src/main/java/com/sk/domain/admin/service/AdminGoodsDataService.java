@@ -1,11 +1,20 @@
 package com.sk.domain.admin.service;
 
+import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import com.sk.domain.admin.dto.response.provider.*;
+
+import org.apache.poi.hpsf.Array;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +29,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.JsonFileWriter;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
@@ -28,7 +38,9 @@ import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
+import com.sk.domain.shared.client.dto.AXMetaFileDto;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -80,6 +92,7 @@ public class AdminGoodsDataService {
     private final UserRepository userRepository;
     private final PlatformTransactionManager masterTransactionManager;
     private final PlatformTransactionManager myBatisTransactionManager;
+    private final JsonFileWriter jsonFileWriter;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -134,6 +147,15 @@ public class AdminGoodsDataService {
     */
     public List<GoodsDataCategoryRes> getDocTypeCategorys() {
         return commonCodeDetailRepository.findDocTypeCategory();
+    }
+
+    /**
+    * 테마 타입 카테고리 목록을 조회한다.
+    *
+    * @return List<GoodsDataCatgoryRes>
+    */
+    public List<GoodsDataCategoryRes> getThemeTypeCategorys() {
+        return commonCodeDetailRepository.findThemeTypeCategory();
     }
 
     /**
@@ -290,7 +312,8 @@ public class AdminGoodsDataService {
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
-                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt()));
+                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
+                        dto.dataContributorNm()));
 
         // todo: 프로바이더 타입 카테고리 등록
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -371,6 +394,8 @@ public class AdminGoodsDataService {
 
         // 비정형 데이타 저장
         if (dto.unstructuredDataList() != null) {
+            List<String> fileNameList = new ArrayList<>();
+
             for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
 
                 adminFileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
@@ -378,7 +403,41 @@ public class AdminGoodsDataService {
 
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
+
+                UploadedFile uploadedFile = adminFileService.getFile(unstructuredData.fileNo());
+                fileNameList.add(uploadedFile.getOriginalFileNm());
             }
+
+            // todo: A.X Platform 에 파일 업로드 연동
+            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            String documentId = UUID.randomUUID().toString();
+
+            AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
+                    .gdsNo(goods.getGoodsNo())
+                    .documentId(documentId)
+                    .documentReleaseDate(nowOffsetDateTime())
+                    .headline(savedGoodsData.getGoodsDataNm())
+                    .synopsis(savedGoodsData.getGoodsDataExpn() + savedGoodsData.getGoodsDataSummaryCntt())
+                    .contributor("")
+                    .authors(List.of(""))
+                    .documentFileName(fileNameList)
+                    .language("")
+                    .countries(List.of(""))
+                    .build();
+
+            try {
+                String directoryPath = "./temp";
+                File directory = new File(directoryPath);
+                if (!directory.exists()) {
+                    directory.mkdir();
+                }
+                jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+            } catch (IOException e) {
+                // 예외 처리 로직
+                e.printStackTrace();
+            }
+
+            savedGoodsData.updateGoodsDataDistinguishId(documentId);
         }
 
         return;
@@ -430,7 +489,7 @@ public class AdminGoodsDataService {
     }
 
     private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
-        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt());
+        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm());
 
         // 문서 타입 카테고리 수정
         if (dto.docCategoryList() != null) {
@@ -541,6 +600,8 @@ public class AdminGoodsDataService {
 
         // 비정형데이타 수정
         if (dto.unstructuredDataList() != null) {
+            List<String> fileNameList = new ArrayList<>();
+
             List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                     .stream()
                     .map(file -> file.getFileNo())
@@ -582,6 +643,37 @@ public class AdminGoodsDataService {
                         .ifPresent(data -> goodsDataCategoryRepository.save(
                                 GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
+
+                UploadedFile uploadedFile = adminFileService.getFile(fileNo);
+                fileNameList.add(uploadedFile.getOriginalFileNm());
+            }
+
+            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            String documentId = goodsData.getGoodsDataDistinguishId();
+
+            AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
+                    .gdsNo(goodsData.getGoods().getGoodsNo())
+                    .documentId(documentId)
+                    .documentReleaseDate(nowOffsetDateTime())
+                    .headline(goodsData.getGoodsDataNm())
+                    .synopsis(goodsData.getGoodsDataExpn() + goodsData.getGoodsDataSummaryCntt())
+                    .contributor("")
+                    .authors(List.of(""))
+                    .documentFileName(fileNameList)
+                    .language("")
+                    .countries(List.of(""))
+                    .build();
+
+            try {
+                String directoryPath = "./temp";
+                File directory = new File(directoryPath);
+                if (!directory.exists()) {
+                    directory.mkdir();
+                }
+                jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+            } catch (IOException e) {
+                // 예외 처리 로직
+                e.printStackTrace();
             }
         }
     }
@@ -655,5 +747,10 @@ public class AdminGoodsDataService {
 
         return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
                 fileUploadRes.fileSize(), fileUploadRes.fileUrl());
+    }
+
+    private String nowOffsetDateTime() {
+        return ZonedDateTime.now(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
     }
 }

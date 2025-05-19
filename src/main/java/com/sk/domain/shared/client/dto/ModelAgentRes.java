@@ -1,13 +1,22 @@
 package com.sk.domain.shared.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 
 import java.util.List;
 
+@Builder
 public record ModelAgentRes(
     Output output,
     Metadata metadata
 ) {
+
+    public static ModelAgentRes ofEmpty() {
+        return ModelAgentRes.builder()
+            .output(null)
+            .metadata(null)
+            .build();
+    }
 
     public record Output(
         List<Message> messages
@@ -44,7 +53,7 @@ public record ModelAgentRes(
 
                 public record Chart(
                     String date,
-                    float price
+                    Double price
                 ) {
                 }
             }

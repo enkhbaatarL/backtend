@@ -19,7 +19,11 @@ public record MiNoticeRes(
         String bulletinTitleName,
 
         @Schema(description = "등록일자", example = "2023-10-01 12:00:00")
-        LocalDateTime createDt) {    
+        LocalDateTime createDt,
+        
+        @Schema(description = "읽음 처리", example = "false")
+        Boolean isRead
+        ) {    
 
 }
 // @formatter:on

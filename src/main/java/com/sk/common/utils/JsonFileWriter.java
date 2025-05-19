@@ -3,6 +3,8 @@ package com.sk.common.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.sk.domain.shared.client.dto.AXMetaFileDto;
+
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -27,10 +29,10 @@ public class JsonFileWriter {
      * @param filePath    저장할 파일 경로 (예: "output/document.json")
      * @throws IOException 파일 쓰기 실패 시 예외 발생
      */
-    // public void write(DocumentDto documentDto, String filePath) throws IOException {
-    // File target = new File(filePath);
-    // // pretty print 옵션
-    // objectMapper.writerWithDefaultPrettyPrinter()
-    // .writeValue(target, documentDto);
-    // }
+    public void write(AXMetaFileDto dto, String filePath) throws IOException {
+        File target = new File(filePath);
+        // pretty print 옵션
+        objectMapper.writerWithDefaultPrettyPrinter()
+                .writeValue(target, dto);
+    }
 }
