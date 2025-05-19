@@ -177,14 +177,13 @@ public class MailService {
         Context context = new Context();
         context.setVariable("goodsDataNm", goodsDataNm); // {데이터 명}
         context.setVariable("goodsDataSourceNm", goodsDataSourceNm); // {정형 데이터 상세명}
-        // context.setVariable("criticalValueSettingContent", criticalValueSettingContent); // {정형 데이터 상세명}
 
         context.setVariable("settingSeparate", notificationCriticalValueSeparateCd); // {알람 임계치 구분}
         context.setVariable("settingVolume", criticalValueSettingVol); // {알람 임계치 값}
         context.setVariable("settingUnit", criticalValueSettingContentBody); // {알람 임계치 단위}
 
-        //TODO: 프론트 경로 나오면 수정 필요
-        context.setVariable("detailLink", serverDomain); // 데이터 상세보기 링크 
+        // TODO: 프론트 경로 나오면 수정 필요
+        context.setVariable("detailLink", serverDomain); // 데이터 상세보기 링크
         return templateEngine.process("notification", context);
     }
 
