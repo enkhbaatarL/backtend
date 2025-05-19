@@ -186,10 +186,6 @@ public class MiInsightsService {
             }
         }
 
-        if (filters != null && !filters.isBlank()) {
-            where.append(" AND tgdc.gds_data_ctgr_cd IN (:filters)");
-        }
-
         switch (period) {
             case ONE_DAY -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
             case ONE_WEEK -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
@@ -202,6 +198,8 @@ public class MiInsightsService {
         }
 
         String groupBy = " GROUP BY tg.prvd_no, tc.gds_no, tgd.gds_data_no ";
+
+        String having = (filters != null && !filters.isBlank()) ? " HAVING FIND_IN_SET(:filters, GROUP_CONCAT(tgdc.gds_data_ctgr_cd)) > 0 " : "";
 
         String orderBy = switch (sort) {
             case NEWEST -> " ORDER BY tgd.mod_dtm DESC ";
@@ -230,6 +228,7 @@ public class MiInsightsService {
                 WHERE
                 """ + where + """
                 """ + groupBy + """
+                """ + having + """
                 """ + orderBy;
 
         String countSql = """
@@ -247,7 +246,9 @@ public class MiInsightsService {
                     AND gds_data_mnagt_spt_cd = 'GUDAT'
                 ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
-                """ + where;
+                """ + where + """
+                """ + groupBy + """
+                """ + having;
 
         Query contentQuery = entityManager.createNativeQuery(contentSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
