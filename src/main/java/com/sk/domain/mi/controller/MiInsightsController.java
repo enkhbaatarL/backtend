@@ -3,6 +3,7 @@ package com.sk.domain.mi.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,18 +45,14 @@ public class MiInsightsController {
     private final MiInsightsService miInsightsService;
 
     @ApiOrder(1)
-    @Parameters({
-            @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
-    })
     @Operation(summary = "Focused 목록 조회", description = "Focused 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/focused-data")
+    @GetMapping("/companies/{companyNo}/focused-data")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<List<FocusedDataDto>> getFocused(
-            @RequestParam(value = "customerCompanyNo") @Min(value = 1) Integer customerCompanyNo) {
+    public BaseResponse<List<FocusedDataDto>> getFocused(@PathVariable(value = "companyNo") Integer companyNo) {
 
         Role role = authorizationService.getCurrentRole();
-        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory.create(miInsightsService.getFocused(cNo));
     }
@@ -72,7 +69,6 @@ public class MiInsightsController {
 
     @ApiOrder(3)
     @Parameters({
-            @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
             @Parameter(name = "keyword", description = "데이타명 검색"),
@@ -82,10 +78,10 @@ public class MiInsightsController {
     })
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/insights-data")
+    @GetMapping("/companies/{companyNo}/insights-data")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<PaginationRes<InsightsDataRes>> getDataCatalog(
-            @RequestParam(value = "customerCompanyNo", required = true) @Min(value = 1) Integer customerCompanyNo,
+            @PathVariable(value = "companyNo") Integer companyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
@@ -94,7 +90,7 @@ public class MiInsightsController {
             @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
 
         Role role = authorizationService.getCurrentRole();
-        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory
                 .create(miInsightsService.getInsights(cNo, page, size, keyword, sort, period, filters));
