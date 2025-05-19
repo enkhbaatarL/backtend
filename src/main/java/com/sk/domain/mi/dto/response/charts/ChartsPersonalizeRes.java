@@ -12,7 +12,7 @@ import java.util.List;
 public record ChartsPersonalizeRes(
 
     @Schema(
-        description = "개인화 차트 조건 타입(RANGE, INTERVAL, INDICATOR, CHART, UNIT, COMP_DATA_SOURCE)",
+        description = "개인화 차트 조건 타입(RANGE, INTERVAL, INDICATOR, CHART, UNIT_CD, COMP_DATA_SOURCE)",
         example = "RANGE"
     )
     ChartSettingConditionCd chartConditionCd,
