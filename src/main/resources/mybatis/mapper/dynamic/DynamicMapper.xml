@@ -70,6 +70,9 @@
                     ${col} = VALUES(${col}),
                 </if>
             </foreach>
+            <!-- mod_dtm과 mod_usr_logn_id 명시적 업데이트 -->
+            mod_dtm = CURRENT_TIMESTAMP,
+            mod_usr_logn_id = #{currentUserId, jdbcType=VARCHAR}
         </trim>
     </insert>
 </mapper>

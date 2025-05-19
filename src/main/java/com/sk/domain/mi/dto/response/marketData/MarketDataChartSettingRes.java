@@ -7,7 +7,6 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-@Builder
 public record MarketDataChartSettingRes(
         @Schema(description = "마켓 데이터 설정 번호", example = "1") Integer marketDataSettingNo, // 마켓 데이터 설정 번호
 
@@ -19,6 +18,8 @@ public record MarketDataChartSettingRes(
 
         @Schema(description = "비교 상품 데이터 소스", example = "1") GoodsDataSourceDetail compareGoodsDataSource // 비교 상품 데이터 소스 (null 가능)
 ) {
+
+    @Builder
     @QueryProjection
     public MarketDataChartSettingRes(
             Integer marketDataSettingNo,

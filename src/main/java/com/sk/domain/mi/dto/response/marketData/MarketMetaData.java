@@ -10,7 +10,6 @@ import com.sk.domain.shared.enums.chart.ChartType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-@Builder
 public record MarketMetaData(
 
         @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
@@ -45,8 +44,27 @@ public record MarketMetaData(
 
         @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate) {
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail,
-            ChangeRatesRes changeRates, String interval,
+    @Builder
+    public MarketMetaData(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm, String goodsDataSourceNm, String currency, String currentUnitCd, ChartType visibleChartType, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt, Double lastValue, Double yoyChangeRate, Double momChangeRate, Double wowChangeRate) {
+        this.chartMarkRank = chartMarkRank;
+        this.goodsNo = goodsNo;
+        this.goodsDataNo = goodsDataNo;
+        this.goodsDataSourceNo = goodsDataSourceNo;
+        this.goodsDataNm = goodsDataNm;
+        this.goodsDataSourceNm = goodsDataSourceNm;
+        this.currency = currency;
+        this.currentUnitCd = currentUnitCd;
+        this.visibleChartType = visibleChartType;
+        this.interval = interval;
+        this.lastUpdateDt = lastUpdateDt;
+        this.indexStartDt = indexStartDt;
+        this.lastValue = lastValue;
+        this.yoyChangeRate = yoyChangeRate;
+        this.momChangeRate = momChangeRate;
+        this.wowChangeRate = wowChangeRate;
+    }
+            
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, ChangeRatesRes changeRates, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())

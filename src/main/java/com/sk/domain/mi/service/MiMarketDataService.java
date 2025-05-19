@@ -31,8 +31,8 @@ import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.marketData.ChangeRatesRes;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
-import com.sk.domain.mi.dto.response.marketData.MarketDataGraphRawData;
-import com.sk.domain.mi.dto.response.marketData.MarketDataGraphRes;
+import com.sk.domain.mi.dto.response.marketData.MarketDataChartRawData;
+import com.sk.domain.mi.dto.response.marketData.MarketDataChartRes;
 import com.sk.domain.mi.dto.response.marketData.MarketMetaData;
 import com.sk.domain.mi.dto.response.marketData.MiMarketDataRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
@@ -135,10 +135,10 @@ public class MiMarketDataService {
             }
 
             // 월별 데이터로 변환
-            List<MarketDataGraphRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
+            List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
                     LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE));
 
-            MarketDataGraphRes mainGraph = MarketDataGraphRes.of(monthlyData);
+            MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
 
             // YOY, MOM, WOW 계산
             ChangeRatesRes changeRates = calculateChangeRates(rawData, dateColumnName, defaultDataColumnName);
@@ -166,7 +166,7 @@ public class MiMarketDataService {
                     .findByCompareGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
 
             // 비교군 데이터소스 조회
-            List<MarketDataGraphRes> compareGraphs = new ArrayList<>();
+            List<MarketDataChartRes> compareCharts = new ArrayList<>();
             if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
                 for (DataSourceGroupMapping dataSourceGroupMapping : dataSourceGroupMappings) {
                     GoodsDataSourceDetail compareGoodsDataSource = dataSourceGroupMapping.getCompareGoodsDataSourceDetail();
@@ -180,16 +180,16 @@ public class MiMarketDataService {
                     // 비교군 원시 데이터 조회
                     List<Map<String, Object>> compareRawData = getMarketDataRows(compareGoodsDataSource, compareDateColumnName, START_DATE);
                     // 비교군 월별 데이터로 변환
-                    List<MarketDataGraphRawData> compareGraph = convertToMonthlyData(compareRawData, compareDateColumnName,
+                    List<MarketDataChartRawData> compareChart = convertToMonthlyData(compareRawData, compareDateColumnName,
                             compareDefaultDataColumnName, LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE));
-                    compareGraphs.add(MarketDataGraphRes.of(compareGraph));
+                    compareCharts.add(MarketDataChartRes.of(compareChart));
                 }
             }
 
             MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, changeRates, MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
-            miMarketDataResponses.add(MiMarketDataRes.of(true, marketMetaData, mainGraph, compareGraphs));
+            miMarketDataResponses.add(MiMarketDataRes.of(true, marketMetaData, mainChart, compareCharts));
         }
         return miMarketDataResponses;
     }
@@ -245,7 +245,7 @@ public class MiMarketDataService {
      * @param startDate 월별 평균 계산 기준 날짜
      * @return 월별 평균 계산 및 DTO 생성
      */
-    private List<MarketDataGraphRawData> convertToMonthlyData(List<Map<String, Object>> rawData,
+    private List<MarketDataChartRawData> convertToMonthlyData(List<Map<String, Object>> rawData,
             String dateColumnName,
             String defaultDataColumnName,
             LocalDate startDate) {
@@ -288,7 +288,7 @@ public class MiMarketDataService {
                 .collect(Collectors.toList());
 
         // 월별 평균 계산 및 DTO 생성
-        List<MarketDataGraphRawData> monthlyData = new ArrayList<>();
+        List<MarketDataChartRawData> monthlyData = new ArrayList<>();
         for (String yearMonth : recentMonths) {
             List<Map<String, Object>> monthData = monthlyGroupedData.get(yearMonth);
 
@@ -312,7 +312,7 @@ public class MiMarketDataService {
             // 대표 날짜 선택: 오늘의 일자와 같은 날짜, 없으면 이전 날짜로 fallback
             String representativeDate = selectRepresentativeDate(monthData, dateColumnName, yearMonth, todayDayOfMonth);
 
-            monthlyData.add(MarketDataGraphRawData.builder()
+            monthlyData.add(MarketDataChartRawData.builder()
                     .date(representativeDate)
                     .value(bd.doubleValue())
                     .build());
