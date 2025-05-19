@@ -15,6 +15,8 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -78,6 +80,7 @@ public class MybatisDynamicQueryService {
     public void saveAllDynamicData(DynamicDataSaveAll dynamicDataSaveAll) {
         // 데이터 소스 설정
         DataSourceContextHolder.setDataSourceKey(dynamicDataSaveAll.tartgetDataSource());
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
 
         String tableName = dynamicDataSaveAll.tableName();
         List<String> columns = dynamicDataSaveAll.columns();
@@ -87,7 +90,7 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("columns", columns);
         params.put("values", values);
-
+        params.put("currentUserId", currentUserId != null ? currentUserId : "SYSTEM");
         dynamicMapper.saveAllDynamic(params);
     }
 

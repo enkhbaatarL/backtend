@@ -43,36 +43,36 @@ public class MiMarketDataController {
 
     @ApiOrder(1)
     @Parameters({
-            @Parameter(name = "customerCompanyNo", description = "고객회사 번호")
+            @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
     })
     @Operation(summary = "마켓 데이터 조회 API", description = "마켓 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "마켓 데이터 조회 성공")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    @GetMapping("/company/{customerCompanyNo}/market-datas")
-    public BaseResponse<List<MiMarketDataRes>> getMarketDatas(@PathVariable("customerCompanyNo") Integer customerCompanyNo,
+    @GetMapping("/companies/{companyNo}/market-datas")
+    public BaseResponse<List<MiMarketDataRes>> getMarketDatas(@PathVariable("companyNo") Integer companyNo,
             Authentication authentication) {
-        return BaseResponseFactory.create(miMarketDataService.getMarketDatas(customerCompanyNo, authentication));
+        return BaseResponseFactory.create(miMarketDataService.getMarketDatas(companyNo, authentication));
     }
 
     @ApiOrder(2)
     @Parameters({
-            @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
+            @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
             @Parameter(name = "keyword", description = "데이타명 검색")
     })
     @Operation(summary = "Data Catalog 목록 조회 - with pagination", description = "Data Catalog 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/data-catalog")
+    @GetMapping("/companies/{companyNo}/data-catalog")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<PaginationRes<DataCatalogRes>> getDataCatalog(
-            @RequestParam(value = "customerCompanyNo", required = true) @Min(value = 1) Integer customerCompanyNo,
+            @PathVariable("companyNo") Integer companyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
 
         Role role = authorizationService.getCurrentRole();
-        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory
                 .create(miMarketDataService.getDataCatalog(cNo, page, size, keyword));

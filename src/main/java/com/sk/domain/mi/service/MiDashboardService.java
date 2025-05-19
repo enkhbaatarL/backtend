@@ -39,4 +39,15 @@ public class MiDashboardService {
 
         return goodsDataRepository.findLatestInsights(companyNo, PageRequest.of(0, 5));
     }
+
+    /**
+     * 대시보드 차트 데이터 조회
+     * 
+     * @param companyNo
+     * @return TODO
+     */
+    public Boolean getChart(int companyNo) {
+
+        return true;
+    }
 }
