@@ -103,7 +103,11 @@ api:
     url: http://localhost:8081
     connection-timeout: 1s
     read-timeout: 20s
-
+  ax-platform:
+    url: https://aip.sktai.io
+    connection-timeout: 1s
+    read-timeout: 20s
+    
 mail:
   smtp:
     host: smtp.worksmobile.com
