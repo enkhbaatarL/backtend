@@ -163,7 +163,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
-                .append(" GROUP_CONCAT(DISTINCT tgdc.gds_data_ctgr_cd ORDER BY tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
+                .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
                 .append(" tgd.mod_dtm AS modifyDt");
 
         StringBuilder where = new StringBuilder()
@@ -247,8 +247,7 @@ public class MiInsightsService {
                 ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
-                """ + groupBy + """
-                """ + having;
+                """ + "AND tgdc.gds_data_ctgr_cd IN (:filters)";
 
         Query contentQuery = entityManager.createNativeQuery(contentSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
