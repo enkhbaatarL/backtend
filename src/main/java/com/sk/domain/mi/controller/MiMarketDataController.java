@@ -42,9 +42,6 @@ public class MiMarketDataController {
     private final MiMarketDataService miMarketDataService;
 
     @ApiOrder(1)
-    @Parameters({
-            @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
-    })
     @Operation(summary = "마켓 데이터 조회 API", description = "마켓 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "마켓 데이터 조회 성공")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
@@ -56,7 +53,6 @@ public class MiMarketDataController {
 
     @ApiOrder(2)
     @Parameters({
-            @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
             @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
             @Parameter(name = "keyword", description = "데이타명 검색")

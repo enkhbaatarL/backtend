@@ -5,7 +5,6 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-@Builder
 public record MiMarketDataRes(
 
         @Schema(description = "메인 그래프") MarketDataChartRes mainChart,
@@ -14,7 +13,15 @@ public record MiMarketDataRes(
 
         @Schema(description = "메타 데이터") MarketMetaData marketMetaData,
 
-        @Schema(description = "비교 그래프") List<MarketDataChartRes> compareCharts) {
+        @Schema(description = "비교 그래프") List<MarketDataChartRes> compareCharts
+) {
+
+
+    @Builder
+    public MiMarketDataRes(Boolean isPermitted, MarketMetaData marketMetaData, MarketDataChartRes mainChart,
+            List<MarketDataChartRes> compareCharts) {
+        this(mainChart, isPermitted, marketMetaData, compareCharts);
+    }
 
     public static MiMarketDataRes of(Boolean isPermitted, MarketMetaData marketMetaData) {
         return MiMarketDataRes.builder()
