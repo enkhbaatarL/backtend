@@ -112,7 +112,7 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getGoodsViewableMap().get(mainGoods.getGoodsNo());
+            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).get(mainGoods.getGoodsNo());
             if (!isPermitted) {
                 miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
                 continue;
