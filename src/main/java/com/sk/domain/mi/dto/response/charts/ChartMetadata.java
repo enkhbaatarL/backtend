@@ -17,7 +17,7 @@ public record ChartMetadata(
     String currentUnitCd,
 
     @Schema(description = "차트 간격", example = "1M")
-    Interval currentInterval,
+    String currentInterval,
 
     @Schema(description = "초기 차트 타입", example = "CANDLE", allowableValues = {"CANDLE", "LINE"})
     ChartType initialChartType,
@@ -32,7 +32,7 @@ public record ChartMetadata(
             .currency(currency)
             .initialChartType(chartType)
             .currentUnitCd(unitConversionCd)
-            .currentInterval(interval)
+            .currentInterval(interval.getCode())
             .changeableUnitCd(changeable)
             .build();
     }

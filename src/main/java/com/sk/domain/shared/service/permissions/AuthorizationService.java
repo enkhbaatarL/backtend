@@ -167,24 +167,4 @@ public class AuthorizationService {
             .anyMatch(mapping -> mapping.getGoodsAuthCd() == authCd);
     }
 
-    /**
-     * 상품 조회권한 검증
-     */
-    public void validateViewPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (!allowedPermissions.getGoodsViewableMap().getOrDefault(goodsNo, false)) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "No view permission for goods: %d".formatted(goodsNo));
-        }
-    }
-
-    /**
-     * 상품 다운로드권한 검증
-     */
-    public void validateDownloadPermission(Integer goodsNo, PermissionRes allowedPermissions) {
-        if (!allowedPermissions.getGoodsDownloadableMap().getOrDefault(goodsNo, false)) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "No download permission for goods: %d".formatted(goodsNo));
-        }
-    }
-
 }

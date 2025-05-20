@@ -1,83 +1,194 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이메일 템플릿</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            width: 100%;
-            max-width: 600px;
-            padding: 20px;
-            text-align: center;
-        }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1a3c5e;
-            margin-bottom: 20px;
-        }
-        .header {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .content-box {
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center; /* 중앙 정렬로 변경 */
-        }
-        .button {
-            display: inline-block;
-            background-color: #1a3c5e;
-            color: #fff; /* 텍스트 색상 화이트로 명시 */
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .footer {
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #e0e0e0;
-            padding-top: 10px;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SK Market Intelligence - New Alert Generated</title>
+
+  <style>
+    table {border-collapse: collapse; border-spacing: 0; margin: 0;}
+    div, td {padding: 0;}
+    div {margin: 0 !important;}
+
+    /*replace CDN url for font and image*/
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-ExtraBold.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-ExtraBold.woff') format('woff'),
+      url('../assets/fonts/Pretendard-ExtraBold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-ExtraLight.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-ExtraLight.woff') format('woff'),
+      url('../assets/fonts/Pretendard-ExtraLight.ttf') format('truetype');
+      font-weight: 200;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-Medium.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-Medium.woff') format('woff'),
+      url('../assets/fonts/Pretendard-Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-Light.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-Light.woff') format('woff'),
+      url('../assets/fonts/Pretendard-Light.ttf') format('truetype');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-Regular.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-Regular.woff') format('woff'),
+      url('../assets/fonts/Pretendard-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-SemiBold.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-SemiBold.woff') format('woff'),
+      url('../assets/fonts/Pretendard-SemiBold.ttf') format('truetype');
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-Thin.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-Thin.woff') format('woff'),
+      url('../assets/fonts/Pretendard-Thin.ttf') format('truetype');
+      font-weight: 100;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-Black.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-Black.woff') format('woff'),
+      url('../assets/fonts/Pretendard-Black.ttf') format('truetype');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('../assets/fonts/Pretendard-Bold.woff2') format('woff2'),
+      url('../assets/fonts/Pretendard-Bold.woff') format('woff'),
+      url('../assets/fonts/Pretendard-Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">
-            SK Market Intelligence
-        </div>
-        <div class="header">
-            신규 알람 발생
-        </div>
-        <div class="header">
-            실정된 알람 조건에 의해 신규 알람이 발생하였습니다.
-        </div>
-        <div class="content-box">
-            <span th:text="${goodsDataNm}">[데이터명]</span> 이(가)<br>
-            <span th:text="${goodsDataSourceNm}">[산출된 정형데이터]</span><br><br>
-            <span th:text="${criticalValueSettingContent}">[100 이상으로 하락]</span>
-        </div>
-        <a th:href="${detailLink}" class="button">데이터 상세보기</a>
-        <div class="footer">
-            본 메일은 발신전용 메일이며 회신처리되지 않습니다. 기타 문의사항은 서비스 관리자에게 문의하세요.<br>
-            © 2025 SKT Co.,Ltd. ALL RIGHT RESERVED.
-        </div>
-    </div>
+<body style="font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', sans-serif; background-color: #ffffff;  margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color: #ffffff;">
+  <tr>
+    <td align="center" style="padding: 20px 0;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width: 600px; margin: 0 auto;">
+        <!-- Logo Section -->
+        <tr>
+          <td align="center" style="padding: 20px 0;">
+            <img src="cid:logo" width="233" height="41" alt="SK Market Intelligence" style="display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;">
+          </td>
+        </tr>
+
+        <!-- Content Section -->
+        <tr>
+          <td style="padding: 30px 0 60px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                <td align="center">
+                  <h1 style="font-size: 24px; font-weight: 700; text-align: center; margin: 0px 0 20px; color: #212529;">신규 알람 발생</h1>
+                  <p style="font-size: 14px; line-height: 1.4; font-weight: 500; text-align: center; color: #495057; margin: 0">
+                    설정된 알람 조건에 의해 신규 알람이 발생하였습니다.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Alert Box -->
+              <tr>
+                <td style="padding: 0 95px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color: #f8f9fa; border-radius: 4px; border: 1px solid #F1F3F5; margin: 30px 0;">
+                    <tr>
+                      <td style="padding: 20px;">
+                        <p th:text="${goodsDataNm}" style="font-size: 16px; font-weight: 700; text-align: center; margin: 0px; color: #2E3F5E;">{데이터명}</p>
+                        <p th:text="${goodsDataSourceNm}" style="font-size: 16px; font-weight: 500; text-align: center; margin: 0 0 12px; color: #495057;">{선택된 정형데이터명}</p>
+                        <p style="font-size: 16px; text-align: center; margin: 0; color: #495057;">
+                          <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; background: #fff;">
+                            <span th:text="${settingSeparate}" style="font-weight: 600">하락률</span>
+                            <span th:text="${settingVolume}" style="color: #5191F5; font-weight: 700;">5%</span>
+                            <span th:text="${settingUnit}" style="font-weight: 500">초과</span>
+                          </span>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Button -->
+              <tr>
+                <td align="center" style="padding: 0;">
+                  <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+                    <tr>
+                      <td align="center" style="background-color: #2c3e50; border-radius: 4px;">
+                        <a th:href="${detailLink}" target="_blank" style="background-color: #2E3F5E; border-radius: 4px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: 600; line-height: 1.4; padding: 10px 70px; text-decoration: none; text-align: center;">데이터 상세보기</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Divider -->
+        <tr>
+          <td style="padding: 0 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                <td style="border-top: 1px solid #DCE1E5; font-size: 0; line-height: 0; mso-line-height-rule: exactly;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding: 20px 0 0 0;">
+            <p style="font-size: 10px; color: #9199A1; text-align: center; margin: 0; line-height: 1.5;">
+              *본 메일은 발신전용 메일이며 회신처리되지 않습니다. 기타 문의사항은 서비스 관리자에게 문의하세요
+            </p>
+            <p style="font-size: 10px; color: #9199A1; text-align: center; margin: 0">
+              ⓒ 2025 SKT Co.,ltd. All right reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>

@@ -78,6 +78,7 @@ public class MiDataDetailService {
      * @param authentication 인증 정보
      * @return 상품 데이터 응답
      */
+    @Transactional
     public GoodsDataRes getGoodsData(Integer goodsNo, Integer goodsDataNo, Authentication authentication) {
 
         Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode())) : Role.SYSTEM;
@@ -147,10 +148,7 @@ public class MiDataDetailService {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
-        List<ChartsPersonalizeReq> validReqs = chartsPersonalizeReqs.stream()
-            .map(ChartsPersonalizeReq::validThen)
-            .filter(Objects::nonNull)
-            .toList();
+        List<ChartsPersonalizeReq> validReqs = ChartsPersonalizeReq.filterPersonalizeRequests(chartsPersonalizeReqs);
 
         List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, subject);
 

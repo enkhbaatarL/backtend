@@ -80,9 +80,9 @@ public record MarketMetaData(
                 .lastUpdateDt(lastUpdateDt)
                 .indexStartDt(indexStartDt)
                 .lastValue(lastValue)
-                .yoyChangeRate(changeRates.yoyChangeRate())
-                .momChangeRate(changeRates.momChangeRate())
-                .wowChangeRate(changeRates.wowChangeRate())
+                .yoyChangeRate(changeRates != null ? changeRates.yoyChangeRate() : null)
+                .momChangeRate(changeRates != null ? changeRates.momChangeRate() : null)
+                .wowChangeRate(changeRates != null ? changeRates.wowChangeRate() : null)
                 .build();
     }
 

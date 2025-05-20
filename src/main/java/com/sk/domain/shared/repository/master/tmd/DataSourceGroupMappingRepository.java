@@ -10,9 +10,6 @@ import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 public interface DataSourceGroupMappingRepository extends JpaRepository<DataSourceGroupMapping, DataSourceGroupMappingId> {
-
-    List<DataSourceGroupMapping> findByMainGoodsDataSourceDetailAndIsDeletedFalse(GoodsDataSourceDetail goodsDataSourceDetail);
-
     @EntityGraph(attributePaths = {"compareGoodsDataSourceDetail"})
-    List<DataSourceGroupMapping> findByCompareGoodsDataSourceDetailAndIsDeletedFalse(GoodsDataSourceDetail goodsDataSourceDetail);
+    List<DataSourceGroupMapping> findByMainGoodsDataSourceDetailAndIsDeletedFalse(GoodsDataSourceDetail goodsDataSourceDetail);
 }
