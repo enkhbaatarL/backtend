@@ -163,7 +163,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
-                .append(" GROUP_CONCAT(DISTINCT tgdc.gds_data_ctgr_cd ORDER BY tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
+                .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
                 .append(" tgd.mod_dtm AS modifyDt");
 
         StringBuilder where = new StringBuilder()
@@ -175,8 +175,8 @@ public class MiInsightsService {
                 .append(" AND tp.del_yn = 'N'")
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
-                .append(" AND tgdc.del_yn = 'N'")
-                .append(" AND tccd.high_cd_id = 'A_TYPES'");
+                .append(" AND tgdc.del_yn = 'N'");
+        // .append(" AND tccd.high_cd_id = 'A_TYPES'");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -187,7 +187,8 @@ public class MiInsightsService {
         }
 
         if (filters != null && !filters.isBlank()) {
-            where.append(" AND tgdc.gds_data_ctgr_cd IN (:filters)");
+            where.append(
+                    " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND FIND_IN_SET(tgdc2.gds_data_ctgr_cd, :filters) > 0)");
         }
 
         switch (period) {
@@ -266,13 +267,8 @@ public class MiInsightsService {
         }
 
         if (filters != null && !filters.isBlank()) {
-            List<String> filterList = Arrays.stream(filters.split(","))
-                    .map(String::trim)
-                    .map(String::toUpperCase)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            contentQuery.setParameter("filters", filterList);
-            countQuery.setParameter("filters", filterList);
+            contentQuery.setParameter("filters", filters.replaceAll("\\s+", ""));
+            countQuery.setParameter("filters", filters.replaceAll("\\s+", ""));
         }
 
         contentQuery.setFirstResult((page - 1) * size);
