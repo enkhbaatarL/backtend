@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +87,7 @@ public class MiMarketDataService {
         if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
             throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         }
-        Role role =  Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // 권한 조회
         PermissionRes permissionRes = switch (role) {
@@ -102,9 +103,11 @@ public class MiMarketDataService {
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
 
+        // 차트 설정 조회
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
+        // 차트 설정 조회 결과
         List<MiMarketDataRes> miMarketDataResponses = new ArrayList<>();
         for (MarketDataChartSetting marketDataChartSetting : marketDataChartSettings) {
             GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
@@ -112,14 +115,12 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).get(mainGoods.getGoodsNo());
-            if (!isPermitted) {
-                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
-                continue;
-            }
+            Boolean isPermitted = permissionRes.getGoodsViewableMap().getOrDefault(mainGoods.getGoodsNo(), false);
 
             // 칼럼 목록 조회
-            String[] tableColumnListNm = mainGoodsDataSource.getTableColumnListNm().split(",");
+            String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
+                    .map(String::trim)
+                    .toArray(String[]::new);
             // 날짜 칼럼
             String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
             // 기본 데이터 칼럼
@@ -128,20 +129,12 @@ public class MiMarketDataService {
             // 원시 데이터 조회
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE);
 
+            // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 isPermitted = false;
                 miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
                 continue;
             }
-
-            // 월별 데이터로 변환
-            List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
-                    LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE));
-
-            MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
-
-            // YOY, MOM, WOW 계산
-            ChangeRatesRes changeRates = calculateChangeRates(rawData, dateColumnName, defaultDataColumnName);
 
             // 마지막 데이터 값
             LocalDate lastUpdateDt = DateUtil.fromIsoToLocalDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
@@ -161,9 +154,29 @@ public class MiMarketDataService {
                 indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE);
             }
 
+            // 권한이 없는 경우 메타데이터까지만 제공
+            if (!isPermitted) {
+                // 마켓데이터 메타데이터 생성
+                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
+                        MARKET_DATA_INTERVAL, indexStartDate,
+                        lastValue, lastUpdateDt);
+
+                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, marketMetaData));
+                continue;
+            }
+
+            // 월별 데이터로 변환
+            List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
+                    LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE));
+
+            MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
+
+            // YOY, MOM, WOW 계산
+            ChangeRatesRes changeRates = calculateChangeRates(rawData, dateColumnName, defaultDataColumnName);
+
             // 비교군 데이터소스 조회
             List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
-                    .findByCompareGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
+                    .findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
 
             // 비교군 데이터소스 조회
             List<MarketDataChartRes> compareCharts = new ArrayList<>();
@@ -186,7 +199,9 @@ public class MiMarketDataService {
                 }
             }
 
-            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, changeRates, MARKET_DATA_INTERVAL, indexStartDate,
+            // 마켓데이터 메타데이터 생성
+            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, changeRates,
+                    MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
             miMarketDataResponses.add(MiMarketDataRes.of(true, marketMetaData, mainChart, compareCharts));
@@ -281,41 +296,52 @@ public class MiMarketDataService {
             }
         }
 
-        // 최대 12개월 선택 (2024-06 ~ 2025-05)
-        List<String> recentMonths = monthlyGroupedData.keySet().stream()
-                .sorted() // 오름차순 (과거 -> 최신)
-                .limit(12) // 최대 12개월 제한
-                .collect(Collectors.toList());
-
         // 월별 평균 계산 및 DTO 생성
         List<MarketDataChartRawData> monthlyData = new ArrayList<>();
-        for (String yearMonth : recentMonths) {
-            List<Map<String, Object>> monthData = monthlyGroupedData.get(yearMonth);
+        LocalDate currentMonth = adjustedStartDate;
+        while (!currentMonth.isAfter(endDate)) {
+            String yearMonth = DateUtil.toYearMonth(currentMonth); // 예: "202406"
+            List<Map<String, Object>> monthData = monthlyGroupedData.getOrDefault(yearMonth, Collections.emptyList());
+
+            // 대표 날짜 선택
+            String representativeDate;
+            if (monthData.isEmpty()) {
+                // 데이터 없는 경우: 오늘의 일자 또는 월의 마지막 날
+                int dayOfMonth = Math.min(todayDayOfMonth, currentMonth.lengthOfMonth());
+                representativeDate = DateUtil.toIso(currentMonth.withDayOfMonth(dayOfMonth));
+            } else {
+                // 데이터 있는 경우: 기존 로직
+                representativeDate = selectRepresentativeDate(monthData, dateColumnName, yearMonth, todayDayOfMonth);
+            }
 
             // 평균 계산
-            double sum = 0.0;
-            int count = 0;
-            for (Map<String, Object> row : monthData) {
-                Object value = row.get(defaultDataColumnName);
-                if (value != null) {
-                    try {
-                        sum += Double.parseDouble(value.toString());
-                        count++;
-                    } catch (NumberFormatException e) {
-                        log.warn("Invalid number format: {}, skipping value", value, e);
+            Double value = null;
+            if (!monthData.isEmpty()) {
+                double sum = 0.0;
+                int count = 0;
+                for (Map<String, Object> row : monthData) {
+                    Object val = row.get(defaultDataColumnName);
+                    if (val != null) {
+                        try {
+                            sum += Double.parseDouble(val.toString());
+                            count++;
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid number format: {}, skipping value", val, e);
+                        }
                     }
                 }
+                if (count > 0) {
+                    BigDecimal bd = BigDecimal.valueOf(sum / count).setScale(2, RoundingMode.HALF_UP);
+                    value = bd.doubleValue();
+                }
             }
-            double average = count > 0 ? sum / count : 0.0;
-            BigDecimal bd = BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP);
-
-            // 대표 날짜 선택: 오늘의 일자와 같은 날짜, 없으면 이전 날짜로 fallback
-            String representativeDate = selectRepresentativeDate(monthData, dateColumnName, yearMonth, todayDayOfMonth);
 
             monthlyData.add(MarketDataChartRawData.builder()
                     .date(representativeDate)
-                    .value(bd.doubleValue())
+                    .value(value)
                     .build());
+
+            currentMonth = currentMonth.plusMonths(1);
         }
 
         return monthlyData;

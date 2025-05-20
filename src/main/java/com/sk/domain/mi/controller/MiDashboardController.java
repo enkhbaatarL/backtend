@@ -41,6 +41,23 @@ public class MiDashboardController {
     @Parameters({
             @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
     })
+    @Operation(summary = "대시보드 데이터 존재 여부 조회", description = "대시보드 데이터 존재 여부를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/data/exists")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    public BaseResponse<Boolean> getDataExists(
+            @PathVariable("companyNo") Integer companyNo) {
+
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
+
+        return BaseResponseFactory.create(miDashboardService.getDataExists(cNo));
+    }
+
+    @ApiOrder(2)
+    @Parameters({
+            @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+    })
     @Operation(summary = "Latest Data 목록 조회", description = "Latest Data 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/latest-data")
@@ -54,7 +71,7 @@ public class MiDashboardController {
         return BaseResponseFactory.create(miDashboardService.getLatestData(cNo));
     }
 
-    @ApiOrder(2)
+    @ApiOrder(3)
     @Parameters({
             @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
     })
@@ -71,7 +88,7 @@ public class MiDashboardController {
         return BaseResponseFactory.create(miDashboardService.getLatestInsights(cNo));
     }
 
-    @ApiOrder(3)
+    @ApiOrder(4)
     @Parameters({
             @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
     })

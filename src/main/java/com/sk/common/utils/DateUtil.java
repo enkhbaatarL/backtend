@@ -188,4 +188,10 @@ public final class DateUtil {
         return dateTime == null ? null : dateTime.format(YYYYMM);
     }
 
+    /**
+     * LocalDate를 "yyyyMM" 문자열로 변환
+     */
+    public static String toYearMonth(LocalDate date) {
+        return date == null ? null : date.format(YYYYMM);
+    }
 }

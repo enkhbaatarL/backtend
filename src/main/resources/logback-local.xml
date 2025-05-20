@@ -13,6 +13,15 @@
         </filter>
     </appender>
 
+    <!-- MyBatis SQL 로그 설정 -->
+    <logger name="org.mybatis" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+ 
+    <logger name="org.apache.ibatis.logging" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
     </root>

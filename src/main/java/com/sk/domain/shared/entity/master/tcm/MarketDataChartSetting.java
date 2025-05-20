@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name = "tcm_mrktdatachrtsetl")
+@Comment("TCM_시장데이터차트설정내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MarketDataChartSetting extends BaseEntity {
 
