@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
-import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -20,7 +19,6 @@ import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
 import com.sk.domain.mi.dto.response.marketData.MiMarketDataRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.mi.service.MiMarketDataService;
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
