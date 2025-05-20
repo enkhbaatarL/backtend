@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
-import com.sk.common.config.database.dataSource.DataSourceContextHolder;
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
@@ -108,7 +108,7 @@ public class MybatisDynamicQueryService {
         String whereClause = dynamicDataDetailReq.whereClause();
         String orderByColumns = dynamicDataDetailReq.orderByColumns();
         String limit = dynamicDataDetailReq.limit();
-        
+
         Map<String, Object> params = new HashMap<>();
         params.put("tableName", tableName);
         params.put("columns", columns);
