@@ -90,6 +90,7 @@ public class MiPdfService {
 
             return PdfUtil.imageToByteArray(addTextWatermark, Extension.PNG.getCode());
         } catch (Exception e) {
+            log.error("Failed to get the image page from the PDF file. fileNo: {}, page: {}", fileNo, page, e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
 

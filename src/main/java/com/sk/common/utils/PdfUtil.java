@@ -66,7 +66,25 @@ public class PdfUtil {
         }
 
         g2d.dispose();
-        return watermarked;
+        return resize(watermarked, 0.35);
+    }
+
+    public static BufferedImage resize(BufferedImage src, double scale) {
+        int w = (int) (src.getWidth() * scale);
+        int h = (int) (src.getHeight() * scale);
+        Image tmp = src.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        BufferedImage dst = new BufferedImage(w, h, src.getType());
+        Graphics2D g2 = dst.createGraphics();
+        try {
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            g2.drawImage(src, 0, 0, w, h, null);
+        } finally {
+            g2.dispose();
+        }
+        return dst;
     }
 
 }
