@@ -4,10 +4,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record FileExistRes(
         @Schema(description = "파일Exist", example = "")
         Boolean fileExist) {
+
+    @Builder
+    public FileExistRes(Boolean fileExist) {
+        this.fileExist = fileExist;
+    }
 
     public static FileExistRes of(Boolean fileExist) {
         return FileExistRes.builder()

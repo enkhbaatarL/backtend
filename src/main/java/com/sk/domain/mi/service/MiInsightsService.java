@@ -69,7 +69,7 @@ public class MiInsightsService {
      * @return List<FocusedDataRes>
      */
     public List<FocusedDataDto> getFocused(int companyNo) {
-        LocalDateTime threshold = LocalDateTime.now().minusDays(5);
+        LocalDateTime threshold = LocalDateTime.now().minusDays(10);
 
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
@@ -176,13 +176,12 @@ public class MiInsightsService {
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
                 .append(" AND tgdc.del_yn = 'N'");
-        // .append(" AND tccd.high_cd_id = 'A_TYPES'");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
-                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN NATURAL LANGUAGE MODE)");
+                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(:keyword IN NATURAL LANGUAGE MODE)");
             } else {
-                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)");
+                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(:keyword IN BOOLEAN MODE)");
             }
         }
 
@@ -205,8 +204,8 @@ public class MiInsightsService {
         String groupBy = " GROUP BY tg.prvd_no, tc.gds_no, tgd.gds_data_no ";
 
         String orderBy = switch (sort) {
-            case NEWEST -> " ORDER BY tgd.mod_dtm DESC ";
-            case OLDEST -> " ORDER BY tgd.mod_dtm ASC ";
+            case NEWEST -> " ORDER BY tgd.mod_dtm DESC, tgd.gds_data_nm DESC ";
+            case OLDEST -> " ORDER BY tgd.mod_dtm ASC, tgd.gds_data_nm ASC ";
             case MOST_RELEVANT -> " ";
         };
 
@@ -299,50 +298,49 @@ public class MiInsightsService {
      * debug용 더미 데이터 생성
      *
      */
-    // @Transactional
-    // public void createDummyData() {
-    // List<String> A_TYPES = List.of(
-    // "A_INSIGHT",
-    // "A_CMMDT_MRKT_RPT",
-    // "A_CMPY_RPT",
-    // "A_ASST_RPT",
-    // "A_DEAL_INSIGHT",
-    // "A_INFORM");
+    @Transactional
+    public void createDummyData() {
+        List<String> A_TYPES = List.of(
+                "A_INSIGHT",
+                "A_CMMDT_MRKT_RPT",
+                "A_CMPY_RPT",
+                "A_ASST_RPT",
+                "A_DEAL_INSIGHT",
+                "A_INFORM");
 
-    // List<String> A_LANGUAGES = List.of(
-    // "A_ENG",
-    // "A_KOR",
-    // "A_OTHERS");
+        List<String> A_LANGUAGES = List.of(
+                "A_ENG",
+                "A_KOR",
+                "A_OTHERS");
 
-    // for (int i = 0; i < 100; i++) {
-    // Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
+        for (int i = 0; i < 100; i++) {
+            Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
 
-    // GoodsData savedGoodsData = goodsDataRepository
-    // .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i), "기고자명 %d".formatted(i)));
+            GoodsData savedGoodsData = goodsDataRepository
+                    .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i),
+                            "기고자명 %d".formatted(i), false));
 
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
-    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
+                    GoodsDataManagementSeparateCode.GDAT.getCode(), null));
 
-    // List<String> copy1 = new ArrayList<>(A_TYPES);
-    // Collections.shuffle(copy1);
-    // List<String> results1 = copy1.subList(0, 3);
-    // for (String result : results1) {
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
-    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-    // }
+            List<String> copy1 = new ArrayList<>(A_TYPES);
+            Collections.shuffle(copy1);
+            List<String> results1 = copy1.subList(0, 3);
+            for (String result : results1) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            }
 
-    // List<String> copy2 = new ArrayList<>(A_LANGUAGES);
-    // Collections.shuffle(copy2);
-    // List<String> results2 = copy2.subList(0, 2);
-    // for (String result : results2) {
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
-    // GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-    // }
+            List<String> copy2 = new ArrayList<>(A_LANGUAGES);
+            Collections.shuffle(copy2);
+            List<String> results2 = copy2.subList(0, 2);
+            for (String result : results2) {
+                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
+                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            }
 
-    // goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
-    // GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
-
-    // }
-
-    // }
+            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
+                    GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
+        }
+    }
 }

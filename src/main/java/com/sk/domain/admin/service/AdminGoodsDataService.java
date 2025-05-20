@@ -313,7 +313,7 @@ public class AdminGoodsDataService {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
                 .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                        dto.dataContributorNm()));
+                        dto.dataContributorNm(), false));
 
         // todo: 프로바이더 타입 카테고리 등록
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -326,7 +326,7 @@ public class AdminGoodsDataService {
         // 문서 타입 카테고리 등록
         if (dto.docCategoryList() != null) {
             List<GoodsDataCategory> goodsDataCategoryList = dto.docCategoryList().stream()
-                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
+                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
                             GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                     .toList();
             goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
@@ -335,7 +335,7 @@ public class AdminGoodsDataService {
         // 언어 타입 카테고리 등록
         if (dto.langCategoryList() != null) {
             List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
-                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
+                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
                             GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                     .toList();
             goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
@@ -432,9 +432,13 @@ public class AdminGoodsDataService {
                     directory.mkdir();
                 }
                 jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+
+                // 업로드 결과 저장
+                // savedGoodsData.updateMetaDataUploadStatus(null);
             } catch (IOException e) {
                 // 예외 처리 로직
                 e.printStackTrace();
+                // log.error(documentId, e);
             }
 
             savedGoodsData.updateGoodsDataDistinguishId(documentId);
@@ -497,7 +501,7 @@ public class AdminGoodsDataService {
                     .map(category -> category.codeId())
                     .toList();
 
-            List<String> newCategoryCodes = dto.docCategoryList().stream().map(CategoryDataReq::CodeId).toList();
+            List<String> newCategoryCodes = dto.docCategoryList().stream().map(CategoryDataReq::codeId).toList();
 
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);
@@ -519,7 +523,7 @@ public class AdminGoodsDataService {
                     .map(category -> category.codeId())
                     .toList();
 
-            List<String> newCategoryCodes = dto.langCategoryList().stream().map(CategoryDataReq::CodeId).toList();
+            List<String> newCategoryCodes = dto.langCategoryList().stream().map(CategoryDataReq::codeId).toList();
 
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);
@@ -617,7 +621,6 @@ public class AdminGoodsDataService {
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-
                 adminFileService.deleteFile(fileNo);
 
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
@@ -629,7 +632,6 @@ public class AdminGoodsDataService {
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-
                 adminFileService.updateFile(
                         fileNo,
                         goodsData.getGoodsDataNo(),
@@ -671,6 +673,9 @@ public class AdminGoodsDataService {
                     directory.mkdir();
                 }
                 jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+
+                // 업로드 결과 저장
+                // savedGoodsData.updateMetaDataUploadStatus(null);
             } catch (IOException e) {
                 // 예외 처리 로직
                 e.printStackTrace();

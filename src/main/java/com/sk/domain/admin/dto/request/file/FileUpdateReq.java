@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record FileUpdateReq(
     @Schema(description = "파일관계객체식별번호", example = "1")
     Integer fileRelationshipObjectDistinguishNo,
@@ -14,6 +13,13 @@ public record FileUpdateReq(
 
     @Schema(description = "파일관계객체구분코드", example = "99991231")
     String fileValidEndDt) {
+
+      @Builder
+      public  FileUpdateReq(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode, String fileValidEndDt) {
+        this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
+        this.fileRelationshipObjectSeparateCode = fileRelationshipObjectSeparateCode;
+        this.fileValidEndDt = fileValidEndDt;
+    }  
 
     public static FileUpdateReq of(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode, String fileValidEndDt) {
         return FileUpdateReq.builder()

@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record CategoryDataReq(
 
         @Schema(description = "카테고리 ID", example = "") 
-        String CodeId) {
+        String codeId) {
 
 }
 // @formatter:on
