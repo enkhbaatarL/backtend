@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sk.common.config.database.dataSource.DataSourceContextHolder;
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.ExcelParsedUtil;
@@ -46,7 +46,7 @@ public class ExcelService {
     // todo: 시트 2개 이상에서 데이타 담아서 내려주고 읽어오기
     /**
      * 엑셀 파일 다운로드
-     * 
+     *
      * @param response
      * @param datas
      * @return
@@ -97,7 +97,7 @@ public class ExcelService {
 
     /**
      * 엑셀 파일 업로드
-     * 
+     *
      * @param file
      * @throws IOException
      */
@@ -145,7 +145,7 @@ public class ExcelService {
      * 컴포넌트 정보에 따른 정형 데이터 저장
      * 테이블 칼럼 리스트(그래프를 그리기 위한 칼럼, tableColumnListNm)와, 엑셀 칼럼 리스트(excelColumnListNm) 명이 다를 수 있음
      * 칼럼명은 서로 1:1 대응 된다는 가정으로 작업하며 테이블 칼럼 리스트(tableColumnListNm) 순서와 엑셀 칼럼 리스트(excelColumnListNm) 순서가 같아야 함
-     * 
+     *
      * @param file
      * @param componentInfo
      * @param criteriaDt 기준일자 (엑셀에는 없지만 DB 테이블에는 저장이 필요할 때 따로 받는다, 현재는 crtr_dt 칼럼에만 저장한다)

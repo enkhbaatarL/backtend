@@ -1,11 +1,10 @@
-package com.sk.common.config.database.dataSource;
+package com.sk.common.config.database;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DynamicRoutingDataSource extends AbstractRoutingDataSource {
@@ -26,4 +25,5 @@ public class DynamicRoutingDataSource extends AbstractRoutingDataSource {
     protected Object determineCurrentLookupKey() {
         return DataSourceContextHolder.getDataSourceKey();
     }
+
 }
