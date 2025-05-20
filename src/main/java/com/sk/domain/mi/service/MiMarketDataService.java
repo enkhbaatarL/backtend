@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +87,7 @@ public class MiMarketDataService {
         if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
             throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         }
-        Role role =  Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // 권한 조회
         PermissionRes permissionRes = switch (role) {
@@ -114,14 +115,12 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getGoodsViewableMap().get(mainGoods.getGoodsNo());
-            if (!isPermitted) {
-                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
-                continue;
-            }
+            Boolean isPermitted = permissionRes.getGoodsViewableMap().getOrDefault(mainGoods.getGoodsNo(), false);
 
             // 칼럼 목록 조회
-            String[] tableColumnListNm = mainGoodsDataSource.getTableColumnListNm().split(",");
+            String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
+                    .map(String::trim)
+                    .toArray(String[]::new);
             // 날짜 칼럼
             String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
             // 기본 데이터 칼럼
@@ -130,20 +129,12 @@ public class MiMarketDataService {
             // 원시 데이터 조회
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE);
 
+            // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 isPermitted = false;
                 miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
                 continue;
             }
-
-            // 월별 데이터로 변환
-            List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
-                    LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE));
-
-            MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
-
-            // YOY, MOM, WOW 계산
-            ChangeRatesRes changeRates = calculateChangeRates(rawData, dateColumnName, defaultDataColumnName);
 
             // 마지막 데이터 값
             LocalDate lastUpdateDt = DateUtil.fromIsoToLocalDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
@@ -163,9 +154,29 @@ public class MiMarketDataService {
                 indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE);
             }
 
+            // 권한이 없는 경우 메타데이터까지만 제공
+            if (!isPermitted) {
+                // 마켓데이터 메타데이터 생성
+                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
+                        MARKET_DATA_INTERVAL, indexStartDate,
+                        lastValue, lastUpdateDt);
+
+                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, marketMetaData));
+                continue;
+            }
+
+            // 월별 데이터로 변환
+            List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
+                    LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE));
+
+            MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
+
+            // YOY, MOM, WOW 계산
+            ChangeRatesRes changeRates = calculateChangeRates(rawData, dateColumnName, defaultDataColumnName);
+
             // 비교군 데이터소스 조회
             List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
-                    .findByCompareGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
+                    .findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
 
             // 비교군 데이터소스 조회
             List<MarketDataChartRes> compareCharts = new ArrayList<>();
@@ -188,7 +199,9 @@ public class MiMarketDataService {
                 }
             }
 
-            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, changeRates, MARKET_DATA_INTERVAL, indexStartDate,
+            // 마켓데이터 메타데이터 생성
+            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, changeRates,
+                    MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
             miMarketDataResponses.add(MiMarketDataRes.of(true, marketMetaData, mainChart, compareCharts));
@@ -289,7 +302,7 @@ public class MiMarketDataService {
         while (!currentMonth.isAfter(endDate)) {
             String yearMonth = DateUtil.toYearMonth(currentMonth); // 예: "202406"
             List<Map<String, Object>> monthData = monthlyGroupedData.getOrDefault(yearMonth, Collections.emptyList());
-    
+
             // 대표 날짜 선택
             String representativeDate;
             if (monthData.isEmpty()) {
@@ -300,7 +313,7 @@ public class MiMarketDataService {
                 // 데이터 있는 경우: 기존 로직
                 representativeDate = selectRepresentativeDate(monthData, dateColumnName, yearMonth, todayDayOfMonth);
             }
-    
+
             // 평균 계산
             Double value = null;
             if (!monthData.isEmpty()) {
@@ -322,12 +335,12 @@ public class MiMarketDataService {
                     value = bd.doubleValue();
                 }
             }
-    
+
             monthlyData.add(MarketDataChartRawData.builder()
                     .date(representativeDate)
                     .value(value)
                     .build());
-    
+
             currentMonth = currentMonth.plusMonths(1);
         }
 
