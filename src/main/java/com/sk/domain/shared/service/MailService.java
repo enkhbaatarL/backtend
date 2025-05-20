@@ -18,7 +18,10 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.Properties.MailProperties;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
+import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.EmailSendStatusName;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
 import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
@@ -51,8 +54,9 @@ public class MailService {
     @Transactional(noRollbackFor = AppErrorException.class)
     public void sendNotificationMail(GoodsCriticalValueSetting goodsCriticalValueSetting, LocalDate dataCreatedDate) {
         // 알람 설정 정보 조회
-        String goodsDataNm = goodsCriticalValueSetting.getGoodsDataSourceDetail().getGoodsData().getGoodsDataNm();
-        String goodsDataSourceNm = goodsCriticalValueSetting.getGoodsDataSourceDetail().getGoodsDataSourceNm();
+        Goods goods = goodsCriticalValueSetting.getGoodsDataSourceDetail().getGoodsData().getGoods();
+        GoodsData goodsData = goodsCriticalValueSetting.getGoodsDataSourceDetail().getGoodsData();
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsCriticalValueSetting.getGoodsDataSourceDetail();
         String criticalValueSettingVol = goodsCriticalValueSetting.getCriticalValueSettingVol() != null
                 ? goodsCriticalValueSetting.getCriticalValueSettingVol().setScale(2, RoundingMode.HALF_UP).toString()
                 : "";
@@ -77,11 +81,11 @@ public class MailService {
         };
 
         // 메일 내용 설정(html)
-        String mailContentHtml = setMailContext(goodsDataNm, goodsDataSourceNm, criticalValueSettingVol, criticalValueSettingHtmlContentBody,
+        String mailContentHtml = setMailContext(goods, goodsData, goodsDataSourceDetail, criticalValueSettingVol, criticalValueSettingHtmlContentBody,
                 notificationCriticalValueSeparate);
 
         // 메일 내용 설정(단순 텍스트)
-        String mailContentText = String.format("%s 이(가) %s", goodsDataSourceNm, criticalValueSettingContent);
+        String mailContentText = String.format("%s 이(가) %s", goodsDataSourceDetail.getGoodsDataSourceNm(), criticalValueSettingContent);
 
         EmailAccessLog emailAccessLog = EmailAccessLog.of(to, mailSubject, mailContentText, EmailSendStatusName.PENDING,
                 goodsCriticalValueSetting);
@@ -172,18 +176,20 @@ public class MailService {
      * @param notificationCriticalValueSeparateCd 알람 임계치 구분
      * @return
      */
-    public String setMailContext(String goodsDataNm, String goodsDataSourceNm, String criticalValueSettingVol, String criticalValueSettingContentBody,
+    public String setMailContext(Goods goods, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String criticalValueSettingVol,
+            String criticalValueSettingContentBody,
             String notificationCriticalValueSeparateCd) {
         Context context = new Context();
-        context.setVariable("goodsDataNm", goodsDataNm); // {데이터 명}
-        context.setVariable("goodsDataSourceNm", goodsDataSourceNm); // {정형 데이터 상세명}
+        context.setVariable("goodsDataNm", goodsData.getGoodsDataNm()); // {데이터 명}
+        context.setVariable("goodsDataSourceNm", goodsDataSourceDetail.getGoodsDataSourceNm()); // {정형 데이터 상세명}
 
         context.setVariable("settingSeparate", notificationCriticalValueSeparateCd); // {알람 임계치 구분}
         context.setVariable("settingVolume", criticalValueSettingVol); // {알람 임계치 값}
         context.setVariable("settingUnit", criticalValueSettingContentBody); // {알람 임계치 단위}
 
-        // TODO: 프론트 경로 나오면 수정 필요
-        context.setVariable("detailLink", serverDomain); // 데이터 상세보기 링크
+        // 데이터 상세보기 링크
+        String detailLink = String.format("%s/%s/%s", serverDomain, goods.getGoodsNo(), goodsData.getGoodsDataNo());
+        context.setVariable("detailLink", detailLink);
         return templateEngine.process("notification", context);
     }
 
