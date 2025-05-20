@@ -115,7 +115,7 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getGoodsViewableMap().getOrDefault(mainGoods.getGoodsNo(), false);
+            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
 
             // 칼럼 목록 조회
             String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
