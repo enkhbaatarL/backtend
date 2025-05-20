@@ -3,11 +3,14 @@ package com.sk.domain.shared.entity.master.tmd;
 import java.time.LocalDateTime;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -64,10 +67,16 @@ public class GoodsData extends BaseEntity {
     @Comment("데이터기고자명")
     private String dataContributorNm;
 
+    @Column(name = "metad_upld_yn", length = 1, columnDefinition = "char(1)")
+    @Comment("메타데이타업로드여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isMetaDataUploaded;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
-            CustomerCompany customerCompany, String dataContributorNm) {
+            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
@@ -77,10 +86,11 @@ public class GoodsData extends BaseEntity {
         this.goods = goods;
         this.customerCompany = customerCompany;
         this.dataContributorNm = dataContributorNm;
+        this.isMetaDataUploaded = isMetaDataUploaded;
     }
 
     public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt,
-            String dataContributorNm) {
+            String dataContributorNm, Boolean isMetaDataUploaded) {
         return GoodsData.builder()
                 .goodsDataNm(goodsDataNm)
                 .goodsDataExpn(goodsDataExpn)
@@ -88,6 +98,7 @@ public class GoodsData extends BaseEntity {
                 .goods(goods)
                 .customerCompany(customerCompany)
                 .dataContributorNm(dataContributorNm)
+                .isMetaDataUploaded(isMetaDataUploaded)
                 .build();
     }
 
@@ -109,6 +120,10 @@ public class GoodsData extends BaseEntity {
 
     public void updateGoodsDataDistinguishId(String goodsDataDistinguishId) {
         this.goodsDataDistinguishId = goodsDataDistinguishId;
+    }
+
+    public void updateMetaDataUploadStatus(Boolean isMetaDataUploaded) {
+        this.isMetaDataUploaded = isMetaDataUploaded;
     }
 
     public void softDelete() {

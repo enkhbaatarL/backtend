@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record FileDownloadRes(
         @Schema(description = "파일번호", example = "1")
         Long fileNo,
@@ -18,6 +17,14 @@ public record FileDownloadRes(
         @Schema(description = "파일데이타", example = "")
         byte[] fileData) {
 
+    @Builder
+    public FileDownloadRes(Long fileNo, String fileNm, Long fileSize, byte[] fileData) {
+        this.fileNo = fileNo;
+        this.fileNm = fileNm;
+        this.fileSize = fileSize;
+        this.fileData = fileData;
+    }
+    
     public static FileDownloadRes of(Long fileNo, String fileNm, Long fileSize, byte[] fileData) {
         return FileDownloadRes.builder()
                 .fileNo(fileNo)

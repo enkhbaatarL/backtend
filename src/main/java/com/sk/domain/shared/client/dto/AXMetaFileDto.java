@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record AXMetaFileDto(
     @JsonProperty("GdsNo")
     Integer gdsNo,
@@ -42,5 +41,20 @@ public record AXMetaFileDto(
     List<String> countries)
 {
 
+    @Builder
+    public AXMetaFileDto(Integer gdsNo, String documentId, String documentReleaseDate, String headline, String synopsis,
+            String contributor, List<String> authors, List<String> documentFileName, String language, List<String> countries) {
+        this.gdsNo = gdsNo;
+        this.documentId = documentId;
+        this.documentReleaseDate = documentReleaseDate;
+        this.headline = headline;
+        this.synopsis = synopsis;
+        this.contributor = contributor;
+        this.authors = authors;
+        this.documentFileName = documentFileName;
+        this.language = language;
+        this.countries = countries;
+
+    } 
 }
 // @formatter:on

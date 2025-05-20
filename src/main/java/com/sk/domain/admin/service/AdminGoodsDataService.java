@@ -313,7 +313,7 @@ public class AdminGoodsDataService {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
                 .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                        dto.dataContributorNm()));
+                        dto.dataContributorNm(), false));
 
         // todo: 프로바이더 타입 카테고리 등록
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -432,6 +432,9 @@ public class AdminGoodsDataService {
                     directory.mkdir();
                 }
                 jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+
+                // 업로드 결과 저장
+                // savedGoodsData.updateMetaDataUploadStatus(null);
             } catch (IOException e) {
                 // 예외 처리 로직
                 e.printStackTrace();
@@ -670,6 +673,9 @@ public class AdminGoodsDataService {
                     directory.mkdir();
                 }
                 jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+
+                // 업로드 결과 저장
+                // savedGoodsData.updateMetaDataUploadStatus(null);
             } catch (IOException e) {
                 // 예외 처리 로직
                 e.printStackTrace();
