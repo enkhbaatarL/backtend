@@ -36,9 +36,9 @@ public class MiPdfService {
      * @param fileNo 파일 번호
      * @return PdfMetadataRes
      */
-    public PdfMetadataRes getPdfFileMetadata(Long fileNo) {
+    public PdfMetadataRes getPdfFileMetadata(Integer fileNo) {
 
-        UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo)
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo.longValue())
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
 
         if (!Extension.PDF.getCode().equalsIgnoreCase(uploadedFile.getFileExtNm())) {
@@ -56,9 +56,9 @@ public class MiPdfService {
      * @param user   사용자
      * @return byte[]
      */
-    public byte[] getImagePageFromPdf(Long fileNo, int page, User user) {
+    public byte[] getImagePageFromPdf(Integer fileNo, int page, User user) {
 
-        UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo)
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo.longValue())
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
 
         if (page > uploadedFile.getFilePageCnt()) {

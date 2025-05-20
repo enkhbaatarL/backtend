@@ -45,9 +45,7 @@ public class MiPdfViewerController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
         goodsNestedParam = "fileNo", requireViewPermission = true
     )
-    public BaseResponse<PdfMetadataRes> getPdfFileMetadata(
-        @PathVariable(value = "fileNo") Long fileNo
-    ) {
+    public BaseResponse<PdfMetadataRes> getPdfFileMetadata(@PathVariable(value = "fileNo") Integer fileNo) {
         return BaseResponseFactory.create(pdfService.getPdfFileMetadata(fileNo));
     }
 
@@ -65,7 +63,7 @@ public class MiPdfViewerController {
         goodsNestedParam = "fileNo", requireViewPermission = true
     )
     public ResponseEntity<byte[]> getImagePageFromPdf(
-        @PathVariable(value = "fileNo") Long fileNo,
+        @PathVariable(value = "fileNo") Integer fileNo,
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @UserResolve User user
     ) {
