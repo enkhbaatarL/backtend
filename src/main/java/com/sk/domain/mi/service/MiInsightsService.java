@@ -206,7 +206,7 @@ public class MiInsightsService {
         String orderBy = switch (sort) {
             case NEWEST -> " ORDER BY tgd.mod_dtm DESC, tgd.gds_data_nm DESC ";
             case OLDEST -> " ORDER BY tgd.mod_dtm ASC, tgd.gds_data_nm ASC ";
-            case MOST_RELEVANT -> " ORDER BY tgd.gds_data_nm ASC ";
+            case MOST_RELEVANT -> " ";
         };
 
         select.append(" ");
@@ -318,7 +318,7 @@ public class MiInsightsService {
 
             GoodsData savedGoodsData = goodsDataRepository
                     .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i),
-                            "기고자명 %d".formatted(i)));
+                            "기고자명 %d".formatted(i), false));
 
             goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
                     GoodsDataManagementSeparateCode.GDAT.getCode(), null));

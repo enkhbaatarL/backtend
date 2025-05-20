@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record NoticeDetailRes(
         @Schema(description = "고정여부", example = "true") 
         Boolean isTopFixed,
@@ -46,6 +45,7 @@ public record NoticeDetailRes(
         @Schema(description = "파일정보", example = "") 
         List<BulletinBoardFileDto> fileList) {
 
+    @Builder
     public NoticeDetailRes(Boolean isTopFixed, Boolean isPopupUse, String popupPostBeginDt, String popupPostEndDt,
             String bulletinCategorySeparateCd, Boolean isWholePost, List<BulletinBoardCompanyDto> targetList,
             String bulletinValidBeginDt, String bulletinValidEndDt, String bulletinTitleNm,
