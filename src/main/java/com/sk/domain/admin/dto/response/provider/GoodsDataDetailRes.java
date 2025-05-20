@@ -22,6 +22,9 @@ public record GoodsDataDetailRes(
         @Schema(description = "상품데이터요약내용", example = "") 
         String goodsDataSummaryCntt,
 
+        @Schema(description = "데이터기고자명 Summary", example = "") 
+        String dataContributorNm,
+
         @Schema(description = "문서 타입 카테고리 리스트", example = "") 
         List<CategoryDataRes> docCategoryList,
 
@@ -40,6 +43,7 @@ public record GoodsDataDetailRes(
                 .goodsDataNm(goodsData.getGoodsDataNm())
                 .goodsDataExpn(goodsData.getGoodsDataExpn())
                 .goodsDataSummaryCntt(goodsData.getGoodsDataSummaryCntt())
+                .dataContributorNm(goodsData.getDataContributorNm())
                 .docCategoryList(docCategoryList)
                 .langCategoryList(langCategoryList)
                 .structuredDataList(structuredDataList)
