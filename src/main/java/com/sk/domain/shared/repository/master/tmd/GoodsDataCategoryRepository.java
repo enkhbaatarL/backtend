@@ -99,17 +99,18 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
     Optional<GoodsDataCategory> findByCategoryCode(@Param("goodsDataNo") Integer goodsDataNo, @Param("codeId") String codeId);
 
     @Query("""
-                    SELECT
-                        ccd.id.codeId as codeId,
-                        ccd.codeNm as codeNm
-                    FROM GoodsDataCategory gdc
-                    LEFT JOIN CommonCodeDetail ccd
-                        ON ccd.id.codeId = gdc.goodsDataCategoryCd
-                    WHERE gdc.isDeleted = false
-                        AND ccd.isDeleted = false
-                        AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
-                        AND gdc.goodsDataManagementSeparateCd = :goodsDataManagementSeparateCode
-                        AND gdc.goodsData.goodsDataNo = :goodsDataNo
+            SELECT
+                ccd.id.codeId as codeId,
+                ccd.highCodeId as highCodeId,
+                ccd.codeNm as codeNm
+            FROM GoodsDataCategory gdc
+            LEFT JOIN CommonCodeDetail ccd
+                ON ccd.id.codeId = gdc.goodsDataCategoryCd
+            WHERE gdc.isDeleted = false
+                AND ccd.isDeleted = false
+                AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
+                AND gdc.goodsDataManagementSeparateCd = :goodsDataManagementSeparateCode
+                AND gdc.goodsData.goodsDataNo = :goodsDataNo
             """)
     List<GoodsDataCategoryProjection> findGoodsDataAndIsDeleted(Integer goodsDataNo, String goodsDataManagementSeparateCode);
 
