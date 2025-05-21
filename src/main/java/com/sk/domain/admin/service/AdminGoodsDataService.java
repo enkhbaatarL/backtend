@@ -13,8 +13,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.sk.domain.admin.dto.response.provider.*;
+import com.sk.domain.admin.listener.event.AXUploadFileEvent;
 
 import org.apache.poi.hpsf.Array;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -92,7 +94,7 @@ public class AdminGoodsDataService {
     private final UserRepository userRepository;
     private final PlatformTransactionManager masterTransactionManager;
     private final PlatformTransactionManager myBatisTransactionManager;
-    private final JsonFileWriter jsonFileWriter;
+    private final ApplicationEventPublisher publisher;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -313,7 +315,7 @@ public class AdminGoodsDataService {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
                 .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                        dto.dataContributorNm()));
+                        dto.dataContributorNm(), false));
 
         // todo: 프로바이더 타입 카테고리 등록
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -326,7 +328,7 @@ public class AdminGoodsDataService {
         // 문서 타입 카테고리 등록
         if (dto.docCategoryList() != null) {
             List<GoodsDataCategory> goodsDataCategoryList = dto.docCategoryList().stream()
-                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
+                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
                             GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                     .toList();
             goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
@@ -335,7 +337,7 @@ public class AdminGoodsDataService {
         // 언어 타입 카테고리 등록
         if (dto.langCategoryList() != null) {
             List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
-                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.CodeId(), "",
+                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
                             GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                     .toList();
             goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
@@ -408,8 +410,7 @@ public class AdminGoodsDataService {
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
-            // todo: A.X Platform 에 파일 업로드 연동
-            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            // A.X Platform 에 파일 업로드 연동
             String documentId = UUID.randomUUID().toString();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
@@ -418,24 +419,14 @@ public class AdminGoodsDataService {
                     .documentReleaseDate(nowOffsetDateTime())
                     .headline(savedGoodsData.getGoodsDataNm())
                     .synopsis(savedGoodsData.getGoodsDataExpn() + savedGoodsData.getGoodsDataSummaryCntt())
-                    .contributor("")
+                    .contributor(savedGoodsData.getDataContributorNm())
                     .authors(List.of(""))
                     .documentFileName(fileNameList)
                     .language("")
                     .countries(List.of(""))
                     .build();
 
-            try {
-                String directoryPath = "./temp";
-                File directory = new File(directoryPath);
-                if (!directory.exists()) {
-                    directory.mkdir();
-                }
-                jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
-            } catch (IOException e) {
-                // 예외 처리 로직
-                e.printStackTrace();
-            }
+            publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, false));
 
             savedGoodsData.updateGoodsDataDistinguishId(documentId);
         }
@@ -497,7 +488,7 @@ public class AdminGoodsDataService {
                     .map(category -> category.codeId())
                     .toList();
 
-            List<String> newCategoryCodes = dto.docCategoryList().stream().map(CategoryDataReq::CodeId).toList();
+            List<String> newCategoryCodes = dto.docCategoryList().stream().map(CategoryDataReq::codeId).toList();
 
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);
@@ -519,7 +510,7 @@ public class AdminGoodsDataService {
                     .map(category -> category.codeId())
                     .toList();
 
-            List<String> newCategoryCodes = dto.langCategoryList().stream().map(CategoryDataReq::CodeId).toList();
+            List<String> newCategoryCodes = dto.langCategoryList().stream().map(CategoryDataReq::codeId).toList();
 
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);
@@ -617,7 +608,6 @@ public class AdminGoodsDataService {
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-
                 adminFileService.deleteFile(fileNo);
 
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
@@ -629,7 +619,6 @@ public class AdminGoodsDataService {
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-
                 adminFileService.updateFile(
                         fileNo,
                         goodsData.getGoodsDataNo(),
@@ -648,7 +637,7 @@ public class AdminGoodsDataService {
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
-            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            // A.X Platform 에 파일 업로드 연동
             String documentId = goodsData.getGoodsDataDistinguishId();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
@@ -657,24 +646,14 @@ public class AdminGoodsDataService {
                     .documentReleaseDate(nowOffsetDateTime())
                     .headline(goodsData.getGoodsDataNm())
                     .synopsis(goodsData.getGoodsDataExpn() + goodsData.getGoodsDataSummaryCntt())
-                    .contributor("")
+                    .contributor(goodsData.getDataContributorNm())
                     .authors(List.of(""))
                     .documentFileName(fileNameList)
                     .language("")
                     .countries(List.of(""))
                     .build();
 
-            try {
-                String directoryPath = "./temp";
-                File directory = new File(directoryPath);
-                if (!directory.exists()) {
-                    directory.mkdir();
-                }
-                jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
-            } catch (IOException e) {
-                // 예외 처리 로직
-                e.printStackTrace();
-            }
+            publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, true));
         }
     }
 

@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record FileUploadRes(
         @Schema(description = "파일번호", example = "1")
         Long fileNo,
@@ -17,6 +16,14 @@ public record FileUploadRes(
 
         @Schema(description = "파일URL", example = "")
         String fileUrl) {
+
+    @Builder
+    public FileUploadRes(Long fileNo, String fileNm, Long fileSize, String fileUrl) {
+        this.fileNo = fileNo;
+        this.fileNm = fileNm;
+        this.fileSize = fileSize;
+        this.fileUrl = fileUrl;
+    }
 
     public static FileUploadRes of(Long fileNo, String fileNm, Long fileSize, String fileUrl) {
         return FileUploadRes.builder()

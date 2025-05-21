@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record FaqDetailRes(
         @Schema(description = "카테고리", example = "CAT1") 
         String bulletinCategorySeparateCd,
@@ -15,6 +14,7 @@ public record FaqDetailRes(
         @Schema(description = "내용", example = "게시물 내용") 
         String bulletinCntt) {
 
+    @Builder
     public FaqDetailRes(String bulletinCategorySeparateCd, String bulletinTitleNm, String bulletinCntt) {
         this.bulletinCategorySeparateCd = bulletinCategorySeparateCd;
         this.bulletinTitleNm = bulletinTitleNm;
