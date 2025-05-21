@@ -16,7 +16,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.common.utils.Properties.MailProperties;
+import com.sk.common.properties.MailProperties;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
@@ -46,7 +46,7 @@ public class MailService {
 
     /**
      * 알람 메일 발송
-     * 
+     *
      * @param goodsCriticalValueSetting 알람 설정 정보
      * @param dataCreatedDate           데이터 발생일 (알람 발송일 X, 임계치 데이터 발생 O)
      */
@@ -167,7 +167,7 @@ public class MailService {
 
     /**
      * 알람 메일 내용 설정(html)
-     * 
+     *
      * 파라미터는 엔티티명 기준
      * @param goodsDataNm 데이터 명
      * @param goodsDataSourceNm 정형 데이터 상세명

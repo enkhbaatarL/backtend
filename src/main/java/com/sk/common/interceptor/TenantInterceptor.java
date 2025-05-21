@@ -1,22 +1,5 @@
 package com.sk.common.interceptor;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerInterceptor;
-
-import com.sk.common.config.database.dataSource.DataSourceContextHolder;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 //TODO: 삭제 예정 => Datasource 설정은 mybatis 호출 직전에
 /**
 @Component

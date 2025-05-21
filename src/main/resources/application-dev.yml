@@ -5,38 +5,47 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     master:
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+      company-cd: master
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
-      password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+      username: ${SKT_MI_DB_USERNAME_MASTER:min}
+      password: ${SKT_MI_DB_PASSWORD_MASTER:min}
       hikari:
-        maximum-pool-size: 5
-        max-lifetime: 60000
-    tenant-datasources:
-      SKCC:
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        connection-timeout: 7s
+        maximum-pool-size: 10
+        idle-timeout: 10m
+        max-lifetime: 15m
+    tenants:
+      - company-cd: SKCC
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
         hikari:
-          maximum-pool-size: 5
-          max-lifetime: 60000
-      SKT:
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+          connection-timeout: 7s
+          maximum-pool-size: 10
+          idle-timeout: 10m
+          max-lifetime: 15m
+      - company-cd: SKT
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
         hikari:
-          maximum-pool-size: 5
-          max-lifetime: 60000
-      midb:
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+          connection-timeout: 7s
+          maximum-pool-size: 10
+          idle-timeout: 10m
+          max-lifetime: 15m
+      - company-cd: midb
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:mipapp}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
         hikari:
-          maximum-pool-size: 5
-          max-lifetime: 60000
+          connection-timeout: 7s
+          maximum-pool-size: 10
+          idle-timeout: 10m
+          max-lifetime: 15m
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -108,7 +117,7 @@ api:
   ax-platform:
     url: https://aip.sktai.io
     connection-timeout: 1s
-    read-timeout: 20s  
+    read-timeout: 20s
 
 mail:
   smtp:
