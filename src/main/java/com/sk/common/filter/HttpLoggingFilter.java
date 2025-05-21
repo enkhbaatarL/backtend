@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @RequiredArgsConstructor
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
+    // Custom Header Key
     private static final String X_COMPANY_NO_KEY = "X-Company-No";
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");

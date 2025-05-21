@@ -28,14 +28,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
             .addPathPatterns("/api/**"); // API 경로에만 적용
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-            .allowedOriginPatterns("*")
-            .allowedMethods("*")
-            .allowedHeaders("*")
-            .allowCredentials(true);
-    }
+    // 2025.05.21 -> CORS 설정 Spring Security 에서 처리함.
+//    @Override
+//    public void addCorsMappings(CorsRegistry registry) {
+//        registry.addMapping("/**")
+//            .allowedOriginPatterns("*")
+//            .allowedMethods("*")
+//            .allowedHeaders("*")
+//            .allowCredentials(true);
+//    }
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {

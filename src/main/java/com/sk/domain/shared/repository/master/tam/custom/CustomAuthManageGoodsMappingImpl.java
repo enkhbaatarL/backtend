@@ -60,8 +60,16 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         // 1) 개별 권한 조건
         Predicate individualAuth = authMapping.user.userNo.eq(userNo).and(authMapping.user.isDeleted.isFalse());
 
+        QUser userForCompanyLookup = new QUser("userForCompanyLookup");
+
+        User userEntity = queryFactory
+            .selectFrom(userForCompanyLookup)
+            .leftJoin(userForCompanyLookup.customerCompany).fetchJoin()
+            .where(userForCompanyLookup.userNo.eq(userNo))
+            .fetchOne();
+
         // 2) 회사 권한 조건
-        Predicate companyAuth = authMapping.user.isNull().and(ccgMapping.customerCompany.customerCompanyNo.eq(user.customerCompany.customerCompanyNo));
+        Predicate companyAuth = authMapping.user.userNo.isNull().and(ccgMapping.customerCompany.customerCompanyNo.eq(userEntity.getCustomerCompany().getCustomerCompanyNo()));
 
         return queryFactory
             .select(authMapping)
