@@ -1,12 +1,17 @@
 package com.sk.domain.mi.dto.response.detail;
 
+import com.sk.common.utils.MDCUtil;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.enums.CategorySeparateHighCd;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Builder
 public record GoodsDataRes(
@@ -40,40 +45,41 @@ public record GoodsDataRes(
     public record CategoryDataInfo(
 
         @Schema(
-            description = "데이터 정보 타입",
-            example = "A_TYPES",
-            allowableValues = {"A_TYPES", "A_LANGUAGES", "B_THEMES"}
+            description = "카테고리 상위코드",
+            example = "LANGUAGES",
+            allowableValues = {"LANGUAGES"}
         )
-        String type,
+        CategorySeparateHighCd categoryHighCd,
 
-        @Schema(
-            description = "데이터 정보 값",
-            example = "Insight"
+        @ArraySchema(
+            arraySchema = @Schema(description = "카테고리 값 목록"),
+            schema = @Schema(description = "카테고리 값 요소", example = "ENGLISH")
         )
-        String value
+        List<String> value
 
     ) {
 
-        public static CategoryDataInfo of(GoodsDataCategoryProjection projection) {
-            return CategoryDataInfo.builder()
-                .type(projection.getCodeId())
-                .value(projection.getCodeNm())
-                .build();
+        public static List<CategoryDataInfo> ofList(List<GoodsDataCategoryProjection> projections) {
+            Map<String, List<GoodsDataCategoryProjection>> grouped = projections.stream().collect(Collectors.groupingBy(GoodsDataCategoryProjection::getHighCodeId));
+            return grouped.keySet().stream()
+                .map(key -> CategoryDataInfo.builder()
+                    .categoryHighCd(CategorySeparateHighCd.fromCodeId(key))
+                    .value(grouped.get(key).stream().map(GoodsDataCategoryProjection::getCodeNm).toList())
+                    .build()).toList();
         }
 
     }
 
     public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes) {
+        int companyNo = Integer.parseInt(MDCUtil.getValue(MDCUtil.COMPANY_NO));
         return GoodsDataRes.builder()
             .goodsDataNm(entity.getGoodsDataNm())
             .goodsDataExpn(entity.getGoodsDataExpn())
             .goodsDataSummaryCntt(entity.getGoodsDataSummaryCntt())
             .providerNm(entity.getGoods().getProvider().getProviderNm())
-            .categoryDataInfo(categoryProjections.stream()
-                .map(CategoryDataInfo::of)
-                .toList())
-            .isViewable(permissionRes.getGoodsViewableMap().getOrDefault(goodsNo, Boolean.FALSE))
-            .isDownloadable(permissionRes.getGoodsDownloadableMap().getOrDefault(goodsNo, Boolean.FALSE))
+            .categoryDataInfo(CategoryDataInfo.ofList(categoryProjections))
+            .isViewable(permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE))
+            .isDownloadable(permissionRes.getGoodsDownloadableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE))
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
