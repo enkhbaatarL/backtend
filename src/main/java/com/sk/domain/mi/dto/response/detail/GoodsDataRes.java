@@ -28,8 +28,8 @@ public record GoodsDataRes(
     @Schema(description = "프로바이더 명", example = "Wood Mackenzie")
     String providerNm,
 
-    @Schema(description = "카테고리 데이터 정보 목록")
-    List<CategoryDataInfo> categoryDataInfo,
+    @Schema(description = "카테고리 정보 목록")
+    List<CategoryDataInfo> categories,
 
     @Schema(description = "보기 권한", example = "true")
     Boolean isViewable,
@@ -77,7 +77,7 @@ public record GoodsDataRes(
             .goodsDataExpn(entity.getGoodsDataExpn())
             .goodsDataSummaryCntt(entity.getGoodsDataSummaryCntt())
             .providerNm(entity.getGoods().getProvider().getProviderNm())
-            .categoryDataInfo(CategoryDataInfo.ofList(categoryProjections))
+            .categories(CategoryDataInfo.ofList(categoryProjections))
             .isViewable(permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE))
             .isDownloadable(permissionRes.getGoodsDownloadableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE))
             .auditInfo(AuditInfo.ofSimple(
