@@ -259,7 +259,7 @@ public class AdminProviderController {
     @Operation(summary = "상품 수정", description = "상품을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/providers/{providerNo}/goods/{goodsNo}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN})
+    @RequiredPermission(roles = {Role.ADMIN, Role.API_SUB_ADMIN})
     public BaseResponse<String> updateGoods(
             @RequestBody @Valid GoodsUpdateReq body,
             @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
@@ -532,8 +532,6 @@ public class AdminProviderController {
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash,
             @RequestPart(value = "file", required = true) MultipartFile file) {
-
-        System.out.println("==========>>>>>>>>>>>>> ");
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();

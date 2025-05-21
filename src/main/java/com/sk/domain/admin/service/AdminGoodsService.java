@@ -170,28 +170,33 @@ public class AdminGoodsService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-        if (goods.getIsPublic()) {
-            if (role == Role.ADMIN) {
-                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
-                return;
-            }
-        } else {
-            if (role == Role.ADMIN) {
-                goods.update("", "", "", dto.isUsed(), null);
-                return;
-            } else if (role == Role.OPERATOR) {
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
+        // if (goods.getIsPublic()) {
+        // if (role == Role.ADMIN) {
+        // goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+        // return;
+        // }
+        // } else {
+        // if (role == Role.ADMIN) {
+        // goods.update("", "", "", dto.isUsed(), null);
+        // return;
+        // } else if (role == Role.OPERATOR) {
+        // customerCompanyProviderMappingRepository
+        // .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
 
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
+        // customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
 
-                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
-                return;
-            }
+        // goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+        // return;
+        // }
+        // }
+
+        if (role == Role.ADMIN) {
+            goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+            return;
         }
 
         throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
