@@ -71,7 +71,7 @@ public class ResourceServerConfig {
         } else {
 
             return http
-                .cors(withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .csrf(AbstractHttpConfigurer::disable)

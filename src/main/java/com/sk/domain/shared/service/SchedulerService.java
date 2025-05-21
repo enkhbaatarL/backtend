@@ -256,7 +256,7 @@ public class SchedulerService {
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findPdfToImagesTarget(Extension.PDF.getCode(), FileRelationshipObjectSeparateCode.GUDAT.getCode());
 
         // 테스트 todo 지울 것.
-        List<UploadedFile> testFiles = uploadedFiles.stream().filter(s -> s.getFileNo() == 28970).toList();
+        List<UploadedFile> testFiles = uploadedFiles.stream().filter(s -> s.getFileNo() == 28972).toList();
 
         log.info("[PDF-TO-IMAGES] Total target PDF files: {}", testFiles.size());
 
