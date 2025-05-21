@@ -1,4 +1,4 @@
-package com.sk.common.utils.Properties;
+package com.sk.common.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

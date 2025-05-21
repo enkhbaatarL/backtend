@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import com.sk.common.enums.AuthComponent;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthenticationException;
-import com.sk.common.utils.Properties.JwtProperties;
+import com.sk.common.properties.JwtProperties;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.service.RefreshTokenService;

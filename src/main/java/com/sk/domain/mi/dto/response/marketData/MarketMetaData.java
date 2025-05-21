@@ -64,7 +64,7 @@ public record MarketMetaData(
         this.wowChangeRate = wowChangeRate;
     }
             
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, ChangeRatesRes changeRates, String interval,
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
@@ -80,9 +80,9 @@ public record MarketMetaData(
                 .lastUpdateDt(lastUpdateDt)
                 .indexStartDt(indexStartDt)
                 .lastValue(lastValue)
-                .yoyChangeRate(changeRates != null ? changeRates.yoyChangeRate() : null)
-                .momChangeRate(changeRates != null ? changeRates.momChangeRate() : null)
-                .wowChangeRate(changeRates != null ? changeRates.wowChangeRate() : null)
+                .yoyChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.yoyChangeRate() : null)
+                .momChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.momChangeRate() : null)
+                .wowChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.wowChangeRate() : null)
                 .build();
     }
 

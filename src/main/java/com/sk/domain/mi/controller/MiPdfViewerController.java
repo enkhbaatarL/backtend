@@ -68,7 +68,7 @@ public class MiPdfViewerController {
         @UserResolve User user
     ) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
+        headers.setContentType(MediaType.IMAGE_JPEG);
 
         byte[] imageBytes = pdfService.getImagePageFromPdf(fileNo, page, user);
 

@@ -1,5 +1,6 @@
 package com.sk.common.filter;
 
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.filter.wrapper.CustomContentCachingRequestWrapper;
 import com.sk.common.filter.wrapper.CustomContentCachingResponseWrapper;
 import com.sk.common.utils.MDCUtil;
@@ -60,6 +61,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             } finally {
                 logResponse();
                 MDCUtil.clear();
+                DataSourceContextHolder.clearDataSourceKey();
             }
 
         } else {
@@ -76,6 +78,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
                 logResponse(cachingResponseWrapper);
                 cachingResponseWrapper.copyBodyToResponse();
                 MDCUtil.clear();
+                DataSourceContextHolder.clearDataSourceKey();
             }
 
         }

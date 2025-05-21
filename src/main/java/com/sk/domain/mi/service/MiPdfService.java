@@ -79,17 +79,19 @@ public class MiPdfService {
             String bucket = bucketInfo.getLeft();
             String fullPath = bucketInfo.getRight();
             String prefix = StringUtil.stripFileExtension(fullPath);
-            String imageName = StringUtils.concat(StringUtil.formatPageNumber(page), ".", Extension.PNG.getCode());
+            String imageName = StringUtils.concat(StringUtil.formatPageNumber(page), ".", Extension.JPEG.getCode());
             String imagePath = StringUtils.concat(prefix, "/", imageName);
 
             byte[] bytes = adminObjectStorageService.downloadFile(bucket, imagePath);
             BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
 
             String waterMark = StringUtil.joinPoundSignNonNull(user.getUserLoginId(), user.getJobGradeNm(), user.getDepartmentNm(), user.getUserNm(), DateUtil.currentYmdHyphen());
-            BufferedImage addTextWatermark = PdfUtil.addTextWatermark(bufferedImage, waterMark);
+            BufferedImage addTextWatermark = PdfUtil.addTextWatermarkRGB(bufferedImage, waterMark);
+            BufferedImage result = PdfUtil.resize(addTextWatermark, 0.75f);
 
-            return PdfUtil.imageToByteArray(addTextWatermark, Extension.PNG.getCode());
+            return PdfUtil.imageToJpegByteArray(result, 0.8f);
         } catch (Exception e) {
+            log.error("Failed to get the image page from the PDF file. fileNo: {}, page: {}", fileNo, page, e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
 
