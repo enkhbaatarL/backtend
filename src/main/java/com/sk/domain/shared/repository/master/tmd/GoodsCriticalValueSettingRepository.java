@@ -13,7 +13,7 @@ import com.sk.domain.shared.repository.master.tmd.custom.CustomGoodsCriticalValu
 public interface GoodsCriticalValueSettingRepository
         extends JpaRepository<GoodsCriticalValueSetting, Integer>, CustomGoodsCriticalValueSettingRepository {
 
-    @EntityGraph(attributePaths = { "goodsDataSourceDetail", "goodsDataSourceDetail.goodsData", "user" })
+    @EntityGraph(attributePaths = { "goodsDataSourceDetail", "goodsDataSourceDetail.goodsData", "goodsDataSourceDetail.goodsData.goods", "user" })
     List<GoodsCriticalValueSetting> findAllByIsDeletedFalse();
 
     Optional<GoodsCriticalValueSetting> findByUserGoodsNotificationSettingNoAndUserAndIsDeletedFalse(
