@@ -179,9 +179,9 @@ public class MiInsightsService {
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
-                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(:keyword IN NATURAL LANGUAGE MODE)");
+                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN NATURAL LANGUAGE MODE)");
             } else {
-                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(:keyword IN BOOLEAN MODE)");
+                where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)");
             }
         }
 

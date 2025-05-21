@@ -853,6 +853,12 @@ public class MiMarketDataService {
                 LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN (
+                    SELECT DISTINCT gds_data_no
+                    FROM midb.tmd_gdsdatactgrl
+                    WHERE del_yn = 'N'
+                    AND gds_data_mnagt_spt_cd = 'GDATS'
+                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -864,6 +870,12 @@ public class MiMarketDataService {
                 LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN (
+                    SELECT DISTINCT gds_data_no
+                    FROM midb.tmd_gdsdatactgrl
+                    WHERE del_yn = 'N'
+                    AND gds_data_mnagt_spt_cd = 'GDATS'
+                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where;
 
