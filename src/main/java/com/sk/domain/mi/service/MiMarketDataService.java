@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -86,7 +87,7 @@ public class MiMarketDataService {
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
     private final MiGoodsPermissionService miGoodsPermissionService;
 
-    // TODO: 호영: 데이터별 병렬처리, 데이터별 캐시처리
+    // TODO: 호영: 데이터별 캐시처리
     /**
      * 마켓 데이터 조회
      * 
@@ -123,9 +124,7 @@ public class MiMarketDataService {
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
-        // 차트 설정 조회 결과
-        List<MiMarketDataRes> miMarketDataResponses = new ArrayList<>();
-        for (MarketDataChartSetting marketDataChartSetting : marketDataChartSettings) {
+        return marketDataChartSettings.parallelStream().map(marketDataChartSetting -> {
             GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
             GoodsData mainGoodsData = marketDataChartSetting.getGoodsDataSourceDetail().getGoodsData();
             Goods mainGoods = mainGoodsData.getGoods();
@@ -148,8 +147,7 @@ public class MiMarketDataService {
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 isPermitted = false;
-                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting)));
-                continue;
+                return MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting));
             }
 
             // 마지막 데이터 값
@@ -177,8 +175,7 @@ public class MiMarketDataService {
                         MARKET_DATA_INTERVAL, indexStartDate,
                         lastValue, lastUpdateDt);
 
-                miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, marketMetaData));
-                continue;
+                return MiMarketDataRes.of(isPermitted, marketMetaData);
             }
 
             // 월별 데이터로 변환
@@ -224,12 +221,24 @@ public class MiMarketDataService {
                     MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
-            miMarketDataResponses.add(MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts));
-        }
-        return miMarketDataResponses;
+            return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
+
+        })
+        .filter(Objects::nonNull)
+        .sorted((a, b) -> {
+            Short rankA = a.marketMetaData().chartMarkRank();
+            Short rankB = b.marketMetaData().chartMarkRank();
+
+            if (rankA == null && rankB == null) return 0;
+            if (rankA == null) return 1;
+            if (rankB == null) return -1;
+
+            return rankA.compareTo(rankB);
+        })
+        .collect(Collectors.toList());
     }
 
-    // TODO: 호영: 데이터별 병렬처리, 데이터별 캐시처리
+    // TODO: 호영: 데이터별 캐시처리
     /**
      * 마켓 데이터 요약 조회 (그래프 제외)
      * 
@@ -265,9 +274,7 @@ public class MiMarketDataService {
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
-        // 차트 설정 조회 결과
-        List<MiMarketDataSummary> miMarketDataSummaries = new ArrayList<>();
-        for (MarketDataChartSetting marketDataChartSetting : marketDataChartSettings) {
+        return marketDataChartSettings.parallelStream().map(marketDataChartSetting -> {
             GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
             GoodsData mainGoodsData = marketDataChartSetting.getGoodsDataSourceDetail().getGoodsData();
             Goods mainGoods = mainGoodsData.getGoods();
@@ -290,8 +297,7 @@ public class MiMarketDataService {
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 isPermitted = false;
-                miMarketDataSummaries.add(MiMarketDataSummary.of(isPermitted, MarketMetaDataSummary.of(marketDataChartSetting)));
-                continue;
+                return MiMarketDataSummary.of(isPermitted, MarketMetaDataSummary.of(marketDataChartSetting));
             }
 
             // 마지막 데이터 값
@@ -318,8 +324,7 @@ public class MiMarketDataService {
                 MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource,
                         null, MARKET_DATA_INTERVAL, indexStartDate, lastValue, lastUpdateDt);
 
-                miMarketDataSummaries.add(MiMarketDataSummary.of(isPermitted, marketMetaDataSummary));
-                continue;
+                return MiMarketDataSummary.of(isPermitted, marketMetaDataSummary);
             }
 
             // DOD, MOM, WOW 계산
@@ -329,14 +334,24 @@ public class MiMarketDataService {
                     calculatePeriodChangeTypes);
 
             // 마켓데이터 메타데이터 생성
-            MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, calculatePeriodChangeRes,
+            MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource,
+                    calculatePeriodChangeRes,
                     MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
-            miMarketDataSummaries.add(MiMarketDataSummary.of(isPermitted, marketMetaDataSummary));
-        }
+            return MiMarketDataSummary.of(isPermitted, marketMetaDataSummary);
+        })
+        .filter(Objects::nonNull)
+        .sorted((a, b) -> {
+            Short rankA = a.marketMetaDataSummary().chartMarkRank();
+            Short rankB = b.marketMetaDataSummary().chartMarkRank();
 
-        return miMarketDataSummaries;
+            if (rankA == null && rankB == null) return 0;
+            if (rankA == null) return 1;
+            if (rankB == null) return -1;
+            return rankA.compareTo(rankB);
+        })
+        .collect(Collectors.toList());
     }
 
     // Class 분리 시킬지 고민중
