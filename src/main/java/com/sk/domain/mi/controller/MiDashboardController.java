@@ -1,6 +1,5 @@
 package com.sk.domain.mi.controller;
 
-<<<<<<< HEAD
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
@@ -9,8 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-=======
->>>>>>> 2a3d39aa885fe1a75b72cbcc15cdfe593bedaed4
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
@@ -19,13 +16,10 @@ import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummary;
 import com.sk.domain.mi.service.MiDashboardService;
-<<<<<<< HEAD
 import com.sk.domain.mi.service.MiMarketDataService;
-=======
-import com.sk.domain.shared.enums.PermissionCondition;
->>>>>>> 2a3d39aa885fe1a75b72cbcc15cdfe593bedaed4
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -33,12 +27,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @Tag(name = "01. Dashboard API", description = "Dashboard API 입니다.")
 @Slf4j
