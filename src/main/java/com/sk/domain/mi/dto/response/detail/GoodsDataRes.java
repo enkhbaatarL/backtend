@@ -71,7 +71,8 @@ public record GoodsDataRes(
     }
 
     public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes) {
-        int companyNo = Integer.parseInt(MDCUtil.getValue(MDCUtil.COMPANY_NO), 2014); //todo
+        int companyNo = Integer.parseInt(MDCUtil.getValue(MDCUtil.COMPANY_NO)); //todo
+        companyNo = 2014;
         return GoodsDataRes.builder()
             .goodsDataNm(entity.getGoodsDataNm())
             .goodsDataExpn(entity.getGoodsDataExpn())
