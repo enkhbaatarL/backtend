@@ -11,62 +11,47 @@ import lombok.Builder;
 
 public record MarketMetaDataSummary(
 
-    @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
+        @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
 
-    @Schema(description = "상품번호", example = "1")
-    Integer goodsNo,
+        @Schema(description = "상품번호", example = "1") Integer goodsNo,
 
-    @Schema(description = "상품데이터번호", example = "1")
-    Integer goodsDataNo,
+        @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
-    @Schema(description = "상품데이터소스번호", example = "1")
-    Integer goodsDataSourceNo,
+        @Schema(description = "상품데이터소스번호", example = "1") Integer goodsDataSourceNo,
 
-    @Schema(description = "상품데이터명", example = "Brent")
-    String goodsDataNm,
+        @Schema(description = "상품데이터명", example = "Brent") String goodsDataNm,
 
-    @Schema(description = "상품데이터소스명", example = "Brent")
-    String goodsDataSourceNm,
+        @Schema(description = "상품데이터소스명", example = "Brent") String goodsDataSourceNm,
 
-    @Schema(description = "화폐", example = "$")
-    String currency,
+        @Schema(description = "화폐", example = "$") String currency,
 
-    @Schema(description = "현재 값 단위", example = "MMBtu")
-    String currentUnitCd,
+        @Schema(description = "현재 값 단위", example = "MMBtu") String currentUnitCd,
 
-    @Schema(description = "간격", example = "1M")
-    String interval,
+        @Schema(description = "간격", example = "1M") String interval,
 
-    @Schema(description = "마지막 업데이트 일시", example = "2021-01-01")
-    LocalDate lastUpdateDt,
+        @Schema(description = "마지막 업데이트 일시", example = "2021-01-01") LocalDate lastUpdateDt,
 
-    @Schema(description = "인덱스 시작일시", example = "2021-01-01")
-    LocalDate indexStartDt,
+        @Schema(description = "인덱스 시작일시", example = "2021-01-01") LocalDate indexStartDt,
 
-    @Schema(description = "수치", example = "95.5")
-    Double lastValue,
+        @Schema(description = "수치", example = "95.5") Double lastValue,
 
-    @Schema(description = "최근 월 변동률 (MOM)", example = "10.5")
-    Double momChangeRate,
+        @Schema(description = "최근 월 변동률 (MOM)", example = "10.5") Double momChangeRate,
 
-    @Schema(description = "최근 월 변동 수치 (MOM)", example = "10.5")
-    Double momChangeValue,
+        @Schema(description = "최근 월 변동 수치 (MOM)", example = "10.5") Double momChangeValue,
 
-    @Schema(description = "최근 주 변동률 (WOW)", example = "10.5")
-    Double wowChangeRate,
+        @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate,
 
-    @Schema(description = "최근 주 변동 수치 (WOW)", example = "10.5")
-    Double wowChangeValue,
+        @Schema(description = "최근 주 변동 수치 (WOW)", example = "10.5") Double wowChangeValue,
 
-    @Schema(description = "최근 일 변동률 (DOD)", example = "10.5")
-    Double dodChangeRate,
+        @Schema(description = "최근 일 변동률 (DOD)", example = "10.5") Double dodChangeRate,
 
-    @Schema(description = "최근 일 변동 수치 (DOD)", example = "10.5")
-    Double dodChangeValue
-) {
+        @Schema(description = "최근 일 변동 수치 (DOD)", example = "10.5") Double dodChangeValue) {
 
     @Builder
-    public MarketMetaDataSummary(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm, String goodsDataSourceNm, String currency, String currentUnitCd, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt, Double lastValue, Double momChangeRate, Double momChangeValue, Double wowChangeRate, Double wowChangeValue, Double dodChangeRate, Double dodChangeValue) {
+    public MarketMetaDataSummary(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm,
+            String goodsDataSourceNm, String currency, String currentUnitCd, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt,
+            Double lastValue, Double momChangeRate, Double momChangeValue, Double wowChangeRate, Double wowChangeValue, Double dodChangeRate,
+            Double dodChangeValue) {
         this.chartMarkRank = chartMarkRank;
         this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
@@ -87,8 +72,9 @@ public record MarketMetaDataSummary(
         this.dodChangeValue = dodChangeValue;
     }
 
-    public static MarketMetaDataSummary of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
-    LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
+    public static MarketMetaDataSummary of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData,
+            GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
+            LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         return MarketMetaDataSummary.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsNo(goodsData.getGoods().getGoodsNo())
