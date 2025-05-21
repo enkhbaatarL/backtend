@@ -32,6 +32,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -215,6 +216,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             details += ". Cause: " + rootCause.getMessage();
         }
         return createAndLogResponse("Malformed JSON Request", ex, BAD_REQUEST, ResultCode.Error.REQ_INVALID_JSON, details);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return createAndLogResponse("Max Upload-Size Exceeded", ex, BAD_REQUEST, ResultCode.Error.FILE_SIZE_ERROR, ex.getMessage());
     }
 
     /**

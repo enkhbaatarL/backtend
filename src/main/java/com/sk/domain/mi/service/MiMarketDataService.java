@@ -3,9 +3,11 @@ package com.sk.domain.mi.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,12 +21,14 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
@@ -41,8 +45,10 @@ import com.sk.domain.mi.dto.response.marketData.MarketDataChartRawData;
 import com.sk.domain.mi.dto.response.marketData.MarketDataChartRes;
 import com.sk.domain.mi.dto.response.marketData.MarketMetaData;
 import com.sk.domain.mi.dto.response.marketData.MarketMetaDataSummary;
+import com.sk.domain.mi.dto.response.marketData.MiMarketDataCache;
 import com.sk.domain.mi.dto.response.marketData.MiMarketDataRes;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummary;
+import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryCache;
+import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
@@ -78,6 +84,9 @@ public class MiMarketDataService {
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
     private static final String MARKET_DATA_INTERVAL = "1M"; // 월별 평균 계산을 위한 기간
 
+    private static final String MARKET_DATA_CACHE_KEY = "market_data:setting:%d";
+    private static final String MARKET_DATA_SUMMARY_CACHE_KEY = "market_data_summary:setting:%d";
+
     private final UserRepository userRepository;
     private final EntityManager entityManager;
     private final MiGoodsDataInquiryUserService miGoodsDataInquiryUserService;
@@ -86,6 +95,9 @@ public class MiMarketDataService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
     private final MiGoodsPermissionService miGoodsPermissionService;
+
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     // TODO: 호영: 데이터별 캐시처리
     /**
@@ -132,6 +144,23 @@ public class MiMarketDataService {
             // 권한 조회
             Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
 
+            String cacheKey = getMarketDataCacheKey(marketDataChartSetting.getMarketDataSettingNo());
+
+            // 캐시 조회
+            String cachedData = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedData != null) {
+                try {
+                    MiMarketDataCache miMarketDataCache = objectMapper.readValue(cachedData, MiMarketDataCache.class);
+
+                    return MiMarketDataRes.of(isPermitted, miMarketDataCache.marketMetaData(),
+                            miMarketDataCache.mainChart(), miMarketDataCache.compareCharts());
+                } catch (Exception e) {
+                    // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
+                    redisTemplate.delete(cacheKey);
+                    log.error("마켓데이터 캐시 조회 실패 : {}", e.getMessage());
+                }
+            }
+
             // 칼럼 목록 조회
             String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
                     .map(String::trim)
@@ -147,7 +176,15 @@ public class MiMarketDataService {
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 isPermitted = false;
-                return MiMarketDataRes.of(isPermitted, MarketMetaData.of(marketDataChartSetting));
+
+                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting);
+                MarketDataChartRes mainChart = MarketDataChartRes.of(Collections.emptyList());
+                List<MarketDataChartRes> compareCharts = Collections.emptyList();
+
+                MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+                saveToMarketDataCache(cacheKey, miMarketDataCache);
+
+                return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
             }
 
             // 마지막 데이터 값
@@ -166,16 +203,6 @@ public class MiMarketDataService {
                 indexStartDate = DateUtil.fromIsoToLocalDate(rawDate);
             } else {
                 indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
-            }
-
-            // 권한이 없는 경우 메타데이터까지만 제공
-            if (!isPermitted) {
-                // 마켓데이터 메타데이터 생성
-                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
-                        MARKET_DATA_INTERVAL, indexStartDate,
-                        lastValue, lastUpdateDt);
-
-                return MiMarketDataRes.of(isPermitted, marketMetaData);
             }
 
             // 월별 데이터로 변환
@@ -221,6 +248,10 @@ public class MiMarketDataService {
                     MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
+            // 캐시 저장
+            MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+            saveToMarketDataCache(cacheKey, miMarketDataCache);
+
             return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
 
         })
@@ -248,7 +279,7 @@ public class MiMarketDataService {
      * @param customerCompanyNo 고객사 번호
      * @return 마켓 데이터 목록
      */
-    public List<MiMarketDataSummary> getMarketDataSummary(Integer customerCompanyNo, Authentication authentication) {
+    public List<MiMarketDataSummaryRes> getMarketDataSummary(Integer customerCompanyNo, Authentication authentication) {
         String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH)); // 2달 전
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
@@ -285,6 +316,22 @@ public class MiMarketDataService {
             // 권한 조회
             Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
 
+            String cacheKey = getMarketDataSummaryCacheKey(marketDataChartSetting.getMarketDataSettingNo());
+
+            // 캐시 조회
+            String cachedData = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedData != null) {
+                try {
+                    MiMarketDataSummaryCache miMarketDataSummaryCache = objectMapper.readValue(cachedData, MiMarketDataSummaryCache.class);
+
+                    return MiMarketDataSummaryRes.of(isPermitted, miMarketDataSummaryCache.marketMetaDataSummary());
+                } catch (Exception e) {
+                    // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
+                    redisTemplate.delete(cacheKey);
+                    log.error("마켓데이터 요약 캐시 조회 실패 : {}", e.getMessage());
+                }
+            }
+
             // 칼럼 목록 조회
             String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
                     .map(String::trim)
@@ -300,7 +347,13 @@ public class MiMarketDataService {
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 isPermitted = false;
-                return MiMarketDataSummary.of(isPermitted, MarketMetaDataSummary.of(marketDataChartSetting));
+
+                MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting);
+
+                MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
+                saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
+
+                return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
             }
 
             // 마지막 데이터 값
@@ -321,15 +374,6 @@ public class MiMarketDataService {
                 indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
             }
 
-            // 권한이 없는 경우 메타데이터까지만 제공
-            if (!isPermitted) {
-                // 마켓데이터 메타데이터 생성
-                MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource,
-                        null, MARKET_DATA_INTERVAL, indexStartDate, lastValue, lastUpdateDt);
-
-                return MiMarketDataSummary.of(isPermitted, marketMetaDataSummary);
-            }
-
             // DOD, MOM, WOW 계산
             Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.DOD, CalculatePeriodChangeType.MOM,
                     CalculatePeriodChangeType.WOW);
@@ -342,7 +386,10 @@ public class MiMarketDataService {
                     MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
-            return MiMarketDataSummary.of(isPermitted, marketMetaDataSummary);
+            MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
+            saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
+
+            return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
         })
                 .filter(Objects::nonNull)
                 .sorted((a, b) -> {
@@ -360,7 +407,53 @@ public class MiMarketDataService {
                 .collect(Collectors.toList());
     }
 
-    // Class 분리 시킬지 고민중
+    /**
+     * 자정까지의 TTL 계산
+     */
+    private long getSecondsUntilMidnightForCache() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+        return Duration.between(now, midnight).getSeconds();
+    }
+
+    /**
+     * 마켓데이터 캐시 키 생성
+     */
+    private String getMarketDataCacheKey(Integer marketDataSettingNo) {
+        return String.format(MARKET_DATA_CACHE_KEY, marketDataSettingNo);
+    }
+
+    /**
+     * 마켓데이터 요약 캐시 키 생성
+     */
+    private String getMarketDataSummaryCacheKey(Integer marketDataSettingNo) {
+        return String.format(MARKET_DATA_SUMMARY_CACHE_KEY, marketDataSettingNo);
+    }
+
+    /**
+     * Redis에 MarketData 캐시 저장
+     */
+    private void saveToMarketDataCache(String key, MiMarketDataCache cache) {
+        try {
+            String json = objectMapper.writeValueAsString(cache);
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(getSecondsUntilMidnightForCache()));
+        } catch (Exception e) {
+            log.error("Failed to serialize and save cache for key: {}", key, e);
+        }
+    }
+
+    /**
+     * Redis에 MarketData 캐시 저장
+     */
+    private void saveToMarketDataSummaryCache(String key, MiMarketDataSummaryCache cache) {
+        try {
+            String json = objectMapper.writeValueAsString(cache);
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(getSecondsUntilMidnightForCache()));
+        } catch (Exception e) {
+            log.error("Failed to serialize and save cache for key: {}", key, e);
+        }
+    }
+
     /**
      * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다.
      * 데이터소스 상세 정보와 날짜 컬럼명, 시작일을 기반으로 데이터를 필터링하여 조회한다.
@@ -494,7 +587,6 @@ public class MiMarketDataService {
 
             currentMonth = currentMonth.plusMonths(1);
         }
-
         return monthlyData;
     }
 

@@ -4,6 +4,8 @@ public interface GoodsDataCategoryProjection {
 
     String getCodeId();
 
+    String getHighCodeId();
+
     String getCodeNm();
 
 }
