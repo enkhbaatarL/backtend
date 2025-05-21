@@ -14,7 +14,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummary;
+import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryRes;
 import com.sk.domain.mi.service.MiDashboardService;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.shared.enums.Role;
@@ -60,7 +60,7 @@ public class MiDashboardController {
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/market-datas")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
-	public BaseResponse<List<MiMarketDataSummary>> getMarketDataSummary(
+	public BaseResponse<List<MiMarketDataSummaryRes>> getMarketDataSummary(
 			@PathVariable("companyNo") Integer companyNo,
 			Authentication authentication) {
 		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo, authentication));
