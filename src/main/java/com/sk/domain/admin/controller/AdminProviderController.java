@@ -62,9 +62,11 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel", "text/csv");
+    private static final long ALLOWED_MAX_SIZE_STRUCTURED = 100 * 1024 * 1024;
+
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
             "pptx");
-    private static final long MAX_SIZE = 24 * 1024 * 1024;
+    private static final long ALLOWED_MAX_SIZE_UNSTRUCTURED = 100 * 1024 * 1024;
 
     /*********************************************************************************************************************
     *
@@ -521,7 +523,7 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
-        if (file.getSize() > MAX_SIZE) {
+        if (file.getSize() > ALLOWED_MAX_SIZE_STRUCTURED) {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
@@ -558,7 +560,7 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
-        if (file.getSize() > MAX_SIZE) {
+        if (file.getSize() > ALLOWED_MAX_SIZE_UNSTRUCTURED) {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 

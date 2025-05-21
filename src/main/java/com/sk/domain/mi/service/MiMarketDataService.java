@@ -224,18 +224,21 @@ public class MiMarketDataService {
             return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
 
         })
-        .filter(Objects::nonNull)
-        .sorted((a, b) -> {
-            Short rankA = a.marketMetaData().chartMarkRank();
-            Short rankB = b.marketMetaData().chartMarkRank();
+                .filter(Objects::nonNull)
+                .sorted((a, b) -> {
+                    Short rankA = a.marketMetaData().chartMarkRank();
+                    Short rankB = b.marketMetaData().chartMarkRank();
 
-            if (rankA == null && rankB == null) return 0;
-            if (rankA == null) return 1;
-            if (rankB == null) return -1;
+                    if (rankA == null && rankB == null)
+                        return 0;
+                    if (rankA == null)
+                        return 1;
+                    if (rankB == null)
+                        return -1;
 
-            return rankA.compareTo(rankB);
-        })
-        .collect(Collectors.toList());
+                    return rankA.compareTo(rankB);
+                })
+                .collect(Collectors.toList());
     }
 
     // TODO: 호영: 데이터별 캐시처리
@@ -341,17 +344,20 @@ public class MiMarketDataService {
 
             return MiMarketDataSummary.of(isPermitted, marketMetaDataSummary);
         })
-        .filter(Objects::nonNull)
-        .sorted((a, b) -> {
-            Short rankA = a.marketMetaDataSummary().chartMarkRank();
-            Short rankB = b.marketMetaDataSummary().chartMarkRank();
+                .filter(Objects::nonNull)
+                .sorted((a, b) -> {
+                    Short rankA = a.marketMetaDataSummary().chartMarkRank();
+                    Short rankB = b.marketMetaDataSummary().chartMarkRank();
 
-            if (rankA == null && rankB == null) return 0;
-            if (rankA == null) return 1;
-            if (rankB == null) return -1;
-            return rankA.compareTo(rankB);
-        })
-        .collect(Collectors.toList());
+                    if (rankA == null && rankB == null)
+                        return 0;
+                    if (rankA == null)
+                        return 1;
+                    if (rankB == null)
+                        return -1;
+                    return rankA.compareTo(rankB);
+                })
+                .collect(Collectors.toList());
     }
 
     // Class 분리 시킬지 고민중
@@ -755,6 +761,12 @@ public class MiMarketDataService {
                 LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN (
+                    SELECT DISTINCT gds_data_no
+                    FROM midb.tmd_gdsdatactgrl
+                    WHERE del_yn = 'N'
+                    AND gds_data_mnagt_spt_cd = 'GDATS'
+                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -766,6 +778,12 @@ public class MiMarketDataService {
                 LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN (
+                    SELECT DISTINCT gds_data_no
+                    FROM midb.tmd_gdsdatactgrl
+                    WHERE del_yn = 'N'
+                    AND gds_data_mnagt_spt_cd = 'GDATS'
+                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where;
 
