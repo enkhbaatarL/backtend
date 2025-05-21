@@ -34,6 +34,7 @@ import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -69,43 +70,34 @@ public class MiDataDetailService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final MiGoodsDataInquiryUserService goodsDataInquiryUserService;
 
+    private final AuthorizationService authorizationService;
+
 
     /**
      * 상품 데이터 정보를 조회합니다.
      *
      * @param goodsNo        상품 번호
      * @param goodsDataNo    상품 데이터 번호
-     * @param authentication 인증 정보
      * @return 상품 데이터 응답
      */
     @Transactional
-    public GoodsDataRes getGoodsData(Integer goodsNo, Integer goodsDataNo, Authentication authentication) {
-
-        Role role = (authentication instanceof JwtAuthenticationToken jwtToken) ? Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode())) : Role.SYSTEM;
+    public GoodsDataRes getGoodsData(Integer goodsNo, Integer goodsDataNo) {
 
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
 
         List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
 
-        PermissionRes permissionRes = switch (role) {
-            case USER -> {
-                JwtAuthenticationToken jwtToken = (JwtAuthenticationToken) authentication;
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield userService.getUserGoodsPermissions(userNo);
-            }
+        PermissionRes permissionRes = switch (authorizationService.getCurrentRole()) {
+            case USER -> userService.getUserGoodsPermissions(authorizationService.getUserNo());
             case ADMIN -> userService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> {
-                JwtAuthenticationToken jwtToken = (JwtAuthenticationToken) authentication;
-                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield userService.getPlusOperatorGoodsPermissions(companyNo);
-            }
+            case API_PLUS_OPERATOR -> userService.getPlusOperatorGoodsPermissions(authorizationService.getCompanyNo());
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
 
         // 상품-데이터 조회 이력 적재
-        goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authentication.getName());
+        goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authorizationService.getSubject());
 
-        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes);
+        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNo());
     }
 
     /**
@@ -144,13 +136,13 @@ public class MiDataDetailService {
      * @return 개인화된 차트 응답 데이터 리스트
      */
     @Transactional
-    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsNo, Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs, String subject) {
+    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsNo, Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
         List<ChartsPersonalizeReq> validReqs = ChartsPersonalizeReq.filterPersonalizeRequests(chartsPersonalizeReqs);
 
-        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, subject);
+        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, authorizationService.getSubject());
 
         Function<ChartsPersonalizeReq, String> keyOfReq = req -> req.chartConditionCd().name() + ":" + req.chartConditionVal();
         Function<PersonalizedChartSetting, String> keyOfEntity = ent -> ent.getChartSettingConditionCd().name() + ":" + ent.getChartSettingConditionVal();
@@ -174,7 +166,7 @@ public class MiDataDetailService {
         // 삽입 대상: incomingKeys 중에 existingMap에 없는 것
         List<PersonalizedChartSetting> toInsert = validReqs.stream()
             .filter(req -> BooleanUtils.isFalse(existingMap.containsKey(keyOfReq.apply(req))))
-            .map(req -> PersonalizedChartSetting.of(req, gds, subject))
+            .map(req -> PersonalizedChartSetting.of(req, gds, authorizationService.getSubject()))
             .toList();
 
         if (BooleanUtils.isFalse(toInsert.isEmpty())) {
@@ -199,7 +191,7 @@ public class MiDataDetailService {
      * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명)
      * @return 생성된 차트 묶음 응답 데이터
      */
-    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd, String userLoginId) {
+    public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
@@ -215,7 +207,7 @@ public class MiDataDetailService {
         Map<String, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
 
         // 개인화 설정 맵 조회
-        Map<ChartSettingConditionCd, List<String>> personalizedMap = personalizationService.getConvertPersonalizedMap(gds, userLoginId);
+        Map<ChartSettingConditionCd, List<String>> personalizedMap = personalizationService.getConvertPersonalizedMap(gds, authorizationService.getSubject());
 
         Pair<String, String> determinedRange = personalizationService.getPsRangeOrDefault(personalizedMap, range, startDate, endDate);
         Interval determinedInterval = personalizationService.getPsIntervalOrDefault(personalizedMap, interval);

@@ -65,9 +65,9 @@ public class MDCUtil {
     public static final String ACCESS_IP_ADDRESS = "ACCESS_IP_ADDRESS";
 
     /**
-     * COMPANY_CD.
+     * REQUEST_X_COMPANY_NO.
      */
-    public static final String COMPANY_NO = "COMPANY_CD";
+    public static final String REQUEST_X_COMPANY_NO = "REQUEST_X_COMPANY_NO";
 
     /**
      * Set Value.
