@@ -411,7 +411,6 @@ public class AdminGoodsDataService {
             }
 
             // A.X Platform 에 파일 업로드 연동
-            System.out.println(" =====>>>> Main: + " + Thread.currentThread().getId());
             String documentId = UUID.randomUUID().toString();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
@@ -420,7 +419,7 @@ public class AdminGoodsDataService {
                     .documentReleaseDate(nowOffsetDateTime())
                     .headline(savedGoodsData.getGoodsDataNm())
                     .synopsis(savedGoodsData.getGoodsDataExpn() + savedGoodsData.getGoodsDataSummaryCntt())
-                    .contributor("")
+                    .contributor(savedGoodsData.getDataContributorNm())
                     .authors(List.of(""))
                     .documentFileName(fileNameList)
                     .language("")
@@ -639,7 +638,6 @@ public class AdminGoodsDataService {
             }
 
             // A.X Platform 에 파일 업로드 연동
-            System.out.println(" =====>>>> Main: + " + Thread.currentThread().getId());
             String documentId = goodsData.getGoodsDataDistinguishId();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
@@ -648,7 +646,7 @@ public class AdminGoodsDataService {
                     .documentReleaseDate(nowOffsetDateTime())
                     .headline(goodsData.getGoodsDataNm())
                     .synopsis(goodsData.getGoodsDataExpn() + goodsData.getGoodsDataSummaryCntt())
-                    .contributor("")
+                    .contributor(goodsData.getDataContributorNm())
                     .authors(List.of(""))
                     .documentFileName(fileNameList)
                     .language("")
