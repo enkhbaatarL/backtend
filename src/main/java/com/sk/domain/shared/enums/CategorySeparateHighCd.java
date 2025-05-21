@@ -14,7 +14,7 @@ public enum CategorySeparateHighCd {
 
     LANGUAGES("A_LANGUAGES", "언어"),
     TYPE("A_TYPES", "타입"),
-    A_PROVIDERS("A_PROVIDERS", "프로바이더"),
+    PROVIDERS("A_PROVIDERS", "프로바이더"),
     NONE("NONE", "매칭되지 않음");
 
     private final String codeId;
