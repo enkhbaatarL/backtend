@@ -20,7 +20,10 @@ public record UnstructuredDataRes(
     @Schema(description = "확장자", example = "pptx")
     String extension,
 
-    @Schema(description = "PDF 미리보기 가능 여부", example = "false")
+    @Schema(
+        description = "PDF 미리보기 가능 여부(PDF 타입의 파일이여도 '이미지 변환'이 완료되지 않은 경우에는 미리보기가 지원되지 않음)",
+        example = "false"
+    )
     Boolean isPdfViewable,
 
     AuditInfo auditInfo
@@ -32,7 +35,7 @@ public record UnstructuredDataRes(
             .fileNo(entity.getFileNo())
             .fileName(entity.getOriginalFileNm())
             .extension(entity.getFileExtNm())
-            .isPdfViewable(Extension.isPdfViewable(entity.getFileExtNm()))
+            .isPdfViewable(Extension.isPdfViewable(entity.getFileExtNm()) && entity.getIsImageConversionCompleted())
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
