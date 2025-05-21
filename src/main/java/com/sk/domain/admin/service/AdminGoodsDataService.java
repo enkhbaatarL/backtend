@@ -13,8 +13,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.sk.domain.admin.dto.response.provider.*;
+import com.sk.domain.admin.listener.event.AXUploadFileEvent;
 
 import org.apache.poi.hpsf.Array;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -92,7 +94,7 @@ public class AdminGoodsDataService {
     private final UserRepository userRepository;
     private final PlatformTransactionManager masterTransactionManager;
     private final PlatformTransactionManager myBatisTransactionManager;
-    private final JsonFileWriter jsonFileWriter;
+    private final ApplicationEventPublisher publisher;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -408,8 +410,8 @@ public class AdminGoodsDataService {
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
-            // todo: A.X Platform 에 파일 업로드 연동
-            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            // A.X Platform 에 파일 업로드 연동
+            System.out.println(" =====>>>> Main: + " + Thread.currentThread().getId());
             String documentId = UUID.randomUUID().toString();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
@@ -425,21 +427,7 @@ public class AdminGoodsDataService {
                     .countries(List.of(""))
                     .build();
 
-            try {
-                String directoryPath = "./temp";
-                File directory = new File(directoryPath);
-                if (!directory.exists()) {
-                    directory.mkdir();
-                }
-                jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
-
-                // 업로드 결과 저장
-                // savedGoodsData.updateMetaDataUploadStatus(null);
-            } catch (IOException e) {
-                // 예외 처리 로직
-                e.printStackTrace();
-                // log.error(documentId, e);
-            }
+            publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, false));
 
             savedGoodsData.updateGoodsDataDistinguishId(documentId);
         }
@@ -650,7 +638,8 @@ public class AdminGoodsDataService {
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
-            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            // A.X Platform 에 파일 업로드 연동
+            System.out.println(" =====>>>> Main: + " + Thread.currentThread().getId());
             String documentId = goodsData.getGoodsDataDistinguishId();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
@@ -666,20 +655,7 @@ public class AdminGoodsDataService {
                     .countries(List.of(""))
                     .build();
 
-            try {
-                String directoryPath = "./temp";
-                File directory = new File(directoryPath);
-                if (!directory.exists()) {
-                    directory.mkdir();
-                }
-                jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
-
-                // 업로드 결과 저장
-                // savedGoodsData.updateMetaDataUploadStatus(null);
-            } catch (IOException e) {
-                // 예외 처리 로직
-                e.printStackTrace();
-            }
+            publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, true));
         }
     }
 
