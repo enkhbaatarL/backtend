@@ -26,6 +26,10 @@ public class AXEventListener {
         System.out.println(" =====>>>> Event: + " + Thread.currentThread().getId());
         log.info("AXUploadFileEvent: {}", event);
 
+        // 1) AX 플래폼 메타 데이터 올리다가 실패하면 재시도하고,
+        // 2) 상품데이터 업데이트해야 할 경우는 기존 정보를 삭제하고 다시 올려야 한다고 합니다.
+        // 삭제 관련해서는 다시 가이드해준다고 합니다.
+
         GoodsData goodsData = event.getGoodsData();
         if (goodsData == null) {
             log.error("GoodsData is null");

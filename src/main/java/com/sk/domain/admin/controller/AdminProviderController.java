@@ -44,6 +44,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
@@ -62,11 +63,8 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel", "text/csv");
-    private static final long ALLOWED_MAX_SIZE_STRUCTURED = 100 * 1024 * 1024;
-
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsx", "ppt",
             "pptx");
-    private static final long ALLOWED_MAX_SIZE_UNSTRUCTURED = 100 * 1024 * 1024;
 
     /*********************************************************************************************************************
     *
@@ -493,7 +491,7 @@ public class AdminProviderController {
     @PostMapping(value = "/goods-datas/upload-file/structured-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<GoodsDataFileUploadRes> uploadStructuredDataFile(
-            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "file", required = true) MultipartFile file,
             @Schema(implementation = StructuredDataFileReq.class) @RequestPart(value = "data", required = true) @Valid StructuredDataFileReq structuredDataFileReq)
             throws IOException {
 
@@ -523,10 +521,6 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
-        if (file.getSize() > ALLOWED_MAX_SIZE_STRUCTURED) {
-            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
-        }
-
         return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
     }
 
@@ -537,7 +531,9 @@ public class AdminProviderController {
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<FileUploadRes> uploadUnstructuredDataFile(
             @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
+            @RequestPart(value = "file", required = true) MultipartFile file) {
+
+        System.out.println("==========>>>>>>>>>>>>> ");
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
@@ -558,10 +554,6 @@ public class AdminProviderController {
         String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS_UNSTRUCTURED.contains(extension)) {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-        }
-
-        if (file.getSize() > ALLOWED_MAX_SIZE_UNSTRUCTURED) {
-            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
         return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, false, fileHash));
