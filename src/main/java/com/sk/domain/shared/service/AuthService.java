@@ -10,7 +10,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.utils.JwtUtil;
-import com.sk.common.utils.Properties.JwtProperties;
+import com.sk.common.properties.JwtProperties;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
@@ -37,7 +37,7 @@ public class AuthService {
 
 	/**
 	 * 토큰 갱신 (Refresh Token Rotation)
-	 * 
+	 *
 	 * @param authHeader
 	 * @param refreshToken
 	 * @return

@@ -1,4 +1,4 @@
-package com.sk.common.config.database.dataSource;
+package com.sk.common.config.database;
 
 import lombok.extern.slf4j.Slf4j;
 

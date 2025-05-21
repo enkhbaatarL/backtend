@@ -10,7 +10,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sk.common.config.database.dataSource.DataSourceContextHolder;
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JwtUtil;
