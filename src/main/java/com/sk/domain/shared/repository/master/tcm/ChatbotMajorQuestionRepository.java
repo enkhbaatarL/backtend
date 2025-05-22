@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface ChatbotMajorQuestionRepository extends JpaRepository<ChatbotMajorQuestion, String> {
 
-    List<ChatbotMajorQuestion> findByCompanySubcommitteeSeparateCdAndIsDeletedFalseOrderByMajorQuestionRnk(String subcommitteeCd);
+    List<ChatbotMajorQuestion> findByMarketIndexAnalysisTargetCdAndIsDeletedFalseOrderByMajorQuestionRnk(String subcommitteeCd);
 
 }

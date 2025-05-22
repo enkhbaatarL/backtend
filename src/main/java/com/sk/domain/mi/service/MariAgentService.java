@@ -48,7 +48,7 @@ public class MariAgentService {
      * @return 주요 질의문 목록
      */
     public List<MajorQuestionRes> getMajorQuestions(String subcommitteeCd) {
-        List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository.findByCompanySubcommitteeSeparateCdAndIsDeletedFalseOrderByMajorQuestionRnk(subcommitteeCd);
+        List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository.findByMarketIndexAnalysisTargetCdAndIsDeletedFalseOrderByMajorQuestionRnk(subcommitteeCd);
         return MajorQuestionRes.ofList(majorQuestions);
     }
 
