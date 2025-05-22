@@ -6,6 +6,7 @@ import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
+import com.querydsl.jpa.JPQLSubQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -63,7 +64,7 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
 
         QUser qUserSub = new QUser("userSub");
 
-        JPQLQuery<Integer> subQuery = JPAExpressions
+        JPQLSubQuery<Integer> subQuery = JPAExpressions
             .select(qUserSub.customerCompany.customerCompanyNo)
             .from(qUserSub)
             .leftJoin(qUserSub.customerCompany)

@@ -145,8 +145,8 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
         return queryFactory
                 .select(new QAdminNotificationCountRes(
                         emailAccessLog.count().intValue(),
-                        emailAccessLog.isSendSuccess.when(true).then(1).otherwise(0).sum().intValue(),
-                        emailAccessLog.isSendSuccess.when(false).then(1).otherwise(0).sum().intValue(),
+                        emailAccessLog.isSendSuccess.when(true).then(1).otherwise(0).sumBigInteger().intValue(),
+                        emailAccessLog.isSendSuccess.when(false).then(1).otherwise(0).sumBigInteger().intValue(),
                         emailAccessLog.modifyDt.max()))
                 .from(emailAccessLog)
                 .where(builder)
