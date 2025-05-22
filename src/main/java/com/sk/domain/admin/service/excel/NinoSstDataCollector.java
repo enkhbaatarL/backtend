@@ -15,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NinoSstDataCollector implements DataCollectorStrategy {
-    private static final List<String> NINO_REGIONS = Arrays.asList("NINO1+2", "NINO3", "NINO4", "NINO3.4");
-    private static final int DEFAULT_DATA_START_ROW_INDEX = 1;
+    private static final List<String> NINO_REGIONS = Arrays.asList("NINO1+2", "NINO3", "NINO4", "NINO3.4"); // NINO 지역 목록
+    private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
 
     /**
      * 엑셀 파일 파싱

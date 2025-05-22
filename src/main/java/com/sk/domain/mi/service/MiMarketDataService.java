@@ -37,19 +37,19 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.dto.response.marketData.CalculatePeriodChangeRange;
-import com.sk.domain.mi.dto.response.marketData.CalculatePeriodChangeRes;
-import com.sk.domain.mi.dto.response.marketData.CalculatePeriodChangeValue;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
-import com.sk.domain.mi.dto.response.marketData.MarketDataChartRawData;
-import com.sk.domain.mi.dto.response.marketData.MarketDataChartRes;
-import com.sk.domain.mi.dto.response.marketData.MarketMetaData;
-import com.sk.domain.mi.dto.response.marketData.MarketMetaDataSummary;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataCache;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataRes;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryCache;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryCache;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRange;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaDataSummary;
+import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRawData;
+import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
@@ -99,7 +99,6 @@ public class MiMarketDataService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    // TODO: 호영: 데이터별 캐시처리
     /**
      * 마켓 데이터 조회
      * 
@@ -152,6 +151,17 @@ public class MiMarketDataService {
                 try {
                     MiMarketDataCache miMarketDataCache = objectMapper.readValue(cachedData, MiMarketDataCache.class);
 
+                    // 권한이 없는 경우 메타데이터까지만 제공
+                    if (!isPermitted) {
+                        // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
+                        MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
+                                MARKET_DATA_INTERVAL, miMarketDataCache.marketMetaData().indexStartDt(),
+                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt());
+
+                        return MiMarketDataRes.of(isPermitted, marketMetaData);
+                    }
+
+                    // 권한이 있는 경우 모든 데이터 제공
                     return MiMarketDataRes.of(isPermitted, miMarketDataCache.marketMetaData(),
                             miMarketDataCache.mainChart(), miMarketDataCache.compareCharts());
                 } catch (Exception e) {
@@ -252,6 +262,16 @@ public class MiMarketDataService {
             MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
             saveToMarketDataCache(cacheKey, miMarketDataCache);
 
+            // 권한이 없는 경우 메타데이터까지만 제공
+            if (!isPermitted) {
+                // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
+                MarketMetaData marketMetaDataNoPermitted = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
+                        MARKET_DATA_INTERVAL, indexStartDate,
+                        lastValue, lastUpdateDt);
+
+                return MiMarketDataRes.of(isPermitted, marketMetaDataNoPermitted);
+            }
+
             return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
 
         })
@@ -272,7 +292,6 @@ public class MiMarketDataService {
                 .collect(Collectors.toList());
     }
 
-    // TODO: 호영: 데이터별 캐시처리
     /**
      * 마켓 데이터 요약 조회 (그래프 제외)
      * 
@@ -323,6 +342,18 @@ public class MiMarketDataService {
             if (cachedData != null) {
                 try {
                     MiMarketDataSummaryCache miMarketDataSummaryCache = objectMapper.readValue(cachedData, MiMarketDataSummaryCache.class);
+
+                    // 권한이 없는 경우 메타데이터까지만 제공
+                    if (!isPermitted) {
+                        // 마켓데이터 메타데이터 생성
+                        MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData,
+                                mainGoodsDataSource,
+                                null, MARKET_DATA_INTERVAL, miMarketDataSummaryCache.marketMetaDataSummary().indexStartDt(),
+                                miMarketDataSummaryCache.marketMetaDataSummary().lastValue(),
+                                miMarketDataSummaryCache.marketMetaDataSummary().lastUpdateDt());
+
+                        return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
+                    }
 
                     return MiMarketDataSummaryRes.of(isPermitted, miMarketDataSummaryCache.marketMetaDataSummary());
                 } catch (Exception e) {
@@ -388,6 +419,16 @@ public class MiMarketDataService {
 
             MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
             saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
+
+            // 권한이 없는 경우 메타데이터까지만 제공
+            if (!isPermitted) {
+                // 마켓데이터 메타데이터 생성
+                MarketMetaDataSummary marketMetaDataSummaryNoPermitted = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData,
+                        mainGoodsDataSource,
+                        null, MARKET_DATA_INTERVAL, indexStartDate, lastValue, lastUpdateDt);
+
+                return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummaryNoPermitted);
+            }
 
             return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
         })
@@ -666,7 +707,7 @@ public class MiMarketDataService {
         LocalDate yesterday = today.minusDays(1);
 
         // 이번 주
-        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() - 1); // 월요일
+        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() % 7); // 알요일
         LocalDate thisWeekEnd = today;
         // 지난 주
         LocalDate lastWeekStart = thisWeekStart.minusWeeks(1);

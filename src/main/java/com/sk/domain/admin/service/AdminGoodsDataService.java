@@ -672,53 +672,11 @@ public class AdminGoodsDataService {
     public GoodsDataFileUploadRes uploadStructuredDataFile(String companyCd, Role role, MultipartFile file, boolean isPublic,
             StructuredDataFileReq structuredDataFileReq) throws IOException {
 
-        // TODO: JPA, MyBatis 트랜잭션 통합 관리 필요(XA 도입 또는 데이터 소스 분리 등 방법 필요)
-
-        // JPA, MyBatis 트랜잭션 각각 관리
-        // TransactionTemplate jpaTxTemplate = new TransactionTemplate(masterTransactionManager);
-        // jpaTxTemplate.setReadOnly(false);
-        // TransactionTemplate myBatisTxTemplate = new TransactionTemplate(myBatisTransactionManager);
-
-        // 1. JPA: 조회 (Select는 )
         ComponentInfo componentInfo = componentInfoRepository
                 .findByComponentTypeIdAndIsDeletedFalse(structuredDataFileReq.componentTypeId())
                 .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                         String.format("Component information could not be found. componentTypeId: %s",
                                 structuredDataFileReq.componentTypeId())));
-
-        // User 조회 (외부 트랜잭션에서 가져온 user는 새로 만든 트랜잭션의 영속성 컨텍스트로 관리하지 않아서 Lazy 조회 불가)
-        // User loadedUser = jpaTxTemplate.execute(status -> {
-        // return userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
-        // .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
-        // });
-
-        // JPA / Mybatis 둘 중 하나라도 문제 생긴 경우 전체 롤백
-        // try {
-        // // 2. MyBatis: 데이터 업로드
-        // myBatisTxTemplate.execute(status -> {
-        // try {
-        // excelService.uploadStructuredData(file, componentInfo);
-        // return true;
-        // } catch (IOException e) {
-        // throw new RuntimeException("MyBatis upload failed", e);
-        // }
-        // });
-
-        // // 3. JPA + S3: 파일 업로드
-        // FileUploadRes fileUploadRes = jpaTxTemplate.execute(status -> {
-        // try {
-        // return adminFileService.uploadFile(loadedUser, file, isPublic);
-        // } catch (Exception e) {
-        // throw new RuntimeException("JPA/S3 upload failed", e);
-        // }
-        // });
-
-        // return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(),
-        // fileUploadRes.fileNm(), fileUploadRes.fileSize(), fileUploadRes.fileUrl());
-        // } catch (Exception e) {
-        // log.error("Upload failed: {}", e.getMessage(), e);
-        // throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
-        // }
 
         excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt());
 

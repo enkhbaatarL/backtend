@@ -3,12 +3,12 @@ package com.sk.domain.shared.repository.master.tcm.custom;
 import static com.sk.domain.shared.entity.master.tcm.QMarketDataChartSetting.marketDataChartSetting;
 import static com.sk.domain.shared.entity.master.tmd.QDataSourceGroupMapping.dataSourceGroupMapping;
 
+import com.sk.domain.mi.dto.response.marketData.MarketDataChartSettingRes;
 import com.sk.domain.mi.dto.response.marketData.QMarketDataChartSettingRes;
 
 import java.util.List;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sk.domain.mi.dto.response.marketData.MarketDataChartSettingRes;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.QGoodsData;
 import com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail;

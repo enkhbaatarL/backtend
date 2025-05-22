@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
+import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
@@ -64,9 +65,14 @@ public class MiDashboardService {
      * 대시보드 차트 데이터 조회
      * 
      * @param companyNo
-     * @return TODO
+     * @return
      */
-    public Boolean getChart(int companyNo) {
+    public Boolean getChart(int companyNo, String date) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+
+        // ChartPredictSetting chartPredictSetting = chartPredictSettingRepository.findByCustomerCompany(customerCompany)
+        //         .orElseThrow(() -> new EntityNotFoundException("ChartPredictSetting not found"));
 
         return true;
     }

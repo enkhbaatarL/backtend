@@ -1,6 +1,9 @@
-package com.sk.domain.mi.dto.response.marketData;
+package com.sk.domain.mi.dto.response.marketData.charts;
 
 import java.util.List;
+
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
+import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRes;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;

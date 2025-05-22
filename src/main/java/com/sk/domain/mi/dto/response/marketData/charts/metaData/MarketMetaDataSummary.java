@@ -1,7 +1,8 @@
-package com.sk.domain.mi.dto.response.marketData;
+package com.sk.domain.mi.dto.response.marketData.charts.metaData;
 
 import java.time.LocalDate;
 
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;

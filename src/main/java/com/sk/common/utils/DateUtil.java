@@ -4,8 +4,10 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Locale;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -21,6 +23,7 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     public static final DateTimeFormatter ISO_LOCAL_DATE_TIME_MINUTES = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     public static final DateTimeFormatter YYYYMM = DateTimeFormatter.ofPattern("yyyyMM");
+    public static final DateTimeFormatter YYYY_MMM_ENG = DateTimeFormatter.ofPattern("yyyy-MMM", Locale.ENGLISH);
     public static final DateTimeFormatter YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private DateUtil() {
@@ -199,4 +202,20 @@ public final class DateUtil {
     public static String toYearMonth(LocalDate date) {
         return date == null ? null : date.format(YYYYMM);
     }
+
+    /**
+     * "yyyy-MMM" 문자열을 "yyyyMM" 문자열로 변환
+     */
+    public static String fromYyyyMmmToYyyyMm(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) {
+            return null;
+        }
+        try {
+            YearMonth ym = YearMonth.parse(dateStr.trim(), YYYY_MMM_ENG);
+            return ym.format(YYYYMM);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format, expected yyyy-MMM: " + dateStr);
+        }
+    }
+
 }
