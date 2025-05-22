@@ -3,6 +3,8 @@ package com.sk.domain.admin.controller;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +27,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.file.FileUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
@@ -80,7 +84,7 @@ public class AdminFileController {
     }
 
     @ApiOrder(3)
-    @Operation(summary = "파일 다운로드", description = "파일을 다운로드합니다.")
+    @Operation(summary = "1개 파일 다운로드", description = "1개의 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
@@ -96,6 +100,27 @@ public class AdminFileController {
         httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 
         return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
+    }
+
+    @ApiOrder(4)
+    @Operation(summary = "1개 이상 파일 zip 압축 다운로드", description = "1개 이상의 파일을 zip으로 압축하여 다운로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/download-zip={fileNos}")
+    public ResponseEntity<byte[]> downloadFiles(
+            @PathVariable(value = "fileNos") String fileNos) throws UnsupportedEncodingException {
+        List<Long> ids = Arrays.stream(fileNos.split(","))
+                .map(Long::valueOf)
+                .toList();
+
+        byte[] fileData = adminFileService.downloadFiles(ids);
+        String encodedFileName = URLEncoder.encode(DateUtil.currentYYYYMMDDHHMMSS().concat(".zip"), StandardCharsets.UTF_8.toString());
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        httpHeaders.setContentLength(fileData.length);
+        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
     }
 
     @ApiOrder(4)

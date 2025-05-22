@@ -195,7 +195,7 @@ public class AdminFileService {
     }
 
     /**
-    * 파일을 다운로드 한다.
+    * 1개 파일을 다운로드 한다.
     *
     * @param fileNo 파일번호
     * @return FileDownloadRes
@@ -215,6 +215,50 @@ public class AdminFileService {
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
+    }
+
+    /**
+    * 1개 이상 파일을 다운로드 한다.
+    *
+    * @param fileNoList 파일번호목록
+    * @return 
+    */
+    public byte[] downloadFiles(List<Long> fileNoList) {
+        // fileNoList.forEach(System.out::println);
+        System.out.println(" ===> Download1: " + fileNoList);
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFileNoList(fileNoList);
+        if (uploadedFiles.size() == 0) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %s", fileNoList));
+        }
+
+        uploadedFiles.forEach(file -> {
+            try {
+                System.out.println(" ===> Download2: " + file.getFileNo());
+
+                // String bucketName = getBucketName(file.getStoragePathNm());
+                // String fileName = getFileName(file.getStoragePathNm());
+
+                // byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
+            } catch (Exception e) {
+                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            }
+        });
+        // UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+
+        // try {
+        // String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+        // String fileName = getFileName(uploadedFile.getStoragePathNm());
+
+        // byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
+
+        // return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
+        // } catch (Exception e) {
+        // throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        // }
+
+        return null;
     }
 
     /**

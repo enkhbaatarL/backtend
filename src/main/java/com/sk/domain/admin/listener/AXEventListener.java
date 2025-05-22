@@ -23,7 +23,6 @@ public class AXEventListener {
     @Async
     @EventListener
     public void onUploadFileEvent(AXUploadFileEvent event) {
-        System.out.println(" =====>>>> Event: + " + Thread.currentThread().getId());
         log.info("AXUploadFileEvent: {}", event);
 
         // 1) AX 플래폼 메타 데이터 올리다가 실패하면 재시도하고,
@@ -41,7 +40,7 @@ public class AXEventListener {
             return;
         }
 
-        if (event.getIsUpdate() == true) {
+        if (event.getIsNew() == false) {
             // 기존 파일 삭제
         }
 

@@ -422,7 +422,7 @@ public class AdminGoodsDataService {
                     .countries(List.of(""))
                     .build();
 
-            publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, false));
+            publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, true));
 
             savedGoodsData.updateGoodsDataDistinguishId(documentId);
         }
@@ -464,6 +464,10 @@ public class AdminGoodsDataService {
                 if (goods.getIsPublic()) {
                     throw AppErrorException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
                 }
+                break;
+
+            default:
+                break;
         }
 
         GoodsData goodsData = goodsDataRepository
@@ -649,7 +653,7 @@ public class AdminGoodsDataService {
                     .countries(List.of(""))
                     .build();
 
-            publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, true));
+            publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, false));
         }
     }
 
