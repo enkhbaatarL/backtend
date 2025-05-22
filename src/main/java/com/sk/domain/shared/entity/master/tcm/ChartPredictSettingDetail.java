@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @Table(name = "tcm_michrtprdcsetd")
-@Comment("TCM _MI차트예측설정상세")
+@Comment("TCM_MI차트예측설정상세")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChartPredictSettingDetail extends BaseEntity {
 
@@ -64,4 +64,9 @@ public class ChartPredictSettingDetail extends BaseEntity {
     @JoinColumn(name = "asso_gds_data_src_no", referencedColumnName = "gds_data_src_no")
     @Comment("연관상품데이터소스번호")
     private GoodsDataSourceDetail associatedGoodsDataSourceDetail;
+
+    @Column(name = "futr_yn", nullable = false, columnDefinition = "char(1)")
+    @Comment("선물여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isFuture;
 }

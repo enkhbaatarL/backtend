@@ -28,7 +28,7 @@ public record MajorQuestionRes(
             .majorQuestionNo(entity.getChatbotMajorQuestionNo())
             .questionRank(entity.getMajorQuestionRnk())
             .majorQuestion(entity.getMajorQuestionCntt())
-            .subcommitteeCd(entity.getCompanySubcommitteeSeparateCd())
+            .subcommitteeCd(entity.getMarketIndexAnalysisTargetCd())
             .build();
     }
 

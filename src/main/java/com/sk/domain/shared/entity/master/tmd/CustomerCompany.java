@@ -40,9 +40,9 @@ public class CustomerCompany extends BaseEntity {
     @Comment("고객회사코드")
     private String customerCompanyCd;
 
-    @Column(name = "cpny_sbcm_spt_cd", length = 20)
-    @Comment("회사분과구분코드")
-    private String companySubcommitteeSeparateCd;
+    @Column(name = "mrkt_idx_anly_tgt_cd", length = 15)
+    @Comment("시장지수분석대상코드")
+    private String marketIndexAnalysisTargetCd;
 
     @Column(name = "use_bgn_dt", length = 8)
     @Comment("사용시작일자")
@@ -72,12 +72,12 @@ public class CustomerCompany extends BaseEntity {
     private List<User> users = new ArrayList<>();
 
     @Builder
-    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String companySubcommitteeSeparateCd, String useBeginDt, String useEndDt, Boolean isUsed, Boolean isMipManagementCompany) {
+    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String marketIndexAnalysisTargetCd, String useBeginDt, String useEndDt, Boolean isUsed, Boolean isMipManagementCompany) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
         this.customerCompanyCd = customerCompanyCd;
-        this.companySubcommitteeSeparateCd = companySubcommitteeSeparateCd;
+        this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
         this.useBeginDt = useBeginDt;
         this.useEndDt = useEndDt;
         this.isUsed = isUsed;

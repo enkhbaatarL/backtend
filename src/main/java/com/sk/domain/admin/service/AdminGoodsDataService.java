@@ -361,7 +361,7 @@ public class AdminGoodsDataService {
                                         componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
                                         componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
 
-                fileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
+                adminFileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
                 /**
@@ -397,13 +397,13 @@ public class AdminGoodsDataService {
 
             for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
 
-                fileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                adminFileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
 
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
 
-                UploadedFile uploadedFile = fileService.getFile(unstructuredData.fileNo());
+                UploadedFile uploadedFile = adminFileService.getFile(unstructuredData.fileNo());
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
@@ -530,7 +530,7 @@ public class AdminGoodsDataService {
         // 정형 데이타 수정
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
-                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
                         .stream()
                         .map(file -> file.getFileNo())
                         .toList();
@@ -544,7 +544,7 @@ public class AdminGoodsDataService {
                 Set<Long> filesToAdd = new HashSet<>(newFileSet);
                 filesToAdd.removeAll(oldFileSet);
                 for (Long fileNo : filesToAdd) {
-                    fileService.updateFile(
+                    adminFileService.updateFile(
                             fileNo,
                             goodsData.getGoodsDataNo(),
                             FileRelationshipObjectSeparateCode.GDATS.getCode(),
@@ -594,7 +594,7 @@ public class AdminGoodsDataService {
         if (dto.unstructuredDataList() != null) {
             List<String> fileNameList = new ArrayList<>();
 
-            List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
+            List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                     .stream()
                     .map(file -> file.getFileNo())
                     .toList();
@@ -609,7 +609,7 @@ public class AdminGoodsDataService {
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-                fileService.deleteFile(fileNo);
+                adminFileService.deleteFile(fileNo);
 
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
                         goodsData.getGoodsDataNo(),
@@ -620,7 +620,7 @@ public class AdminGoodsDataService {
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-                fileService.updateFile(
+                adminFileService.updateFile(
                         fileNo,
                         goodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(),
@@ -634,7 +634,7 @@ public class AdminGoodsDataService {
                                 GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
 
-                UploadedFile uploadedFile = fileService.getFile(fileNo);
+                UploadedFile uploadedFile = adminFileService.getFile(fileNo);
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
@@ -673,53 +673,11 @@ public class AdminGoodsDataService {
     public GoodsDataFileUploadRes uploadStructuredDataFile(String companyCd, Role role, MultipartFile file, boolean isPublic,
             StructuredDataFileReq structuredDataFileReq) throws IOException {
 
-        // TODO: JPA, MyBatis 트랜잭션 통합 관리 필요(XA 도입 또는 데이터 소스 분리 등 방법 필요)
-
-        // JPA, MyBatis 트랜잭션 각각 관리
-        // TransactionTemplate jpaTxTemplate = new TransactionTemplate(masterTransactionManager);
-        // jpaTxTemplate.setReadOnly(false);
-        // TransactionTemplate myBatisTxTemplate = new TransactionTemplate(myBatisTransactionManager);
-
-        // 1. JPA: 조회 (Select는 )
         ComponentInfo componentInfo = componentInfoRepository
                 .findByComponentTypeIdAndIsDeletedFalse(structuredDataFileReq.componentTypeId())
                 .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
                         String.format("Component information could not be found. componentTypeId: %s",
                                 structuredDataFileReq.componentTypeId())));
-
-        // User 조회 (외부 트랜잭션에서 가져온 user는 새로 만든 트랜잭션의 영속성 컨텍스트로 관리하지 않아서 Lazy 조회 불가)
-        // User loadedUser = jpaTxTemplate.execute(status -> {
-        // return userRepository.findByUserNoAndIsDeletedFalse(user.getUserNo())
-        // .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "User not found"));
-        // });
-
-        // JPA / Mybatis 둘 중 하나라도 문제 생긴 경우 전체 롤백
-        // try {
-        // // 2. MyBatis: 데이터 업로드
-        // myBatisTxTemplate.execute(status -> {
-        // try {
-        // excelService.uploadStructuredData(file, componentInfo);
-        // return true;
-        // } catch (IOException e) {
-        // throw new RuntimeException("MyBatis upload failed", e);
-        // }
-        // });
-
-        // // 3. JPA + S3: 파일 업로드
-        // FileUploadRes fileUploadRes = jpaTxTemplate.execute(status -> {
-        // try {
-        // return fileService.uploadFile(loadedUser, file, isPublic);
-        // } catch (Exception e) {
-        // throw new RuntimeException("JPA/S3 upload failed", e);
-        // }
-        // });
-
-        // return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(),
-        // fileUploadRes.fileNm(), fileUploadRes.fileSize(), fileUploadRes.fileUrl());
-        // } catch (Exception e) {
-        // log.error("Upload failed: {}", e.getMessage(), e);
-        // throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
-        // }
 
         excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt());
 

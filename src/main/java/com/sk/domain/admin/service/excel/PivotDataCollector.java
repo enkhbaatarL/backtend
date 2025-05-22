@@ -19,7 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class PivotDataCollector implements DataCollectorStrategy {
-    private static final int DEFAULT_DATA_START_ROW_INDEX = 1;
+    private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
+    private static final int HEADER_COLUMN_INDEX = 1; // 헤더 열 인덱스
+    private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final int MAX_PERIOD_CODE_LENGTH = 10; // oni_anly_perd_spt_cd 최대 길이
 
     @Override
@@ -29,8 +31,8 @@ public class PivotDataCollector implements DataCollectorStrategy {
             Sheet sheet = (Sheet) data;
             Iterator<Row> rowIterator = sheet.iterator();
             // 헤더 파싱
-            List<String> periodCodes = ExcelParsedUtil.extractExcelHeader(sheet, 0);
-            periodCodes = periodCodes.size() > 1 ? periodCodes.subList(1, periodCodes.size()) : createDefaultHeaders(periodCodes.size());
+            List<String> periodCodes = ExcelParsedUtil.extractExcelHeader(sheet, HEADER_ROW_INDEX);
+            periodCodes = periodCodes.size() > 1 ? periodCodes.subList(HEADER_COLUMN_INDEX, periodCodes.size()) : createDefaultHeaders(periodCodes.size());
             periodCodes = periodCodes.stream().map(this::truncatePeriodCode).collect(Collectors.toList());
             log.debug("Excel period codes: {}", periodCodes);
             while (rowIterator.hasNext()) {
@@ -55,7 +57,7 @@ public class PivotDataCollector implements DataCollectorStrategy {
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
             CSVParser csvParser = (CSVParser) data;
             // 헤더 파싱
-            List<String> periodCodes = actualColumns.size() > 1 ? actualColumns.subList(1, actualColumns.size())
+            List<String> periodCodes = actualColumns.size() > 1 ? actualColumns.subList(HEADER_COLUMN_INDEX, actualColumns.size())
                     : createDefaultHeaders(actualColumns.size());
             periodCodes = periodCodes.stream().map(this::truncatePeriodCode).collect(Collectors.toList());
             log.debug("CSV period codes: {}", periodCodes);

@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DefaultDataCollector implements DataCollectorStrategy {
 
-    private static final int DEFAULT_DATA_START_ROW_INDEX = 1;
+    private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt) {
