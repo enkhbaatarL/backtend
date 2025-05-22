@@ -5,10 +5,12 @@ import com.sk.common.filter.wrapper.CustomContentCachingRequestWrapper;
 import com.sk.common.filter.wrapper.CustomContentCachingResponseWrapper;
 import com.sk.common.utils.MDCUtil;
 import com.sk.common.utils.StringUtil;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -26,14 +28,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
+
+    // Custom Header Key
+    private static final String X_COMPANY_NO_KEY = "X-Company-No";
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
     private final AtomicLong id = new AtomicLong(0);
 
+    private final AuthorizationService authorizationService;
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         Enumeration<String> headerNames = request.getHeaderNames();
 
@@ -97,6 +104,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_START_TIME, String.valueOf(startTime));
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
         MDCUtil.setValue(MDCUtil.ACCESS_IP_ADDRESS, request.getRemoteAddr());
+        MDCUtil.setValue(MDCUtil.REQUEST_X_COMPANY_NO, request.getHeader(X_COMPANY_NO_KEY));
     }
 
     /**
@@ -116,6 +124,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
         MDCUtil.setValue(MDCUtil.REQUEST_QUERY_STRING, request.getQueryString());
         MDCUtil.setValue(MDCUtil.ACCESS_IP_ADDRESS, request.getRemoteAddr());
+        MDCUtil.setValue(MDCUtil.REQUEST_X_COMPANY_NO, request.getHeader(X_COMPANY_NO_KEY));
     }
 
     /**
@@ -132,10 +141,10 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             uri += "?" + request.getQueryString();
 
         log.info("req uri={}, method={}, body={}, ip={}",
-                uri,
-                request.getMethod(),
-                StringUtil.stripNewlinesAndTabs(new String(requestBody, StandardCharsets.UTF_8)),
-                request.getRemoteAddr());
+            uri,
+            request.getMethod(),
+            StringUtil.stripNewlinesAndTabs(new String(requestBody, StandardCharsets.UTF_8)),
+            request.getRemoteAddr());
 
     }
 
@@ -164,9 +173,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             return;
 
         log.info("res uri={}, body={}, totalTime={}",
-                uri,
-                new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
-                System.currentTimeMillis() - startTime);
+            uri,
+            new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
+            System.currentTimeMillis() - startTime);
 
     }
 

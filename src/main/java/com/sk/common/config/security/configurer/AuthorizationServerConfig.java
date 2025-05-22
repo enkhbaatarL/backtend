@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Acce
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -47,6 +48,8 @@ public class AuthorizationServerConfig {
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
     private final CustomAccessTokenResponseHandler customAccessTokenResponseHandler;
 
+    private final CorsConfigurationSource corsConfigurationSource;
+
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -66,7 +69,7 @@ public class AuthorizationServerConfig {
 
             // Authorization Server 관련 경로 매칭
             http
-                .cors(withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
                 .securityMatcher("/api/v1/oauth2/token") // Authorization Server 경로 제한
                 .with(authorizationServerConfigurer, withDefaults())
@@ -86,7 +89,7 @@ public class AuthorizationServerConfig {
         } else {
 
             http
-                .cors(withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .securityMatcher("/api/v1/oauth2/token")
                 .authorizeHttpRequests(authorize -> authorize
                     .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용

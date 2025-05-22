@@ -24,6 +24,7 @@ public final class DateUtil {
     public static final DateTimeFormatter ISO_LOCAL_DATE_TIME_MINUTES = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     public static final DateTimeFormatter YYYYMM = DateTimeFormatter.ofPattern("yyyyMM");
     public static final DateTimeFormatter YYYY_MMM_ENG = DateTimeFormatter.ofPattern("yyyy-MMM", Locale.ENGLISH);
+    public static final DateTimeFormatter YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private DateUtil() {
     }
@@ -99,6 +100,10 @@ public final class DateUtil {
      */
     public static String currentYmdHms() {
         return LocalDate.now().format(YYYY_MM_DD_HH_MM_SS);
+    }
+
+    public static String currentYYYYMMDDHHMMSS() {
+        return LocalDateTime.now().format(YYYYMMDDHHMMSS);
     }
 
     /**

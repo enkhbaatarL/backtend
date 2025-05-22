@@ -65,6 +65,11 @@ public class MDCUtil {
     public static final String ACCESS_IP_ADDRESS = "ACCESS_IP_ADDRESS";
 
     /**
+     * REQUEST_X_COMPANY_NO.
+     */
+    public static final String REQUEST_X_COMPANY_NO = "REQUEST_X_COMPANY_NO";
+
+    /**
      * Set Value.
      *
      * @param key   the key

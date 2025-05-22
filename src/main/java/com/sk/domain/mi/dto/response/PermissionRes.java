@@ -218,9 +218,10 @@ public record PermissionRes(
     }
 
     @JsonIgnore
-    public Map<Integer, Boolean> getGoodsViewableMap() {
+    public Map<Integer, Boolean> getGoodsViewableMap(Integer companyNo) {
 
         return this.companies.stream()
+            .filter(obj -> obj.companyNo.equals(companyNo))
             .flatMap(obj -> obj.providers.stream()
                 .flatMap(obj2 -> obj2.goods.stream()))
             .collect(Collectors.toMap(GoodsAuthRes::goodsNo, GoodsAuthRes::isViewable));
@@ -228,9 +229,10 @@ public record PermissionRes(
     }
 
     @JsonIgnore
-    public Map<Integer, Boolean> getGoodsDownloadableMap() {
+    public Map<Integer, Boolean> getGoodsDownloadableMap(Integer companyNo) {
 
         return this.companies.stream()
+            .filter(obj -> obj.companyNo.equals(companyNo))
             .flatMap(obj -> obj.providers.stream()
                 .flatMap(obj2 -> obj2.goods.stream()))
             .collect(Collectors.toMap(GoodsAuthRes::goodsNo, GoodsAuthRes::isDownloadable));
