@@ -40,6 +40,8 @@ import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMa
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.FileService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,7 +54,7 @@ public class AdminBulletinBoardService {
     private final UploadedFileRepository uploadedFileRepository;
     private final BulletinBoardCustomerCompanyMappingRepository bulletinBoardCustomerCompanyMappingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
-    private final AdminFileService adminFileService;
+    private final FileService fileService;
 
     /**
      * 공지사항에서 사용 할 필터를 조회한다.
@@ -132,7 +134,7 @@ public class AdminBulletinBoardService {
                 dto.bulletinCntt()));
 
         if (dto.fileNo() != null) {
-            adminFileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+            fileService.updateFile(dto.fileNo(), savedBulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
                     DateUtil.endYmd());
         }
 
@@ -176,7 +178,7 @@ public class AdminBulletinBoardService {
                         f.getFileNo(),
                         f.getOriginalFileNm(),
                         f.getFileSize(),
-                        adminFileService.getUrl(f.getFileNo())))
+                        fileService.getUrl(f.getFileNo())))
                 .toList();
 
         return NoticeDetailRes.of(bulletinBoard, target, fileInfo);
@@ -209,9 +211,9 @@ public class AdminBulletinBoardService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
         if (dto.fileNo() == null) {
-            adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
+            fileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
         } else {
-            adminFileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
+            fileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
                     DateUtil.endYmd());
         }
 
@@ -279,7 +281,7 @@ public class AdminBulletinBoardService {
 
         bulletinBoardCustomerCompanyMappingRepository.deleteByBulletinNo(bulletinBoard.getBulletinNo());
 
-        adminFileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
+        fileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
 
         bulletinBoard.softDelete();
 
@@ -305,7 +307,7 @@ public class AdminBulletinBoardService {
                         f.getFileNo(),
                         f.getOriginalFileNm(),
                         f.getFileSize(),
-                        adminFileService.getUrl(f.getFileNo())))
+                        fileService.getUrl(f.getFileNo())))
                 .toList();
 
         return PopupRes.of(bulletinBoard, fileInfo);

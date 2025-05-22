@@ -1,29 +1,21 @@
-package com.sk.domain.admin.service;
+package com.sk.domain.shared.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.Normalizer;
 
-import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -33,6 +25,7 @@ import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileExistRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.shared.dto.request.file.FileDownloadReq;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
@@ -44,9 +37,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class AdminFileService {
+public class FileService {
     private final UploadedFileRepository uploadedFileRepository;
-    private final AdminObjectStorageService adminObjectStorageService;
+    private final ObjectStorageService objectStorageService;
 
     private final String TEMP_DIR = "TEMP";
 
@@ -60,7 +53,7 @@ public class AdminFileService {
     private String prefix;
 
     public void getAll() {
-        adminObjectStorageService.getAll();
+        objectStorageService.getAll();
         return;
     }
 
@@ -122,7 +115,7 @@ public class AdminFileService {
 
             // Object Storage 저장
             String fileName = PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR) + storageFileNm;
-            String fileUrl = adminObjectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            String fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -184,7 +177,7 @@ public class AdminFileService {
 
             // Object Storage 저장
             String fileName = PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR) + storageFileNm;
-            String fileUrl = adminObjectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            String fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -212,16 +205,20 @@ public class AdminFileService {
     * @param fileNo 파일번호
     * @return FileDownloadRes
     */
-    public FileDownloadRes downloadFile(Long fileNo) {
-        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+    public FileDownloadRes downloadFile(FileDownloadReq dto) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(dto.fileNo())
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", dto.fileNo())));
+
+        if (!(uploadedFile.getOriginalFileNm().equals(dto.fileNm()) && uploadedFile.getFileSize().equals(dto.fileSize()))) {
+            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
+        }
 
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String fileName = getFileName(uploadedFile.getStoragePathNm());
 
-            byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
+            byte[] fileData = objectStorageService.downloadFile(bucketName, fileName);
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
@@ -235,10 +232,24 @@ public class AdminFileService {
     * @param fileNoList 파일번호목록
     * @return byte[] 
     */
-    public byte[] downloadFiles(List<Long> fileNoList) {
+    public byte[] downloadFiles(List<FileDownloadReq> list) {
+        List<Long> fileNoList = list.stream()
+                .map(FileDownloadReq::fileNo)
+                .toList();
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFileNoList(fileNoList);
         if (uploadedFiles.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %s", fileNoList));
+        }
+        for (UploadedFile f1 : uploadedFiles) {
+            for (FileDownloadReq f2 : list) {
+                if (f1.getFileNo().equals(f2.fileNo())) {
+                    if (f1.getOriginalFileNm().equals(f2.fileNm()) && f1.getFileSize().equals(f2.fileSize())) {
+                        continue;
+                    } else {
+                        throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
+                    }
+                }
+            }
         }
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -250,7 +261,7 @@ public class AdminFileService {
                 String fileName = f.getOriginalFileNm();
 
                 // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
-                try (S3ObjectInputStream s3is = adminObjectStorageService.getObjectContent(bucketName, filePath)) {
+                try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
                     if (s3is == null)
                         continue;
 
@@ -286,7 +297,7 @@ public class AdminFileService {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String fileName = getFileName(uploadedFile.getStoragePathNm());
 
-            adminObjectStorageService.deleteFile(bucketName, fileName);
+            objectStorageService.deleteFile(bucketName, fileName);
 
             uploadedFile.softDelete();
         } catch (Exception e) {
@@ -311,7 +322,7 @@ public class AdminFileService {
                 String bucketName = getBucketName(f.getStoragePathNm());
                 String fileName = getFileName(f.getStoragePathNm());
 
-                adminObjectStorageService.deleteFile(bucketName, fileName);
+                objectStorageService.deleteFile(bucketName, fileName);
 
                 f.softDelete();
             } catch (Exception e) {
@@ -344,7 +355,7 @@ public class AdminFileService {
             String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
-            adminObjectStorageService.moveFile(bucketName, oldPath, newPath);
+            objectStorageService.moveFile(bucketName, oldPath, newPath);
 
             uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
 
@@ -368,7 +379,22 @@ public class AdminFileService {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String fileName = getFileName(uploadedFile.getStoragePathNm());
 
-            return adminObjectStorageService.getUrl(bucketName, fileName);
+            return objectStorageService.getUrl(bucketName, fileName);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+    }
+
+    public String getUrl(UploadedFile uploadedFile) {
+        if (uploadedFile == null) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 파일이 없습니다.");
+        }
+
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String fileName = getFileName(uploadedFile.getStoragePathNm());
+
+            return objectStorageService.getUrl(bucketName, fileName);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }

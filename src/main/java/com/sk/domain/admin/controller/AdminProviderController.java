@@ -13,7 +13,6 @@ import com.sk.domain.admin.dto.response.file.FileExistRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.admin.dto.response.provider.*;
-import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
@@ -22,6 +21,7 @@ import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,7 +44,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
@@ -57,7 +56,7 @@ public class AdminProviderController {
     private final AdminProviderService providerService;
     private final AdminGoodsService goodsService;
     private final AdminGoodsDataService goodsDataService;
-    private final AdminFileService adminFileService;
+    private final FileService fileService;
     private final CustomerCompanyRepository customerCompanyRepository;
 
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
@@ -554,7 +553,7 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, false, fileHash));
+        return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, false, fileHash));
     }
 
     @ApiOrder(92)
@@ -566,41 +565,6 @@ public class AdminProviderController {
             @RequestParam(value = "fileName", required = false, defaultValue = "") String fileName,
             @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash) {
 
-        return BaseResponseFactory.create(adminFileService.fileExist(fileName, fileHash));
-    }
-
-    @ApiOrder(99)
-    @Operation(summary = "비정형 데이타 파일 다운로드", description = "비정형 데이타 파일을 다운로드합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/goods-datas/download-file/unstructured-data/{fileNo}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public ResponseEntity<byte[]> downloadFile(
-            @RequestBody @Valid FileDownloadReq body,
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo)
-            throws UnsupportedEncodingException {
-
-        UploadedFile uploadedFile = adminFileService.getFile(fileNo);
-
-        // 검증 로직
-        if (uploadedFile.getFileRelationshipObjectSeparateCd() != FileRelationshipObjectSeparateCode.GUDAT.getCode()) {
-            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
-        }
-        if (uploadedFile.getFileNo() != body.fileNo()) {
-            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
-        }
-        if (!uploadedFile.getOriginalFileNm().equals(body.fileNm())) {
-            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
-        }
-
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
-
-        String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
-
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        httpHeaders.setContentLength(fileDownloadRes.fileData().length);
-        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
-
-        return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
+        return BaseResponseFactory.create(fileService.fileExist(fileName, fileHash));
     }
 }

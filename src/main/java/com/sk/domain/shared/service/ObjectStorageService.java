@@ -1,4 +1,4 @@
-package com.sk.domain.admin.service;
+package com.sk.domain.shared.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -34,6 +34,11 @@ import jakarta.annotation.PostConstruct;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.paginators.ListBucketsIterable;
 
 // todo: 멀티파트 업로드 필요시
 // https://velog.io/@sangwoo-sean/spring-AWS-S3-Multipart-Upload
@@ -41,9 +46,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AdminObjectStorageService {
+public class ObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
+    private final S3Client s3Client;
+
+    @Value("${ncp.storage.region-name}")
+    private String regionName;
+
+    @Value("${ncp.storage.access-key}")
+    private String accessKey;
+
+    @Value("${ncp.storage.secret-key}")
+    private String secretKey;
 
     @Value("${ncp.storage.end-point}")
     private String endPoint;
@@ -56,16 +71,27 @@ public class AdminObjectStorageService {
 
     @PostConstruct
     public void init() {
-        // getBucketList();
+        // Region region = RegionUtils.getRegion(regionName);
+
+        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(accessKey, secretKey);
+
+        S3Client s3Client = S3Client.builder()
+                .region(Region.of(regionName))
+                .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
+                .build();
+
+        getBucketList();
     }
 
     public void getBucketList() {
-        List<Bucket> buckets = objectStorageClient.listBuckets();
-        System.out.println("Bucket List: ");
-        for (Bucket bucket : buckets) {
-            System.out.println("    name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
-                    + bucket.getOwner().getId());
-        }
+        // List<Bucket> buckets = objectStorageClient.listBuckets();
+        // System.out.println("Bucket List: ");
+        // for (Bucket bucket : buckets) {
+        // System.out.println(" name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
+        // + bucket.getOwner().getId());
+        // }
+        ListBucketsIterable response = s3Client.listBucketsPaginator();
+        response.buckets().forEach(bucket -> System.out.println("Bucket Name: " + bucket.name()));
     }
 
     public S3Object getObject(String bucketName, String fileName) {
