@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -32,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @RequiredArgsConstructor
 public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
+    // Custom Header Key
     private static final String X_COMPANY_NO_KEY = "X-Company-No";
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
@@ -104,7 +104,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_START_TIME, String.valueOf(startTime));
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
         MDCUtil.setValue(MDCUtil.ACCESS_IP_ADDRESS, request.getRemoteAddr());
-        MDCUtil.setValue(MDCUtil.COMPANY_NO, Optional.ofNullable(request.getHeader(X_COMPANY_NO_KEY)).orElse("2012"));
+        MDCUtil.setValue(MDCUtil.REQUEST_X_COMPANY_NO, request.getHeader(X_COMPANY_NO_KEY));
     }
 
     /**
@@ -124,7 +124,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
         MDCUtil.setValue(MDCUtil.REQUEST_QUERY_STRING, request.getQueryString());
         MDCUtil.setValue(MDCUtil.ACCESS_IP_ADDRESS, request.getRemoteAddr());
-        MDCUtil.setValue(MDCUtil.COMPANY_NO, Optional.ofNullable(request.getHeader(X_COMPANY_NO_KEY)).orElse("2012"));
+        MDCUtil.setValue(MDCUtil.REQUEST_X_COMPANY_NO, request.getHeader(X_COMPANY_NO_KEY));
     }
 
     /**

@@ -4,6 +4,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.enums.ResultCode;
@@ -60,8 +61,16 @@ public class CustomAuthManageGoodsMappingImpl implements CustomAuthManageGoodsMa
         // 1) 개별 권한 조건
         Predicate individualAuth = authMapping.user.userNo.eq(userNo).and(authMapping.user.isDeleted.isFalse());
 
+        QUser qUserSub = new QUser("userSub");
+
+        JPQLQuery<Integer> subQuery = JPAExpressions
+            .select(qUserSub.customerCompany.customerCompanyNo)
+            .from(qUserSub)
+            .leftJoin(qUserSub.customerCompany)
+            .where(qUserSub.userNo.eq(userNo));
+
         // 2) 회사 권한 조건
-        Predicate companyAuth = authMapping.user.isNull().and(ccgMapping.customerCompany.customerCompanyNo.eq(user.customerCompany.customerCompanyNo));
+        Predicate companyAuth = authMapping.user.userNo.isNull().and(ccgMapping.customerCompany.customerCompanyNo.eq(subQuery));
 
         return queryFactory
             .select(authMapping)

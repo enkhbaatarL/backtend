@@ -72,10 +72,9 @@ public class MiDataDetailController {
     )
     public BaseResponse<GoodsDataRes> getGoodsData(
         @PathVariable(value = "goodsNo") Integer goodsNo,
-        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
-        Authentication authentication
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsNo, goodsDataNo, authentication));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsNo, goodsDataNo));
     }
 
     @ApiOrder(2)
@@ -151,10 +150,9 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs,
-        Authentication authentication
+        @RequestBody @Valid List<ChartsPersonalizeReq> chartsPersonalizeReqs
     ) {
-        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsNo, goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs, authentication.getName()));
+        return BaseResponseFactory.create(miDataDetailService.putGoodsDataSourcesChartsPersonalize(goodsNo, goodsDataNo, goodsDataSourceNo, chartsPersonalizeReqs));
     }
 
     @ApiOrder(5)
@@ -202,10 +200,9 @@ public class MiDataDetailController {
         @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
         @RequestParam(value = "endDate", required = false)
         @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
-        @RequestParam(value = "unitCd", required = false) String unitCd,
-        Authentication authentication
+        @RequestParam(value = "unitCd", required = false) String unitCd
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd, authentication.getName()));
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd));
     }
 
     @ApiOrder(6)
