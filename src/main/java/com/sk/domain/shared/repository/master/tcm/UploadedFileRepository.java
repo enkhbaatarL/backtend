@@ -24,6 +24,15 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             SELECT u
             FROM UploadedFile u
             WHERE u.isDeleted = false
+                AND u.fileNo IN (:fileNoList)
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                """)
+    List<UploadedFile> findByFileNoList(@Param("fileNoList") List<Long> fileNoList);
+
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
                 AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
                 AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
                 AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})

@@ -21,6 +21,7 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     public static final DateTimeFormatter ISO_LOCAL_DATE_TIME_MINUTES = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     public static final DateTimeFormatter YYYYMM = DateTimeFormatter.ofPattern("yyyyMM");
+    public static final DateTimeFormatter YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private DateUtil() {
     }
@@ -31,7 +32,6 @@ public final class DateUtil {
     public static String toYmd(LocalDate date) {
         return date == null ? null : date.format(YYYYMMDD);
     }
-
 
     /**
      * LocalDateTime을 "yyyyMMdd" 문자열로 변환
@@ -99,6 +99,10 @@ public final class DateUtil {
         return LocalDate.now().format(YYYY_MM_DD_HH_MM_SS);
     }
 
+    public static String currentYYYYMMDDHHMMSS() {
+        return LocalDateTime.now().format(YYYYMMDDHHMMSS);
+    }
+
     /**
      * string 날짜를 LocalDate 타입으로 반환
      */
@@ -120,7 +124,8 @@ public final class DateUtil {
     }
 
     public static String toYmd(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+        if (dateTimeStr == null || dateTimeStr.isBlank())
+            return null;
 
         try {
             // ISO-8601 형식 처리 (예: 2024-01-01T00:00)
@@ -131,8 +136,8 @@ public final class DateUtil {
             try {
                 // 기존 포맷 시도 (예: 2024-01-01 00:00:00)
                 String trimmed = dateTimeStr.length() > 19
-                    ? dateTimeStr.substring(0, 19)
-                    : dateTimeStr;
+                        ? dateTimeStr.substring(0, 19)
+                        : dateTimeStr;
                 LocalDateTime ldt = LocalDateTime.parse(trimmed, YYYY_MM_DD_HH_MM_SS);
                 return ldt.format(YYYYMMDD);
             } catch (DateTimeParseException e2) {

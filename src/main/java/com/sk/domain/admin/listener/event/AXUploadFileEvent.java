@@ -11,6 +11,6 @@ import lombok.RequiredArgsConstructor;
 public class AXUploadFileEvent {
     private final GoodsData goodsData;
     private final AXMetaFileDto axMetaFileDto;
-    private final Boolean isUpdate;
+    private final Boolean isNew;
 
 }

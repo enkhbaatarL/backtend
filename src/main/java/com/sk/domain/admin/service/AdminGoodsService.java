@@ -157,7 +157,7 @@ public class AdminGoodsService {
     }
 
     /**
-    * 상품을 수정한다.
+    * 상품을 수정한다. -> 2025/05/21 영선님과 협의 후 관리자만 가능하게 수정
     *
     * @param goodsNo 상품 번호
     * @param GoodsUpdateReq 상품 데이터
@@ -170,28 +170,33 @@ public class AdminGoodsService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "goods no: %d".formatted(goodsNo)));
 
-        if (goods.getIsPublic()) {
-            if (role == Role.ADMIN) {
-                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
-                return;
-            }
-        } else {
-            if (role == Role.ADMIN) {
-                goods.update("", "", "", dto.isUsed(), null);
-                return;
-            } else if (role == Role.OPERATOR) {
-                customerCompanyProviderMappingRepository
-                        .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
+        // if (goods.getIsPublic()) {
+        // if (role == Role.ADMIN) {
+        // goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+        // return;
+        // }
+        // } else {
+        // if (role == Role.ADMIN) {
+        // goods.update("", "", "", dto.isUsed(), null);
+        // return;
+        // } else if (role == Role.OPERATOR) {
+        // customerCompanyProviderMappingRepository
+        // .findById_CustomerCompanyNoAndId_ProviderNoAndIsDeletedFalse(companyNo, providerNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "provider no: %d".formatted(providerNo)));
 
-                customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
-                        .orElseThrow(
-                                () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
+        // customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsNo)
+        // .orElseThrow(
+        // () -> AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "goods no: %d".formatted(goodsNo)));
 
-                goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
-                return;
-            }
+        // goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+        // return;
+        // }
+        // }
+
+        if (role == Role.ADMIN) {
+            goods.update(dto.goodsNm(), dto.goodsId(), dto.goodsExpn(), dto.isUsed(), dto.isPublic());
+            return;
         }
 
         throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);

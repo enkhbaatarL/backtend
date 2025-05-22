@@ -1,8 +1,11 @@
 package com.sk.domain.admin.controller;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +28,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.file.FileUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
@@ -34,6 +39,8 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -65,7 +72,7 @@ public class AdminFileController {
     @ApiOrder(2)
     @Operation(summary = "파일 업로드", description = "파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadRes> uploadFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
@@ -80,9 +87,9 @@ public class AdminFileController {
     }
 
     @ApiOrder(3)
-    @Operation(summary = "파일 다운로드", description = "파일을 다운로드합니다.")
+    @Operation(summary = "1개 파일 다운로드", description = "1개의 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/{fileNo}")
+    @GetMapping("/download/{fileNo}")
     public ResponseEntity<byte[]> downloadFile(
             @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
 
@@ -99,6 +106,33 @@ public class AdminFileController {
     }
 
     @ApiOrder(4)
+    @Parameters({
+            @Parameter(name = "prefix", description = "다운 받을 파일명의 Prefix", example = "Prefix_20250522140159.zip"),
+            @Parameter(name = "fileNos", description = "다운 받을 파일번호", example = "1020,1234,2356")
+    })
+    @Operation(summary = "1개 이상 파일 zip 압축 다운로드", description = "1개 이상의 파일을 zip으로 압축하여 다운로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/download")
+    public ResponseEntity<byte[]> downloadFiles(
+            @RequestParam(value = "prefix", required = true) String prefix,
+            @RequestParam(value = "fileNos", required = true) String fileNos) throws UnsupportedEncodingException {
+        List<Long> ids = Arrays.stream(fileNos.split(","))
+                .map(Long::valueOf)
+                .toList();
+
+        byte[] fileData = adminFileService.downloadFiles(ids);
+        String encodedFileName = URLEncoder.encode(prefix.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
+                StandardCharsets.UTF_8.toString());
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        httpHeaders.setContentLength(fileData.length);
+        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
+    }
+
+    @ApiOrder(5)
     @Operation(summary = "파일 삭제", description = "파일을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/{fileNo}")
@@ -110,7 +144,7 @@ public class AdminFileController {
         return BaseResponseFactory.create("success");
     }
 
-    @ApiOrder(5)
+    @ApiOrder(6)
     @Operation(summary = "파일 수정", description = "파일을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/{fileNo}")
@@ -124,7 +158,7 @@ public class AdminFileController {
         return BaseResponseFactory.create("success");
     }
 
-    // @ApiOrder(6)
+    // @ApiOrder(7)
     // @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
     // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     // @GetMapping("/presigned-url/{fileNo}")
