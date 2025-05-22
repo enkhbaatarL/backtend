@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.marketData;
+package com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange;
 
 import java.time.LocalDate;
 

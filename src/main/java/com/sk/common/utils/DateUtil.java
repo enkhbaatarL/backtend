@@ -4,8 +4,10 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Locale;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -21,6 +23,7 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     public static final DateTimeFormatter ISO_LOCAL_DATE_TIME_MINUTES = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     public static final DateTimeFormatter YYYYMM = DateTimeFormatter.ofPattern("yyyyMM");
+    public static final DateTimeFormatter YYYY_MMM_ENG = DateTimeFormatter.ofPattern("yyyy-MMM", Locale.ENGLISH);
 
     private DateUtil() {
     }
@@ -31,7 +34,6 @@ public final class DateUtil {
     public static String toYmd(LocalDate date) {
         return date == null ? null : date.format(YYYYMMDD);
     }
-
 
     /**
      * LocalDateTime을 "yyyyMMdd" 문자열로 변환
@@ -120,7 +122,8 @@ public final class DateUtil {
     }
 
     public static String toYmd(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+        if (dateTimeStr == null || dateTimeStr.isBlank())
+            return null;
 
         try {
             // ISO-8601 형식 처리 (예: 2024-01-01T00:00)
@@ -131,8 +134,8 @@ public final class DateUtil {
             try {
                 // 기존 포맷 시도 (예: 2024-01-01 00:00:00)
                 String trimmed = dateTimeStr.length() > 19
-                    ? dateTimeStr.substring(0, 19)
-                    : dateTimeStr;
+                        ? dateTimeStr.substring(0, 19)
+                        : dateTimeStr;
                 LocalDateTime ldt = LocalDateTime.parse(trimmed, YYYY_MM_DD_HH_MM_SS);
                 return ldt.format(YYYYMMDD);
             } catch (DateTimeParseException e2) {
@@ -194,4 +197,20 @@ public final class DateUtil {
     public static String toYearMonth(LocalDate date) {
         return date == null ? null : date.format(YYYYMM);
     }
+
+    /**
+     * "yyyy-MMM" 문자열을 "yyyyMM" 문자열로 변환
+     */
+    public static String fromYyyyMmmToYyyyMm(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) {
+            return null;
+        }
+        try {
+            YearMonth ym = YearMonth.parse(dateStr.trim(), YYYY_MMM_ENG);
+            return ym.format(YYYYMM);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format, expected yyyy-MMM: " + dateStr);
+        }
+    }
+
 }

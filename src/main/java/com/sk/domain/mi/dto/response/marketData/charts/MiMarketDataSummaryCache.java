@@ -1,6 +1,7 @@
-package com.sk.domain.mi.dto.response.marketData;
+package com.sk.domain.mi.dto.response.marketData.charts;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaDataSummary;
 
 import lombok.Builder;
 

@@ -11,6 +11,8 @@ public class DataCollectorStrategyResolver {
             return new PivotDataCollector();
         } else if (componentType == ComponentType.CPC_NINO_SST) {
             return new NinoSstDataCollector();
+        } else if (componentType == ComponentType.OECD_CLI) {
+            return new OecdCliDataCollector();
         } else {
             return new DefaultDataCollector();
         }

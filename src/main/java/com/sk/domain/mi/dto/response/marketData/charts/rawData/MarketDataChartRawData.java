@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.marketData;
+package com.sk.domain.mi.dto.response.marketData.charts.rawData;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;

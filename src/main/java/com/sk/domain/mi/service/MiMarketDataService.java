@@ -37,19 +37,19 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.dto.response.marketData.CalculatePeriodChangeRange;
-import com.sk.domain.mi.dto.response.marketData.CalculatePeriodChangeRes;
-import com.sk.domain.mi.dto.response.marketData.CalculatePeriodChangeValue;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
-import com.sk.domain.mi.dto.response.marketData.MarketDataChartRawData;
-import com.sk.domain.mi.dto.response.marketData.MarketDataChartRes;
-import com.sk.domain.mi.dto.response.marketData.MarketMetaData;
-import com.sk.domain.mi.dto.response.marketData.MarketMetaDataSummary;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataCache;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataRes;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryCache;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryCache;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRange;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaDataSummary;
+import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRawData;
+import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
@@ -707,7 +707,7 @@ public class MiMarketDataService {
         LocalDate yesterday = today.minusDays(1);
 
         // 이번 주
-        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() - 1); // 월요일
+        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() % 7); // 알요일
         LocalDate thisWeekEnd = today;
         // 지난 주
         LocalDate lastWeekStart = thisWeekStart.minusWeeks(1);

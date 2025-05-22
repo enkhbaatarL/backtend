@@ -40,7 +40,7 @@ public class ExcelFileParsed implements FileTypeStrategy {
     public List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt) throws IOException {
         Workbook workbook = ExcelParsedUtil.createWorkbook(file);
         try {
-            Sheet sheet = workbook.getSheetAt(0);
+            Sheet sheet = workbook.getSheetAt(0); // 첫번째 시트
             DataCollectorStrategy strategy = dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm());
             List<Object[]> result = strategy.processData(sheet, Arrays.asList(componentInfo.getExcelTableColumnListNm().split(",")), criteriaDt);
             workbook.close();

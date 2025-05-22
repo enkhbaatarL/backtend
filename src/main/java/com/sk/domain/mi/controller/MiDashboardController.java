@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.annotation.ApiOrder;
@@ -14,7 +15,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
-import com.sk.domain.mi.dto.response.marketData.MiMarketDataSummaryRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.service.MiDashboardService;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.shared.enums.Role;
@@ -66,25 +67,6 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo, authentication));
 	}
 
-	/**
-	@ApiOrder(2)
-	@Parameters({
-	        @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
-	})
-	@Operation(summary = "Latest Data 목록 조회", description = "Latest Data 목록을 조회합니다.")
-	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-	@GetMapping("/companies/{companyNo}/latest-data")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
-	public BaseResponse<List<LatestDataRes>> getLatestData(
-	        @PathVariable("companyNo") Integer companyNo) {
-	
-	    Role role = authorizationService.getCurrentRole();
-	    int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
-	
-	    return BaseResponseFactory.create(miDashboardService.getLatestData(cNo));
-	}
-	 */
-
 	@ApiOrder(3)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
@@ -104,14 +86,16 @@ public class MiDashboardController {
 
 	@ApiOrder(4)
 	@Parameters({
-			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
+			@Parameter(name = "date", description = "조회할 년월", example = "202401")
 	})
 	@Operation(summary = "대시보드 차트 데이터 조회", description = "대시보드 차트 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<Boolean> getChart(
-			@PathVariable("companyNo") Integer companyNo) {
-		return BaseResponseFactory.create(miDashboardService.getChart(companyNo));
+			@PathVariable("companyNo") Integer companyNo,
+			@RequestParam("date") String date) {
+		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date));
 	}
 }

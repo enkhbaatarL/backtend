@@ -28,8 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ExcelParsedUtil {
-    private static final int MAX_CONSECUTIVE_EMPTY_ROWS = 5; // 연속된 빈 행의 최대 개수
-
     /**
      * 엑셀 파일 생성
      * @param file
@@ -100,13 +98,16 @@ public class ExcelParsedUtil {
     public static List<String> extractExcelHeader(Sheet sheet, int headerRowIndex) {
         List<String> headers = new ArrayList<>();
         Iterator<Row> rowIterator = sheet.iterator();
-        int currentRow = 0;
+
+        //TODO: 비어있는 행은 감지 못함(수정 필요)
 
         // 헤더 행까지 이동
         Row headerRow = null;
-        while (rowIterator.hasNext() && currentRow <= headerRowIndex) {
+        while (rowIterator.hasNext()) {
             headerRow = rowIterator.next();
-            currentRow++;
+            if(headerRow.getRowNum() >= headerRowIndex) {
+                break;
+            }
         }
 
         if (headerRow == null) {
@@ -114,7 +115,7 @@ public class ExcelParsedUtil {
         }
 
         for (Cell cell : headerRow) {
-            String value = cell.getStringCellValue() != null ? cell.getStringCellValue().trim() : "";
+            String value = cell.getStringCellValue() != null ? cell.getStringCellValue().trim() : null;
             headers.add(value);
         }
         return headers;

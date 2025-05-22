@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name = "tcm_michrtprdcsetm")
-@Comment("TCM _MI차트예측설정기본")
+@Comment("TCM_MI차트예측설정기본")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChartPredictSetting extends BaseEntity {
 
