@@ -68,6 +68,15 @@ public class AdminObjectStorageService {
         }
     }
 
+    public S3Object getObject(String bucketName, String fileName) {
+        return objectStorageClient.getObject(bucketName, fileName);
+    }
+
+    public S3ObjectInputStream getObjectContent(String bucketName, String fileName) {
+        S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
+        return s3Object != null ? s3Object.getObjectContent() : null;
+    }
+
     /**
     * 파일을 업로드 한다.
     *

@@ -157,7 +157,7 @@ public class AdminGoodsService {
     }
 
     /**
-    * 상품을 수정한다.
+    * 상품을 수정한다. -> 2025/05/21 영선님과 협의 후 관리자만 가능하게 수정
     *
     * @param goodsNo 상품 번호
     * @param GoodsUpdateReq 상품 데이터

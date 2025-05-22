@@ -3,16 +3,28 @@ package com.sk.domain.admin.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.Normalizer;
 
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
@@ -221,44 +233,42 @@ public class AdminFileService {
     * 1개 이상 파일을 다운로드 한다.
     *
     * @param fileNoList 파일번호목록
-    * @return 
+    * @return byte[] 
     */
     public byte[] downloadFiles(List<Long> fileNoList) {
-        // fileNoList.forEach(System.out::println);
-        System.out.println(" ===> Download1: " + fileNoList);
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFileNoList(fileNoList);
-        if (uploadedFiles.size() == 0) {
+        if (uploadedFiles.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %s", fileNoList));
         }
 
-        uploadedFiles.forEach(file -> {
-            try {
-                System.out.println(" ===> Download2: " + file.getFileNo());
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ZipOutputStream zos = new ZipOutputStream(baos)) {
 
-                // String bucketName = getBucketName(file.getStoragePathNm());
-                // String fileName = getFileName(file.getStoragePathNm());
+            for (UploadedFile f : uploadedFiles) {
+                String bucketName = getBucketName(f.getStoragePathNm());
+                String filePath = getFileName(f.getStoragePathNm());
+                String fileName = f.getOriginalFileNm();
 
-                // byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
-            } catch (Exception e) {
-                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+                // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
+                try (S3ObjectInputStream s3is = adminObjectStorageService.getObjectContent(bucketName, filePath)) {
+                    if (s3is == null)
+                        continue;
+
+                    zos.putNextEntry(new ZipEntry(fileName));
+                    byte[] buffer = new byte[4096];
+                    int len;
+                    while ((len = s3is.read(buffer)) != -1) {
+                        zos.write(buffer, 0, len);
+                    }
+                    zos.closeEntry();
+                }
             }
-        });
-        // UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-        // .orElseThrow(
-        // () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+            zos.finish();
 
-        // try {
-        // String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-        // String fileName = getFileName(uploadedFile.getStoragePathNm());
-
-        // byte[] fileData = adminObjectStorageService.downloadFile(bucketName, fileName);
-
-        // return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
-        // } catch (Exception e) {
-        // throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
-        // }
-
-        return null;
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+        }
     }
 
     /**
