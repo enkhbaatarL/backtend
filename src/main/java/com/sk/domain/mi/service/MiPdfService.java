@@ -6,12 +6,13 @@ import com.sk.common.exception.SystemErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
-import com.sk.domain.admin.service.AdminObjectStorageService;
 import com.sk.domain.mi.dto.response.PdfMetadataRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
+import com.sk.domain.shared.service.ObjectStorageService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,7 +29,7 @@ import java.awt.image.BufferedImage;
 public class MiPdfService {
 
     private final UploadedFileRepository uploadedFileRepository;
-    private final AdminObjectStorageService adminObjectStorageService;
+    private final ObjectStorageService objectStorageService;
 
     /**
      * 파일 메타데이터를 반환한다.
@@ -39,7 +40,8 @@ public class MiPdfService {
     public PdfMetadataRes getPdfFileMetadata(Integer fileNo) {
 
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo.longValue())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
 
         if (!Extension.PDF.getCode().equalsIgnoreCase(uploadedFile.getFileExtNm())) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The fileNo is not a PDF file. fileNo: %s".formatted(fileNo));
@@ -59,7 +61,8 @@ public class MiPdfService {
     public byte[] getImagePageFromPdf(Integer fileNo, int page, User user) {
 
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo.longValue())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
 
         if (page > uploadedFile.getFilePageCnt()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The page is out of range. fileNo: %s, page: %s".formatted(fileNo, page));
@@ -70,7 +73,8 @@ public class MiPdfService {
         }
 
         if (!uploadedFile.getIsImageConversionCompleted()) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The PDF image conversion has not yet been completed. fileNo: %s".formatted(fileNo));
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
+                    "The PDF image conversion has not yet been completed. fileNo: %s".formatted(fileNo));
         }
 
         try {
@@ -82,10 +86,11 @@ public class MiPdfService {
             String imageName = StringUtils.concat(StringUtil.formatPageNumber(page), ".", Extension.JPEG.getCode());
             String imagePath = StringUtils.concat(prefix, "/", imageName);
 
-            byte[] bytes = adminObjectStorageService.downloadFile(bucket, imagePath);
+            byte[] bytes = objectStorageService.downloadFile(bucket, imagePath);
             BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
 
-            String waterMark = StringUtil.joinPoundSignNonNull(user.getUserLoginId(), user.getJobGradeNm(), user.getDepartmentNm(), user.getUserNm(), DateUtil.currentYmdHyphen());
+            String waterMark = StringUtil.joinPoundSignNonNull(user.getUserLoginId(), user.getJobGradeNm(), user.getDepartmentNm(), user.getUserNm(),
+                    DateUtil.currentYmdHyphen());
             BufferedImage addTextWatermark = PdfUtil.addTextWatermarkRGB(bufferedImage, waterMark);
             BufferedImage result = PdfUtil.resize(addTextWatermark, 0.75f);
 

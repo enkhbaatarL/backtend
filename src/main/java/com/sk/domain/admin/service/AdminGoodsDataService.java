@@ -63,6 +63,7 @@ import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.FileService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +84,7 @@ public class AdminGoodsDataService {
     private final CustomerCompanyProviderMappingRepository customerCompanyProviderMappingRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
     private final ComponentInfoRepository componentInfoRepository;
-    private final AdminFileService adminFileService;
+    private final FileService fileService;
     private final ExcelService excelService;
     private final UnitConvertRepository unitConvertRepository;
     private final GoodsDataUnitConvertRepository goodsDataUnitConvertRepository;
@@ -360,7 +361,7 @@ public class AdminGoodsDataService {
                                         componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
                                         componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
 
-                adminFileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
+                fileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
                         FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
 
                 /**
@@ -396,13 +397,13 @@ public class AdminGoodsDataService {
 
             for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
 
-                adminFileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                fileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
 
                 goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
 
-                UploadedFile uploadedFile = adminFileService.getFile(unstructuredData.fileNo());
+                UploadedFile uploadedFile = fileService.getFile(unstructuredData.fileNo());
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
@@ -529,7 +530,7 @@ public class AdminGoodsDataService {
         // 정형 데이타 수정
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
-                List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
                         .stream()
                         .map(file -> file.getFileNo())
                         .toList();
@@ -543,7 +544,7 @@ public class AdminGoodsDataService {
                 Set<Long> filesToAdd = new HashSet<>(newFileSet);
                 filesToAdd.removeAll(oldFileSet);
                 for (Long fileNo : filesToAdd) {
-                    adminFileService.updateFile(
+                    fileService.updateFile(
                             fileNo,
                             goodsData.getGoodsDataNo(),
                             FileRelationshipObjectSeparateCode.GDATS.getCode(),
@@ -593,7 +594,7 @@ public class AdminGoodsDataService {
         if (dto.unstructuredDataList() != null) {
             List<String> fileNameList = new ArrayList<>();
 
-            List<Long> oldFileNos = adminFileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
+            List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                     .stream()
                     .map(file -> file.getFileNo())
                     .toList();
@@ -608,7 +609,7 @@ public class AdminGoodsDataService {
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-                adminFileService.deleteFile(fileNo);
+                fileService.deleteFile(fileNo);
 
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
                         goodsData.getGoodsDataNo(),
@@ -619,7 +620,7 @@ public class AdminGoodsDataService {
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-                adminFileService.updateFile(
+                fileService.updateFile(
                         fileNo,
                         goodsData.getGoodsDataNo(),
                         FileRelationshipObjectSeparateCode.GUDAT.getCode(),
@@ -633,7 +634,7 @@ public class AdminGoodsDataService {
                                 GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
 
-                UploadedFile uploadedFile = adminFileService.getFile(fileNo);
+                UploadedFile uploadedFile = fileService.getFile(fileNo);
                 fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
@@ -680,7 +681,7 @@ public class AdminGoodsDataService {
 
         excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt());
 
-        FileUploadRes fileUploadRes = adminFileService.uploadFile(companyCd, role, file, isPublic);
+        FileUploadRes fileUploadRes = fileService.uploadFile(companyCd, role, file, isPublic);
 
         return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
                 fileUploadRes.fileSize(), fileUploadRes.fileUrl());

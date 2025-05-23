@@ -43,11 +43,11 @@ import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
-import com.sk.domain.admin.service.AdminFileService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminBulletinBoardController {
     private final AuthorizationService authorizationService;
     private final AdminBulletinBoardService adminBulletinBoardService;
-    private final AdminFileService adminFileService;
+    private final FileService fileService;
     private final CustomerCompanyRepository customerCompanyRepository;
 
     /*******************************************************************
@@ -205,27 +205,7 @@ public class AdminBulletinBoardController {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        return BaseResponseFactory.create(adminFileService.uploadFile(companyCd, role, file, true));
-    }
-
-    @ApiOrder(8)
-    @Operation(summary = "공지사항 첨부 파일 다운로드", description = "공지사항 첨부 파일을 다운로드합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping("/notice/download-file/{fileNo}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
-    public ResponseEntity<byte[]> downloadFile(
-            @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) throws UnsupportedEncodingException {
-
-        FileDownloadRes fileDownloadRes = adminFileService.downloadFile(fileNo);
-
-        String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString());
-
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        httpHeaders.setContentLength(fileDownloadRes.fileData().length);
-        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
-
-        return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
+        return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, true));
     }
 
     @ApiOrder(9)

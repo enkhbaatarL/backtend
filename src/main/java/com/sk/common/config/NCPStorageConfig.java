@@ -33,5 +33,4 @@ public class NCPStorageConfig {
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
                 .build();
     }
-
 }
