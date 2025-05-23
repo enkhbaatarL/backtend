@@ -47,7 +47,7 @@ public class AdminSystemController {
     }
 
     @ApiOrder(2)
-    @Operation(summary = "클라이언트 접속 정보 등록 API", description = "클라이언트 접송 정보를 등록합니다.")
+    @Operation(summary = "API Key 등록 API", description = "API Key를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/client-access")
     @RequiredPermission(roles = {Role.ADMIN})
@@ -61,7 +61,7 @@ public class AdminSystemController {
     @Parameters({
         @Parameter(name = "clientAccessRegNo", description = "클라이언트 접속 등록 번호"),
     })
-    @Operation(summary = "클라이언트 Secret-Key 재발급 API", description = "클라이언트 Secret-Key를 재발급합니다.")
+    @Operation(summary = "API Client-Secret 재발급 API", description = "클라이언트 Client-Secret을 재발급합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PatchMapping("/client-access/{clientAccessRegNo}")
     @RequiredPermission(roles = {Role.ADMIN})
@@ -75,7 +75,7 @@ public class AdminSystemController {
     @Parameters({
         @Parameter(name = "clientAccessRegNo", description = "클라이언트 접속 등록 번호"),
     })
-    @Operation(summary = "클라이언트 접근권한 삭제 API", description = "클라이언트 접근 권한을 삭제합니다.")
+    @Operation(summary = "API Key 삭제 API", description = "API Key를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @DeleteMapping("/client-access/{clientAccessRegNo}")
     @RequiredPermission(roles = {Role.ADMIN})
@@ -89,7 +89,7 @@ public class AdminSystemController {
     @Parameters({
         @Parameter(name = "clientAccessRegNo", description = "클라이언트 접속 등록 번호"),
     })
-    @Operation(summary = "클라이언트 Secret-Key(복호화) 조회 API", description = "복호화된 클라이언트 Secret-Key를 조회합니다.")
+    @Operation(summary = "Client-Secret(복호화) 조회 API", description = "복호화된 Client-Secret을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/client-access/client-access/{clientAccessRegNo}/reveal-secret")
     @RequiredPermission(roles = {Role.ADMIN})
