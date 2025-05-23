@@ -244,6 +244,8 @@ public class MiDataDetailService {
             personalizedMap
         );
 
+        // 메인차트와 기술적 지표 날짜 필터링
+
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }
 

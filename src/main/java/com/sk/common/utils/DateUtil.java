@@ -227,4 +227,15 @@ public final class DateUtil {
         }
     }
 
+    public static String minusDays(String dateStr, int days) {
+        if (dateStr == null || dateStr.isBlank()) {
+            return null;
+        }
+        LocalDate date = parseDate(dateStr);
+        if (date == null) {
+            return null;
+        }
+        return toYmd(date.minusDays(days));
+    }
+
 }
