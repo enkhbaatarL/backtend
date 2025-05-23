@@ -56,8 +56,8 @@ public final class ChartBundleFactory {
     public static Chart combineCharts(GoodsDataSourceDetail gds, boolean isCandle, List<Map<String, Object>> convertedData, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
         ChartType chartType = isCandle ? ChartType.CANDLE : ChartType.LINE;
 
-        String xAxis = targetColumns.get(IDX_DATE);
-        List<String> yAxisList = targetColumns.subList(1, targetColumns.size());
+        String xAxis = targetColumns.get(IDX_DATE).trim();
+        List<String> yAxisList = targetColumns.subList(1, targetColumns.size()).stream().map(String::trim).collect(Collectors.toList());
 
         List<String> timestamps = buildTimestamps(xAxis, convertedData);
         List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, gds.getTradeVolumeColumnNm(), isVisible);

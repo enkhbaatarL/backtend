@@ -13,10 +13,12 @@ import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
  * 차트 데이터를 생성하는 서비스
  * 데이터소스로부터 데이터를 조회하고 차트 형태로 가공한다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -55,7 +58,7 @@ public class ChartGenerationService {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
         List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).toList();
 
-        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex());
+        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 조회
@@ -175,13 +178,21 @@ public class ChartGenerationService {
      * 원시 데이터의 날짜 값을 LocalDate 타입으로 파싱하고, 정렬한다.
      */
     private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
-        return rawData.stream().map(row -> {
+        return rawData.stream()
+            .map(row -> {
+                log.info("{}", dateColumnKey);
                 Map<String, Object> copy = new HashMap<>(row);
-                if (row.containsKey(dateColumnKey)) {
-                    copy.put(dateColumnKey, DateUtil.parseDate(row.get(dateColumnKey)));
-                }
+                log.info("{}", copy);
+                Object raw = row.get(dateColumnKey);
+                log.info("{}", raw);
+                LocalDate parsed = DateUtil.parseDate(raw);
+                log.info("{}", parsed);
+                copy.put(dateColumnKey, parsed);
+                log.info("{}", copy);
                 return copy;
-            }).sorted(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateColumnKey))))
+            }).sorted(Comparator.comparing(
+                (Map<String, Object> r) -> (LocalDate) r.get(dateColumnKey),
+                Comparator.nullsLast(Comparator.naturalOrder())))
             .collect(Collectors.toList());
     }
 }
