@@ -9,14 +9,8 @@ public record DataCatalogRes(
         @Schema(description = "프로바이더 번호", example = "")
         int providerNo,
 
-        @Schema(description = "프로바이더 이름", example = "")
-        String providerNm,
-
         @Schema(description = "상품 번호", example = "")
         int goodsNo,
-
-        @Schema(description = "상품 이름", example = "")
-        String goodsNm,
 
         @Schema(description = "상품데이터번호", example = "") 
         int goodsDataNo,
@@ -24,11 +18,28 @@ public record DataCatalogRes(
         @Schema(description = "상품데이터명", example = "") 
         String goodsDataNm,
 
-        @Schema(description = "상품데이터설명", example = "") 
-        String goodsDataExpn,
+        @Schema(description = "상품데이터소스번호", example = "") 
+        int goodsDataSrcNo,
+
+        @Schema(description = "상품데이터소스명", example = "") 
+        String goodsDataSrcNm,
+
+        @Schema(description = "수치", example = "95.5") 
+        Double lastValue,
 
         @Schema(description = "상품데이터 수정 시간", example = "") 
         LocalDateTime modifyDt) {
 
+            public DataCatalogRes(int providerNo, int goodsNo, int goodsDataNo, String goodsDataNm, int goodsDataSrcNo, String goodsDataSrcNm, 
+            Double lastValue, LocalDateTime modifyDt) {
+                this.providerNo = providerNo;
+                this.goodsNo = goodsNo;
+                this.goodsDataNo = goodsDataNo;
+                this.goodsDataNm = goodsDataNm;
+                this.goodsDataSrcNo = goodsDataSrcNo;
+                this.goodsDataSrcNm = goodsDataSrcNm;
+                this.lastValue = lastValue;
+                this.modifyDt = modifyDt;
+            }
 }
 // @formatter:on
