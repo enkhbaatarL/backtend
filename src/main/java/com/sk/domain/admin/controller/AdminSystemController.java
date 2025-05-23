@@ -35,7 +35,7 @@ public class AdminSystemController {
         @Parameter(name = "page", description = "페이지 번호 (default: 1)"),
         @Parameter(name = "size", description = "페이지당 항목 수 (default: 10)"),
     })
-    @Operation(summary = "클라이언트 정보 정보 목록 조회 API (with pagination)", description = "클라이언트 접속 정보 목록을 조회합니다.")
+    @Operation(summary = "API 관리 목록 조회 API (with pagination)", description = "API 접속 정보 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/client-access")
     @RequiredPermission(roles = {Role.ADMIN})

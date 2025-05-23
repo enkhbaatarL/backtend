@@ -110,20 +110,29 @@ public final class DateUtil {
      * string 날짜를 LocalDate 타입으로 반환
      */
     public static LocalDate parseDate(Object dateObj) {
-        if (dateObj == null) {
-            return null;
+
+        if (dateObj == null) return null;
+        if (dateObj instanceof LocalDate ld) return ld;
+        if (dateObj instanceof LocalDateTime ldt) return ldt.toLocalDate();
+        if (dateObj instanceof Timestamp ts) return ts.toLocalDateTime().toLocalDate();
+
+        String s = dateObj.toString().trim();
+
+        // 1) yyyyMMdd → 2024-07-17 로 변환
+        if (s.matches("\\d{8}")) {
+            return LocalDate.parse(s, DateTimeFormatter.BASIC_ISO_DATE);
         }
-        if (dateObj instanceof LocalDate ld) {
-            return ld;
-        } else if (dateObj instanceof LocalDateTime ldt) {
-            return ldt.toLocalDate();
-        } else if (dateObj instanceof Timestamp ts) {
-            return ts.toLocalDateTime().toLocalDate();
-        } else {
-            String s = dateObj.toString();
-            String d = s.length() >= 10 ? s.substring(0, 10) : s;
-            return DateUtil.fromYmdHyphen(d);
+        // 2) yyyy-MM-dd 그대로
+        if (s.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return LocalDate.parse(s);
         }
+
+        // 3) yyyy-MM-dd[ T]HH:mm:ss[.SSS][XXX] 등 -> 앞 10글자만 잘라서 파싱
+        if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
+            return LocalDate.parse(s.substring(0, 10));
+        }
+
+        return null;
     }
 
     public static String toYmd(String dateTimeStr) {
@@ -139,8 +148,8 @@ public final class DateUtil {
             try {
                 // 기존 포맷 시도 (예: 2024-01-01 00:00:00)
                 String trimmed = dateTimeStr.length() > 19
-                        ? dateTimeStr.substring(0, 19)
-                        : dateTimeStr;
+                    ? dateTimeStr.substring(0, 19)
+                    : dateTimeStr;
                 LocalDateTime ldt = LocalDateTime.parse(trimmed, YYYY_MM_DD_HH_MM_SS);
                 return ldt.format(YYYYMMDD);
             } catch (DateTimeParseException e2) {
