@@ -1,14 +1,9 @@
 package com.sk.domain.mi.dto.response.bbs;
 
-import java.util.List;
-
-import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record MiNoticeDetailRes(
     @Schema(description = "게시물번호", example = "1") 
     Integer bulletinNo,
@@ -24,6 +19,15 @@ public record MiNoticeDetailRes(
     
     @Schema(description = "첨부파일 URL", example = "게시글 등록 시 이미지 첨부된 경우 노출") 
     String fileUrl) {
+
+        @Builder
+        public MiNoticeDetailRes(Integer bulletinNo, String bulletinCategoryName, String bulletinTitleNm, String bulletinCntt,String fileUrl) {
+            this.bulletinNo = bulletinNo;
+            this.bulletinCategoryName = bulletinCategoryName;
+            this.bulletinTitleNm = bulletinTitleNm;
+            this.bulletinCntt = bulletinCntt;
+            this.fileUrl = fileUrl;
+        }
 
         public static MiNoticeDetailRes of(int bulletinNo, String bulletinCategoryName, String bulletinTitleNm, String bulletinCntt, String fileUrl) {
             return MiNoticeDetailRes.builder()

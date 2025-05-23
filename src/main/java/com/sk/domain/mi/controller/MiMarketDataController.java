@@ -42,7 +42,8 @@ public class MiMarketDataController {
     @ApiOrder(1)
     @Operation(summary = "마켓 데이터 조회 API", description = "마켓 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "마켓 데이터 조회 성공")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+            Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     @GetMapping("/companies/{companyNo}/market-datas")
     public BaseResponse<List<MiMarketDataRes>> getMarketDatas(@PathVariable("companyNo") Integer companyNo,
             Authentication authentication) {
