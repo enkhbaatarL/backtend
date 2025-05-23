@@ -3,7 +3,6 @@ package com.sk.domain.shared.controller;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
@@ -30,7 +29,6 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.file.FileUpdateReq;
-import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.request.file.FileDownloadReq;
@@ -41,8 +39,6 @@ import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -121,7 +117,7 @@ public class FileController {
     @ApiOrder(4)
     @Operation(summary = "1개 이상 파일 zip 압축 다운로드", description = "1개 이상의 파일을 zip으로 압축하여 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/download")
+    @PostMapping("/download")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER})
     public ResponseEntity<byte[]> downloadFiles(
             @RequestParam(value = "prefix", required = true) String prefix,

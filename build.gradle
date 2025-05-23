@@ -111,7 +111,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-configuration-processor'
 
     // S3
-    implementation 'software.amazon.awssdk:s3:2.31.45'
     implementation 'com.amazonaws:aws-java-sdk-s3:1.11.238'
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
     implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
