@@ -20,7 +20,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Profile({"local", "tech", "dev"})
+@Profile({"local", "tech", "dev", "prod"})
 @Configuration
 @RequiredArgsConstructor
 public class SwaggerConfig {
