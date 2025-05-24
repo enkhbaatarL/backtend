@@ -5,7 +5,6 @@ import com.sk.domain.shared.repository.master.tif.custom.CustomClientAccessInfoR
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface ClientAccessInfoRepository extends JpaRepository<ClientAccessInfo, Long>, CustomClientAccessInfoRepository {
@@ -14,6 +13,6 @@ public interface ClientAccessInfoRepository extends JpaRepository<ClientAccessIn
     Optional<ClientAccessInfo> findByClientAccessRegNoAndIsDeletedFalse(Integer integer);
 
     @EntityGraph(attributePaths = {"customerCompany"})
-    Optional<ClientAccessInfo> findByClientCertId(String clientId);
+    Optional<ClientAccessInfo> findByClientCertIdAndIsDeletedFalse(String clientId);
 
 }

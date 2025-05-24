@@ -4,6 +4,8 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
+import com.sk.common.utils.ChartSliceUtil;
+import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
@@ -244,7 +246,11 @@ public class MiDataDetailService {
             personalizedMap
         );
 
-        return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
+        ChartBundleRes bundle = ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
+
+        // 차트 데이터 슬라이싱
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(determinedRange.getLeft()));
+
     }
 
     /**

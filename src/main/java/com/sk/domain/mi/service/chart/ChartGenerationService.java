@@ -56,20 +56,21 @@ public class ChartGenerationService {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
-        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).toList();
+        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
 
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
-        // 원시 데이터 조회
+        // 원시 데이터 : [조회]
         List<Map<String, Object>> rawData = getRows(gds, dateColumnName, determinedRange, isMainChart);
-        // 원시 데이터 정렬 및 날짜 변환
+
+        // 원시 데이터 : [정렬 및 날짜 변환]
         List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
 
-        // 원시 데이터 데이터 집계
+        // 원시 데이터 : [집계]
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
 
-        // 원시 데이터 단위 변환
+        // 원시 데이터 : [단위 변환]
         List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
 
         return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
@@ -166,11 +167,16 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, determinedRange.getLeft(), determinedRange.getRight());
+        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일부터 조회
+        String startDate = isMainChart ? DateUtil.minusDays(determinedRange.getLeft(), 180) : determinedRange.getLeft();
+
+        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, determinedRange.getRight());
+
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())
             .filter(s -> isMainChart)
             .map(s -> gds.getTableColumnListNm() + "," + s)
             .orElse(gds.getTableColumnListNm());
+
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, selectClause, whereClause, dateColumnName));
     }
 
@@ -180,15 +186,10 @@ public class ChartGenerationService {
     private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
         return rawData.stream()
             .map(row -> {
-                log.info("{}", dateColumnKey);
                 Map<String, Object> copy = new HashMap<>(row);
-                log.info("{}", copy);
                 Object raw = row.get(dateColumnKey);
-                log.info("{}", raw);
                 LocalDate parsed = DateUtil.parseDate(raw);
-                log.info("{}", parsed);
                 copy.put(dateColumnKey, parsed);
-                log.info("{}", copy);
                 return copy;
             }).sorted(Comparator.comparing(
                 (Map<String, Object> r) -> (LocalDate) r.get(dateColumnKey),
