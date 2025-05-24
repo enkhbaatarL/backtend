@@ -167,8 +167,8 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        // 2025-05-23 fix: ma120을 표현하기 위해 180일부터 조회
-        String startDate = DateUtil.minusDays(determinedRange.getLeft(), 180);
+        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일부터 조회
+        String startDate = isMainChart ? DateUtil.minusDays(determinedRange.getLeft(), 180) : determinedRange.getLeft();
 
         String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, determinedRange.getRight());
 
@@ -186,15 +186,10 @@ public class ChartGenerationService {
     private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
         return rawData.stream()
             .map(row -> {
-                log.info("{}", dateColumnKey);
                 Map<String, Object> copy = new HashMap<>(row);
-                log.info("{}", copy);
                 Object raw = row.get(dateColumnKey);
-                log.info("{}", raw);
                 LocalDate parsed = DateUtil.parseDate(raw);
-                log.info("{}", parsed);
                 copy.put(dateColumnKey, parsed);
-                log.info("{}", copy);
                 return copy;
             }).sorted(Comparator.comparing(
                 (Map<String, Object> r) -> (LocalDate) r.get(dateColumnKey),
