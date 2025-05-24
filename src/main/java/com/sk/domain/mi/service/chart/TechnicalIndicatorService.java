@@ -42,10 +42,10 @@ public class TechnicalIndicatorService {
      * 차트 데이터가 없거나 시계열 데이터가 비어있는 경우 빈 리스트를 반환한다.
      *
      * @param chart 기술적 지표를 생성할 차트 데이터
-     * @param personalizedMap 개인화 설정 맵
+     * @param finalizedIndicators 보여줄 보조지표 목록
      * @return 생성된 기술적 지표 목록
      */
-    public List<Indicator> generateIndicators(Chart chart, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public List<Indicator> generateIndicators(Chart chart, List<String> finalizedIndicators) {
 
         if (chart == null) {
             return Collections.emptyList();
@@ -58,8 +58,8 @@ public class TechnicalIndicatorService {
             return Collections.emptyList();
         }
 
-        Indicator maData = createMovingAverageData(timestamps, mainSeries, personalizedMap);
-        Indicator bbData = createBollingerBandData(timestamps, mainSeries, personalizedMap);
+        Indicator maData = createMovingAverageData(timestamps, mainSeries, finalizedIndicators);
+        Indicator bbData = createBollingerBandData(timestamps, mainSeries, finalizedIndicators);
 
         return List.of(maData, bbData);
     }
@@ -71,19 +71,16 @@ public class TechnicalIndicatorService {
      *
      * @param timestamps 시간 데이터 목록
      * @param series 시계열 데이터 목록
-     * @param personalizedMap 개인화 설정 맵
+     * @param finalizedIndicators 보여줄 보조지표 목록
      * @return 이동평균선 지표 데이터
      */
-    private Indicator createMovingAverageData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    private Indicator createMovingAverageData(List<String> timestamps, List<BigDecimal> series, List<String> finalizedIndicators) {
         List<BigDecimal> maShort = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_SHORT);
         List<BigDecimal> maMedium = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_MEDIUM);
         List<BigDecimal> maLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_LONG);
         List<BigDecimal> maExtraLong = unitConversionService.convertTimeSeriesToMovingAverage(series, PERIOD_EXTRA_LONG);
 
-        // Get personalized indicators using the PersonalizationService
-        List<String> personalizedIndicators = personalizationService.getPersonalizedIndicators(personalizedMap);
-
-        List<Series> movingAverageIndicator = ChartBundleFactory.createMovingAverageIndicator(maShort, maMedium, maLong, maExtraLong, personalizedIndicators);
+        List<Series> movingAverageIndicator = ChartBundleFactory.createMovingAverageIndicator(maShort, maMedium, maLong, maExtraLong, finalizedIndicators);
 
         return Indicator.of(IndicatorType.MOVING_AVERAGE, timestamps, movingAverageIndicator);
     }
@@ -95,16 +92,13 @@ public class TechnicalIndicatorService {
      *
      * @param timestamps 시간 데이터 목록
      * @param series 시계열 데이터 목록
-     * @param personalizedMap 개인화 설정 맵
+     * @param finalizedIndicators 보여줄 보조지표 목록
      * @return 볼린저 밴드 지표 데이터
      */
-    private Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    private Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series, List<String> finalizedIndicators) {
         List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, PERIOD_MEDIUM);
 
-        // Get personalized indicators using the PersonalizationService
-        List<String> personalizedIndicators = personalizationService.getPersonalizedIndicators(personalizedMap);
-
-        List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, personalizedIndicators);
+        List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, finalizedIndicators);
 
         return Indicator.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
     }

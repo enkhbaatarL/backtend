@@ -5,6 +5,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.MathUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.mi.conversion.UnitConversionService;
+import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataUnitConvert;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
@@ -31,7 +32,7 @@ public class ChartUnitConversionService {
     public static final UnitConvert IDENTITY;
 
     static {
-        IDENTITY = UnitConvert.of(BigDecimal.ONE);
+        IDENTITY = UnitConvert.ofDefault(BigDecimal.ONE);
     }
 
     private final UnitConversionService unitConversionService;
@@ -42,19 +43,18 @@ public class ChartUnitConversionService {
      * 상품-데이터-소스 번호를 기준으로 단위 변환 목록을 조회하고, 변환 가능한 단위 맵을 생성한다.
      *
      * @param gds 데이터소스 상세 정보
-     * @return 단위 변환 맵 (key: 변환타입#단위, value: 단위변환기본 객체)
+     * @return 단위 변환 맵 (key: 중분류#단위, value: 단위변환기본 객체)
      */
-    public Map<String, UnitConvert> getConvertUnitCdMap(GoodsDataSourceDetail gds) {
+    public Map<UnitCd, UnitConvert> getConvertUnitCdMap(GoodsDataSourceDetail gds) {
 
         // 단위 변환 목록 조회
         List<GoodsDataUnitConvert> unitConversions = goodsDataUnitConvertRepository.findByGoodsDataSourceDetailAndIsDeletedFalse(gds);
 
-        Map<String, UnitConvert> unitCdMap = unitConversions.stream().collect(
-            Collectors.toMap(uc -> StringUtil.joinPoundSignNonNull(uc.getUnitConvert().getConvertTargetDetailTypeNm(), uc.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert,
-                (v1, v2) -> v2)
+        Map<UnitCd, UnitConvert> unitCdMap = unitConversions.stream().collect(
+            Collectors.toMap(uc -> new UnitCd(uc.getUnitConvert().getConvertTargetDetailTypeNm(), uc.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert, (v1, v2) -> v2)
         );
 
-        unitCdMap.put(StringUtil.joinPoundSignNonNull(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()), IDENTITY);
+        unitCdMap.put(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()), IDENTITY);
 
         return unitCdMap;
 
@@ -172,9 +172,9 @@ public class ChartUnitConversionService {
         return result;
     }
 
-    public void validateUnitCd(Map<String, UnitConvert> unitConvertMap, String determinedUnitCd) {
-        if (!unitConvertMap.containsKey(determinedUnitCd)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitCd' cannot be applied to the current goods-data-source. unitCd: %s".formatted(determinedUnitCd));
+    public void validateUnitCd(Map<UnitCd, UnitConvert> unitConvertMap, UnitCd finalizedUnitCd) {
+        if (!unitConvertMap.containsKey(finalizedUnitCd)) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitCd' cannot be applied to the current goods-data-source. unitCd: %s".formatted(finalizedUnitCd.toString()));
         }
     }
 

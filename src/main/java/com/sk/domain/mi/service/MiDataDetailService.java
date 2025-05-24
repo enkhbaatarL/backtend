@@ -17,17 +17,17 @@ import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.chart.*;
-import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
+import com.sk.domain.mi.service.chart.dto.PersonalizeKey;
+import com.sk.domain.mi.service.chart.dto.RawDataQueryContext;
+import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
-import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
-import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
@@ -41,8 +41,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,8 +76,8 @@ public class MiDataDetailService {
     /**
      * 상품 데이터 정보를 조회합니다.
      *
-     * @param goodsNo        상품 번호
-     * @param goodsDataNo    상품 데이터 번호
+     * @param goodsNo     상품 번호
+     * @param goodsDataNo 상품 데이터 번호
      * @return 상품 데이터 응답
      */
     @Transactional
@@ -131,51 +129,60 @@ public class MiDataDetailService {
     /**
      * 차트 개인화를 설정합니다.
      *
-     * @param goodsNo               상품 번호
-     * @param gdNo                  상품 데이터 번호
-     * @param gdsNo                 상품 데이터소스 번호
-     * @param chartsPersonalizeReqs 차트 개인화 요청 데이터 리스트
+     * @param goodsNo     상품 번호
+     * @param gdNo        상품 데이터 번호
+     * @param gdsNo       상품 데이터소스 번호
+     * @param rawRequests 차트 개인화 요청 데이터 리스트
      * @return 개인화된 차트 응답 데이터 리스트
      */
     @Transactional
-    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsNo, Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> chartsPersonalizeReqs) {
+    public List<ChartsPersonalizeRes> putGoodsDataSourcesChartsPersonalize(Integer goodsNo, Integer gdNo, Integer gdsNo, List<ChartsPersonalizeReq> rawRequests) {
 
-        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+        String userId = authorizationService.getSubject();
 
-        List<ChartsPersonalizeReq> validReqs = ChartsPersonalizeReq.filterPersonalizeRequests(chartsPersonalizeReqs);
+        // 기본 검증
+        GoodsDataSourceDetail dataSource = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
-        List<PersonalizedChartSetting> existing = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, authorizationService.getSubject());
+        // 요청 정제
+        List<ChartsPersonalizeReq> requests = ChartsPersonalizeReq.filterPersonalizeRequests(rawRequests);
+        if (requests.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "No valid parameter values in the array.");
+        }
 
-        Function<ChartsPersonalizeReq, String> keyOfReq = req -> req.chartConditionCd().name() + ":" + req.chartConditionVal();
-        Function<PersonalizedChartSetting, String> keyOfEntity = ent -> ent.getChartSettingConditionCd().name() + ":" + ent.getChartSettingConditionVal();
+        // 사용자 개인화 현황 조회
+        List<PersonalizedChartSetting> currentSettings = personalizedChartSettingRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(dataSource, userId);
 
-        Map<String, PersonalizedChartSetting> existingMap = existing.stream()
-            .collect(Collectors.toMap(
-                keyOfEntity,
-                Function.identity(),
-                (v1, v2) -> v2));
 
-        Set<String> incomingKeys = validReqs.stream()
+        Function<ChartsPersonalizeReq, PersonalizeKey> keyOfReq = r -> new PersonalizeKey(r.chartConditionCd(), r.chartConditionVal());
+        Function<PersonalizedChartSetting, PersonalizeKey> keyOfEntity = e -> new PersonalizeKey(e.getChartSettingConditionCd(), e.getChartSettingConditionVal());
+
+        Map<PersonalizeKey, PersonalizedChartSetting> currentMap = currentSettings.stream().collect(Collectors.toMap(keyOfEntity, Function.identity()));
+
+        Set<PersonalizeKey> requestKeys = requests.stream()
             .map(keyOfReq)
             .collect(Collectors.toSet());
 
-        // 삭제 대상: 기존 키 중에 incomingKeys에 없는 것
-        existingMap.entrySet().stream()
-            .filter(e -> BooleanUtils.isFalse(incomingKeys.contains(e.getKey())))
-            .map(Map.Entry::getValue)
-            .forEach(BaseEntity::softDelete);
+        Set<PersonalizeKey> keysToRemove = new HashSet<>(currentMap.keySet());
+        keysToRemove.removeAll(requestKeys);
 
-        // 삽입 대상: incomingKeys 중에 existingMap에 없는 것
-        List<PersonalizedChartSetting> toInsert = validReqs.stream()
-            .filter(req -> BooleanUtils.isFalse(existingMap.containsKey(keyOfReq.apply(req))))
-            .map(req -> PersonalizedChartSetting.of(req, gds, authorizationService.getSubject()))
-            .toList();
+        Set<PersonalizeKey> keysToInsert = new HashSet<>(requestKeys);
+        keysToInsert.removeAll(currentMap.keySet());
 
-        if (BooleanUtils.isFalse(toInsert.isEmpty())) {
-            personalizedChartSettingRepository.saveAll(toInsert);
+        // soft-delete
+        keysToRemove.stream()
+            .map(currentMap::get)
+            .forEach(PersonalizedChartSetting::softDelete);
+
+        // insert
+        if (!keysToInsert.isEmpty()) {
+            List<PersonalizedChartSetting> inserts = requests.stream()
+                .filter(r -> keysToInsert.contains(keyOfReq.apply(r)))
+                .map(r -> PersonalizedChartSetting.of(r, dataSource, userId))
+                .toList();
+            personalizedChartSettingRepository.saveAll(inserts);
         }
 
-        return ChartsPersonalizeRes.ofList(validReqs);
+        return ChartsPersonalizeRes.ofList(requests);
 
     }
 
@@ -194,63 +201,158 @@ public class MiDataDetailService {
      * @return 생성된 차트 묶음 응답 데이터
      */
     public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
-
+        // 1. 데이터 소스 검증 및 유효성 검사
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+        validateChartParameters(gds, interval, range, startDate, endDate);
 
+        // 2. 단위 변환 및 개인화 설정 처리
+        ChartSettingsContext settingsContext = finalizedChartSettings(gds, interval, range, startDate, endDate, unitCd);
+
+        // 3. 차트 데이터 생성
+        ChartBundleRes bundle = generateChartBundle(gds, settingsContext);
+
+        // 4. 차트 데이터 슬라이싱 및 반환
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContext.finalizedRange().getLeft()));
+    }
+
+    /**
+     * 차트 파라미터의 유효성을 검증합니다.
+     *
+     * @param gds       데이터소스 상세 정보
+     * @param interval  인터벌
+     * @param range     범위
+     * @param startDate 시작일
+     * @param endDate   종료일
+     */
+    private void validateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate) {
+
+        if (interval == null || range == null) {
+            return;
+        }
+
+        // 인터벌이 데이터소스의 최소 인터벌보다 작은지 검증
         if (BooleanUtils.isFalse(interval.getPeriodUnitSeparateCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd()))) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "The 'interval' is greater than the minInterval of the goods-data-source. interval: %s, minInterval: %s".formatted(interval, gds.getPeriodUnitSeparateCd()));
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                "The 'interval' is greater than the minInterval of the goods-data-source. interval: %s, minInterval: %s".formatted(interval, gds.getPeriodUnitSeparateCd()));
         }
 
+        // 인터벌에 대해 범위가 유효한지 검증
         if (BooleanUtils.isFalse(interval.isAllowedRange(range, startDate, endDate))) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "The 'range' is not allowed in the 'interval'. interval: %s, range: %s".formatted(interval, range));
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                "The 'range' is not allowed in the 'interval'. interval: %s, range: %s".formatted(interval, range));
         }
+
+    }
+
+    /**
+     * 차트 설정 컨텍스트를 결정합니다.
+     * 개인화 설정과 요청 파라미터를 기반으로 차트 설정을 결정합니다.
+     *
+     * @param gds       데이터소스 상세 정보
+     * @param interval  인터벌
+     * @param range     범위
+     * @param startDate 시작일
+     * @param endDate   종료일
+     * @param unitCd    단위 코드
+     * @return 결정된 차트 설정 컨텍스트
+     */
+    private ChartSettingsContext finalizedChartSettings(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
 
         // 변환 가능한 단위 맵 조회 (GDS 기본 단위 포함)
-        Map<String, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
+        Map<UnitCd, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
 
-        // 개인화 설정 맵 조회
-        Map<ChartSettingConditionCd, List<String>> personalizedMap = personalizationService.getConvertPersonalizedMap(gds, authorizationService.getSubject());
+        PersonalizationService.Preferences resolve = personalizationService.resolve(gds, authorizationService.getCurrentRole(), authorizationService.getSubject());
 
-        Pair<String, String> determinedRange = personalizationService.getPsRangeOrDefault(personalizedMap, range, startDate, endDate);
-        Interval determinedInterval = personalizationService.getPsIntervalOrDefault(personalizedMap, interval);
-        String determinedUnitCd = personalizationService.getPsUnitCdOrDefault(personalizedMap, unitCd, ChartUnitConversionService.generateDefaultUnitCd(gds));
-        ChartType determinedChartType = personalizationService.getPsChartTypeOrDefault(personalizedMap);
+        Interval finalizedInterval = Optional.ofNullable(interval) // req
+            .or(resolve::interval) // personalize
+            .orElse(Interval.ONE_DAY); // default
+
+        Pair<String, String> finalizedRange = Optional.ofNullable(range) // req
+            .map(r -> toPair(r, startDate, endDate)) // req
+            .or(resolve::periodDates) // personalize
+            .or(() -> resolve.range().map(DateUtil::getDateRange)) // personalize
+            .orElse(DateUtil.getDateRange(Range.ONE_YEAR)); // default
+
+        UnitCd finalizedUnitCd = Optional.ofNullable(unitCd)
+            .map(UnitCd::parse)
+            .or(resolve::unitCd)
+            .orElse(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()));
+
+        ChartType finalizedChartType = resolve.chartType()
+            .orElse(ChartType.LINE);
+
+        List<String> finalizedIndicators = resolve.indicators();
+
+        List<Integer> finalizedCompIds = resolve.compDataSourceIds();
 
         // 결정된 단위코드 유효성 검증
-        chartUnitConversionService.validateUnitCd(unitCdMap, determinedUnitCd);
+        chartUnitConversionService.validateUnitCd(unitCdMap, finalizedUnitCd);
 
-        // 메타데이터 생성
-        ChartMetadata metadata = ChartMetadata.of(gds.getGoodsDataSourceCurrencyUnitNm(), determinedChartType, determinedUnitCd, unitCdMap.keySet(), determinedInterval);
+        return new ChartSettingsContext(
+            unitCdMap,
+            finalizedInterval,
+            finalizedRange,
+            finalizedUnitCd,
+            finalizedChartType,
+            finalizedIndicators,
+            finalizedCompIds
+        );
+    }
 
-        // 메인 차트 생성
+    private static Pair<String, String> toPair(Range range, LocalDate from, LocalDate to) {
+        if (range == Range.CUSTOM) {
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("CUSTOM 범위엔 startDate·endDate 둘 다 필요해!");
+            }
+            return Pair.of(DateUtil.toYmd(from), DateUtil.toYmd(to));
+        }
+        return DateUtil.getDateRange(range);
+    }
+
+    /**
+     * 차트 번들을 생성합니다.
+     * 메타데이터, 메인 차트, 기술적 지표, 비교 차트를 생성하여 번들로 묶습니다.
+     *
+     * @param gds             데이터소스 상세 정보
+     * @param settingsContext 차트 설정 컨텍스트
+     * @return 생성된 차트 번들
+     */
+    private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext settingsContext) {
+
+        // [metadata] 생성
+        ChartMetadata metadata = ChartMetadata.of(
+            gds.getGoodsDataSourceCurrencyUnitNm(),
+            settingsContext.finalizedChartType(),
+            settingsContext.finalizedUnitCd(),
+            settingsContext.unitCdMap().keySet(),
+            settingsContext.finalizedInterval()
+        );
+
+        // [mainChart] 생성
         Chart mainChart = chartGenerationService.generateChartData(
             gds,
-            determinedRange,
-            determinedInterval,
-            unitCdMap.get(determinedUnitCd),
+            settingsContext.finalizedRange(),
+            settingsContext.finalizedInterval(),
+            settingsContext.unitCdMap().get(settingsContext.finalizedUnitCd()),
             Boolean.TRUE, // 메인 차트는 항상 visible 상태
             Boolean.TRUE
         );
 
-        // 기술적 지표 생성
+        // [indicators] 생성
         List<Indicator> indicators = technicalIndicatorService.generateIndicators(
             mainChart,
-            personalizedMap
+            settingsContext.finalizedIndicators()
         );
 
-        // 비교 차트 생성
+        // [comparisonCharts] 생성
         List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
             gds,
-            determinedRange,
-            determinedInterval,
-            personalizedMap
+            settingsContext.finalizedRange(),
+            settingsContext.finalizedInterval(),
+            settingsContext.finalizedCompIds()
         );
 
-        ChartBundleRes bundle = ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
-
-        // 차트 데이터 슬라이싱
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(determinedRange.getLeft()));
-
+        return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }
 
     /**
@@ -412,16 +514,6 @@ public class MiDataDetailService {
                 ProviderDataColumn::getDataColumnExpn,
                 (existing, replacement) -> existing // 중복 키 발생 시 기존 값 유지
             ));
-    }
-
-    /**
-     * 원천 데이터 쿼리 컨텍스트 정보를 담는 record.
-     */
-    private record RawDataQueryContext(
-        Map<String, String> columnExpressions,
-        String dateColumn,
-        String whereClause
-    ) {
     }
 
 }
