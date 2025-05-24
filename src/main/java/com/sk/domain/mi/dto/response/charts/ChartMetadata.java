@@ -1,11 +1,13 @@
 package com.sk.domain.mi.dto.response.charts;
 
+import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Builder
 public record ChartMetadata(
@@ -27,13 +29,13 @@ public record ChartMetadata(
 
 ) {
 
-    public static ChartMetadata of(String currency, ChartType chartType, String unitConversionCd, Set<String> changeable, Interval interval) {
+    public static ChartMetadata of(String currency, ChartType chartType, UnitCd unitConversionCd, Set<UnitCd> changeable, Interval interval) {
         return ChartMetadata.builder()
             .currency(currency)
             .initialChartType(chartType)
-            .currentUnitCd(unitConversionCd)
+            .currentUnitCd(unitConversionCd.toString())
             .currentInterval(interval.getCode())
-            .changeableUnitCd(changeable)
+            .changeableUnitCd(changeable.stream().map(UnitCd::toString).collect(Collectors.toSet()))
             .build();
     }
 

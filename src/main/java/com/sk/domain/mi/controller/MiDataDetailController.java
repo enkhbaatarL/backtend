@@ -135,10 +135,10 @@ public class MiDataDetailController {
             개인화 차트 조건 타입과 허용 값 정의 <br>
              - RANGE: 차트 범위(1W, 1M, 3M, 6M, 1Y, 2Y) <br>
              - INTERVAL: 차트 주기(1D, 1W, 2W, 1M, 3M, 6M, 1Y) <br>
-             - INDICATOR: 보조 지표(BB, MA_5, MA_20, MA_60, MA_120) / 복수 값 허용 <br>
+             - INDICATOR: 보조 지표(BB, MA_5, MA_20, MA_60, MA_120), visible 처리 / 복수 값 허용 <br>
              - CHART: 차트 유형(CANDLE, LINE) <br>
              - UNIT_CD: 변환 단위 코드 <br>
-             - COMP_DATA_SOURCE: 상품 데이터소스 번호 / 복수 값 허용 <br><br>
+             - COMP_DATA_SOURCE: 상품 데이터소스 번호, visible 처리 / 복수 값 허용 <br><br>
 
             차트 개인화 설정은 항상 <b>전체 설정 값</b>을 리스트로 전달해주어야 합니다. (요청 시, 개인화 리소스 전체 교체)
             """
@@ -194,12 +194,10 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestParam(value = "interval", required = false, defaultValue = "1D") Interval interval,
-        @RequestParam(value = "range", required = false, defaultValue = "1Y") Range range,
-        @RequestParam(value = "startDate", required = false)
-        @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
-        @RequestParam(value = "endDate", required = false)
-        @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
+        @RequestParam(value = "interval", required = false) Interval interval,
+        @RequestParam(value = "range", required = false) Range range,
+        @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
+        @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
         @RequestParam(value = "unitCd", required = false) String unitCd
     ) {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd));
