@@ -29,11 +29,10 @@ public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataI
                 LEFT JOIN Goods g ON g = gdiu.id.goodsData.goods
                 LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
                 JOIN (
-                SELECT DISTINCT gdc.goodsData.goodsDataNo as goodsDataNo
-                FROM GoodsDataCategory gdc
-                WHERE gdc.isDeleted = false
-                AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
-            ) gud ON gud.goodsDataNo = gd.goodsDataNo
+                    SELECT DISTINCT gdsd.goodsData.goodsDataNo as goodsDataNo
+                    FROM GoodsDataSourceDetail gdsd
+                    WHERE gdsd.isDeleted = false
+                ) gud ON gud.goodsDataNo = gd.goodsDataNo
                 WHERE  gdiu.id.userLoginId = :userLoginId
                     AND gdiu.isDeleted = false
                     AND p.isDeleted = false

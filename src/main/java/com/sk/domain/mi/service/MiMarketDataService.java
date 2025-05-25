@@ -964,6 +964,11 @@ public class MiMarketDataService {
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     private Double getLastValue(String targetDbNm, String targetTableNm, String queryConditionCntt, String dateColumnName, String valueColumnName) {
+        if (StringUtils.hasText(targetDbNm) && StringUtils.hasText(targetTableNm) && StringUtils.hasText(queryConditionCntt)
+                && StringUtils.hasText(dateColumnName) && StringUtils.hasText(valueColumnName)) {
+            return 0.0;
+        }
+
         DataSourceContextHolder.setDataSourceKey(targetDbNm);
         try {
             String sql = String.format("""
