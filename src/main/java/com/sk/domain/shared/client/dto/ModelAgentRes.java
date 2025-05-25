@@ -52,8 +52,10 @@ public record ModelAgentRes(
             ) {
 
                 public record Chart(
-                    String date,
-                    Double price
+                    int order,
+                    String legend,
+                    List<String> date,
+                    List<Double> value
                 ) {
                 }
             }

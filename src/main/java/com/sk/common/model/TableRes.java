@@ -4,6 +4,7 @@ import java.util.List;
 
 public record TableRes(
 
+    String tableId,
     List<Column> headers,
     List<Row> rows
 
@@ -35,7 +36,11 @@ public record TableRes(
     }
 
     public static TableRes of(List<Column> headers, List<Row> rows) {
-        return new TableRes(headers, rows);
+        return new TableRes(null, headers, rows);
+    }
+
+    public static TableRes of(String tableId, List<Column> headers, List<Row> rows) {
+        return new TableRes(tableId, headers, rows);
     }
 
 }
