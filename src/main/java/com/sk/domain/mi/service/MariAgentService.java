@@ -214,78 +214,152 @@ public class MariAgentService {
 
             String response = """
                 {
-                    "output": {
-                        "messages": [
+                  "output": {
+                    "messages": [
+                      {
+                        "content": {
+                          "text": "## 📈 2024년 5월 주요 제품 판매 실적 분석\\n\\n안녕하세요! 2024년 5월 주요 제품들의 판매 실적을 분석한 결과입니다.\\n\\n아래 표는 각 제품별 판매량 및 전월 대비 증감률을 나타냅니다.\\n\\n| 제품명         | 카테고리 | 판매량 (개) | 전월 대비 증감률 (%) | 비고     |\\n|----------------|----------|-------------|--------------------|----------|\\n| 스마트워치 X   | 웨어러블 | 1,250       | +15.2              | 신모델 출시 |\\n| AI 스피커 Mini | 스마트홈 | 880         | +8.5               | 프로모션 진행 |\\n| 무선 이어폰 Z  | 오디오   | 2,130       | -2.1               | 경쟁 심화  |\\n| 4K 모니터 Pro  | 디스플레이| 670         | +22.0              | 수요 증가  |\\n\\n전반적으로 스마트워치 X와 4K 모니터 Pro의 판매 성장이 두드러지며, 무선 이어폰 Z는 경쟁 심화로 소폭 감소했습니다. AI 스피커 Mini는 프로모션 효과로 꾸준한 성장을 보이고 있습니다.\\n\\n다음은 '스마트워치 X'의 일별 판매량 추이 그래프입니다.",
+                          "charts": [
                             {
-                                "content": {
-                                    "text": "# 안녕하세요, Mari 에이전트입니다!\\n\\n오늘의 주요 정보를 요약해 드립니다.\\n\\n## 🌟 주요 업데이트\\n\\n- **새로운 기능**: '주요 질의문' 기능이 추가되었습니다. 이제 분과별로 자주 묻는 질문을 빠르게 확인할 수 있습니다.\\n- **성능 개선**: 채팅 응답 속도가 평균 15% 향상되었습니다.\\n\\n## 📊 최근 데이터 동향 (예시)\\n\\n아래 차트는 최근 2주간의 가상 지표 변화를 보여줍니다. 실제 데이터는 API를 통해 확인해주세요.\\n\\n*   항목 A: 꾸준한 상승세\\n*   항목 B: 변동성 증가\\n\\n더 자세한 내용은 [공식 문서](https://www.example.com/docs)를 참조하시거나, `도움말`이라고 입력하여 문의해주세요.\\n\\n```python\\n# 이것은 예시 코드 블록입니다.\\ndef greet():\\n    print(\\"Hello, Mari!\\")\\n```\\n\\n감사합니다!",
-                                    "charts":[
-                                        {"date": "2024-07-24", "price": 152.34},
-                                        {"date": "2024-07-25", "price": 155.12},
-                                        {"date": "2024-07-26", "price": 153.98},
-                                        {"date": "2024-07-27", "price": 157.05},
-                                        {"date": "2024-07-28", "price": 156.88},
-                                        {"date": "2024-07-29", "price": 160.42},
-                                        {"date": "2024-07-30", "price": 159.76},
-                                        {"date": "2024-07-31", "price": 162.15},
-                                        {"date": "2024-08-01", "price": 161.50},
-                                        {"date": "2024-08-02", "price": 163.88},
-                                        {"date": "2024-08-03", "price": 165.02},
-                                        {"date": "2024-08-04", "price": 164.30},
-                                        {"date": "2024-08-05", "price": 166.77},
-                                        {"date": "2024-08-06", "price": 168.10}
-                                    ]
-                                },
-                                "additional_kwargs": {
-                                    "refusal": null
-                                },
-                                "response_metadata": {
-                                    "token_usage": {
-                                        "completion_tokens": 81,
-                                        "prompt_tokens": 48,
-                                        "total_tokens": 129,
-                                        "completion_tokens_details": {
-                                            "accepted_prediction_tokens": 0,
-                                            "audio_tokens": 0,
-                                            "reasoning_tokens": 0,
-                                            "rejected_prediction_tokens": 0
-                                        },
-                                        "prompt_tokens_details": {
-                                            "audio_tokens": 0,
-                                            "cached_tokens": 0
-                                        }
-                                    },
-                                    "model_name": "gpt-4o-2024-08-06",
-                                    "system_fingerprint": "fp_ee1d74bde0",
-                                    "finish_reason": "stop",
-                                    "logprobs": null
-                                },
-                                "type": "ai",
-                                "name": null,
-                                "id": "run-14f316b3-4071-4cf3-8a6a-1021deb62985-0",
-                                "example": false,
-                                "tool_calls": [],
-                                "invalid_tool_calls": [],
-                                "usage_metadata": {
-                                    "input_tokens": 48,
-                                    "output_tokens": 81,
-                                    "total_tokens": 129,
-                                    "input_token_details": {
-                                        "audio": 0,
-                                        "cache_read": 0
-                                    },
-                                    "output_token_details": {
-                                        "audio": 0,
-                                        "reasoning": 0
-                                    }
-                                }
+                              "order": 1,
+                              "legend": "스마트워치 X 일별 판매량 (5월)",
+                              "date": [
+                                "2024-05-01", "2024-05-02", "2024-05-03", "2024-05-04", "2024-05-05",
+                                "2024-05-06", "2024-05-07", "2024-05-08", "2024-05-09", "2024-05-10",
+                                "2024-05-11", "2024-05-12", "2024-05-13", "2024-05-14", "2024-05-15",
+                                "2024-05-16", "2024-05-17", "2024-05-18", "2024-05-19", "2024-05-20",
+                                "2024-05-21", "2024-05-22", "2024-05-23", "2024-05-24", "2024-05-25",
+                                "2024-05-26", "2024-05-27", "2024-05-28", "2024-05-29", "2024-05-30",
+                                "2024-05-31"
+                              ],
+                              "value": [
+                                30.0, 32.0, 35.0, 33.0, 38.0, 40.0, 42.0, 45.0, 43.0, 48.0,
+                                50.0, 55.0, 52.0, 49.0, 45.0, 48.0, 53.0, 58.0, 60.0, 62.0,
+                                59.0, 55.0, 50.0, 48.0, 52.0, 57.0, 61.0, 65.0, 68.0, 70.0,
+                                66.0
+                              ]
                             }
-                        ]
-                    },
-                    "metadata": {
-                        "run_id": "f82e37a3-5ce7-46c2-b436-894ed7803848",
-                        "feedback_tokens": []
-                    }
+                          ]
+                        },
+                        "additional_kwargs": {
+                          "refusal": null
+                        },
+                        "response_metadata": {
+                          "token_usage": {
+                            "completion_tokens": 350,
+                            "prompt_tokens": 120,
+                            "total_tokens": 470,
+                            "completion_tokens_details": {
+                              "accepted_prediction_tokens": 340,
+                              "audio_tokens": 0,
+                              "reasoning_tokens": 10,
+                              "rejected_prediction_tokens": 0
+                            },
+                            "prompt_tokens_details": {
+                              "audio_tokens": 0,
+                              "cached_tokens": 50
+                            }
+                          },
+                          "model_name": "claude-3-opus-20240229",
+                          "system_fingerprint": "fp_abc123",
+                          "finish_reason": "stop_sequence",
+                          "logprobs": null
+                        },
+                        "type": "ai_response",
+                        "name": "ProductAnalysisBot",
+                        "id": "msg_01HXZYJ8K9N7M5G4F3E2D1C0B",
+                        "example": false,
+                        "tool_calls": [],
+                        "invalid_tool_calls": [],
+                        "usage_metadata": {
+                          "input_tokens": 120,
+                          "output_tokens": 350,
+                          "total_tokens": 470,
+                          "input_token_details": {
+                            "audio": 0,
+                            "cache_read": 50
+                          },
+                          "output_token_details": {
+                            "audio": 0,
+                            "reasoning": 10
+                          }
+                        }
+                      },
+                      {
+                        "content": {
+                          "text": "## 📊 웹사이트 트래픽 분석 (2024년 5월)\\n\\n2024년 5월 한 달간 저희 웹사이트의 트래픽 변화를 요약해 드립니다.\\n\\n주요 유입 경로별 세션 수는 다음과 같습니다.\\n\\n| 유입 경로     | 세션 수   | 전월 대비 (%) | 주요 키워드 (상위 2개) |\\n|---------------|-----------|---------------|------------------------|\\n| 직접 유입     | 15,200    | +5.8          | -                      |\\n| 자연 검색(SEO)| 28,500    | +12.3         | '스마트워치 추천', 'AI 스피커 가격' |\\n| 소셜 미디어   | 8,700     | -3.1          | (캠페인 종료)          |\\n| 추천(Referral)| 4,100     | +7.5          | 'IT뉴스사이트', '기술블로그' |\\n\\n자연 검색을 통한 유입이 크게 증가했으며, 소셜 미디어는 특정 캠페인 종료로 인해 감소했습니다. 전반적인 트래픽은 증가 추세입니다.\\n\\n아래는 일별 총 방문자 수 변화를 나타내는 차트입니다.",
+                          "charts": [
+                            {
+                              "order": 1,
+                              "legend": "웹사이트 일별 총 방문자 수 (5월)",
+                              "date": [
+                                "2024-05-01", "2024-05-02", "2024-05-03", "2024-05-04", "2024-05-05",
+                                "2024-05-06", "2024-05-07", "2024-05-08", "2024-05-09", "2024-05-10",
+                                "2024-05-11", "2024-05-12", "2024-05-13", "2024-05-14", "2024-05-15",
+                                "2024-05-16", "2024-05-17", "2024-05-18", "2024-05-19", "2024-05-20",
+                                "2024-05-21", "2024-05-22", "2024-05-23", "2024-05-24", "2024-05-25",
+                                "2024-05-26", "2024-05-27", "2024-05-28", "2024-05-29", "2024-05-30",
+                                "2024-05-31"
+                              ],
+                              "value": [
+                                1800.0, 1850.0, 1900.0, 1880.0, 1950.0, 2000.0, 2050.0, 2100.0, 2080.0, 2150.0,
+                                2200.0, 2250.0, 2220.0, 2180.0, 2100.0, 2150.0, 2230.0, 2300.0, 2350.0, 2380.0,
+                                2330.0, 2280.0, 2200.0, 2180.0, 2250.0, 2320.0, 2380.0, 2450.0, 2500.0, 2550.0,
+                                2510.0
+                              ]
+                            }
+                          ]
+                        },
+                        "additional_kwargs": {
+                          "refusal": null
+                        },
+                        "response_metadata": {
+                          "token_usage": {
+                            "completion_tokens": 400,
+                            "prompt_tokens": 100,
+                            "total_tokens": 500,
+                            "completion_tokens_details": {
+                              "accepted_prediction_tokens": 390,
+                              "audio_tokens": 0,
+                              "reasoning_tokens": 10,
+                              "rejected_prediction_tokens": 0
+                            },
+                            "prompt_tokens_details": {
+                              "audio_tokens": 0,
+                              "cached_tokens": 30
+                            }
+                          },
+                          "model_name": "claude-3-sonnet-20240307",
+                          "system_fingerprint": "fp_def456",
+                          "finish_reason": "max_tokens",
+                          "logprobs": null
+                        },
+                        "type": "ai_response",
+                        "name": "TrafficAnalysisBot",
+                        "id": "msg_01HXZYK2R7S6P5H4G3F2E1D0C",
+                        "example": false,
+                        "tool_calls": [],
+                        "invalid_tool_calls": [],
+                        "usage_metadata": {
+                          "input_tokens": 100,
+                          "output_tokens": 400,
+                          "total_tokens": 500,
+                          "input_token_details": {
+                            "audio": 0,
+                            "cache_read": 30
+                          },
+                          "output_token_details": {
+                            "audio": 0,
+                            "reasoning": 10
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "run_id": "run_xyz789abc123",
+                    "feedback_tokens": []
+                  }
                 }
                 """;
 

@@ -35,7 +35,7 @@ public class CustomRegisteredClientRepository implements RegisteredClientReposit
     @Override
     public RegisteredClient findByClientId(String clientId) {
 
-        ClientAccessInfo client = clientAccessInfoRepository.findByClientCertId(clientId)
+        ClientAccessInfo client = clientAccessInfoRepository.findByClientCertIdAndIsDeletedFalse(clientId)
             .orElseThrow(() -> new AuthenticationServiceException("clientId: %s".formatted(clientId)));
 
         return RegisteredClient.withId(clientId)
