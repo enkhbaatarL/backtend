@@ -230,6 +230,17 @@ public class MiDataDetailService {
             return;
         }
 
+        if (range == Range.CUSTOM) {
+            if (startDate == null || endDate == null) {
+                throw AppErrorException.of(
+                    ResultCode.Error.REQ_INVALID, "Both 'startDate' and 'endDate' must be provided for a 'CUSTOM' range.");
+            }
+            if (endDate.isBefore(startDate)) {
+                throw AppErrorException.of(
+                    ResultCode.Error.REQ_INVALID, "'endDate' must be after 'startDate'.");
+            }
+        }
+
         // 인터벌이 데이터소스의 최소 인터벌보다 작은지 검증
         if (BooleanUtils.isFalse(interval.getPeriodUnitSeparateCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd()))) {
             throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
@@ -238,7 +249,7 @@ public class MiDataDetailService {
 
         // 인터벌에 대해 범위가 유효한지 검증
         if (BooleanUtils.isFalse(interval.isAllowedRange(range, startDate, endDate))) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
                 "The 'range' is not allowed in the 'interval'. interval: %s, range: %s".formatted(interval, range));
         }
 
