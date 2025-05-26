@@ -96,7 +96,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // excel
-    implementation 'org.apache.poi:poi:5.3.0'
+    implementation 'org.apache.poi:poi:5.4.0'
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
     implementation 'com.github.pjfanning:poi-shared-strings:2.7.0'
     implementation 'com.github.pjfanning:excel-streaming-reader:5.0.3'

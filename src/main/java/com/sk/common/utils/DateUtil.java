@@ -99,7 +99,7 @@ public final class DateUtil {
      * 현재 날짜를 "yyyy-MM-dd HH:mm:ss"로 반환
      */
     public static String currentYmdHms() {
-        return LocalDate.now().format(YYYY_MM_DD_HH_MM_SS);
+        return LocalDateTime.now().format(YYYY_MM_DD_HH_MM_SS);
     }
 
     public static String currentYYYYMMDDHHMMSS() {
