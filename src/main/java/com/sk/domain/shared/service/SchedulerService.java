@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -21,6 +22,7 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.thymeleaf.util.StringUtils;
 
 import com.sk.common.enums.ResultCode;
@@ -247,7 +249,7 @@ public class SchedulerService {
      * @return Boolean
      */
     @Transactional
-    public Boolean processPdfToImages() {
+    public Boolean processPdfToImages(PdgImageReq pdgImageReq) {
 
         log.info("[PDF-TO-IMAGES] Start processing target PDFs...");
 
@@ -255,12 +257,14 @@ public class SchedulerService {
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findPdfToImagesTarget(Extension.PDF.getCode(),
                 FileRelationshipObjectSeparateCode.GUDAT.getCode());
 
-        // 테스트 todo 지울 것.
-        List<UploadedFile> testFiles = uploadedFiles.stream().filter(s -> s.getFileNo() == 28972).toList();
+        List<UploadedFile> filtered = uploadedFiles.stream()
+            .filter(file -> CollectionUtils.isEmpty(pdgImageReq.fileNos()) || pdgImageReq.fileNos().contains(file.getFileNo()))
+            .filter(file -> pdgImageReq.createdAfter() == null || !file.getCreateDt().toLocalDate().isBefore(pdgImageReq.createdAfter()))
+            .toList();
 
-        log.info("[PDF-TO-IMAGES] Total target PDF files: {}", testFiles.size());
+        log.info("[PDF-TO-IMAGES] Total target PDF files: {}", filtered.size());
 
-        testFiles.forEach(uploadedFile -> {
+        filtered.forEach(uploadedFile -> {
 
             String storagePathNm = uploadedFile.getStoragePathNm();
             Long fileNo = uploadedFile.getFileNo();
