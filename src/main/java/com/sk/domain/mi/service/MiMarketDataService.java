@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.checkerframework.checker.units.qual.g;
+import org.checkerframework.checker.units.qual.s;
 import org.hibernate.exception.SQLGrammarException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -904,7 +905,7 @@ public class MiMarketDataService {
                 """.formatted(select, where);
 
         String countSql = """
-                SELECT COUNT(*)
+                SELECT COUNT(*) AS totalCount
                 FROM midb.tam_custcpnygdsmappl  tc
                 LEFT JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tc.gds_no
                 LEFT JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
@@ -944,20 +945,31 @@ public class MiMarketDataService {
             String queryConditionCntt = (String) row[9];
             String tableColumnListNm = (String) row[10];
 
-            String[] cols = Arrays.stream(tableColumnListNm.split(","))
-                    .map(String::trim)
-                    .toArray(String[]::new);
+            Double lastValue = 0.0;
+            if (targetDbNm == null || targetTableNm == null || queryConditionCntt == null
+                    || tableColumnListNm == null) {
+                // 데이터가 없는 경우
+            } else {
+                String[] cols = Arrays.stream(tableColumnListNm.split(","))
+                        .map(String::trim)
+                        .toArray(String[]::new);
 
-            Double lastValue = getLastValue(
-                    targetDbNm, targetTableNm,
-                    queryConditionCntt, cols[MARKET_DATA_DATE_COLUMN_INDEX],
-                    cols[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX]);
+                if (cols.length < 2) {
+                    // 최소 2개의 컬럼이 필요 (날짜, 기본 데이터)
+                } else {
+                    lastValue = getLastValue(
+                            targetDbNm, targetTableNm,
+                            queryConditionCntt, cols[MARKET_DATA_DATE_COLUMN_INDEX],
+                            cols[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX]);
+                }
+            }
 
             return new DataCatalogRes(
                     providerNo, goodsNo, goodsDataNo,
                     goodsDataNm, goodsDataSrcNo, goodsDataSrcNm,
                     lastValue, modifyDt);
-        }).toList();
+        })
+                .toList();
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(result, pageable, () -> total));
     }
