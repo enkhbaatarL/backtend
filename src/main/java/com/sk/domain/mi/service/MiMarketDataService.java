@@ -1003,6 +1003,7 @@ public class MiMarketDataService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "사용자 정보를 찾을 수 없습니다."));
 
-        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
+        // return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
+        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser("SKGAS001@SKGAS.com", PageRequest.of(0, 5));
     }
 }

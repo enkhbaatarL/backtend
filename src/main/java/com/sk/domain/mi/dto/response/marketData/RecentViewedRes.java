@@ -15,9 +15,6 @@ public record RecentViewedRes(
         @Schema(description = "상품 번호", example = "")
         int goodsNo,
 
-        @Schema(description = "상품 이름", example = "")
-        String goodsNm,
-
         @Schema(description = "상품데이터번호", example = "") 
         int goodsDataNo,
 
@@ -27,8 +24,8 @@ public record RecentViewedRes(
         @Schema(description = "상품데이터설명", example = "") 
         String goodsDataExpn,
 
-        @Schema(description = "상품데이터 수정 시간", example = "") 
-        LocalDateTime modifyDt) {
+        @Schema(description = "최근 view 날짜", example = "") 
+        LocalDateTime recentViewedDt) {
 
 }
 // @formatter:on

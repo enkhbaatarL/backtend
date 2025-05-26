@@ -29,7 +29,7 @@ public class MiGoodsDataInquiryUserService {
     }
 
     public List<RecentViewedRes> getGoodsDataInquiryUser(String userLoginId, Pageable pageable) {
-        return goodsDataInquiryUserRepository.findById_UserLoginIdAndIsDeletedFalse(userLoginId, pageable);
+        return goodsDataInquiryUserRepository.findRecentViewdByUserLoginId(userLoginId, pageable);
     }
 
 }
