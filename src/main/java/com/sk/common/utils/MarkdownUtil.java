@@ -28,16 +28,24 @@ import java.util.regex.Pattern;
 @UtilityClass
 public final class MarkdownUtil {
 
-    /** 정확히 tableId HTML 주석 한 줄을 매칭. */
+    /**
+     * 정확히 tableId HTML 주석 한 줄을 매칭.
+     */
     private static final Pattern TABLE_ID_COMMENT_LINE = Pattern.compile("^\\s*<!--\\s*tableId:\\{?[0-9a-fA-F\\-]{36}}?\\s*-->\\s*$");
 
-    /** 주석 내부에서 UUID만 추출하기 위한 패턴. (대소문자 무시) */
+    /**
+     * 주석 내부에서 UUID만 추출하기 위한 패턴. (대소문자 무시)
+     */
     private static final Pattern TABLE_ID_UUID_EXTRACT = Pattern.compile("tableId:\\{?([0-9a-fA-F\\-]{36})}?", Pattern.CASE_INSENSITIVE);
 
-    /** 파이프(|)가 2개 이상 들어간 헤더 후보 행. */
+    /**
+     * 파이프(|)가 2개 이상 들어간 헤더 후보 행.
+     */
     private static final Pattern PIPE_ROW = Pattern.compile("^\\s*\\|.*\\|.*");
 
-    /** | --- | :---: | 같은 구분선 행. */
+    /**
+     * | --- | :---: | 같은 구분선 행.
+     */
     private static final Pattern DELIM_ROW = Pattern.compile("^\\s*\\|?\\s*:?-{3,}.*\\|.*");
 
     /**
@@ -85,8 +93,8 @@ public final class MarkdownUtil {
      */
     public static List<TableRes> parseTablesWithIds(final String markdown) {
         Parser parser = Parser.builder()
-            .extensions(List.of(TablesExtension.create()))
-            .build();
+                .extensions(List.of(TablesExtension.create()))
+                .build();
 
         Node document = parser.parse(markdown);
         TableCollector collector = new TableCollector();
@@ -110,58 +118,66 @@ public final class MarkdownUtil {
     /**
      * 문서 트리를 순회하며 테이블과 그 앞의 tableId 주석을 매핑한다.
      */
-    private static final class TableCollector extends AbstractVisitor {
-
+    private static class TableCollector extends AbstractVisitor {
         private final List<TableRes> tables = new ArrayList<>();
-        private String pendingId; // 가장 최근 발견한 tableId, 테이블 처리 후 초기화
+        private String pendingId;
 
         @Override
-        public void visit(HtmlBlock htmlBlock) { captureId(htmlBlock.getLiteral()); }
-        @Override
-        public void visit(HtmlInline htmlInline) { captureId(htmlInline.getLiteral()); }
-        @Override
-        public void visit(Paragraph paragraph) {
-            captureId(extractLiteral(paragraph));
-            visitChildren(paragraph);
-        }
-
-        private void captureId(String text) {
-            if (pendingId != null || text == null) return;
-            Matcher m = TABLE_ID_UUID_EXTRACT.matcher(text);
-            if (m.find()) pendingId = m.group(1);
+        public void visit(HtmlBlock block) {
+            extractId(block.getLiteral());
         }
 
         @Override
-        public void visit(CustomBlock customBlock) {
-            if (customBlock instanceof TableBlock table) {
+        public void visit(HtmlInline inline) {
+            extractId(inline.getLiteral());
+        }
+
+        @Override
+        public void visit(Paragraph p) {
+            extractId(literalOf(p));
+            visitChildren(p);
+        }
+
+        @Override
+        public void visit(CustomBlock custom) {
+            if (custom instanceof TableBlock table) {
                 String id = (pendingId != null) ? pendingId : UUID.randomUUID().toString();
                 tables.add(buildTable(table, id));
                 pendingId = null;
             } else {
-                visitChildren(customBlock);
+                visitChildren(custom);
             }
         }
 
-        private static TableRes buildTable(TableBlock tableBlock, String id) {
+        /* ---- helpers ---- */
+        private void extractId(String text) {
+            if (text == null || pendingId != null) return;
+            Matcher m = TABLE_ID_UUID_EXTRACT.matcher(text);
+            if (m.find()) pendingId = m.group(1);
+        }
+
+        private TableRes buildTable(TableBlock tb, String id) {
             List<TableRes.Column> headers = new ArrayList<>();
             List<TableRes.Row> rows = new ArrayList<>();
 
-            TableHead head = (TableHead) tableBlock.getFirstChild();
+            TableHead head = (TableHead) tb.getFirstChild();
             if (head != null) {
-                TableRow headerRow = (TableRow) head.getFirstChild();
-                for (Node cell = headerRow.getFirstChild(); cell != null; cell = cell.getNext()) {
-                    String txt = extractLiteral(cell);
-                    headers.add(TableRes.Column.of(txt, txt));
+                TableRow hdr = (TableRow) head.getFirstChild();
+                int colIdx = 1;
+                for (Node cell = hdr.getFirstChild(); cell != null; cell = cell.getNext(), colIdx++) {
+                    String txt = literalOf(cell);
+                    String field = "col_" + colIdx;
+                    headers.add(TableRes.Column.of(field, txt));
                 }
             }
 
-            TableBody body = (head != null) ? (TableBody) head.getNext() : null;
+            TableBody body = (TableBody) (head != null ? head.getNext() : null);
             if (body != null) {
                 for (Node rowNode = body.getFirstChild(); rowNode != null; rowNode = rowNode.getNext()) {
                     TableRow row = (TableRow) rowNode;
                     List<String> cells = new ArrayList<>();
                     for (Node cell = row.getFirstChild(); cell != null; cell = cell.getNext()) {
-                        cells.add(extractLiteral(cell));
+                        cells.add(literalOf(cell));
                     }
                     rows.add(TableRes.Row.of(cells));
                 }
@@ -169,12 +185,22 @@ public final class MarkdownUtil {
             return TableRes.of(id, headers, rows);
         }
 
-        private static String extractLiteral(Node node) {
+        /**
+         * 재귀 DFS 로 모든 {@link Text} 노드의 내용을 이어붙인다.
+         */
+        private String literalOf(Node node) {
             StringBuilder sb = new StringBuilder();
-            for (Node n = node.getFirstChild(); n != null; n = n.getNext()) {
-                if (n instanceof Text t) sb.append(t.getLiteral());
-            }
+            collect(node, sb);
             return sb.toString().trim();
+        }
+
+        private void collect(Node n, StringBuilder sb) {
+            if (n instanceof Text t) {
+                sb.append(t.getLiteral());
+            }
+            for (Node child = n.getFirstChild(); child != null; child = child.getNext()) {
+                collect(child, sb);
+            }
         }
     }
 
