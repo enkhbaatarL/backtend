@@ -60,19 +60,6 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
     List<CategoryDataRes> findLangCategoryDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.StructuredDataRes(
-            ccd.codeNm,
-            gdc.createDt
-            )
-            FROM GoodsDataCategory gdc
-            LEFT JOIN CommonCodeDetail ccd ON ccd.id.codeId = gdc.goodsDataCategoryCd
-            WHERE gdc.isDeleted = false
-                AND gdc.goodsDataManagementSeparateCd = 'GDATS'
-                AND gdc.goodsData.goodsDataNo = :goodsDataNo
-            """)
-    List<StructuredDataRes> findStructuredDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
-
-    @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.UnstructuredDataRes(
             gdc.goodsDataKeywordNm,
             uf.fileNo,

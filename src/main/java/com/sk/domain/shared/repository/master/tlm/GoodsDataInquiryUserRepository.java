@@ -13,38 +13,33 @@ import java.util.List;
 public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataInquiryUser, GoodsDataInquiryUserId> {
 
     @Query(value = """
-                SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
-                    p.providerNo,
-                    p.providerNm,
-                    g.goodsNo,
-                    g.goodsNm,
-                    gd.goodsDataNo,
-                    gd.goodsDataNm,
-                    gd.goodsDataExpn,
-                    gd.modifyDt
-                ),
-                FUNCTION('MAX',gdiu.createDt) as createDt
-                FROM GoodsDataInquiryUser gdiu
+            SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
+            p.providerNo,
+            p.providerNm,
+            g.goodsNo,
+            gd.goodsDataNo,
+            gd.goodsDataNm,
+            gd.goodsDataExpn,
+            MAX(gdiu.createDt)
+            )
+            FROM GoodsDataInquiryUser gdiu
                 LEFT JOIN GoodsData gd ON gd.goodsDataNo = gdiu.id.goodsData.goodsDataNo
                 LEFT JOIN Goods g ON g = gdiu.id.goodsData.goods
                 LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
                 JOIN (
-                SELECT DISTINCT gdc.goodsData.goodsDataNo as goodsDataNo
-                FROM GoodsDataCategory gdc
-                WHERE gdc.isDeleted = false
-                AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
-            ) gud ON gud.goodsDataNo = gd.goodsDataNo
-                WHERE  gdiu.id.userLoginId = :userLoginId
-                    AND gdiu.isDeleted = false
-                    AND p.isDeleted = false
-                    AND p.isUsed = true
-                    AND g.isDeleted = false
-                    AND g.isUsed = true
-                    AND gd.isDeleted = false
-                GROUP BY p.providerNo, g.goodsNo, gd.goodsDataNo
-                ORDER BY gdiu.createDt DESC
-            """, countQuery = """
-
+                SELECT DISTINCT gdsd.goodsData.goodsDataNo as goodsDataNo
+                FROM GoodsDataSourceDetail gdsd
+                WHERE gdsd.isDeleted = false
+                ) gud ON gud.goodsDataNo = gd.goodsDataNo
+            WHERE gdiu.id.userLoginId = :userLoginId
+                AND gdiu.isDeleted = false
+                AND p.isDeleted = false
+                AND p.isUsed = true
+                AND g.isDeleted = false
+                AND g.isUsed = true
+                AND gd.isDeleted = false
+            GROUP BY p.providerNo, p.providerNm, g.goodsNo, gd.goodsDataNo, gd.goodsDataNm, gd.goodsDataExpn
+            ORDER BY MAX(gdiu.createDt) DESC
             """)
-    List<RecentViewedRes> findById_UserLoginIdAndIsDeletedFalse(@Param("userLoginId") String userLoginId, Pageable pageable);
+    List<RecentViewedRes> findRecentViewdByUserLoginId(@Param("userLoginId") String userLoginId, Pageable pageable);
 }
