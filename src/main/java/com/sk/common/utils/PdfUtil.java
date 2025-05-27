@@ -134,12 +134,12 @@ public class PdfUtil {
 
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.18f));
         g.setColor(Color.RED);
-        g.setFont(new Font("Dialog", Font.BOLD, 20));
+        g.setFont(new Font("Dialog", Font.BOLD, 30));
         g.rotate(Math.toRadians(-30), w / 2.0, h / 2.0);
 
         FontMetrics fm = g.getFontMetrics();
-        int stepX = fm.stringWidth(text) + 100;
-        int stepY = fm.getHeight() + 80;
+        int stepX = fm.stringWidth(text) + 200;
+        int stepY = fm.getHeight() + 160;
 
         for (int x = -w; x < w * 2; x += stepX)
             for (int y = -h; y < h * 2; y += stepY)
