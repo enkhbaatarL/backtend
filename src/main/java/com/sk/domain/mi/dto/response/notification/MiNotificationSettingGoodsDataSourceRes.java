@@ -7,6 +7,8 @@ import lombok.Builder;
 
 public record MiNotificationSettingGoodsDataSourceRes(
 
+        @Schema(description = "상품번호", example = "1") Integer goodsNo,
+
         @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
         @Schema(description = "상품데이터명", example = "상품데이터명") String goodsDataNm,
@@ -19,8 +21,9 @@ public record MiNotificationSettingGoodsDataSourceRes(
 
     @Builder
     @QueryProjection
-    public MiNotificationSettingGoodsDataSourceRes(Integer goodsDataNo, String goodsDataNm, Integer goodsDataSourceNo,
-            String goodsDataSourceNm, Integer settingNotificationCount) {
+    public MiNotificationSettingGoodsDataSourceRes(Integer goodsNo, Integer goodsDataNo, String goodsDataNm,
+            Integer goodsDataSourceNo, String goodsDataSourceNm, Integer settingNotificationCount) {
+        this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
         this.goodsDataNm = goodsDataNm;
         this.goodsDataSourceNo = goodsDataSourceNo;
