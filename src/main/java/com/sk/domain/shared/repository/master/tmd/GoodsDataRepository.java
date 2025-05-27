@@ -205,53 +205,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """)
     List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
 
-    @Query(value = """
-            SELECT
-                tp.prvd_no AS providerNo,
-                tp.prvd_nm AS providerNm,
-                tg.gds_no AS goodsNo,
-                tg.gds_nm AS goodsNm,
-                tgd.gds_data_no AS goodsDataNo,
-                tgd.gds_data_nm AS goodsDataNm,
-                tgd.gds_data_expn AS goodsDataExpn,
-                tgd.mod_dtm AS modifyDt
-            FROM midb.tam_custcpnygdsmappl tc
-            LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
-            LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
-            LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-            WHERE tc.cust_cpny_no = :customerCompanyNo
-                AND tc.del_yn = 'N'
-                AND tc.use_yn = 'Y'
-                AND tg.del_yn = 'N'
-                AND tg.use_yn = 'Y'
-                AND tp.del_yn = 'N'
-                AND tp.use_yn = 'Y'
-                AND tgd.del_yn = 'N'
-                AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)
-            GROUP BY
-                tg.prvd_no,
-                tc.gds_no,
-                tgd.gds_data_no
-            ORDER BY
-                tgd.mod_dtm DESC
-            """, countQuery = """
-            SELECT COUNT(DISTINCT tg.prvd_no, tc.gds_no, tgd.gds_data_no)
-            FROM midb.tam_custcpnygdsmappl tc
-            LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
-            LEFT JOIN midb.tmd_prvdm tp ON tp.prvd_no = tg.prvd_no
-            LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-            WHERE tc.cust_cpny_no = :customerCompanyNo
-                AND tc.del_yn = 'N'
-                AND tc.use_yn = 'Y'
-                AND tg.del_yn = 'N'
-                AND tg.use_yn = 'Y'
-                AND tp.del_yn = 'N'
-                AND tp.use_yn = 'Y'
-                AND tgd.del_yn = 'N'
-                AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)
-            """, nativeQuery = true)
-    List<DataCatalogRes> findDataCatalog(@Param("customerCompanyNo") int customerCompanyNo, @Param("keyword") String keyword, Pageable pageable);
-
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 
     @Query(value = """
