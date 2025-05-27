@@ -11,7 +11,9 @@ import com.sk.domain.shared.repository.master.tlm.custom.CustomEmailAccessLogRep
 public interface EmailAccessLogRepository extends JpaRepository<EmailAccessLog, Integer>, CustomEmailAccessLogRepository {
     @EntityGraph(attributePaths = {
             "goodsCriticalValueSetting",
-            "goodsCriticalValueSetting.goodsDataSourceDetail"
+            "goodsCriticalValueSetting.goodsDataSourceDetail",
+            "goodsCriticalValueSetting.goodsDataSourceDetail.goodsData",
+            "goodsCriticalValueSetting.goodsDataSourceDetail.goodsData.goods"
     })
     Optional<EmailAccessLog> findByEmailSendSnAndEmailReceiveUserLoginIdAndIsDeletedFalse(Integer emailSendSn, String emailReceiveUserLoginId);
 }

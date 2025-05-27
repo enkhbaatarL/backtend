@@ -2,6 +2,7 @@ package com.sk.domain.shared.repository.master.tmd.custom;
 
 import static com.sk.domain.shared.entity.master.tmd.QGoodsCriticalValueSetting.goodsCriticalValueSetting;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
+import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
 
 import java.util.List;
@@ -29,13 +30,13 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<MiNotificationSettingRes> findNotificationSettingsByConditions(GoodsDataSourceDetail goodsDataSourceDetail, User user, int page,
+    public Page<MiNotificationSettingRes> findNotificationSettingsByConditions(GoodsDataSourceDetail dataSourceDetail, User user, int page,
             int size) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(goodsCriticalValueSetting.goodsDataSourceDetail.eq(goodsDataSourceDetail))
+        builder.and(goodsDataSourceDetail.eq(dataSourceDetail))
                 .and(goodsCriticalValueSetting.user.eq(user))
                 .and(goodsCriticalValueSetting.isDeleted.isFalse());
 
@@ -43,12 +44,17 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
                 new QMiNotificationSettingRes(
                         goodsCriticalValueSetting.userGoodsNotificationSettingNo,
                         goodsCriticalValueSetting.user.userNo,
-                        goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNo,
-                        goodsCriticalValueSetting.goodsDataSourceDetail.goodsDataSourceNm,
+                        goods.goodsNo,
+                        goodsData.goodsDataNo,
+                        goodsDataSourceDetail.goodsDataSourceNo,
+                        goodsDataSourceDetail.goodsDataSourceNm,
                         goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
                         goodsCriticalValueSetting.criticalValueSettingVol,
                         goodsCriticalValueSetting.criticalValueSettingUnitNm))
                 .from(goodsCriticalValueSetting)
+                .leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
+                .leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+                .leftJoin(goodsData.goods, goods)
                 .where(builder)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -58,6 +64,9 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
         JPQLQuery<Long> countQuery = queryFactory
                 .select(goodsCriticalValueSetting.count())
                 .from(goodsCriticalValueSetting)
+                .leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
+                .leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+                .leftJoin(goodsData.goods, goods)
                 .where(builder);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
@@ -79,6 +88,7 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
 
         List<MiNotificationSettingGoodsDataSourceRes> content = queryFactory
                 .select(new QMiNotificationSettingGoodsDataSourceRes(
+                        goods.goodsNo,
                         goodsData.goodsDataNo,
                         goodsData.goodsDataNm,
                         goodsDataSourceDetail.goodsDataSourceNo,
@@ -86,6 +96,7 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
                         goodsCriticalValueSetting.count().intValue()))
                 .from(goodsDataSourceDetail)
                 .join(goodsDataSourceDetail.goodsData, goodsData)
+                .leftJoin(goodsData.goods, goods)
                 .leftJoin(goodsCriticalValueSetting)
                 .on(goodsCriticalValueSetting.goodsDataSourceDetail.eq(goodsDataSourceDetail)
                         .and(goodsCriticalValueSetting.isDeleted.isFalse())
@@ -101,6 +112,7 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
                 .select(goodsDataSourceDetail.countDistinct())
                 .from(goodsDataSourceDetail)
                 .join(goodsDataSourceDetail.goodsData, goodsData)
+                .leftJoin(goodsData.goods, goods)
                 .leftJoin(goodsCriticalValueSetting)
                 .on(goodsCriticalValueSetting.goodsDataSourceDetail.eq(goodsDataSourceDetail)
                         .and(goodsCriticalValueSetting.isDeleted.isFalse())

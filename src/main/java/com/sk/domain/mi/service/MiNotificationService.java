@@ -136,7 +136,7 @@ public class MiNotificationService {
                         String.format("GoodsCriticalValueSetting not found: notificationSettingNo=%d",
                                 notificationSettingNo)));
 
-        return MiNotificationSettingRes.of(goodsCriticalValueSetting, goodsDataSourceDetail);
+        return MiNotificationSettingRes.ofDetail(goodsCriticalValueSetting, goodsDataSourceDetail, goodsDataSourceDetail.getGoodsData(), goodsDataSourceDetail.getGoodsData().getGoods());
     }
 
     /**

@@ -29,7 +29,11 @@ public record MiNotificationRes(
 
         @Schema(description = "정형데이터 명", example = "정형데이터 명") String goodsDataSourceNm,
 
-        @Schema(description = "상품데이터소스번호", example = "1") Integer goodsDataSourceNo
+        @Schema(description = "상품데이터소스번호", example = "1") Integer goodsDataSourceNo,
+
+        @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
+        
+        @Schema(description = "상품번호", example = "1") Integer goodsNo
 
         ) {
 
@@ -38,7 +42,7 @@ public record MiNotificationRes(
     public MiNotificationRes(Integer emailSendSn, String emailTitleNm, String emailCntt,
             LocalDateTime emailSendDtm, Boolean isEmailInquiry, NotiCrtvlSptCd notificationCriticalValueSeparateCd,
             BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm, String goodsDataSourceNm,
-            Integer goodsDataSourceNo) {
+            Integer goodsDataSourceNo, Integer goodsDataNo, Integer goodsNo) {
         this.emailSendSn = emailSendSn;
         this.emailTitleNm = emailTitleNm;
         this.emailCntt = emailCntt;
@@ -49,6 +53,8 @@ public record MiNotificationRes(
         this.criticalValueSettingUnitNm = criticalValueSettingUnitNm;
         this.goodsDataSourceNm = goodsDataSourceNm;
         this.goodsDataSourceNo = goodsDataSourceNo;
+        this.goodsDataNo = goodsDataNo;
+        this.goodsNo = goodsNo;
     }
 
     public static MiNotificationRes of(EmailAccessLog emailAccessLog) {
@@ -63,6 +69,8 @@ public record MiNotificationRes(
                 .criticalValueSettingUnitNm(emailAccessLog.getGoodsCriticalValueSetting().getCriticalValueSettingUnitNm())
                 .goodsDataSourceNm(emailAccessLog.getGoodsCriticalValueSetting().getGoodsDataSourceDetail().getGoodsDataSourceNm())
                 .goodsDataSourceNo(emailAccessLog.getGoodsCriticalValueSetting().getGoodsDataSourceDetail().getGoodsDataSourceNo())
+                .goodsDataNo(emailAccessLog.getGoodsCriticalValueSetting().getGoodsDataSourceDetail().getGoodsData().getGoodsDataNo())
+                .goodsNo(emailAccessLog.getGoodsCriticalValueSetting().getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo())
                 .build();
     }
 }

@@ -3,7 +3,9 @@ package com.sk.domain.mi.dto.response.notification;
 import java.math.BigDecimal;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
 
@@ -14,6 +16,10 @@ public record MiNotificationSettingRes(
         @Schema(description = "사용자상품알림설정번호", example = "1") Integer userGoodsNotificationSettingNo,
 
         @Schema(description = "사용자번호", example = "1") Integer userNo,
+
+        @Schema(description = "상품번호", example = "1") Integer goodsNo,
+
+        @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
         @Schema(description = "상품데이터소스번호", example = "1") Integer goodsDataSourceNo,
 
@@ -27,11 +33,13 @@ public record MiNotificationSettingRes(
 
     @Builder
     @QueryProjection
-    public MiNotificationSettingRes(Integer userGoodsNotificationSettingNo, Integer userNo, Integer goodsDataSourceNo,
-            String goodsDataSourceNm, NotiCrtvlSptCd notificationCriticalValueSeparateCd, BigDecimal criticalValueSettingVol,
-            String criticalValueSettingUnitNm) {
+    public MiNotificationSettingRes(Integer userGoodsNotificationSettingNo, Integer userNo, Integer goodsNo, Integer goodsDataNo,
+            Integer goodsDataSourceNo, String goodsDataSourceNm, NotiCrtvlSptCd notificationCriticalValueSeparateCd,
+            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
         this.userGoodsNotificationSettingNo = userGoodsNotificationSettingNo;
         this.userNo = userNo;
+        this.goodsNo = goodsNo;
+        this.goodsDataNo = goodsDataNo;
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
         this.notificationCriticalValueSeparateCd = notificationCriticalValueSeparateCd;
@@ -43,6 +51,20 @@ public record MiNotificationSettingRes(
         return MiNotificationSettingRes.builder()
                 .userGoodsNotificationSettingNo(dto.getUserGoodsNotificationSettingNo())
                 .userNo(dto.getUser().getUserNo())
+                .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
+                .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
+                .notificationCriticalValueSeparateCd(dto.getNotificationCriticalValueSeparateCd())
+                .criticalValueSettingVol(dto.getCriticalValueSettingVol())
+                .criticalValueSettingUnitNm(dto.getCriticalValueSettingUnitNm())
+                .build();
+    }
+
+    public static MiNotificationSettingRes ofDetail(GoodsCriticalValueSetting dto, GoodsDataSourceDetail goodsDataSourceDetail, GoodsData goodsData, Goods goods) {
+        return MiNotificationSettingRes.builder()
+                .userGoodsNotificationSettingNo(dto.getUserGoodsNotificationSettingNo())
+                .userNo(dto.getUser().getUserNo())
+                .goodsNo(goods.getGoodsNo())
+                .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
                 .notificationCriticalValueSeparateCd(dto.getNotificationCriticalValueSeparateCd())
