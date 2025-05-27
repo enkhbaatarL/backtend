@@ -81,6 +81,7 @@ public class MiMarketDataService {
     private static final int MARKET_DATA_START_DATE_YEAR = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N년 전)
     private static final int MARKET_DATA_START_DATE_MONTH = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_MONTHLY_START_DATE_YEAR = 1; // 마켓데이터 월별 데이터 시작 날짜 (N년 전)
+    private static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
     private static final String MARKET_DATA_INTERVAL = "1M"; // 월별 평균 계산을 위한 기간
 
@@ -217,7 +218,7 @@ public class MiMarketDataService {
 
             // 월별 데이터로 변환
             List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
-                    LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE_YEAR));
+                    LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
             MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
 
@@ -248,7 +249,7 @@ public class MiMarketDataService {
                     List<Map<String, Object>> compareRawData = getMarketDataRows(compareGoodsDataSource, compareDateColumnName, START_DATE);
                     // 비교군 월별 데이터로 변환
                     List<MarketDataChartRawData> compareChart = convertToMonthlyData(compareRawData, compareDateColumnName,
-                            compareDefaultDataColumnName, LocalDate.now().minusYears(MARKET_DATA_MONTHLY_START_DATE_YEAR));
+                            compareDefaultDataColumnName, LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
                     compareCharts.add(MarketDataChartRes.of(compareChart));
                 }
             }
@@ -387,7 +388,7 @@ public class MiMarketDataService {
                 return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
             }
 
-            // 마지막 데이터 값
+            // 마지막 데이터 날짜 값
             LocalDate lastUpdateDt = DateUtil.fromIsoToLocalDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
 
             // 마지막 데이터 값
@@ -502,7 +503,7 @@ public class MiMarketDataService {
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @param dateColumnName        필터링할 날짜 컬럼명
-     * @param startDate             데이터 범위 시작일 (포함, YYYYMMDD 형식)
+     * @param startDate             데이터 범위 시작일 (포함, yyyy-MM-dd 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
@@ -554,7 +555,7 @@ public class MiMarketDataService {
         }
 
         // startDate를 1년 전 다음 달 첫 번째 날로 조정 (예: 2024-06-01)
-        LocalDate adjustedStartDate = startDate.plusMonths(1).withDayOfMonth(1);
+        LocalDate adjustedStartDate = startDate.withDayOfMonth(1);
         // endDate를 이번 달 첫 날로 설정 (예: 2025-05-01)
         LocalDate endDate = LocalDate.now().withDayOfMonth(1);
         // 오늘의 일자 (예: 13)

@@ -202,6 +202,14 @@ public final class DateUtil {
     public static String toYearMonth(LocalDate date) {
         return date == null ? null : date.format(YYYYMM);
     }
+    
+    /**
+     * "yyyyMM" 문자열을 LocalDate로 변환
+     */
+    public static LocalDate fromYearMonth(String yearMonth) {
+        return yearMonth == null ? null : LocalDate.parse(yearMonth, YYYYMM);
+    }
+
 
     /**
      * "yyyy-MMM" 문자열을 "yyyyMM" 문자열로 변환

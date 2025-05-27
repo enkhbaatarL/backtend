@@ -70,10 +70,10 @@ spring:
           mi:
             entity-id: https://dev-mi.sk.com/saml/metadata
             acs:
-              location: https://dev-mi.sk.com/saml2/sso/mi
+              location: https://dev-mi.sk.com/login/saml2/sso/mi
               binding: POST
             singlelogout:
-              url: https://dev-mi.sk.com/saml/SingleLogout
+              url: https://dev-mi.sk.com/saml2/SingleLogout
             assertingparty:
               metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
