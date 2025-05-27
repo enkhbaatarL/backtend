@@ -1,4 +1,4 @@
-package com.sk.domain.admin.dto.request.provider;
+package com.sk.domain.shared.dto.request.file;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +12,11 @@ public record FileDownloadReq(
 
     @NotBlank
     @Schema(description = "파일명", example = "sample.jpg")
-    String fileNm
+    String fileNm,
+
+    @NotNull
+    @Schema(description = "파일크기", example = "1")
+    Long fileSize
 ) {
 
 }

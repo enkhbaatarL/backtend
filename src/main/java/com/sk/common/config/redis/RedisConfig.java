@@ -84,7 +84,7 @@ public class RedisConfig {
 
     // Redis Connection Factory 설정 (Sentinel 모드)
     @Bean
-    @Profile(value = "dev")
+    @Profile({"dev", "prod"})
     public LettuceConnectionFactory lettuceConnectionFactoryDev(@Value("${redis.service-name}") String serviceName,
             @Value("${redis.redis-password}") String redisPassword,
             @Value("${redis.sentinel-host-node}") String sentinelHostNode,

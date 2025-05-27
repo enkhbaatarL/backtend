@@ -1,5 +1,7 @@
 package com.sk.domain.admin.service;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.AESUtil;
@@ -52,6 +54,11 @@ public class AdminSystemService {
     public ClientAccessInfoRes postClientAccessInfo(ClientAccessInfoReq.Insert dto) {
 
         CustomerCompany customerCompany = companyValidator.ensureCompanyExistsByCompanyNo(dto.customerCompanyNo()).getOrThrow();
+
+        clientAccessInfoRepository.findByClientCertIdAndIsDeletedFalse(dto.clientCertId())
+            .ifPresent(clientAccessInfo -> {
+                throw AppErrorException.of(ResultCode.Error.RSC_ALREADY_EXISTS, String.format("ClientCertId [%s] already exists.", dto.clientCertId()));
+            });
 
         String clientSecret = AESUtil.generateSecret();
         String encryptedClientSecret = AESUtil.encrypt(clientSecret, secretKey);

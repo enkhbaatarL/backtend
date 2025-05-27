@@ -8,15 +8,16 @@ import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
-import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
  * 차트 데이터를 생성하는 서비스
  * 데이터소스로부터 데이터를 조회하고 차트 형태로 가공한다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -31,7 +33,6 @@ public class ChartGenerationService {
 
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
-    private final PersonalizationService personalizationService;
     private final ChartAggregationService chartAggregationService;
     private final ChartUnitConversionService chartUnitConversionService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
@@ -53,20 +54,21 @@ public class ChartGenerationService {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
-        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).toList();
+        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
 
-        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex());
+        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
-        // 원시 데이터 조회
+        // 원시 데이터 : [조회]
         List<Map<String, Object>> rawData = getRows(gds, dateColumnName, determinedRange, isMainChart);
-        // 원시 데이터 정렬 및 날짜 변환
+
+        // 원시 데이터 : [정렬 및 날짜 변환]
         List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
 
-        // 원시 데이터 데이터 집계
+        // 원시 데이터 : [집계]
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
 
-        // 원시 데이터 단위 변환
+        // 원시 데이터 : [단위 변환]
         List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
 
         return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
@@ -105,13 +107,13 @@ public class ChartGenerationService {
      * 메인 데이터소스와 연결된 비교군 데이터소스를 찾아 각각에 대한 차트 데이터를 생성한다.
      * 개인화 설정이 있는 경우, 개인화된 비교군 데이터소스만 포함한다.
      *
-     * @param mainDataSource  비교 대상 메인 데이터소스
-     * @param determinedRange 조회 시작일, 조회 종료일 (YYYYMMDD 형식)
-     * @param interval        데이터 집계 시간 간격
-     * @param personalizedMap 개인화 설정 맵
+     * @param mainDataSource   비교 대상 메인 데이터소스
+     * @param determinedRange  조회 시작일, 조회 종료일 (YYYYMMDD 형식)
+     * @param interval         데이터 집계 시간 간격
+     * @param finalizedCompIds 보여줄 비교군 데이터 소스 목록
      * @return 비교군 데이터소스에 대한 차트 데이터 목록
      */
-    public List<Chart> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, Pair<String, String> determinedRange, Interval interval, Map<ChartSettingConditionCd, List<String>> personalizedMap) {
+    public List<Chart> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, Pair<String, String> determinedRange, Interval interval, List<Integer> finalizedCompIds) {
 
         // 유효성 검증
         if (mainDataSource == null) {
@@ -125,14 +127,12 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        // 비교군데이터 개인화 설정 확인
-        List<Integer> personalizedCompDataSources = personalizationService.getPersonalizedCompDataSources(personalizedMap);
 
         // 각 비교 데이터소스에 대한 차트 데이터 생성
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
             .map(comparison -> {
-                boolean isVisible = personalizedCompDataSources.contains(comparison.getId().getCompareGoodsDataSourceNo());
+                boolean isVisible = finalizedCompIds.contains(comparison.getId().getCompareGoodsDataSourceNo());
                 return generateChartData(
                     comparison.getCompareGoodsDataSourceDetail(),
                     determinedRange,
@@ -150,10 +150,10 @@ public class ChartGenerationService {
      * 데이터소스 상세 정보와 날짜 컬럼명, 시작일, 종료일을 기반으로 데이터를 필터링하여 조회한다.
      * 조건에 맞는 데이터가 없는 경우 빈 리스트를 반환한다.
      *
-     * @param gds 데이터소스 상세 정보
-     * @param dateColumnName        필터링할 날짜 컬럼명
-     * @param determinedRange       데이터 범위 시작일, 데이터 범위 종료일 (포함, YYYYMMDD 형식)
-     * @param isMainChart           메인 차트 여부
+     * @param gds             데이터소스 상세 정보
+     * @param dateColumnName  필터링할 날짜 컬럼명
+     * @param determinedRange 데이터 범위 시작일, 데이터 범위 종료일 (포함, YYYYMMDD 형식)
+     * @param isMainChart     메인 차트 여부
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional(transactionManager = "myBatisTransactionManager")
@@ -163,11 +163,16 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, determinedRange.getLeft(), determinedRange.getRight());
+        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일부터 조회
+        String startDate = isMainChart ? DateUtil.minusDays(determinedRange.getLeft(), 180) : determinedRange.getLeft();
+
+        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, determinedRange.getRight());
+
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())
             .filter(s -> isMainChart)
             .map(s -> gds.getTableColumnListNm() + "," + s)
             .orElse(gds.getTableColumnListNm());
+
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, selectClause, whereClause, dateColumnName));
     }
 
@@ -175,13 +180,16 @@ public class ChartGenerationService {
      * 원시 데이터의 날짜 값을 LocalDate 타입으로 파싱하고, 정렬한다.
      */
     private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
-        return rawData.stream().map(row -> {
+        return rawData.stream()
+            .map(row -> {
                 Map<String, Object> copy = new HashMap<>(row);
-                if (row.containsKey(dateColumnKey)) {
-                    copy.put(dateColumnKey, DateUtil.parseDate(row.get(dateColumnKey)));
-                }
+                Object raw = row.get(dateColumnKey);
+                LocalDate parsed = DateUtil.parseDate(raw);
+                copy.put(dateColumnKey, parsed);
                 return copy;
-            }).sorted(Comparator.comparing(row -> DateUtil.parseDate(row.get(dateColumnKey))))
+            }).sorted(Comparator.comparing(
+                (Map<String, Object> r) -> (LocalDate) r.get(dateColumnKey),
+                Comparator.nullsLast(Comparator.naturalOrder())))
             .collect(Collectors.toList());
     }
 }

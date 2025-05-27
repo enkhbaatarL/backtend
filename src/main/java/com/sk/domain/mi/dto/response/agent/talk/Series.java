@@ -6,33 +6,41 @@ import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Builder
 public record Series(
 
+    @Schema(description = "순서")
+    Integer order,
+
+    @Schema(description = "범례")
+    String legend,
+
     @Schema(description = "timestamps, x축")
     List<String> timestamps,
-
-    @Schema(description = "시계열 데이터 명")
-    String seriesNm,
 
     @Schema(description = "값 리스트")
     List<BigDecimal> values
 
 ) {
 
-    public static Series of(ModelAgentRes.Output.Message.Content content) {
+    public static Series of(ModelAgentRes.Output.Message.Content.Chart chart) {
 
-        List<ModelAgentRes.Output.Message.Content.Chart> charts = content.charts();
-
-        List<String> timestamps = charts.stream().map(s -> s.date().replaceAll("-", "")).toList();
-        List<BigDecimal> values = charts.stream().map(s -> BigDecimal.valueOf(s.price())).toList();
+        List<String> timestamps = chart.date().stream().map(s -> s.replaceAll("-", "")).toList();
+        List<BigDecimal> values = chart.value().stream().map(BigDecimal::valueOf).toList();
 
         return Series.builder()
+            .order(chart.order())
+            .legend(chart.legend())
             .timestamps(timestamps)
-            .seriesNm("미정")
             .values(values)
             .build();
+
+    }
+
+    public static List<Series> ofList(List<ModelAgentRes.Output.Message.Content.Chart> charts) {
+        return charts.stream().map(Series::of).collect(Collectors.toList());
     }
 
 }

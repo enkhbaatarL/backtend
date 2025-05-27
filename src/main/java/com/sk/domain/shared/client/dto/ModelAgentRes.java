@@ -48,14 +48,27 @@ public record ModelAgentRes(
 
             public record Content(
                 String text,
-                List<Chart> charts
+                List<Chart> charts,
+                List<Source> sources,
+                @JsonProperty("related_data")
+                List<Integer> relatedData
             ) {
 
                 public record Chart(
-                    String date,
-                    Double price
+                    int order,
+                    String legend,
+                    List<String> date,
+                    List<Double> value
                 ) {
                 }
+
+                public record Source(
+                    String url,
+                    @JsonProperty("source_nm")
+                    String sourceNm
+                ) {
+                }
+
             }
 
             public record AdditionalKwargs(

@@ -39,6 +39,7 @@ import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.FileService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +55,7 @@ public class MiBulletinBoardService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final BulletinBoardNotificationUserRepository bulletinBoardNotificationUserRepository;
     private final UserRepository userRepository;
-    private final MiFileService miFileService;
+    private final FileService fileService;
 
     /**
      * 공지사항에서 사용 할 필터를 조회한다.
@@ -148,7 +149,7 @@ public class MiBulletinBoardService {
         }
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), categoryName, bulletinBoard.getBulletinTitleNm(),
-                bulletinBoard.getBulletinCntt(), uploadFile != null ? miFileService.getUrl(uploadFile) : null);
+                bulletinBoard.getBulletinCntt(), uploadFile != null ? fileService.getUrl(uploadFile) : null);
     }
 
     /**
@@ -170,7 +171,7 @@ public class MiBulletinBoardService {
                         f.getFileNo(),
                         f.getOriginalFileNm(),
                         f.getFileSize(),
-                        miFileService.getUrl(f.getFileNo())))
+                        fileService.getUrl(f.getFileNo())))
                 .toList();
 
         return PopupRes.of(bulletinBoard, fileInfo);

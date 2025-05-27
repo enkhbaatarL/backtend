@@ -19,6 +19,9 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.checkerframework.checker.units.qual.g;
+import org.checkerframework.checker.units.qual.s;
+import org.hibernate.exception.SQLGrammarException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,9 +29,12 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
@@ -65,7 +71,9 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,6 +107,7 @@ public class MiMarketDataService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final EntityManager em;
 
     /**
      * 마켓 데이터 조회
@@ -849,6 +858,7 @@ public class MiMarketDataService {
      * @param keyword   검색어
      * @return PaginationRes<DataCatalogRes>
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaginationRes<DataCatalogRes> getDataCatalog(
             int companyNo,
             int page,
@@ -857,101 +867,142 @@ public class MiMarketDataService {
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        StringBuilder select = new StringBuilder()
-                .append(" tp.prvd_no AS providerNo,")
-                .append(" tp.prvd_nm AS providerNm,")
-                .append(" tg.gds_no AS goodsNo,")
-                .append(" tg.gds_nm AS goodsNm,")
-                .append(" tgd.gds_data_no AS goodsDataNo,")
-                .append(" tgd.gds_data_nm AS goodsDataNm,")
-                .append(" tgd.gds_data_expn AS goodsDataExpn,")
-                .append(" tgd.mod_dtm AS modifyDt");
+        String select = """
+                tp.prvd_no           AS providerNo,
+                tg.gds_no            AS goodsNo,
+                tgd.gds_data_no      AS goodsDataNo,
+                tgd.gds_data_nm      AS goodsDataNm,
+                tgsrc.gds_data_src_no AS goodsDataSrcNo,
+                tgsrc.gds_data_src_nm AS goodsDataSrcNm,
+                tgsrc.mod_dtm        AS modifyDt,
+                tgsrc.tgt_db_nm      AS targetDbNm,
+                tgsrc.tgt_tbl_nm     AS targetTableNm,
+                tgsrc.qry_cdtn_cntt  AS queryConditionCntt,
+                tgsrc.tbl_colm_list_nm AS tableColumnListNm
+                """;
 
-        StringBuilder where = new StringBuilder()
-                .append(" tc.cust_cpny_no = :companyNo")
-                .append(" AND tc.del_yn = 'N'")
-                .append(" AND tc.use_yn = 'Y'")
-                .append(" AND tg.del_yn = 'N'")
-                .append(" AND tg.use_yn = 'Y'")
-                .append(" AND tp.del_yn = 'N'")
-                .append(" AND tp.use_yn = 'Y'")
-                .append(" AND tgd.del_yn = 'N'");
+        String where = """
+                tc.cust_cpny_no = :companyNo
+                AND tc.del_yn   = 'N' AND tc.use_yn   = 'Y'
+                AND tg.del_yn   = 'N' AND tg.use_yn   = 'Y'
+                AND tp.del_yn   = 'N' AND tp.use_yn   = 'Y'
+                AND tgd.del_yn  = 'N'
+                AND tgsrc.del_yn= 'N'
+                """;
 
-        if (keyword != null && !keyword.isBlank()) {
-            where.append(" AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)");
+        if (StringUtils.hasText(keyword)) {
+            where += " AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)";
         }
 
-        String groupBy = " GROUP BY tg.prvd_no, tc.gds_no, tgd.gds_data_no ";
-
-        String orderBy = " ORDER BY tgd.mod_dtm DESC ";
-
-        select.append(" ");
-        where.append(" ");
-
         String contentSql = """
-                SELECT
-                  """ + select + """
-                FROM midb.tam_custcpnygdsmappl tc
-                LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
-                LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
-                LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                JOIN (
-                    SELECT DISTINCT gds_data_no
-                    FROM midb.tmd_gdsdatactgrl
-                    WHERE del_yn = 'N'
-                    AND gds_data_mnagt_spt_cd = 'GDATS'
-                ) gud ON gud.gds_data_no = tgd.gds_data_no
-                WHERE
-                """ + where + """
-                """ + groupBy + """
-                """ + orderBy;
+                SELECT %s
+                FROM midb.tam_custcpnygdsmappl  tc
+                LEFT JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tc.gds_no
+                LEFT JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
+                LEFT JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
+                LEFT JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no
+                WHERE %s
+                ORDER BY tgsrc.mod_dtm DESC
+                """.formatted(select, where);
 
         String countSql = """
-                SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
-                FROM midb.tam_custcpnygdsmappl tc
-                LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
-                LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
-                LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                JOIN (
-                    SELECT DISTINCT gds_data_no
-                    FROM midb.tmd_gdsdatactgrl
-                    WHERE del_yn = 'N'
-                    AND gds_data_mnagt_spt_cd = 'GDATS'
-                ) gud ON gud.gds_data_no = tgd.gds_data_no
-                WHERE
-                """ + where;
+                SELECT COUNT(*) AS totalCount
+                FROM midb.tam_custcpnygdsmappl  tc
+                LEFT JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tc.gds_no
+                LEFT JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
+                LEFT JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
+                LEFT JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no
+                WHERE %s
+                """.formatted(where);
 
-        Query contentQuery = entityManager.createNativeQuery(contentSql);
-        Query countQuery = entityManager.createNativeQuery(countSql);
+        Query contentQuery = entityManager.createNativeQuery(contentSql)
+                .setParameter("companyNo", companyNo)
+                .setFirstResult((page - 1) * size)
+                .setMaxResults(size);
 
-        contentQuery.setParameter("companyNo", companyNo);
-        countQuery.setParameter("companyNo", companyNo);
+        Query countQuery = entityManager.createNativeQuery(countSql)
+                .setParameter("companyNo", companyNo);
 
-        if (keyword != null && !keyword.isBlank()) {
+        if (StringUtils.hasText(keyword)) {
             contentQuery.setParameter("keyword", String.format("+(%s)", keyword.replaceAll("(\\S+)", "$1*")));
             countQuery.setParameter("keyword", String.format("+(%s)", keyword.replaceAll("(\\S+)", "$1*")));
         }
 
-        contentQuery.setFirstResult((page - 1) * size);
-        contentQuery.setMaxResults(size);
-
         @SuppressWarnings("unchecked")
         List<Object[]> rows = contentQuery.getResultList();
-        List<DataCatalogRes> content = rows.stream()
-                .map(row -> new DataCatalogRes(
-                        (Integer) row[0], // providerNo
-                        (String) row[1], // providerNm
-                        (Integer) row[2], // goodsNo
-                        (String) row[3], // goodsNm
-                        (Integer) row[4], // goodsDataNo
-                        (String) row[5], // goodsDataNm
-                        (String) row[6], // goodsDataExpn
-                        ((Timestamp) row[7]).toLocalDateTime() // modifyDt
-                ))
-                .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
-        return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
+        List<DataCatalogRes> result = rows.stream().parallel().map(row -> {
+
+            int providerNo = (Integer) row[0];
+            int goodsNo = (Integer) row[1];
+            int goodsDataNo = (Integer) row[2];
+            String goodsDataNm = (String) row[3];
+            int goodsDataSrcNo = (Integer) row[4];
+            String goodsDataSrcNm = (String) row[5];
+            LocalDateTime modifyDt = ((Timestamp) row[6]).toLocalDateTime();
+            String targetDbNm = (String) row[7];
+            String targetTableNm = (String) row[8];
+            String queryConditionCntt = (String) row[9];
+            String tableColumnListNm = (String) row[10];
+
+            Double lastValue = 0.0;
+            if (targetDbNm == null || targetTableNm == null || queryConditionCntt == null
+                    || tableColumnListNm == null) {
+                // 데이터가 없는 경우
+            } else {
+                String[] cols = Arrays.stream(tableColumnListNm.split(","))
+                        .map(String::trim)
+                        .toArray(String[]::new);
+
+                if (cols.length < 2) {
+                    // 최소 2개의 컬럼이 필요 (날짜, 기본 데이터)
+                } else {
+                    lastValue = getLastValue(
+                            targetDbNm, targetTableNm,
+                            queryConditionCntt, cols[MARKET_DATA_DATE_COLUMN_INDEX],
+                            cols[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX]);
+                }
+            }
+
+            return new DataCatalogRes(
+                    providerNo, goodsNo, goodsDataNo,
+                    goodsDataNm, goodsDataSrcNo, goodsDataSrcNm,
+                    lastValue, modifyDt);
+        })
+                .toList();
+
+        return PaginationRes.toRes(PageableExecutionUtils.getPage(result, pageable, () -> total));
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    private Double getLastValue(String targetDbNm, String targetTableNm, String queryConditionCntt, String dateColumnName, String valueColumnName) {
+        if (StringUtils.hasText(targetDbNm) && StringUtils.hasText(targetTableNm) && StringUtils.hasText(queryConditionCntt)
+                && StringUtils.hasText(dateColumnName) && StringUtils.hasText(valueColumnName)) {
+            return 0.0;
+        }
+
+        DataSourceContextHolder.setDataSourceKey(targetDbNm);
+        try {
+            String sql = String.format("""
+                    SELECT %s
+                    FROM %s.%s
+                    WHERE %s
+                    ORDER BY %s DESC
+                    LIMIT 1
+                    """,
+                    valueColumnName, // 컬럼
+                    targetDbNm, targetTableNm, // DB.테이블
+                    queryConditionCntt, // 조건식
+                    dateColumnName); // 정렬
+
+            Object result = em.createNativeQuery(sql).getSingleResult();
+            return result != null ? ((Number) result).doubleValue() : 0.0;
+        } catch (PersistenceException | IllegalArgumentException e) {
+            return 0.0;
+        } finally {
+            DataSourceContextHolder.clearDataSourceKey();
+        }
     }
 
     /**
@@ -965,6 +1016,7 @@ public class MiMarketDataService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "사용자 정보를 찾을 수 없습니다."));
 
-        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
+        // return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
+        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser("SKGAS001@SKGAS.com", PageRequest.of(0, 5));
     }
 }

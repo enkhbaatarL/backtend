@@ -3,15 +3,15 @@ package com.sk.domain.shared.controller;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import com.sk.domain.shared.service.SchedulerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 스케쥴러용 API
@@ -40,11 +40,18 @@ public class SchedulerController {
     }
 
     @ApiOrder(3)
-    @Operation(summary = "PDF파일 이미지 변환 API", description = "배치에 쓰일 API로 PDF파일을 이미지로 나누어 S3 업로드 합니다.")
+    @Operation(
+        summary = "PDF파일 이미지 변환 API",
+        description = """
+            배치에 쓰일 API로 PDF파일을 이미지로 나누어 S3 업로드 합니다. <br>
+            """
+    )
     @PostMapping("/pdf-to-images")
     @ApiResponse(responseCode = "200", description = "알림 발송 성공")
-    public BaseResponse<Boolean> processPdfToImages() {
-        return BaseResponseFactory.create(schedulerService.processPdfToImages());
+    public BaseResponse<Boolean> processPdfToImages(
+        @RequestBody(required = false) PdgImageReq pdgImageReq
+    ) {
+        return BaseResponseFactory.create(schedulerService.processPdfToImages(pdgImageReq));
     }
 
     @ApiOrder(4)

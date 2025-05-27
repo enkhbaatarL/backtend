@@ -1,4 +1,4 @@
-package com.sk.domain.admin.service;
+package com.sk.domain.shared.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AdminObjectStorageService {
+public class ObjectStorageService {
     // https://guide.ncloud-docs.com/docs/storage-storage-8-1
     private final AmazonS3 objectStorageClient;
 
@@ -63,7 +63,7 @@ public class AdminObjectStorageService {
         List<Bucket> buckets = objectStorageClient.listBuckets();
         System.out.println("Bucket List: ");
         for (Bucket bucket : buckets) {
-            System.out.println("    name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
+            System.out.println(" name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
                     + bucket.getOwner().getId());
         }
     }
