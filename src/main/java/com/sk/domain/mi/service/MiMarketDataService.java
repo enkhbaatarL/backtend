@@ -860,6 +860,8 @@ public class MiMarketDataService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaginationRes<DataCatalogRes> getDataCatalog(
             int companyNo,
+            int userNo,
+            Role role,
             int page,
             int size,
             String keyword) {
@@ -945,29 +947,28 @@ public class MiMarketDataService {
             String queryConditionCntt = (String) row[9];
             String tableColumnListNm = (String) row[10];
 
+            boolean isViewable = isDataViewable(companyNo, userNo, role, goodsNo);
             Double lastValue = 0.0;
-            if (targetDbNm == null || targetTableNm == null || queryConditionCntt == null
-                    || tableColumnListNm == null) {
-                // 데이터가 없는 경우
-            } else {
-                String[] cols = Arrays.stream(tableColumnListNm.split(","))
-                        .map(String::trim)
-                        .toArray(String[]::new);
+            if (isViewable) {
+                if (targetDbNm != null && targetTableNm != null && queryConditionCntt != null && tableColumnListNm != null) {
+                    // 컬럼 목록을 쉼표로 분리하고 공백 제거
+                    String[] cols = Arrays.stream(tableColumnListNm.split(","))
+                            .map(String::trim)
+                            .toArray(String[]::new);
 
-                if (cols.length < 2) {
-                    // 최소 2개의 컬럼이 필요 (날짜, 기본 데이터)
-                } else {
-                    lastValue = getLastValue(
-                            targetDbNm, targetTableNm,
-                            queryConditionCntt, cols[MARKET_DATA_DATE_COLUMN_INDEX],
-                            cols[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX]);
+                    if (cols.length >= 2) {
+                        // 최소 2개의 컬럼이 필요 (날짜, 기본 데이터)
+                        lastValue = getLastValue(
+                                targetDbNm, targetTableNm, queryConditionCntt,
+                                cols[MARKET_DATA_DATE_COLUMN_INDEX], cols[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX]);
+                    }
                 }
             }
 
             return new DataCatalogRes(
                     providerNo, goodsNo, goodsDataNo,
                     goodsDataNm, goodsDataSrcNo, goodsDataSrcNm,
-                    lastValue, modifyDt);
+                    isViewable, lastValue, modifyDt);
         })
                 .toList();
 
@@ -975,9 +976,32 @@ public class MiMarketDataService {
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    boolean isDataViewable(int companyNo, int userNo, Role role, int goodsNo) {
+
+        if (companyNo <= 0 || userNo <= 0 || goodsNo <= 0 || role == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
+        }
+
+        switch (role) {
+            case ADMIN -> {
+                PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+                return permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+            }
+
+            case USER -> {
+                PermissionRes permissionRes = miGoodsPermissionService.getUserGoodsPermissions(userNo);
+                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+            }
+
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        }
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     private Double getLastValue(String targetDbNm, String targetTableNm, String queryConditionCntt, String dateColumnName, String valueColumnName) {
-        if (StringUtils.hasText(targetDbNm) && StringUtils.hasText(targetTableNm) && StringUtils.hasText(queryConditionCntt)
-                && StringUtils.hasText(dateColumnName) && StringUtils.hasText(valueColumnName)) {
+
+        if (!(StringUtils.hasText(targetDbNm) && StringUtils.hasText(targetTableNm) && StringUtils.hasText(queryConditionCntt)
+                && StringUtils.hasText(dateColumnName) && StringUtils.hasText(valueColumnName))) {
             return 0.0;
         }
 
@@ -1015,7 +1039,6 @@ public class MiMarketDataService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "사용자 정보를 찾을 수 없습니다."));
 
-        // return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
-        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser("SKGAS001@SKGAS.com", PageRequest.of(0, 5));
+        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
     }
 }

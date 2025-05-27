@@ -1,15 +1,9 @@
 package com.sk.domain.admin.controller;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -40,7 +34,6 @@ import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.admin.dto.response.bbs.PopupRes;
-import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
@@ -77,7 +70,6 @@ public class AdminBulletinBoardController {
      *
      *******************************************************************/
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "png");
-    private static final long MAX_SIZE = 10 * 1024 * 1024;
 
     @ApiOrder(1)
     @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
@@ -199,10 +191,6 @@ public class AdminBulletinBoardController {
         String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-        }
-
-        if (file.getSize() > MAX_SIZE) {
-            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
         return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, true));

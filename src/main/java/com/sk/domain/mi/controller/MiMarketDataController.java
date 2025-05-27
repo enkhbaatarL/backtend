@@ -66,11 +66,12 @@ public class MiMarketDataController {
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
 
+        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory
-                .create(miMarketDataService.getDataCatalog(cNo, page, size, keyword));
+                .create(miMarketDataService.getDataCatalog(cNo, userNo, role, page, size, keyword));
     }
 
     @ApiOrder(3)
