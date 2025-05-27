@@ -7,6 +7,7 @@ import com.sk.common.model.TableRes;
 import com.sk.common.utils.ChartSliceUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelUtils;
+import com.sk.common.utils.MDCUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
@@ -40,6 +41,7 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,7 +112,18 @@ public class MiDataDetailService {
     public List<UnstructuredDataRes> getGoodsDataUnstructuredData(Integer goodsNo, Integer goodsDataNo) {
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsData.getGoodsDataNo());
-        return UnstructuredDataRes.ofList(documents);
+
+        PermissionRes permissionRes = switch (authorizationService.getCurrentRole()) {
+            case USER -> userService.getUserGoodsPermissions(authorizationService.getUserNo());
+            case ADMIN -> userService.getAccessAdminGoodsPermissions();
+            case API_PLUS_OPERATOR -> userService.getPlusOperatorGoodsPermissions(authorizationService.getCompanyNo());
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        };
+
+        int companyNo = ObjectUtils.isNotEmpty(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) ? Integer.parseInt(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) : authorizationService.getCompanyNo();
+        Boolean goodsViewable = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+
+        return UnstructuredDataRes.ofList(documents, goodsViewable);
     }
 
     /**
