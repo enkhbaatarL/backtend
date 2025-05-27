@@ -52,7 +52,7 @@ public class CustomClientAccessInfoRepositoryImpl implements CustomClientAccessI
             .leftJoin(clientAccessInfo.customerCompany, customerCompany).fetchJoin()
             .leftJoin(creator).on(clientAccessInfo.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN)))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(clientAccessInfo.modifyUserId.eq(modifier.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN)))
+            .leftJoin(modifier).on(clientAccessInfo.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.in(UserRoleCd.ADMIN)))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
