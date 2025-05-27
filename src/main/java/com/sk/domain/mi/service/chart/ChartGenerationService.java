@@ -145,6 +145,20 @@ public class ChartGenerationService {
             .toList();
     }
 
+    @Transactional(transactionManager = "myBatisTransactionManager")
+    public LocalDate getLatestDate(GoodsDataSourceDetail gds) {
+
+        if (gds == null) return null;
+
+        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
+        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
+
+        String selectClause = "max(%s) as latestDate".formatted(dateColumnName);
+        List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofLatestDate(gds, selectClause));
+
+        return DateUtil.parseDate(data.get(0).get("latestDate"));
+    }
+
     /**
      * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다.
      * 데이터소스 상세 정보와 날짜 컬럼명, 시작일, 종료일을 기반으로 데이터를 필터링하여 조회한다.

@@ -343,13 +343,16 @@ public class MiDataDetailService {
      */
     private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext settingsContext) {
 
+        LocalDate latestDate = chartGenerationService.getLatestDate(gds);
+
         // [metadata] 생성
         ChartMetadata metadata = ChartMetadata.of(
             gds.getGoodsDataSourceCurrencyUnitNm(),
             settingsContext.finalizedChartType(),
             settingsContext.finalizedUnitCd(),
             settingsContext.unitCdMap().keySet(),
-            settingsContext.finalizedInterval()
+            settingsContext.finalizedInterval(),
+            DateUtil.toYmd(latestDate) // 2025-05-27 fix: 메타데이터에 최신 업데이트 일자 추가
         );
 
         // [mainChart] 생성

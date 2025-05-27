@@ -86,4 +86,13 @@ public record DynamicDataReq(
             .build();
     }
 
+    public static DynamicDataReq ofLatestDate(GoodsDataSourceDetail gds, String selectClause) {
+        return DynamicDataReq.builder()
+            .targetDataSource(gds.getTargetDbNm())
+            .columns(selectClause)
+            .tableName(gds.getTargetTableNm())
+            .whereClause(gds.getQueryConditionCntt())
+            .build();
+    }
+
 }

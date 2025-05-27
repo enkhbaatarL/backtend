@@ -47,6 +47,7 @@ public class MybatisDynamicQueryService {
             String[] columnArray = columns.split(",");
             for (String col : columnArray) {
                 if (col.trim().equalsIgnoreCase("count(*)")) continue; // count 쿼리 허용
+                if (col.trim().contains("max")) continue; // max 쿼리 허용
                 if (!col.trim().matches("^[a-zA-Z0-9_]+$")) {
                     throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "Invalid column name: " + col);
                 }
