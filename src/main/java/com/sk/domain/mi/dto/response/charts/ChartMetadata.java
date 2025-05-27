@@ -25,17 +25,21 @@ public record ChartMetadata(
     ChartType initialChartType,
 
     @Schema(description = "변경할 수 있는 단위코드 목록", example = "Brent#kbbl")
-    Set<String> changeableUnitCd
+    Set<String> changeableUnitCd,
+
+    @Schema(description = "데이터소스 최신 업데이트 일자", example = "20250505")
+    String latestDate
 
 ) {
 
-    public static ChartMetadata of(String currency, ChartType chartType, UnitCd unitConversionCd, Set<UnitCd> changeable, Interval interval) {
+    public static ChartMetadata of(String currency, ChartType chartType, UnitCd unitConversionCd, Set<UnitCd> changeable, Interval interval, String latestDate) {
         return ChartMetadata.builder()
             .currency(currency)
             .initialChartType(chartType)
             .currentUnitCd(unitConversionCd.toString())
             .currentInterval(interval.getCode())
             .changeableUnitCd(changeable.stream().map(UnitCd::toString).collect(Collectors.toSet()))
+            .latestDate(latestDate)
             .build();
     }
 
