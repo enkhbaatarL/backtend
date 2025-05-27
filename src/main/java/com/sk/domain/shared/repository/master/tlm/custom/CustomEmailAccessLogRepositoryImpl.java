@@ -4,6 +4,8 @@ import static com.sk.domain.shared.entity.master.tlm.QEmailAccessLog.emailAccess
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsCriticalValueSetting.goodsCriticalValueSetting;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
+import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
 import java.time.LocalDateTime;
@@ -117,10 +119,14 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
 				goodsCriticalValueSetting.criticalValueSettingVol,
 				goodsDataSourceDetail.goodsDataSourceUnitNm,
 				goodsDataSourceDetail.goodsDataSourceNm,
-				goodsDataSourceDetail.goodsDataSourceNo))
+				goodsDataSourceDetail.goodsDataSourceNo,
+				goodsData.goodsDataNo,
+				goods.goodsNo))
 				.from(emailAccessLog)
 				.leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
 				.leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
+				.leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+				.leftJoin(goodsData.goods, goods)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())
 				.where(builder)
@@ -129,6 +135,10 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
 
 		JPQLQuery<Long> countQuery = queryFactory.select(emailAccessLog.count())
 				.from(emailAccessLog)
+				.leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
+				.leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
+				.leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+				.leftJoin(goodsData.goods, goods)
 				.where(builder);
 
 		return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
