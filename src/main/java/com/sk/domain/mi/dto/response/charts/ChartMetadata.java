@@ -53,7 +53,7 @@ public record ChartMetadata(
         return ChartMetadata.builder()
             .currency(gds.getGoodsDataSourceCurrencyUnitNm())
             .currentUnitCd(unitConversionCd.toString())
-            .minInterval(gds.getPeriodUnitSeparateCd().getMinInterval().getCode())
+            .minInterval(gds.getPeriodUnitSeparateCd().minInterval().getCode())
             .currentInterval(interval.getCode())
             .currentRange(range.getCode())
             .currentRangeBetween(List.of(rangeBetween.getLeft(), rangeBetween.getRight()))
