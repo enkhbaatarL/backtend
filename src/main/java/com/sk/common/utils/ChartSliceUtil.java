@@ -97,7 +97,7 @@ public class ChartSliceUtil {
         int cut = findStartIdx(src.timestamps(), start);
         return sliceContainer(
             src.timestamps(), src.series(), cut,
-            (ts, ss) -> Chart.of(src.goodsDataSourceNo(), src.unitCd(), src.chartType(), ts, ss));
+            (ts, ss) -> Chart.of(src.goodsDataSourceNo(), src.goodsDataSourceName(), src.goodDataName(), src.unitCd(), src.chartType(), ts, ss));
     }
 
     /**

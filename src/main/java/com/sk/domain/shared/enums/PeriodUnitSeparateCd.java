@@ -1,5 +1,6 @@
 package com.sk.domain.shared.enums;
 
+import com.sk.domain.shared.enums.chart.Interval;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,14 +11,15 @@ import java.time.temporal.TemporalUnit;
 @AllArgsConstructor
 public enum PeriodUnitSeparateCd {
 
-    D("D", "일", ChronoUnit.DAYS),
-    W("W", "주", ChronoUnit.WEEKS),
-    M("M", "월", ChronoUnit.MONTHS),
-    Y("Y", "년", ChronoUnit.YEARS);
+    D("D", "일", ChronoUnit.DAYS, Interval.ONE_DAY),
+    W("W", "주", ChronoUnit.WEEKS, Interval.ONE_WEEK),
+    M("M", "월", ChronoUnit.MONTHS, Interval.ONE_MONTH),
+    Y("Y", "년", ChronoUnit.YEARS, Interval.ONE_YEAR);
 
     private final String code;
     private final String description;
     private final TemporalUnit temporalUnit;
+    private final Interval minInterval;
 
     /**
      * 주어진 PeriodUnitSeparateCd와 비교하여 이 PeriodUnitSeparateCd가 더 큰 단위를 가지는지 확인합니다.
