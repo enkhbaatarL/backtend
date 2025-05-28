@@ -13,7 +13,6 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.service.MiSignalMapService;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.signalMap.signalMapPeriodType;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
@@ -24,7 +23,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +35,7 @@ public class MiSignalMapController {
     private final AuthorizationService authorizationService;
     private final MiSignalMapService miSignalMapService;
 
+    // todo: get period list
     // todo: get filter list
 
     @ApiOrder(1)
@@ -55,6 +54,9 @@ public class MiSignalMapController {
 
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
+
+        String title = miSignalMapService.getTitle(cNo);
+        log.info("Signal Map Title: {}", title);
 
         return BaseResponseFactory.create("todo");
     }
