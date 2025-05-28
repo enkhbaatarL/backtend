@@ -343,13 +343,16 @@ public class MiDataDetailService {
      */
     private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext settingsContext) {
 
+        LocalDate latestDate = chartGenerationService.getLatestDate(gds);
+
         // [metadata] 생성
         ChartMetadata metadata = ChartMetadata.of(
             gds.getGoodsDataSourceCurrencyUnitNm(),
             settingsContext.finalizedChartType(),
             settingsContext.finalizedUnitCd(),
             settingsContext.unitCdMap().keySet(),
-            settingsContext.finalizedInterval()
+            settingsContext.finalizedInterval(),
+            DateUtil.toYmd(latestDate) // 2025-05-27 fix: 메타데이터에 최신 업데이트 일자 추가
         );
 
         // [mainChart] 생성
@@ -404,7 +407,7 @@ public class MiDataDetailService {
         List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofPagingQuery(gds, queryContext.whereClause(), queryContext.dateColumn(), page, size));
 
         // 테이블 응답 생성
-        TableRes table = buildTableResponse(dataQuery, queryContext.columnExpressions());
+        TableRes table = buildTableResponse(dataQuery, queryContext);
 
         // 최종 페이징 응답 반환
         return PaginationTableRes.toRes(page, size, totalElements, table.rows(), table.headers());
@@ -428,7 +431,7 @@ public class MiDataDetailService {
         List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, queryContext.whereClause(), queryContext.dateColumn()));
 
         // 테이블 응답 생성
-        TableRes table = buildTableResponse(dataQuery, queryContext.columnExpressions());
+        TableRes table = buildTableResponse(dataQuery, queryContext);
 
         // 엑셀 파일 생성 및 반환
         return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), table.headers(), table.rows());
@@ -469,24 +472,24 @@ public class MiDataDetailService {
         String dateColumn = columns.get(0);
         String whereClause = "%s between '%s' and '%s'".formatted(dateColumn, startDate, endDate);
 
-        return new RawDataQueryContext(columnExpressions, dateColumn, whereClause);
+        return new RawDataQueryContext(columns, columnExpressions, dateColumn, whereClause);
     }
 
     /**
      * 조회된 데이터와 컬럼 표현식을 기반으로 TableRes 객체를 생성합니다.
      */
-    private TableRes buildTableResponse(List<Map<String, Object>> dataQuery, Map<String, String> columnExpressions) {
+    private TableRes buildTableResponse(List<Map<String, Object>> dataQuery, RawDataQueryContext queryContext) {
 
         if (dataQuery == null || dataQuery.isEmpty()) {
             return TableRes.of(Collections.emptyList(), Collections.emptyList());
         }
 
-        // 필드명 추출 (첫 번째 데이터 기준)
-        List<String> fields = new ArrayList<>(dataQuery.get(0).keySet());
+        // 필드명 추출 (select 절 순서 보장)
+        List<String> fields = new ArrayList<>(queryContext.selectClause());
 
         // Headers 생성
         List<TableRes.Column> headers = fields.stream()
-            .map(field -> TableRes.Column.of(field, columnExpressions.getOrDefault(field, field)))
+            .map(field -> TableRes.Column.of(field, queryContext.columnExpressions().getOrDefault(field, field)))
             .toList();
 
         // Rows 생성

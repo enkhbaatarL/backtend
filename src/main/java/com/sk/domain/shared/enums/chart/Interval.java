@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
 public enum Interval {
 
     ONE_DAY("1D", "1일", PeriodUnitSeparateCd.D, List.of(Range.ONE_WEEK, Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 1),
-    ONE_WEEK("1W", "1주", PeriodUnitSeparateCd.W, List.of(Range.ONE_WEEK, Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 1),
-    TWO_WEEK("2W", "2주", PeriodUnitSeparateCd.W, List.of(Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 2),
-    ONE_MONTH("1M", "1개월", PeriodUnitSeparateCd.M, List.of(Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 1),
-    THREE_MONTH("3M", "3개월", PeriodUnitSeparateCd.M, List.of(Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 3),
-    SIX_MONTH("6M", "6개월", PeriodUnitSeparateCd.M, List.of(Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 6),
-    ONE_YEAR("1Y", "1년", PeriodUnitSeparateCd.Y, List.of(Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 1);
+    ONE_WEEK("1W", "1주", PeriodUnitSeparateCd.W, List.of(Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 1),
+    TWO_WEEK("2W", "2주", PeriodUnitSeparateCd.W, List.of(Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 2),
+    ONE_MONTH("1M", "1개월", PeriodUnitSeparateCd.M, List.of(Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM), 1),
+    THREE_MONTH("3M", "3개월", PeriodUnitSeparateCd.M, List.of(Range.TWO_YEARS, Range.CUSTOM), 3),
+    SIX_MONTH("6M", "6개월", PeriodUnitSeparateCd.M, List.of(Range.CUSTOM), 6),
+    ONE_YEAR("1Y", "1년", PeriodUnitSeparateCd.Y, List.of(Range.CUSTOM), 1);
 
     private final String code;
     private final String description;
