@@ -113,7 +113,7 @@ public record GoodsDataSourceRes(
 
                 // 최소 주기 필터링
                 List<Interval> filtered = baseline.stream()
-                    .filter(i -> i.getPeriodUnitSeparateCd().isGreaterOrEqual(minInterval))
+                    .filter(i -> i.getPeriodCd().isGreaterOrEqual(minInterval))
                     .toList();
 
                 if (filtered.isEmpty()) {

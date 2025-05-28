@@ -214,18 +214,23 @@ public class MiDataDetailService {
      * @return 생성된 차트 묶음 응답 데이터
      */
     public ChartBundleRes getGoodsDataSourceCharts(Integer goodsNo, Integer gdNo, Integer gdsNo, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
-        // 1. 데이터 소스 검증 및 유효성 검사
+        // 1. 데이터 소스 검증
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+
+        // 2. 요청 파라미터 1차 유효성 검증 (오직 사용자 요청(Range, Interval)에 대한 값 검증을 수행함)
         validateChartParameters(gds, interval, range, startDate, endDate);
 
-        // 2. 단위 변환 및 개인화 설정 처리
+        // 3. 개인화 & 디폴트 설정 처리
         ChartSettingsContext settingsContext = finalizedChartSettings(gds, interval, range, startDate, endDate, unitCd);
 
-        // 3. 차트 데이터 생성
+        // 4. 개인화 & 디폴트 & 요청 파라미터 2차 유효성 검증 후 보정
+//        validateChartParameters(gds, settingsContext);
+
+        // 5. 차트 데이터 생성
         ChartBundleRes bundle = generateChartBundle(gds, settingsContext);
 
-        // 4. 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContext.finalizedRange().getLeft()));
+        // 6. 차트 데이터 슬라이싱 및 반환
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContext.finalizedRangeBetween().getLeft()));
     }
 
     /**
@@ -244,26 +249,27 @@ public class MiDataDetailService {
         }
 
         if (range == Range.CUSTOM) {
+
+            // 커스텀 범위인 경우 시작일과 종료일이 모두 필요
             if (startDate == null || endDate == null) {
-                throw AppErrorException.of(
-                    ResultCode.Error.REQ_INVALID, "Both 'startDate' and 'endDate' must be provided for a 'CUSTOM' range.");
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Both 'startDate' and 'endDate' must be provided for a 'CUSTOM' range.");
             }
+
+            // 시작일과 종료일이 유효한 날짜인지 검증
             if (endDate.isBefore(startDate)) {
-                throw AppErrorException.of(
-                    ResultCode.Error.REQ_INVALID, "'endDate' must be after 'startDate'.");
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "'endDate' must be after 'startDate'.");
             }
+
         }
 
-        // 인터벌이 데이터소스의 최소 인터벌보다 작은지 검증
-        if (BooleanUtils.isFalse(interval.getPeriodUnitSeparateCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd()))) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
-                "The 'interval' is greater than the minInterval of the goods-data-source. interval: %s, minInterval: %s".formatted(interval, gds.getPeriodUnitSeparateCd()));
+        // 요청받은 인터벌이 데이터소스의 최소 데이터 수집 단위보다 작은지 검증
+        if (BooleanUtils.isFalse(interval.getPeriodCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd()))) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "The 'interval' is greater than the minInterval of the goods-data-source. interval: %s, minInterval: %s".formatted(interval, gds.getPeriodUnitSeparateCd()));
         }
 
         // 인터벌에 대해 범위가 유효한지 검증
         if (BooleanUtils.isFalse(interval.isAllowedRange(range, startDate, endDate))) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
-                "The 'range' is not allowed in the 'interval'. interval: %s, range: %s".formatted(interval, range));
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The 'range' is not allowed in the 'interval'. interval: %s, range: %s".formatted(interval, range));
         }
 
     }
@@ -291,7 +297,11 @@ public class MiDataDetailService {
             .or(resolve::interval) // personalize
             .orElse(Interval.ONE_DAY); // default
 
-        Pair<String, String> finalizedRange = Optional.ofNullable(range) // req
+        Range finalizedRange = Optional.ofNullable(range) // req
+            .or(resolve::range) // personalize
+            .orElse(Range.ONE_YEAR); // default
+
+        Pair<String, String> finalizedRangeBetween = Optional.ofNullable(range) // req
             .map(r -> toPair(r, startDate, endDate)) // req
             .or(resolve::periodDates) // personalize
             .or(() -> resolve.range().map(DateUtil::getDateRange)) // personalize
@@ -316,6 +326,7 @@ public class MiDataDetailService {
             unitCdMap,
             finalizedInterval,
             finalizedRange,
+            finalizedRangeBetween,
             finalizedUnitCd,
             finalizedChartType,
             finalizedIndicators,
@@ -347,18 +358,20 @@ public class MiDataDetailService {
 
         // [metadata] 생성
         ChartMetadata metadata = ChartMetadata.of(
-            gds.getGoodsDataSourceCurrencyUnitNm(),
+            gds,
             settingsContext.finalizedChartType(),
             settingsContext.finalizedUnitCd(),
             settingsContext.unitCdMap().keySet(),
             settingsContext.finalizedInterval(),
+            settingsContext.finalizedRange(),
+            settingsContext.finalizedRangeBetween(),
             DateUtil.toYmd(latestDate) // 2025-05-27 fix: 메타데이터에 최신 업데이트 일자 추가
         );
 
         // [mainChart] 생성
         Chart mainChart = chartGenerationService.generateChartData(
             gds,
-            settingsContext.finalizedRange(),
+            settingsContext.finalizedRangeBetween(),
             settingsContext.finalizedInterval(),
             settingsContext.unitCdMap().get(settingsContext.finalizedUnitCd()),
             Boolean.TRUE, // 메인 차트는 항상 visible 상태
@@ -374,7 +387,7 @@ public class MiDataDetailService {
         // [comparisonCharts] 생성
         List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
             gds,
-            settingsContext.finalizedRange(),
+            settingsContext.finalizedRangeBetween(),
             settingsContext.finalizedInterval(),
             settingsContext.finalizedCompIds()
         );

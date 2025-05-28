@@ -41,7 +41,7 @@ public record UnitCd(
      */
     @Override
     public String toString() {
-        if (category == null) return unit == null ? "" : unit;
+        if (category == null) return unit;
         if (unit == null) return category;
         return category + DELIM + unit;
     }

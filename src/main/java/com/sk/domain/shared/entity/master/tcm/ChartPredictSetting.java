@@ -56,11 +56,14 @@ public class ChartPredictSetting extends BaseEntity {
     @Comment("예측선택일")
     private Integer predictChoiceDay;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "scop_perd_unit_spt_cd", length = 2)
     @Comment("범위기간단위구분코드")
-    private String scopePeriodUnitSeparateCd;
+    private PeriodUnitSeparateCd scopePeriodUnitSeparateCd;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "defl_perd_unit_spt_cd", length = 2)
     @Comment("기본기간단위구분코드")
-    private String defaultPeriodUnitSeparateCd;
+    private PeriodUnitSeparateCd defaultPeriodUnitSeparateCd;
+
 }

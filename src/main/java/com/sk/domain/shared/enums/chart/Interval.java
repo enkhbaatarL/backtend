@@ -26,7 +26,7 @@ public enum Interval {
 
     private final String code;
     private final String description;
-    private final PeriodUnitSeparateCd periodUnitSeparateCd;
+    private final PeriodUnitSeparateCd periodCd;
     private final List<Range> allowedRanges;
     private final int unitCount;
 
@@ -43,7 +43,7 @@ public enum Interval {
     public boolean isAllowedRange(Range range, LocalDate startDate, LocalDate endDate) {
         if (range == Range.CUSTOM) {
             Duration requestDuration = Duration.between(startDate.atStartOfDay(), endDate.atStartOfDay());
-            Duration required = periodUnitSeparateCd.getTemporalUnit().getDuration().multipliedBy(unitCount);
+            Duration required = periodCd.getTemporalUnit().getDuration().multipliedBy(unitCount);
             return requestDuration.compareTo(required) >= 0;
         } else {
             return this.allowedRanges.contains(range);
