@@ -48,6 +48,7 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             JOIN FETCH gdsd.goodsData gd
             JOIN FETCH gd.goods g
             WHERE gdsd.isDeleted = false
+            AND gdsd.goodsDataUseManagementCd = 'backend'
             AND gd.isDeleted = false
             AND g.isDeleted = false
             AND gdsd.goodsDataSourceNo = :goodsDataSourceNo
