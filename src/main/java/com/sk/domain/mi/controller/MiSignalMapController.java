@@ -13,11 +13,15 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.service.MiSignalMapService;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.insights.InsightsPeriodType;
+import com.sk.domain.shared.enums.signalMap.signalMapPeriodType;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
@@ -33,15 +37,21 @@ public class MiSignalMapController {
     private final AuthorizationService authorizationService;
     private final MiSignalMapService miSignalMapService;
 
+    // todo: get filter list
+
     @ApiOrder(1)
-    // @Parameters({
-    // @Parameter(name = "customerCompanyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
-    // })
-    @Operation(summary = "??? 목록 조회", description = "??? 목록을 조회합니다.")
+    @Parameters({
+            @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간 필터", schema = @Schema(implementation = signalMapPeriodType.class)),
+            @Parameter(name = "filters", description = "회사마다 다른 필터가 존재, 없는 경우도 있음"),
+    })
+    @Operation(summary = "시그널맵 데이타 조회", description = "시그널맵 데이타를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/latest-data")
+    @GetMapping("/companies/{companyNo}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<String> getTest(@PathVariable(value = "companyNo") Integer companyNo) {
+    public BaseResponse<String> getTest(
+            @PathVariable(value = "companyNo") Integer companyNo,
+            @RequestParam(value = "period", required = false, defaultValue = "ALL") signalMapPeriodType period,
+            @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
 
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();

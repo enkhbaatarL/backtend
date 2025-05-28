@@ -163,6 +163,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_no AS goodsDataNo,")
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
+                .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
                 .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
                 .append(" tgd.mod_dtm AS modifyDt");
 
@@ -284,8 +285,9 @@ public class MiInsightsService {
                         (Integer) row[4], // goodsDataNo
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
-                        (String) row[7], // goodsDataCategory
-                        ((Timestamp) row[8]).toLocalDateTime() // modifyDt
+                        (String) row[7], // goodsDataSummaryCntt
+                        (String) row[8], // goodsDataCategory
+                        ((Timestamp) row[9]).toLocalDateTime() // modifyDt
                 ))
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
