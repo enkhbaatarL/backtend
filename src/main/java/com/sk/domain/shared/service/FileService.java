@@ -404,7 +404,11 @@ public class FileService {
         List<UploadedFile> list = uploadedFileRepository.findByFileNameAndFileHash(Normalizer.normalize(fileName, Normalizer.Form.NFC),
                 fileHash);
 
-        return FileExistRes.of(list.size() > 0);
+        if (list.size() > 0) {
+            return FileExistRes.of(list.get(0).getFileNo(), true);
+        } else {
+            return FileExistRes.of(0L, false);
+        }
     }
 
     private String getFileExtension(String fileName) {
