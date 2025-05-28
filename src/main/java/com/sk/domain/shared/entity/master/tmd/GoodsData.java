@@ -45,7 +45,7 @@ public class GoodsData extends BaseEntity {
     @Comment("상품데이터명")
     private String goodsDataNm;
 
-    @Column(name = "gds_data_expn", length = 500)
+    @Column(name = "gds_data_expn", columnDefinition = "text")
     @Comment("상품데이터설명")
     private String goodsDataExpn;
 
