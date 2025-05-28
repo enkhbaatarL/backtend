@@ -1022,7 +1022,7 @@ public class MiMarketDataService {
 
             Object result = em.createNativeQuery(sql).getSingleResult();
             return result != null ? ((Number) result).doubleValue() : 0.0;
-        } catch (PersistenceException | IllegalArgumentException e) {
+        } catch (Exception e) {
             return 0.0;
         } finally {
             DataSourceContextHolder.clearDataSourceKey();
