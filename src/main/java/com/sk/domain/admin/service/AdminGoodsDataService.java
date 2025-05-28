@@ -481,7 +481,7 @@ public class AdminGoodsDataService {
     }
 
     private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
-        goodsData.update(dto.goodsExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm());
+        goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm());
 
         // 문서 타입 카테고리 수정
         if (dto.docCategoryList() != null) {
