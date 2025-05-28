@@ -29,7 +29,7 @@ public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataI
                 JOIN (
                 SELECT DISTINCT gdsd.goodsData.goodsDataNo as goodsDataNo
                 FROM GoodsDataSourceDetail gdsd
-                WHERE gdsd.isDeleted = false
+                WHERE gdsd.isDeleted = false AND gdsd.goodsDataUseManagementCd = 'backend'
                 ) gud ON gud.goodsDataNo = gd.goodsDataNo
             WHERE gdiu.id.userLoginId = :userLoginId
                 AND gdiu.isDeleted = false
