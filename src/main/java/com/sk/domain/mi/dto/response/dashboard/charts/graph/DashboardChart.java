@@ -22,11 +22,11 @@ public record DashboardChart(
 
     public static DashboardChart of(ChartPredictSettingDetail chartPredictSettingDetail,
             DashboardChartLine actualChartLines, DashboardChartLine forecastChartLines) {
-        return DashboardChart.builder()
-                .chartLineDescription(chartPredictSettingDetail.getPredictChartDetailExpn())
-                .chartLineType(chartPredictSettingDetail.getChartPredictLineSeparateCd())
-                .actualChartLines(actualChartLines)
-                .forecastChartLines(forecastChartLines)
-                .build();
+            return DashboardChart.builder()
+                    .chartLineDescription(chartPredictSettingDetail.getPredictChartDetailExpn())
+                    .chartLineType(chartPredictSettingDetail.getChartPredictLineSeparateCd())
+                    .actualChartLines(actualChartLines)
+                    .forecastChartLines(forecastChartLines)
+                    .build();
     }
 }

@@ -27,7 +27,7 @@ public record DashboardChartLine(
 				.isPermitted(isPermitted)
 				.dataType(dataType)
 				.rawData(rawData)
-				// .rawData(isPermitted != null && isPermitted ? rawData : null)
+				.rawData(isPermitted != null && isPermitted ? rawData : null)
 				.build();
 	}
 }
