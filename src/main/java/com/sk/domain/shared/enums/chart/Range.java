@@ -1,8 +1,11 @@
 package com.sk.domain.shared.enums.chart;
 
+import com.sk.common.utils.DateUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
@@ -44,6 +47,16 @@ public enum Range {
 
     public static Range findByCode(String code) {
         return RANGE_CODE_MAP.getOrDefault(code, null);
+    }
+
+    public static Pair<String, String> toPair(Range range, LocalDate from, LocalDate to) {
+        if (range == Range.CUSTOM) {
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("For CUSTOM range, both startDate and endDate are required!");
+            }
+            return Pair.of(DateUtil.toYmd(from), DateUtil.toYmd(to));
+        }
+        return DateUtil.getDateRange(range);
     }
 
 }

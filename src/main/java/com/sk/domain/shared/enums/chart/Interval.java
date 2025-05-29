@@ -37,7 +37,7 @@ public enum Interval {
 
     /**
      * range·데이터 최소단위·기간 길이까지 고려해
-     * ① 자신이 허용되는지 판단한다
+     * 자신이 허용되는지 판단한다
      */
     public boolean isCompatible(Range range, PeriodUnitSeparateCd minUnit, LocalDate st, LocalDate ed) {
         return this.isAllowedRange(range, st, ed) && this.periodCd.isGreaterOrEqual(minUnit);

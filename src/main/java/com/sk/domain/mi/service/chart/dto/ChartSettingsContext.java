@@ -20,54 +20,25 @@ import java.util.Set;
 @Builder
 public record ChartSettingsContext(
 
-    /**
-     * 인터벌
-     */
+    // 요청 시점의 값들
+    Interval requestedInterval,
+    Range requestedRange,
+    LocalDate requestedStartDateStr,
+    LocalDate requestedEndDateStr,
+    String requestedUnitCdStr,
+
+    // 최종 결정/조정된 값들
     Interval finalizedInterval,
-    /**
-     * 범위
-     */
     Range finalizedRange,
-    /**
-     * 커스텀 범위 시작일
-     */
     LocalDate finalizedStartDate,
-    /**
-     * 커스텀 범위 종료일
-     */
     LocalDate finalizedEndDate,
-    /**
-     * 커스텀 범위 시작일 및 종료일 쌍 객체
-     */
     Pair<String, String> finalizedRangeBetween,
-    /**
-     * 단위변환코드
-     */
     UnitCd finalizedUnitCd,
-    /**
-     * 단위변환코드 문자열
-     */
-    String finalizedUnitCdStr,
-    /**
-     * 단위변환을 위한 객체
-     */
     UnitConvert finalizedUnitConvert,
-    /**
-     * 변경가능한 단위변환코드 목록
-     */
-    Set<UnitCd> finalizedAllowedUnitCds,
-    /**
-     * 차트타입
-     */
     ChartType finalizedChartType,
-    /**
-     * 보조지표 리스트
-     */
     List<String> finalizedIndicators,
-    /**
-     * 비교군 리스트
-     */
-    List<Integer> finalizedCompIds
+    List<Integer> finalizedCompIds,
+    Set<UnitCd> finalizedAllowedUnitCds
 
 ) {
 }

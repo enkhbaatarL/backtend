@@ -23,9 +23,6 @@ public interface ChartPredictSettingDetailRepository
                     AND cpsd.isFuture = false
             """)
     List<String> findFilterTypeByCompanyNo(@Param("companyNo") Integer companyNo);
-import java.util.List;
-
-public interface ChartPredictSettingDetailRepository extends JpaRepository<ChartPredictSettingDetail, Integer>, CustomChartPredictSettingDetailRepository {
 
     List<ChartPredictSettingDetail> findByChartPredictSettingAndIsDeletedFalse(ChartPredictSetting chartPredictSetting);
 

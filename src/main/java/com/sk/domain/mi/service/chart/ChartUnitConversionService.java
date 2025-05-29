@@ -196,12 +196,6 @@ public class ChartUnitConversionService {
         return result;
     }
 
-    public void validateUnitCd(Map<UnitCd, UnitConvert> unitConvertMap, UnitCd finalizedUnitCd) {
-        if (!unitConvertMap.containsKey(finalizedUnitCd)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitCd' cannot be applied to the current goods-data-source. unitCd: [%s]".formatted(finalizedUnitCd.toString()));
-        }
-    }
-
     public static String generateDefaultUnitCd(GoodsDataSourceDetail goodsDataSourceDetail) {
         return StringUtil.joinPoundSignNonNull(goodsDataSourceDetail.getConvertTargetDetailTypeNm(), goodsDataSourceDetail.getGoodsDataSourceUnitNm());
     }
