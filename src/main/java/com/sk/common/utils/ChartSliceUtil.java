@@ -123,8 +123,10 @@ public class ChartSliceUtil {
      */
     public static ChartBundleRes sliceBundle(ChartBundleRes src, LocalDate start) {
 
+        // 메인차트 슬라이싱
         Chart main = sliceChart(src.mainChart(), start);
 
+        // 보조지표 슬라이싱
         List<Indicator> indicators = src.indicators() == null ? List.of() :
             src.indicators().stream()
                 .map(ind -> sliceIndicator(ind, start))

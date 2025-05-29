@@ -2,7 +2,6 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
-import com.sk.common.utils.StringUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.charts.*;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;

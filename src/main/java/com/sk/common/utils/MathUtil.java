@@ -46,8 +46,14 @@ public class MathUtil {
         return x;
     }
 
+    /**
+     * BigDecimal로 변환
+     *  - null인 경우 null 반환,
+     *  - BigDecimal인 경우 그대로 반환,
+     *  - 그 외에는 문자열로 변환 후 BigDecimal 생성
+     */
     public static BigDecimal toBigDecimal(Object v) {
-        if (v == null) return BigDecimal.ZERO;
+        if (v == null) return null;
         if (v instanceof BigDecimal bd) return bd;
         try {
             return new BigDecimal(v.toString());

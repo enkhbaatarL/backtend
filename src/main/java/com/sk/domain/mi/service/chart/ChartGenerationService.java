@@ -63,7 +63,7 @@ public class ChartGenerationService {
         List<Map<String, Object>> rawData = getRows(gds, dateColumnName, determinedRange, isMainChart);
 
         // 원시 데이터 : [정렬 및 날짜 변환]
-        List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
+        List<Map<String, Object>> sortedData = convertAndOrderByDates(rawData, dateColumnName);
 
         // 원시 데이터 : [집계]
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
@@ -193,7 +193,7 @@ public class ChartGenerationService {
     /**
      * 원시 데이터의 날짜 값을 LocalDate 타입으로 파싱하고, 정렬한다.
      */
-    private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
+    private List<Map<String, Object>> convertAndOrderByDates(List<Map<String, Object>> rawData, String dateColumnKey) {
         return rawData.stream()
             .map(row -> {
                 Map<String, Object> copy = new HashMap<>(row);

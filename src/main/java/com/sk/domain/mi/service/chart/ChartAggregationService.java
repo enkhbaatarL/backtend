@@ -2,7 +2,7 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
-import com.sk.common.utils.StringUtil;
+import com.sk.domain.mi.service.chart.dto.BucketBoundary;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
@@ -21,13 +21,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ChartAggregationService {
-
-    // 버킷 경계를 나타내는 내부 레코드 (시작일 포함, 종료일 미포함)
-    private record BucketBoundary(
-        LocalDate start,
-        LocalDate exclusiveEnd
-    ) {
-    }
 
     /**
      * 원시 데이터(rawData)를 주어진 간격(interval)에 맞춰 집계한다.
@@ -134,7 +127,6 @@ public class ChartAggregationService {
             case ONE_YEAR -> date.minusYears(1);
             // ONE_DAY는 aggregate 메소드 초반에 처리되므로 여기선 불필요하나, 완전성을 위해 추가
             case ONE_DAY -> date.minusDays(1);
-            // default or throw exception? Assuming valid interval enum
         };
     }
 
@@ -191,8 +183,8 @@ public class ChartAggregationService {
      * 캔들 차트 데이터 집계 (시가, 종가, 고가, 저가)
      * 대표 날짜는 버킷의 시작일 사용.
      */
-    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucketData, LocalDate representativeDate, String dateCol, String volumeCol, List<String> targetColumns) {
-        if (bucketData.isEmpty()) return Collections.emptyMap();
+    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, LocalDate representativeDate, String dateCol, String volumeCol, List<String> targetColumns) {
+        if (bucket.isEmpty()) return Collections.emptyMap();
 
         // 버킷 내 데이터는 이미 시간순 정렬되어 있다고 가정
         Map<String, Object> map = new LinkedHashMap<>();
@@ -205,16 +197,20 @@ public class ChartAggregationService {
         String closeCol = targetColumns.get(RenderAs.CLOSE.getIndex());
 
         // 시가 (Open): 버킷의 첫 번째 데이터 값 -> todo 평균
-        map.put(openCol, MathUtil.toBigDecimal(bucketData.get(0).get(openCol)));
+//        map.put(openCol, MathUtil.toBigDecimal(bucket.get(0).get(openCol)));
+        map.put(openCol, average(bucket, openCol));
         // 종가 (Close): 버킷의 마지막 데이터 값 -> todo 평균
-        map.put(closeCol, MathUtil.toBigDecimal(bucketData.get(bucketData.size() - 1).get(closeCol)));
+//        map.put(closeCol, MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(closeCol)));
+        map.put(closeCol, average(bucket, closeCol));
         // 고가 (High): 버킷 내 최대값 -> todo 평균
-        map.put(highCol, max(bucketData, highCol));
+//        map.put(highCol, max(bucket, highCol));
+        map.put(highCol, average(bucket, highCol));
         // 저가 (Low): 버킷 내 최소값 -> todo 평균
-        map.put(lowCol, min(bucketData, lowCol));
+//        map.put(lowCol, min(bucket, lowCol));
+        map.put(lowCol, average(bucket, lowCol));
 
         if (StringUtils.isNotEmpty(volumeCol)) {
-            map.put(volumeCol, sum(bucketData, volumeCol));
+            map.put(volumeCol, sum(bucket, volumeCol));
         }
 
         return map;
@@ -253,8 +249,8 @@ public class ChartAggregationService {
 
     private BigDecimal max(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .filter(Objects::nonNull) // null 값 제외
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .max(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO) // 최대값이 없으면 0 (데이터가 없거나 모두 null)
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
@@ -262,8 +258,8 @@ public class ChartAggregationService {
 
     private BigDecimal min(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .filter(Objects::nonNull) // null 값 제외
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .min(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO) // 최소값이 없으면 0
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
@@ -271,8 +267,8 @@ public class ChartAggregationService {
 
     private BigDecimal average(List<Map<String, Object>> bucket, String col) {
         List<BigDecimal> values = bucket.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .filter(Objects::nonNull) // null 값은 평균 계산에서 제외
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .toList();
 
         if (values.isEmpty()) {
@@ -285,8 +281,8 @@ public class ChartAggregationService {
 
     private BigDecimal sum(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .filter(Objects::nonNull) // null 값 제외
+            .map(r -> MathUtil.toBigDecimal(r.get(col)))
             .reduce(BigDecimal.ZERO, MathUtil::add)
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
     }
