@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PersonalizationService {
 
-    private final PersonalizedChartSettingRepository repository;
+    private final PersonalizedChartSettingRepository personalRepository;
 
     public Preferences resolve(GoodsDataSourceDetail gds, Role role, String userLoginId) {
 
@@ -35,7 +35,7 @@ public class PersonalizationService {
         }
 
         // DB 조회
-        List<PersonalizedChartSetting> rows = repository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, userLoginId);
+        List<PersonalizedChartSetting> rows = personalRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, userLoginId);
 
         // 그룹핑 후 EnumMap 채우기
         raw.putAll(rows.stream()

@@ -57,6 +57,8 @@ public class ChartGenerationService {
         List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
 
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
+        String volumeColumnNm = Optional.ofNullable(gds.getTradeVolumeColumnNm()).map(String::trim).orElse(null);
+
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 : [조회]
@@ -69,7 +71,7 @@ public class ChartGenerationService {
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
 
         // 원시 데이터 : [단위 변환]
-        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, volumeColumnNm, unitConvert);
 
         return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
@@ -137,7 +139,7 @@ public class ChartGenerationService {
                     comparison.getCompareGoodsDataSourceDetail(),
                     determinedRange,
                     interval,
-                    ChartUnitConversionService.IDENTITY,
+                    ChartUnitConversionService.DEFAULT_IDENTITY,
                     isVisible, // '비교군' 차트 화면 노출 여부
                     Boolean.FALSE // 메인 차트 여부
                 );

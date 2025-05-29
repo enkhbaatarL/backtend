@@ -53,13 +53,6 @@ public enum Interval {
             return !endDate.isBefore(minEndDate);
         }
         return this.allowedRanges.contains(range);
-//        if (range == Range.CUSTOM) {
-//            Duration requestDuration = Duration.between(startDate.atStartOfDay(), endDate.atStartOfDay());
-//            Duration required = this.periodCd.getTemporalUnit().getDuration().multipliedBy(periodCount);
-//            return requestDuration.compareTo(required) >= 0;
-//        } else {
-//            return this.allowedRanges.contains(range);
-//        }
     }
 
     private static final Map<String, Interval> INTERVAL_CODE_MAP;

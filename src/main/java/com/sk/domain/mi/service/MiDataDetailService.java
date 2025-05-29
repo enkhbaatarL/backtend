@@ -41,8 +41,8 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepositor
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -219,41 +219,40 @@ public class MiDataDetailService {
         // 1. 데이터 소스 검증
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
-        // 2. 요청 파라미터 1차 유효성 hard 검증 (오직 사용자 요청(Range, Interval)에 대한 값 검증을 수행함)
-        hardValidateChartParameters(gds, interval, range, startDate, endDate);
+        // 2. 요청 파라미터 1차 유효성 hard 검증
+        ChartSettingsContext settingsContextV1 = hardValidateChartParameters(gds, interval, range, startDate, endDate, unitCd);
 
         // 3. 개인화 & 디폴트 설정 처리
-        ChartSettingsContext settingsContext = finalizedChartSettings(gds, interval, range, startDate, endDate, unitCd);
+        ChartSettingsContext settingsContextV2 = personalizeAndDefault(gds, settingsContextV1);
 
-        // 4. 개인화 & 디폴트 & 요청 파라미터 2차 유효성 soft 검증 후 보정 (todo 테스트 및 점검)
-//        settingsContext = softValidateChartParametersAndAdjust(gds, settingsContext);
+        // 4. 파라미터 2차 유효성 soft 검증 -> 검증 실패 시, 대체 값 주입
+//        ChartSettingsContext settingsContextV3 = softValidateChartParametersAndAdjust(gds, settingsContextV2);
 
         // 5. 차트 데이터 생성
-        ChartBundleRes bundle = generateChartBundle(gds, settingsContext);
+        ChartBundleRes bundle = generateChartBundle(gds, settingsContextV2);
 
         // 6. 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContext.finalizedRangeBetween().getLeft()));
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV2.finalizedRangeBetween().getLeft()));
 
     }
 
     /**
-     * 차트 파라미터의 유효성을 검증합니다.
+     * 차트 요청 파라미터의 1차 유효성을 검증합니다.
+     * 사용자 요청에 대한 값 검증을 수행합니다.
      *
      * @param gds       데이터소스 상세 정보
      * @param interval  인터벌
      * @param range     범위
      * @param startDate 시작일
      * @param endDate   종료일
+     * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명)
      */
-    private void hardValidateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate) {
+    private ChartSettingsContext hardValidateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
 
-        if (interval == null || range == null) {
-            return;
-        }
-
+        // 'Range' 검증
         if (range == Range.CUSTOM) {
 
-            // 커스텀 범위인 경우 시작일과 종료일이 모두 필요
+            // [CUSTOM] 범위인 경우, 시작일과 종료일이 모두 필요
             if (startDate == null || endDate == null) {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "For [CUSTOM] 'range', both 'startDate' and 'endDate' must be provided.");
             }
@@ -265,49 +264,83 @@ public class MiDataDetailService {
 
         }
 
-        // 검증 1: 요청된 interval이 데이터소스의 최소 수집 단위(gds.getPeriodUnitSeparateCd())보다 과도하게 세부적인지 확인
-        // interval의 기간 단위(periodCd)는 gds의 최소 단위(getPeriodUnitSeparateCd)보다 크거나 같아야 함.
-        if (!interval.getPeriodCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd())) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
-                "Requested interval (%s - %s) is too granular. Data source's minimum period unit is %s (%s). Minimum allowed interval is %s.".formatted(
-                    interval.getCode(),
-                    interval.getDescription(),
-                    gds.getPeriodUnitSeparateCd().getCode(),
-                    gds.getPeriodUnitSeparateCd().getDescription(),
-                    gds.getPeriodUnitSeparateCd().minInterval().getCode()
-                )
-            );
-        }
+        // 'Interval' 검증
+        if (ObjectUtils.isNotEmpty(interval)) {
 
-        // 검증 2: 요청된 interval에 대해 요청된 range가 허용되는 조합인지 확인
-        // (CUSTOM range의 경우, startDate와 endDate를 사용해 기간 길이도 함께 검증됨)
-        if (!interval.isAllowedRange(range, startDate, endDate)) {
-            String customRangeInfo = "";
-            if (range == Range.CUSTOM) {
-                customRangeInfo = " (from %s to %s)".formatted(DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
+            // 인터벌과 기간단위코드 상관관계 검증
+            // example:
+            // interval ONE_DAY(1D)라면? 데이터소스의 기간단위구분코드가 최소 'D' 여야 한다.
+            // 기간단위구분코드가 W, M, Y 라면 원본데이터를 1D 볼 수 없기 때문에 에러를 발생시킨다.
+            if (!interval.getPeriodCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd())) {
+                throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "Requested interval (%s - %s) is too granular. Data source's minimum period unit is %s (%s). Minimum allowed interval is %s.".formatted(
+                        interval.getCode(),
+                        interval.getDescription(),
+                        gds.getPeriodUnitSeparateCd().getCode(),
+                        gds.getPeriodUnitSeparateCd().getDescription(),
+                        gds.getPeriodUnitSeparateCd().minInterval().getCode()
+                    )
+                );
             }
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                "The selected range (%s%s) is not compatible with the selected interval (%s - %s).".formatted(
-                    range.getCode(),
-                    customRangeInfo,
-                    interval.getCode(),
-                    interval.getDescription()
-                )
-            );
+
+            // 범위와 인터벌 상관관계 검증
+            if (!interval.isAllowedRange(range, startDate, endDate)) {
+                String customRangeInfo = "";
+                if (range == Range.CUSTOM) {
+                    customRangeInfo = " (from %s to %s)".formatted(DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
+                }
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                    "The selected range (%s%s) is not compatible with the selected interval (%s - %s).".formatted(
+                        range.getCode(),
+                        customRangeInfo,
+                        interval.getCode(),
+                        interval.getDescription()
+                    )
+                );
+            }
+
         }
 
+        UnitConvert unitConvert = ChartUnitConversionService.DEFAULT_IDENTITY;
+        Map<UnitCd, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
+
+        // 'UnitCd' 검증
+        if (StringUtils.isNotEmpty(unitCd)) {
+            UnitCd requestUnitCd = UnitCd.parse(unitCd);
+            chartUnitConversionService.validateUnitCd(unitCdMap, requestUnitCd);
+            unitConvert = unitCdMap.get(requestUnitCd);
+        }
+
+        // 1차 유효성 검증이 끝난 차트 설정 컨텍스트
+        return ChartSettingsContext.builder()
+            .finalizedInterval(interval) // req
+            .finalizedRange(range) // req
+            .finalizedStartDate(startDate) //req
+            .finalizedEndDate(endDate) // req
+            .finalizedUnitCdStr(unitCd) // req
+            .finalizedUnitConvert(unitConvert)
+            .finalizedAllowedUnitCds(unitCdMap.keySet())
+            .build();
     }
 
-    private ChartSettingsContext softValidateChartParametersAndAdjust(GoodsDataSourceDetail gds, ChartSettingsContext ctx) {
+    /**
+     * 차트 파라미터를 soft-validate하고 조정합니다.
+     * 데이터소스의 최소 수집 단위에 맞춰 인터벌과 범위를 조정합니다.
+     *
+     * @param gds               데이터소스 상세 정보
+     * @param settingsContextV2 파라미터 설정 컨텍스트 객체(v2)
+     * @return 조정된 차트 설정 컨텍스트
+     */
+    private ChartSettingsContext softValidateChartParametersAndAdjust(GoodsDataSourceDetail gds, ChartSettingsContext settingsContextV2) {
 
-        Interval originalInterval = ctx.finalizedInterval();
-        Range originalRange = ctx.finalizedRange();
+        Interval originalInterval = settingsContextV2.finalizedInterval();
+        Range originalRange = settingsContextV2.finalizedRange();
 
         Interval interval = originalInterval;
         Range range = originalRange;
 
-        LocalDate st = DateUtil.fromYmd(ctx.finalizedRangeBetween().getLeft());
-        LocalDate ed = DateUtil.fromYmd(ctx.finalizedRangeBetween().getRight());
+        LocalDate st = DateUtil.fromYmd(settingsContextV2.finalizedRangeBetween().getLeft());
+        LocalDate ed = DateUtil.fromYmd(settingsContextV2.finalizedRangeBetween().getRight());
         PeriodUnitSeparateCd minDataSourceUnit = gds.getPeriodUnitSeparateCd();
 
         if (!interval.isAllowedRange(range, st, ed)) {
@@ -334,7 +367,7 @@ public class MiDataDetailService {
             log.info("Soft-validated chart parameters adjusted...!!! : interval {} → {}, range {} → {}", originalInterval, interval, originalRange, range);
         }
 
-        return ctx
+        return settingsContextV2
             .withFinalizedInterval(interval)
             .withFinalizedRange(range);
     }
@@ -343,61 +376,55 @@ public class MiDataDetailService {
     /**
      * 차트 설정 컨텍스트를 결정합니다.
      * 개인화 설정과 요청 파라미터를 기반으로 차트 설정을 결정합니다.
+     * <p>
+     * [파라미터 우선 순위]
+     * 1. 사용자 요청 값
+     * 2. 개인화 조회 값
+     * 3. 기본값
      *
-     * @param gds       데이터소스 상세 정보
-     * @param interval  인터벌
-     * @param range     범위
-     * @param startDate 시작일
-     * @param endDate   종료일
-     * @param unitCd    단위 코드
+     * @param gds               데이터소스 상세 정보
+     * @param settingsContextV1 파라미터 설정 컨텍스트 객체(v1)
      * @return 결정된 차트 설정 컨텍스트
      */
-    private ChartSettingsContext finalizedChartSettings(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
-
-        // 변환 가능한 단위 맵 조회 (GDS 기본 단위 포함)
-        Map<UnitCd, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
+    private ChartSettingsContext personalizeAndDefault(GoodsDataSourceDetail gds, ChartSettingsContext settingsContextV1) {
 
         PersonalizationService.Preferences resolve = personalizationService.resolve(gds, authorizationService.getCurrentRole(), authorizationService.getSubject());
 
-        Interval finalizedInterval = Optional.ofNullable(interval) // req
+        Interval finalizedInterval = Optional.ofNullable(settingsContextV1.finalizedInterval()) // req
             .or(resolve::interval) // personalize
             .orElse(Interval.ONE_DAY); // default
 
-        Range finalizedRange = Optional.ofNullable(range) // req
+        Range finalizedRange = Optional.ofNullable(settingsContextV1.finalizedRange()) // req
             .or(resolve::range) // personalize
             .orElse(Range.ONE_YEAR); // default
 
-        Pair<String, String> finalizedRangeBetween = Optional.ofNullable(range) // req
-            .map(r -> toPair(r, startDate, endDate)) // req
-            .or(resolve::periodDates) // personalize
-            .or(() -> resolve.range().map(DateUtil::getDateRange)) // personalize
+        Pair<String, String> finalizedRangeBetween = Optional.ofNullable(settingsContextV1.finalizedRange()) // req
+            .map(r -> toPair(r, settingsContextV1.finalizedStartDate(), settingsContextV1.finalizedEndDate()))
+            .or(resolve::periodDates)  // personalize
+            .or(() -> resolve.range().map(DateUtil::getDateRange))
             .orElse(DateUtil.getDateRange(Range.ONE_YEAR)); // default
 
-        UnitCd finalizedUnitCd = Optional.ofNullable(unitCd)
-            .map(UnitCd::parse)
-            .or(resolve::unitCd)
-            .orElse(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()));
+        UnitCd finalizedUnitCd = Optional.ofNullable(settingsContextV1.finalizedUnitCdStr())
+            .map(UnitCd::parse) // request
+            .or(resolve::unitCd) // personalize
+            .orElse(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm())); // default
 
-        ChartType finalizedChartType = resolve.chartType()
-            .orElse(ChartType.LINE);
+        ChartType finalizedChartType = resolve.chartType() // personalize
+            .orElse(ChartType.LINE); // default
 
-        List<String> finalizedIndicators = resolve.indicators();
+        List<String> finalizedIndicators = resolve.indicators(); // personalize
+        List<Integer> finalizedCompIds = resolve.compDataSourceIds(); // personalize
 
-        List<Integer> finalizedCompIds = resolve.compDataSourceIds();
-
-        // 결정된 단위코드 유효성 검증
-        chartUnitConversionService.validateUnitCd(unitCdMap, finalizedUnitCd);
-
-        return new ChartSettingsContext(
-            unitCdMap,
-            finalizedInterval,
-            finalizedRange,
-            finalizedRangeBetween,
-            finalizedUnitCd,
-            finalizedChartType,
-            finalizedIndicators,
-            finalizedCompIds
-        );
+        // settingsContextV1 -> settingsContextV2
+        return settingsContextV1
+            .withFinalizedInterval(finalizedInterval)
+            .withFinalizedRange(finalizedRange)
+            .withFinalizedRangeBetween(finalizedRangeBetween)
+            .withFinalizedUnitCd(finalizedUnitCd)
+            .withFinalizedUnitConvert(settingsContextV1.finalizedUnitConvert())
+            .withFinalizedChartType(finalizedChartType)
+            .withFinalizedIndicators(finalizedIndicators)
+            .withFinalizedCompIds(finalizedCompIds);
     }
 
     private static Pair<String, String> toPair(Range range, LocalDate from, LocalDate to) {
@@ -427,7 +454,7 @@ public class MiDataDetailService {
             gds,
             settingsContext.finalizedChartType(),
             settingsContext.finalizedUnitCd(),
-            settingsContext.unitCdMap().keySet(),
+            settingsContext.finalizedAllowedUnitCds(),
             settingsContext.finalizedInterval(),
             settingsContext.finalizedRange(),
             settingsContext.finalizedRangeBetween(),
@@ -439,7 +466,7 @@ public class MiDataDetailService {
             gds,
             settingsContext.finalizedRangeBetween(),
             settingsContext.finalizedInterval(),
-            settingsContext.unitCdMap().get(settingsContext.finalizedUnitCd()),
+            settingsContext.finalizedUnitConvert(),
             Boolean.TRUE, // 메인 차트는 항상 visible 상태
             Boolean.TRUE
         );

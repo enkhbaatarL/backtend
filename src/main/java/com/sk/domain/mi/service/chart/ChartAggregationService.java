@@ -250,7 +250,7 @@ public class ChartAggregationService {
     private BigDecimal max(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
             .filter(Objects::nonNull) // null 값 제외
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
             .max(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO) // 최대값이 없으면 0 (데이터가 없거나 모두 null)
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
@@ -259,7 +259,7 @@ public class ChartAggregationService {
     private BigDecimal min(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
             .filter(Objects::nonNull) // null 값 제외
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
             .min(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO) // 최소값이 없으면 0
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
@@ -268,7 +268,7 @@ public class ChartAggregationService {
     private BigDecimal average(List<Map<String, Object>> bucket, String col) {
         List<BigDecimal> values = bucket.stream()
             .filter(Objects::nonNull) // null 값은 평균 계산에서 제외
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
             .toList();
 
         if (values.isEmpty()) {
@@ -282,7 +282,7 @@ public class ChartAggregationService {
     private BigDecimal sum(List<Map<String, Object>> bucket, String col) {
         return bucket.stream()
             .filter(Objects::nonNull) // null 값 제외
-            .map(r -> MathUtil.toBigDecimal(r.get(col)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
             .reduce(BigDecimal.ZERO, MathUtil::add)
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
     }

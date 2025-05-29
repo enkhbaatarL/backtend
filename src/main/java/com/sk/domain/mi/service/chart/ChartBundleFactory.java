@@ -96,13 +96,13 @@ public final class ChartBundleFactory {
                 String columnName = yAxisList.get(index);
                 RenderAs renderAs = chartType.resolveRenderAs(index);
                 String label = labels.getOrDefault(columnName, columnName);
-                List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(columnName))).toList();
+                List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimalOrNull(row.get(columnName))).toList();
                 return Series.of(renderAs.getRenderingId(String.valueOf(index + 1)), label, renderAs, values, isVisible);
             })
             .collect(Collectors.toList());
 
         if (StringUtils.isNotEmpty(volumeColumn)) {
-            List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(volumeColumn))).toList();
+            List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimalOrNull(row.get(volumeColumn))).toList();
             series.add(Series.of(RenderAs.VOLUME.getId(), RenderAs.VOLUME.getDisplayDescription(), RenderAs.VOLUME, values, isVisible));
         }
 
