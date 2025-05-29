@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 // @formatter:off
-@Builder
 public record CategoryDataRes(
         @Schema(description = "코드ID", example = "")
         String codeId,
