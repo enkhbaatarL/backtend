@@ -22,6 +22,7 @@ public interface ChartPredictSettingRepository extends JpaRepository<ChartPredic
             """)
     Optional<ChartPredictSetting> findByCustomerCompanyNo(@Param("companyNo") Integer companyNo);
 
+
     Optional<ChartPredictSetting> findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(Integer companyNo);
 
 }
