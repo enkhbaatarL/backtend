@@ -133,7 +133,7 @@ public class MiDataDetailController {
             상품 정형 데이터(데이터소스) 차트 개인화 설정을 합니다. <br><br>
 
             개인화 차트 조건 타입과 허용 값 정의 <br>
-             - RANGE: 차트 범위(1W, 1M, 3M, 6M, 1Y, 2Y) <br>
+             - RANGE: 차트 범위(1W, 1M, 3M, 6M, 1Y, 2Y) / CUSTOM은 개인화 대상이 아님 <br>
              - INTERVAL: 차트 주기(1D, 1W, 2W, 1M, 3M, 6M, 1Y) <br>
              - INDICATOR: 보조 지표(BB, MA_5, MA_20, MA_60, MA_120), visible 처리 / 복수 값 허용 <br>
              - CHART: 차트 유형(CANDLE, LINE) <br>
