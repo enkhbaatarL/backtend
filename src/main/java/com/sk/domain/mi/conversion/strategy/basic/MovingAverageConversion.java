@@ -33,31 +33,61 @@ public class MovingAverageConversion implements ConversionStrategy {
     /**
      * 시계열 데이터에 대한 이동 평균 계산
      */
+//    @Override
+//    public List<BigDecimal> convertTimeSeries(List<BigDecimal> timeSeriesData, int windowSize) {
+//
+//        if (timeSeriesData == null) {
+//            throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Time series data cannot be null");
+//        }
+//
+//        // 결과 리스트 초기화 (null로 채워진 동일한 크기의 리스트)
+//        List<BigDecimal> results = new ArrayList<>(Collections.nCopies(timeSeriesData.size(), null));
+//
+//        // 윈도우 크기 이상의 데이터가 있는 시점부터 이동평균 계산
+//        for (int i = windowSize - 1; i < timeSeriesData.size(); i++) {
+//            BigDecimal sum = BigDecimal.ZERO;
+//
+//            // 현재 윈도우의 데이터 합계 계산
+//            for (int j = 0; j < windowSize; j++) {
+//                sum = MathUtil.add(sum, timeSeriesData.get(i - j));
+//            }
+//
+//            // 평균 계산 및 결과 저장
+//            results.set(i, MathUtil.divide(sum, new BigDecimal(windowSize)));
+//        }
+//
+//        return results;
+//    }
+
     @Override
     public List<BigDecimal> convertTimeSeries(List<BigDecimal> timeSeriesData, int windowSize) {
-
         if (timeSeriesData == null) {
             throw SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Time series data cannot be null");
         }
 
-        // 결과 리스트 초기화 (null로 채워진 동일한 크기의 리스트)
         List<BigDecimal> results = new ArrayList<>(Collections.nCopies(timeSeriesData.size(), null));
 
-        // 윈도우 크기 이상의 데이터가 있는 시점부터 이동평균 계산
         for (int i = windowSize - 1; i < timeSeriesData.size(); i++) {
-            BigDecimal sum = BigDecimal.ZERO;
-
-            // 현재 윈도우의 데이터 합계 계산
+            List<BigDecimal> window = new ArrayList<>(windowSize);
             for (int j = 0; j < windowSize; j++) {
-                sum = MathUtil.add(sum, timeSeriesData.get(i - j));
+                BigDecimal val = timeSeriesData.get(i - j);
+                if (val != null) {
+                    window.add(val);
+                }
             }
-
-            // 평균 계산 및 결과 저장
-            results.set(i, MathUtil.divide(sum, new BigDecimal(windowSize)));
+            // 유효 데이터가 하나도 없으면 결과도 null
+            if (window.isEmpty()) {
+                results.set(i, null);
+            } else {
+                // 평균 계산
+                BigDecimal sum = BigDecimal.ZERO;
+                for (BigDecimal v : window) sum = MathUtil.add(sum, v);
+                results.set(i, MathUtil.divide(sum, new BigDecimal(window.size())));
+            }
         }
-
         return results;
     }
+
 
     @Override
     public boolean supports(FormulaService formulaService) {

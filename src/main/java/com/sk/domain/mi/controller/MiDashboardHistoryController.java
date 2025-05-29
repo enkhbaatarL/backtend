@@ -1,11 +1,10 @@
 package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.mi.dto.response.dashboard.HistoryMetadataRes;
 import com.sk.domain.mi.service.MiDashboardHistoryService;
-import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -37,14 +36,13 @@ public class MiDashboardHistoryController {
     @Parameters({
         @Parameter(name = "companyNo", description = "고객회사 번호")
     })
-    @Operation(summary = "대시보드 히스토리 드랍다운 리스트 API", description = "대시보드 히스토리 드랍다운 리스트를 조회합니다.")
+    @Operation(summary = "대시보드 히스토리 메타데이터 API", description = "대시보드 히스토리 메타데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/history/dropdown")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<?> getForecastDate(
+    @GetMapping("/forecast-history/metadata")
+    public BaseResponse<HistoryMetadataRes> getForecastHistoryMetadata(
         @RequestParam(value = "companyNo") Integer companyNo
     ) {
-        return BaseResponseFactory.create(dashboardHistoryService.getForecastDate(companyNo));
+        return BaseResponseFactory.create(dashboardHistoryService.getForecastHistoryMetadata(companyNo));
     }
 
 }

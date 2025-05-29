@@ -2,6 +2,7 @@ package com.sk.domain.shared.repository.master.tcm;
 
 import java.util.List;
 
+import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +23,10 @@ public interface ChartPredictSettingDetailRepository
                     AND cpsd.isFuture = false
             """)
     List<String> findFilterTypeByCompanyNo(@Param("companyNo") Integer companyNo);
+import java.util.List;
+
+public interface ChartPredictSettingDetailRepository extends JpaRepository<ChartPredictSettingDetail, Integer>, CustomChartPredictSettingDetailRepository {
+
+    List<ChartPredictSettingDetail> findByChartPredictSettingAndIsDeletedFalse(ChartPredictSetting chartPredictSetting);
+
 }

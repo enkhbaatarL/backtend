@@ -11,7 +11,9 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataUnitConvert;
 import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataUnitConvertRepository;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +31,10 @@ import java.util.stream.Collectors;
 public class ChartUnitConversionService {
 
     // GDS 기본 단위 유지를 위한 객체
-    public static final UnitConvert IDENTITY;
+    public static final UnitConvert DEFAULT_IDENTITY;
 
     static {
-        IDENTITY = UnitConvert.ofDefault(BigDecimal.ONE);
+        DEFAULT_IDENTITY = UnitConvert.ofDefault(BigDecimal.ONE);
     }
 
     private final UnitConversionService unitConversionService;
@@ -54,7 +56,7 @@ public class ChartUnitConversionService {
             Collectors.toMap(uc -> new UnitCd(uc.getUnitConvert().getConvertTargetDetailTypeNm(), uc.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert, (v1, v2) -> v2)
         );
 
-        unitCdMap.put(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()), IDENTITY);
+        unitCdMap.put(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()), DEFAULT_IDENTITY);
 
         return unitCdMap;
 
@@ -66,21 +68,22 @@ public class ChartUnitConversionService {
      * @param isCandleChartPossible 캔들 차트 여부
      * @param aggregatedData        집계된 원시 데이터
      * @param targetColumns         컬럼명 리스트 (date 컬럼이 0번)
+     * @param volumeColumn          거래량 컬럼명
      * @param unitConvert           단위 변환 정보
      * @return 변환된 값이 반영된 데이터 리스트
      */
-    public List<Map<String, Object>> convert(boolean isCandleChartPossible, List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert) {
+    public List<Map<String, Object>> convert(boolean isCandleChartPossible, List<Map<String, Object>> aggregatedData, List<String> targetColumns, String volumeColumn, UnitConvert unitConvert) {
 
-        if (ObjectUtils.isEmpty(aggregatedData) || unitConvert == ChartUnitConversionService.IDENTITY) {
+        if (ObjectUtils.isEmpty(aggregatedData) || unitConvert == ChartUnitConversionService.DEFAULT_IDENTITY) {
             return aggregatedData;
         }
 
         String dateCol = targetColumns.get(RenderAs.DATE.getIndex());
 
         if (isCandleChartPossible) {
-            return convertCandleChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
+            return convertCandleChart(aggregatedData, targetColumns, unitConvert, dateCol, volumeColumn);
         } else {
-            return convertLineChart(aggregatedData, targetColumns, unitConvert, dateCol, aggregatedData.size());
+            return convertLineChart(aggregatedData, targetColumns, unitConvert, dateCol, volumeColumn);
         }
     }
 
@@ -92,10 +95,10 @@ public class ChartUnitConversionService {
      * @param targetColumns  컬럼명 리스트
      * @param unitConvert    단위 변환 정보
      * @param dateCol        날짜 컬럼명
-     * @param size           데이터 크기
+     * @param volumeColumn   거래량 컬럼명
      * @return 변환된 캔들 차트 데이터
      */
-    private List<Map<String, Object>> convertCandleChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, int size) {
+    private List<Map<String, Object>> convertCandleChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, String volumeColumn) {
         String closeCol = targetColumns.get(RenderAs.CLOSE.getIndex());
         String openCol = targetColumns.get(RenderAs.OPEN.getIndex());
         String highCol = targetColumns.get(RenderAs.HIGH.getIndex());
@@ -103,16 +106,16 @@ public class ChartUnitConversionService {
 
         // 시계열 데이터 추출
         List<BigDecimal> closeSeries = aggregatedData.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(closeCol)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(closeCol)))
             .toList();
         List<BigDecimal> openSeries = aggregatedData.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(openCol)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(openCol)))
             .toList();
         List<BigDecimal> highSeries = aggregatedData.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(highCol)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(highCol)))
             .toList();
         List<BigDecimal> lowSeries = aggregatedData.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(lowCol)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(lowCol)))
             .toList();
 
         // 단위 변환 적용
@@ -121,15 +124,26 @@ public class ChartUnitConversionService {
         List<BigDecimal> convertedHigh = unitConversionService.convertTimeSeries(unitConvert, highSeries);
         List<BigDecimal> convertedLow = unitConversionService.convertTimeSeries(unitConvert, lowSeries);
 
+        // 단위 변환 미적용(거래량)
+        List<BigDecimal> volumeSeries = null;
+        if (StringUtils.isNotEmpty(volumeColumn)) {
+            volumeSeries = aggregatedData.stream()
+                .map(r -> MathUtil.toBigDecimalOrNull(r.get(volumeColumn)))
+                .toList();
+        }
+
         // 결과 생성
         List<Map<String, Object>> result = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < aggregatedData.size(); i++) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put(dateCol, aggregatedData.get(i).get(dateCol));
             row.put(openCol, convertedOpen.get(i));
             row.put(highCol, convertedHigh.get(i));
             row.put(lowCol, convertedLow.get(i));
             row.put(closeCol, convertedClose.get(i));
+            if (CollectionUtils.isNotEmpty(volumeSeries)) {
+                row.put(volumeColumn, volumeSeries.get(i));
+            }
             result.add(row);
         }
         return result;
@@ -143,25 +157,35 @@ public class ChartUnitConversionService {
      * @param targetColumns  컬럼명 리스트
      * @param unitConvert    단위 변환 정보
      * @param dateCol        날짜 컬럼명
-     * @param size           데이터 크기
+     * @param volumeColumn   거래량 컬럼명
      * @return 변환된 메트릭 차트 데이터
      */
-    private List<Map<String, Object>> convertLineChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, int size) {
+    private List<Map<String, Object>> convertLineChart(List<Map<String, Object>> aggregatedData, List<String> targetColumns, UnitConvert unitConvert, String dateCol, String volumeColumn) {
         String mainCol = targetColumns.get(RenderAs.MAIN.getIndex());
 
         // 메인 시계열 데이터 추출 및 변환
         List<BigDecimal> mainSeries = aggregatedData.stream()
-            .map(r -> MathUtil.toBigDecimal(r.get(mainCol)))
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(mainCol)))
             .toList();
         List<BigDecimal> convertedMain = unitConversionService.convertTimeSeries(unitConvert, mainSeries);
 
+        // 단위 변환 미적용(거래량)
+        List<BigDecimal> volumeSeries = null;
+        if (StringUtils.isNotEmpty(volumeColumn)) {
+            volumeSeries = aggregatedData.stream()
+                .map(r -> MathUtil.toBigDecimalOrNull(r.get(volumeColumn)))
+                .toList();
+        }
+
         // 결과 생성
         List<Map<String, Object>> result = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < aggregatedData.size(); i++) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put(dateCol, aggregatedData.get(i).get(dateCol));
             row.put(mainCol, convertedMain.get(i));
-
+            if (CollectionUtils.isNotEmpty(volumeSeries)) {
+                row.put(volumeColumn, volumeSeries.get(i));
+            }
             // 참조 컬럼은 원본 값 그대로 복사
             for (int j = RenderAs.REFERENCE.getIndex(); j < targetColumns.size(); j++) {
                 String col = targetColumns.get(j);
@@ -174,7 +198,7 @@ public class ChartUnitConversionService {
 
     public void validateUnitCd(Map<UnitCd, UnitConvert> unitConvertMap, UnitCd finalizedUnitCd) {
         if (!unitConvertMap.containsKey(finalizedUnitCd)) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitCd' cannot be applied to the current goods-data-source. unitCd: %s".formatted(finalizedUnitCd.toString()));
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The requested 'unitCd' cannot be applied to the current goods-data-source. unitCd: [%s]".formatted(finalizedUnitCd.toString()));
         }
     }
 
