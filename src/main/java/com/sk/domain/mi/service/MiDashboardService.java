@@ -1,28 +1,60 @@
 package com.sk.domain.mi.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardDataSource;
+import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChart;
+import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartLine;
+import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartRawData;
+import com.sk.domain.mi.dto.response.dashboard.charts.metaData.DashboardMetadata;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.entity.master.tmd.Goods;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.chart.ChartPredictLineType;
+import com.sk.domain.shared.enums.Claim;
+import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.chart.ChartPredictDataType;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
@@ -42,10 +74,17 @@ public class MiDashboardService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
+    private final MiGoodsPermissionService miGoodsPermissionService;
+
+    private final String DASHBOARD_CHART_CACHE_KEY = "dashboard_chart:%d";
 
     private final int DASHBOARD_CHART_START_DATE_FROM_MONTH = 11; // 차트 데이터 조회 기준 날짜 (N달 전)
-    private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
+    private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0; // 예측 결과 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
+    private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
+
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     /**
      * 데이터 존재 여부 조회
@@ -99,67 +138,413 @@ public class MiDashboardService {
      * @param companyNo
      * @return
      */
-    public DashboardChartRes getChart(int companyNo, String date) {
+    public DashboardChartRes getChart(Integer customerCompanyNo, String date, Authentication authentication) {
         if (date == null || date.isEmpty()) {
             date = DateUtil.toYearMonth(LocalDate.now());
         }
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
-        // TODO: 잘 가져와지는지 확인 => 안돼
+        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        }
+        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+
+        // 권한 조회
+        PermissionRes permissionRes = switch (role) {
+            case USER -> {
+                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+            }
+            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+            case API_PLUS_OPERATOR -> {
+                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+            }
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        };
+
+        // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
 
         if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            // TODO: null 처리
-            return null;
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
         }
 
         ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
+        // // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값을 계산하기 위해 예측 데이터별 마지막 업데이트 날짜 목록
+        // List<LocalDate> lastUpdatedList = new ArrayList<>();
+
+        // // 알림 세팅에서 사용할 데이터 소스 목록(예측 데이터만 해당)
+        // List<DashboardDataSource> dashboardDataSources = new ArrayList<>();
+
+        // // Actual 데이터 소스 화폐 단위
+        // GoodsDataSourceDetail actualGoodsDataSourceDetail = null;
+
+        // // associatedGoodsDataSourceDetail 기준으로 데이터를 묶어주기 위함
+        // List<Map<Integer, DashboardChart>> associatedCharts = new ArrayList<>();
+
+        // 스레드 안전한 컬렉션 초기화
+        List<LocalDate> lastUpdatedList = Collections.synchronizedList(new ArrayList<>());
+        List<DashboardDataSource> dashboardDataSources = Collections.synchronizedList(new ArrayList<>());
+        AtomicReference<GoodsDataSourceDetail> actualGoodsDataSourceDetail = new AtomicReference<>();
+        ConcurrentHashMap<Integer, DashboardChart> chartMap = new ConcurrentHashMap<>();
+        AtomicReference<String> atomicDate = new AtomicReference<>();
+
         // 차트 데이터 조회
         // TODO: parallelStream 으로 변경 필요
-        for (ChartPredictSettingDetail chartPredictSettingDetail : chartPredictSettingDetails) {
-            // TODO: goodsDataSource 잘 가져와지는지 확(N+1 없이)
+        // for (ChartPredictSettingDetail chartPredictSettingDetail : chartPredictSettingDetails) {
+        chartPredictSettingDetails.parallelStream().forEach(chartPredictSettingDetail -> {
             GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+            GoodsData goodsData = goodsDataSource.getGoodsData();
+            Goods goods = goodsData.getGoods();
+
+            // 권한 조회
+            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(goods.getGoodsNo(), false);
+
+            // 차트 데이터 타입 설정
+            ChartPredictDataType chartPredictDataType;
+            if (chartPredictSettingDetail.getIsFuture()) {
+                chartPredictDataType = ChartPredictDataType.FUTURE;
+            } else if (chartPredictSettingDetail.getIsChartLinePredictVal()) {
+                chartPredictDataType = ChartPredictDataType.FORECAST;
+
+                // 정책상 예측 데이터는 무조건 권한이 있다
+                isPermitted = true;
+            } else {
+                chartPredictDataType = ChartPredictDataType.ACTUAL;
+
+                // Actual 데이터 소스 화폐 단위(SK on 처럼 Actual 여러개이면 Actual 모두 같은 화폐단위를 사용한다고 가정), 최초 설정만 유지
+                actualGoodsDataSourceDetail.compareAndSet(null, goodsDataSource);
+            }
+
+            // TODO: 권한에 따른 처리
+
+            // TODO: 캐싱 처리
 
             // 칼럼 목록 조회
             String[] tableColumnListNm = Arrays.stream(goodsDataSource.getTableColumnListNm().split(","))
                     .map(String::trim)
                     .toArray(String[]::new);
             // 날짜 칼럼
-            String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
+            String dateColumnName = tableColumnListNm[MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX];
             // 기본 데이터 칼럼
             String defaultDataColumnName = tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
+            String baseDate = atomicDate.get();
+
             // Lasted Date 기준 (2025-01-01)
-            LocalDate endDate = DateUtil.fromYearMonth(date).plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt());
+            LocalDate endDate = DateUtil.fromYearMonth(baseDate).plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt())
+                    .with(TemporalAdjusters.lastDayOfMonth());
             LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH);
-            
+
             // 예측 데이터와 정형데이터의 date 포맷이 다름
             // 차트 조회 종료 날짜(2025-01-01)
-            String END_DATE = chartPredictSettingDetail.getIsChartLinePredictValue() ? DateUtil.toYmd(endDate) : DateUtil.toYmdHyphen(endDate);
+            String END_DATE = chartPredictSettingDetail.getIsChartLinePredictVal() ? DateUtil.toYmd(endDate) : DateUtil.toYmdHyphen(endDate);
             // 차트 조회 시작 날짜(2025-01-01)
-            String START_DATE = chartPredictSettingDetail.getIsChartLinePredictValue() ? DateUtil.toYmd(startDate) : DateUtil.toYmdHyphen(startDate);
+            String START_DATE = chartPredictSettingDetail.getIsChartLinePredictVal() ? DateUtil.toYmd(startDate) : DateUtil.toYmdHyphen(startDate);
 
-            // 원시 데이터 조회
-            List<Map<String, Object>> rawData = getMarketDataRows(goodsDataSource, dateColumnName, START_DATE, END_DATE);
+            // 원시 데이터 조회 (IF절로 예측 데이터, 정형 데이터 조회 로직 분리)
+            List<Map<String, Object>> rawData = new ArrayList<>();
 
-            if (rawData.isEmpty()) {
-                // TODO: null 처리
-                return null;
+            if (chartPredictSettingDetail.getIsChartLinePredictVal()) {
+                // 예측 데이터 조회
+                rawData = getForcastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, START_DATE, END_DATE);
+            } else {
+                // 정형 + 선물 데이터 조회
+                rawData = getActualDataRows(goodsDataSource, dateColumnName, START_DATE, END_DATE);
             }
 
-            // 마지막 데이터 값
-            Double lastValue = Double.parseDouble(rawData.get(rawData.size() - 1).get(defaultDataColumnName).toString());
+            // 예측 데이터인 경우
+            if (chartPredictSettingDetail.getIsChartLinePredictVal()) {
+                // 예측 데이터가 있는 경우
+                if (!rawData.isEmpty()) {
+                    // 마지막 데이터의 예측 수행 날짜 값
+                    String lastUpdated = rawData.get(rawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME).toString();
+                    lastUpdatedList.add(DateUtil.fromYmd(lastUpdated));
+                }
 
-            log.info("lastValue: {}", lastValue);
+                dashboardDataSources.add(DashboardDataSource.of(goodsDataSource, chartPredictSettingDetail));
+            }
 
-            // associatedGoodsDataSourceDetail 기준으로 묶어야 함
+            // 월별 날짜 생성
+            List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
+
+            // 월별 평균 계산
+            List<DashboardChartRawData> monthlyAverages = calculateMonthlyAverages(monthlyDates, rawData, dateColumnName, defaultDataColumnName);
+
+            DashboardChartLine dashboardChartLine = DashboardChartLine.of(isPermitted, chartPredictDataType, monthlyAverages);
+
+            // associatedCharts 업데이트
+            Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
+            chartMap.compute(goodsDataSourceNo, (key, existingChart) -> {
+                if (existingChart == null) {
+                    return DashboardChart.of(
+                            chartPredictSettingDetail,
+                            chartPredictSettingDetail.getIsChartLinePredictVal() ? null : dashboardChartLine,
+                            chartPredictSettingDetail.getIsChartLinePredictVal() ? dashboardChartLine : null);
+                } else {
+                    return DashboardChart.of(
+                            chartPredictSettingDetail,
+                            chartPredictSettingDetail.getIsChartLinePredictVal()
+                                    ? existingChart.actualChartLines()
+                                    : dashboardChartLine,
+                            chartPredictSettingDetail.getIsChartLinePredictVal()
+                                    ? dashboardChartLine
+                                    : existingChart.forecastChartLines());
+                }
+            });
+        });
+
+        // ConcurrentHashMap을 List<Map<Integer, DashboardChart>>로 변환
+        List<Map<Integer, DashboardChart>> associatedCharts = chartMap.entrySet().stream()
+                .collect(Collectors.groupingBy(
+                        Map.Entry::getKey,
+                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+                .values().stream()
+                .map(HashMap::new)
+                .collect(Collectors.toList());
+
+        // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값
+        LocalDate lastUpdated = lastUpdatedList.stream()
+                .max(LocalDate::compareTo)
+                .orElse(null);
+
+        DashboardMetadata dashboardMetadata = DashboardMetadata.of(customerCompany.getMarketIndexAnalysisTargetCd(), lastUpdated,
+                actualGoodsDataSourceDetail.get(), date);
+
+        // associatedCharts에서 DashboardChart 리스트 추출
+        List<DashboardChart> finalCharts = associatedCharts.stream()
+                .flatMap(map -> map.values().stream())
+                .map(chart -> {
+                    DashboardChartLine actualLines = chart.actualChartLines() != null
+                            ? chart.actualChartLines()
+                            : DashboardChartLine.of(null, null, null);
+                    DashboardChartLine forecastLines = chart.forecastChartLines() != null
+                            ? chart.forecastChartLines()
+                            : DashboardChartLine.of(null, null, null);
+                    return new DashboardChart(
+                            chart.chartLineDescription(),
+                            chart.chartLineType(),
+                            actualLines,
+                            forecastLines);
+                })
+                .toList();
+
+        return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources);
+    }
+
+    /**
+     * 월별 날짜 생성
+     * 
+     * @param startDate 시작일
+     * @param endDate 종료일
+     * @return List<LocalDate>
+     */
+    public List<LocalDate> generateMonthlyDates(LocalDate startDate, LocalDate endDate) {
+        List<LocalDate> monthlyDates = new ArrayList<>();
+        LocalDate current = startDate.withDayOfMonth(1); // 월의 첫 번째 날
+        while (!current.isAfter(endDate)) {
+            monthlyDates.add(current);
+            current = current.plusMonths(1).withDayOfMonth(1);
         }
-        return null;
+        return monthlyDates;
+    }
+
+    /**
+     * 월별 평균 계산
+     * 
+     * @param monthlyDates 월별 날짜 목록
+     * @param rawData 원시 데이터 목록
+     * @param dateColumnName 날짜 칼럼명
+     * @param defaultDataColumnName 기본 데이터 칼럼명
+     * @return List<DashboardChartRawData>
+     */
+    public List<DashboardChartRawData> calculateMonthlyAverages(List<LocalDate> monthlyDates, List<Map<String, Object>> rawData,
+            String dateColumnName, String defaultDataColumnName) {
+        // 결과 리스트
+        List<DashboardChartRawData> monthlyAverages = new ArrayList<>();
+
+        // DateTimeFormatter for YYYY-MM
+        DateTimeFormatter yyyyMMFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+
+        // rawData를 월별로 그룹화
+        Map<String, List<Double>> monthlyValues = new TreeMap<>();
+        for (Map<String, Object> row : rawData) {
+
+            String yearMonth = null;
+            // 날짜 칼럼 값이 LocalDateTime 타입인 경우
+            if (row.get(dateColumnName) instanceof LocalDateTime) {
+                yearMonth = DateUtil.toYyyyMm((LocalDateTime) row.get(dateColumnName));
+            } else if (row.get(dateColumnName) instanceof String) {
+                // 날짜 칼럼 값이 String 타입인 경우
+                yearMonth = DateUtil.toYyyyMm(DateUtil.fromYmd((String) row.get(dateColumnName)));
+            }
+
+            // 기본 데이터 칼럼 값
+            Object val = row.get(defaultDataColumnName);
+            Double valueData;
+
+            // 기본 데이터 칼럼 값 형식 변환 Object -> Double
+            if (val == null) {
+                valueData = null;
+            } else if (val instanceof Double) {
+                valueData = (Double) val;
+            } else if (val instanceof BigDecimal) {
+                valueData = ((BigDecimal) val).doubleValue();
+            } else {
+                try {
+                    valueData = Double.parseDouble(val.toString());
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid number format: {}, column: {}, skipping value", val, defaultDataColumnName, e);
+                    valueData = null;
+                }
+            }
+
+            // 월별 평균 그룹화
+            monthlyValues.computeIfAbsent(yearMonth, k -> new ArrayList<>()).add(valueData);
+        }
+
+        // 월별 평균 계산
+        for (LocalDate month : monthlyDates) {
+            String yearMonth = month.format(yyyyMMFormatter);
+            List<Double> values = monthlyValues.getOrDefault(yearMonth, Collections.emptyList());
+
+            // 월별 평균 결과 데이터
+            DashboardChartRawData dashboardChartRawData;
+            if (values.isEmpty()) {
+                dashboardChartRawData = DashboardChartRawData.of(yearMonth, null);
+            } else {
+                // 월별 평균 계산
+                double average = values.stream()
+                        .mapToDouble(Double::doubleValue)
+                        .average()
+                        .orElse(0.0);
+                // 소수점 2자리
+                BigDecimal bd = BigDecimal.valueOf(average)
+                        .setScale(2, RoundingMode.HALF_UP);
+
+                dashboardChartRawData = DashboardChartRawData.of(yearMonth, bd.doubleValue());
+            }
+
+            // 월별 평균 결과 저장
+            monthlyAverages.add(dashboardChartRawData);
+        }
+        return monthlyAverages;
+    }
+
+    /**
+     * 자정까지의 TTL 계산
+     */
+    private long getSecondsUntilMidnightForCache() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+        return Duration.between(now, midnight).getSeconds();
+    }
+
+    /**
+     * 대시보드 그래프 캐시 키 생성
+     * 
+     * @param chartPredictSettingDetailNo 차트 예측 설정 상세 번호
+     * @return 캐시 키
+     */
+    private String getDashboardChartCacheKey(Integer chartPredictSettingDetailNo) {
+        return String.format(DASHBOARD_CHART_CACHE_KEY, chartPredictSettingDetailNo);
+    }
+
+    /**
+     * Redis에 대시보드 그래프 요약 캐시 저장
+     *
+     * @param key 캐시 키
+     * @param cache 캐시 객체
+     */
+    private void saveDashboardChartCache(String key, Object cache) {
+        try {
+            String json = objectMapper.writeValueAsString(cache);
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(getSecondsUntilMidnightForCache()));
+        } catch (Exception e) {
+            log.error("Failed to serialize and save cache for key: {}", key, e);
+        }
+    }
+
+    /**
+     * 예측 데이터 조회
+     * 
+     * @param goodsDataSourceDetail 데이터소스 상세 정보
+     * @param dateColumnName 날짜 칼럼명
+     * @param valueColumnName 기본 데이터 칼럼명
+     * @param startDate 시작일
+     * @param endDate 종료일
+     * @return List<Map<String, Object>>
+     */
+    @Transactional
+    private List<Map<String, Object>> getForcastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
+            String startDate,
+            String endDate) {
+        if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
+            return Collections.emptyList();
+        }
+
+        String dbQueryConditionCntt = goodsDataSourceDetail.getQueryConditionCntt();
+        String dbColumnListNm = goodsDataSourceDetail.getTableColumnListNm();
+
+        // 정규 표현식 패턴을 이용해서 getTableColumnListNm 에서 칼럼, 데이터 추출
+        String pattern = "([a-zA-Z_]+)\\s*=\\s*'([^']*)'\\s*and\\s*([a-zA-Z_]+)\\s*=\\s*'([^']*)'";
+        Pattern regex = Pattern.compile(pattern);
+        Matcher matcher = regex.matcher(dbQueryConditionCntt);
+
+        String key1 = null;
+        String value1 = null;
+        String key2 = null;
+        String value2 = null;
+
+        if (matcher.matches()) {
+            key1 = matcher.group(1);
+            value1 = matcher.group(2);
+            key2 = matcher.group(3);
+            value2 = matcher.group(4);
+        } else {
+            throw new IllegalArgumentException("Invalid condition format: " + dbQueryConditionCntt);
+        }
+
+        String columns = String.format("%s, %s", dbColumnListNm, MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        String tableName = String.format("%s AS t1", goodsDataSourceDetail.getTargetTableNm());
+        String innerJoin = String.format(
+                """
+                            INNER JOIN
+                            (
+                                SELECT
+                                    SUBSTRING(%s, 1, 6) AS yyyymm,
+                                    MAX(%s) AS max_date
+                                FROM %s
+                                WHERE
+                                    %s BETWEEN '%s' AND '%s'
+                                    AND %s = '%s'
+                                    AND %s = '%s'
+                                GROUP BY SUBSTRING(%s, 1, 6)
+                            ) AS l
+                            ON t1.%s = l.max_date
+                            AND t1.%s = '%s'
+                            AND t1.%s = '%s'
+                        """,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                goodsDataSourceDetail.getTargetTableNm(),
+                dateColumnName, startDate, endDate,
+                key1, value1,
+                key2, value2,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                key1, value1,
+                key2, value2);
+        String orderByColumns = String.format("%s", MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+
+        return mybatisDynamicQueryService.getDynamicForcast(
+                DynamicDataDetailReq.ofInnerJoin(goodsDataSourceDetail.getTargetDbNm(), tableName, columns, innerJoin, orderByColumns));
     }
 
     /**
@@ -174,7 +559,7 @@ public class MiDashboardService {
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
-    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate,
+    private List<Map<String, Object>> getActualDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate,
             String endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
             return Collections.emptyList();

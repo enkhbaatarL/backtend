@@ -19,9 +19,6 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.checkerframework.checker.units.qual.g;
-import org.checkerframework.checker.units.qual.s;
-import org.hibernate.exception.SQLGrammarException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -52,10 +49,10 @@ import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRange;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
+import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
+import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawData;
 import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
 import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaDataSummary;
-import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRawData;
-import com.sk.domain.mi.dto.response.marketData.charts.rawData.MarketDataChartRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
@@ -71,7 +68,6 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Query;
@@ -88,7 +84,6 @@ public class MiMarketDataService {
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
     private static final int MARKET_DATA_START_DATE_YEAR = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N년 전)
     private static final int MARKET_DATA_START_DATE_MONTH = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
-    private static final int MARKET_DATA_MONTHLY_START_DATE_YEAR = 1; // 마켓데이터 월별 데이터 시작 날짜 (N년 전)
     private static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
     private static final String MARKET_DATA_INTERVAL = "1M"; // 월별 평균 계산을 위한 기간
@@ -198,8 +193,8 @@ public class MiMarketDataService {
                 isPermitted = false;
 
                 MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting);
-                MarketDataChartRes mainChart = MarketDataChartRes.of(Collections.emptyList());
-                List<MarketDataChartRes> compareCharts = Collections.emptyList();
+                MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
+                List<MarketDataChart> compareCharts = Collections.emptyList();
 
                 MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
                 saveToMarketDataCache(cacheKey, miMarketDataCache);
@@ -229,7 +224,7 @@ public class MiMarketDataService {
             List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
                     LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
-            MarketDataChartRes mainChart = MarketDataChartRes.of(monthlyData);
+            MarketDataChart mainChart = MarketDataChart.of(monthlyData);
 
             // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
             Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
@@ -243,7 +238,7 @@ public class MiMarketDataService {
                     .findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
 
             // 비교군 데이터소스 조회
-            List<MarketDataChartRes> compareCharts = new ArrayList<>();
+            List<MarketDataChart> compareCharts = new ArrayList<>();
             if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
                 for (DataSourceGroupMapping dataSourceGroupMapping : dataSourceGroupMappings) {
                     GoodsDataSourceDetail compareGoodsDataSource = dataSourceGroupMapping.getCompareGoodsDataSourceDetail();
@@ -259,7 +254,7 @@ public class MiMarketDataService {
                     // 비교군 월별 데이터로 변환
                     List<MarketDataChartRawData> compareChart = convertToMonthlyData(compareRawData, compareDateColumnName,
                             compareDefaultDataColumnName, LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
-                    compareCharts.add(MarketDataChartRes.of(compareChart));
+                    compareCharts.add(MarketDataChart.of(compareChart));
                 }
             }
 
@@ -284,7 +279,7 @@ public class MiMarketDataService {
 
             return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
 
-        })
+        }) // 차트 정렬
                 .filter(Objects::nonNull)
                 .sorted((a, b) -> {
                     Short rankA = a.marketMetaData().chartMarkRank();
@@ -469,6 +464,9 @@ public class MiMarketDataService {
 
     /**
      * 마켓데이터 캐시 키 생성
+     * 
+     * @param marketDataSettingNo 마켓데이터 설정 번호
+     * @return 캐시 키
      */
     private String getMarketDataCacheKey(Integer marketDataSettingNo) {
         return String.format(MARKET_DATA_CACHE_KEY, marketDataSettingNo);
@@ -476,6 +474,9 @@ public class MiMarketDataService {
 
     /**
      * 마켓데이터 요약 캐시 키 생성
+     * 
+     * @param marketDataSettingNo 마켓데이터 설정 번호
+     * @return 캐시 키
      */
     private String getMarketDataSummaryCacheKey(Integer marketDataSettingNo) {
         return String.format(MARKET_DATA_SUMMARY_CACHE_KEY, marketDataSettingNo);
@@ -483,6 +484,9 @@ public class MiMarketDataService {
 
     /**
      * Redis에 MarketData 캐시 저장
+     * 
+     * @param key 캐시 키
+     * @param cache 캐시 객체
      */
     private void saveToMarketDataCache(String key, MiMarketDataCache cache) {
         try {
@@ -494,7 +498,10 @@ public class MiMarketDataService {
     }
 
     /**
-     * Redis에 MarketData 캐시 저장
+     * Redis에 MarketDataSummary 캐시 저장
+     * 
+     * @param key 캐시 키
+     * @param cache 캐시 객체
      */
     private void saveToMarketDataSummaryCache(String key, MiMarketDataSummaryCache cache) {
         try {
@@ -578,7 +585,7 @@ public class MiMarketDataService {
                 LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateUtil.ISO_LOCAL_DATE_TIME_MINUTES);
                 LocalDate date = dateTime.toLocalDate();
 
-                // 2024-06-01 ~ 2025-05-31 범위 내 데이터만 처리
+                // e.g. 2024-06-01 ~ 2025-05-31 범위 내 데이터만 처리
                 if (date.isBefore(adjustedStartDate) || date.isAfter(endDate.withDayOfMonth(endDate.lengthOfMonth()))) {
                     continue;
                 }

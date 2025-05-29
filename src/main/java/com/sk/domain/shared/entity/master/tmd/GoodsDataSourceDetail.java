@@ -2,16 +2,27 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import java.time.LocalDateTime;
 
-import com.sk.domain.shared.converter.StringToPeriodUnitSeparateCdConverter;
-import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
-import jakarta.persistence.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

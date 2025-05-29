@@ -25,6 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MybatisDynamicQueryService {
 
+    private final String FORCAST_VIEW_COLUMN_NAME = "LastPrdcFulfDt"; // 예측 데이터 조회 시 VIEW에 사용할 컬럼명
+    private final String FORCAST_PRDC_FULF_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 데이터 조회 시 예측 수행 일자 Date 칼럼명
+    private final String FORCAST_MAX_DATE_COLUMN_NAME = "max_date"; // 예측 데이터 조회 시 최대 Date 칼럼명
+    private final Integer FORCAST_DATE_SUBSTRING_START_INDEX = 1; // 예측 데이터 조회 시 Date 칼럼을 yyyyMMdd 형식에서 yyyyMM 형식으로 변환 시 SUBSTRING에 사용할 함수의 시작 인덱스
+    private final Integer FORCAST_DATE_SUBSTRING_END_INDEX = 6; // 예측 데이터 조회 시 Date 칼럼을 yyyyMMdd 형식에서 yyyyMM 형식으로 변환 시 SUBSTRING에 사용할 함수의 끝 인덱스
+
     private final DynamicMapper dynamicMapper;
 
     /**
@@ -100,8 +106,8 @@ public class MybatisDynamicQueryService {
      * @return
      */
     public List<Map<String, Object>> getDynamicRawQuery(DynamicDataDetailReq dynamicDataDetailReq) {
-
-        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.tartgetDataSource());
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.targetDataSource());
 
         String tableName = dynamicDataDetailReq.tableName();
         String columns = dynamicDataDetailReq.columns();
@@ -116,5 +122,29 @@ public class MybatisDynamicQueryService {
         params.put("orderByColumns", orderByColumns);
         params.put("limit", limit);
         return dynamicMapper.selectDynamic(params);
+    }
+
+    /**
+     * 예측 데이터 조회
+     * @param dynamicDataDetailReq
+     * @return
+     */
+    public List<Map<String, Object>> getDynamicForcast(DynamicDataDetailReq dynamicDataDetailReq) {
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.targetDataSource());
+
+        String tableName = dynamicDataDetailReq.tableName();
+        String columns = dynamicDataDetailReq.columns();
+        String whereClause = dynamicDataDetailReq.whereClause();
+        String innerJoin = dynamicDataDetailReq.innerJoin();
+        String orderByColumns = dynamicDataDetailReq.orderByColumns();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("whereClause", whereClause);
+        params.put("innerJoin", innerJoin);
+        params.put("orderByColumns", orderByColumns);
+        return dynamicMapper.selectDynamicForcastChart(params);
     }
 }

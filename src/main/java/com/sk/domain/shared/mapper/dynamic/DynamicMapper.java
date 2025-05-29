@@ -12,4 +12,6 @@ public interface DynamicMapper {
     void saveDynamic(Map<String, String> params);
 
     void saveAllDynamic(Map<String, Object> param);
+
+    List<Map<String, Object>> selectDynamicForcastChart(Map<String, Object> params);
 }
