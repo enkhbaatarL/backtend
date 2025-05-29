@@ -154,7 +154,7 @@ public class ChartGenerationService {
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
 
         String selectClause = "max(%s) as latestDate".formatted(dateColumnName);
-        List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofLatestDate(gds, selectClause));
+        List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofMaxQuery(gds, selectClause));
 
         return DateUtil.parseDate(data.get(0).get("latestDate"));
     }
