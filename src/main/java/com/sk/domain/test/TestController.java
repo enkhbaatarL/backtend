@@ -69,10 +69,8 @@ public class TestController {
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/user")
-    public BaseResponse<GenerateTokenRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq,
-            HttpServletResponse response) {
-
-        return BaseResponseFactory.create(testService.userLogin(testLoginReq, response));
+    public BaseResponse<GenerateTokenRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq) {
+        return BaseResponseFactory.create(testService.userLogin(testLoginReq));
     }
 
     @ApiResponse(responseCode = "200", description = "토큰 갱신 성공", headers = {
@@ -91,10 +89,8 @@ public class TestController {
     @Operation(summary = "테스트 어드민 로그인", description = "테스트 어드민 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/admin")
-    public BaseResponse<GenerateTokenRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq,
-            HttpServletResponse response) {
-
-        return BaseResponseFactory.create(testService.adminLogin(testLoginReq, response));
+    public BaseResponse<GenerateTokenRes> adminLogin(@RequestBody @Valid TestReq.adminLogin testLoginReq) {
+        return BaseResponseFactory.create(testService.adminLogin(testLoginReq));
     }
 
     @Operation(summary = "토큰 검증", description = "토큰 검증을 진행합니다.")

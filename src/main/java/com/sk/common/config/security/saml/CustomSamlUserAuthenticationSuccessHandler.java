@@ -40,6 +40,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 	private final StringRedisTemplate redisTemplate;
 
 	private final int LOGIN_SESSION_EXPIRE_TIME = 60 * 10; //로그인 세션 유지시간 10분
+	private final String AUTH_REQUIRED_ERROR_CODE = "AUTH_REQUIRED";
 
 	@Override
 	@Transactional
@@ -57,7 +58,8 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 		List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(loginId);
 		if (users.isEmpty()) {
-			response.sendRedirect(loginErrorUrl);
+			log.error("SAML 사용자 인증 실패: {}", loginId);
+			response.sendRedirect(loginErrorUrl + "?errorCode=" + AUTH_REQUIRED_ERROR_CODE);
 			throw new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId));
 		}
 

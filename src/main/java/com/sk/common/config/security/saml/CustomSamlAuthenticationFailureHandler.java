@@ -3,6 +3,7 @@ package com.sk.common.config.security.saml;
 import java.io.IOException;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -21,6 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class CustomSamlAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
+    @Value("${spring.security.saml2.login-error-url}")
+	private String loginErrorUrl;
+
+	private final String AUTH_REQUIRED_ERROR_CODE = "AUTH_REQUIRED";
+
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException exception) throws IOException, ServletException {
@@ -29,6 +35,8 @@ public class CustomSamlAuthenticationFailureHandler implements AuthenticationFai
         if (exception instanceof Saml2AuthenticationException saml2Ex) {
             String errorCode = saml2Ex.getSaml2Error().getErrorCode();
             String description = saml2Ex.getSaml2Error().getDescription();
+
+            response.sendRedirect(loginErrorUrl + "?errorCode=" + AUTH_REQUIRED_ERROR_CODE);
 
             ResultCode.Error resultCode = CustomAuthenticationException.mapAuthExceptionToResultCode(exception);
             throw CustomAuthenticationException.of(AuthComponent.SAML_SERVICE_PROVIDER, resultCode,
