@@ -37,7 +37,7 @@ public class MiDashboardHistoryService {
         List<ChartPredictSettingDetail> foreSettingDetails = chartPredictSettingDetailRepository.findByChartPredictSettingAndIsDeletedFalse(foreSetting);
 
         Map<Boolean, List<ChartPredictSettingDetail>> partitioned = foreSettingDetails.stream()
-            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictValue));
+            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
 
         // 예측가
         List<ChartPredictSettingDetail> forecasts = partitioned.get(Boolean.TRUE);
