@@ -4,6 +4,7 @@ import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.charts.*;
+import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.RenderAs;
@@ -61,7 +62,7 @@ public final class ChartBundleFactory {
         String goodsDataSourceNm = gds.getGoodsDataSourceNm();
         String goodsDataNm = gds.getGoodsData().getGoodsDataNm();
 
-        return Chart.of(gds.getGoodsDataSourceNo(), goodsDataSourceNm, goodsDataNm, ChartUnitConversionService.generateDefaultUnitCd(gds), chartType, timestamps, series);
+        return Chart.of(gds.getGoodsDataSourceNo(), goodsDataSourceNm, goodsDataNm, new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()).toString(), chartType, timestamps, series);
     }
 
     /**
