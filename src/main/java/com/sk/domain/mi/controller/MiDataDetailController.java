@@ -233,8 +233,8 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-        @RequestParam(value = "startDate") String startDate,
-        @RequestParam(value = "endDate") String endDate
+        @RequestParam(value = "startDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
+        @RequestParam(value = "endDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate
     ) {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, page, size, startDate, endDate));
     }
@@ -265,8 +265,8 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
-        @RequestParam(value = "startDate") String startDate,
-        @RequestParam(value = "endDate") String endDate
+        @RequestParam(value = "startDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
+        @RequestParam(value = "endDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate
     ) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.attachment().filename("%s.xlsx".formatted(DateUtil.currentYmdHms())).build());

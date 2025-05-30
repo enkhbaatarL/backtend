@@ -58,7 +58,6 @@ public class ChartGenerationService {
 
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
         String volumeColumnNm = Optional.ofNullable(gds.getTradeVolumeColumnNm()).map(String::trim).orElse(null);
-
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 : [조회]
@@ -179,11 +178,12 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일부터 조회
+        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일의 LOOK_BACK Period를 설정
         String startDate = isMainChart ? DateUtil.minusDays(determinedRange.getLeft(), 180) : determinedRange.getLeft();
 
         String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, determinedRange.getRight());
 
+        // select 절에 거래량 컬럼 추가
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())
             .filter(s -> isMainChart)
             .map(s -> gds.getTableColumnListNm() + "," + s)
@@ -194,6 +194,7 @@ public class ChartGenerationService {
 
     /**
      * 원시 데이터의 날짜 값을 LocalDate 타입으로 파싱하고, 정렬한다.
+     * 실제 쿼리에서 orderBy를 통해 정렬이 수행되지만 서비스단에서 방어로직 차원에서 한번 더 진행한다.
      */
     private List<Map<String, Object>> convertAndOrderByDates(List<Map<String, Object>> rawData, String dateColumnKey) {
         return rawData.stream()
