@@ -6,15 +6,12 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.dashboard.HistoryMetadataRes;
 import com.sk.domain.mi.service.MiDashboardHistoryService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "11. 대시보드 히스토리 API", description = "대시보드 히스토리 API 입니다.")
@@ -33,16 +30,11 @@ public class MiDashboardHistoryController {
      * 3. 월별 데이터인 경우 리포트 다운로드 API
      */
     @ApiOrder(10)
-    @Parameters({
-        @Parameter(name = "companyNo", description = "고객회사 번호")
-    })
     @Operation(summary = "대시보드 히스토리 메타데이터 API", description = "대시보드 히스토리 메타데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/forecast-history/metadata")
-    public BaseResponse<HistoryMetadataRes> getForecastHistoryMetadata(
-        @RequestParam(value = "companyNo") Integer companyNo
-    ) {
-        return BaseResponseFactory.create(dashboardHistoryService.getForecastHistoryMetadata(companyNo));
+    @GetMapping("/history/metadata")
+    public BaseResponse<HistoryMetadataRes> getForecastHistoryMetadata() {
+        return BaseResponseFactory.create(dashboardHistoryService.getForecastHistoryMetadata());
     }
 
 }
