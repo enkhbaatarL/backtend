@@ -25,8 +25,6 @@ public class CustomSamlAuthenticationFailureHandler implements AuthenticationFai
     @Value("${spring.security.saml2.login-error-url}")
 	private String loginErrorUrl;
 
-	private final String AUTH_REQUIRED_ERROR_CODE = "AUTH_REQUIRED";
-
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException exception) throws IOException, ServletException {
@@ -36,7 +34,7 @@ public class CustomSamlAuthenticationFailureHandler implements AuthenticationFai
             String errorCode = saml2Ex.getSaml2Error().getErrorCode();
             String description = saml2Ex.getSaml2Error().getDescription();
 
-            response.sendRedirect(loginErrorUrl + "?errorCode=" + AUTH_REQUIRED_ERROR_CODE);
+            response.sendRedirect(loginErrorUrl + "?errorCode=" + ResultCode.Error.AUTH_REQUIRED.getCode());
 
             ResultCode.Error resultCode = CustomAuthenticationException.mapAuthExceptionToResultCode(exception);
             throw CustomAuthenticationException.of(AuthComponent.SAML_SERVICE_PROVIDER, resultCode,
