@@ -229,10 +229,10 @@ public class MiDataDetailService {
         ChartSettingsContext settingsContextV3 = softValidateChartParametersAndAdjust(gds, settingsContextV2);
 
         // 5. 차트 데이터 생성
-        ChartBundleRes bundle = generateChartBundle(gds, settingsContextV2);
+        ChartBundleRes bundle = generateChartBundle(gds, settingsContextV3);
 
         // 6. 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV2.finalizedRangeBetween().getLeft()));
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()));
 
     }
 

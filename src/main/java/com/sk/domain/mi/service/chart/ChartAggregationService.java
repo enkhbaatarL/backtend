@@ -38,8 +38,8 @@ public class ChartAggregationService {
             return Collections.emptyList();
         }
 
-        // 일간 데이터는 집계 없이 그대로 반환
-        if (interval == Interval.ONE_DAY) {
+        // 변환이 필요없는 상태인 경우 바로 리턴
+        if (gds.getPeriodUnitSeparateCd().shouldNotAggregate(interval)) {
             return sortedData;
         }
 
@@ -68,6 +68,7 @@ public class ChartAggregationService {
      * @return 버킷 경계 목록 (역순: 가장 최근 버킷이 첫 번째 요소)
      */
     private List<BucketBoundary> calculateBucketBoundariesBackward(List<Map<String, Object>> rows, Interval interval, String dateCol) {
+
         List<LocalDate> dates = rows.stream()
             .map(r -> DateUtil.parseDate(r.get(dateCol)))
             .filter(Objects::nonNull)
@@ -91,19 +92,21 @@ public class ChartAggregationService {
             // 현재 계산된 버킷 시작일이 전체 데이터의 첫 날짜보다 이전이거나 같으면,
             // 실제 데이터가 있는 첫 날짜를 이 버킷의 시작일로 조정하고 루프 종료
             if (!currentStartDate.isAfter(firstDate)) {
-                boundaries.add(new BucketBoundary(firstDate, currentEndDate));
+                boundaries.add(BucketBoundary.of(firstDate, currentEndDate));
                 break;
             }
 
-            boundaries.add(new BucketBoundary(currentStartDate, currentEndDate));
-            currentEndDate = currentStartDate; // 다음 버킷의 종료일(미포함)은 현재 버킷의 시작일
+            boundaries.add(BucketBoundary.of(currentStartDate, currentEndDate));
+
+            // 다음 버킷의 종료일(미포함)은 현재 버킷의 시작일로 설정
+            currentEndDate = currentStartDate;
 
             // 다음 버킷의 시작일이 데이터의 첫 날짜보다 이전이 될 경우 중지
             LocalDate nextStartDate = retreat(currentEndDate, interval);
             if (nextStartDate.isBefore(firstDate)) {
                 // 마지막 남은 기간을 위한 버킷 추가 (데이터 첫날 ~ 현재 종료일)
                 if (currentEndDate.isAfter(firstDate)) { // 아직 처리 안된 첫 날짜 이후 기간이 있다면
-                    boundaries.add(new BucketBoundary(firstDate, currentEndDate));
+                    boundaries.add(BucketBoundary.of(firstDate, currentEndDate));
                 }
                 break;
             }
@@ -141,6 +144,7 @@ public class ChartAggregationService {
      * @return 집계된 데이터 목록 (역순: 최신 버킷 결과가 첫 번째 요소)
      */
     private List<Map<String, Object>> aggregateUsingBoundaries(List<Map<String, Object>> rows, List<BucketBoundary> boundaries, String dateCol, String volumeCol, List<String> targetColumns, boolean isCandleChart) {
+
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (BucketBoundary boundary : boundaries) {
@@ -161,6 +165,7 @@ public class ChartAggregationService {
             if (!aggregatedMap.isEmpty()) {
                 result.add(aggregatedMap);
             }
+
         }
         // 결과는 역순 (최신 버킷 -> 과거 버킷 순서) 상태
         return result;
@@ -196,19 +201,20 @@ public class ChartAggregationService {
         String lowCol = targetColumns.get(RenderAs.LOW.getIndex());
         String closeCol = targetColumns.get(RenderAs.CLOSE.getIndex());
 
-        // 시가 (Open): 버킷의 첫 번째 데이터 값 -> todo 평균
+        // 시가 (Open): 버킷의 첫 번째 데이터 값
 //        map.put(openCol, MathUtil.toBigDecimal(bucket.get(0).get(openCol)));
         map.put(openCol, average(bucket, openCol));
-        // 종가 (Close): 버킷의 마지막 데이터 값 -> todo 평균
+        // 종가 (Close): 버킷의 마지막 데이터 값
 //        map.put(closeCol, MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(closeCol)));
         map.put(closeCol, average(bucket, closeCol));
-        // 고가 (High): 버킷 내 최대값 -> todo 평균
+        // 고가 (High): 버킷 내 최대값
 //        map.put(highCol, max(bucket, highCol));
         map.put(highCol, average(bucket, highCol));
-        // 저가 (Low): 버킷 내 최소값 -> todo 평균
+        // 저가 (Low): 버킷 내 최소값
 //        map.put(lowCol, min(bucket, lowCol));
         map.put(lowCol, average(bucket, lowCol));
 
+        // 거래량 컬럼이 있는 경우
         if (StringUtils.isNotEmpty(volumeCol)) {
             map.put(volumeCol, sum(bucket, volumeCol));
         }
@@ -233,10 +239,10 @@ public class ChartAggregationService {
         // 참조 시리즈 (Reference): 평균 계산
         for (int i = RenderAs.REFERENCE.getIndex(); i < targetColumns.size(); i++) {
             String refCol = targetColumns.get(i);
-            // 참조 컬럼이 실제로 bucketData에 존재하는지 확인하는 로직 추가 고려 가능
             map.put(refCol, average(bucketData, refCol));
         }
 
+        // 거래량 컬럼이 있는 경우
         if (StringUtils.isNotEmpty(volumeCol)) {
             map.put(volumeCol, sum(bucketData, volumeCol));
         }
