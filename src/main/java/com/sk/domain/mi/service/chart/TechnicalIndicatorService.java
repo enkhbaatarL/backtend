@@ -41,7 +41,7 @@ public class TechnicalIndicatorService {
      * 이동평균선과 볼린저 밴드 지표를 계산하고, 개인화 설정에 따라 표시 여부를 결정한다.
      * 차트 데이터가 없거나 시계열 데이터가 비어있는 경우 빈 리스트를 반환한다.
      *
-     * @param chart 기술적 지표를 생성할 차트 데이터
+     * @param chart               기술적 지표를 생성할 차트 데이터
      * @param finalizedIndicators 보여줄 보조지표 목록
      * @return 생성된 기술적 지표 목록
      */
@@ -69,8 +69,8 @@ public class TechnicalIndicatorService {
      * 시계열 데이터를 기반으로 5일, 20일, 60일, 120일 이동평균선을 계산하고,
      * 개인화 설정에 따라 표시 여부를 결정하여 지표 데이터를 생성한다.
      *
-     * @param timestamps 시간 데이터 목록
-     * @param series 시계열 데이터 목록
+     * @param timestamps          시간 데이터 목록
+     * @param series              시계열 데이터 목록
      * @param finalizedIndicators 보여줄 보조지표 목록
      * @return 이동평균선 지표 데이터
      */
@@ -90,8 +90,8 @@ public class TechnicalIndicatorService {
      * 시계열 데이터를 기반으로 볼린저 밴드(상단, 중간, 하단)를 계산하고,
      * 개인화 설정에 따라 표시 여부를 결정하여 지표 데이터를 생성한다.
      *
-     * @param timestamps 시간 데이터 목록
-     * @param series 시계열 데이터 목록
+     * @param timestamps          시간 데이터 목록
+     * @param series              시계열 데이터 목록
      * @param finalizedIndicators 보여줄 보조지표 목록
      * @return 볼린저 밴드 지표 데이터
      */

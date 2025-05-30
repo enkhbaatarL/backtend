@@ -2,7 +2,6 @@ package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
-import com.sk.common.utils.StringUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.charts.*;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -59,7 +58,10 @@ public final class ChartBundleFactory {
         List<String> timestamps = buildTimestamps(xAxis, convertedData);
         List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, gds.getTradeVolumeColumnNm(), isVisible);
 
-        return Chart.of(gds.getGoodsDataSourceNo(), ChartUnitConversionService.generateDefaultUnitCd(gds), chartType, timestamps, series);
+        String goodsDataSourceNm = gds.getGoodsDataSourceNm();
+        String goodsDataNm = gds.getGoodsData().getGoodsDataNm();
+
+        return Chart.of(gds.getGoodsDataSourceNo(), goodsDataSourceNm, goodsDataNm, ChartUnitConversionService.generateDefaultUnitCd(gds), chartType, timestamps, series);
     }
 
     /**
@@ -94,13 +96,13 @@ public final class ChartBundleFactory {
                 String columnName = yAxisList.get(index);
                 RenderAs renderAs = chartType.resolveRenderAs(index);
                 String label = labels.getOrDefault(columnName, columnName);
-                List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(columnName))).toList();
+                List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimalOrNull(row.get(columnName))).toList();
                 return Series.of(renderAs.getRenderingId(String.valueOf(index + 1)), label, renderAs, values, isVisible);
             })
             .collect(Collectors.toList());
 
         if (StringUtils.isNotEmpty(volumeColumn)) {
-            List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimal(row.get(volumeColumn))).toList();
+            List<BigDecimal> values = rawRows.stream().map(row -> MathUtil.toBigDecimalOrNull(row.get(volumeColumn))).toList();
             series.add(Series.of(RenderAs.VOLUME.getId(), RenderAs.VOLUME.getDisplayDescription(), RenderAs.VOLUME, values, isVisible));
         }
 

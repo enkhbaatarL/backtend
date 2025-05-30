@@ -49,6 +49,12 @@ public record PaginationTableRes<T, R>(
     public static <T, R> PaginationTableRes<T, R> toRes(int reqPage, int reqSize, int totalElements, List<T> detail, List<R> headers) {
 
         int totalPages = (int) Math.ceil((double) totalElements / reqSize);
+        if (totalPages == 0) totalPages = 1;
+
+        boolean isFirst = reqPage <= 1;
+        boolean isLast = reqPage >= totalPages;
+        boolean hasPrevious = reqPage > 1;
+        boolean hasNext = reqPage < totalPages;
 
         return PaginationTableRes.of(
             totalPages,
@@ -56,13 +62,14 @@ public record PaginationTableRes<T, R>(
             reqPage,
             detail.size(),
             reqSize,
-            reqSize == 1,
-            reqSize >= totalPages,
-            reqSize > 1,
-            reqSize < totalPages,
+            isFirst,
+            isLast,
+            hasPrevious,
+            hasNext,
             detail,
             headers
         );
+
     }
 
 }

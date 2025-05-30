@@ -24,6 +24,9 @@ public record DataCatalogRes(
         @Schema(description = "상품데이터소스명", example = "") 
         String goodsDataSrcNm,
 
+        @Schema(description = "보기권한 여부", example = "true")
+        boolean isViewable,
+        
         @Schema(description = "수치", example = "95.5") 
         Double lastValue,
 
@@ -31,13 +34,14 @@ public record DataCatalogRes(
         LocalDateTime modifyDt) {
 
             public DataCatalogRes(int providerNo, int goodsNo, int goodsDataNo, String goodsDataNm, int goodsDataSrcNo, String goodsDataSrcNm, 
-            Double lastValue, LocalDateTime modifyDt) {
+            boolean isViewable, Double lastValue, LocalDateTime modifyDt) {
                 this.providerNo = providerNo;
                 this.goodsNo = goodsNo;
                 this.goodsDataNo = goodsDataNo;
                 this.goodsDataNm = goodsDataNm;
                 this.goodsDataSrcNo = goodsDataSrcNo;
                 this.goodsDataSrcNm = goodsDataSrcNm;
+                this.isViewable = isViewable;
                 this.lastValue = lastValue;
                 this.modifyDt = modifyDt;
             }

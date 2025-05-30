@@ -14,7 +14,17 @@ public class MathUtil {
         return a.add(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
     }
 
+    public static BigDecimal safeAdd(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) return null;
+        return a.add(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
+    }
+
     public static BigDecimal subtract(BigDecimal a, BigDecimal b) {
+        return a.subtract(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
+    }
+
+    public static BigDecimal safeSubtract(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) return null;
         return a.subtract(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
     }
 
@@ -22,7 +32,17 @@ public class MathUtil {
         return a.multiply(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
     }
 
+    public static BigDecimal safeMultiply(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) return null;
+        return a.multiply(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
+    }
+
     public static BigDecimal divide(BigDecimal a, BigDecimal b) {
+        return a.divide(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
+    }
+
+    public static BigDecimal safeDivide(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) return null;
         return a.divide(b, MC).setScale(GLOBAL_SCALE, GLOBAL_ROUNDING);
     }
 
@@ -46,8 +66,14 @@ public class MathUtil {
         return x;
     }
 
-    public static BigDecimal toBigDecimal(Object v) {
-        if (v == null) return BigDecimal.ZERO;
+    /**
+     * BigDecimal로 변환
+     *  - null인 경우 null 반환,
+     *  - BigDecimal인 경우 그대로 반환,
+     *  - 그 외에는 문자열로 변환 후 BigDecimal 생성
+     */
+    public static BigDecimal toBigDecimalOrNull(Object v) {
+        if (v == null) return null;
         if (v instanceof BigDecimal bd) return bd;
         try {
             return new BigDecimal(v.toString());

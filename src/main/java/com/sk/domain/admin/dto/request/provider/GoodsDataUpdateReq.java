@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 // @formatter:off
 public record GoodsDataUpdateReq(
     @Schema(description = "상품데이터설명", example = "") 
-    String goodsExpn,
+    String goodsDataExpn,
     
     @Schema(description = "Summary", example = "") 
     String goodsDataSummaryCntt,

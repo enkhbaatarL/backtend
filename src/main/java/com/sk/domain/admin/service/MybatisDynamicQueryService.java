@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import org.springframework.stereotype.Service;
 
 import com.sk.common.config.database.DataSourceContextHolder;
@@ -53,6 +54,7 @@ public class MybatisDynamicQueryService {
             String[] columnArray = columns.split(",");
             for (String col : columnArray) {
                 if (col.trim().equalsIgnoreCase("count(*)")) continue; // count 쿼리 허용
+                if (col.trim().contains("max")) continue; // max 쿼리 허용
                 if (!col.trim().matches("^[a-zA-Z0-9_]+$")) {
                     throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "Invalid column name: " + col);
                 }
@@ -73,7 +75,7 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("whereClause", whereClause);
         params.put("additionalWhereClause", additionalWhereClause);
-        params.put("orderByColumns", dynamicDataReq.orderBy());
+        params.put("orderByColumns", dynamicDataReq.orderByColumn());
         params.put("limit", dynamicDataReq.limit());
         params.put("offset", dynamicDataReq.offset());
         return dynamicMapper.selectDynamic(params);
@@ -124,7 +126,23 @@ public class MybatisDynamicQueryService {
         return dynamicMapper.selectDynamic(params);
     }
 
-    /**
+    public List<TargetPredictResultData> getPredictResultQuery(DynamicDataReq dynamicDataReq) {
+
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
+
+        String tableName = dynamicDataReq.tableName();
+        String columns = dynamicDataReq.columns();
+        String whereClause = dynamicDataReq.whereClause();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("whereClause", whereClause);
+        params.put("groupBy", whereClause);
+        return dynamicMapper.selectPredictResultData(params);
+    }
+
+     /**
      * 예측 데이터 조회
      * @param dynamicDataDetailReq
      * @return

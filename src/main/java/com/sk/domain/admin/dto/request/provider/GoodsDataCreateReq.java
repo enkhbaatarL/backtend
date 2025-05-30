@@ -24,11 +24,9 @@ public record GoodsDataCreateReq(
     @Schema(description = "데이터기고자명 Summary", example = "") 
     String dataContributorNm,
 
-    @NotNull
     @Schema(description = "문서 타입 카테고리 리스트", example = "")
     List<CategoryDataReq> docCategoryList,
 
-    @NotNull
     @Schema(description = "언어 타입 카테고리 리스트", example = "")
     List<CategoryDataReq> langCategoryList,
 

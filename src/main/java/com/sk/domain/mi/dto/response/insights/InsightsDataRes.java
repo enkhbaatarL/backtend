@@ -27,6 +27,9 @@ public record InsightsDataRes(
         @Schema(description = "상품데이터설명", example = "") 
         String goodsDataExpn,
 
+        @Schema(description = "상품데이터요약내용", example = "") 
+        String goodsDataSummaryCntt,
+
         @Schema(description = "상품데이터카테고리", example = "") 
         String goodsDataCategory,
 

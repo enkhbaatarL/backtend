@@ -61,8 +61,7 @@ public class MiPdfService {
     public byte[] getImagePageFromPdf(Integer fileNo, int page, User user) {
 
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(fileNo.longValue())
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                        "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [uploaded-file]. fileNo: %s".formatted(fileNo)));
 
         if (page > uploadedFile.getFilePageCnt()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The page is out of range. fileNo: %s, page: %s".formatted(fileNo, page));
@@ -73,8 +72,7 @@ public class MiPdfService {
         }
 
         if (!uploadedFile.getIsImageConversionCompleted()) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
-                    "The PDF image conversion has not yet been completed. fileNo: %s".formatted(fileNo));
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "The PDF image conversion has not yet been completed. fileNo: %s".formatted(fileNo));
         }
 
         try {
@@ -89,8 +87,8 @@ public class MiPdfService {
             byte[] bytes = objectStorageService.downloadFile(bucket, imagePath);
             BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
 
-            String waterMark = StringUtil.joinPoundSignNonNull(user.getUserLoginId(), user.getJobGradeNm(), user.getDepartmentNm(), user.getUserNm(),
-                    DateUtil.currentYmdHyphen());
+            // 회사명#사번#날짜
+            String waterMark = StringUtil.joinPoundSignNonNull(user.getCustomerCompany().getCustomerCompanyNm(), user.getUserLoginId(), DateUtil.currentYmdHyphen());
             BufferedImage addTextWatermark = PdfUtil.addTextWatermarkRGB(bufferedImage, waterMark);
             BufferedImage result = PdfUtil.resize(addTextWatermark, 0.75f);
 

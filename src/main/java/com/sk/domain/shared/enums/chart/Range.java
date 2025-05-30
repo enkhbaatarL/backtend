@@ -1,10 +1,13 @@
 package com.sk.domain.shared.enums.chart;
 
+import com.sk.common.utils.DateUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -13,16 +16,28 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public enum Range {
 
-    ONE_WEEK("1W", Duration.ofDays(7)),
-    ONE_MONTH("1M", Duration.ofDays(30)),
-    THREE_MONTHS("3M", Duration.ofDays(90)),
-    SIX_MONTHS("6M", Duration.ofDays(180)),
-    ONE_YEAR("1Y", Duration.ofDays(365)),
-    TWO_YEARS("2Y", Duration.ofDays(730)),
-    CUSTOM("CUSTOM", null);
+    ONE_WEEK("1W", 7),
+    ONE_MONTH("1M", 30),
+    THREE_MONTHS("3M", 90),
+    SIX_MONTHS("6M", 180),
+    ONE_YEAR("1Y", 365),
+    TWO_YEARS("2Y", 730),
+    CUSTOM("CUSTOM", Long.MAX_VALUE);
 
     private final String code;
-    private final Duration duration;
+    private final long approxDays;
+
+    /**
+     * interval이 허용하는 후보 중
+     * 원본보다 '짧아지지 않는' 최소 Range 반환
+     */
+    public Range shrinkToFit(Interval interval) {
+        return interval.getAllowedRanges().stream()
+            .filter(r -> r.approxDays >= this.approxDays)
+            .min(Comparator.comparingLong(Range::getApproxDays))
+            .orElse(this);
+    }
+
 
     private static final Map<String, Range> RANGE_CODE_MAP;
 
@@ -32,6 +47,16 @@ public enum Range {
 
     public static Range findByCode(String code) {
         return RANGE_CODE_MAP.getOrDefault(code, null);
+    }
+
+    public static Pair<String, String> toPair(Range range, LocalDate from, LocalDate to) {
+        if (range == Range.CUSTOM) {
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("For CUSTOM range, both startDate and endDate are required!");
+            }
+            return Pair.of(DateUtil.toYmd(from), DateUtil.toYmd(to));
+        }
+        return DateUtil.getDateRange(range);
     }
 
 }

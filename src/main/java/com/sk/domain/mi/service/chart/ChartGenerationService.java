@@ -57,19 +57,21 @@ public class ChartGenerationService {
         List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
 
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
+        String volumeColumnNm = Optional.ofNullable(gds.getTradeVolumeColumnNm()).map(String::trim).orElse(null);
+
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 : [조회]
         List<Map<String, Object>> rawData = getRows(gds, dateColumnName, determinedRange, isMainChart);
 
         // 원시 데이터 : [정렬 및 날짜 변환]
-        List<Map<String, Object>> sortedData = convertAndSortDates(rawData, dateColumnName);
+        List<Map<String, Object>> sortedData = convertAndOrderByDates(rawData, dateColumnName);
 
         // 원시 데이터 : [집계]
         List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
 
         // 원시 데이터 : [단위 변환]
-        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, unitConvert);
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, volumeColumnNm, unitConvert);
 
         return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
@@ -137,12 +139,26 @@ public class ChartGenerationService {
                     comparison.getCompareGoodsDataSourceDetail(),
                     determinedRange,
                     interval,
-                    ChartUnitConversionService.IDENTITY,
+                    ChartUnitConversionService.DEFAULT_IDENTITY,
                     isVisible, // '비교군' 차트 화면 노출 여부
                     Boolean.FALSE // 메인 차트 여부
                 );
             })
             .toList();
+    }
+
+    @Transactional(transactionManager = "myBatisTransactionManager")
+    public LocalDate getLatestDate(GoodsDataSourceDetail gds) {
+
+        if (gds == null) return null;
+
+        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
+        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
+
+        String selectClause = "max(%s) as latestDate".formatted(dateColumnName);
+        List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofMaxQuery(gds, selectClause));
+
+        return DateUtil.parseDate(data.get(0).get("latestDate"));
     }
 
     /**
@@ -179,7 +195,7 @@ public class ChartGenerationService {
     /**
      * 원시 데이터의 날짜 값을 LocalDate 타입으로 파싱하고, 정렬한다.
      */
-    private List<Map<String, Object>> convertAndSortDates(List<Map<String, Object>> rawData, String dateColumnKey) {
+    private List<Map<String, Object>> convertAndOrderByDates(List<Map<String, Object>> rawData, String dateColumnKey) {
         return rawData.stream()
             .map(row -> {
                 Map<String, Object> copy = new HashMap<>(row);

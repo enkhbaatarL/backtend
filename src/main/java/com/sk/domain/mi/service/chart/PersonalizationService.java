@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.chart;
 
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PersonalizationService {
 
-    private final PersonalizedChartSettingRepository repository;
+    private final PersonalizedChartSettingRepository personalRepository;
 
     public Preferences resolve(GoodsDataSourceDetail gds, Role role, String userLoginId) {
 
@@ -35,7 +36,7 @@ public class PersonalizationService {
         }
 
         // DB 조회
-        List<PersonalizedChartSetting> rows = repository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, userLoginId);
+        List<PersonalizedChartSetting> rows = personalRepository.findByGoodsDataSourceDetailAndUserLoginIdAndIsDeletedFalse(gds, userLoginId);
 
         // 그룹핑 후 EnumMap 채우기
         raw.putAll(rows.stream()
@@ -92,14 +93,7 @@ public class PersonalizationService {
         }
 
         public Optional<Pair<String, String>> periodDates() {
-            if (range().orElse(null) != Range.CUSTOM) {
-                return Optional.empty();
-            }
-            List<String> dates = list(raw, ChartSettingConditionCd.RANGE);
-            if (dates.size() != 2) {
-                return Optional.empty();
-            }
-            return Optional.of(Pair.of(dates.get(0), dates.get(1)));
+            return range().map(DateUtil::getDateRange);
         }
 
         private static Optional<String> first(Map<ChartSettingConditionCd, List<String>> map, ChartSettingConditionCd key) {
