@@ -43,7 +43,7 @@ public class AuthService {
 	 * @return
 	 */
 	@Transactional
-	public Boolean generateToken(String authHeader, String refreshToken, HttpServletResponse response) {
+	public GenerateTokenRes generateToken(String authHeader, String refreshToken) {
 		String accessToken = authHeader.replace("Bearer ", "");
 
 		// accessToken 검증(만료 상관없이)
@@ -60,33 +60,31 @@ public class AuthService {
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						String.format("User information could not be found. userNo: %s", accessTokenClaims.get("userNo", Integer.class))));
 
-		generateToken(user, response);
-
-		return Boolean.TRUE;
+		return generateToken(user);
 	}
 
-	public GenerateTokenRes generateToken(User user, HttpServletResponse response) {
+	public GenerateTokenRes generateToken(User user) {
 		String renewedAccessToken = jwtUtil.generateAccessToken(user);
 		String renewedRefreshToken = jwtUtil.generateRefreshToken(user);
 
 		// 엑세스 토큰을 쿠키에 설정
-		ResponseCookie responseAccessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_HEADER, renewedAccessToken)
-				.maxAge(jwtProperties.getAccessTokenExpiry() / 1000)
-				.path("/")
-				.secure(true)
-				.httpOnly(true)
-				.build();
+		// ResponseCookie responseAccessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_HEADER, renewedAccessToken)
+		// 		.maxAge(jwtProperties.getAccessTokenExpiry() / 1000)
+		// 		.path("/")
+		// 		.secure(true)
+		// 		.httpOnly(true)
+		// 		.build();
 
 
 		// 리프레시 토큰을 쿠키에 설정
-		ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
-				.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
-				.path("/")
-				.secure(true)
-				.httpOnly(true)
-				.build();
+		// ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
+		// 		.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
+		// 		.path("/")
+		// 		.secure(true)
+		// 		.httpOnly(true)
+		// 		.build();
 
-		response.addHeader(HttpHeaders.SET_COOKIE, responseRefreshCookie.toString());
+		// response.addHeader(HttpHeaders.SET_COOKIE, responseRefreshCookie.toString());
 
 		// ResponseCookie responseAccessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken)
 		// 		.maxAge(jwtProperties.getAccessTokenExpiry() / 1000)
@@ -97,10 +95,6 @@ public class AuthService {
 
 		// response.addHeader(HttpHeaders.SET_COOKIE, responseAccessTokenCookie.toString());
 
-		// response.addHeader(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken);
-
-		response.addHeader(HttpHeaders.SET_COOKIE, responseAccessTokenCookie.toString());
-
-		return GenerateTokenRes.of(renewedAccessToken);
+		return GenerateTokenRes.of(renewedAccessToken, renewedRefreshToken);
 	}
 }
