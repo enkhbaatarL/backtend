@@ -9,6 +9,8 @@ import com.sk.common.model.TableRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
+import com.sk.domain.mi.dto.response.charts.ChartMetadata;
+import com.sk.domain.mi.dto.response.charts.ChartMetadataSimple;
 import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
@@ -160,6 +162,34 @@ public class MiDataDetailController {
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
         @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
+    })
+    @Operation(
+        summary = "상품 정형 데이터(데이터소스) 차트 메타데이터 조회 API",
+        description = """
+            상품 정형 데이터(데이터소스) 차트의 메타데이터를 조회합니다. <br>
+            상품 `VIEW`권한이 필요합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/metadata")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsNestedParam = "goodsDataSourceNo", requireViewPermission = true
+    )
+    public BaseResponse<ChartMetadataSimple> getGoodsDataSourceCharts(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
+        @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceMetadata(goodsNo, goodsDataNo, goodsDataSourceNo));
+    }
+
+    @ApiOrder(6)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
+        @Parameter(name = "goodsDataSourceNo", description = "상품 데이터소스 번호"),
         @Parameter(name = "interval", description = "차트 주기 (1D, 1W, 2W, 1M, 3M, 6M, 1Y)", schema = @Schema(
             type = "string",
             allowableValues = {
@@ -203,7 +233,7 @@ public class MiDataDetailController {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd));
     }
 
-    @ApiOrder(6)
+    @ApiOrder(7)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),
@@ -239,7 +269,7 @@ public class MiDataDetailController {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, page, size, startDate, endDate));
     }
 
-    @ApiOrder(7)
+    @ApiOrder(8)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
         @Parameter(name = "goodsDataNo", description = "상품 데이터 번호"),

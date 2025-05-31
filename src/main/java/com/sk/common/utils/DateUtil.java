@@ -164,12 +164,12 @@ public final class DateUtil {
         LocalDate endDate = LocalDate.now();
 
         LocalDate startDate = switch (range) {
-            case ONE_WEEK -> endDate.minusWeeks(1);
-            case ONE_MONTH -> endDate.minusMonths(1);
-            case THREE_MONTHS -> endDate.minusMonths(3);
-            case SIX_MONTHS -> endDate.minusMonths(6);
-            case ONE_YEAR -> endDate.minusYears(1);
-            case TWO_YEARS -> endDate.minusYears(2);
+            case ONE_WEEK -> endDate.minusWeeks(1).plusDays(1);
+            case ONE_MONTH -> endDate.minusMonths(1).plusDays(1);
+            case THREE_MONTHS -> endDate.minusMonths(3).plusDays(1);
+            case SIX_MONTHS -> endDate.minusMonths(6).plusDays(1);
+            case ONE_YEAR -> endDate.minusYears(1).plusDays(1);
+            case TWO_YEARS -> endDate.minusYears(2).plusDays(1);
             default -> endDate;
         };
 
@@ -212,7 +212,7 @@ public final class DateUtil {
     public static String toYearMonth(LocalDate date) {
         return date == null ? null : date.format(YYYYMM);
     }
-    
+
     /**
      * "yyyyMM" 문자열을 LocalDate로 변환 (202501 -> LocalDate 2025-01-01)
      */

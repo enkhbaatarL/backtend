@@ -3,6 +3,7 @@ package com.sk.domain.mi.service.chart;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.service.chart.dto.BucketBoundary;
+import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
@@ -15,263 +16,155 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * 지정된 기간 간격에 따라 원시 차트 데이터를 시간 버킷으로 집계하는 서비스.
- * 데이터의 마지막 날짜를 기준으로 과거 방향으로 집계합니다.
- */
 @Service
 public class ChartAggregationService {
 
     /**
-     * 원시 데이터(rawData)를 주어진 간격(interval)에 맞춰 집계한다.
-     * 데이터의 마지막 날짜를 기준으로 과거 방향으로 버킷을 생성하여 집계한다.
+     * 지정된 인터벌과 설정에 따라 정렬된 데이터를 집계합니다.
      *
-     * @param sortedData    소스에서 조회한 원시 데이터 목록 (시간순 오름차순 정렬 가정)
-     * @param interval      집계 단위 (ONE_DAY 제외)
-     * @param targetColumns 차트 렌더링에 사용될 컬럼명 리스트 (DATE, OPEN/MAIN, HIGH, LOW, CLOSE, REFERENCE...)
-     * @param gds           데이터 소스 상세 정보
-     * @return 집계된 데이터 포인트 목록 (시간순 오름차순 정렬)
+     * @param sortedData    처리할 정렬된 데이터 맵 리스트
+     * @param ctx           인터벌, 시작일자, 종료일자 설정이 포함된 차트 설정 컨텍스트
+     * @param targetColumns 집계 시 고려할 대상 컬럼명 리스트
+     * @param gds           상품 데이터소스 상세
+     * @return 지정된 인터벌과 경계값에 따라 집계된 데이터 맵 리스트
      */
-    public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, Interval interval, List<String> targetColumns, GoodsDataSourceDetail gds) {
+    public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, ChartSettingsContext ctx, List<String> targetColumns, GoodsDataSourceDetail gds) {
 
-        if (ObjectUtils.isEmpty(sortedData)) {
-            return Collections.emptyList();
-        }
-
-        // 변환이 필요없는 상태인 경우 바로 리턴
-        if (gds.getPeriodUnitSeparateCd().shouldNotAggregate(interval)) {
+        if (Interval.ONE_DAY == ctx.finalizedInterval()) {
             return sortedData;
         }
 
-        String dateColumn = targetColumns.get(RenderAs.DATE.getIndex());
-        String volumeColumn = gds.getTradeVolumeColumnNm();
-        boolean isCandleChart = Boolean.TRUE.equals(gds.getIsCandleChartPossible());
+        String dateCol = targetColumns.get(RenderAs.DATE.getIndex());
 
-        // 데이터의 마지막 날짜를 기준으로 과거 방향으로 버킷 경계 계산
-        List<BucketBoundary> boundaries = calculateBucketBoundariesBackward(sortedData, interval, dateColumn);
-
-        // 계산된 버킷 경계를 사용하여 데이터 집계
-        List<Map<String, Object>> aggregatedData = aggregateUsingBoundaries(sortedData, boundaries, dateColumn, volumeColumn, targetColumns, isCandleChart);
-
-        // 최종 결과를 시간순(오름차순)으로 정렬하여 반환
-        // aggregateUsingBoundaries 결과가 이미 역순(최신->과거)이므로 뒤집어줌
-        Collections.reverse(aggregatedData);
-        return aggregatedData;
-    }
-
-    /**
-     * 데이터의 마지막 날짜부터 과거 방향으로 지정된 간격(interval)에 따라 버킷 경계를 계산한다.
-     *
-     * @param rows     원시 데이터 목록
-     * @param interval 집계 간격
-     * @param dateCol  날짜 컬럼명
-     * @return 버킷 경계 목록 (역순: 가장 최근 버킷이 첫 번째 요소)
-     */
-    private List<BucketBoundary> calculateBucketBoundariesBackward(List<Map<String, Object>> rows, Interval interval, String dateCol) {
-
-        List<LocalDate> dates = rows.stream()
+        List<LocalDate> dates = sortedData.stream()
             .map(r -> DateUtil.parseDate(r.get(dateCol)))
             .filter(Objects::nonNull)
             .sorted()
             .distinct() // 중복 날짜 제거
             .toList();
 
-        if (dates.isEmpty()) {
+        Interval interval = ctx.finalizedInterval();
+        LocalDate inclusiveStart = ctx.finalizedStartDate();
+        LocalDate exclusiveEnd = ctx.finalizedEndDate().plusDays(1);
+
+        // 버킷 생성
+        List<BucketBoundary> boundaries = BucketBoundary.build(dates, exclusiveEnd, inclusiveStart, interval);
+
+        return aggregate(sortedData, boundaries, targetColumns, gds);
+    }
+
+    public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, List<BucketBoundary> boundaries, List<String> targetColumns, GoodsDataSourceDetail gds) {
+
+        if (ObjectUtils.isEmpty(sortedData)) {
             return Collections.emptyList();
         }
 
-        LocalDate firstDate = dates.get(0);
-        LocalDate lastDate = dates.get(dates.size() - 1);
+//        if (gds.getPeriodUnitSeparateCd().shouldNotAggregate(boundaries.get(0).interval())) {
+//            return sortedData;
+//        }
 
-        List<BucketBoundary> boundaries = new ArrayList<>();
-        LocalDate currentEndDate = lastDate.plusDays(1); // 마지막 버킷의 종료일(미포함)
+        String dateColumn = targetColumns.get(RenderAs.DATE.getIndex());
+        String volumeColumn = gds.getTradeVolumeColumnNm();
+        boolean isCandle = Boolean.TRUE.equals(gds.getIsCandleChartPossible());
 
-        while (true) {
-            LocalDate currentStartDate = retreat(currentEndDate, interval);
+        List<Map<String, Object>> aggregated = aggregateUsingBoundaries(sortedData, boundaries, dateColumn, volumeColumn, targetColumns, isCandle);
 
-            // 현재 계산된 버킷 시작일이 전체 데이터의 첫 날짜보다 이전이거나 같으면,
-            // 실제 데이터가 있는 첫 날짜를 이 버킷의 시작일로 조정하고 루프 종료
-            if (!currentStartDate.isAfter(firstDate)) {
-                boundaries.add(BucketBoundary.of(firstDate, currentEndDate));
-                break;
-            }
+        // asc 정렬
+        Collections.reverse(aggregated);
 
-            boundaries.add(BucketBoundary.of(currentStartDate, currentEndDate));
-
-            // 다음 버킷의 종료일(미포함)은 현재 버킷의 시작일로 설정
-            currentEndDate = currentStartDate;
-
-            // 다음 버킷의 시작일이 데이터의 첫 날짜보다 이전이 될 경우 중지
-            LocalDate nextStartDate = retreat(currentEndDate, interval);
-            if (nextStartDate.isBefore(firstDate)) {
-                // 마지막 남은 기간을 위한 버킷 추가 (데이터 첫날 ~ 현재 종료일)
-                if (currentEndDate.isAfter(firstDate)) { // 아직 처리 안된 첫 날짜 이후 기간이 있다면
-                    boundaries.add(BucketBoundary.of(firstDate, currentEndDate));
-                }
-                break;
-            }
-        }
-
-        // 생성된 버킷 리스트는 역순 (최신 -> 과거) 상태임
-        return boundaries;
+        return aggregated;
     }
 
-
-    /**
-     * 주어진 날짜에서 지정된 간격만큼 과거로 이동시킨다.
-     */
-    private LocalDate retreat(LocalDate date, Interval interval) {
-        return switch (interval) {
-            case ONE_WEEK -> date.minusWeeks(1);
-            case TWO_WEEK -> date.minusWeeks(2);
-            case ONE_MONTH -> date.minusMonths(1);
-            case THREE_MONTH -> date.minusMonths(3);
-            case SIX_MONTH -> date.minusMonths(6);
-            case ONE_YEAR -> date.minusYears(1);
-            // ONE_DAY는 aggregate 메소드 초반에 처리되므로 여기선 불필요하나, 완전성을 위해 추가
-            case ONE_DAY -> date.minusDays(1);
-        };
-    }
-
-    /**
-     * 계산된 버킷 경계에 따라 데이터를 필터링하고 집계한다.
-     *
-     * @param rows          원시 데이터 목록
-     * @param boundaries    버킷 경계 목록 (역순: 최신 버킷 먼저)
-     * @param dateCol       날짜 컬럼명
-     * @param targetColumns 차트 컬럼명 리스트
-     * @param isCandleChart 캔들 차트 여부
-     * @return 집계된 데이터 목록 (역순: 최신 버킷 결과가 첫 번째 요소)
-     */
-    private List<Map<String, Object>> aggregateUsingBoundaries(List<Map<String, Object>> rows, List<BucketBoundary> boundaries, String dateCol, String volumeCol, List<String> targetColumns, boolean isCandleChart) {
+    private List<Map<String, Object>> aggregateUsingBoundaries(List<Map<String, Object>> rows, List<BucketBoundary> boundaries, String dateCol, String volumeCol, List<String> targetColumns, boolean isCandle) {
 
         List<Map<String, Object>> result = new ArrayList<>();
 
-        for (BucketBoundary boundary : boundaries) {
-            // 해당 버킷 기간에 맞는 데이터 필터링 (start <= date < exclusiveEnd)
-            List<Map<String, Object>> bucketData = filterByDateRange(rows, dateCol, boundary.start(), boundary.exclusiveEnd());
+        for (BucketBoundary b : boundaries) {
 
-            if (bucketData.isEmpty()) {
-                continue; // 해당 기간에 데이터 없으면 건너뜀
+            List<Map<String, Object>> bucket = filterByDateRange(rows, dateCol, b.InclusiveStart(), b.exclusiveEnd());
+
+            if (bucket.isEmpty()) {
+                result.add(emptyRow(b.InclusiveStart(), dateCol, volumeCol, targetColumns));
+                continue;
             }
 
-            // 대표 날짜는 버킷의 시작일로 설정
-            LocalDate representativeDate = boundary.start();
+            // 시작일 -> 대표일로 선정
+            LocalDate representative = b.InclusiveStart();
 
-            Map<String, Object> aggregatedMap = isCandleChart
-                ? aggregateCandle(bucketData, representativeDate, dateCol, volumeCol, targetColumns)
-                : aggregateLine(bucketData, representativeDate, dateCol, volumeCol, targetColumns);
+            Map<String, Object> aggregateData = isCandle
+                ? aggregateCandle(bucket, representative, dateCol, volumeCol, targetColumns)
+                : aggregateLine(bucket, representative, dateCol, volumeCol, targetColumns);
 
-            if (!aggregatedMap.isEmpty()) {
-                result.add(aggregatedMap);
-            }
-
+            result.add(aggregateData);
         }
-        // 결과는 역순 (최신 버킷 -> 과거 버킷 순서) 상태
-        return result;
+
+        return result; // 최신→과거 역순 (호출부에서 reverse)
     }
 
-    /**
-     * 주어진 시작일(포함)과 종료일(미포함) 사이의 데이터를 필터링한다.
-     */
+    private Map<String, Object> emptyRow(LocalDate date, String dateCol, String volCol, List<String> cols) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put(dateCol, date);
+        for (String c : cols) {
+            if (!c.equals(dateCol)) m.put(c, null);
+        }
+        if (StringUtils.isNotEmpty(volCol)) m.put(volCol, null);
+        return m;
+    }
+
     private List<Map<String, Object>> filterByDateRange(List<Map<String, Object>> rows, String dateCol, LocalDate start, LocalDate exclusiveEnd) {
         return rows.stream()
             .filter(r -> {
                 LocalDate d = DateUtil.parseDate(r.get(dateCol));
-                // start <= d < exclusiveEnd
                 return d != null && !d.isBefore(start) && d.isBefore(exclusiveEnd);
             })
-            .collect(Collectors.toList()); // 결과는 여전히 시간순 정렬 상태 유지
+            .collect(Collectors.toList());
     }
 
-    /**
-     * 캔들 차트 데이터 집계 (시가, 종가, 고가, 저가)
-     * 대표 날짜는 버킷의 시작일 사용.
-     */
-    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, LocalDate representativeDate, String dateCol, String volumeCol, List<String> targetColumns) {
+    private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, LocalDate representative, String dateCol, String volumeCol, List<String> targetCols) {
+
         if (bucket.isEmpty()) return Collections.emptyMap();
 
-        // 버킷 내 데이터는 이미 시간순 정렬되어 있다고 가정
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put(dateCol, representativeDate); // 대표 날짜는 버킷 시작일
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put(dateCol, representative);
 
-        // OCHL 컬럼 인덱스 또는 이름 가져오기
-        String openCol = targetColumns.get(RenderAs.OPEN.getIndex());
-        String highCol = targetColumns.get(RenderAs.HIGH.getIndex());
-        String lowCol = targetColumns.get(RenderAs.LOW.getIndex());
-        String closeCol = targetColumns.get(RenderAs.CLOSE.getIndex());
+        String openCol = targetCols.get(RenderAs.OPEN.getIndex());
+        String highCol = targetCols.get(RenderAs.HIGH.getIndex());
+        String lowCol = targetCols.get(RenderAs.LOW.getIndex());
+        String closeCol = targetCols.get(RenderAs.CLOSE.getIndex());
 
-        // 시가 (Open): 버킷의 첫 번째 데이터 값
-//        map.put(openCol, MathUtil.toBigDecimal(bucket.get(0).get(openCol)));
-        map.put(openCol, average(bucket, openCol));
-        // 종가 (Close): 버킷의 마지막 데이터 값
-//        map.put(closeCol, MathUtil.toBigDecimal(bucket.get(bucket.size() - 1).get(closeCol)));
-        map.put(closeCol, average(bucket, closeCol));
-        // 고가 (High): 버킷 내 최대값
-//        map.put(highCol, max(bucket, highCol));
-        map.put(highCol, average(bucket, highCol));
-        // 저가 (Low): 버킷 내 최소값
-//        map.put(lowCol, min(bucket, lowCol));
-        map.put(lowCol, average(bucket, lowCol));
+        m.put(openCol, avg(bucket, openCol));
+        m.put(highCol, avg(bucket, highCol));
+        m.put(lowCol, avg(bucket, lowCol));
+        m.put(closeCol, avg(bucket, closeCol));
 
         // 거래량 컬럼이 있는 경우
-        if (StringUtils.isNotEmpty(volumeCol)) {
-            map.put(volumeCol, sum(bucket, volumeCol));
-        }
+        if (StringUtils.isNotEmpty(volumeCol)) m.put(volumeCol, sum(bucket, volumeCol));
 
-        return map;
+        return m;
     }
 
-    /**
-     * 라인/영역 차트 데이터 집계 (주요 값 및 참조 시리즈 평균)
-     * 대표 날짜는 버킷의 시작일 사용.
-     */
-    private Map<String, Object> aggregateLine(List<Map<String, Object>> bucketData, LocalDate representativeDate, String dateCol, String volumeCol, List<String> targetColumns) {
-        if (bucketData.isEmpty()) return Collections.emptyMap();
+    private Map<String, Object> aggregateLine(List<Map<String, Object>> bucket, LocalDate representative, String dateCol, String volumeCol, List<String> targetCols) {
 
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put(dateCol, representativeDate); // 대표 날짜는 버킷 시작일
+        if (bucket.isEmpty()) return Collections.emptyMap();
 
-        // 주요 값 (Main): 평균 계산
-        String mainCol = targetColumns.get(RenderAs.MAIN.getIndex());
-        map.put(mainCol, average(bucketData, mainCol));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put(dateCol, representative);
 
-        // 참조 시리즈 (Reference): 평균 계산
-        for (int i = RenderAs.REFERENCE.getIndex(); i < targetColumns.size(); i++) {
-            String refCol = targetColumns.get(i);
-            map.put(refCol, average(bucketData, refCol));
+        String main = targetCols.get(RenderAs.MAIN.getIndex());
+        m.put(main, avg(bucket, main));
+
+        for (int i = RenderAs.REFERENCE.getIndex(); i < targetCols.size(); i++) {
+            String col = targetCols.get(i);
+            m.put(col, avg(bucket, col));
         }
 
         // 거래량 컬럼이 있는 경우
-        if (StringUtils.isNotEmpty(volumeCol)) {
-            map.put(volumeCol, sum(bucketData, volumeCol));
-        }
+        if (StringUtils.isNotEmpty(volumeCol)) m.put(volumeCol, sum(bucket, volumeCol));
 
-        return map;
+        return m;
     }
 
-    // --- 집계 헬퍼 메소드 (min, max, average) ---
-    // 기존 메소드 유지 (null 처리 및 스케일 조정 포함)
-
-    private BigDecimal max(List<Map<String, Object>> bucket, String col) {
-        return bucket.stream()
-            .filter(s -> ObjectUtils.isNotEmpty(s.get(col))) // null 계산에서 제외
-            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
-            .max(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO) // 최대값이 없으면 0 (데이터가 없거나 모두 null)
-            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
-    }
-
-    private BigDecimal min(List<Map<String, Object>> bucket, String col) {
-        return bucket.stream()
-            .filter(s -> ObjectUtils.isNotEmpty(s.get(col))) // null 계산에서 제외
-            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
-            .min(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO) // 최소값이 없으면 0
-            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
-    }
-
-    private BigDecimal average(List<Map<String, Object>> bucket, String col) {
+    private BigDecimal avg(List<Map<String, Object>> bucket, String col) {
         List<BigDecimal> values = bucket.stream()
             .filter(s -> ObjectUtils.isNotEmpty(s.get(col))) // null 계산에서 제외
             .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
@@ -290,6 +183,24 @@ public class ChartAggregationService {
             .filter(s -> ObjectUtils.isNotEmpty(s.get(col))) // null 계산에서 제외
             .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
             .reduce(BigDecimal.ZERO, MathUtil::add)
+            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
+    }
+
+    private BigDecimal max(List<Map<String, Object>> bucket, String col) {
+        return bucket.stream()
+            .filter(s -> ObjectUtils.isNotEmpty(s.get(col))) // null 계산에서 제외
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
+            .max(Comparator.naturalOrder())
+            .orElse(BigDecimal.ZERO) // 최대값이 없으면 0 (데이터가 없거나 모두 null)
+            .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
+    }
+
+    private BigDecimal min(List<Map<String, Object>> bucket, String col) {
+        return bucket.stream()
+            .filter(s -> ObjectUtils.isNotEmpty(s.get(col))) // null 계산에서 제외
+            .map(r -> MathUtil.toBigDecimalOrNull(r.get(col)))
+            .min(Comparator.naturalOrder())
+            .orElse(BigDecimal.ZERO) // 최소값이 없으면 0
             .setScale(MathUtil.GLOBAL_SCALE, MathUtil.GLOBAL_ROUNDING);
     }
 

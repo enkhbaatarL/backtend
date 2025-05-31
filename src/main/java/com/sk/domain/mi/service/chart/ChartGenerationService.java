@@ -4,11 +4,10 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.charts.Chart;
+import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
-import com.sk.domain.shared.entity.master.tmd.UnitConvert;
-import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,15 +41,13 @@ public class ChartGenerationService {
      * 데이터소스로부터 원시 데이터를 조회하고, 인터벌에 따라 데이터를 집계한 후,
      * 단위 변환을 적용하여 최종 차트 데이터를 생성한다.
      *
-     * @param gds             데이터소스 상세 정보
-     * @param determinedRange 조회 시작일, 조회 종료일 (YYYYMMDD 형식)
-     * @param interval        데이터 집계 시간 간격
-     * @param unitConvert     단위 변환 객체
-     * @param isVisible       차트 표시 여부
-     * @param isMainChart     메인 차트 여부
+     * @param gds         데이터소스 상세 정보
+     * @param contextV3   차트 설정 컨텍스트
+     * @param isVisible   차트 표시 여부
+     * @param isMainChart 메인 차트 여부
      * @return 처리된 차트 데이터
      */
-    public Chart generateChartData(GoodsDataSourceDetail gds, Pair<String, String> determinedRange, Interval interval, UnitConvert unitConvert, boolean isVisible, boolean isMainChart) {
+    public Chart generateChartData(GoodsDataSourceDetail gds, ChartSettingsContext contextV3, boolean isVisible, boolean isMainChart) {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
@@ -61,16 +58,16 @@ public class ChartGenerationService {
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 : [조회]
-        List<Map<String, Object>> rawData = getRows(gds, dateColumnName, determinedRange, isMainChart);
+        List<Map<String, Object>> rawData = getRows(gds, dateColumnName, contextV3.finalizedRangeBetween(), isMainChart);
 
         // 원시 데이터 : [정렬 및 날짜 변환]
         List<Map<String, Object>> sortedData = convertAndOrderByDates(rawData, dateColumnName);
 
         // 원시 데이터 : [집계]
-        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, interval, targetColumns, gds);
+        List<Map<String, Object>> aggregatedData = chartAggregationService.aggregate(sortedData, contextV3, targetColumns, gds);
 
         // 원시 데이터 : [단위 변환]
-        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, volumeColumnNm, unitConvert, isMainChart);
+        List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, volumeColumnNm, contextV3.finalizedUnitConvert(), isMainChart);
 
         return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
     }
@@ -109,12 +106,10 @@ public class ChartGenerationService {
      * 개인화 설정이 있는 경우, 개인화된 비교군 데이터소스만 포함한다.
      *
      * @param mainDataSource   비교 대상 메인 데이터소스
-     * @param determinedRange  조회 시작일, 조회 종료일 (YYYYMMDD 형식)
-     * @param interval         데이터 집계 시간 간격
-     * @param finalizedCompIds 보여줄 비교군 데이터 소스 목록
+     * @param settingsContext
      * @return 비교군 데이터소스에 대한 차트 데이터 목록
      */
-    public List<Chart> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, Pair<String, String> determinedRange, Interval interval, List<Integer> finalizedCompIds) {
+    public List<Chart> generateComparisonCharts(GoodsDataSourceDetail mainDataSource, ChartSettingsContext settingsContext) {
 
         // 유효성 검증
         if (mainDataSource == null) {
@@ -133,12 +128,11 @@ public class ChartGenerationService {
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
             .map(comparison -> {
+                List<Integer> finalizedCompIds = settingsContext.finalizedCompIds();
                 boolean isVisible = finalizedCompIds.contains(comparison.getId().getCompareGoodsDataSourceNo());
                 return generateChartData(
                     comparison.getCompareGoodsDataSourceDetail(),
-                    determinedRange,
-                    interval,
-                    ChartUnitConversionService.DEFAULT_IDENTITY,
+                    settingsContext,
                     isVisible, // '비교군' 차트 화면 노출 여부
                     Boolean.FALSE // 메인 차트 여부
                 );

@@ -63,7 +63,7 @@
             OFFSET ${offset}
         </if>
         <if test="groupByColumn != null and groupByColumn != ''">
-            OFFSET ${groupByColumn}
+            GROUP BY ${groupByColumn}
         </if>
     </select>
 
