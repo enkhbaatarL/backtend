@@ -200,6 +200,15 @@ public class MiDataDetailService {
 
     }
 
+    public ChartMetadataSimple getGoodsDataSourceMetadata(Integer goodsNo, Integer gdNo, Integer gdsNo) {
+        // 1. 데이터 소스 검증
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+        ChartSettingsContext simpleContext = personalizeAndDefault(gds, ChartSettingsContext.ofEmpty());
+        Set<String> allowedUnitCd = chartUnitConversionService.getConvertUnitCdMap(gds).keySet().stream().map(UnitCd::toString).collect(Collectors.toSet());
+        return ChartMetadataSimple.of(gds, simpleContext, allowedUnitCd);
+
+    }
+
     /**
      * 상품 데이터소스 차트 묶음을 조회한다.
      * 사용자의 개인화 설정에 따라 차트의 범위, 인터벌, 단위 등이 조정된다.
@@ -402,13 +411,12 @@ public class MiDataDetailService {
                     oldRangeForLog.getCode(), DateUtil.toYmd(oldStartDateForLog), DateUtil.toYmd(oldEndDateForLog), initialInterval.getCode());
                 currentInterval = candidateIntervalForOneYear;
             } else {
-                // ONE_YEAR에도 맞는 Interval이 없다면, 데이터소스 최소 Interval로 강제 (최후의 수단)
+                // ONE_YEAR에도 맞는 Interval이 없다면, 데이터소스 최소 Interval로 강제
                 Interval fallbackInterval = minDataSourceUnit.minInterval();
                 log.warn("[Chart Parameter Soft-Validation]: No Interval found for Range.ONE_YEAR. Fallback to data source minimum Interval {}. (Original Range was {}, Dates {} to {}, Initial Interval was {})",
                     fallbackInterval.getCode(), oldRangeForLog.getCode(), DateUtil.toYmd(oldStartDateForLog), DateUtil.toYmd(oldEndDateForLog), initialInterval.getCode());
                 currentInterval = fallbackInterval;
             }
-            isCompatible = currentInterval.isAllowedRange(currentRange, currentStartDate, currentEndDate);
         }
 
         // 로그: 최종적으로 값이 변경된 경우
@@ -433,6 +441,8 @@ public class MiDataDetailService {
         return contextV2
             .withFinalizedInterval(currentInterval)
             .withFinalizedRange(currentRange)
+            .withFinalizedStartDate(currentStartDate)
+            .withFinalizedEndDate(currentEndDate)
             .withFinalizedRangeBetween(finalPeriodDatesPair);
     }
 
@@ -502,49 +512,30 @@ public class MiDataDetailService {
      * 차트 번들을 생성합니다.
      * 메타데이터, 메인 차트, 기술적 지표, 비교 차트를 생성하여 번들로 묶습니다.
      *
-     * @param gds             데이터소스 상세 정보
-     * @param settingsContext 차트 설정 컨텍스트
+     * @param gds       데이터소스 상세 정보
+     * @param contextV3 차트 설정 컨텍스트(v3)
      * @return 생성된 차트 번들
      */
-    private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext settingsContext) {
+    private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext contextV3) {
 
         LocalDate latestDate = chartGenerationService.getLatestDate(gds);
 
         // [metadata] 생성
-        ChartMetadata metadata = ChartMetadata.of(
-            gds,
-            settingsContext.finalizedChartType(),
-            settingsContext.finalizedUnitCd(),
-            settingsContext.finalizedAllowedUnitCds(),
-            settingsContext.finalizedInterval(),
-            settingsContext.finalizedRange(),
-            settingsContext.finalizedRangeBetween(),
-            DateUtil.toYmd(latestDate) // 2025-05-27 fix: 메타데이터에 최신 업데이트 일자 추가
-        );
+        ChartMetadata metadata = ChartMetadata.of(gds, contextV3, DateUtil.toYmd(latestDate));
 
         // [mainChart] 생성
         Chart mainChart = chartGenerationService.generateChartData(
             gds,
-            settingsContext.finalizedRangeBetween(),
-            settingsContext.finalizedInterval(),
-            settingsContext.finalizedUnitConvert(),
+            contextV3,
             Boolean.TRUE, // 메인 차트는 항상 visible 상태
             Boolean.TRUE
         );
 
         // [indicators] 생성
-        List<Indicator> indicators = technicalIndicatorService.generateIndicators(
-            mainChart,
-            settingsContext.finalizedIndicators()
-        );
+        List<Indicator> indicators = technicalIndicatorService.generateIndicators(mainChart, contextV3.finalizedIndicators());
 
         // [comparisonCharts] 생성
-        List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
-            gds,
-            settingsContext.finalizedRangeBetween(),
-            settingsContext.finalizedInterval(),
-            settingsContext.finalizedCompIds()
-        );
+        List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(gds, contextV3);
 
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }

@@ -46,8 +46,12 @@ public class ChartUnitConversionService {
         // 단위 변환 목록 조회
         List<GoodsDataUnitConvert> unitConversions = goodsDataUnitConvertRepository.findByGoodsDataSourceDetailAndIsDeletedFalse(gds);
 
-        Map<UnitCd, UnitConvert> unitCdMap = unitConversions.stream().collect(
-            Collectors.toMap(uc -> new UnitCd(uc.getUnitConvert().getConvertTargetDetailTypeNm(), uc.getUnitConvert().getConvertAfterUnitNm()), GoodsDataUnitConvert::getUnitConvert, (v1, v2) -> v2)
+        Map<UnitCd, UnitConvert> unitCdMap = unitConversions.stream()
+            .filter(u -> u.getUnitConvert().getIsUsed())
+            .collect(Collectors.toMap(uc ->
+                new UnitCd(uc.getUnitConvert().getConvertTargetDetailTypeNm(), uc.getUnitConvert().getConvertAfterUnitNm()),
+                GoodsDataUnitConvert::getUnitConvert,
+                (v1, v2) -> v2)
         );
 
         unitCdMap.put(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()), DEFAULT_IDENTITY);

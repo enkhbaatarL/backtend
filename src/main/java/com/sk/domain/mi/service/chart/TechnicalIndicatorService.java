@@ -33,7 +33,6 @@ public class TechnicalIndicatorService {
     private static final int PERIOD_EXTRA_LONG = 120;
 
     private final UnitConversionService unitConversionService;
-    private final PersonalizationService personalizationService;
 
 
     /**

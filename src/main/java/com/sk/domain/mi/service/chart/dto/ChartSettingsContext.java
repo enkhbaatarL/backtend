@@ -30,7 +30,9 @@ public record ChartSettingsContext(
     // 최종 결정/조정된 값들
     Interval finalizedInterval,
     Range finalizedRange,
+    // inclusive
     LocalDate finalizedStartDate,
+    // exclusive
     LocalDate finalizedEndDate,
     Pair<String, String> finalizedRangeBetween,
     UnitCd finalizedUnitCd,
@@ -41,4 +43,9 @@ public record ChartSettingsContext(
     Set<UnitCd> finalizedAllowedUnitCds
 
 ) {
+
+    public static ChartSettingsContext ofEmpty() {
+        return ChartSettingsContext.builder().build();
+    }
+
 }
