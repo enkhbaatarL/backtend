@@ -8,6 +8,7 @@ import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
+import com.sk.domain.shared.enums.chart.LookBack;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +59,7 @@ public class ChartGenerationService {
         boolean isCandleChartPossible = gds.getIsCandleChartPossible();
 
         // 원시 데이터 : [조회]
-        List<Map<String, Object>> rawData = getRows(gds, dateColumnName, contextV3.finalizedRangeBetween(), isMainChart);
+        List<Map<String, Object>> rawData = getRows(gds, dateColumnName, contextV3, isMainChart);
 
         // 원시 데이터 : [정렬 및 날짜 변환]
         List<Map<String, Object>> sortedData = convertAndOrderByDates(rawData, dateColumnName);
@@ -105,7 +106,7 @@ public class ChartGenerationService {
      * 메인 데이터소스와 연결된 비교군 데이터소스를 찾아 각각에 대한 차트 데이터를 생성한다.
      * 개인화 설정이 있는 경우, 개인화된 비교군 데이터소스만 포함한다.
      *
-     * @param mainDataSource   비교 대상 메인 데이터소스
+     * @param mainDataSource  비교 대상 메인 데이터소스
      * @param settingsContext
      * @return 비교군 데이터소스에 대한 차트 데이터 목록
      */
@@ -159,23 +160,25 @@ public class ChartGenerationService {
      * 데이터소스 상세 정보와 날짜 컬럼명, 시작일, 종료일을 기반으로 데이터를 필터링하여 조회한다.
      * 조건에 맞는 데이터가 없는 경우 빈 리스트를 반환한다.
      *
-     * @param gds             데이터소스 상세 정보
-     * @param dateColumnName  필터링할 날짜 컬럼명
-     * @param determinedRange 데이터 범위 시작일, 데이터 범위 종료일 (포함, YYYYMMDD 형식)
-     * @param isMainChart     메인 차트 여부
+     * @param gds            데이터소스 상세 정보
+     * @param dateColumnName 필터링할 날짜 컬럼명
+     * @param contextV3      contextV3
+     * @param isMainChart    메인 차트 여부
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional(transactionManager = "myBatisTransactionManager")
-    public List<Map<String, Object>> getRows(GoodsDataSourceDetail gds, String dateColumnName, Pair<String, String> determinedRange, boolean isMainChart) {
+    public List<Map<String, Object>> getRows(GoodsDataSourceDetail gds, String dateColumnName, ChartSettingsContext contextV3, boolean isMainChart) {
 
-        if (gds == null || dateColumnName == null || determinedRange == null) {
+        if (gds == null || dateColumnName == null || contextV3.finalizedRangeBetween() == null) {
             return Collections.emptyList();
         }
 
         // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일의 LOOK_BACK Period를 설정
-        String startDate = isMainChart ? DateUtil.minusDays(determinedRange.getLeft(), 180) : determinedRange.getLeft();
+        String startDate = isMainChart
+            ? LookBack.W_SIZE_120.getLookBackStartDateStr(contextV3.finalizedStartDate(), contextV3.finalizedInterval(), 30)
+            : contextV3.finalizedRangeBetween().getLeft();
 
-        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, determinedRange.getRight());
+        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, contextV3.finalizedRangeBetween().getRight());
 
         // select 절에 거래량 컬럼 추가
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())

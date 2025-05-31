@@ -147,7 +147,10 @@ public class MiDataDetailController {
     )
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PutMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}/goods-data-sources/{goodsDataSourceNo}/charts-personalize")
-    @RequiredPermission(roles = {Role.USER})
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
     public BaseResponse<List<ChartsPersonalizeRes>> putGoodsDataSourcesChartsPersonalize(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,

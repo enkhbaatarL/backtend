@@ -81,6 +81,7 @@ public class MiDashboardHistoryService {
             Map<Integer, List<ChartPredictSettingDetail>> settingDetailMap = groupByForecastDetailNo(historySettingDetails);
 
             List<ForecastContext> forecastContexts = forecasts.stream().map(f -> {
+
                 GoodsDataSourceDetail gds = f.getGoodsDataSourceDetail();
                 List<TargetPredictResultData> targetPredictResultData = getPredictResultData(gds);
 
@@ -96,6 +97,7 @@ public class MiDashboardHistoryService {
                     .toList();
 
                 return ForecastContext.of(f, fulfillDates, spots, futures);
+
             }).toList();
 
             return HistoryMetadataRes.of(historySetting, forecastContexts);
