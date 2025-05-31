@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ChartPredictLineType {
     BRANCH("BRANCH", "가지모양"),
-    LEAF("LEAF", "잎모양");
+    LINE("LINE", "선모양");
 
     private final String code;
     private final String description;

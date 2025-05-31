@@ -15,12 +15,12 @@ public interface ChartPredictSettingDetailRepository
         extends JpaRepository<ChartPredictSettingDetail, Integer>, CustomChartPredictSettingDetailRepository {
 
     @Query(value = """
-                SELECT cpsd.predictChartDetailExplanation
+                SELECT cpsd.predictChartDetailExpn
                 FROM ChartPredictSettingDetail cpsd
                 WHERE cpsd.chartPredictSetting.customerCompany.customerCompanyNo = :companyNo
                     AND cpsd.isDeleted = false
                     AND cpsd.goodsDataSourceDetail.isDeleted = false
-                    AND cpsd.isChartLinePredictValue = false
+                    AND cpsd.isChartLinePredictVal = false
                     AND cpsd.isFuture = false
             """)
     List<String> findFilterTypeByCompanyNo(@Param("companyNo") Integer companyNo);

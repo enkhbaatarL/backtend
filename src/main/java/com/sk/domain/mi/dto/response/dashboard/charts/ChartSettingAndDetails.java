@@ -6,13 +6,12 @@ import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 public record ChartSettingAndDetails(
-    ChartPredictSetting chartPredictSetting,
-    List<ChartPredictSettingDetail> chartPredictSettingDetails
-) {
-
+        @Schema(description = "차트 설정") ChartPredictSetting chartPredictSetting,
+        @Schema(description = "차트 설정 상세") List<ChartPredictSettingDetail> chartPredictSettingDetails) {
     @Builder
     @QueryProjection
     public ChartSettingAndDetails(ChartPredictSetting chartPredictSetting, List<ChartPredictSettingDetail> chartPredictSettingDetails) {

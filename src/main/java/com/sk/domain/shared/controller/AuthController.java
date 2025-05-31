@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,11 +47,10 @@ public class AuthController {
                 "data": true
             }
             """)))
-    public BaseResponse<Boolean> generateToken(
+    public BaseResponse<GenerateTokenRes> generateToken(
             @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = true) String authHeader,
-            @Parameter(description = "Refresh Token (쿠키에서 전달)", required = true) @CookieValue(value = "X-Refresh-Token", required = true) String refreshToken,
-            HttpServletResponse response) {
+            @Parameter(description = "Refresh Token (쿠키에서 전달)", required = true) @CookieValue(value = "X-Refresh-Token", required = true) String refreshToken) {
         return BaseResponseFactory
-                .create(authService.generateToken(authHeader, refreshToken, response));
+                .create(authService.generateToken(authHeader, refreshToken));
     }
 }

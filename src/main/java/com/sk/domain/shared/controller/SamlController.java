@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.service.SamlService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,10 +50,9 @@ public class SamlController {
     @Operation(summary = "SAML 콜백", description = "SAML 콜백을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "SAML 콜백 성공")
     @GetMapping("/callback")
-    public BaseResponse<Boolean> samlCallback(
-            @RequestParam(value = "sessionId", required = true) String sessionId,
-            HttpServletResponse response) {
-        return BaseResponseFactory.create(samlService.samlCallback(sessionId, response));
+    public BaseResponse<GenerateTokenRes> samlCallback(
+            @RequestParam(value = "sessionId", required = true) String sessionId) {
+        return BaseResponseFactory.create(samlService.samlCallback(sessionId));
     }
 
     /**
