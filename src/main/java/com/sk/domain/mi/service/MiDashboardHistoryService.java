@@ -52,7 +52,7 @@ public class MiDashboardHistoryService {
         List<ChartPredictSettingDetail> historySettingDetails = chartPredictSettingDetailRepository.findByChartPredictSettingAndIsDeletedFalse(historySetting);
 
         Map<Boolean, List<ChartPredictSettingDetail>> partitioned = historySettingDetails.stream()
-            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictValue));
+            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
 
         // 예측가
         List<ChartPredictSettingDetail> forecasts = partitioned.get(Boolean.TRUE);
@@ -87,11 +87,11 @@ public class MiDashboardHistoryService {
                 List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
                 List<ChartPredictSettingDetail> groupedSpotsWithFutures = settingDetailMap.getOrDefault(f.getChartPredictSettingDetailNo(), Collections.emptyList());
                 List<ChartPredictSettingDetail> spots = groupedSpotsWithFutures.stream()
-                    .filter(awf -> !awf.getIsChartLinePredictValue())
+                    .filter(awf -> !awf.getIsChartLinePredictVal())
                     .filter(awf -> !awf.getIsFuture())
                     .toList();
                 List<ChartPredictSettingDetail> futures = groupedSpotsWithFutures.stream()
-                    .filter(awf -> !awf.getIsChartLinePredictValue())
+                    .filter(awf -> !awf.getIsChartLinePredictVal())
                     .filter(ChartPredictSettingDetail::getIsFuture)
                     .toList();
 
@@ -125,7 +125,7 @@ public class MiDashboardHistoryService {
             .stream()
             .collect(Collectors.toMap(
                 list -> list.stream()
-                    .filter(ChartPredictSettingDetail::getIsChartLinePredictValue)
+                    .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
                     .findFirst() // 그룹마다 예측가 데이터를 찾아
                     .map(ChartPredictSettingDetail::getChartPredictSettingDetailNo)
                     .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "At least one forecast-data is required. associate-goods-data-source-no: %s".formatted(list.get(0).getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))), // 예측가가 없는 경우 예외 발생

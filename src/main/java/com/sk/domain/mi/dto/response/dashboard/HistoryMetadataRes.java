@@ -65,7 +65,7 @@ public record HistoryMetadataRes(
             public static SettingDetail of(PriceType priceType, ChartPredictSettingDetail settingDetail) {
                 return SettingDetail.builder()
                     .settingDetailNo(settingDetail.getChartPredictSettingDetailNo())
-                    .settingDetailExpn(settingDetail.getPredictChartDetailExplanation())
+                    .settingDetailExpn(settingDetail.getPredictChartDetailExpn())
                     .priceType(priceType)
                     .priceTypeNm(priceType.getDescription())
                     .build();
