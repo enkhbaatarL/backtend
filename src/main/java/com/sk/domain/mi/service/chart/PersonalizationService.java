@@ -31,7 +31,7 @@ public class PersonalizationService {
         EnumMap<ChartSettingConditionCd, List<String>> raw = initializeEmpty();
 
         // 로그인 안 한 경우(혹은 미개발 환경) → 빈 Preferences 반환
-        if (StringUtils.isBlank(userLoginId) || Role.USER != role) {
+        if (StringUtils.isBlank(userLoginId) || !List.of(Role.USER, Role.ADMIN).contains(role)) {
             return new Preferences(raw);
         }
 
