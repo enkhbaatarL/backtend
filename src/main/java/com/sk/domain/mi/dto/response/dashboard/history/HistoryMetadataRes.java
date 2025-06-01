@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.dashboard;
+package com.sk.domain.mi.dto.response.dashboard.history;
 
 import com.sk.domain.mi.dto.context.ForecastContext;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;

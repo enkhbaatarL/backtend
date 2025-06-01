@@ -138,6 +138,7 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("columns", columns);
         params.put("whereClause", whereClause);
+        params.put("additionalWhereClause", dynamicDataReq.additionalWhereClause());
         params.put("groupByColumn", dynamicDataReq.groupByColumn());
         return dynamicMapper.selectPredictResultData(params);
     }
