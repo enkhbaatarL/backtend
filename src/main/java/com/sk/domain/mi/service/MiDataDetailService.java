@@ -170,7 +170,7 @@ public class MiDataDetailService {
         Function<ChartsPersonalizeReq, PersonalizeKey> keyOfReq = r -> new PersonalizeKey(r.chartConditionCd(), r.chartConditionVal());
         Function<PersonalizedChartSetting, PersonalizeKey> keyOfEntity = e -> new PersonalizeKey(e.getChartSettingConditionCd(), e.getChartSettingConditionVal());
 
-        Map<PersonalizeKey, PersonalizedChartSetting> currentMap = currentSettings.stream().collect(Collectors.toMap(keyOfEntity, Function.identity()));
+        Map<PersonalizeKey, PersonalizedChartSetting> currentMap = currentSettings.stream().collect(Collectors.toMap(keyOfEntity, Function.identity(), (v1, v2) -> v2));
 
         Set<PersonalizeKey> requestKeys = requests.stream()
             .map(keyOfReq)
