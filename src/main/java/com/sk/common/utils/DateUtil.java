@@ -25,6 +25,7 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYYMM = DateTimeFormatter.ofPattern("yyyyMM");
     public static final DateTimeFormatter YYYY_MMM_ENG = DateTimeFormatter.ofPattern("yyyy-MMM", Locale.ENGLISH);
     public static final DateTimeFormatter YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    public static final DateTimeFormatter YYYY_MM = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private DateUtil() {
     }
@@ -163,12 +164,12 @@ public final class DateUtil {
         LocalDate endDate = LocalDate.now();
 
         LocalDate startDate = switch (range) {
-            case ONE_WEEK -> endDate.minusWeeks(1);
-            case ONE_MONTH -> endDate.minusMonths(1);
-            case THREE_MONTHS -> endDate.minusMonths(3);
-            case SIX_MONTHS -> endDate.minusMonths(6);
-            case ONE_YEAR -> endDate.minusYears(1);
-            case TWO_YEARS -> endDate.minusYears(2);
+            case ONE_WEEK -> endDate.minusWeeks(1).plusDays(1);
+            case ONE_MONTH -> endDate.minusMonths(1).plusDays(1);
+            case THREE_MONTHS -> endDate.minusMonths(3).plusDays(1);
+            case SIX_MONTHS -> endDate.minusMonths(6).plusDays(1);
+            case ONE_YEAR -> endDate.minusYears(1).plusDays(1);
+            case TWO_YEARS -> endDate.minusYears(2).plusDays(1);
             default -> endDate;
         };
 
@@ -211,12 +212,12 @@ public final class DateUtil {
     public static String toYearMonth(LocalDate date) {
         return date == null ? null : date.format(YYYYMM);
     }
-    
+
     /**
-     * "yyyyMM" 문자열을 LocalDate로 변환
+     * "yyyyMM" 문자열을 LocalDate로 변환 (202501 -> LocalDate 2025-01-01)
      */
     public static LocalDate fromYearMonth(String yearMonth) {
-        return yearMonth == null ? null : LocalDate.parse(yearMonth, YYYYMM);
+        return yearMonth == null ? null : YearMonth.parse(yearMonth, YYYYMM).atDay(1);
     }
 
 
@@ -246,4 +247,20 @@ public final class DateUtil {
         return toYmd(date.minusDays(days));
     }
 
+
+    /**
+     * LocalDateTime을 "yyyy-MM" 문자열로 변환
+     */
+    public static String toYyyyMm(LocalDateTime dateTime) {
+        return dateTime == null ? null : dateTime.format(YYYY_MM);
+    }
+
+    /**
+     * LocalDate를 "yyyy-MM" 문자열로 변환
+     */
+    public static String toYyyyMm(LocalDate date) {
+        return date == null ? null : date.format(YYYY_MM);
+    }
+
+    // YYYYMMDD
 }

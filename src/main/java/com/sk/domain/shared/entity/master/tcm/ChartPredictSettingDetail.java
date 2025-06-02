@@ -48,12 +48,12 @@ public class ChartPredictSettingDetail extends BaseEntity {
 
     @Column(name = "prdc_chrt_dtl_expn", length = 100)
     @Comment("예측차트상세설명")
-    private String predictChartDetailExplanation;
+    private String predictChartDetailExpn;
 
     @Column(name = "chrt_line_prdc_val_yn", nullable = false, columnDefinition = "char(1)")
     @Comment("차트선예측값여부")
     @Convert(converter = BooleanToYNAttributeConverter.class)
-    private Boolean isChartLinePredictValue;
+    private Boolean isChartLinePredictVal;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "chrt_prdc_line_spt_cd", length = 10)

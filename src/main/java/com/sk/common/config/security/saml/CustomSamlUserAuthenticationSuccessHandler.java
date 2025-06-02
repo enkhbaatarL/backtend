@@ -14,6 +14,7 @@ import org.springframework.security.saml2.provider.service.authentication.Saml2A
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import com.sk.common.enums.ResultCode;
 import com.sk.domain.shared.entity.master.tlm.UserAccessLog;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tlm.UserAccessLogRepository;
@@ -57,7 +58,8 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 		List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(loginId);
 		if (users.isEmpty()) {
-			response.sendRedirect(loginErrorUrl);
+			log.error("SAML 사용자 인증 실패: {}", loginId);
+			response.sendRedirect(loginErrorUrl + "?errorCode=" + ResultCode.Error.AUTH_REQUIRED.getCode());
 			throw new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId));
 		}
 

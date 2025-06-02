@@ -2,6 +2,7 @@ package com.sk.domain.shared.service.permissions;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
+import com.sk.common.utils.MDCUtil;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.enums.Claim;
@@ -17,6 +18,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * JWT 인증/권한 서비스
@@ -53,6 +55,17 @@ public class AuthorizationService {
         } catch (NumberFormatException e) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid company number");
         }
+    }
+
+    /**
+     * 우선순위에 따른 회사번호 조회
+     *   1. 헤더의 X-Company-No
+     *   2. token claim
+     */
+    public Integer getCompanyNoWithPriority() {
+        return Optional.ofNullable(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO))
+            .map(Integer::parseInt)
+            .orElseGet(this::getCompanyNo);
     }
 
     /**

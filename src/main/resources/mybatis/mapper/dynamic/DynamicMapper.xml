@@ -3,6 +3,13 @@
 
 <mapper namespace="com.sk.domain.shared.mapper.dynamic.DynamicMapper">
 
+    <!-- Mapper XML -->
+    <resultMap id="targetPredictResultData" type="com.sk.domain.shared.mapper.dto.TargetPredictResultData">
+        <result property="predictFulfillDate" column="prdc_fulf_dt"/>
+        <result property="predictResultDate" column="prdc_rslt_dt"/>
+        <result property="predictResultValue" column="prdc_rslt_val"/>
+    </resultMap>
+
     <!-- 동적 SELECT 쿼리 -->
     <!-- SQL 인젝션 처리 필요 -->
     <select id="selectDynamic" parameterType="map" resultType="map">
@@ -31,6 +38,35 @@
         </if>
     </select>
 
+    <select id="selectPredictResultData" parameterType="map" resultMap="targetPredictResultData">
+        SELECT
+        <if test="columns != null and columns != ''">
+            ${columns}
+        </if>
+        <if test="columns == null or columns == ''">
+            *
+        </if>
+        FROM ${tableName}
+        <if test="whereClause != null and whereClause != ''">
+            WHERE ${whereClause}
+        </if>
+        <if test="additionalWhereClause != null and additionalWhereClause != ''">
+            AND ${additionalWhereClause}
+        </if>
+        <if test="orderByColumns != null and orderByColumns != ''">
+            ORDER BY ${orderByColumns}
+        </if>
+        <if test="limit != null and limit != ''">
+            LIMIT ${limit}
+        </if>
+        <if test="offset != null and offset != ''">
+            OFFSET ${offset}
+        </if>
+        <if test="groupByColumn != null and groupByColumn != ''">
+            GROUP BY ${groupByColumn}
+        </if>
+    </select>
+
     <insert id="saveDynamic" parameterType="map">
         INSERT INTO ${tableName} (
             <foreach collection="columns" item="col" separator=", ">
@@ -43,6 +79,7 @@
         )
     </insert>
 
+    <!-- 정형데이터 일괄 저장 -->
     <insert id="saveAllDynamic" parameterType="map">
         INSERT INTO ${tableName}
             <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -75,4 +112,22 @@
             mod_usr_logn_id = #{currentUserId, jdbcType=VARCHAR}
         </trim>
     </insert>
+
+    <!-- 예측 데이터 조회 -->
+    <select id="selectDynamicForcastChart" parameterType="map" resultType="map">
+        SELECT
+        <if test="columns != null and columns != ''">
+            ${columns}
+        </if>
+        <if test="columns == null or columns == ''">
+            *
+        </if>
+        FROM ${tableName}
+        <if test="innerJoin != null and innerJoin != ''">
+            ${innerJoin}
+        </if>
+        <if test="orderByColumns != null and orderByColumns != ''">
+            ORDER BY ${orderByColumns}
+        </if>
+    </select>
 </mapper>

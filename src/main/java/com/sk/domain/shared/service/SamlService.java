@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
@@ -34,7 +35,7 @@ public class SamlService {
      * @return
      */
     @Transactional
-    public Boolean samlCallback(String sessionId, HttpServletResponse response) {
+    public GenerateTokenRes samlCallback(String sessionId) {
         String userLoginId = redisTemplate.opsForValue().get(sessionId);
 
         if (userLoginId == null) {
@@ -52,10 +53,10 @@ public class SamlService {
                 .findFirst()
                 .orElse(users.get(0));
 
-        authService.generateToken(user, response);
+        GenerateTokenRes generateTokenRes = authService.generateToken(user);
 
         redisTemplate.delete(sessionId);
 
-        return Boolean.TRUE;
+        return generateTokenRes;
     }
 }

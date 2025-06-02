@@ -41,8 +41,8 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepositor
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -170,7 +170,7 @@ public class MiDataDetailService {
         Function<ChartsPersonalizeReq, PersonalizeKey> keyOfReq = r -> new PersonalizeKey(r.chartConditionCd(), r.chartConditionVal());
         Function<PersonalizedChartSetting, PersonalizeKey> keyOfEntity = e -> new PersonalizeKey(e.getChartSettingConditionCd(), e.getChartSettingConditionVal());
 
-        Map<PersonalizeKey, PersonalizedChartSetting> currentMap = currentSettings.stream().collect(Collectors.toMap(keyOfEntity, Function.identity()));
+        Map<PersonalizeKey, PersonalizedChartSetting> currentMap = currentSettings.stream().collect(Collectors.toMap(keyOfEntity, Function.identity(), (v1, v2) -> v2));
 
         Set<PersonalizeKey> requestKeys = requests.stream()
             .map(keyOfReq)
@@ -200,6 +200,15 @@ public class MiDataDetailService {
 
     }
 
+    public ChartMetadataSimple getGoodsDataSourceMetadata(Integer goodsNo, Integer gdNo, Integer gdsNo) {
+        // 1. 데이터 소스 검증
+        GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
+        ChartSettingsContext simpleContext = personalizeAndDefault(gds, ChartSettingsContext.ofEmpty());
+        Set<String> allowedUnitCd = chartUnitConversionService.getConvertUnitCdMap(gds).keySet().stream().map(UnitCd::toString).collect(Collectors.toSet());
+        return ChartMetadataSimple.of(gds, simpleContext, allowedUnitCd);
+
+    }
+
     /**
      * 상품 데이터소스 차트 묶음을 조회한다.
      * 사용자의 개인화 설정에 따라 차트의 범위, 인터벌, 단위 등이 조정된다.
@@ -219,244 +228,314 @@ public class MiDataDetailService {
         // 1. 데이터 소스 검증
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
 
-        // 2. 요청 파라미터 1차 유효성 hard 검증 (오직 사용자 요청(Range, Interval)에 대한 값 검증을 수행함)
-        hardValidateChartParameters(gds, interval, range, startDate, endDate);
+        // 2. 요청 파라미터 1차 유효성 hard 검증 -> 검증 실패 시, 예외 처리
+        ChartSettingsContext settingsContextV1 = hardValidateChartParameters(gds, interval, range, startDate, endDate, unitCd);
 
         // 3. 개인화 & 디폴트 설정 처리
-        ChartSettingsContext settingsContext = finalizedChartSettings(gds, interval, range, startDate, endDate, unitCd);
+        ChartSettingsContext settingsContextV2 = personalizeAndDefault(gds, settingsContextV1);
 
-        // 4. 개인화 & 디폴트 & 요청 파라미터 2차 유효성 soft 검증 후 보정 (todo 테스트 및 점검)
-//        settingsContext = softValidateChartParametersAndAdjust(gds, settingsContext);
+        // 4. 파라미터 2차 유효성 soft 검증 -> 검증 실패 시, 조정값 주입
+        ChartSettingsContext settingsContextV3 = softValidateChartParametersAndAdjust(gds, settingsContextV2);
 
         // 5. 차트 데이터 생성
-        ChartBundleRes bundle = generateChartBundle(gds, settingsContext);
+        ChartBundleRes bundle = generateChartBundle(gds, settingsContextV3);
 
         // 6. 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContext.finalizedRangeBetween().getLeft()));
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()));
 
     }
 
     /**
-     * 차트 파라미터의 유효성을 검증합니다.
+     * 차트 요청 파라미터의 1차 유효성을 검증합니다.
+     * 사용자 요청에 대한 값 검증을 수행합니다.
      *
      * @param gds       데이터소스 상세 정보
-     * @param interval  인터벌
-     * @param range     범위
-     * @param startDate 시작일
-     * @param endDate   종료일
+     * @param interval  인터벌 (요청 값)
+     * @param range     범위 (요청 값)
+     * @param startDate 시작일 (요청 값)
+     * @param endDate   종료일 (요청 값)
+     * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명) (요청 값)
+     * @return ChartSettingsContext (1차 검증된 차트 설정 컨텍스트)
      */
-    private void hardValidateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate) {
+    private ChartSettingsContext hardValidateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
 
-        if (interval == null || range == null) {
-            return;
-        }
-
+        // 'Range' 검증
         if (range == Range.CUSTOM) {
 
-            // 커스텀 범위인 경우 시작일과 종료일이 모두 필요
+            // Range가 CUSTOM인 경우, 시작일과 종료일이 모두 필요
             if (startDate == null || endDate == null) {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "For [CUSTOM] 'range', both 'startDate' and 'endDate' must be provided.");
             }
 
             // 시작일과 종료일이 유효한 날짜인지 검증
             if (endDate.isBefore(startDate)) {
-                throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "'endDate' must be after 'startDate'.");
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "'endDate' (%s) must be on or after 'startDate' (%s).".formatted(DateUtil.toYmd(endDate), DateUtil.toYmd(startDate)));
             }
 
         }
 
-        // 검증 1: 요청된 interval이 데이터소스의 최소 수집 단위(gds.getPeriodUnitSeparateCd())보다 과도하게 세부적인지 확인
-        // interval의 기간 단위(periodCd)는 gds의 최소 단위(getPeriodUnitSeparateCd)보다 크거나 같아야 함.
-        if (!interval.getPeriodCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd())) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
-                "Requested interval (%s - %s) is too granular. Data source's minimum period unit is %s (%s). Minimum allowed interval is %s.".formatted(
-                    interval.getCode(),
-                    interval.getDescription(),
-                    gds.getPeriodUnitSeparateCd().getCode(),
-                    gds.getPeriodUnitSeparateCd().getDescription(),
-                    gds.getPeriodUnitSeparateCd().minInterval().getCode()
-                )
-            );
-        }
+        // 'Interval' 검증
+        if (ObjectUtils.isNotEmpty(interval)) {
 
-        // 검증 2: 요청된 interval에 대해 요청된 range가 허용되는 조합인지 확인
-        // (CUSTOM range의 경우, startDate와 endDate를 사용해 기간 길이도 함께 검증됨)
-        if (!interval.isAllowedRange(range, startDate, endDate)) {
-            String customRangeInfo = "";
-            if (range == Range.CUSTOM) {
-                customRangeInfo = " (from %s to %s)".formatted(DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
+            // 인터벌과 기간단위코드 상관관계 검증
+            // example: interval ONE_DAY(1D)라면? 데이터소스의 기간단위구분코드가 최소 'D(daily)' 여야 한다.
+            if (!interval.getPeriodCd().isGreaterOrEqual(gds.getPeriodUnitSeparateCd())) {
+                throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "Requested interval (%s - %s) is too granular. goods-data-source minimum period unit is %s (%s). Minimum allowed interval is %s.".formatted(
+                        interval.getCode(),
+                        interval.getDescription(),
+                        gds.getPeriodUnitSeparateCd().getCode(),
+                        gds.getPeriodUnitSeparateCd().getDescription(),
+                        gds.getPeriodUnitSeparateCd().minInterval().getCode()
+                    )
+                );
             }
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                "The selected range (%s%s) is not compatible with the selected interval (%s - %s).".formatted(
-                    range.getCode(),
-                    customRangeInfo,
-                    interval.getCode(),
-                    interval.getDescription()
-                )
-            );
+
+            // 범위와 인터벌 상관관계 검증
+            if (!interval.isAllowedRange(range, startDate, endDate)) {
+                String customRangeInfo = range == Range.CUSTOM ? " (from %s to %s)".formatted(DateUtil.toYmd(startDate), DateUtil.toYmd(endDate)) : "";
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                    "Requested range (%s%s) is not compatible with the requested interval (%s).".formatted(
+                        range.getCode(),
+                        customRangeInfo,
+                        interval.getCode()
+                    )
+                );
+            }
+
         }
 
+        UnitConvert unitConvert = ChartUnitConversionService.DEFAULT_IDENTITY;
+        Map<UnitCd, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
+
+        // 'UnitCd' 검증
+        if (StringUtils.isNotEmpty(unitCd)) {
+
+            UnitCd requestUnitCd = UnitCd.parse(unitCd);
+
+            if (!unitCdMap.containsKey(requestUnitCd)) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID,
+                    "Requested unitCd cannot be applied to the current goods-data-source(no: %s). unitCd (%s)".formatted(gds.getGoodsDataSourceNo(), requestUnitCd.toString()));
+            }
+
+            unitConvert = unitCdMap.get(requestUnitCd);
+        }
+
+        // 1차 유효성 검증이 끝난 차트 설정 컨텍스트
+        return ChartSettingsContext.builder()
+            .requestedInterval(interval)
+            .requestedRange(range)
+            .requestedStartDateStr(startDate)
+            .requestedEndDateStr(endDate)
+            .requestedUnitCdStr(unitCd)
+            .finalizedUnitConvert(unitConvert)
+            .finalizedAllowedUnitCds(unitCdMap.keySet())
+            .build();
     }
 
-    private ChartSettingsContext softValidateChartParametersAndAdjust(GoodsDataSourceDetail gds, ChartSettingsContext ctx) {
+    /**
+     * 차트 파라미터의 2차 유효성을 검증합니다.
+     * 데이터소스의 최소 수집 단위에 맞춰 인터벌과 범위를 조정하고,
+     * 개인화/기본값 적용 후 발생할 수 있는 Interval과 Range 간의 불일치를 해소합니다.
+     * 검증 실패 시 예외 대신 값을 [보정]합니다.
+     *
+     * @param gds       데이터소스 상세 정보
+     * @param contextV2 개인화 및 기본값이 적용된 파라미터 설정 컨텍스트 객체(v2)
+     * @return ChartSettingsContext (2차 검증된 차트 설정 컨텍스트)
+     */
+    private ChartSettingsContext softValidateChartParametersAndAdjust(GoodsDataSourceDetail gds, ChartSettingsContext contextV2) {
 
-        Interval originalInterval = ctx.finalizedInterval();
-        Range originalRange = ctx.finalizedRange();
+        Interval initialInterval = contextV2.finalizedInterval();
+        Range initialRange = contextV2.finalizedRange();
+        Pair<String, String> initialPeriodPair = contextV2.finalizedRangeBetween();
 
-        Interval interval = originalInterval;
-        Range range = originalRange;
+        LocalDate initialStartDate = DateUtil.fromYmd(initialPeriodPair.getLeft());
+        LocalDate initialEndDate = DateUtil.fromYmd(initialPeriodPair.getRight());
 
-        LocalDate st = DateUtil.fromYmd(ctx.finalizedRangeBetween().getLeft());
-        LocalDate ed = DateUtil.fromYmd(ctx.finalizedRangeBetween().getRight());
         PeriodUnitSeparateCd minDataSourceUnit = gds.getPeriodUnitSeparateCd();
 
-        if (!interval.isAllowedRange(range, st, ed)) {
-            Interval fixed = Interval.smallestAllowed(range, minDataSourceUnit, st, ed);
-            if (fixed != null) {
-                interval = fixed;
+        Interval currentInterval = initialInterval;
+        Range currentRange = initialRange;
+        LocalDate currentStartDate = initialStartDate;
+        LocalDate currentEndDate = initialEndDate;
+
+        // 단계 1: Interval이 데이터소스 최소 단위보다 작은 경우, 최소 단위 Interval로 조정
+        if (!currentInterval.getPeriodCd().isGreaterOrEqual(minDataSourceUnit)) {
+            Interval newInterval = minDataSourceUnit.minInterval();
+            log.info("[Chart Parameter Soft-Validation]: Initial Interval ({}) is too granular for goods-data-source minimum unit ({}). Adjusted Interval to {}.", currentInterval.getCode(), minDataSourceUnit.getCode(), newInterval.getCode());
+            currentInterval = newInterval;
+        }
+
+        // 단계 2: 조정된 Interval과 현재 Range/날짜의 호환성 검사
+        // Interval.isAllowedRange는 Range가 CUSTOM일 때 startDate, endDate를 사용함.
+        boolean isCompatible = currentInterval.isAllowedRange(currentRange, currentStartDate, currentEndDate);
+
+        if (!isCompatible) {
+            log.info("[Chart Parameter Soft-Validation]: Current Interval ({}) and Range ({}, Dates: {} to {}) are incompatible. Attempting further adjustments.",
+                currentInterval.getCode(), currentRange.getCode(), DateUtil.toYmd(currentStartDate), DateUtil.toYmd(currentEndDate));
+
+            // 시도 1: 현재 Range를 유지하고, 호환되는 가장 작은 Interval (데이터소스 최소단위 고려)로 재조정
+            Interval candidateInterval = Interval.smallestAllowed(currentRange, minDataSourceUnit, currentStartDate, currentEndDate);
+
+            if (candidateInterval != null) {
+                log.info("[Chart Parameter Soft-Validation]: For current Range ({}, Dates: {} to {}), adjusting Interval from {} to {}.",
+                    currentRange.getCode(), DateUtil.toYmd(currentStartDate), DateUtil.toYmd(currentEndDate), currentInterval.getCode(), candidateInterval.getCode());
+                currentInterval = candidateInterval;
+                isCompatible = currentInterval.isAllowedRange(currentRange, currentStartDate, currentEndDate); // 호환성 재확인
             } else {
-                Range rangeFixed = range.shrinkToFit(interval);
-                if (rangeFixed != null) range = rangeFixed;
+                // 현재 Range와 날짜에 맞는 Interval이 없음. Range를 조정해야 함.
+                log.info("[Chart Parameter Soft-Validation]: No suitable Interval found for current Range ({}, Dates: {} to {}) and data source unit ({}). Will adjust Range.",
+                    currentRange.getCode(), DateUtil.toYmd(currentStartDate), DateUtil.toYmd(currentEndDate), minDataSourceUnit.getCode());
             }
         }
 
-        if (range == Range.CUSTOM && !interval.isAllowedRange(range, st, ed)) {
-            Interval fixed = Interval.smallestAllowed(range, minDataSourceUnit, st, ed);
-            if (fixed != null) interval = fixed;
+        // 단계 3 (단계 2에서 호환성을 찾지 못한 경우): Range를 ONE_YEAR로 기본 설정하고, 이에 맞는 Interval 찾기
+        if (!isCompatible) {
+            log.info("[Chart Parameter Soft-Validation]: Previous adjustments insufficient. Defaulting Range to 1Y(ONE_YEAR) and finding a compatible Interval.");
+
+            Range oldRangeForLog = currentRange;
+            LocalDate oldStartDateForLog = currentStartDate;
+            LocalDate oldEndDateForLog = currentEndDate;
+
+            currentRange = Range.ONE_YEAR;
+            Pair<String, String> oneYearDates = DateUtil.getDateRange(Range.ONE_YEAR);
+            currentStartDate = DateUtil.parseDate(oneYearDates.getLeft());
+            currentEndDate = DateUtil.parseDate(oneYearDates.getRight());
+
+            Interval candidateIntervalForOneYear = Interval.smallestAllowed(currentRange, minDataSourceUnit, currentStartDate, currentEndDate);
+
+            if (candidateIntervalForOneYear != null) {
+                log.info("[Chart Parameter Soft-Validation]: Adjusted Range to {} (Dates: {} to {}). Interval for this range set to {}. (Original Range was {}, Dates {} to {}, Initial Interval was {})",
+                    currentRange.getCode(), DateUtil.toYmd(currentStartDate), DateUtil.toYmd(currentEndDate),
+                    candidateIntervalForOneYear.getCode(),
+                    oldRangeForLog.getCode(), DateUtil.toYmd(oldStartDateForLog), DateUtil.toYmd(oldEndDateForLog), initialInterval.getCode());
+                currentInterval = candidateIntervalForOneYear;
+            } else {
+                // ONE_YEAR에도 맞는 Interval이 없다면, 데이터소스 최소 Interval로 강제
+                Interval fallbackInterval = minDataSourceUnit.minInterval();
+                log.warn("[Chart Parameter Soft-Validation]: No Interval found for Range.ONE_YEAR. Fallback to data source minimum Interval {}. (Original Range was {}, Dates {} to {}, Initial Interval was {})",
+                    fallbackInterval.getCode(), oldRangeForLog.getCode(), DateUtil.toYmd(oldStartDateForLog), DateUtil.toYmd(oldEndDateForLog), initialInterval.getCode());
+                currentInterval = fallbackInterval;
+            }
         }
 
-        if (!interval.isAllowedRange(range, st, ed) || !interval.getPeriodCd().isGreaterOrEqual(minDataSourceUnit)) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Cannot find compatible interval/range after soft-validation. interval=%s, range=%s".formatted(interval, range));
+        // 로그: 최종적으로 값이 변경된 경우
+        boolean intervalChanged = !initialInterval.equals(currentInterval);
+        boolean rangeChanged = !initialRange.equals(currentRange);
+        boolean datesChanged = !initialStartDate.equals(currentStartDate) || !initialEndDate.equals(currentEndDate);
+
+        if (intervalChanged || rangeChanged || datesChanged) {
+            log.info("[Chart Parameter Soft-Validation Summary]: Parameters adjusted. Initial: Range={}, Interval={}, Dates={}-{}. Final:   Range={}, Interval={}, Dates={}-{}.",
+                initialRange.getCode(), initialInterval.getCode(), DateUtil.toYmd(initialStartDate), DateUtil.toYmd(initialEndDate),
+                currentRange.getCode(), currentInterval.getCode(), DateUtil.toYmd(currentStartDate), DateUtil.toYmd(currentEndDate));
         }
 
-        // 보정 결과 로그
-        if (originalInterval != interval || originalRange != range) {
-            log.info("Soft-validated chart parameters adjusted...!!! : interval {} → {}, range {} → {}", originalInterval, interval, originalRange, range);
+        // 최종적으로 결정된 Range와 날짜로 finalizedRangeBetween 업데이트
+        Pair<String, String> finalPeriodDatesPair;
+        if (currentRange == Range.CUSTOM) {
+            finalPeriodDatesPair = Pair.of(DateUtil.toYmd(currentStartDate), DateUtil.toYmd(currentEndDate));
+        } else {
+            finalPeriodDatesPair = DateUtil.getDateRange(currentRange);
         }
 
-        return ctx
-            .withFinalizedInterval(interval)
-            .withFinalizedRange(range);
+        return contextV2
+            .withFinalizedInterval(currentInterval)
+            .withFinalizedRange(currentRange)
+            .withFinalizedStartDate(currentStartDate)
+            .withFinalizedEndDate(currentEndDate)
+            .withFinalizedRangeBetween(finalPeriodDatesPair);
     }
 
 
     /**
      * 차트 설정 컨텍스트를 결정합니다.
      * 개인화 설정과 요청 파라미터를 기반으로 차트 설정을 결정합니다.
+     * <p>
+     * [파라미터 우선 순위]
+     * 1. 사용자 요청 값
+     * 2. 개인화 조회 값
+     * 3. 기본값
      *
      * @param gds       데이터소스 상세 정보
-     * @param interval  인터벌
-     * @param range     범위
-     * @param startDate 시작일
-     * @param endDate   종료일
-     * @param unitCd    단위 코드
+     * @param contextV1 파라미터 설정 컨텍스트 객체(v1)
      * @return 결정된 차트 설정 컨텍스트
      */
-    private ChartSettingsContext finalizedChartSettings(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
-
-        // 변환 가능한 단위 맵 조회 (GDS 기본 단위 포함)
-        Map<UnitCd, UnitConvert> unitCdMap = chartUnitConversionService.getConvertUnitCdMap(gds);
+    private ChartSettingsContext personalizeAndDefault(GoodsDataSourceDetail gds, ChartSettingsContext contextV1) {
 
         PersonalizationService.Preferences resolve = personalizationService.resolve(gds, authorizationService.getCurrentRole(), authorizationService.getSubject());
 
-        Interval finalizedInterval = Optional.ofNullable(interval) // req
-            .or(resolve::interval) // personalize
-            .orElse(Interval.ONE_DAY); // default
+        // Interval 결정: 요청값 > 개인화 > 기본값
+        Interval finalizedInterval = Optional.ofNullable(contextV1.requestedInterval())
+            .or(resolve::interval)
+            .orElse(Interval.ONE_DAY);
 
-        Range finalizedRange = Optional.ofNullable(range) // req
-            .or(resolve::range) // personalize
-            .orElse(Range.ONE_YEAR); // default
+        // Range 결정: 요청값 > 개인화 > 기본값
+        Range finalizedRange = Optional.ofNullable(contextV1.requestedRange())
+            .or(resolve::range)
+            .orElse(Range.ONE_YEAR);
 
-        Pair<String, String> finalizedRangeBetween = Optional.ofNullable(range) // req
-            .map(r -> toPair(r, startDate, endDate)) // req
-            .or(resolve::periodDates) // personalize
-            .or(() -> resolve.range().map(DateUtil::getDateRange)) // personalize
-            .orElse(DateUtil.getDateRange(Range.ONE_YEAR)); // default
+        // RangeBetween 결정: 요청값 > 개인화 > 기본값
+        Pair<String, String> finalizedRangeBetween = Optional.ofNullable(contextV1.requestedRange())
+            .map(r -> Range.toPair(r, contextV1.requestedStartDateStr(), contextV1.requestedEndDateStr()))
+            .or(resolve::periodDates)
+            .orElse(DateUtil.getDateRange(Range.ONE_YEAR));
 
-        UnitCd finalizedUnitCd = Optional.ofNullable(unitCd)
+        // UnitCd 결정: 요청값 > 개인화 > 기본값
+        UnitCd finalizedUnitCd = Optional.ofNullable(contextV1.requestedUnitCdStr())
             .map(UnitCd::parse)
             .or(resolve::unitCd)
             .orElse(new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()));
 
+        // ChartType 결정: 개인화 > 기본값
         ChartType finalizedChartType = resolve.chartType()
             .orElse(ChartType.LINE);
 
+        // Indicators 결정: 개인화
         List<String> finalizedIndicators = resolve.indicators();
 
+        // ComparisonChartIds 결정: 개인화
         List<Integer> finalizedCompIds = resolve.compDataSourceIds();
 
-        // 결정된 단위코드 유효성 검증
-        chartUnitConversionService.validateUnitCd(unitCdMap, finalizedUnitCd);
-
-        return new ChartSettingsContext(
-            unitCdMap,
-            finalizedInterval,
-            finalizedRange,
-            finalizedRangeBetween,
-            finalizedUnitCd,
-            finalizedChartType,
-            finalizedIndicators,
-            finalizedCompIds
-        );
+        // settingsContextV1 -> settingsContextV2
+        return contextV1
+            .withFinalizedInterval(finalizedInterval)
+            .withFinalizedRange(finalizedRange)
+            .withFinalizedRangeBetween(finalizedRangeBetween)
+            .withFinalizedUnitCd(finalizedUnitCd)
+            .withFinalizedChartType(finalizedChartType)
+            .withFinalizedIndicators(finalizedIndicators)
+            .withFinalizedCompIds(finalizedCompIds);
     }
 
-    private static Pair<String, String> toPair(Range range, LocalDate from, LocalDate to) {
-        if (range == Range.CUSTOM) {
-            if (from == null || to == null) {
-                throw new IllegalArgumentException("For CUSTOM range, both startDate and endDate are required!");
-            }
-            return Pair.of(DateUtil.toYmd(from), DateUtil.toYmd(to));
-        }
-        return DateUtil.getDateRange(range);
-    }
 
     /**
      * 차트 번들을 생성합니다.
      * 메타데이터, 메인 차트, 기술적 지표, 비교 차트를 생성하여 번들로 묶습니다.
      *
-     * @param gds             데이터소스 상세 정보
-     * @param settingsContext 차트 설정 컨텍스트
+     * @param gds       데이터소스 상세 정보
+     * @param contextV3 차트 설정 컨텍스트(v3)
      * @return 생성된 차트 번들
      */
-    private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext settingsContext) {
+    private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext contextV3) {
 
         LocalDate latestDate = chartGenerationService.getLatestDate(gds);
 
         // [metadata] 생성
-        ChartMetadata metadata = ChartMetadata.of(
-            gds,
-            settingsContext.finalizedChartType(),
-            settingsContext.finalizedUnitCd(),
-            settingsContext.unitCdMap().keySet(),
-            settingsContext.finalizedInterval(),
-            settingsContext.finalizedRange(),
-            settingsContext.finalizedRangeBetween(),
-            DateUtil.toYmd(latestDate) // 2025-05-27 fix: 메타데이터에 최신 업데이트 일자 추가
-        );
+        ChartMetadata metadata = ChartMetadata.of(gds, contextV3, DateUtil.toYmd(latestDate));
 
         // [mainChart] 생성
         Chart mainChart = chartGenerationService.generateChartData(
             gds,
-            settingsContext.finalizedRangeBetween(),
-            settingsContext.finalizedInterval(),
-            settingsContext.unitCdMap().get(settingsContext.finalizedUnitCd()),
+            contextV3,
             Boolean.TRUE, // 메인 차트는 항상 visible 상태
             Boolean.TRUE
         );
 
         // [indicators] 생성
-        List<Indicator> indicators = technicalIndicatorService.generateIndicators(
-            mainChart,
-            settingsContext.finalizedIndicators()
-        );
+        List<Indicator> indicators = technicalIndicatorService.generateIndicators(mainChart, contextV3.finalizedIndicators());
 
         // [comparisonCharts] 생성
-        List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(
-            gds,
-            settingsContext.finalizedRangeBetween(),
-            settingsContext.finalizedInterval(),
-            settingsContext.finalizedCompIds()
-        );
+        List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(gds, contextV3);
 
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }
@@ -473,10 +552,10 @@ public class MiDataDetailService {
      * @param endDate   조회 종료일
      * @return 페이징된 원천 데이터 테이블 응답
      */
-    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, String startDate, String endDate) {
+    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, LocalDate startDate, LocalDate endDate) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
-        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
+        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
 
         // Count 쿼리 실행
         List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, queryContext.whereClause()));
@@ -502,10 +581,10 @@ public class MiDataDetailService {
      * @param endDate   조회 종료일
      * @return 엑셀 파일 스트림
      */
-    public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, String startDate, String endDate) {
+    public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, LocalDate startDate, LocalDate endDate) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
-        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
+        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
 
         List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, queryContext.whereClause(), queryContext.dateColumn()));
 
@@ -518,6 +597,11 @@ public class MiDataDetailService {
 
     /**
      * GoodsData를 조회하고 유효성을 검사합니다.
+     *
+     * @param gdNo    상품 데이터 번호
+     * @param goodsNo 상품 번호
+     * @return 유효한 GoodsData 객체
+     * @throws AppErrorException 지정된 상품 데이터가 존재하지 않거나 삭제된 경우
      */
     private GoodsData getValidatedGoodsData(Integer gdNo, Integer goodsNo) {
         return goodsDataRepository.findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(gdNo, goodsNo)
@@ -526,6 +610,12 @@ public class MiDataDetailService {
 
     /**
      * GoodsDataSourceDetail을 조회하고 유효성을 검사합니다.
+     *
+     * @param gdsNo   상품 데이터소스 번호
+     * @param gdNo    상품 데이터 번호
+     * @param goodsNo 상품 번호
+     * @return 유효한 GoodsDataSourceDetail 객체
+     * @throws AppErrorException 지정된 상품 데이터소스가 존재하지 않거나 삭제된 경우
      */
     private GoodsDataSourceDetail getValidatedGoodsDataSource(Integer gdsNo, Integer gdNo, Integer goodsNo) {
         return goodsDataSourceDetailRepository.findGoodsDataSourceWithGoodsTree(gdsNo, gdNo, goodsNo)
@@ -534,6 +624,11 @@ public class MiDataDetailService {
 
     /**
      * 쿼리에 필요한 컨텍스트 정보 (컬럼 표현식, 날짜 컬럼, WHERE 절)를 준비합니다.
+     *
+     * @param gds       상품 데이터 소스 상세 정보
+     * @param startDate 조회 시작일 (YYYYMMDD)
+     * @param endDate   조회 종료일 (YYYYMMDD)
+     * @return RawDataQueryContext 객체
      */
     private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
@@ -556,6 +651,10 @@ public class MiDataDetailService {
 
     /**
      * 조회된 데이터와 컬럼 표현식을 기반으로 TableRes 객체를 생성합니다.
+     *
+     * @param dataQuery    Mybatis 동적 쿼리 결과 데이터 목록
+     * @param queryContext 원천 데이터 쿼리 컨텍스트
+     * @return TableRes 객체
      */
     private TableRes buildTableResponse(List<Map<String, Object>> dataQuery, RawDataQueryContext queryContext) {
 
@@ -584,6 +683,9 @@ public class MiDataDetailService {
 
     /**
      * Count 쿼리 결과에서 총 개수를 추출합니다.
+     *
+     * @param countQueryResult Count 쿼리 결과 목록
+     * @return 총 개수
      */
     private int extractTotalElements(List<Map<String, Object>> countQueryResult) {
         return countQueryResult.stream()
@@ -596,7 +698,7 @@ public class MiDataDetailService {
     }
 
     /**
-     * 상품 데이터 소스의 컬럼 표현식을 조회합니다. (기존 메소드 유지)
+     * 상품 데이터 소스의 컬럼 표현식을 조회합니다.
      *
      * @param goodsDataSourceDetail 상품 데이터 소스 상세 정보
      * @return 컬럼명과 컬럼 표현식 맵

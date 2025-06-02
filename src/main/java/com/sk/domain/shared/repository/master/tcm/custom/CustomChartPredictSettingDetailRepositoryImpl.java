@@ -3,6 +3,8 @@ package com.sk.domain.shared.repository.master.tcm.custom;
 import static com.sk.domain.shared.entity.master.tcm.QChartPredictSetting.chartPredictSetting;
 import static com.sk.domain.shared.entity.master.tcm.QChartPredictSettingDetail.chartPredictSettingDetail;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
+import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
 
 import java.util.List;
 import java.util.Set;
@@ -24,12 +26,20 @@ public class CustomChartPredictSettingDetailRepositoryImpl implements CustomChar
 
     @Override
     public ChartSettingAndDetails findByCustomerCompany(CustomerCompany customerCompany) {
+
+        // 차트 예측 설정 목록 조회
         List<Tuple> tuples = queryFactory
-                .select(chartPredictSetting, chartPredictSettingDetail, goodsDataSourceDetail)
+                .select(chartPredictSetting, chartPredictSettingDetail, goodsDataSourceDetail, goodsData, goods)
                 .from(chartPredictSetting)
                 .leftJoin(chartPredictSettingDetail)
-                .on(chartPredictSettingDetail.chartPredictSetting.eq(chartPredictSetting))
+                    .on(chartPredictSettingDetail.chartPredictSetting.eq(chartPredictSetting))
+                    .fetchJoin()
                 .leftJoin(chartPredictSettingDetail.goodsDataSourceDetail, goodsDataSourceDetail)
+                    .fetchJoin()
+                .leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+                    .fetchJoin()
+                .leftJoin(goodsData.goods, goods)
+                    .fetchJoin()
                 .where(chartPredictSetting.customerCompany.eq(customerCompany))
                 .fetch();
 

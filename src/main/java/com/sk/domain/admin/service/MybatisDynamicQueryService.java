@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import org.springframework.stereotype.Service;
 
 import com.sk.common.config.database.DataSourceContextHolder;
@@ -24,6 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class MybatisDynamicQueryService {
+
+    private final String FORCAST_VIEW_COLUMN_NAME = "LastPrdcFulfDt"; // 예측 데이터 조회 시 VIEW에 사용할 컬럼명
+    private final String FORCAST_PRDC_FULF_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 데이터 조회 시 예측 수행 일자 Date 칼럼명
+    private final String FORCAST_MAX_DATE_COLUMN_NAME = "max_date"; // 예측 데이터 조회 시 최대 Date 칼럼명
+    private final Integer FORCAST_DATE_SUBSTRING_START_INDEX = 1; // 예측 데이터 조회 시 Date 칼럼을 yyyyMMdd 형식에서 yyyyMM 형식으로 변환 시 SUBSTRING에 사용할 함수의 시작 인덱스
+    private final Integer FORCAST_DATE_SUBSTRING_END_INDEX = 6; // 예측 데이터 조회 시 Date 칼럼을 yyyyMMdd 형식에서 yyyyMM 형식으로 변환 시 SUBSTRING에 사용할 함수의 끝 인덱스
 
     private final DynamicMapper dynamicMapper;
 
@@ -68,7 +75,7 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("whereClause", whereClause);
         params.put("additionalWhereClause", additionalWhereClause);
-        params.put("orderByColumns", dynamicDataReq.orderBy());
+        params.put("orderByColumns", dynamicDataReq.orderByColumn());
         params.put("limit", dynamicDataReq.limit());
         params.put("offset", dynamicDataReq.offset());
         return dynamicMapper.selectDynamic(params);
@@ -101,8 +108,8 @@ public class MybatisDynamicQueryService {
      * @return
      */
     public List<Map<String, Object>> getDynamicRawQuery(DynamicDataDetailReq dynamicDataDetailReq) {
-
-        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.tartgetDataSource());
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.targetDataSource());
 
         String tableName = dynamicDataDetailReq.tableName();
         String columns = dynamicDataDetailReq.columns();
@@ -117,5 +124,45 @@ public class MybatisDynamicQueryService {
         params.put("orderByColumns", orderByColumns);
         params.put("limit", limit);
         return dynamicMapper.selectDynamic(params);
+    }
+
+    public List<TargetPredictResultData> getPredictResultQuery(DynamicDataReq dynamicDataReq) {
+
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
+
+        String tableName = dynamicDataReq.tableName();
+        String columns = dynamicDataReq.columns();
+        String whereClause = dynamicDataReq.whereClause();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("whereClause", whereClause);
+        params.put("groupByColumn", dynamicDataReq.groupByColumn());
+        return dynamicMapper.selectPredictResultData(params);
+    }
+
+     /**
+     * 예측 데이터 조회
+     * @param dynamicDataDetailReq
+     * @return
+     */
+    public List<Map<String, Object>> getDynamicForcast(DynamicDataDetailReq dynamicDataDetailReq) {
+        // 데이터 소스 설정
+        DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.targetDataSource());
+
+        String tableName = dynamicDataDetailReq.tableName();
+        String columns = dynamicDataDetailReq.columns();
+        String whereClause = dynamicDataDetailReq.whereClause();
+        String innerJoin = dynamicDataDetailReq.innerJoin();
+        String orderByColumns = dynamicDataDetailReq.orderByColumns();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("whereClause", whereClause);
+        params.put("innerJoin", innerJoin);
+        params.put("orderByColumns", orderByColumns);
+        return dynamicMapper.selectDynamicForcastChart(params);
     }
 }

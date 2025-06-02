@@ -62,7 +62,7 @@ public class UnitConversionService {
 
         // 단순 변환 계수 사용 - DB에 저장된 단위 변환
         return timeSeriesValues.stream()
-            .map(value -> MathUtil.multiply(value, unitConvert.getConvertCoef()))
+            .map(value -> MathUtil.safeMultiply(value, unitConvert.getConvertCoef()))
             .toList();
     }
 
@@ -85,7 +85,7 @@ public class UnitConversionService {
 
         // 단순 변환 계수 사용 - DB에 저장된 단위 변환
         return timeSeriesValues.stream()
-            .map(value -> MathUtil.multiply(value, unitConvert.getConvertCoef()))
+            .map(value -> MathUtil.safeMultiply(value, unitConvert.getConvertCoef()))
             .toList();
     }
 
@@ -109,7 +109,7 @@ public class UnitConversionService {
 
         // 단순 변환 계수 사용 - DB에 저장된 단위 변환
         return timeSeriesValues.stream()
-            .map(value -> MathUtil.multiply(value, unitConvert.getConvertCoef()))
+            .map(value -> MathUtil.safeMultiply(value, unitConvert.getConvertCoef()))
             .toList();
     }
 

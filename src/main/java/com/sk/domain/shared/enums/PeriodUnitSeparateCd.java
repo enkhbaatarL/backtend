@@ -29,6 +29,15 @@ public enum PeriodUnitSeparateCd {
         };
     }
 
+    public boolean shouldNotAggregate(Interval interval) {
+        return switch (this) {
+            case D -> interval == Interval.ONE_DAY;
+            case W -> interval == Interval.ONE_WEEK;
+            case M -> interval == Interval.ONE_MONTH;
+            case Y -> interval == Interval.ONE_YEAR;
+        };
+    }
+
     public long toSeconds(int count) {
         return temporalUnit.getDuration().multipliedBy(count).toSeconds();
     }
