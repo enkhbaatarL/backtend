@@ -1,9 +1,11 @@
 package com.sk.domain.shared.service.permissions;
 
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.utils.MDCUtil;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.service.MiGoodsPermissionService;
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.GoodsAuthCd;
@@ -18,6 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -28,6 +31,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthorizationService {
 
+    private final MiGoodsPermissionService goodsPermissionService;
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
 
     /**
@@ -178,6 +182,21 @@ public class AuthorizationService {
             .filter(mapping -> !mapping.getIsDeleted())
             .filter(mapping -> mapping.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo().equals(goodsNo))
             .anyMatch(mapping -> mapping.getGoodsAuthCd() == authCd);
+    }
+
+    public boolean hasGoodsViewPermission(Integer goodsNo) {
+        PermissionRes userPermissions = getUserPermissions();
+        Map<Integer, Boolean> goodsViewableMap = userPermissions.getGoodsViewableMap(getCompanyNoWithPriority());
+        return goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
+    }
+
+    public PermissionRes getUserPermissions() {
+        return switch (getCurrentRole()) {
+            case USER -> goodsPermissionService.getUserGoodsPermissions(getUserNo());
+            case ADMIN -> goodsPermissionService.getAccessAdminGoodsPermissions();
+            case API_PLUS_OPERATOR -> goodsPermissionService.getPlusOperatorGoodsPermissions(getCompanyNo());
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        };
     }
 
 }

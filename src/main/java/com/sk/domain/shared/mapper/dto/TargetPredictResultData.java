@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 // tmm_bztgtprdcrsltdatam Table
 @Getter
 @Setter
@@ -20,5 +22,5 @@ public class TargetPredictResultData {
     /**
      * 예측결과값
      */
-    private String predictResultValue;
+    private BigDecimal predictResultValue;
 }

@@ -102,7 +102,7 @@ public class MiDashboardService {
 
     /**
      * 데이터 존재 여부 조회
-     * 
+     *
      * @param companyNo
      * @return boolean
      */
@@ -115,7 +115,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 기본 정보 조회
-     * 
+     *
      * @param companyNo
      * @return DashboardChartRes
      */
@@ -126,7 +126,7 @@ public class MiDashboardService {
 
     /**
      * Latest Data 목록 조회
-     * 
+     *
      * @param companyNo
      * @return List<LatestDataRes>
      */
@@ -137,7 +137,7 @@ public class MiDashboardService {
 
     /**
      * Latest Insights 목록 조회
-     * 
+     *
      * @param companyNo
      * @return List<LatestInsights>
      */
@@ -446,7 +446,7 @@ public class MiDashboardService {
 
     /**
      * 월별 날짜 생성
-     * 
+     *
      * @param startDate 시작일
      * @param endDate 종료일
      * @return List<LocalDate>
@@ -463,7 +463,7 @@ public class MiDashboardService {
 
     /**
      * 월별 평균 계산
-     * 
+     *
      * @param monthlyDates 월별 날짜 목록
      * @param rawData 원시 데이터 목록
      * @param dateColumnName 날짜 칼럼명
@@ -576,7 +576,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 그래프 캐시 키 생성
-     * 
+     *
      * @param chartPredictSettingDetailNo 차트 예측 설정 상세 번호
      * @return 캐시 키
      */
@@ -601,7 +601,7 @@ public class MiDashboardService {
 
     /**
      * 예측 데이터 조회
-     * 
+     *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @param dateColumnName 날짜 칼럼명
      * @param valueColumnName 기본 데이터 칼럼명

@@ -16,10 +16,7 @@ public record MajorQuestionRes(
     Integer questionRank,
 
     @Schema(description = "주요 질의문", example = "삼성전자 주가는 왜 오를 생각을 안하죠?")
-    String majorQuestion,
-
-    @Schema(description = "분과코드", example = "SKT")
-    String subcommitteeCd
+    String majorQuestion
 
 ) {
 
@@ -28,7 +25,6 @@ public record MajorQuestionRes(
             .majorQuestionNo(entity.getChatbotMajorQuestionNo())
             .questionRank(entity.getMajorQuestionRnk())
             .majorQuestion(entity.getMajorQuestionCntt())
-            .subcommitteeCd(entity.getMarketIndexAnalysisTargetCd())
             .build();
     }
 

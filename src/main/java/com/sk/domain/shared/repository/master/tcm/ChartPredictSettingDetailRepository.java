@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tcm;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -27,5 +28,8 @@ public interface ChartPredictSettingDetailRepository
 
     @EntityGraph(attributePaths = {"goodsDataSourceDetail"})
     List<ChartPredictSettingDetail> findByChartPredictSettingAndIsDeletedFalse(ChartPredictSetting chartPredictSetting);
+
+    @EntityGraph(attributePaths = {"chartPredictSetting"})
+    Optional<ChartPredictSettingDetail> findByChartPredictSettingDetailNoAndIsDeletedFalse(Integer settingDetailNo);
 
 }
