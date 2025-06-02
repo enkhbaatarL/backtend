@@ -54,4 +54,15 @@ public class MiDashboardHistoryController {
         return BaseResponseFactory.create(dashboardHistoryService.getHistoryData(settingDetailNo, fulfillDate));
     }
 
+    @ApiOrder(12)
+    @Operation(summary = "대시보드 히스토리 상세 데이터 다운로드 API", description = "대시보드 히스토리 상세 데이터를 다운로드 합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/histories/download")
+    public Object downloadHistoryData(
+        @RequestParam(value = "settingDetailNo") Integer settingDetailNo,
+        @RequestParam(value = "fulfillDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate fulfillDate
+    ) {
+        return BaseResponseFactory.create(dashboardHistoryService.downloadHistoryData(settingDetailNo, fulfillDate));
+    }
+
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import org.springframework.stereotype.Service;
 
@@ -141,6 +142,23 @@ public class MybatisDynamicQueryService {
         params.put("additionalWhereClause", dynamicDataReq.additionalWhereClause());
         params.put("groupByColumn", dynamicDataReq.groupByColumn());
         return dynamicMapper.selectPredictResultData(params);
+    }
+
+    public List<DoubleValueResultData> getDoubleValueResultQuery(DynamicDataReq dynamicDataReq) {
+
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
+
+        String tableName = dynamicDataReq.tableName();
+        String columns = dynamicDataReq.columns();
+        String whereClause = dynamicDataReq.whereClause();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("columns", columns);
+        params.put("whereClause", whereClause);
+        params.put("additionalWhereClause", dynamicDataReq.additionalWhereClause());
+        params.put("groupByColumn", dynamicDataReq.groupByColumn());
+        return dynamicMapper.selectDoubleValueResultData(params);
     }
 
      /**

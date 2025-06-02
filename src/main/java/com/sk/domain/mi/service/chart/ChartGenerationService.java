@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.chart;
 
+import com.sk.common.utils.ClauseUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
@@ -11,9 +12,9 @@ import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.enums.chart.LookBack;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ChartGenerationService {
+
+    private final AuthorizationService authorizationService;
 
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
@@ -52,7 +55,7 @@ public class ChartGenerationService {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
-        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
+        List<String> targetColumns = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
 
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
         String volumeColumnNm = Optional.ofNullable(gds.getTradeVolumeColumnNm()).map(String::trim).orElse(null);
@@ -124,10 +127,10 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-
-        // 각 비교 데이터소스에 대한 차트 데이터 생성
+        // 각 비교 데이터소스에 대한 차트 데이터 생성 (비교군 차트 권한체크)
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
+            .filter(comparison -> authorizationService.hasGoodsViewPermission(comparison.getCompareGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo()))
             .map(comparison -> {
                 List<Integer> finalizedCompIds = settingsContext.finalizedCompIds();
                 boolean isVisible = finalizedCompIds.contains(comparison.getId().getCompareGoodsDataSourceNo());
@@ -146,10 +149,10 @@ public class ChartGenerationService {
 
         if (gds == null) return null;
 
-        List<String> targetColumns = Arrays.stream(gds.getTableColumnListNm().split(",")).map(String::trim).toList();
-        String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
+        List<String> selectColumnList = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
+        String dateColumnName = selectColumnList.get(RenderAs.DATE.getIndex()).trim();
 
-        String selectClause = "max(%s) as latestDate".formatted(dateColumnName);
+        String selectClause = ClauseUtil.getMaxClause(dateColumnName, "latestDate");
         List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofMaxQuery(gds, selectClause));
 
         return DateUtil.parseDate(data.get(0).get("latestDate"));
@@ -173,12 +176,12 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 위해 180일의 LOOK_BACK Period를 설정
+        // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 LOOK_BACK Period를 설정
         String startDate = isMainChart
             ? LookBack.W_SIZE_120.getLookBackStartDateStr(contextV3.finalizedStartDate(), contextV3.finalizedInterval(), 30)
             : contextV3.finalizedRangeBetween().getLeft();
 
-        String whereClause = "%s between '%s' and '%s'".formatted(dateColumnName, startDate, contextV3.finalizedRangeBetween().getRight());
+        String additionalWhereClause = ClauseUtil.createBetweenClause(dateColumnName, startDate, contextV3.finalizedRangeBetween().getRight());
 
         // select 절에 거래량 컬럼 추가
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())
@@ -186,7 +189,7 @@ public class ChartGenerationService {
             .map(s -> gds.getTableColumnListNm() + "," + s)
             .orElse(gds.getTableColumnListNm());
 
-        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, selectClause, whereClause, dateColumnName));
+        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, selectClause, additionalWhereClause, dateColumnName));
     }
 
     /**

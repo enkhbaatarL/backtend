@@ -73,8 +73,8 @@ public record HistoryMetadataRes(
 
             public static List<SettingDetail> ofList(List<ChartPredictSettingDetail> spots, List<ChartPredictSettingDetail> futures) {
                 ArrayList<SettingDetail> result = new ArrayList<>();
-                result.addAll(spots.stream().map(spot -> SettingDetail.of(PriceType.SPOT, spot)).toList());
-                result.addAll(futures.stream().map(future -> SettingDetail.of(PriceType.FUTURES, future)).toList());
+                result.addAll(spots.stream().map(spot -> SettingDetail.of(PriceType.ACTUAL, spot)).toList());
+                result.addAll(futures.stream().map(future -> SettingDetail.of(PriceType.FUTURE, future)).toList());
                 return result;
             }
 
