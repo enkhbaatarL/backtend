@@ -80,6 +80,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MiMarketDataService {
 
+    private static final int MARKET_DATA_CACHE_TTL = 1; // 마켓데이터 캐시 유효 기간 (1시간)
+
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
     private static final int MARKET_DATA_START_DATE_YEAR = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N년 전)
@@ -136,7 +138,7 @@ public class MiMarketDataService {
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
 
-        // 차트 설정 조회
+        //TODO: 차트 설정 조회 (데이터 상세에서 지우면 조회 자체가 안되야함)
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
@@ -457,9 +459,11 @@ public class MiMarketDataService {
      * 자정까지의 TTL 계산
      */
     private long getSecondsUntilMidnightForCache() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
-        return Duration.between(now, midnight).getSeconds();
+        // LocalDateTime now = LocalDateTime.now();
+        // LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+        // return Duration.between(now, midnight).getSeconds();
+
+        return Duration.ofHours(MARKET_DATA_CACHE_TTL).getSeconds();
     }
 
     /**

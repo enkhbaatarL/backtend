@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sk.domain.shared.mapper.dynamic.DashboardMapper">
+    <select id="chartFactorCategory" resultType="java.lang.String">
+        SELECT DISTINCT tb.expp_lvl_nm
+          FROM tmm_bztgtprdcexppinfom tb
+         WHERE ${queryWhere}
+           AND tb.prdc_fulf_dt = #{predictDate}
+           AND tb.del_yn = 'N'
+         ORDER BY tb.expp_rnk
+    </select>
+
+    <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap">
+        <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
+        <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
+        <result property="predictionInputMnemonicDetailCd" column="prdc_inpt_mnmnc_dtl_cd"/>
+        <result property="predictionInputMnemonicCd" column="prdc_inpt_mnmnc_cd"/>
+        <result property="explanatoryLevelDetailNm" column="expp_lvl_dtl_nm"/>
+        <result property="explanatoryScore" column="expp_scre"/>
+        <result property="explanatoryRnk" column="expp_rnk"/>
+        <result property="mnemonicCd" column="mnmnc_cd"/>
+        <result property="explanatoryDirectionSymbolNm" column="expp_dir_symb_nm"/>
+        <result property="dirRank" column="dir_rank"/>
+    </resultMap>
+    <select id="chartFactors" resultMap="dashboardChartFactorMap">
+        SELECT 
+            tb.mrkt_idx_anly_tgt_cd
+          , tb.prdc_fulf_dt
+          , tb.prdc_inpt_mnmnc_dtl_cd
+          , tb.prdc_inpt_mnmnc_cd
+          , tb.expp_lvl_dtl_nm
+          , tb.expp_scre
+          , tb.expp_rnk
+          , tb.mnmnc_cd
+          , tb.expp_dir_symb_nm
+          , RANK() OVER (PARTITION BY tb.expp_dir_symb_nm ORDER BY tb.expp_rnk) AS dir_rank
+          FROM tmm_bztgtprdcexppinfom tb
+         WHERE ${queryWhere}
+           AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+           AND tb.prdc_fulf_dt = #{predictDate}
+           AND tb.expp_dir_symb_nm = #{direction}
+           AND tb.del_yn = 'N'
+         ORDER BY tb.expp_rnk
+         LIMIT #{limit}
+    </select>
+</mapper>
