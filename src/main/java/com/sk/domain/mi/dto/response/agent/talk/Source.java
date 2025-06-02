@@ -25,7 +25,7 @@ public record Source(
     }
 
     public static List<Source> ofList(List<ModelAgentRes.Output.Message.Content.Source> sources) {
-        return sources.stream().map(Source::of).toList();
+        return sources != null ? sources.stream().map(Source::of).toList() : List.of();
     }
 
 }

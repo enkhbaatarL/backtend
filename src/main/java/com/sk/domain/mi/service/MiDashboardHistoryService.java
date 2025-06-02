@@ -3,14 +3,20 @@ package com.sk.domain.mi.service;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.SystemErrorException;
+import com.sk.common.model.TableRes;
 import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.context.ForecastContext;
-import com.sk.domain.mi.dto.response.dashboard.HistoryMetadataRes;
+import com.sk.domain.mi.dto.response.dashboard.history.HistoryDataRes;
+import com.sk.domain.mi.dto.response.dashboard.history.HistoryMetadataRes;
+import com.sk.domain.mi.dto.response.dashboard.history.PriceEntry;
+import com.sk.domain.mi.dto.response.dashboard.history.PriceStat;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
@@ -19,6 +25,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +75,7 @@ public class MiDashboardHistoryService {
             ChartPredictSettingDetail forecast = forecasts.get(0);
 
             GoodsDataSourceDetail gds = forecast.getGoodsDataSourceDetail();
-            List<TargetPredictResultData> targetPredictResultData = getPredictResultData(gds);
+            List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
 
             List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
 
@@ -83,7 +92,7 @@ public class MiDashboardHistoryService {
             List<ForecastContext> forecastContexts = forecasts.stream().map(f -> {
 
                 GoodsDataSourceDetail gds = f.getGoodsDataSourceDetail();
-                List<TargetPredictResultData> targetPredictResultData = getPredictResultData(gds);
+                List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
 
                 List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
                 List<ChartPredictSettingDetail> groupedSpotsWithFutures = settingDetailMap.getOrDefault(f.getChartPredictSettingDetailNo(), Collections.emptyList());
@@ -110,13 +119,86 @@ public class MiDashboardHistoryService {
 
     }
 
-    public List<TargetPredictResultData> getPredictResultData(GoodsDataSourceDetail goodsDataSourceDetail) {
+    public List<HistoryDataRes> getHistoryData(Integer settingDetailNo, LocalDate fulfillDate) {
+
+        ChartPredictSettingDetail counterpart = chartPredictSettingDetailRepository.findByChartPredictSettingDetailNoAndIsDeletedFalse(settingDetailNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [chart-predict-setting-detail]. settingDetailNo: %s".formatted(settingDetailNo)));
+
+        ChartPredictSetting setting = counterpart.getChartPredictSetting();
+
+        List<ChartPredictSettingDetail> settings = chartPredictSettingDetailRepository.findByChartPredictSettingAndIsDeletedFalse(setting);
+
+        Map<Boolean, List<ChartPredictSettingDetail>> partitioned = settings.stream()
+            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
+
+        // 예측가
+        List<ChartPredictSettingDetail> forecasts = partitioned.get(Boolean.TRUE);
+
+        // 예측가 데이터가 1개인 경우
+        if (forecasts.size() == 1) {
+
+            ChartPredictSettingDetail forecast = forecasts.get(0);
+
+            List<TargetPredictResultData> forecastResults = getPredictResultData(forecast.getGoodsDataSourceDetail(), fulfillDate);
+
+            String startDate = forecastResults.get(0).getPredictResultDate();
+            String endDate = forecastResults.get(forecastResults.size() - 1).getPredictResultDate();
+
+            List<DoubleValueResultData> counterPartResults = getCounterPartResultData(counterpart.getGoodsDataSourceDetail(), startDate, endDate);
+
+            Integer goodsNo = counterpart.getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo();
+            boolean permitted = authorizationService.hasGoodsViewPermission(goodsNo);
+
+            return HistoryDataRes.ofList(forecastResults, counterPartResults, counterpart.getIsFuture(), permitted);
+
+        } else if (forecasts.size() >= 2) {
+
+            ChartPredictSettingDetail forecast = forecasts.stream()
+                .filter(s -> s.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(counterpart.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .findFirst()
+                .orElse(null);
+
+            List<TargetPredictResultData> forecastResults = getPredictResultData(forecast.getGoodsDataSourceDetail(), fulfillDate);
+
+            String startDate = forecastResults.get(0).getPredictResultDate();
+            String endDate = forecastResults.get(forecastResults.size() - 1).getPredictResultDate();
+
+            List<DoubleValueResultData> counterPartResults = getCounterPartResultData(counterpart.getGoodsDataSourceDetail(), startDate, endDate);
+
+            Integer goodsNo = counterpart.getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo();
+            boolean permitted = authorizationService.hasGoodsViewPermission(goodsNo);
+
+            return HistoryDataRes.ofList(forecastResults, counterPartResults, counterpart.getIsFuture(), permitted);
+
+        } else {
+
+            return HistoryDataRes.ofEmpty();
+
+        }
+
+    }
+
+    private List<DoubleValueResultData> getCounterPartResultData(GoodsDataSourceDetail goodsDataSourceDetail, String start, String end) {
+        String[] selectCols = Arrays.stream(goodsDataSourceDetail.getTableColumnListNm().split(",")).map(String::strip).toArray(String[]::new);
+        String selectClause = ClauseUtil.createSelectClause(ClauseUtil.concatAlias(selectCols[0], "date"), ClauseUtil.concatAlias(selectCols[1], "value"));
+        String additionalWhereClause = ClauseUtil.createBetweenClause(selectCols[0], start, end);
+        return mybatisDynamicQueryService.getDoubleValueResultQuery(DynamicDataReq.of(goodsDataSourceDetail, selectClause, additionalWhereClause, selectCols[0]));
+    }
+
+    private List<TargetPredictResultData> getPredictResultGroupedData(GoodsDataSourceDetail goodsDataSourceDetail) {
         String selectClause = ClauseUtil.BIZ_TARGET_FULFILL_DT_COLUMN;
         String groupByColumn = ClauseUtil.BIZ_TARGET_FULFILL_DT_COLUMN;
         return mybatisDynamicQueryService.getPredictResultQuery(DynamicDataReq.ofGroupByQuery(goodsDataSourceDetail, selectClause, groupByColumn));
     }
 
-    public Map<Integer, List<ChartPredictSettingDetail>> groupByForecastDetailNo(List<ChartPredictSettingDetail> historySettingDetails) {
+    private List<TargetPredictResultData> getPredictResultData(GoodsDataSourceDetail goodsDataSourceDetail, LocalDate fulfillDate) {
+        String selectClause = ClauseUtil.getBizTargetSelectClause(goodsDataSourceDetail.getTableColumnListNm());
+        String additionalWhereClause = ClauseUtil.createWhereClause(ClauseUtil.BIZ_TARGET_FULFILL_DT_COLUMN, DateUtil.toYmd(fulfillDate));
+        String resultDtColumn = ClauseUtil.BIZ_TARGET_RESULT_DT_COLUMN;
+        return mybatisDynamicQueryService.getPredictResultQuery(DynamicDataReq.of(goodsDataSourceDetail, selectClause, additionalWhereClause, resultDtColumn));
+    }
+
+    private Map<Integer, List<ChartPredictSettingDetail>> groupByForecastDetailNo(List<ChartPredictSettingDetail> historySettingDetails) {
 
         // 1. 연관상품데이터소스번호 기준으로 1차 그룹핑
         Map<Integer, List<ChartPredictSettingDetail>> groupedByAssoNo = historySettingDetails.stream()
@@ -133,6 +215,45 @@ public class MiDashboardHistoryService {
                     .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "At least one forecast-data is required. associate-goods-data-source-no: %s".formatted(list.get(0).getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))), // 예측가가 없는 경우 예외 발생
                 Function.identity() // 그룹의 리스트를 값으로 사용
             ));
+    }
+
+    public ByteArrayInputStream downloadHistoryData(Integer settingDetailNo, LocalDate fulfillDate) {
+
+        List<HistoryDataRes> historyData = getHistoryData(settingDetailNo, fulfillDate);
+
+        List<TableRes.Row> rows = historyData.stream()
+            .map(h -> {
+
+                // baseline = forecast
+                PriceEntry base = h.baseline();
+                // counterpart = actual or future
+                PriceEntry counter = h.counterpart();
+
+                PriceStat baseStat = base != null ? base.stat() : null;
+                PriceStat counterStat = (counter != null && Boolean.TRUE.equals(counter.isPermitted())) ? counter.stat() : null;
+
+                List<String> cells = List.of(
+
+                    h.date().toString(),
+
+                    baseStat != null ? baseStat.price().toPlainString() : "",
+                    baseStat != null && baseStat.changeRate() != null ? baseStat.changeRate().toPlainString() : "",
+                    baseStat != null && baseStat.isMaximum() ? "Y" : "",
+                    baseStat != null && baseStat.isMinimum() ? "Y" : "",
+
+                    /* counterpart */
+                    counterStat != null ? counterStat.price().toPlainString() : "",
+                    counterStat != null && counterStat.changeRate() != null ? counterStat.changeRate().toPlainString() : "",
+                    counterStat != null && counterStat.isMaximum() ? "Y" : "",
+                    counterStat != null && counterStat.isMinimum() ? "Y" : ""
+                );
+
+                return TableRes.Row.of(cells);
+            })
+            .toList();
+
+
+        return null;
     }
 
 }

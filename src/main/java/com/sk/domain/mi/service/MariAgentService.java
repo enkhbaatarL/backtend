@@ -15,10 +15,13 @@ import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalk;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tcm.ChatbotMajorQuestionRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,20 +38,27 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MariAgentService {
 
+    private final AuthorizationService authorizationService;
+
     private final ModelAgentApi modelAgentApi;
 
     private final ChatbotTalkRepository chatbotTalkRepository;
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
 
     /**
      * 주어진 분과 코드로 필터링된 주요 질의문 목록을 조회합니다.
      *
-     * @param subcommitteeCd 분과 코드
      * @return 주요 질의문 목록
      */
-    public List<MajorQuestionRes> getMajorQuestions(String subcommitteeCd) {
-        List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository.findByMarketIndexAnalysisTargetCdAndIsDeletedFalseOrderByMajorQuestionRnk(subcommitteeCd);
+    public List<MajorQuestionRes> getMajorQuestions() {
+
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
+
+        List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository.findByMarketIndexAnalysisTargetCdAndIsDeletedFalseOrderByMajorQuestionRnk(company.getMarketIndexAnalysisTargetCd());
         return MajorQuestionRes.ofList(majorQuestions);
     }
 
