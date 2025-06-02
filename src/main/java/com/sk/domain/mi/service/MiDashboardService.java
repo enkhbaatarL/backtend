@@ -94,6 +94,7 @@ public class MiDashboardService {
     private final int DASHBOARD_CHART_START_DATE_FROM_MONTH = 11; // 차트 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0; // 예측 결과 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
+    private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
 
     private final StringRedisTemplate redisTemplate;
@@ -146,6 +147,55 @@ public class MiDashboardService {
     }
 
     /**
+     * 대시보드 기본 정보 조회
+     * 
+     * @param companyNo
+     * @return DashboardInfoRes
+     */
+    public DashboardInfoRes getDashboardInfo(int companyNo) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+
+        // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
+        List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
+            .filter( chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+            .map(chartPredictSettingDetail -> {
+                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+
+                // 날짜 칼럼
+                String dateColumnName = MARKET_DATA_PREDICT_DATE_COLUMN_NAME;
+
+                List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(goodsDataSource, dateColumnName);
+
+                if (lastUpdateDateData.isEmpty()) {
+                    return null;
+                }
+
+                String rawDate = lastUpdateDateData.get(0).get(dateColumnName).toString();
+                return DateUtil.fromIsoToLocalDate(rawDate);
+            })
+            .collect(Collectors.toList());
+
+        // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값
+        LocalDate lastUpdated = lastUpdatedList.stream()
+                .max(LocalDate::compareTo)
+                .orElse(null);
+        return DashboardInfoRes.of(chartPredictSetting, lastUpdated);
+    }
+
+    /**
      * 차트 날짜 조회
      * 
      * @param page
@@ -154,7 +204,27 @@ public class MiDashboardService {
      * @return List<String>
      */
     public List<String> getChartDates(int page, int size, int companyNo) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        // 예측 수행 날짜 조회 (오늘 날짜부터 size 날짜로?!) => 날짜가 있는지?!
+        // chartPredictSettingDetails.stream()
+        //     .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+        //     .map(chartPredictSettingDetail -> {
+        //         GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+                
+            // })
+
+        // 예측 수행 날짜 조회
         return null;
     }
 
@@ -629,6 +699,27 @@ public class MiDashboardService {
     }
 
     /**
+     * 마지막 Update Date 데이터 조회
+     *
+     * @param goodsDataSourceDetail 데이터소스 상세 정보
+     * @param dateColumnName        날짜 컬럼명
+     * @return 조건에 맞는 데이터 행 목록
+     */
+    @Transactional
+    private List<Map<String, Object>> getLastUpdateDateData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+
+        if (goodsDataSourceDetail == null || dateColumnName == null) {
+            return Collections.emptyList();
+        }
+
+        String orderByColumns = String.format("%s DESC", dateColumnName);
+
+        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofLimitAndOrderBy(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(),
+                DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT, orderByColumns));
+    }
+
+    /**
      * 차트 주요 요인 분석 카테고리 조회
      * 
      * @param goodsDataSourceNo 데이터소스 번호
@@ -702,4 +793,5 @@ public class MiDashboardService {
 
         return DashboardChartFactorRes.of(explanatoryLevelNm, chartPlusFactors, chartMinusFactors);
     }
+
 }

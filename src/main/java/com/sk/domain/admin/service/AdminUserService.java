@@ -128,9 +128,12 @@ public class AdminUserService {
                         .user(user)
                         .build())
                 .toList();
+
+        List<User> savedUsers = userRepository.saveAll(users);
+
         userHistoryRepository.saveAll(histories);
 
-        return userRepository.saveAll(users).stream()
+        return savedUsers.stream()
                 .map(UserRes::ofSimple)
                 .collect(Collectors.toList());
     }
