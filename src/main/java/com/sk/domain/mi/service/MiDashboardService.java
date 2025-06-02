@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +39,10 @@ import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactor;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorCategoryRes;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardDataCache;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardDataSource;
@@ -56,10 +59,12 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.ChartPredictDataType;
+import com.sk.domain.shared.mapper.dynamic.DashboardMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -76,12 +81,20 @@ public class MiDashboardService {
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final MiGoodsPermissionService miGoodsPermissionService;
+    private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final DashboardMapper dashboardMapper;
 
-    private final String DASHBOARD_CHART_CACHE_KEY = "dashboard_chart:%d";
+    private final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
+    private final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
+    private final String CHART_EXPLANATORY_MINUS_DIRECTION = "-";
+
+    private final String DASHBOARD_CHART_CACHE_KEY = "dashboard_chart:%d_based_on_date:%s";
+    private static final int DASHBOARD_CHART_CACHE_TTL = 1; // 대시보드 차트 캐시 유효 기간 (1시간)
 
     private final int DASHBOARD_CHART_START_DATE_FROM_MONTH = 11; // 차트 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0; // 예측 결과 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
+    private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
 
     private final StringRedisTemplate redisTemplate;
@@ -134,9 +147,93 @@ public class MiDashboardService {
     }
 
     /**
-     * 대시보드 차트 데이터 조회
-     *
+     * 대시보드 기본 정보 조회
+     * 
      * @param companyNo
+     * @return DashboardInfoRes
+     */
+    public DashboardInfoRes getDashboardInfo(int companyNo) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+
+        // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
+        List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
+            .filter( chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+            .map(chartPredictSettingDetail -> {
+                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+
+                // 날짜 칼럼
+                String dateColumnName = MARKET_DATA_PREDICT_DATE_COLUMN_NAME;
+
+                List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(goodsDataSource, dateColumnName);
+
+                if (lastUpdateDateData.isEmpty()) {
+                    return null;
+                }
+
+                String rawDate = lastUpdateDateData.get(0).get(dateColumnName).toString();
+                return DateUtil.fromIsoToLocalDate(rawDate);
+            })
+            .collect(Collectors.toList());
+
+        // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값
+        LocalDate lastUpdated = lastUpdatedList.stream()
+                .max(LocalDate::compareTo)
+                .orElse(null);
+        return DashboardInfoRes.of(chartPredictSetting, lastUpdated);
+    }
+
+    /**
+     * 차트 날짜 조회
+     * 
+     * @param page
+     * @param size
+     * @param companyNo
+     * @return List<String>
+     */
+    public List<String> getChartDates(int page, int size, int companyNo) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        // 예측 수행 날짜 조회 (오늘 날짜부터 size 날짜로?!) => 날짜가 있는지?!
+        // chartPredictSettingDetails.stream()
+        //     .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+        //     .map(chartPredictSettingDetail -> {
+        //         GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+                
+            // })
+
+        // 예측 수행 날짜 조회
+        return null;
+    }
+
+    /**
+     * 대시보드 차트 데이터 조회
+     * 
+     * @param customerCompanyNo
+     * @param date
+     * @param authentication
      * @return
      */
     public DashboardChartRes getChart(Integer customerCompanyNo, String date, Authentication authentication) {
@@ -220,7 +317,7 @@ public class MiDashboardService {
                     .with(TemporalAdjusters.lastDayOfMonth());
             LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH);
 
-            String cacheKey = getDashboardChartCacheKey(chartPredictSettingDetail.getChartPredictSettingDetailNo());
+            String cacheKey = getDashboardChartCacheKey(chartPredictSettingDetail.getChartPredictSettingDetailNo(), finalDate);
 
             // 캐시 조회
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
@@ -269,14 +366,16 @@ public class MiDashboardService {
                 List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
 
                 // 월별 평균 계산
-                monthlyAverages = calculateMonthlyAverages(monthlyDates, rawData, dateColumnName, defaultDataColumnName);
+                monthlyAverages = calculateMonthlyAverages(monthlyDates, rawData, dateColumnName, defaultDataColumnName,
+                        chartPredictSettingDetail.getIsChartLinePredictVal());
 
                 // 캐시 저장
                 DashboardDataCache dashboardDataCache = DashboardDataCache.of(monthlyAverages);
                 saveDashboardChartCache(cacheKey, dashboardDataCache);
             }
 
-            DashboardChartLine dashboardChartLine = DashboardChartLine.of(isPermitted, chartPredictDataType, monthlyAverages);
+            DashboardChartLine dashboardChartLine = DashboardChartLine.of(isPermitted, chartPredictDataType, goodsDataSource.getGoodsDataSourceNo(),
+                    monthlyAverages);
 
             // associatedCharts 업데이트
             Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
@@ -330,10 +429,10 @@ public class MiDashboardService {
                 .map(chart -> {
                     DashboardChartLine actualLines = chart.actualChartLines() != null
                             ? chart.actualChartLines()
-                            : DashboardChartLine.of(null, null, null);
+                            : DashboardChartLine.of(null, null, null, null);
                     DashboardChartLine forecastLines = chart.forecastChartLines() != null
                             ? chart.forecastChartLines()
-                            : DashboardChartLine.of(null, null, null);
+                            : DashboardChartLine.of(null, null, null, null);
                     return new DashboardChart(
                             chart.chartLineDescription(),
                             chart.chartLineType(),
@@ -372,7 +471,7 @@ public class MiDashboardService {
      * @return List<DashboardChartRawData>
      */
     public List<DashboardChartRawData> calculateMonthlyAverages(List<LocalDate> monthlyDates, List<Map<String, Object>> rawData,
-            String dateColumnName, String defaultDataColumnName) {
+            String dateColumnName, String defaultDataColumnName, boolean isPredict) {
         // 결과 리스트
         List<DashboardChartRawData> monthlyAverages = new ArrayList<>();
 
@@ -381,15 +480,23 @@ public class MiDashboardService {
 
         // rawData를 월별로 그룹화
         Map<String, List<Double>> monthlyValues = new TreeMap<>();
+        Map<String, String> monthlyPredictDates = new TreeMap<>(); // prdc_fulf_dt 저장
         for (Map<String, Object> row : rawData) {
-
             String yearMonth = null;
+            String predictDate = null;
+
             // 날짜 칼럼 값이 LocalDateTime 타입인 경우
             if (row.get(dateColumnName) instanceof LocalDateTime) {
                 yearMonth = DateUtil.toYyyyMm((LocalDateTime) row.get(dateColumnName));
             } else if (row.get(dateColumnName) instanceof String) {
                 // 날짜 칼럼 값이 String 타입인 경우
                 yearMonth = DateUtil.toYyyyMm(DateUtil.fromYmd((String) row.get(dateColumnName)));
+            }
+
+            // 예측 데이터인 경우에만 예측수행날짜가 있다
+            if (isPredict) {
+                predictDate = (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+                monthlyPredictDates.put(yearMonth, predictDate);
             }
 
             // 기본 데이터 칼럼 값
@@ -420,11 +527,18 @@ public class MiDashboardService {
         for (LocalDate month : monthlyDates) {
             String yearMonth = month.format(yyyyMMFormatter);
             List<Double> values = monthlyValues.getOrDefault(yearMonth, Collections.emptyList());
+            String predictDate = isPredict ? monthlyPredictDates.getOrDefault(yearMonth, null) : null;
 
             // 월별 평균 결과 데이터
             DashboardChartRawData dashboardChartRawData;
             if (values.isEmpty()) {
-                dashboardChartRawData = DashboardChartRawData.of(yearMonth, null);
+                // 예측 데이터인 경우
+                if (isPredict) {
+                    dashboardChartRawData = DashboardChartRawData.ofForecast(yearMonth, predictDate, null);
+                    // 정형 데이터인 경우
+                } else {
+                    dashboardChartRawData = DashboardChartRawData.ofActual(yearMonth, null);
+                }
             } else {
                 // 월별 평균 계산
                 double average = values.stream()
@@ -434,8 +548,13 @@ public class MiDashboardService {
                 // 소수점 2자리
                 BigDecimal bd = BigDecimal.valueOf(average)
                         .setScale(2, RoundingMode.HALF_UP);
-
-                dashboardChartRawData = DashboardChartRawData.of(yearMonth, bd.doubleValue());
+                // 예측 데이터인 경우
+                if (isPredict) {
+                    dashboardChartRawData = DashboardChartRawData.ofForecast(yearMonth, null, bd.doubleValue());
+                    // 정형 데이터인 경우
+                } else {
+                    dashboardChartRawData = DashboardChartRawData.ofActual(yearMonth, bd.doubleValue());
+                }
             }
 
             // 월별 평균 결과 저장
@@ -448,9 +567,11 @@ public class MiDashboardService {
      * 자정까지의 TTL 계산
      */
     private long getSecondsUntilMidnightForCache() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
-        return Duration.between(now, midnight).getSeconds();
+        // LocalDateTime now = LocalDateTime.now();
+        // LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+        // return Duration.between(now, midnight).getSeconds();
+
+        return Duration.ofHours(DASHBOARD_CHART_CACHE_TTL).getSeconds();
     }
 
     /**
@@ -459,8 +580,8 @@ public class MiDashboardService {
      * @param chartPredictSettingDetailNo 차트 예측 설정 상세 번호
      * @return 캐시 키
      */
-    private String getDashboardChartCacheKey(Integer chartPredictSettingDetailNo) {
-        return String.format(DASHBOARD_CHART_CACHE_KEY, chartPredictSettingDetailNo);
+    private String getDashboardChartCacheKey(Integer chartPredictSettingDetailNo, String basedOnDate) {
+        return String.format(DASHBOARD_CHART_CACHE_KEY, chartPredictSettingDetailNo, basedOnDate);
     }
 
     /**
@@ -576,4 +697,101 @@ public class MiDashboardService {
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
+
+    /**
+     * 마지막 Update Date 데이터 조회
+     *
+     * @param goodsDataSourceDetail 데이터소스 상세 정보
+     * @param dateColumnName        날짜 컬럼명
+     * @return 조건에 맞는 데이터 행 목록
+     */
+    @Transactional
+    private List<Map<String, Object>> getLastUpdateDateData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+
+        if (goodsDataSourceDetail == null || dateColumnName == null) {
+            return Collections.emptyList();
+        }
+
+        String orderByColumns = String.format("%s DESC", dateColumnName);
+
+        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofLimitAndOrderBy(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(),
+                DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT, orderByColumns));
+    }
+
+    /**
+     * 차트 주요 요인 분석 카테고리 조회
+     * 
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
+     * @return DashboardChartFactorCategoryRes
+     */
+    public DashboardChartFactorCategoryRes getChartFactorCategory(int companyNo, int goodsDataSourceNo, String predictDate) {
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+
+        return DashboardChartFactorCategoryRes.of(dashboardMapper.chartFactorCategory(queryWhere, predictDate));
+    }
+
+    /**
+     * 차트 주요 요인 분석 조회
+     * 
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
+     * @param explanatoryLevelNm 주요 요인 레벨명
+     * @return DashboardChartFactorRes
+     */
+    public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
+
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        boolean isChartLinePredictVal = chartPredictSettingDetails.stream()
+                .anyMatch(chartPredictSettingDetail -> {
+                    GoodsDataSourceDetail goodsDataSourceDetail = chartPredictSettingDetail.getGoodsDataSourceDetail();
+                    return goodsDataSourceDetail.getGoodsDataSourceNo() == goodsDataSourceNo
+                            && chartPredictSettingDetail.getIsChartLinePredictVal() == true && chartPredictSettingDetail.getIsFuture() == false;
+                });
+
+        if (!isChartLinePredictVal) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("차트 예측 데이터가 없습니다. goodsDataSourceNo: %d", goodsDataSourceNo));
+        }
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+
+        // 차트 주요 요인 분석 조회 (+)
+        List<DashboardChartFactorMap> chartPlusFactorsMap = dashboardMapper.chartFactors(queryWhere, explanatoryLevelNm, predictDate,
+                CHART_EXPLANATORY_PLUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
+
+        // 차트 주요 요인 분석 조회 (-)
+        List<DashboardChartFactorMap> chartMinusFactorsMap = dashboardMapper.chartFactors(queryWhere, explanatoryLevelNm, predictDate,
+                CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
+
+        // Map -> Dto
+        List<DashboardChartFactor> chartPlusFactors = chartPlusFactorsMap.stream()
+                .map(DashboardChartFactor::of)
+                .toList();
+
+        // Map -> Dto
+        List<DashboardChartFactor> chartMinusFactors = chartMinusFactorsMap.stream()
+                .map(DashboardChartFactor::of)
+                .toList();
+
+        return DashboardChartFactorRes.of(explanatoryLevelNm, chartPlusFactors, chartMinusFactors);
+    }
+
 }

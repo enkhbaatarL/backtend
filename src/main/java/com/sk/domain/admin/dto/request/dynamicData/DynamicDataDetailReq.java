@@ -65,4 +65,14 @@ public record DynamicDataDetailReq(
                 .orderByColumns(orderByColumns)
                 .build();
     }
+
+    public static DynamicDataDetailReq ofLimitAndOrderBy(String targetDataSource, String tableName, String columns, String whereClause, String limit, String orderByColumns) {
+        return DynamicDataDetailReq.builder()
+                .targetDataSource(targetDataSource)
+                .tableName(tableName)
+                .columns(columns)
+                .whereClause(whereClause)
+                .limit(limit)
+                .build();
+    }
 }
