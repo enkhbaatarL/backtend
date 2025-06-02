@@ -36,11 +36,11 @@ public record HistoryMetadataRes(
 
         @ArraySchema(
             arraySchema = @Schema(description = "예측가의 예측 수행일 목록"),
-            schema = @Schema(description = "예측 수행일", example = "20250611")
+            schema = @Schema(description = "예측 수행일", example = "20250611", type = "string")
         )
         List<String> fulfillmentDates,
 
-        @Schema(description = "현물 & 선물 리스트")
+        @Schema(description = "실제 & 선물 리스트")
         List<SettingDetail> settingDetails
 
     ) {
@@ -54,10 +54,10 @@ public record HistoryMetadataRes(
             @Schema(description = "설정 설명, 설정 명", example = "Actual")
             String settingDetailExpn,
 
-            @Schema(description = "설정 타입", example = "SPOT", allowableValues = {"SPOT", "FUTURES", "FORECAST"})
+            @Schema(description = "설정 타입", example = "ACTUAL", allowableValues = {"ACTUAL", "FUTURE", "FORECAST"})
             PriceType priceType,
 
-            @Schema(description = "설정 타입 명", example = "현물가", allowableValues = {"현물가", "선물가", "예측가"})
+            @Schema(description = "설정 타입 명", example = "실제가", allowableValues = {"실제가", "선물가", "예측가"})
             String priceTypeNm
 
         ) {
