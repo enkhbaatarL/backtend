@@ -7,12 +7,14 @@ import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.util.Map;
 import java.util.Optional;
 
 public record QnaRes(
@@ -23,7 +25,6 @@ public record QnaRes(
     @Schema(description = "질의문", example = "삼성전자 주가는?")
     String question,
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "AI응답", example = "?")
     AnswerRes answer,
 
@@ -58,8 +59,7 @@ public record QnaRes(
             entity.getChatbotTalkQnaNo(),
             entity.getUserQuestionCntt(),
             Optional.ofNullable(entity.getChatbotAnswerCntt())
-                .map(str -> JsonUtil.fromJson(str, ModelAgentRes.class))
-                .map(AnswerRes::of)
+                .map(str -> JsonUtil.fromJson(str, AnswerRes.class))
                 .orElse(null),
             entity.getIsRecommended(),
             entity.getIsNotRecommended(),
@@ -116,17 +116,20 @@ public record QnaRes(
             .build();
     }
 
-    public static QnaRes of(ChatbotTalkQna qna, ModelAgentRes modelAgentRes) {
+    public static QnaRes of(ChatbotTalkQna qna, AnswerRes answer) {
         return QnaRes.builder()
             .qnaNo(qna.getChatbotTalkQnaNo())
             .question(qna.getUserQuestionCntt())
-            .answer(AnswerRes.of(modelAgentRes))
+            .answer(answer)
             .isRecommended(qna.getIsRecommended())
             .isNotRecommended(qna.getIsNotRecommended())
             .statusCd(qna.getAnswerStatusCd())
             .statusNm(qna.getAnswerStatusCd().getDescription())
             .feedbackCd(qna.getAssessmentFeedbackCd())
-            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null))
+            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd())
+                .map(AssessmentFeedbackCd::getDescription)
+                .orElse(null)
+            )
             .feedbackComment(qna.getAssessmentFeedbackCntt())
             .auditInfo(AuditInfo.ofSimple(
                 qna.getCreateUserId(),

@@ -58,7 +58,14 @@ public final class DummyResponses {
                   "legend": "디지털 이탈률",
                   "date": ["2024-05-01","2024-05-02","2024-05-03","2024-05-04","2024-05-05"],
                   "value": [9.1,9.3,9.5,9.4,9.7]
-                }]
+                }],
+              "sources": [
+                {"source_nm": "Google Search Console", "url": "https://search.google.com/search-console"},
+                {"source_nm": "Google Analytics", "url": "https://analytics.google.com/analytics/web/"}
+              ],
+              "related_data": [
+                3, 20
+              ]
               }
             }]
           }
@@ -187,7 +194,14 @@ public final class DummyResponses {
                   "legend": "리드타임(일)",
                   "date": ["2024-05-01","2024-05-08","2024-05-15","2024-05-22","2024-05-29"],
                   "value": [14,13,13,12,12]
-                }]
+                }],
+              "sources": [
+                {"source_nm": "Google Search Console", "url": "https://search.google.com/search-console"},
+                {"source_nm": "Google Analytics", "url": "https://analytics.google.com/analytics/web/"}
+              ],
+              "related_data": [
+                3, 20
+              ]
               }
             }]
           }
@@ -308,6 +322,13 @@ public final class DummyResponses {
                                 2510.0
                               ]
                             }
+                          ],
+                          "sources": [
+                            {"source_nm": "Google Search Console", "url": "https://search.google.com/search-console"},
+                            {"source_nm": "Google Analytics", "url": "https://analytics.google.com/analytics/web/"}
+                          ],
+                          "related_data": [
+                            3, 20
                           ]
                         },
                         "additional_kwargs": {
