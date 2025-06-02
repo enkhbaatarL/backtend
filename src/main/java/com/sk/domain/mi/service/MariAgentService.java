@@ -10,17 +10,20 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalk;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tcm.ChatbotMajorQuestionRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import com.sk.domain.test.DummyResponses;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +31,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -47,6 +49,7 @@ public class MariAgentService {
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
+    private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
 
     /**
      * 주어진 분과 코드로 필터링된 주요 질의문 목록을 조회합니다.
@@ -149,11 +152,8 @@ public class MariAgentService {
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
 
-        // 모델 에이전트 질의
-        Optional<ModelAgentRes> modelAgentResOpt = executeModelAgent(qna);
-
-        return modelAgentResOpt
-            .map(modelAgentRes -> QnaRes.of(qna, modelAgentRes))
+        return executeModelAgent(qna)
+            .map(answer -> QnaRes.of(qna, answer))
             .orElse(QnaRes.of(qna));
     }
 
@@ -192,11 +192,8 @@ public class MariAgentService {
 
         validateTalkOwnership(qna.getChatbotTalk(), user, chatRoomId.toString());
 
-        // 모델 에이전트 질의
-        Optional<ModelAgentRes> modelAgentResOpt = executeModelAgent(qna);
-
-        return modelAgentResOpt
-            .map(modelAgentRes -> QnaRes.of(qna, modelAgentRes))
+        return executeModelAgent(qna)
+            .map(answer -> QnaRes.of(qna, answer))
             .orElse(QnaRes.of(qna));
     }
 
@@ -219,15 +216,38 @@ public class MariAgentService {
      * @param qna qna 객체
      * @return
      */
-    private Optional<ModelAgentRes> executeModelAgent(ChatbotTalkQna qna) {
+    private Optional<AnswerRes> executeModelAgent(ChatbotTalkQna qna) {
         try {
-//            ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getUserQuestionCntt());
 
+//            ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getUserQuestionCntt());
             ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
-            qna.updateCompleteResult(modelAgentRes);
-            return Optional.of(modelAgentRes);
+            List<Integer> related = Optional.ofNullable(modelAgentRes)
+                .map(ModelAgentRes::output)
+                .map(ModelAgentRes.Output::messages)
+                .stream()
+                .flatMap(List::stream)
+                .map(ModelAgentRes.Output.Message::content)
+                .filter(Objects::nonNull)
+                .map(ModelAgentRes.Output.Message.Content::relatedData)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .toList();
+
+            Map<Integer, GoodsDataSourceDetail> gdsMap = goodsDataSourceDetailRepository.findByGoodsDataSourceNoInAndIsDeletedFalse(related)
+                .stream()
+                .collect(Collectors.toMap(GoodsDataSourceDetail::getGoodsDataSourceNo, Function.identity()));
+
+
+            AnswerRes answerRes = Optional.ofNullable(modelAgentRes)
+                .map(modelRes -> AnswerRes.of(modelRes, gdsMap)) // 응답 객체 생성
+                .orElse(null);
+
+            qna.updateCompleteResult(modelAgentRes, answerRes);
+
+            return Optional.ofNullable(answerRes);
         } catch (Exception e) {
+            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
             qna.updateFailResult();
             return Optional.empty();
         }

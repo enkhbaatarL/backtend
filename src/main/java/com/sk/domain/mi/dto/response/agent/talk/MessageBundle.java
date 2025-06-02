@@ -3,10 +3,12 @@ package com.sk.domain.mi.dto.response.agent.talk;
 import com.sk.common.model.TableRes;
 import com.sk.common.utils.MarkdownUtil;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.Map;
 
 @Builder
 public record MessageBundle(
@@ -21,19 +23,21 @@ public record MessageBundle(
     List<TableRes> tables,
 
     @Schema(description = "출처")
-    List<Source> sources
+    List<Source> sources,
 
-    // todo 연관 데이터 추가해야함.
+    @Schema(description = "연관 데이터")
+    List<Related> relatedData
 
 ) {
 
-    public static MessageBundle of(ModelAgentRes.Output.Message message) {
+    public static MessageBundle of(ModelAgentRes.Output.Message message, Map<Integer, GoodsDataSourceDetail> gdsMap) {
         String updatedMarkdown = MarkdownUtil.insertTableIds(message.content().text());
         return MessageBundle.builder()
             .content(updatedMarkdown)
             .series(Series.ofList(message.content().charts()))
             .tables(MarkdownUtil.parseTablesWithIds(updatedMarkdown))
             .sources(Source.ofList(message.content().sources()))
+            .relatedData(Related.ofList(message.content().relatedData(), gdsMap))
             .build();
     }
 
