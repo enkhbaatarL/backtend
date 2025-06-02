@@ -132,8 +132,7 @@ public class FileService {
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
-            log.error("Exception during upload: {}", e.getMessage(), e);
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 업로드 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -194,8 +193,7 @@ public class FileService {
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
-            log.error("Exception during upload: {}", e.getMessage(), e);
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 업로드 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -222,7 +220,7 @@ public class FileService {
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -278,7 +276,7 @@ public class FileService {
 
             return baos.toByteArray();
         } catch (IOException e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -301,7 +299,7 @@ public class FileService {
 
             uploadedFile.softDelete();
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -326,7 +324,7 @@ public class FileService {
 
                 f.softDelete();
             } catch (Exception e) {
-                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
             }
         });
     }
@@ -361,7 +359,7 @@ public class FileService {
 
             return uploadedFile;
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -381,7 +379,7 @@ public class FileService {
 
             return objectStorageService.getUrl(bucketName, fileName);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
@@ -396,7 +394,7 @@ public class FileService {
 
             return objectStorageService.getUrl(bucketName, fileName);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
     }
 
