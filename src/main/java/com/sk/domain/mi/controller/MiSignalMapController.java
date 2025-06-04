@@ -13,6 +13,7 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapDataRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes;
 import com.sk.domain.mi.service.MiSignalMapService;
@@ -57,7 +58,7 @@ public class MiSignalMapController {
     @ApiOrder(3)
     @Parameters({
             @Parameter(name = "period", description = "기간 필터"),
-            @Parameter(name = "filters", description = "회사마다 다른 필터가 존재, 없는 경우도 있음"),
+            @Parameter(name = "filter", description = "회사마다 다른 필터가 존재, 없는 경우도 있음"),
     })
     @Operation(summary = "시그널맵 데이타 조회", description = "시그널맵 데이타를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -66,7 +67,7 @@ public class MiSignalMapController {
     public BaseResponse<SignalMapDataRes> getTest(
             @PathVariable(value = "companyNo") Integer companyNo,
             @RequestParam(value = "period", required = false, defaultValue = "TOT") String period,
-            @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
+            @RequestParam(value = "filter", required = false, defaultValue = "") String filter) {
 
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
@@ -77,6 +78,8 @@ public class MiSignalMapController {
         String latestUpdatedDt = miSignalMapService.getLatestUpdatedDt(cNo);
         log.info("  ========>>>>>>>>> Latest Updated Date: {}", latestUpdatedDt);
 
-        return BaseResponseFactory.create(miSignalMapService.getSignalMap(cNo, period, filters));
+        List<ScreenCategoryDto> datas = miSignalMapService.getSignalMap(cNo, period, filter);
+
+        return BaseResponseFactory.create(new SignalMapDataRes(title, latestUpdatedDt, datas));
     }
 }
