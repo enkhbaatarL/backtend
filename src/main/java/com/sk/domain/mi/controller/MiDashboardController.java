@@ -21,6 +21,7 @@ import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartDateRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorCategoryRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.service.MiDashboardService;
 import com.sk.domain.mi.service.MiMarketDataService;
@@ -116,7 +117,25 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartDates(companyNo));
 	}
 
+
 	@ApiOrder(6)
+	@Parameters({
+		@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
+		@Parameter(name = "date", description = "조회할 년월", example = "202505")
+	})
+	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/summary")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	public BaseResponse<List<DashboardSummaryRes>> getDashboardSummary(
+			@PathVariable("companyNo") Integer companyNo,
+			@RequestParam(value = "date", required = false) String date) {
+		return BaseResponseFactory.create(miDashboardService.getDashboardSummary(companyNo, date));
+	}
+
+	
+
+	@ApiOrder(7)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 			@Parameter(name = "date", description = "조회할 년월", example = "202505")
@@ -132,7 +151,7 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date, authentication));
 	}
 	
-	@ApiOrder(7)
+	@ApiOrder(8)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 			@Parameter(name = "date", description = "조회할 년월", example = "202505")
@@ -148,7 +167,7 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartFileDownload(companyNo, date, authentication));
 	}
 
-	@ApiOrder(8)
+	@ApiOrder(9)
 	@Parameters({
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
 			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "63")
@@ -164,7 +183,7 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartFactorCategory(companyNo, goodsDataSourceNo, predictDate));
 	}
 
-	@ApiOrder(9)
+	@ApiOrder(10)
 	@Parameters({
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
 			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "63"),
@@ -182,7 +201,7 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, explanatoryLevelNm));
 	}
 
-	@ApiOrder(10)
+	@ApiOrder(11)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),

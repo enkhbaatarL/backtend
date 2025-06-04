@@ -55,6 +55,7 @@ import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardDataCache;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardDataSource;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardSummaryRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChart;
 import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartLine;
 import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartRawData;
@@ -191,6 +192,23 @@ public class MiDashboardService {
     public List<LatestInsightsRes> getLatestInsights(int companyNo) {
 
         return goodsDataRepository.findLatestInsights(companyNo, PageRequest.of(0, 5));
+    }
+
+    /**
+     * 대시보드 Summary 데이터 조회
+     * 
+     * @param companyNo
+     * @return DashboardSummaryRes
+     */
+    public List<DashboardSummaryRes> getDashboardSummary(int companyNo, String date) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+
+        // 마지막 예측 날 가져오기
+
+        // summary 데이터 리스트 조회
+
+        return null;
     }
 
     /**
@@ -445,8 +463,8 @@ public class MiDashboardService {
                 .orElse(null);
 
         DashboardChartDataTableType dataTableType = chartPredictSettingDetails.stream()
-            .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-            .count() >= 2 ? DashboardChartDataTableType.FORECAST_DUAL_LAYER : DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
+                .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+                .count() >= 2 ? DashboardChartDataTableType.FORECAST_DUAL_LAYER : DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
 
         DashboardMetadata dashboardMetadata = DashboardMetadata.of(customerCompany.getMarketIndexAnalysisTargetCd(), lastUpdated,
                 actualGoodsDataSourceDetail.get(), finalDate, dataTableType);
@@ -814,8 +832,8 @@ public class MiDashboardService {
      */
     public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
         customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
-        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
-        
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
 
@@ -857,7 +875,8 @@ public class MiDashboardService {
      * @return DashboardChartFactorGraphRes
      */
     public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate,
-            String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd, Authentication authentication) {
+            String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd,
+            Authentication authentication) {
         customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
@@ -890,10 +909,6 @@ public class MiDashboardService {
                 .chartFactorGraphExplanatory(queryWhere, explanatoryLevelNm, predictDate, predictionInputMnemonicCd)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 주요 요인 분석 라인 그래프 조회 데이터가 없습니다."));
 
-
-        
-
-
         // 그래프 Table 조회
         DashboardChartFactorGraphMap chartFactorGraph = dashboardMapper
                 .chartFactorGraph(marketIndexAnalysisTargetCd, mnemonicCd)
@@ -902,14 +917,7 @@ public class MiDashboardService {
         // 그래프 RawData
         Integer actualGoodsDataSourceNo = chartFactorGraph.getGoodsDataSourceNo();
 
-
-
         // Date 기준
-
-
-
-
-
 
         return null;
     }
