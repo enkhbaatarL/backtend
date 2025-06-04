@@ -5,7 +5,6 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
@@ -189,16 +189,13 @@ public class MiDashboardService {
         return goodsDataRepository.findLatestInsights(companyNo, PageRequest.of(0, 5));
     }
 
-    //TODO: 페이징 처리 제대로 하던가 아니면 아예 모든 데이터 List로 제공?!!!
     /**
      * 조회 가능한 차트 날짜 조회
      * 
-     * @param page
-     * @param size
      * @param companyNo
      * @return DashboardChartDateRes
      */
-    public DashboardChartDateRes getChartDates(int page, int size, int companyNo) {
+    public DashboardChartDateRes getChartDates(int companyNo) {
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
@@ -211,24 +208,8 @@ public class MiDashboardService {
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
-        LocalDate now = LocalDate.now();
-
-        // endDate 계산: 현재 월에서 (page - 1) * size 개월 전의 마지막 날
-        YearMonth endYearMonth = YearMonth.from(now).minusMonths((long) (page - 1) * size);
-        LocalDate endDate = endYearMonth.atEndOfMonth();
-
-        // startDate 계산: endDate에서 (size - 1) 개월 전의 첫 번째 날
-        YearMonth startYearMonth = YearMonth.from(endDate).minusMonths(size - 1);
-        LocalDate startDate = startYearMonth.atDay(1);
-
-        String END_DATE = DateUtil.toYmd(endDate);
-        String START_DATE = DateUtil.toYmd(startDate);
-
-        // 월별 날짜 생성
-        List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
-
         // 데이터가 존재하는 월별 날짜 수집
-        Set<LocalDate> existingDates = chartPredictSettingDetails.stream()
+        Set<LocalDate> existingDates = chartPredictSettingDetails.parallelStream()
                 .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
                 .flatMap(chartPredictSettingDetail -> {
                     GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
@@ -237,8 +218,7 @@ public class MiDashboardService {
                     }
 
                     // 데이터 조회
-                    List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource, MARKET_DATA_PREDICT_DATE_COLUMN_NAME, START_DATE,
-                            END_DATE);
+                    List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource, MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
                     // rawData에서 날짜 추출 및 월별 첫 번째 날로 변환
                     return rawData.stream()
@@ -258,10 +238,7 @@ public class MiDashboardService {
                 })
                 .collect(Collectors.toSet()); // 중복 제거
 
-        // 예측 수행 날짜 조회
-        // monthlyDates와 existingDates 교집합 계산
-        return DashboardChartDateRes.of(monthlyDates.stream()
-                .filter(existingDates::contains)
+        return DashboardChartDateRes.of(existingDates.stream()
                 .sorted(Comparator.reverseOrder())
                 .collect(Collectors.toList()));
     }
@@ -460,7 +437,6 @@ public class MiDashboardService {
         DashboardMetadata dashboardMetadata = DashboardMetadata.of(customerCompany.getMarketIndexAnalysisTargetCd(), lastUpdated,
                 actualGoodsDataSourceDetail.get(), finalDate);
 
-        // TODO: Response의 순서는 상관 없나??
         // associatedCharts에서 DashboardChart 리스트 추출
         List<DashboardChart> finalCharts = associatedCharts.stream()
                 .flatMap(map -> map.values().stream())
@@ -477,6 +453,7 @@ public class MiDashboardService {
                             actualLines,
                             forecastLines);
                 })
+                .sorted(Comparator.comparing(DashboardChart::chartLineDescription))
                 .toList();
 
         return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources);
@@ -769,16 +746,19 @@ public class MiDashboardService {
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
-    private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate,
-            String endDate) {
-        if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
+    private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+        if (goodsDataSourceDetail == null || dateColumnName == null) {
             return Collections.emptyList();
         }
 
-        String whereClause = "%s >= '%s' AND %s <= '%s'".formatted(dateColumnName, startDate, dateColumnName, endDate);
+        // yyyyMM 형식으로 데이터 묶기 위함
+        int startDateLength = 1;
+        int endDateLength = 6;
+        String GROUP_BY = "SUBSTRING(%s, %d, %d)".formatted(dateColumnName, startDateLength, endDateLength);
+        String ORDER_BY = String.format("%s DESC", GROUP_BY);
 
-        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.of(goodsDataSourceDetail.getTargetDbNm(),
-                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, whereClause));
+        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofGroupByOrderBy(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(), GROUP_BY, ORDER_BY));
     }
 
     /**
@@ -856,4 +836,20 @@ public class MiDashboardService {
         return DashboardChartFactorRes.of(explanatoryLevelNm, chartPlusFactors, chartMinusFactors);
     }
 
+    /**
+     * 차트 주요 요인 분석 라인 그래프 조회
+     * 
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
+     * @param explanatoryLevelNm 주요 요인 레벨명
+     * @return DashboardChartFactorGraphRes
+     */
+    public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
+
+
+        
+
+
+        return null;
+    }
 }

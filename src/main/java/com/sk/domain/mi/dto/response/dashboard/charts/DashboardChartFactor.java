@@ -18,13 +18,13 @@ public record DashboardChartFactor(
 
         @Schema(description = "설명력점수") BigDecimal explanatoryScore,
 
-        @Schema(description = "설명력순위") Integer explanatoryRnk,
+        @Schema(description = "설명력순위(실제)") Integer explanatoryRnk,
 
         @Schema(description = "MNEMONIC코드") String mnemonicCd,
 
         @Schema(description = "설명력방향기호명") String explanatoryDirectionSymbolNm,
 
-        @Schema(description = "설명력순위") Integer dirRank) {
+        @Schema(description = "설명력순위(모델)") Integer dirRank) {
 
     @Builder
     public DashboardChartFactor(String marketIndexAnalysisTargetCd, String predictionFulfillDt, String predictionInputMnemonicDetailCd,

@@ -14,6 +14,7 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartDateRes;
@@ -31,7 +32,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -105,8 +105,6 @@ public class MiDashboardController {
 
 	@ApiOrder(5)
 	@Parameters({
-		@Parameter(name = "page", description = "페이지 번호", example = "1"),
-		@Parameter(name = "size", description = "페이지 크기", example = "10"),
 		@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 	})
 	@Operation(summary = "대시보드 차트 조회 가능한 날짜 리스트", description = "대시보드 차트 조회 가능한 날짜 리스트를 조회합니다.")
@@ -114,10 +112,8 @@ public class MiDashboardController {
 	@GetMapping("/companies/{companyNo}/chart-dates")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<DashboardChartDateRes> getChartDates(
-			@RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 10) int size,
 			@PathVariable("companyNo") Integer companyNo) {
-		return BaseResponseFactory.create(miDashboardService.getChartDates(page, size, companyNo));
+		return BaseResponseFactory.create(miDashboardService.getChartDates(companyNo));
 	}
 
 	@ApiOrder(6)
@@ -170,19 +166,19 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, category));
 	}
 
-	// @ApiOrder(9)
-	// @Parameters({
-	// 		@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
-	// })
-	// @Operation(summary = "대시보드 차트 주요 요인 분석 조회", description = "대시보드 차트 주요 요인 분석 데이터를 조회합니다.")
-	// @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-	// @GetMapping("/companies/{companyNo}/chart/factor/graph")
-	// @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-	// public BaseResponse<DashboardChartFactorGraphRes> getChartFactorGraph(
-	// 		@PathVariable("companyNo") Integer companyNo,
-	// 		@RequestParam(value = "predictDate", required = true) String predictDate,
-	// 		@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
-	// 		@RequestParam(value = "category", required = true) String category) {
-	// 	return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, category));
-	// }
+	@ApiOrder(9)
+	@Parameters({
+			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	})
+	@Operation(summary = "대시보드 차트 주요 요인 분석 라인 그래프", description = "대시보드 차트 주요 요인 분석 라인 그래프를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/chart/factor/graph")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	public BaseResponse<DashboardChartFactorGraphRes> getChartFactorGraph(
+			@PathVariable("companyNo") Integer companyNo,
+			@RequestParam(value = "predictDate", required = true) String predictDate,
+			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
+			@RequestParam(value = "category", required = true) String category) {
+		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, category));
+	}
 }
