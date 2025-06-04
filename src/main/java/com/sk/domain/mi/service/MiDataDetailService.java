@@ -88,19 +88,17 @@ public class MiDataDetailService {
 
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
 
-        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
+        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode())
+            .stream()
+            .filter(ca -> StringUtils.isNotEmpty(ca.getHighCodeId()))
+            .toList();
 
-        PermissionRes permissionRes = switch (authorizationService.getCurrentRole()) {
-            case USER -> userService.getUserGoodsPermissions(authorizationService.getUserNo());
-            case ADMIN -> userService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> userService.getPlusOperatorGoodsPermissions(authorizationService.getCompanyNo());
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 상품-데이터 조회 이력 적재
         goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authorizationService.getSubject());
 
-        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNo());
+        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority());
     }
 
     /**
@@ -464,10 +462,10 @@ public class MiDataDetailService {
 
         PersonalizationService.Preferences resolve = personalizationService.resolve(gds, authorizationService.getCurrentRole(), authorizationService.getSubject());
 
-        // Interval 결정: 요청값 > 개인화 > 기본값
+        // Interval 결정: 요청값 > 개인화 > 기본값(최소 단위에 따른 기본값 변경)
         Interval finalizedInterval = Optional.ofNullable(contextV1.requestedInterval())
             .or(resolve::interval)
-            .orElse(Interval.ONE_DAY);
+            .orElse(gds.getPeriodUnitSeparateCd().minInterval());
 
         // Range 결정: 요청값 > 개인화 > 기본값
         Range finalizedRange = Optional.ofNullable(contextV1.requestedRange())
