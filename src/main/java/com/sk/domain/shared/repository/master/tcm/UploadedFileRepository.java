@@ -33,6 +33,24 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             SELECT u
             FROM UploadedFile u
             WHERE u.isDeleted = false
+                AND u.storagePathNm = :filePath
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                """)
+    Optional<UploadedFile> findByFilePath(@Param("filePath") String filePath);
+
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+                AND u.storagePathNm IN (:filePathList)
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                """)
+    List<UploadedFile> findByFilePathList(@Param("filePathList") List<String> filePathList);
+
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
                 AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
                 AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
                 AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
