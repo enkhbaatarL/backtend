@@ -429,7 +429,7 @@ public final class DummyResponses {
               }
             },{
               "content": {
-                "text": "## 🚨 2024-05 재고 부족 Risk SKU\\n\\n| SKU | 현재 재고 | 안전재고 ||\\n|-----|-----------|-----------|\\n| SKU-X | 120 | 300 |\\n| SKU-Y | 80  | 250 |",
+                "text": "## 🚨 2024-05 재고 부족 Risk SKU\\n\\n| SKU | 현재 재고 | 안전재고 |\\n|-----|-----------|-----------|\\n| SKU-X | 120 | 300 |\\n| SKU-Y | 80  | 250 |",
                 "charts": [{
                   "order": 1,
                   "legend": "SKU-X 잔여 재고 추이",
