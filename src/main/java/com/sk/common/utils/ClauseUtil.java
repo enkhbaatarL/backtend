@@ -21,7 +21,7 @@ public class ClauseUtil {
     }
 
     public static String createBetweenClause(String colName, String value1, String value2) {
-        return StringUtils.join(colName + " BETWEEN ", value1, " AND ", value2);
+        return String.format("%s BETWEEN '%s' AND '%s'", colName, value1, value2);
     }
 
     public static String createSelectClause(String... cols) {

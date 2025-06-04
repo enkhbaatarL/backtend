@@ -109,55 +109,57 @@ public final class DateUtil {
     }
 
     /**
-     * string 날짜를 LocalDate 타입으로 반환
+     * 여러 날짜 타입을 모두 LocalDate로 변환하는 메소드
      */
     public static LocalDate parseDate(Object dateObj) {
-
         if (dateObj == null) return null;
         if (dateObj instanceof LocalDate ld) return ld;
         if (dateObj instanceof LocalDateTime ldt) return ldt.toLocalDate();
         if (dateObj instanceof Timestamp ts) return ts.toLocalDateTime().toLocalDate();
-
+        if (dateObj instanceof Integer i) {
+            // int 연도 (ex: 2024)
+            if (i >= 1000 && i <= 9999) return LocalDate.of(i, 1, 1);
+            return null;
+        }
         String s = dateObj.toString().trim();
 
-        // 1) yyyyMMdd → 2024-07-17 로 변환
-        if (s.matches("\\d{8}")) {
-            return LocalDate.parse(s, DateTimeFormatter.BASIC_ISO_DATE);
+        // 연도: 4자리 숫자 (varchar4, int 문자열 변환 포함)
+        if (s.matches("\\d{4}")) {
+            int year = Integer.parseInt(s);
+            return LocalDate.of(year, 1, 1);
         }
-        // 2) yyyy-MM-dd 그대로
+        // 월: 6자리 숫자 (varchar6)
+        if (s.matches("\\d{6}")) {
+            int year = Integer.parseInt(s.substring(0, 4));
+            int month = Integer.parseInt(s.substring(4, 6));
+            return LocalDate.of(year, month, 1);
+        }
+        // 일: 8자리 숫자 (varchar8)
+        if (s.matches("\\d{8}")) {
+            return LocalDate.parse(s, DateTimeFormatter.BASIC_ISO_DATE); // yyyyMMdd
+        }
+        // yyyy-MM-dd
         if (s.matches("\\d{4}-\\d{2}-\\d{2}")) {
             return LocalDate.parse(s);
         }
-
-        // 3) yyyy-MM-dd[ T]HH:mm:ss[.SSS][XXX] 등 -> 앞 10글자만 잘라서 파싱
+        // yyyy-MM
+        if (s.matches("\\d{4}-\\d{2}")) {
+            int year = Integer.parseInt(s.substring(0, 4));
+            int month = Integer.parseInt(s.substring(5, 7));
+            return LocalDate.of(year, month, 1);
+        }
+        // yyyy-MM-dd[ T]HH:mm:ss[.SSS][XXX] 등: 앞 10글자만
         if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
             return LocalDate.parse(s.substring(0, 10));
         }
 
-        return null;
-    }
-
-    public static String toYmd(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.isBlank())
-            return null;
-
-        try {
-            // ISO-8601 형식 처리 (예: 2024-01-01T00:00)
-            LocalDateTime ldt = LocalDateTime.parse(dateTimeStr);
-            return ldt.format(YYYYMMDD);
-
-        } catch (DateTimeParseException e1) {
-            try {
-                // 기존 포맷 시도 (예: 2024-01-01 00:00:00)
-                String trimmed = dateTimeStr.length() > 19
-                    ? dateTimeStr.substring(0, 19)
-                    : dateTimeStr;
-                LocalDateTime ldt = LocalDateTime.parse(trimmed, YYYY_MM_DD_HH_MM_SS);
-                return ldt.format(YYYYMMDD);
-            } catch (DateTimeParseException e2) {
-                throw new IllegalArgumentException("Invalid date format: " + dateTimeStr);
-            }
+        // datetime 타입 문자열도 커버: yyyy/MM/dd, yyyy.MM.dd 등
+        if (s.matches("\\d{4}[./]\\d{2}[./]\\d{2}")) {
+            String replaced = s.replace('.', '-').replace('/', '-');
+            return LocalDate.parse(replaced);
         }
+
+        return null;
     }
 
     public static String format(LocalDate date, PeriodUnitSeparateCd unit) {
@@ -166,7 +168,6 @@ public final class DateUtil {
             default -> toYmd(date);
         };
     }
-
 
     public static Pair<String, String> getDateRange(Range range) {
 

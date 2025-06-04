@@ -2,8 +2,8 @@ package com.sk.domain.admin.dto.request.company;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import net.shibboleth.utilities.java.support.annotation.constraint.NotEmpty;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
