@@ -51,8 +51,9 @@ public class SamlController {
     @ApiResponse(responseCode = "200", description = "SAML 콜백 성공")
     @GetMapping("/callback")
     public BaseResponse<GenerateTokenRes> samlCallback(
-            @RequestParam(value = "sessionId", required = true) String sessionId) {
-        return BaseResponseFactory.create(samlService.samlCallback(sessionId));
+            @RequestParam(value = "sessionId", required = true) String sessionId,
+            HttpServletResponse response) {
+        return BaseResponseFactory.create(samlService.samlCallback(sessionId, response));
     }
 
     /**

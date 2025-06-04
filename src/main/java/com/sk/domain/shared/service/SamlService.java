@@ -35,7 +35,7 @@ public class SamlService {
      * @return
      */
     @Transactional
-    public GenerateTokenRes samlCallback(String sessionId) {
+    public GenerateTokenRes samlCallback(String sessionId, HttpServletResponse response) {
         String userLoginId = redisTemplate.opsForValue().get(sessionId);
 
         if (userLoginId == null) {
@@ -53,7 +53,7 @@ public class SamlService {
                 .findFirst()
                 .orElse(users.get(0));
 
-        GenerateTokenRes generateTokenRes = authService.generateToken(user);
+        GenerateTokenRes generateTokenRes = authService.generateToken(user, response);
 
         redisTemplate.delete(sessionId);
 

@@ -43,7 +43,7 @@ public class AuthService {
 	 * @return
 	 */
 	@Transactional
-	public GenerateTokenRes generateToken(String authHeader, String refreshToken) {
+	public GenerateTokenRes generateToken(String authHeader, String refreshToken, HttpServletResponse response) {
 		String accessToken = authHeader.replace("Bearer ", "");
 
 		// accessToken 검증(만료 상관없이)
@@ -60,10 +60,10 @@ public class AuthService {
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						String.format("User information could not be found. userNo: %s", accessTokenClaims.get("userNo", Integer.class))));
 
-		return generateToken(user);
+		return generateToken(user, response);
 	}
 
-	public GenerateTokenRes generateToken(User user) {
+	public GenerateTokenRes generateToken(User user, HttpServletResponse response) {
 		String renewedAccessToken = jwtUtil.generateAccessToken(user);
 		String renewedRefreshToken = jwtUtil.generateRefreshToken(user);
 
@@ -77,14 +77,14 @@ public class AuthService {
 
 
 		// 리프레시 토큰을 쿠키에 설정
-		// ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
-		// 		.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
-		// 		.path("/")
-		// 		.secure(true)
-		// 		.httpOnly(true)
-		// 		.build();
+		ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
+				.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
+				.path("/")
+				.secure(true)
+				.httpOnly(true)
+				.build();
 
-		// response.addHeader(HttpHeaders.SET_COOKIE, responseRefreshCookie.toString());
+		response.addHeader(HttpHeaders.SET_COOKIE, responseRefreshCookie.toString());
 
 		// ResponseCookie responseAccessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_HEADER, ACCESS_TOKEN_RULE + renewedAccessToken)
 		// 		.maxAge(jwtProperties.getAccessTokenExpiry() / 1000)
@@ -95,6 +95,6 @@ public class AuthService {
 
 		// response.addHeader(HttpHeaders.SET_COOKIE, responseAccessTokenCookie.toString());
 
-		return GenerateTokenRes.of(renewedAccessToken, renewedRefreshToken);
+		return GenerateTokenRes.of(renewedAccessToken);
 	}
 }

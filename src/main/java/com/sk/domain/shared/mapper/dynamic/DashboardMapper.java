@@ -11,4 +11,7 @@ public interface DashboardMapper {
     List<String> chartFactorCategory(String queryWhere, String predictDate);
 
     List<DashboardChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm, String predictDate, String direction, int limit);
+
+
+    //TODO
 }

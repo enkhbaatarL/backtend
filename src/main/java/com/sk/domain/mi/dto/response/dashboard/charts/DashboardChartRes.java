@@ -13,21 +13,25 @@ public record DashboardChartRes(
 
         @Schema(description = "그래프") List<DashboardChart> charts,
 
-        @Schema(description = "알림 설정을 위한 데이터 소스 상세") List<DashboardDataSource> dashboardDataSources) {
+        @Schema(description = "알림 설정을 위한 데이터 소스 상세") List<DashboardDataSource> dashboardDataSources,
+
+        @Schema(description = "파일 다운로드 여부") boolean isFileDownload) {
 
     @Builder
-    public DashboardChartRes(DashboardMetadata dashboardMetadata, List<DashboardChart> charts, List<DashboardDataSource> dashboardDataSources) {
+    public DashboardChartRes(DashboardMetadata dashboardMetadata, List<DashboardChart> charts, List<DashboardDataSource> dashboardDataSources, boolean isFileDownload) {
         this.dashboardMetadata = dashboardMetadata;
         this.charts = charts;
         this.dashboardDataSources = dashboardDataSources;
+        this.isFileDownload = isFileDownload;
     }
 
     public static DashboardChartRes of(DashboardMetadata dashboardMetadata, List<DashboardChart> charts,
-            List<DashboardDataSource> dashboardDataSources) {
+            List<DashboardDataSource> dashboardDataSources, boolean isFileDownload) {
         return DashboardChartRes.builder()
                 .dashboardMetadata(dashboardMetadata)
                 .charts(charts)
                 .dashboardDataSources(dashboardDataSources)
+                .isFileDownload(isFileDownload)
                 .build();
     }
 }

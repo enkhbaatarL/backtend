@@ -44,4 +44,26 @@
          ORDER BY tb.expp_rnk
          LIMIT #{limit}
     </select>
+
+    <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorExplanatoryMap">
+        <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
+        <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
+        <result property="mnemonicCd" column="mnmnc_cd"/>
+        <result property="explanatoryLevelNm" column="expp_lvl_nm"/>
+        <result property="explanatoryDetailCntt" column="expp_dtl_cntt"/>
+    </resultMap>
+    <select id="chartFactorExplanatory" resultMap="dashboardChartFactorExplanatoryMap">
+        SELECT 
+            tb.mrkt_idx_anly_tgt_cd
+          , tb.prdc_fulf_dt
+          , tb.mnmnc_cd
+          , tb.expp_lvl_nm
+          , tb.expp_dtl_cntt
+          FROM tmm_bztgtprdcexppinfom tb
+         WHERE ${queryWhere}
+           AND tb.del_yn = 'N'
+           AND tb.expp_lvl_nm = expp_lvl_dtl_nm
+           AND tb.prdc_fulf_dt = #{predictDate}
+           AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+    </select>
 </mapper>
