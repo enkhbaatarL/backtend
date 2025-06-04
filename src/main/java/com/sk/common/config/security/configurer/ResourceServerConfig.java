@@ -41,19 +41,33 @@ public class ResourceServerConfig {
 
     @Bean
     @Order(3)
+    public SecurityFilterChain tokenByPassSecurityFilterChain(HttpSecurity http) throws Exception {
+            http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
+                .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                    .anyRequest().permitAll()
+                )
+                .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+            return http.build();
+    }
+
+    @Bean
+    @Order(4)
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
         if (securityEnabled) {
-
+            
             http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
                 .securityMatcher("/api/**") // Resource Server 경로 매칭
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v1/auth/**").permitAll()
-                    .requestMatchers("/api/v1/test/**").permitAll() //TODO: 테스트용 추후에 삭제 필요
-                    .requestMatchers("/api/v1/saml2/**").permitAll()
                     .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
