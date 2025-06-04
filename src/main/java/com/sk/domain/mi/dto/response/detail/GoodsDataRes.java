@@ -66,21 +66,21 @@ public record GoodsDataRes(
                 .map(key -> CategoryDataInfo.builder()
                     .categoryHighCd(CategorySeparateHighCd.fromCodeId(key))
                     .value(grouped.get(key).stream().map(GoodsDataCategoryProjection::getCodeNm).toList())
-                    .build()).toList();
+                    .build())
+                .toList();
         }
 
     }
 
-    public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes, Integer tokenCompanyNo) {
-        int companyNo = ObjectUtils.isNotEmpty(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) ? Integer.parseInt(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) : tokenCompanyNo;
+    public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes, Integer priorityCompanyNo) {
         return GoodsDataRes.builder()
             .goodsDataNm(entity.getGoodsDataNm())
             .goodsDataExpn(entity.getGoodsDataExpn())
             .goodsDataSummaryCntt(entity.getGoodsDataSummaryCntt())
             .providerNm(entity.getGoods().getProvider().getProviderNm())
             .categories(CategoryDataInfo.ofList(categoryProjections))
-            .isViewable(permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE))
-            .isDownloadable(permissionRes.getGoodsDownloadableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE))
+            .isViewable(permissionRes.getGoodsViewableMap(priorityCompanyNo).getOrDefault(goodsNo, Boolean.FALSE))
+            .isDownloadable(permissionRes.getGoodsDownloadableMap(priorityCompanyNo).getOrDefault(goodsNo, Boolean.FALSE))
             .auditInfo(AuditInfo.ofSimple(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
