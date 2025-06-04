@@ -5,18 +5,22 @@ import com.sk.common.utils.MathUtil;
 import com.sk.domain.shared.enums.PriceType;
 import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Builder
 public record HistoryDataRes(
-    LocalDate date,
+
+    @Schema(description = "예측결과 일자 또는 달", example = "20250601")
+    String date,
+    @Schema(description = "예측 데이터")
     PriceEntry baseline,
+    @Schema(description = "실제 또는 선물 데이터")
     PriceEntry counterpart
 ) {
 
@@ -70,7 +74,7 @@ public record HistoryDataRes(
             }
 
             result.add(HistoryDataRes.builder()
-                .date(date)
+                .date(DateUtil.toYmd(date))
                 .baseline(baseline)
                 .counterpart(counterpart)
                 .build());
