@@ -131,6 +131,22 @@ public class MiDashboardController {
 			Authentication authentication) {
 		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date, authentication));
 	}
+	
+	@ApiOrder(7)
+	@Parameters({
+			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
+			@Parameter(name = "date", description = "조회할 년월", example = "202505")
+	})
+	@Operation(summary = "대시보드 차트 데이터 조회", description = "대시보드 차트 데이터를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/chart/file-download")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	public BaseResponse<DashboardChartRes> getChartFileDownload(
+			@PathVariable("companyNo") Integer companyNo,
+			@RequestParam(value = "date", required = false) String date,
+			Authentication authentication) {
+		return BaseResponseFactory.create(miDashboardService.getChartFileDownload(companyNo, date, authentication));
+	}
 
 	@ApiOrder(7)
 	@Parameters({

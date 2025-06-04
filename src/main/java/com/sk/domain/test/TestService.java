@@ -66,13 +66,13 @@ public class TestService {
      * @return
      */
     @Transactional
-    public GenerateTokenRes userLogin(TestReq.userLogin testLoginReq) {
+    public GenerateTokenRes userLogin(TestReq.userLogin testLoginReq, HttpServletResponse response) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
                 UserRoleCd.USER)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "User information could not be found. userLoginId: " + testLoginReq.loginUserId()));
 
-        return authService.generateToken(user);
+        return authService.generateToken(user, response);
     }
 
     /**
@@ -82,7 +82,7 @@ public class TestService {
      * @return
      */
     @Transactional
-    public GenerateTokenRes adminLogin(TestReq.adminLogin testLoginReq) {
+    public GenerateTokenRes adminLogin(TestReq.adminLogin testLoginReq, HttpServletResponse response) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes.getRequest();
         String clientIp = request.getRemoteAddr();
@@ -101,7 +101,7 @@ public class TestService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The IP address is not allowed: %s", clientIp)));
 
-        return authService.generateToken(user);
+        return authService.generateToken(user, response);
     }
 
     /**
