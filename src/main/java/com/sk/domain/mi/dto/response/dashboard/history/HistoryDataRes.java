@@ -2,38 +2,63 @@ package com.sk.domain.mi.dto.response.dashboard.history;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
+import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
+import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.PriceType;
 import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Builder
 public record HistoryDataRes(
-    LocalDate date,
+
+    @Schema(description = "예측결과 일자 또는 달", example = "20250601")
+    String date,
+    @Schema(description = "예측 데이터")
     PriceEntry baseline,
+    @Schema(description = "실제 또는 선물 데이터")
     PriceEntry counterpart
 ) {
 
-    public static List<HistoryDataRes> ofList(List<TargetPredictResultData> forecastResults, List<DoubleValueResultData> counterPartResults, Boolean isFuture, Boolean isCounterPartPermitted) {
+    public static List<HistoryDataRes> ofList(ChartPredictSetting setting, List<TargetPredictResultData> forecastResults, List<DoubleValueResultData> counterPartResults, Boolean isFuture, Boolean isCounterPartPermitted) {
 
-        Map<LocalDate, BigDecimal> forecastMap = forecastResults.stream()
-            .collect(Collectors.toMap(r -> DateUtil.fromYmd(r.getPredictResultDate()), TargetPredictResultData::getPredictResultValue));
+        PeriodUnitSeparateCd periodCd = setting.getScopePeriodUnitSeparateCd();
 
-        Map<LocalDate, BigDecimal> counterpartMap = counterPartResults.stream()
-            .collect(Collectors.toMap(DoubleValueResultData::getDate, DoubleValueResultData::getValue));
+//        Map<LocalDate, BigDecimal> forecastMap = forecastResults.stream()
+//            .collect(Collectors.toMap(r -> DateUtil.fromYmd(r.getPredictResultDate()), TargetPredictResultData::getPredictResultValue));
+//
+//        Map<LocalDate, BigDecimal> counterpartMap = counterPartResults.stream()
+//            .collect(Collectors.toMap(DoubleValueResultData::getDate, DoubleValueResultData::getValue));
+
+        Map<String, BigDecimal> forecastMap = forecastResults.stream()
+            .collect(Collectors.toMap(
+                r -> DateUtil.format(DateUtil.fromYmd(r.getPredictResultDate()), periodCd),
+                TargetPredictResultData::getPredictResultValue,
+                (v1, v2) -> v2, // 중복 키는 뒤에 온 값으로
+                TreeMap::new
+            ));
+
+        Map<String, BigDecimal> counterpartMap = counterPartResults.stream()
+            .collect(Collectors.toMap(
+                r -> DateUtil.format(r.getDate().toLocalDate(), periodCd),
+                DoubleValueResultData::getValue,
+                (v1, v2) -> v2,
+                TreeMap::new
+            ));
 
         BigDecimal maxForecast = forecastMap.values().stream().max(BigDecimal::compareTo).orElse(null);
         BigDecimal minForecast = forecastMap.values().stream().min(BigDecimal::compareTo).orElse(null);
         BigDecimal maxCounter  = counterpartMap.values().stream().max(BigDecimal::compareTo).orElse(null);
         BigDecimal minCounter  = counterpartMap.values().stream().min(BigDecimal::compareTo).orElse(null);
 
-        SortedSet<LocalDate> dates = new TreeSet<>();
+        SortedSet<String> dates = new TreeSet<>();
         dates.addAll(forecastMap.keySet());
         dates.addAll(counterpartMap.keySet());
 
@@ -41,7 +66,7 @@ public record HistoryDataRes(
         BigDecimal prevForecast = null;
         BigDecimal prevCounter  = null;
 
-        for (LocalDate date : dates) {
+        for (String date : dates) {
 
             // baseline = FORECAST
             PriceEntry baseline = null;

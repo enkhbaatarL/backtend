@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -292,6 +293,7 @@ public class MiDashboardService {
         List<DashboardDataSource> dashboardDataSources = Collections.synchronizedList(new ArrayList<>());
         AtomicReference<GoodsDataSourceDetail> actualGoodsDataSourceDetail = new AtomicReference<>();
         ConcurrentHashMap<Integer, DashboardChart> chartMap = new ConcurrentHashMap<>();
+        AtomicBoolean isFileDownload = new AtomicBoolean(true); // 차트 데이터중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능(default true)
 
         // 차트 데이터 조회
         chartPredictSettingDetails.parallelStream().forEach(chartPredictSettingDetail -> {
@@ -301,6 +303,11 @@ public class MiDashboardService {
 
             // 권한 조회
             Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(goods.getGoodsNo(), false);
+
+            // 예측 데이터가 아닌 데이터중 하나라도 권한이 없으면 다운로드 불가능
+            if (!isPermitted && !chartPredictSettingDetail.getIsChartLinePredictVal()) {
+                isFileDownload.set(false);
+            }
 
             // 차트 데이터 타입 설정
             ChartPredictDataType chartPredictDataType;
@@ -456,7 +463,7 @@ public class MiDashboardService {
                 .sorted(Comparator.comparing(DashboardChart::chartLineDescription))
                 .toList();
 
-        return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources);
+        return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources, isFileDownload.get());
     }
 
     /**
@@ -579,7 +586,7 @@ public class MiDashboardService {
     }
 
     /**
-     * 자정까지의 TTL 계산
+     * 한시간 후 캐시 만료
      */
     private long getSecondsUntilMidnightForCache() {
         // LocalDateTime now = LocalDateTime.now();
@@ -762,6 +769,19 @@ public class MiDashboardService {
     }
 
     /**
+     * 차트 파일 다운로드
+     * 
+     * @param companyNo 고객사 번호
+     * @param date 조회할 년월
+     * @param authentication 인증 정보
+     * @return DashboardChartRes
+     */
+    public DashboardChartRes getChartFileDownload(int companyNo, String date, Authentication authentication) {
+        //데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
+        return null;
+    }
+
+    /**
      * 차트 주요 요인 분석 카테고리 조회
      * 
      * @param goodsDataSourceNo 데이터소스 번호
@@ -832,6 +852,16 @@ public class MiDashboardService {
         List<DashboardChartFactor> chartMinusFactors = chartMinusFactorsMap.stream()
                 .map(DashboardChartFactor::of)
                 .toList();
+
+
+
+        
+
+
+
+
+
+
 
         return DashboardChartFactorRes.of(explanatoryLevelNm, chartPlusFactors, chartMinusFactors);
     }

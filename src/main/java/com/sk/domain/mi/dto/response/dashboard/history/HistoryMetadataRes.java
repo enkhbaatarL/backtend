@@ -96,7 +96,7 @@ public record HistoryMetadataRes(
     public static HistoryMetadataRes of(ChartPredictSetting predictSetting, List<ForecastContext> forecastContexts) {
         return HistoryMetadataRes.builder()
             .predictTargetSettingNm(predictSetting.getPredictTargetSettingNm())
-            .predictPeriodUnitSeparateCd(predictSetting.getPredictPeriodUnitSeparateCd())
+            .predictPeriodUnitSeparateCd(predictSetting.getScopePeriodUnitSeparateCd())
             .targets(Target.ofList(forecastContexts))
             .build();
     }
@@ -104,7 +104,7 @@ public record HistoryMetadataRes(
     public static HistoryMetadataRes of(ChartPredictSetting predictSetting) {
         return HistoryMetadataRes.builder()
             .predictTargetSettingNm(predictSetting.getPredictTargetSettingNm())
-            .predictPeriodUnitSeparateCd(predictSetting.getPredictPeriodUnitSeparateCd())
+            .predictPeriodUnitSeparateCd(predictSetting.getScopePeriodUnitSeparateCd())
             .build();
     }
 

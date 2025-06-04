@@ -1,23 +1,28 @@
 package com.sk.domain.mi.dto.response.dashboard.history;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 /**
  * 단일 가격 + 증감률 + 최고/최저 플래그.
  */
 @Builder
 public record PriceStat(
-    // 가격
+
+    @Schema(description = "가격", example = "3.5")
     BigDecimal price,
-    // 직전 대비 증감률(%)
+
+    @Schema(description = "직전 대비 증감률", example = "0.05")
     BigDecimal changeRate,
-    // 기간 최고가 여부
+
+    @Schema(description = "기간 최고가 여부", example = "true")
     boolean isMaximum,
-    // 기간 최저가 여부
+
+    @Schema(description = "기간 최저가 여부", example = "false")
     boolean isMinimum
+
 ) {
 
     public static PriceStat of(BigDecimal price, BigDecimal changeRate, boolean isMaximum, boolean isMinimum) {

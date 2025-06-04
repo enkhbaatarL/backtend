@@ -26,7 +26,8 @@ public class ExcelUtils {
 
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(100); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            Sheet sheet = workbook.createSheet(title);
+            // 06-04 fix : 시트명에 slash가 포함될 경우 변환 처리
+            Sheet sheet = workbook.createSheet(title.replaceAll("/", "_"));
 
             // Header
             Row headerRow = sheet.createRow(0);
@@ -50,6 +51,7 @@ public class ExcelUtils {
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());
         } catch (Exception e) {
+            log.error("Excel download failed: {}", e.getMessage(), e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "excel download fail.");
         }
 
