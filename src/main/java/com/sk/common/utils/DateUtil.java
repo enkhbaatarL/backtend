@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.sk.domain.shared.enums.chart.Range;
@@ -158,6 +159,14 @@ public final class DateUtil {
             }
         }
     }
+
+    public static String format(LocalDate date, PeriodUnitSeparateCd unit) {
+        return switch (unit) {
+            case M -> toYearMonth(date);
+            default -> toYmd(date);
+        };
+    }
+
 
     public static Pair<String, String> getDateRange(Range range) {
 
