@@ -312,7 +312,7 @@ public class AdminGoodsDataService {
         // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
         GoodsData savedGoodsData = goodsDataRepository
                 .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                        dto.dataContributorNm(), false));
+                        dto.dataContributorNm(), false, true));
 
         // todo: 프로바이더 타입 카테고리 등록
         Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
