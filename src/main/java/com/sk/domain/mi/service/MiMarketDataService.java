@@ -138,7 +138,7 @@ public class MiMarketDataService {
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
 
-        //TODO: 차트 설정 조회 (데이터 상세에서 지우면 조회 자체가 안되야함)
+        // TODO: 차트 설정 조회 (데이터 상세에서 지우면 조회 자체가 안되야함)
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
@@ -900,6 +900,7 @@ public class MiMarketDataService {
                 AND tg.del_yn   = 'N' AND tg.use_yn   = 'Y'
                 AND tp.del_yn   = 'N' AND tp.use_yn   = 'Y'
                 AND tgd.del_yn  = 'N'
+                AND tgd.gds_data_mark_yn  = 'Y'
                 AND tgsrc.del_yn= 'N'
                 """;
 

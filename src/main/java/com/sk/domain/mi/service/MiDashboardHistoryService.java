@@ -23,15 +23,19 @@ import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,26 +51,112 @@ public class MiDashboardHistoryService {
     /**
      * 예측가 히스토리 메타데이터 조회
      */
+//    public HistoryMetadataRes getForecastHistoryMetadata() {
+//        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+//
+//        ChartPredictSetting setting = settingRepo
+//            .findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
+//            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+//                "It doesn't exist in the [chart-predict-setting]. companyNo: %s".formatted(companyNo)));
+//
+//        List<ChartPredictSettingDetail> details = settingDetailRepo.findByChartPredictSettingAndIsDeletedFalse(setting);
+//
+//        Map<Boolean, List<ChartPredictSettingDetail>> partitioned = details.stream()
+//            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
+//
+//        // 모든 예측가를 ForecastContext 로 변환
+//        List<ForecastContext> forecastContexts = partitioned.getOrDefault(Boolean.TRUE, List.of())
+//            .stream()
+//            .map(forecast -> toForecastContext(forecast, partitioned.get(Boolean.FALSE)))
+//            .toList();
+//
+//        return HistoryMetadataRes.of(setting, forecastContexts);
+//    }
     public HistoryMetadataRes getForecastHistoryMetadata() {
+
         Integer companyNo = authorizationService.getCompanyNoWithPriority();
 
-        ChartPredictSetting setting = settingRepo
-            .findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "It doesn't exist in the [chart-predict-setting]. companyNo: %s".formatted(companyNo)));
+        ChartPredictSetting historySetting = settingRepo.findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [chart-predict-setting]. companyNo: %s".formatted(companyNo)));
 
-        List<ChartPredictSettingDetail> details = settingDetailRepo.findByChartPredictSettingAndIsDeletedFalse(setting);
+        List<ChartPredictSettingDetail> historySettingDetails = settingDetailRepo.findByChartPredictSettingAndIsDeletedFalse(historySetting);
 
-        Map<Boolean, List<ChartPredictSettingDetail>> partitioned = details.stream()
+        Map<Boolean, List<ChartPredictSettingDetail>> partitioned = historySettingDetails.stream()
             .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
 
-        // 모든 예측가를 ForecastContext 로 변환
-        List<ForecastContext> forecastContexts = partitioned.getOrDefault(Boolean.TRUE, List.of())
-            .stream()
-            .map(forecast -> toForecastContext(forecast, partitioned.get(Boolean.FALSE)))
-            .toList();
+        // 예측가
+        List<ChartPredictSettingDetail> forecasts = partitioned.get(Boolean.TRUE);
 
-        return HistoryMetadataRes.of(setting, forecastContexts);
+        // 현물가 & 선물가
+        List<ChartPredictSettingDetail> spotsWithFutures = partitioned.get(Boolean.FALSE);
+
+        // 예측가 데이터가 1개인 경우
+        if (forecasts.size() == 1) {
+
+            ChartPredictSettingDetail forecast = forecasts.get(0);
+
+            GoodsDataSourceDetail gds = forecast.getGoodsDataSourceDetail();
+            List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
+
+            List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
+
+            List<ChartPredictSettingDetail> spots = spotsWithFutures.stream().filter(awf -> !awf.getIsFuture()).toList();
+            List<ChartPredictSettingDetail> futures = spotsWithFutures.stream().filter(ChartPredictSettingDetail::getIsFuture).toList();
+
+            return HistoryMetadataRes.of(historySetting, List.of(ForecastContext.of(forecast, fulfillDates, spots, futures)));
+
+        } else if (forecasts.size() >= 2) {
+            // 예측가 데이터가 2개 이상인 경우
+
+            Map<Integer, List<ChartPredictSettingDetail>> settingDetailMap = groupByForecastDetailNo(historySettingDetails);
+
+            List<ForecastContext> forecastContexts = forecasts.stream().map(f -> {
+
+                GoodsDataSourceDetail gds = f.getGoodsDataSourceDetail();
+                List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
+
+                List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
+                List<ChartPredictSettingDetail> groupedSpotsWithFutures = settingDetailMap.getOrDefault(f.getChartPredictSettingDetailNo(), Collections.emptyList());
+                List<ChartPredictSettingDetail> spots = groupedSpotsWithFutures.stream()
+                    .filter(awf -> !awf.getIsChartLinePredictVal())
+                    .filter(awf -> !awf.getIsFuture())
+                    .toList();
+                List<ChartPredictSettingDetail> futures = groupedSpotsWithFutures.stream()
+                    .filter(awf -> !awf.getIsChartLinePredictVal())
+                    .filter(ChartPredictSettingDetail::getIsFuture)
+                    .toList();
+
+                return ForecastContext.of(f, fulfillDates, spots, futures);
+
+            }).toList();
+
+            return HistoryMetadataRes.of(historySetting, forecastContexts);
+
+        } else {
+
+            return HistoryMetadataRes.of(historySetting);
+
+        }
+
+    }
+
+    private Map<Integer, List<ChartPredictSettingDetail>> groupByForecastDetailNo(List<ChartPredictSettingDetail> historySettingDetails) {
+
+        // 1. 연관상품데이터소스번호 기준으로 1차 그룹핑
+        Map<Integer, List<ChartPredictSettingDetail>> groupedByAssoNo = historySettingDetails.stream()
+            .collect(Collectors.groupingBy(d -> d.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()));
+
+        // 각 그룹에서 예측가를 찾아 데이터소스 번호를 키로 사용하고, 해당 그룹의 리스트를 값으로 하는 Map 생성
+        return groupedByAssoNo.values()
+            .stream()
+            .collect(Collectors.toMap(
+                list -> list.stream()
+                    .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+                    .findFirst() // 그룹마다 예측가 데이터를 찾아
+                    .map(ChartPredictSettingDetail::getChartPredictSettingDetailNo)
+                    .orElseThrow(() -> SystemErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "At least one forecast-data is required. associate-goods-data-source-no: %s".formatted(list.get(0).getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))), // 예측가가 없는 경우 예외 발생
+                Function.identity() // 그룹의 리스트를 값으로 사용
+            ));
     }
 
     /**
@@ -136,16 +226,27 @@ public class MiDashboardHistoryService {
 
         List<TargetPredictResultData> forecastResults = getPredictResultData(forecast.getGoodsDataSourceDetail(), fulfillDate);
 
-        // 예측구간 추출
-        String start = forecastResults.get(0).getPredictResultDate();
-        String end = forecastResults.get(forecastResults.size() - 1).getPredictResultDate();
+        // 1. 예측 결과 날짜 추출
+        List<LocalDate> dates = forecastResults.stream()
+            .map(TargetPredictResultData::getPredictResultDate)
+            .filter(StringUtils::isNotEmpty)
+            .map(DateUtil::fromYmd)
+            .toList();
+
+        // 2. 최소/최대 날짜 추출
+        LocalDate minDate = dates.stream().min(LocalDate::compareTo).orElse(LocalDate.now());
+        LocalDate maxDate = dates.stream().max(LocalDate::compareTo).orElse(LocalDate.now());
+
+        // 3. 해당 달의 1일/말일로 변환 (예측구간)
+        String start = DateUtil.toYmd(minDate.with(TemporalAdjusters.firstDayOfMonth()));
+        String end = DateUtil.toYmd(maxDate.with(TemporalAdjusters.lastDayOfMonth()));
 
         List<DoubleValueResultData> counterpartResults = getCounterPartResultData(counterpart.getGoodsDataSourceDetail(), start, end);
 
         int goodsNo = counterpart.getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo();
         boolean permitted = authorizationService.hasGoodsViewPermission(goodsNo);
 
-        return HistoryDataRes.ofList(forecastResults, counterpartResults, counterpart.getIsFuture(), permitted);
+        return HistoryDataRes.ofList(forecast.getChartPredictSetting(), forecastResults, counterpartResults, counterpart.getIsFuture(), permitted);
     }
 
     /**

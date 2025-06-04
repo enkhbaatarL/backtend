@@ -73,10 +73,16 @@ public class GoodsData extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isMetaDataUploaded;
 
+    @Column(name = "gds_data_mark_yn", length = 1, columnDefinition = "char(1)")
+    @Comment("상품데이타표시여부")
+    @ColumnDefault("'Y'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isGoodsDataMarked;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
-            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded) {
+            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
@@ -87,10 +93,11 @@ public class GoodsData extends BaseEntity {
         this.customerCompany = customerCompany;
         this.dataContributorNm = dataContributorNm;
         this.isMetaDataUploaded = isMetaDataUploaded;
+        this.isGoodsDataMarked = isGoodsDataMarked;
     }
 
     public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt,
-            String dataContributorNm, Boolean isMetaDataUploaded) {
+            String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked) {
         return GoodsData.builder()
                 .goodsDataNm(goodsDataNm)
                 .goodsDataExpn(goodsDataExpn)
@@ -99,6 +106,7 @@ public class GoodsData extends BaseEntity {
                 .customerCompany(customerCompany)
                 .dataContributorNm(dataContributorNm)
                 .isMetaDataUploaded(isMetaDataUploaded)
+                .isGoodsDataMarked(isGoodsDataMarked)
                 .build();
     }
 

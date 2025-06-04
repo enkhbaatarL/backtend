@@ -15,7 +15,6 @@ import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
-import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -53,38 +52,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
             @Param("keyword") String keyword, Pageable pageable);
 
-    // @Query(value = """
-    // SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataRes(
-    // cc.customerCompanyNm,
-    // gd.goodsDataNo,
-    // gd.goodsDataNm,
-    // gd.goodsDataExpn
-    // )
-    // FROM GoodsData gd
-    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-    // LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-    // LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-    // WHERE gd.isDeleted = false
-    // AND gd.goods.provider.providerNo = :providerNo
-    // AND gd.goods.goodsNo = :goodsNo
-    // AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
-    // OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-    // ORDER BY gd.goodsDataNm ASC
-    // """, countQuery = """
-    // SELECT COUNT(DISTINCT gd.goodsDataNo)
-    // FROM GoodsData gd
-    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-    // WHERE gd.isDeleted = false
-    // AND gd.goods.provider.providerNo = :providerNo
-    // AND gd.goods.goodsNo = :goodsNo
-    // AND gd.customerCompany.customerCompanyNo = :customerCompanyNo
-    // AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
-    // OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-    // """)
-    // Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
-    // @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
-    // @Param("keyword") String keyword, Pageable pageable);
-
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
             gd.goodsDataNo,
@@ -103,32 +70,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.goodsNo = :goodsNo
                         """)
     List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
-
-    // @Query(value = """
-    // SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
-    // gd.goodsDataNo,
-    // gd.goodsDataNm
-    // )
-    // FROM GoodsData gd
-    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-    // LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-    // LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-    // WHERE gd.isDeleted = false
-    // AND gd.goods.provider.providerNo = :providerNo
-    // AND gd.goods.goodsNo = :goodsNo
-    // ORDER BY gd.goodsDataNm ASC
-    // """, countQuery = """
-    // SELECT COUNT(DISTINCT gd.goodsDataNo)
-    // FROM GoodsData gd
-    // LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
-    // LEFT JOIN CustomerCompanyProviderMapping cp ON gd.goods.provider = cp.provider
-    // LEFT JOIN CustomerCompanyGoodsMapping cg ON gd.goods = cg.goods
-    // WHERE gd.isDeleted = false
-    // AND gd.goods.provider.providerNo = :providerNo
-    // AND gd.goods.goodsNo = :goodsNo
-    // """)
-    // List<GoodsDataNameRes> findGoodsDataNamesByProviderNoAndGoodsNoForOperator(@Param("customerCompanyNo") int customerCompanyNo,
-    // @Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
     @Query(value = """
             SELECT gd
@@ -169,16 +110,18 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 WHERE gdc.isDeleted = false
                 AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
             ) gud ON gud.goodsDataNo = gd.goodsDataNo
-            WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
-                AND ccgm.isDeleted = false
-                AND ccgm.isUsed = true
-                AND g.isDeleted = false
-                AND g.isUsed = true
-                AND p.isDeleted = false
-                AND p.isUsed = true
-                AND gd.isDeleted = false
-                AND gdc.isDeleted = false
-                AND ccd.highCodeId = 'A_TYPES'
+            WHERE ccgm.id.customerCompanyNo                = :customerCompanyNo
+                AND ccgm.isDeleted                           = false
+                AND ccgm.isUsed                              = true
+                AND g.isDeleted                              = false
+                AND g.isUsed                                 = true
+                AND p.isDeleted                              = false
+                AND p.isUsed                                 = true
+                AND gd.isDeleted                             = false
+                AND gd.isGoodsDataMarked                     = true
+                AND gdc.isDeleted                            = false
+                AND ccd.highCodeId                            = 'A_TYPES'
+                AND gdc.goodsDataManagementSeparateCd         = 'GUDAT'
                 AND gd.modifyDt >= :threshold
             GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
             ORDER BY gd.goodsDataNo DESC
@@ -198,6 +141,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND p.isDeleted                              = false
                 AND p.isUsed                                 = true
                 AND gd.isDeleted                             = false
+                AND gd.isGoodsDataMarked                     = true
                 AND gdc.isDeleted                            = false
                 AND ccd.highCodeId                            = 'A_TYPES'
                 AND gdc.goodsDataManagementSeparateCd         = 'GUDAT'
@@ -229,6 +173,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND p.isDeleted = false
                 AND p.isUsed = true
                 AND gd.isDeleted = false
+                AND gd.isGoodsDataMarked = true
             ORDER BY gd.modifyDt DESC
                     """)
     List<LatestDataRes> findLatestData(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
@@ -262,6 +207,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND p.isDeleted = false
                 AND p.isUsed = true
                 AND gd.isDeleted = false
+                AND gd.isGoodsDataMarked = true
                 AND gdc.isDeleted = false
             GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
             ORDER BY gd.modifyDt DESC
