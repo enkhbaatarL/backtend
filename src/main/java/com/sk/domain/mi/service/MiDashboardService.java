@@ -10,15 +10,19 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -35,10 +39,12 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartDateRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactor;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorCategoryRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap;
@@ -115,13 +121,50 @@ public class MiDashboardService {
 
     /**
      * 대시보드 기본 정보 조회
-     *
+     * 
      * @param companyNo
-     * @return DashboardChartRes
+     * @return DashboardInfoRes
      */
-    public DashboardInfoRes getInfo(int companyNo) {
+    public DashboardInfoRes getDashboardInfo(int companyNo) {
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
-        return null;
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
+        List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
+                .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+                .map(chartPredictSettingDetail -> {
+                    GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+
+                    // 날짜 칼럼
+                    String dateColumnName = MARKET_DATA_PREDICT_DATE_COLUMN_NAME;
+
+                    List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(goodsDataSource, dateColumnName);
+
+                    if (lastUpdateDateData.isEmpty()) {
+                        return null;
+                    }
+
+                    String rawDate = lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME).toString();
+                    return DateUtil.fromYmd(rawDate);
+                })
+                .collect(Collectors.toList());
+
+        // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값
+        LocalDate lastUpdated = lastUpdatedList.stream()
+                .max(LocalDate::compareTo)
+                .orElse(null);
+        return DashboardInfoRes.of(chartPredictSetting, lastUpdated);
     }
 
     /**
@@ -147,63 +190,12 @@ public class MiDashboardService {
     }
 
     /**
-     * 대시보드 기본 정보 조회
+     * 조회 가능한 차트 날짜 조회
      * 
      * @param companyNo
-     * @return DashboardInfoRes
+     * @return DashboardChartDateRes
      */
-    public DashboardInfoRes getDashboardInfo(int companyNo) {
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
-
-        // 차트 설정 조회
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
-        }
-
-        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
-
-        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
-
-
-        // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
-        List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
-            .filter( chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-            .map(chartPredictSettingDetail -> {
-                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
-
-                // 날짜 칼럼
-                String dateColumnName = MARKET_DATA_PREDICT_DATE_COLUMN_NAME;
-
-                List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(goodsDataSource, dateColumnName);
-
-                if (lastUpdateDateData.isEmpty()) {
-                    return null;
-                }
-
-                String rawDate = lastUpdateDateData.get(0).get(dateColumnName).toString();
-                return DateUtil.fromIsoToLocalDate(rawDate);
-            })
-            .collect(Collectors.toList());
-
-        // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값
-        LocalDate lastUpdated = lastUpdatedList.stream()
-                .max(LocalDate::compareTo)
-                .orElse(null);
-        return DashboardInfoRes.of(chartPredictSetting, lastUpdated);
-    }
-
-    /**
-     * 차트 날짜 조회
-     * 
-     * @param page
-     * @param size
-     * @param companyNo
-     * @return List<String>
-     */
-    public List<String> getChartDates(int page, int size, int companyNo) {
+    public DashboardChartDateRes getChartDates(int companyNo) {
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
@@ -216,16 +208,39 @@ public class MiDashboardService {
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
-        // 예측 수행 날짜 조회 (오늘 날짜부터 size 날짜로?!) => 날짜가 있는지?!
-        // chartPredictSettingDetails.stream()
-        //     .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-        //     .map(chartPredictSettingDetail -> {
-        //         GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
-                
-            // })
+        // 데이터가 존재하는 월별 날짜 수집
+        Set<LocalDate> existingDates = chartPredictSettingDetails.parallelStream()
+                .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+                .flatMap(chartPredictSettingDetail -> {
+                    GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+                    if (goodsDataSource == null) {
+                        return Stream.empty();
+                    }
 
-        // 예측 수행 날짜 조회
-        return null;
+                    // 데이터 조회
+                    List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource, MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+
+                    // rawData에서 날짜 추출 및 월별 첫 번째 날로 변환
+                    return rawData.stream()
+                            .map(row -> {
+                                Object dateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+                                if (dateValue == null) {
+                                    return null;
+                                }
+                                try {
+                                    LocalDate date = DateUtil.fromYmd(dateValue.toString());
+                                    return date.withDayOfMonth(1); // 월의 첫 번째 날로 변환
+                                } catch (Exception e) {
+                                    return null; // 잘못된 날짜 형식 무시
+                                }
+                            })
+                            .filter(Objects::nonNull);
+                })
+                .collect(Collectors.toSet()); // 중복 제거
+
+        return DashboardChartDateRes.of(existingDates.stream()
+                .sorted(Comparator.reverseOrder())
+                .collect(Collectors.toList()));
     }
 
     /**
@@ -422,7 +437,6 @@ public class MiDashboardService {
         DashboardMetadata dashboardMetadata = DashboardMetadata.of(customerCompany.getMarketIndexAnalysisTargetCd(), lastUpdated,
                 actualGoodsDataSourceDetail.get(), finalDate);
 
-        // TODO: Response의 순서는 상관 없나??
         // associatedCharts에서 DashboardChart 리스트 추출
         List<DashboardChart> finalCharts = associatedCharts.stream()
                 .flatMap(map -> map.values().stream())
@@ -439,6 +453,7 @@ public class MiDashboardService {
                             actualLines,
                             forecastLines);
                 })
+                .sorted(Comparator.comparing(DashboardChart::chartLineDescription))
                 .toList();
 
         return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources);
@@ -720,6 +735,33 @@ public class MiDashboardService {
     }
 
     /**
+     * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다.
+     * 데이터소스 상세 정보와 날짜 컬럼명, 시작일을 기반으로 데이터를 필터링하여 조회한다.
+     * 조건에 맞는 데이터가 없는 경우 빈 리스트를 반환한다.
+     *
+     * @param goodsDataSourceDetail 데이터소스 상세 정보
+     * @param dateColumnName        필터링할 날짜 컬럼명
+     * @param startDate             데이터 범위 시작일 (포함, 예측 데이터는 YYYYMMDD 형식, 정형 데이터는 yyyy-MM-dd 형식)
+     * @param endDate               데이터 범위 종료일 (포함, 예측 데이터는 YYYYMMDD 형식, 정형 데이터는 yyyy-MM-dd 형식)
+     * @return 조건에 맞는 데이터 행 목록
+     */
+    @Transactional
+    private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+        if (goodsDataSourceDetail == null || dateColumnName == null) {
+            return Collections.emptyList();
+        }
+
+        // yyyyMM 형식으로 데이터 묶기 위함
+        int startDateLength = 1;
+        int endDateLength = 6;
+        String GROUP_BY = "SUBSTRING(%s, %d, %d)".formatted(dateColumnName, startDateLength, endDateLength);
+        String ORDER_BY = String.format("%s DESC", GROUP_BY);
+
+        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofGroupByOrderBy(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(), GROUP_BY, ORDER_BY));
+    }
+
+    /**
      * 차트 주요 요인 분석 카테고리 조회
      * 
      * @param goodsDataSourceNo 데이터소스 번호
@@ -794,4 +836,20 @@ public class MiDashboardService {
         return DashboardChartFactorRes.of(explanatoryLevelNm, chartPlusFactors, chartMinusFactors);
     }
 
+    /**
+     * 차트 주요 요인 분석 라인 그래프 조회
+     * 
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
+     * @param explanatoryLevelNm 주요 요인 레벨명
+     * @return DashboardChartFactorGraphRes
+     */
+    public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
+
+
+        
+
+
+        return null;
+    }
 }

@@ -4,13 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -61,6 +64,11 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @Column(name = "crtvl_set_unit_nm", length = 20)
     @Comment("임계치설정단위명")
     private String criticalValueSettingUnitNm;
+
+    @Column(name = "prdc_data_yn", nullable = false, columnDefinition = "char(1)")
+    @Comment("예측데이터여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)   
+    private Boolean isPredictData;
 
     @Builder
     public GoodsCriticalValueSetting(
