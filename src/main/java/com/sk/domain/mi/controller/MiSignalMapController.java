@@ -13,6 +13,7 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.mi.dto.response.signalMap.SignalMapDataRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes;
 import com.sk.domain.mi.service.MiSignalMapService;
 import com.sk.domain.shared.enums.Role;
@@ -36,7 +37,7 @@ public class MiSignalMapController {
     private final MiSignalMapService miSignalMapService;
 
     @ApiOrder(1)
-    @Operation(summary = "시그널맵 기간 조회", description = "시그널맵 기간을 조회합니다.")
+    @Operation(summary = "시그널맵 기간 필터 조회", description = "시그널맵 기간 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/periods")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -45,7 +46,7 @@ public class MiSignalMapController {
     }
 
     @ApiOrder(2)
-    @Operation(summary = "시그널맵 필터 조회", description = "시그널맵 필터를 조회합니다.")
+    @Operation(summary = "시그널맵 회사별 필터 조회", description = "시그널맵 회사별 필터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/filters")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -62,9 +63,9 @@ public class MiSignalMapController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<String> getTest(
+    public BaseResponse<SignalMapDataRes> getTest(
             @PathVariable(value = "companyNo") Integer companyNo,
-            @RequestParam(value = "period", required = false, defaultValue = "ALL") String period,
+            @RequestParam(value = "period", required = false, defaultValue = "TOT") String period,
             @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
 
         Role role = authorizationService.getCurrentRole();
@@ -76,6 +77,6 @@ public class MiSignalMapController {
         String latestUpdatedDt = miSignalMapService.getLatestUpdatedDt(cNo);
         log.info("  ========>>>>>>>>> Latest Updated Date: {}", latestUpdatedDt);
 
-        return BaseResponseFactory.create("todo");
+        return BaseResponseFactory.create(miSignalMapService.getSignalMap(cNo, period, filters));
     }
 }
