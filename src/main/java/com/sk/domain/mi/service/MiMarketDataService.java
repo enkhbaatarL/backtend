@@ -113,11 +113,11 @@ public class MiMarketDataService {
      * @param authentication 인증 정보
      * @return 마켓 데이터 목록
      */
-    public List<MiMarketDataRes> getMarketDatas(Integer customerCompanyNo, Authentication authentication) {
+    public List<MiMarketDataRes> getMarketDatas(Integer companyNo, Authentication authentication) {
         String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR)); // 2년 전
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
             throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
@@ -132,8 +132,8 @@ public class MiMarketDataService {
             }
             case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
             case API_PLUS_OPERATOR -> {
-                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+                Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
             }
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
@@ -148,7 +148,7 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
+            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(mainGoods.getGoodsNo(), false);
 
             String cacheKey = getMarketDataCacheKey(marketDataChartSetting.getMarketDataSettingNo());
 
