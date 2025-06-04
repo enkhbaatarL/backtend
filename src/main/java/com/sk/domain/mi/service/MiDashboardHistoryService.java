@@ -23,12 +23,14 @@ import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -136,9 +138,18 @@ public class MiDashboardHistoryService {
 
         List<TargetPredictResultData> forecastResults = getPredictResultData(forecast.getGoodsDataSourceDetail(), fulfillDate);
 
+        LocalDate beteweenDate = forecastResults.stream()
+            .filter(s -> StringUtils.isNotEmpty(s.getPredictResultDate()))
+            .findFirst()
+            .map(s -> DateUtil.fromYmd(s.getPredictResultDate()))
+            .orElse(LocalDate.now());
+
         // 예측구간 추출
-        String start = forecastResults.get(0).getPredictResultDate();
-        String end = forecastResults.get(forecastResults.size() - 1).getPredictResultDate();
+//        String start = forecastResults.get(0).getPredictResultDate();
+//        String end = forecastResults.get(forecastResults.size() - 1).getPredictResultDate();
+
+        String start = DateUtil.toYmd(beteweenDate.with(TemporalAdjusters.firstDayOfMonth()));
+        String end = DateUtil.toYmd(beteweenDate.with(TemporalAdjusters.lastDayOfMonth()));
 
         List<DoubleValueResultData> counterpartResults = getCounterPartResultData(counterpart.getGoodsDataSourceDetail(), start, end);
 
