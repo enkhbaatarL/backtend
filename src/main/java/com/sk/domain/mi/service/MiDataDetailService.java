@@ -112,15 +112,8 @@ public class MiDataDetailService {
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsData.getGoodsDataNo());
 
-        PermissionRes permissionRes = switch (authorizationService.getCurrentRole()) {
-            case USER -> userService.getUserGoodsPermissions(authorizationService.getUserNo());
-            case ADMIN -> userService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> userService.getPlusOperatorGoodsPermissions(authorizationService.getCompanyNo());
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
-
-        int companyNo = ObjectUtils.isNotEmpty(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) ? Integer.parseInt(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) : authorizationService.getCompanyNo();
-        Boolean goodsViewable = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        Boolean goodsViewable = permissionRes.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
 
         return UnstructuredDataRes.ofList(documents, goodsViewable);
     }
