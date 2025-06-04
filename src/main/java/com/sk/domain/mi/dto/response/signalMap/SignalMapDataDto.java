@@ -11,6 +11,9 @@ public record SignalMapDataDto(
         @Schema(description = "상관관계계산값", example = "") 
         BigDecimal correlationCalculationVal
 ) {
-
+    public SignalMapDataDto(String instrumentNm, BigDecimal correlationCalculationVal) {
+        this.instrumentNm = instrumentNm;
+        this.correlationCalculationVal = correlationCalculationVal;
+    }
 }
 // @formatter:on

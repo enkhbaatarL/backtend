@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 // @formatter:off
 public record GoodsDataCreateReq(
     @NotBlank
-    @Size(min = 1, max = 100)
     @Schema(description = "상품데이터명", example = "")
     String goodsDataNm,
 

@@ -176,6 +176,7 @@ public class MiInsightsService {
                 .append(" AND tp.del_yn = 'N'")
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
+                .append(" AND tgd.gds_data_mark_yn  = 'Y'")
                 .append(" AND tgdc.del_yn = 'N'");
 
         if (keyword != null && !keyword.isBlank()) {
@@ -320,7 +321,7 @@ public class MiInsightsService {
 
             GoodsData savedGoodsData = goodsDataRepository
                     .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i),
-                            "기고자명 %d".formatted(i), false));
+                            "기고자명 %d".formatted(i), false, true));
 
             goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
                     GoodsDataManagementSeparateCode.GDAT.getCode(), null));
