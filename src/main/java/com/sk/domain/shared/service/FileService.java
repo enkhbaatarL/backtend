@@ -468,9 +468,12 @@ public class FileService {
                 fileHash);
 
         if (list.size() > 0) {
-            return FileExistRes.of(list.get(0).getFileNo(), true);
+            UploadedFile uploadedFile = list.get(0);
+            boolean fileUsed = uploadedFile.getFileRelationshipObjectSeparateCd() != null
+                    && !uploadedFile.getFileRelationshipObjectSeparateCd().equals(FileRelationshipObjectSeparateCode.TEMP.getCode());
+            return FileExistRes.of(uploadedFile.getFileNo(), true, fileUsed);
         } else {
-            return FileExistRes.of(0L, false);
+            return FileExistRes.of(0L, false, false);
         }
     }
 
