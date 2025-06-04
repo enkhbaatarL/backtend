@@ -35,7 +35,7 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "SAML 콜백 성공")
     public BaseResponse<GenerateTokenRes> generateToken(
             @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = true) String authHeader,
-            @Parameter(description = "Refresh Token (쿠키에서 전달)", required = true) @CookieValue(value = "X-Refresh-Token", required = true) String refreshToken,
+            @Parameter(hidden = true) @CookieValue(value = "X-Refresh-Token", required = true) String refreshToken,
             HttpServletResponse response) {
         return BaseResponseFactory
                 .create(authService.generateToken(authHeader, refreshToken, response));
