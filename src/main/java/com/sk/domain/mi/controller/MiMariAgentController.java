@@ -38,17 +38,12 @@ public class MiMariAgentController {
     private final MariAgentService mariAgentService;
 
     @ApiOrder(1)
-    @Parameters({
-        @Parameter(name = "subcommitteeCd", description = "분과코드")
-    })
     @Operation(summary = "주요 질의문 목록 조회 API", description = "분과 별 주요 질의문 목록을 조회합니다. <br>목록은 `questionRank` 필드를 기반으로 오름차순 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/major-questions")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<List<MajorQuestionRes>> getMajorQuestions(
-        @RequestParam(value = "subcommitteeCd") String subcommitteeCd
-    ) {
-        return BaseResponseFactory.create(mariAgentService.getMajorQuestions(subcommitteeCd));
+    public BaseResponse<List<MajorQuestionRes>> getMajorQuestions() {
+        return BaseResponseFactory.create(mariAgentService.getMajorQuestions());
     }
 
     @ApiOrder(2)

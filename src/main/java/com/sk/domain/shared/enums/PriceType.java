@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PriceType {
 
-    SPOT("SPOT", "현물가"), // ACTUAL
-    FUTURES("FUTURES", "선물가"),
+    ACTUAL("ACTUAL", "실제가"), // == SPOT(현물가)
+    FUTURE("FUTURE", "선물가"),
     FORECAST("FORECAST", "예측가");
 
     private final String code;

@@ -40,7 +40,7 @@ public record Series(
     }
 
     public static List<Series> ofList(List<ModelAgentRes.Output.Message.Content.Chart> charts) {
-        return charts.stream().map(Series::of).collect(Collectors.toList());
+        return charts != null ? charts.stream().map(Series::of).collect(Collectors.toList()) : List.of();
     }
 
 }

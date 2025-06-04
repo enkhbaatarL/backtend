@@ -11,17 +11,19 @@ public record DynamicDataDetailReq(
         @Schema(description = "조건 절", example = "id = 1") String whereClause,
         @Schema(description = "내부 조인 조건", example = "id = 1") String innerJoin,
         @Schema(description = "정렬 컬럼", example = "id, name") String orderByColumns,
+        @Schema(description = "그룹 컬럼", example = "id, name") String groupByColumns,
         @Schema(description = "제한 조건", example = "10") String limit) {
 
     @Builder
     public DynamicDataDetailReq(String targetDataSource, String tableName, String columns, String whereClause, String innerJoin,
-            String orderByColumns, String limit) {
+            String orderByColumns, String groupByColumns, String limit) {
         this.targetDataSource = targetDataSource;
         this.tableName = tableName;
         this.columns = columns;
         this.whereClause = whereClause;
         this.innerJoin = innerJoin;
         this.orderByColumns = orderByColumns;
+        this.groupByColumns = groupByColumns;
         this.limit = limit;
     }
 
@@ -62,6 +64,28 @@ public record DynamicDataDetailReq(
                 .tableName(tableName)
                 .columns(columns)
                 .innerJoin(innerJoin)
+                .orderByColumns(orderByColumns)
+                .build();
+    }
+
+    public static DynamicDataDetailReq ofLimitAndOrderBy(String targetDataSource, String tableName, String columns, String whereClause, String limit, String orderByColumns) {
+        return DynamicDataDetailReq.builder()
+                .targetDataSource(targetDataSource)
+                .tableName(tableName)
+                .columns(columns)
+                .whereClause(whereClause)
+                .limit(limit)
+                .build();
+    }
+
+    public static DynamicDataDetailReq ofGroupByOrderBy(String targetDataSource, String tableName, String columns, String whereClause,
+            String groupByColumns, String orderByColumns) {
+        return DynamicDataDetailReq.builder()
+                .targetDataSource(targetDataSource)
+                .tableName(tableName)
+                .columns(columns)
+                .whereClause(whereClause)
+                .groupByColumns(groupByColumns)
                 .orderByColumns(orderByColumns)
                 .build();
     }

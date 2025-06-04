@@ -31,6 +31,9 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
     @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
 
+    @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
+    List<GoodsDataSourceDetail> findByGoodsDataSourceNoInAndIsDeletedFalse(List<Integer> goodsDataSourceNos);
+
     @Query(value = """
             SELECT gdsd
             FROM GoodsDataSourceDetail gdsd

@@ -107,7 +107,6 @@ logging:
     org.springframework.security: TRACE
     org.springframework.boot.autoconfigure.security: TRACE
     org.springframework.context: DEBUG
-
 api:
   model-agent:
     url: http://localhost:8081

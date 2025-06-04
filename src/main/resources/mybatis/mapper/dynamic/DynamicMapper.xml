@@ -67,6 +67,35 @@
         </if>
     </select>
 
+    <select id="selectDoubleValueResultData" parameterType="map" resultType="com.sk.domain.shared.mapper.dto.DoubleValueResultData">
+        SELECT
+        <if test="columns != null and columns != ''">
+            ${columns}
+        </if>
+        <if test="columns == null or columns == ''">
+            *
+        </if>
+        FROM ${tableName}
+        <if test="whereClause != null and whereClause != ''">
+            WHERE ${whereClause}
+        </if>
+        <if test="additionalWhereClause != null and additionalWhereClause != ''">
+            AND ${additionalWhereClause}
+        </if>
+        <if test="orderByColumns != null and orderByColumns != ''">
+            ORDER BY ${orderByColumns}
+        </if>
+        <if test="limit != null and limit != ''">
+            LIMIT ${limit}
+        </if>
+        <if test="offset != null and offset != ''">
+            OFFSET ${offset}
+        </if>
+        <if test="groupByColumn != null and groupByColumn != ''">
+            GROUP BY ${groupByColumn}
+        </if>
+    </select>
+
     <insert id="saveDynamic" parameterType="map">
         INSERT INTO ${tableName} (
             <foreach collection="columns" item="col" separator=", ">
