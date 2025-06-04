@@ -48,6 +48,15 @@ public class ClauseUtil {
             .toList();
     }
 
+    public String[] getSelectColumnArrays(String selectClause) {
+        if (StringUtils.isBlank(selectClause)) {
+            return new String[0];
+        }
+        return Stream.of(selectClause.split(","))
+            .map(String::strip)
+            .toArray(String[]::new);
+    }
+
     public String getMaxClause(String columnName, String alias) {
         if (StringUtils.isBlank(alias) || StringUtils.isBlank(alias)) {
             return "max(%s)".formatted(alias);

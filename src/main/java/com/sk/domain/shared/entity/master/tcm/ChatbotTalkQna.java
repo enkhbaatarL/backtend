@@ -4,6 +4,8 @@ import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
+import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
@@ -125,9 +127,9 @@ public class ChatbotTalkQna extends BaseEntity {
 
     }
 
-    public void updateCompleteResult(ModelAgentRes modelAgentRes) {
+    public void updateCompleteResult(ModelAgentRes modelAgentRes, AnswerRes answerRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
-        this.chatbotAnswerCntt = Optional.ofNullable(modelAgentRes).map(JsonUtil::toJson).orElse(null);
+        this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
         this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
             .map(ModelAgentRes::output)
             .map(ModelAgentRes.Output::messages)
