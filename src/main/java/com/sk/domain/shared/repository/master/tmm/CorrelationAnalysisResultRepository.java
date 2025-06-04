@@ -13,13 +13,6 @@ import com.sk.domain.shared.entity.master.tmm.CorrelationAnalysisResult;
 
 public interface CorrelationAnalysisResultRepository extends JpaRepository<CorrelationAnalysisResult, CorrelationAnalysisResultId> {
 
-    // @Query(value = """
-    // SELECT MAX(tcar.anly_fulf_dt)
-    // FROM midb.tmm_corranlyrsltd tcar
-    // WHERE tcar.mrkt_idx_anly_tgt_cd = (SELECT tc.mrkt_idx_anly_tgt_cd
-    // FROM midb.tmd_custcpnym tc
-    // WHERE tc.cust_cpny_no = :companyNo)
-    // """, nativeQuery = true)
     @Query(value = """
             SELECT MAX(tcar.id.analysisFulfilmentDt)
             FROM CorrelationAnalysisResult tcar
@@ -39,12 +32,5 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
             ORDER BY tcd.codeRnk ASC
             """)
     List<SignalMapPeriodRes> findPeriosdByCustomerCompanyNo(@Param("companyNo") Integer companyNo);
-    // select distinct tcar.corr_calc_cyc_cd, tcd.cd_nm
-    // from midb.tmm_corranlyrsltd tcar
-    // left join midb.tcm_commcdd tcd on tcd.cd_id = tcar.corr_calc_cyc_cd
-    // where tcar.mrkt_idx_anly_tgt_cd =
-    // (SELECT a.mrkt_idx_anly_tgt_cd
-    // FROM midb.tmd_custcpnym a
-    // WHERE a.cust_cpny_no = 2013)
-    // order by tcd.cd_rnk asc;
+
 }

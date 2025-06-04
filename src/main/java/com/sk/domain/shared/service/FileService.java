@@ -281,6 +281,71 @@ public class FileService {
     }
 
     /**
+    * 1개 파일을 다운로드 한다.
+    *
+    * @param filePath 파일 전체 경로
+    * @return FileDownloadRes
+    */
+    public FileDownloadRes downloadFile2(String filePath) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFilePath(filePath)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file path: %s", filePath)));
+
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String fileName = getFileName(uploadedFile.getStoragePathNm());
+
+            byte[] fileData = objectStorageService.downloadFile(bucketName, fileName);
+
+            return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    /**
+    * 1개 이상 파일을 다운로드 한다.
+    *
+    * @param filePathList 파일번호목록
+    * @return byte[] 
+    */
+    public byte[] downloadFiles2(List<String> filePathList) {
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFilePathList(filePathList);
+        if (uploadedFiles.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file path list: %s", filePathList));
+        }
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ZipOutputStream zos = new ZipOutputStream(baos)) {
+
+            for (UploadedFile f : uploadedFiles) {
+                String bucketName = getBucketName(f.getStoragePathNm());
+                String filePath = getFileName(f.getStoragePathNm());
+                String fileName = f.getOriginalFileNm();
+
+                // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
+                try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
+                    if (s3is == null)
+                        continue;
+
+                    zos.putNextEntry(new ZipEntry(fileName));
+                    byte[] buffer = new byte[4096];
+                    int len;
+                    while ((len = s3is.read(buffer)) != -1) {
+                        zos.write(buffer, 0, len);
+                    }
+                    zos.closeEntry();
+                }
+            }
+            zos.finish();
+
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    /**
     * 파일을 삭제 한다.
     *
     * @param fileNo 파일번호
