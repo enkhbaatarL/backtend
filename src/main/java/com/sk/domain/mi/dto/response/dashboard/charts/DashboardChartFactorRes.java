@@ -10,7 +10,7 @@ public record DashboardChartFactorRes(
         String explanatoryLevelNm,
 
         @Schema(description = "예측 요인 설명")
-        String summary,
+        String categorySummary,
 
         @Schema(description = "플러스 요인")
         List<DashboardChartFactor> plusFactors,
@@ -18,16 +18,17 @@ public record DashboardChartFactorRes(
         @Schema(description = "마이너스 요인")
         List<DashboardChartFactor> minusFactors) {
     @Builder
-    public DashboardChartFactorRes(String explanatoryLevelNm, String summary, List<DashboardChartFactor> plusFactors, List<DashboardChartFactor> minusFactors) {
+    public DashboardChartFactorRes(String explanatoryLevelNm, String categorySummary, List<DashboardChartFactor> plusFactors, List<DashboardChartFactor> minusFactors) {
         this.explanatoryLevelNm = explanatoryLevelNm;
-        this.summary = summary;
+        this.categorySummary = categorySummary;
         this.plusFactors = plusFactors;
         this.minusFactors = minusFactors;
     }
 
-    public static DashboardChartFactorRes of(String explanatoryLevelNm, List<DashboardChartFactor> plusFactors, List<DashboardChartFactor> minusFactors) {
+    public static DashboardChartFactorRes of(String explanatoryLevelNm, String categorySummary, List<DashboardChartFactor> plusFactors, List<DashboardChartFactor> minusFactors) {
         return DashboardChartFactorRes.builder()
                 .explanatoryLevelNm(explanatoryLevelNm)
+                .categorySummary(categorySummary)
                 .plusFactors(plusFactors)
                 .minusFactors(minusFactors)
                 .build();

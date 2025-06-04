@@ -48,6 +48,8 @@ import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartDateRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactor;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorCategoryRes;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorExplanatoryMap;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorGraphMap;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
@@ -66,6 +68,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.ChartPredictDataType;
+import com.sk.domain.shared.enums.dashboard.DashboardChartDataTableType;
 import com.sk.domain.shared.mapper.dynamic.DashboardMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
@@ -441,8 +444,12 @@ public class MiDashboardService {
                 .max(LocalDate::compareTo)
                 .orElse(null);
 
+        DashboardChartDataTableType dataTableType = chartPredictSettingDetails.stream()
+            .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
+            .count() >= 2 ? DashboardChartDataTableType.FORECAST_DUAL_LAYER : DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
+
         DashboardMetadata dashboardMetadata = DashboardMetadata.of(customerCompany.getMarketIndexAnalysisTargetCd(), lastUpdated,
-                actualGoodsDataSourceDetail.get(), finalDate);
+                actualGoodsDataSourceDetail.get(), finalDate, dataTableType);
 
         // associatedCharts에서 DashboardChart 리스트 추출
         List<DashboardChart> finalCharts = associatedCharts.stream()
@@ -572,7 +579,7 @@ public class MiDashboardService {
                         .setScale(2, RoundingMode.HALF_UP);
                 // 예측 데이터인 경우
                 if (isPredict) {
-                    dashboardChartRawData = DashboardChartRawData.ofForecast(yearMonth, null, bd.doubleValue());
+                    dashboardChartRawData = DashboardChartRawData.ofForecast(yearMonth, predictDate, bd.doubleValue());
                     // 정형 데이터인 경우
                 } else {
                     dashboardChartRawData = DashboardChartRawData.ofActual(yearMonth, bd.doubleValue());
@@ -777,7 +784,7 @@ public class MiDashboardService {
      * @return DashboardChartRes
      */
     public DashboardChartRes getChartFileDownload(int companyNo, String date, Authentication authentication) {
-        //데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
+        // 데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
         return null;
     }
 
@@ -806,30 +813,9 @@ public class MiDashboardService {
      * @return DashboardChartFactorRes
      */
     public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
-
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
-
-        // 차트 설정 조회
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
-        }
-
-        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
-
-        boolean isChartLinePredictVal = chartPredictSettingDetails.stream()
-                .anyMatch(chartPredictSettingDetail -> {
-                    GoodsDataSourceDetail goodsDataSourceDetail = chartPredictSettingDetail.getGoodsDataSourceDetail();
-                    return goodsDataSourceDetail.getGoodsDataSourceNo() == goodsDataSourceNo
-                            && chartPredictSettingDetail.getIsChartLinePredictVal() == true && chartPredictSettingDetail.getIsFuture() == false;
-                });
-
-        if (!isChartLinePredictVal) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("차트 예측 데이터가 없습니다. goodsDataSourceNo: %d", goodsDataSourceNo));
-        }
-
+        customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
+        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+        
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
 
@@ -853,17 +839,13 @@ public class MiDashboardService {
                 .map(DashboardChartFactor::of)
                 .toList();
 
+        // 차트 주요 요인 분석 조회 요약 조회
+        DashboardChartFactorExplanatoryMap chartFactorExplanatory = dashboardMapper
+                .chartFactorExplanatory(queryWhere, explanatoryLevelNm, predictDate).orElse(null);
 
+        String summary = chartFactorExplanatory != null ? chartFactorExplanatory.getExplanatoryDetailCntt() : null;
 
-        
-
-
-
-
-
-
-
-        return DashboardChartFactorRes.of(explanatoryLevelNm, chartPlusFactors, chartMinusFactors);
+        return DashboardChartFactorRes.of(explanatoryLevelNm, summary, chartPlusFactors, chartMinusFactors);
     }
 
     /**
@@ -874,10 +856,59 @@ public class MiDashboardService {
      * @param explanatoryLevelNm 주요 요인 레벨명
      * @return DashboardChartFactorGraphRes
      */
-    public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
+    public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate,
+            String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd, Authentication authentication) {
+        customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+
+        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        }
+        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+
+        // 권한 조회
+        PermissionRes permissionRes = switch (role) {
+            case USER -> {
+                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+            }
+            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+            case API_PLUS_OPERATOR -> {
+                Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
+            }
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        };
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+                .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+
+        // 설명력 조회
+        DashboardChartFactorExplanatoryMap chartFactorGraphExplanatory = dashboardMapper
+                .chartFactorGraphExplanatory(queryWhere, explanatoryLevelNm, predictDate, predictionInputMnemonicCd)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 주요 요인 분석 라인 그래프 조회 데이터가 없습니다."));
 
 
         
+
+
+        // 그래프 Table 조회
+        DashboardChartFactorGraphMap chartFactorGraph = dashboardMapper
+                .chartFactorGraph(marketIndexAnalysisTargetCd, mnemonicCd)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 주요 요인 분석 라인 그래프 조회 데이터가 없습니다."));
+
+        // 그래프 RawData
+        Integer actualGoodsDataSourceNo = chartFactorGraph.getGoodsDataSourceNo();
+
+
+
+        // Date 기준
+
+
+
+
 
 
         return null;
