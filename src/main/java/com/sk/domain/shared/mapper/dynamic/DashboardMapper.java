@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorExplanatoryMap;
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorGraphMap;
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap;
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartSummaryMap;
+import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap;
+import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorGraphMap;
+import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap;
+import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
 
 @Mapper
 public interface DashboardMapper {

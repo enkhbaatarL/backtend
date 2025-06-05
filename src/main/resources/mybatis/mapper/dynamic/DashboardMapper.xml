@@ -11,7 +11,7 @@
          ORDER BY tb.expp_rnk
     </select>
 
-    <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap">
+    <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap">
         <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
         <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
         <result property="predictionInputMnemonicDetailCd" column="prdc_inpt_mnmnc_dtl_cd"/>
@@ -45,7 +45,7 @@
          LIMIT #{limit}
     </select>
 
-    <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorExplanatoryMap">
+    <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap">
         <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
         <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
         <result property="mnemonicCd" column="mnmnc_cd"/>
@@ -91,7 +91,7 @@
          LIMIT 1
     </select>
 
-    <resultMap id="dashboardChartFactorGraphMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorGraphMap">
+    <resultMap id="dashboardChartFactorGraphMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorGraphMap">
         <result property="marketIndexDataNo" column="mrkt_idx_data_no"/>
         <result property="ricCd" column="ric_cd"/>
         <result property="mnemonicCd" column="mnmnc_cd"/>
@@ -117,7 +117,7 @@
          LIMIT 1
     </select>
 
-    <resultMap id="dashboardChartSummaryMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartSummaryMap">
+    <resultMap id="dashboardChartSummaryMap" type="com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap">
         <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
         <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
         <result property="mnemonicCd" column="mnmnc_cd"/>

@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.dashboard.charts;
+package com.sk.domain.mi.dto.response.dashboard.summary;
 
 import java.util.List;
 

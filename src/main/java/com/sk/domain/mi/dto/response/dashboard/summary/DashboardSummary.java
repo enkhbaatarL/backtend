@@ -1,4 +1,4 @@
-package com.sk.domain.mi.dto.response.dashboard.charts;
+package com.sk.domain.mi.dto.response.dashboard.summary;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
