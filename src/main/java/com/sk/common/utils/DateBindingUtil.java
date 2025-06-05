@@ -1,5 +1,7 @@
 package com.sk.common.utils;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.shared.enums.DateGranularity;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import lombok.experimental.UtilityClass;
@@ -31,10 +33,10 @@ public class DateBindingUtil {
                 case 4 -> DateGranularity.YEAR_VARCHAR;
                 case 6 -> DateGranularity.MONTH_VARCHAR;
                 case 8 -> DateGranularity.DAY_VARCHAR;
-                default -> throw new IllegalStateException("varchar(" + len + ") 지원안함");
+                default -> throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "unsupported data column: %s, length: %s".formatted(dt, len));
             };
             case "date", "datetime", "timestamp" -> DateGranularity.DATETIME;
-            default -> throw new IllegalStateException("지원안함: " + dt);
+            default -> throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "unsupported data column: %s".formatted(dt));
         };
     }
 
