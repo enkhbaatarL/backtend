@@ -67,38 +67,35 @@ public class MiSignalMapService {
      * @return List<ScreenCategoryDto>
      */
     public List<ScreenCategoryDto> getSignalMap(int companyNo, String period, String filter) {
-        // ① 네이티브쿼리 실행 → Projection 인터페이스로 바로 결과를 가져옴
+
         List<SignalMapProjection> rawList = correlationAnalysisResultRepository.findSignalMapData(companyNo, period, filter);
 
-        // ② 2단계 그룹핑: 1차(instmScrnCtgrNm) → 2차(instmScrnDtlCtgrNm)
         Map<String, Map<String, List<SignalMapProjection>>> grouped = rawList.stream()
                 .collect(Collectors.groupingBy(
                         SignalMapProjection::getInstmScrnCtgrNm,
                         Collectors.groupingBy(SignalMapProjection::getInstmScrnDtlCtgrNm)));
 
-        // ③ DTO 구조로 변환
         List<ScreenCategoryDto> result = new ArrayList<>();
-        for (Map.Entry<String, Map<String, List<SignalMapProjection>>> parentEntry : grouped.entrySet()) {
-            String parentCategoryName = parentEntry.getKey();
-            Map<String, List<SignalMapProjection>> detailMap = parentEntry.getValue();
+        for (Map.Entry<String, Map<String, List<SignalMapProjection>>> screenCategoryEntry : grouped.entrySet()) {
+            String screenCategoryName = screenCategoryEntry.getKey();
+            Map<String, List<SignalMapProjection>> screenDetailCategoryMap = screenCategoryEntry.getValue();
 
-            List<ScreenDetailCategoryDto> detailDtoList = detailMap.entrySet().stream()
+            List<ScreenDetailCategoryDto> screenDetailCategoryDtoList = screenDetailCategoryMap.entrySet().stream()
                     .map(detailEntry -> {
-                        String detailCategoryName = detailEntry.getKey();
+                        String screenDetailCategoryName = detailEntry.getKey();
                         List<SignalMapProjection> projList = detailEntry.getValue();
 
-                        // 각 프로젝션에서 instmNm, corrCalcVal만 꺼내서 DTO로 변환
                         List<SignalMapDataDto> itemDtoList = projList.stream()
                                 .map(proj -> new SignalMapDataDto(
                                         proj.getInstmNm(),
                                         proj.getCorrCalcVal()))
                                 .collect(Collectors.toList());
 
-                        return new ScreenDetailCategoryDto(detailCategoryName, itemDtoList);
+                        return new ScreenDetailCategoryDto(screenDetailCategoryName, itemDtoList);
                     })
                     .collect(Collectors.toList());
 
-            result.add(new ScreenCategoryDto(parentCategoryName, detailDtoList));
+            result.add(new ScreenCategoryDto(screenCategoryName, screenDetailCategoryDtoList));
         }
         return result;
     }
