@@ -5,7 +5,7 @@ import lombok.Builder;
 
 public record DashboardChartRawData(
         @Schema(description = "예측 결과 월(YYYY-MM)", example = "2024-05") String resultDate,
-        @Schema(description = "예측 수행 일자(yyyyMMdd)", example = "2024-05-01") String predictDate,
+        @Schema(description = "예측 수행 일자(yyyyMMdd)", example = "20240501") String predictDate,
         @Schema(description = "월별 평균 데이터 값", example = "123.45") Double value) {
     @Builder
     public DashboardChartRawData(String resultDate, String predictDate, Double value) {

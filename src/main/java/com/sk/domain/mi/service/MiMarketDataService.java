@@ -144,7 +144,7 @@ public class MiMarketDataService {
 
         return marketDataChartSettings.parallelStream().map(marketDataChartSetting -> {
             GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
-            GoodsData mainGoodsData = marketDataChartSetting.getGoodsDataSourceDetail().getGoodsData();
+            GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
