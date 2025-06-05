@@ -4,10 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
-import com.sk.common.utils.ChartSliceUtil;
-import com.sk.common.utils.DateUtil;
-import com.sk.common.utils.ExcelUtils;
-import com.sk.common.utils.MDCUtil;
+import com.sk.common.utils.*;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
@@ -33,6 +30,7 @@ import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
@@ -624,20 +622,18 @@ public class MiDataDetailService {
     private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
 
-        // 컬럼 목록 파싱 및 날짜 컬럼 결정 (null 또는 빈 문자열 처리 추가 고려)
-        List<String> columns = Optional.ofNullable(gds.getTableColumnListNm())
-            .map(s -> Arrays.stream(s.split(",")).map(String::trim).toList())
-            .orElse(Collections.emptyList());
+        List<String> columns = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
 
         if (columns.isEmpty()) {
-            // 적절한 예외 처리 또는 기본값 설정
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Table column list is not defined for goodsDataSourceNo: %s".formatted(gds.getGoodsDataSourceNo()));
         }
 
-        String dateColumn = columns.get(0);
-        String whereClause = "%s between '%s' and '%s'".formatted(dateColumn, startDate, endDate);
+        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
+        Pair<String, String> range = DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
 
-        return new RawDataQueryContext(columns, columnExpressions, dateColumn, whereClause);
+        String additionalWhereClause = ClauseUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
+
+        return new RawDataQueryContext(columns, columnExpressions, columns.get(0), additionalWhereClause);
     }
 
     /**

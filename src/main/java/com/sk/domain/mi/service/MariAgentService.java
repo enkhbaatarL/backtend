@@ -73,7 +73,7 @@ public class MariAgentService {
      * @return 채팅룸 목록
      */
     public List<ChatRoomRes> getChatRooms(User user) {
-        List<ChatbotTalk> chatbotTalks = chatbotTalkRepository.findByUserAndIsDeletedFalseOrderByFinalTalkDtDesc(user);
+        List<ChatbotTalk> chatbotTalks = chatbotTalkRepository.findByUserAndIsDeletedFalseOrderByCreateDtDesc(user);
         return ChatRoomRes.ofList(chatbotTalks);
     }
 

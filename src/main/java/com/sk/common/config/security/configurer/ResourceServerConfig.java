@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,8 +24,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
@@ -42,18 +41,18 @@ public class ResourceServerConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain tokenByPassSecurityFilterChain(HttpSecurity http) throws Exception {
-            http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-                .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**")
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                    .anyRequest().permitAll()
-                )
-                .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
+            .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**")
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-            return http.build();
+        return http.build();
     }
 
     @Bean
@@ -61,7 +60,7 @@ public class ResourceServerConfig {
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
         if (securityEnabled) {
-            
+
             http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
@@ -96,6 +95,7 @@ public class ResourceServerConfig {
     }
 
     @Bean
+    @Primary
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
