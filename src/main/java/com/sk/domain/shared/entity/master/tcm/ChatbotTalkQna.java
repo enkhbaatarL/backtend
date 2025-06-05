@@ -62,7 +62,7 @@ public class ChatbotTalkQna extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isNotRecommended;
 
-    @Column(name = "talk_qna_stat_cd", length = 1, columnDefinition = "varchar(1)")
+    @Column(name = "talk_qna_stat_cd", length = 2, columnDefinition = "varchar(2)")
     @Comment("대화문답상태코드")
     @Convert(converter = StringToAnswerStatusCdConverter.class)
     private AnswerStatusCd answerStatusCd;
@@ -103,10 +103,18 @@ public class ChatbotTalkQna extends BaseEntity {
     public static ChatbotTalkQna of(QnaReq.Insert talkReq, ChatbotTalk talk) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
-            .userQuestionCntt(talkReq.question())
+            .userQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
             .isRecommended(Boolean.FALSE)
             .isNotRecommended(Boolean.FALSE)
             .answerStatusCd(AnswerStatusCd.PENDING) // default
+            .build();
+    }
+
+    public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk, AnswerStatusCd answerStatusCd) {
+        return ChatbotTalkQna.builder()
+            .chatbotTalk(talk)
+            .userQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
+            .answerStatusCd(answerStatusCd)
             .build();
     }
 
