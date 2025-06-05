@@ -69,9 +69,7 @@ public class MiInsightsService {
      * @return List<FocusedDataRes>
      */
     public List<FocusedDataDto> getFocused(int companyNo) {
-        LocalDateTime threshold = LocalDateTime.now().minusDays(10);
-
-        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
+        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, PageRequest.of(0, 500));
 
         List<FocusedDataDto> result = new ArrayList<>();
         List<FocusedDataDto> mutableList = dataList.stream()

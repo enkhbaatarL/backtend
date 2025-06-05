@@ -121,33 +121,10 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.isGoodsDataMarked                     = true
                 AND gdc.isDeleted                            = false
                 AND ccd.highCodeId                            = 'A_TYPES'
-                AND gdc.goodsDataManagementSeparateCd         = 'GUDAT'
-                AND gd.modifyDt >= :threshold
             GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
             ORDER BY gd.goodsDataNo DESC
-            """, countQuery = """
-            SELECT COUNT(DISTINCT gd.goodsDataNo)
-            FROM CustomerCompanyGoodsMapping ccgm
-            LEFT JOIN Goods                   g   ON g.goodsNo = ccgm.id.goodsNo
-            LEFT JOIN Provider                p   ON p.providerNo = g.provider.providerNo
-            LEFT JOIN GoodsData               gd  ON gd.goods.goodsNo = g.goodsNo
-            LEFT JOIN GoodsDataCategory       gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            LEFT JOIN CommonCodeDetail        ccd ON ccd.id.codeId = gdc.goodsDataCategoryCd
-            WHERE ccgm.id.customerCompanyNo                = :customerCompanyNo
-                AND ccgm.isDeleted                           = false
-                AND ccgm.isUsed                              = true
-                AND g.isDeleted                              = false
-                AND g.isUsed                                 = true
-                AND p.isDeleted                              = false
-                AND p.isUsed                                 = true
-                AND gd.isDeleted                             = false
-                AND gd.isGoodsDataMarked                     = true
-                AND gdc.isDeleted                            = false
-                AND ccd.highCodeId                            = 'A_TYPES'
-                AND gdc.goodsDataManagementSeparateCd         = 'GUDAT'
-                AND gd.modifyDt >= :threshold
             """)
-    List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
+    List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 
