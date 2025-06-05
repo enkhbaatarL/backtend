@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sk.domain.shared.mapper.dynamic.MetadataMapper">
+
+    <select id="selectSchemaMetadata" parameterType="map" resultType="com.sk.domain.shared.mapper.dto.SchemaMetadata">
+        SELECT
+            TABLE_SCHEMA AS dbName,
+            TABLE_NAME AS tableName,
+            COLUMN_NAME AS columnName,
+            DATA_TYPE AS dataType,
+            COLUMN_TYPE AS columnType,
+            CHARACTER_MAXIMUM_LENGTH AS characterMaximumLength
+        FROM
+            information_schema.COLUMNS
+        WHERE
+            TABLE_SCHEMA = #{dbName}
+          AND TABLE_NAME = #{tableName}
+          AND COLUMN_NAME = #{colName}
+    </select>
+
+</mapper>

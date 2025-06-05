@@ -94,4 +94,12 @@ public record DynamicDataReq(
             .build();
     }
 
+    public static DynamicDataReq ofMetaQuery(GoodsDataSourceDetail gds) {
+        return DynamicDataReq.builder()
+            .targetDataSource(gds.getTargetDbNm())
+            .columns(gds.getTableColumnListNm())
+            .tableName(gds.getTargetTableNm())
+            .build();
+    }
+
 }

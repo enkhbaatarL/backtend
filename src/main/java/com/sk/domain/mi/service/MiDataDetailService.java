@@ -4,10 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
-import com.sk.common.utils.ChartSliceUtil;
-import com.sk.common.utils.DateUtil;
-import com.sk.common.utils.ExcelUtils;
-import com.sk.common.utils.MDCUtil;
+import com.sk.common.utils.*;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
@@ -33,6 +30,7 @@ import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.chart.ChartType;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
@@ -88,19 +86,17 @@ public class MiDataDetailService {
 
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
 
-        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode());
+        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode())
+            .stream()
+            .filter(ca -> StringUtils.isNotEmpty(ca.getHighCodeId()))
+            .toList();
 
-        PermissionRes permissionRes = switch (authorizationService.getCurrentRole()) {
-            case USER -> userService.getUserGoodsPermissions(authorizationService.getUserNo());
-            case ADMIN -> userService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> userService.getPlusOperatorGoodsPermissions(authorizationService.getCompanyNo());
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 상품-데이터 조회 이력 적재
         goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authorizationService.getSubject());
 
-        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNo());
+        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority());
     }
 
     /**
@@ -114,15 +110,8 @@ public class MiDataDetailService {
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsData.getGoodsDataNo());
 
-        PermissionRes permissionRes = switch (authorizationService.getCurrentRole()) {
-            case USER -> userService.getUserGoodsPermissions(authorizationService.getUserNo());
-            case ADMIN -> userService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> userService.getPlusOperatorGoodsPermissions(authorizationService.getCompanyNo());
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
-
-        int companyNo = ObjectUtils.isNotEmpty(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) ? Integer.parseInt(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO)) : authorizationService.getCompanyNo();
-        Boolean goodsViewable = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        Boolean goodsViewable = permissionRes.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
 
         return UnstructuredDataRes.ofList(documents, goodsViewable);
     }
@@ -464,10 +453,10 @@ public class MiDataDetailService {
 
         PersonalizationService.Preferences resolve = personalizationService.resolve(gds, authorizationService.getCurrentRole(), authorizationService.getSubject());
 
-        // Interval 결정: 요청값 > 개인화 > 기본값
+        // Interval 결정: 요청값 > 개인화 > 기본값(최소 단위에 따른 기본값 변경)
         Interval finalizedInterval = Optional.ofNullable(contextV1.requestedInterval())
             .or(resolve::interval)
-            .orElse(Interval.ONE_DAY);
+            .orElse(gds.getPeriodUnitSeparateCd().minInterval());
 
         // Range 결정: 요청값 > 개인화 > 기본값
         Range finalizedRange = Optional.ofNullable(contextV1.requestedRange())
@@ -633,20 +622,18 @@ public class MiDataDetailService {
     private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
 
-        // 컬럼 목록 파싱 및 날짜 컬럼 결정 (null 또는 빈 문자열 처리 추가 고려)
-        List<String> columns = Optional.ofNullable(gds.getTableColumnListNm())
-            .map(s -> Arrays.stream(s.split(",")).map(String::trim).toList())
-            .orElse(Collections.emptyList());
+        List<String> columns = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
 
         if (columns.isEmpty()) {
-            // 적절한 예외 처리 또는 기본값 설정
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Table column list is not defined for goodsDataSourceNo: %s".formatted(gds.getGoodsDataSourceNo()));
         }
 
-        String dateColumn = columns.get(0);
-        String whereClause = "%s between '%s' and '%s'".formatted(dateColumn, startDate, endDate);
+        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
+        Pair<String, String> range = DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
 
-        return new RawDataQueryContext(columns, columnExpressions, dateColumn, whereClause);
+        String additionalWhereClause = ClauseUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
+
+        return new RawDataQueryContext(columns, columnExpressions, columns.get(0), additionalWhereClause);
     }
 
     /**

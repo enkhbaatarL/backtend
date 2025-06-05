@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sk.common.utils.ClauseUtil;
 import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
+import com.sk.domain.shared.mapper.dynamic.MetadataMapper;
 import org.springframework.stereotype.Service;
 
 import com.sk.common.config.database.DataSourceContextHolder;
@@ -34,6 +37,7 @@ public class MybatisDynamicQueryService {
     private final Integer FORCAST_DATE_SUBSTRING_END_INDEX = 6; // 예측 데이터 조회 시 Date 칼럼을 yyyyMMdd 형식에서 yyyyMM 형식으로 변환 시 SUBSTRING에 사용할 함수의 끝 인덱스
 
     private final DynamicMapper dynamicMapper;
+    private final MetadataMapper metadataMapper;
 
     /**
      * Where 절에서 금지된 토큰 목록
@@ -159,6 +163,19 @@ public class MybatisDynamicQueryService {
         params.put("additionalWhereClause", dynamicDataReq.additionalWhereClause());
         params.put("groupByColumn", dynamicDataReq.groupByColumn());
         return dynamicMapper.selectDoubleValueResultData(params);
+    }
+
+    public SchemaMetadata getMeta(DynamicDataReq dynamicDataReq) {
+
+        DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
+
+        List<String> select = ClauseUtil.getSelectColumnList(dynamicDataReq.columns());
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("dbName", dynamicDataReq.targetDataSource());
+        params.put("tableName", dynamicDataReq.tableName());
+        params.put("colName", select.get(0)); // 날짜 컬럼을 보장함.
+        return metadataMapper.selectSchemaMetadata(params);
     }
 
      /**

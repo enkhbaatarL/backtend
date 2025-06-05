@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service.chart;
 
 import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
@@ -11,10 +12,12 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
 import com.sk.domain.shared.enums.chart.LookBack;
 import com.sk.domain.shared.enums.chart.RenderAs;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -177,11 +180,15 @@ public class ChartGenerationService {
         }
 
         // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 LOOK_BACK Period를 설정
-        String startDate = isMainChart
-            ? LookBack.W_SIZE_120.getLookBackStartDateStr(contextV3.finalizedStartDate(), contextV3.finalizedInterval(), 30)
-            : contextV3.finalizedRangeBetween().getLeft();
+        LocalDate startDate = isMainChart
+            ? LookBack.W_SIZE_120.getLookBackStartDate(contextV3.finalizedStartDate(), contextV3.finalizedInterval(), 30)
+            : DateUtil.fromYmd(contextV3.finalizedRangeBetween().getLeft());
 
-        String additionalWhereClause = ClauseUtil.createBetweenClause(dateColumnName, startDate, contextV3.finalizedRangeBetween().getRight());
+        // 날짜 컬럼 스키마 조회
+        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
+        Pair<String, String> range = DateBindingUtil.range(meta, startDate, DateUtil.fromYmd(contextV3.finalizedRangeBetween().getRight()));
+
+        String additionalWhereClause = ClauseUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
 
         // select 절에 거래량 컬럼 추가
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())

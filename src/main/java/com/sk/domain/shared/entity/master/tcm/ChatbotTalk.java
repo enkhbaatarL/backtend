@@ -63,8 +63,8 @@ public class ChatbotTalk extends BaseEntity {
         return ChatbotTalk.builder()
                 .chatbotTalkUuid(chatRoomId)
                 .user(user)
-                .talkTitleNm(talkReq.question())
-                .talkFirstQuestionCntt(talkReq.question())
+                .talkTitleNm(talkReq.question().substring(0, Math.min(talkReq.question().length(), 100)))
+                .talkFirstQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
                 .talkBeginDt(DateUtil.currentYmd())
                 .finalTalkDt(DateUtil.currentYmd())
                 .build();
