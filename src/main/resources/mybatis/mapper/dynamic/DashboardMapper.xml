@@ -113,7 +113,32 @@
            AND a.del_yn = b.del_yn
            AND a.del_yn = 'N'
            AND b.mrkt_idx_anly_tgt_cd = #{marketIndexAnalysisTargetCd}
-           AND (a.ric_cd = #{mnemonicCd} OR a.mnmnc_cd = #{mnemonicCd});
+           AND (a.ric_cd = #{mnemonicCd} OR a.mnmnc_cd = #{mnemonicCd})
          LIMIT 1
     </select>
+
+    <resultMap id="dashboardChartSummaryMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartSummaryMap">
+        <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
+        <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
+        <result property="mnemonicCd" column="mnmnc_cd"/>
+        <result property="predictionResultDt" column="prdc_rslt_dt"/>
+        <result property="explanatoryTitleContent" column="expp_titl_cntt"/>
+        <result property="explanatorySummaryContent" column="expp_smry_cntt"/>
+        <result property="explanatoryFilePath" column="expp_cntt_file_path_nm"/>
+    </resultMap>
+    <select id="chartSummary" resultMap="dashboardChartSummaryMap">
+        SELECT mrkt_idx_anly_tgt_cd
+            , prdc_fulf_dt 
+            , mnmnc_cd 
+            , prdc_rslt_dt
+            , expp_titl_cntt 
+            , expp_smry_cntt 
+            , expp_cntt_file_path_nm 
+          FROM tmm_bztgtprdcexppcnttm
+         WHERE ${queryWhere}
+           AND prdc_fulf_dt between #{startDate} and #{endDate}
+           AND del_yn = 'N'
+         ORDER BY prdc_fulf_dt DESC
+         LIMIT 1
+   </select>
 </mapper>
