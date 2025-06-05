@@ -38,6 +38,7 @@ public record HistoryDataRes(
 //            .collect(Collectors.toMap(DoubleValueResultData::getDate, DoubleValueResultData::getValue));
 
         Map<String, BigDecimal> forecastMap = forecastResults.stream()
+            .filter(r -> r != null && r.getPredictResultDate() != null && r.getPredictResultValue() != null)
             .collect(Collectors.toMap(
                 r -> DateUtil.format(DateUtil.fromYmd(r.getPredictResultDate()), periodCd),
                 TargetPredictResultData::getPredictResultValue,
@@ -46,6 +47,7 @@ public record HistoryDataRes(
             ));
 
         Map<String, BigDecimal> counterpartMap = counterPartResults.stream()
+            .filter(r -> r != null && r.getDate() != null && r.getValue() != null)
             .collect(Collectors.toMap(
                 r -> DateUtil.format(r.getDate().toLocalDate(), periodCd),
                 DoubleValueResultData::getValue,
