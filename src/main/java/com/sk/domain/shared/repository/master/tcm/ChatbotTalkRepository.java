@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface ChatbotTalkRepository extends JpaRepository<ChatbotTalk, String> {
 
-    List<ChatbotTalk> findByUserAndIsDeletedFalseOrderByFinalTalkDtDesc(User user);
+    List<ChatbotTalk> findByUserAndIsDeletedFalseOrderByCreateDtDesc(User user);
 
     Optional<ChatbotTalk> findByChatbotTalkUuidAndIsDeletedFalse(String uuid);
 

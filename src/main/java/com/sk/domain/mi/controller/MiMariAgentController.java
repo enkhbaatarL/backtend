@@ -47,7 +47,7 @@ public class MiMariAgentController {
     }
 
     @ApiOrder(2)
-    @Operation(summary = "채팅룸 목록 조회 API", description = "로그인된 사용자의 Mari 에이전트 채팅룸 목록을 조회합니다. <br>목록은 `finalChatDt` 필드를 기반으로 내림차순 정렬됩니다.")
+    @Operation(summary = "채팅룸 목록 조회 API", description = "로그인된 사용자의 Mari 에이전트 채팅룸 목록을 조회합니다. <br>목록은 생성일 필드를 기반으로 내림차순 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/chat-rooms")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
