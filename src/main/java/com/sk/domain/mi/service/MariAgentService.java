@@ -19,9 +19,11 @@ import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.repository.master.tcm.ChatbotMajorQuestionRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkRepository;
+import com.sk.domain.shared.repository.master.tcm.ProhibitedWordRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -47,6 +49,7 @@ public class MariAgentService {
 
     private final ChatbotTalkRepository chatbotTalkRepository;
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
+    private final ProhibitedWordRepository prohibitedWordRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
@@ -73,7 +76,7 @@ public class MariAgentService {
      * @return 채팅룸 목록
      */
     public List<ChatRoomRes> getChatRooms(User user) {
-        List<ChatbotTalk> chatbotTalks = chatbotTalkRepository.findByUserAndIsDeletedFalseOrderByFinalTalkDtDesc(user);
+        List<ChatbotTalk> chatbotTalks = chatbotTalkRepository.findByUserAndIsDeletedFalseOrderByCreateDtDesc(user);
         return ChatRoomRes.ofList(chatbotTalks);
     }
 
@@ -150,11 +153,40 @@ public class MariAgentService {
             })
             .orElseGet(() -> chatbotTalkRepository.save(ChatbotTalk.of(chatRoomId.toString(), talkReq, user)));
 
+        AnswerStatusCd validationStatus = validateQuestion(talkReq.question());
+        if (validationStatus != null) {
+            ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.ofFail(talkReq, talk, validationStatus));
+            return QnaRes.of(qna);
+        }
+
         ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
 
         return executeModelAgent(qna)
             .map(answer -> QnaRes.of(qna, answer))
             .orElse(QnaRes.of(qna));
+    }
+
+    /**
+     * 질문에 대한 밸리데이션 체크 (금칙어, 길이)
+     * 실패 사유가 있을 경우 AnswerStatusCd 반환, 아니면 null
+     */
+    private AnswerStatusCd validateQuestion(String question) {
+        if (question.length() > 2000) {
+            return AnswerStatusCd.FAIL_EXCEED_LENGTH;
+        }
+        if (isProhibitedWordUsed(question)) {
+            return AnswerStatusCd.FAIL_FORBIDDEN_WORDS;
+        }
+        return null;
+    }
+
+    /**
+     * 금칙어 포함 여부
+     */
+    private boolean isProhibitedWordUsed(String question) {
+        return prohibitedWordRepository.findByIsUsedTrueAndIsDeletedFalse()
+            .stream()
+            .anyMatch(word -> question.contains(word.getProhibitedWordName()));
     }
 
     /**

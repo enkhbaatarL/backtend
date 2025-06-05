@@ -21,6 +21,7 @@ import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartDateRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorCategoryRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
+import com.sk.domain.mi.dto.response.dashboard.charts.DashboardSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.service.MiDashboardService;
 import com.sk.domain.mi.service.MiMarketDataService;
@@ -116,12 +117,30 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartDates(companyNo));
 	}
 
+
 	@ApiOrder(6)
+	@Parameters({
+		@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
+		@Parameter(name = "date", description = "조회할 년월", example = "202505")
+	})
+	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/summary")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	public BaseResponse<List<DashboardSummaryRes>> getDashboardSummary(
+			@PathVariable("companyNo") Integer companyNo,
+			@RequestParam(value = "date", required = false) String date) {
+		return BaseResponseFactory.create(miDashboardService.getDashboardSummary(companyNo, date));
+	}
+
+	
+
+	@ApiOrder(7)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 			@Parameter(name = "date", description = "조회할 년월", example = "202505")
 	})
-	@Operation(summary = "대시보드 차트 데이터 조회", description = "대시보드 차트 데이터를 조회합니다.")
+	@Operation(summary = "대시보드 차트 데이터 조회(Drill Down #1)", description = "대시보드 차트 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -132,12 +151,12 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date, authentication));
 	}
 	
-	@ApiOrder(7)
+	@ApiOrder(8)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 			@Parameter(name = "date", description = "조회할 년월", example = "202505")
 	})
-	@Operation(summary = "대시보드 차트 데이터 조회", description = "대시보드 차트 데이터를 조회합니다.")
+	@Operation(summary = "대시보드 차트 데이터 다운로드", description = "대시보드 차트 데이터를 다운로드합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/file-download")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -148,12 +167,12 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartFileDownload(companyNo, date, authentication));
 	}
 
-	@ApiOrder(7)
+	@ApiOrder(9)
 	@Parameters({
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
-			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "1")
+			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "63")
 	})
-	@Operation(summary = "대시보드 차트 주요 요인 분석 카테고리 조회", description = "대시보드 차트 주요 요인 분석 카테고리를 조회합니다.")
+	@Operation(summary = "대시보드 차트 주요 요인 분석 카테고리 조회(Drill Down #2)", description = "대시보드 차트 주요 요인 분석 카테고리를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/factor/category")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -164,13 +183,13 @@ public class MiDashboardController {
 		return BaseResponseFactory.create(miDashboardService.getChartFactorCategory(companyNo, goodsDataSourceNo, predictDate));
 	}
 
-	@ApiOrder(8)
+	@ApiOrder(10)
 	@Parameters({
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
-			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "1"),
-			@Parameter(name = "category", description = "카테고리", example = "WEATHER")
+			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "63"),
+			@Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "WEATHER")
 	})
-	@Operation(summary = "대시보드 차트 주요 요인 분석 조회", description = "대시보드 차트 주요 요인 분석 데이터를 조회합니다.")
+	@Operation(summary = "대시보드 차트 주요 요인 분석 조회(Drill Down #2)", description = "대시보드 차트 주요 요인 분석 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/factors")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -178,15 +197,21 @@ public class MiDashboardController {
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "predictDate", required = true) String predictDate,
 			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
-			@RequestParam(value = "category", required = true) String category) {
-		return BaseResponseFactory.create(miDashboardService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, category));
+			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm) {
+		return BaseResponseFactory.create(miDashboardService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, explanatoryLevelNm));
 	}
 
-	@ApiOrder(9)
+	@ApiOrder(11)
 	@Parameters({
-			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
+			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
+			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "63"),
+			@Parameter(name = "mnemonicCd", description = "주요 요인 명칭 코드", example = "NGCC.01"),
+			@Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "STORAGE"),
+			@Parameter(name = "predictionInputMnemonicCd", description = "예측 입력 명칭 코드", example = "EIAGS48"),
+			@Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드", example = "EN_LNG")
 	})
-	@Operation(summary = "대시보드 차트 주요 요인 분석 라인 그래프", description = "대시보드 차트 주요 요인 분석 라인 그래프를 조회합니다.")
+	@Operation(summary = "대시보드 차트 주요 요인 분석 라인 그래프(Drill Down #3)", description = "대시보드 차트 주요 요인 분석 라인 그래프를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/factor/graph")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
@@ -194,7 +219,11 @@ public class MiDashboardController {
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "predictDate", required = true) String predictDate,
 			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
-			@RequestParam(value = "category", required = true) String category) {
-		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, category));
+			@RequestParam(value = "mnemonicCd", required = true) String mnemonicCd,
+			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm,
+			@RequestParam(value = "predictionInputMnemonicCd", required = true) String predictionInputMnemonicCd,
+			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd,
+			Authentication authentication) {
+		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, mnemonicCd, explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd, authentication));
 	}
 }

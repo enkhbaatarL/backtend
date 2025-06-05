@@ -49,21 +49,71 @@
         <result property="marketIndexAnalysisTargetCd" column="mrkt_idx_anly_tgt_cd"/>
         <result property="predictionFulfillDt" column="prdc_fulf_dt"/>
         <result property="mnemonicCd" column="mnmnc_cd"/>
+        <result property="predictionInputMnemonicCd" column="prdc_inpt_mnmnc_cd"/>
         <result property="explanatoryLevelNm" column="expp_lvl_nm"/>
         <result property="explanatoryDetailCntt" column="expp_dtl_cntt"/>
+        <result property="explanatoryLevelDetailNm" column="expp_lvl_dtl_nm"/>
     </resultMap>
     <select id="chartFactorExplanatory" resultMap="dashboardChartFactorExplanatoryMap">
         SELECT 
             tb.mrkt_idx_anly_tgt_cd
           , tb.prdc_fulf_dt
           , tb.mnmnc_cd
+          , tb.prdc_inpt_mnmnc_cd
           , tb.expp_lvl_nm
           , tb.expp_dtl_cntt
-          FROM tmm_bztgtprdcexppinfom tb
+          , tb.expp_lvl_dtl_nm
+          FROM tmm_bztgtexppcnttd tb
          WHERE ${queryWhere}
            AND tb.del_yn = 'N'
            AND tb.expp_lvl_nm = expp_lvl_dtl_nm
-           AND tb.prdc_fulf_dt = #{predictDate}
            AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+           AND tb.prdc_fulf_dt = #{predictDate}
+         LIMIT 1
+    </select>
+
+    <select id="chartFactorGraphExplanatory" resultMap="dashboardChartFactorExplanatoryMap">
+        SELECT 
+            tb.mrkt_idx_anly_tgt_cd
+          , tb.prdc_fulf_dt
+          , tb.mnmnc_cd
+          , tb.prdc_inpt_mnmnc_cd
+          , tb.expp_lvl_nm
+          , tb.expp_dtl_cntt
+          , tb.expp_lvl_dtl_nm
+          FROM tmm_bztgtexppcnttd tb
+         WHERE ${queryWhere}
+           AND tb.del_yn = 'N'
+           AND tb.expp_lvl_nm != expp_lvl_dtl_nm
+           AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+           AND tb.prdc_fulf_dt = #{predictDate}
+           AND tb.prdc_inpt_mnmnc_cd = #{predictionInputMnemonicCd}
+         LIMIT 1
+    </select>
+
+    <resultMap id="dashboardChartFactorGraphMap" type="com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorGraphMap">
+        <result property="marketIndexDataNo" column="mrkt_idx_data_no"/>
+        <result property="ricCd" column="ric_cd"/>
+        <result property="mnemonicCd" column="mnmnc_cd"/>
+        <result property="instrumentCollectionTableNm" column="instm_cltn_tbl_nm"/>
+        <result property="instrumentDataSeparateCd" column="instm_data_spt_cd"/>
+        <result property="goodsDataSourceNo" column="gds_data_src_no"/>
+    </resultMap>
+    <select id="chartFactorGraph" resultMap="dashboardChartFactorGraphMap">
+        SELECT 
+            a.mrkt_idx_data_no 
+          , a.ric_cd 
+          , a.mnmnc_cd 
+          , b.instm_cltn_tbl_nm 
+          , b.instm_data_spt_cd 
+          , a.gds_data_src_no 
+          FROM tmm_mrktidxdatam a
+          , tmm_mrktidxdatad b
+         WHERE a.mrkt_idx_data_no = b.mrkt_idx_data_no 
+           AND a.del_yn = b.del_yn
+           AND a.del_yn = 'N'
+           AND b.mrkt_idx_anly_tgt_cd = #{marketIndexAnalysisTargetCd}
+           AND (a.ric_cd = #{mnemonicCd} OR a.mnmnc_cd = #{mnemonicCd});
+         LIMIT 1
     </select>
 </mapper>

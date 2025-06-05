@@ -1,7 +1,5 @@
 package com.sk.domain.mi.dto.response.dashboard.charts;
 
-import java.math.BigDecimal;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -24,6 +22,11 @@ public class DashboardChartFactorExplanatoryMap {
     String mnemonicCd;
 
     /**
+     * 예측입력MNEMONIC코드
+     */
+    String predictionInputMnemonicCd;
+
+    /**
      * 설명력명목명
      */
     String explanatoryLevelNm;
@@ -32,4 +35,9 @@ public class DashboardChartFactorExplanatoryMap {
      * 설명력상세내용
      */
     String explanatoryDetailCntt;
+
+    /**
+     * 설명력레벨상세명
+     */
+    String explanatoryLevelDetailNm;
 }
