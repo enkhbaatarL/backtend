@@ -71,7 +71,8 @@ public class MiDashboardHistoryController {
         @RequestParam(value = "fulfillDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate fulfillDate
     ) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentDisposition(ContentDisposition.attachment().filename("history-%s.xlsx".formatted(DateUtil.currentYmdHms())).build());
+        String title = "dashboard_history_%s_%s.xlsx".formatted(fulfillDate.toString(), DateUtil.currentYmdHms());
+        headers.setContentDisposition(ContentDisposition.attachment().filename(title).build());
 
         ByteArrayInputStream in = dashboardHistoryService.downloadHistoryData(settingDetailNo, fulfillDate);
 

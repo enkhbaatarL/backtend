@@ -4,7 +4,10 @@ import com.sk.domain.shared.enums.chart.Interval;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalUnit;
 
 @Getter
@@ -52,6 +55,15 @@ public enum PeriodUnitSeparateCd {
      */
     public boolean isGreaterOrEqual(PeriodUnitSeparateCd minUnit) {
         return this.temporalUnit.getDuration().compareTo(minUnit.temporalUnit.getDuration()) >= 0;
+    }
+
+    public LocalDate alignStart(LocalDate start) {
+        return switch (this) {
+            case D -> start;
+            case W -> start.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case M -> start.withDayOfMonth(1);
+            case Y -> start.withDayOfYear(1);
+        };
     }
 
 }

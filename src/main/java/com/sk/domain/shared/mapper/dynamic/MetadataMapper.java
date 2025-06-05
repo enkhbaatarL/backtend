@@ -8,7 +8,6 @@ import java.util.Map;
 @Mapper
 public interface MetadataMapper {
 
-    // todo 캐싱
     SchemaMetadata selectSchemaMetadata(Map<String, Object> params);
 
 }
