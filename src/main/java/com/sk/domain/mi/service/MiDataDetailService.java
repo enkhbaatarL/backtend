@@ -541,10 +541,10 @@ public class MiDataDetailService {
      * @param endDate   조회 종료일
      * @return 페이징된 원천 데이터 테이블 응답
      */
-    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, LocalDate startDate, LocalDate endDate) {
+    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, String startDate, String endDate) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
-        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
+        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, startDate, endDate);
 
         // Count 쿼리 실행
         List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, queryContext.whereClause()));
@@ -555,6 +555,17 @@ public class MiDataDetailService {
 
         // 테이블 응답 생성
         TableRes table = buildTableResponse(dataQuery, queryContext);
+
+        String hdr = table.headers().stream().map(hd -> hd.field())
+            .collect(Collectors.joining(","));
+        System.out.println("[hd]" + hdr);
+        String rst = table.rows().stream()
+            .map(row -> row.cells().stream()
+                .map(cell -> cell == null ? "null" : "'" + cell.toString() + "'")
+                .collect(Collectors.joining(",", "[", "]"))
+            )
+            .collect(Collectors.joining(","));
+        System.out.println("[rst]" + rst);
 
         // 최종 페이징 응답 반환
         return PaginationTableRes.toRes(page, size, totalElements, table.rows(), table.headers());
@@ -629,7 +640,12 @@ public class MiDataDetailService {
         }
 
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
-        Pair<String, String> range = DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
+        Pair<String, String> range = null;
+        if(startDate.length() != 8)
+            range = Pair.of(startDate, endDate);
+        else
+            range = DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
+
 
         String additionalWhereClause = ClauseUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
 
