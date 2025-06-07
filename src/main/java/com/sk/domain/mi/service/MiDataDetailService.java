@@ -513,12 +513,7 @@ public class MiDataDetailService {
         ChartMetadata metadata = ChartMetadata.of(gds, contextV3, DateUtil.toYmd(latestDate));
 
         // [mainChart] 생성
-        Chart mainChart = chartGenerationService.generateChartData(
-            gds,
-            contextV3,
-            Boolean.TRUE, // 메인 차트는 항상 visible 상태
-            Boolean.TRUE
-        );
+        Chart mainChart = chartGenerationService.generateChartData(gds, contextV3, Boolean.TRUE, Boolean.TRUE);
 
         // [indicators] 생성
         List<Indicator> indicators = technicalIndicatorService.generateIndicators(mainChart, contextV3.finalizedIndicators());
