@@ -47,18 +47,18 @@ public class RedisConfig {
     @Bean
     @Profile(value = "local")
     public LettuceConnectionFactory lettuceConnectionFactoryLocal(@Value("${spring.data.redis.host}") String host,
-            @Value("${spring.data.redis.port}") int port,
-            @Value("${spring.data.redis.password}") String password,
-            @Value("${spring.data.redis.command-timeout}") Duration commandTimeout) {
+                                                                  @Value("${spring.data.redis.port}") int port,
+                                                                  @Value("${spring.data.redis.password}") String password,
+                                                                  @Value("${spring.data.redis.command-timeout}") Duration commandTimeout) {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
         redisConfig.setPort(port);
         redisConfig.setPassword(password);
 
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(commandTimeout)
-                .useSsl()
-                .build();
+            .commandTimeout(commandTimeout)
+            .useSsl()
+            .build();
 
         return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
@@ -66,18 +66,18 @@ public class RedisConfig {
     @Bean
     @Profile(value = "tech")
     public LettuceConnectionFactory lettuceConnectionFactoryTech(@Value("${spring.data.redis.host}") String host,
-            @Value("${spring.data.redis.port}") int port,
-            @Value("${spring.data.redis.password}") String password,
-            @Value("${spring.data.redis.command-timeout}") Duration commandTimeout) {
+                                                                 @Value("${spring.data.redis.port}") int port,
+                                                                 @Value("${spring.data.redis.password}") String password,
+                                                                 @Value("${spring.data.redis.command-timeout}") Duration commandTimeout) {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(host);
         redisConfig.setPort(port);
         // redisConfig.setPassword(password);
 
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(commandTimeout)
-                // .useSsl()
-                .build();
+            .commandTimeout(commandTimeout)
+            // .useSsl()
+            .build();
 
         return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
@@ -86,14 +86,14 @@ public class RedisConfig {
     @Bean
     @Profile({"dev", "prod"})
     public LettuceConnectionFactory lettuceConnectionFactoryDev(@Value("${redis.service-name}") String serviceName,
-            @Value("${redis.redis-password}") String redisPassword,
-            @Value("${redis.sentinel-host-node}") String sentinelHostNode,
-            @Value("${redis.sentinel-port}") int sentinelPort,
-            @Value("${redis.sentinel-password}") String sentinelPassword) {
+                                                                @Value("${redis.redis-password}") String redisPassword,
+                                                                @Value("${redis.sentinel-host-node}") String sentinelHostNode,
+                                                                @Value("${redis.sentinel-port}") int sentinelPort,
+                                                                @Value("${redis.sentinel-password}") String sentinelPassword) {
         // Sentinel 설정 (마스터 이름과 Sentinel 노드 정보 설정)
         RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
-                .master(serviceName)
-                .sentinel(sentinelHostNode, sentinelPort);
+            .master(serviceName)
+            .sentinel(sentinelHostNode, sentinelPort);
 
         sentinelConfig.setSentinelPassword(RedisPassword.of(sentinelPassword));
         sentinelConfig.setPassword(RedisPassword.of(redisPassword));
@@ -124,25 +124,30 @@ public class RedisConfig {
     // 캐시 매니저 설정
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory,
-            @Value("${cache.redis.time-to-live}") Duration cacheTimeToLive) {
+                                          @Value("${cache.redis.time-to-live}") Duration cacheTimeToLive) {
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(cacheTimeToLive)
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                .disableCachingNullValues();
+            .entryTtl(cacheTimeToLive)
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+            .disableCachingNullValues();
 
         // 캐시별 TTL 설정
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
         cacheConfigurations.put(CacheType.PERMISSIONS.getCacheName(),
-                defaultCacheConfig
-                        .entryTtl(Duration.ofMinutes(CacheType.PERMISSIONS.getTimeToLiveMinutes()))
-                        .prefixCacheNameWith(CacheType.PERMISSIONS.getCachePrefix()));
+            defaultCacheConfig
+                .entryTtl(Duration.ofMinutes(CacheType.PERMISSIONS.getTimeToLiveMinutes()))
+                .prefixCacheNameWith(CacheType.PERMISSIONS.getCachePrefix()));
+
+        cacheConfigurations.put(CacheType.SCHEMA_COLUMN_TYPES.getCacheName(),
+            defaultCacheConfig
+                .entryTtl(Duration.ofMinutes(CacheType.SCHEMA_COLUMN_TYPES.getTimeToLiveMinutes()))
+                .prefixCacheNameWith(CacheType.SCHEMA_COLUMN_TYPES.getCachePrefix()));
 
         return RedisCacheManager.builder(redisConnectionFactory)
-                .cacheDefaults(defaultCacheConfig)
-                .withInitialCacheConfigurations(cacheConfigurations)
-                .build();
+            .cacheDefaults(defaultCacheConfig)
+            .withInitialCacheConfigurations(cacheConfigurations)
+            .build();
     }
 
 }
