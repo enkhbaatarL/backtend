@@ -13,6 +13,7 @@ import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.ModelAgentRes;
+import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalk;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
@@ -223,6 +224,13 @@ public class MariAgentService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. chatRoomId: %s, qnaNo: %s".formatted(chatRoomId, qnaNo)));
 
         validateTalkOwnership(qna.getChatbotTalk(), user, chatRoomId.toString());
+
+        List<ChatbotTalkQna> qnaList = chatbotTalkQnaRepository.findByChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString());
+
+        // 현재 qna 이후의 대화는 모두 삭제
+        qnaList.stream()
+            .filter(entity -> entity.getChatbotTalkQnaNo() > qnaNo)
+            .forEach(BaseEntity::softDelete);
 
         return executeModelAgent(qna)
             .map(answer -> QnaRes.of(qna, answer))

@@ -230,7 +230,7 @@ public class MiDataDetailService {
         ChartBundleRes bundle = generateChartBundle(gds, settingsContextV3);
 
         // 6. 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()));
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()), gds.getPeriodUnitSeparateCd());
 
     }
 
