@@ -199,7 +199,10 @@ public final class DateUtil {
      * ISO 형식의 날짜 문자열을 LocalDate로 변환
      */
     public static LocalDate fromIsoToLocalDate(String dateStr) {
-        return dateStr == null ? null : LocalDateTime.parse(dateStr, ISO_LOCAL_DATE_TIME_MINUTES).toLocalDate();
+        return dateStr == null ? null :
+            (dateStr.length() == 6) ? YearMonth.parse(dateStr, YYYYMM).atDay(1) :
+            (dateStr.length() == 8) ? LocalDate.parse(dateStr, YYYYMMDD) :
+                LocalDateTime.parse(dateStr, ISO_LOCAL_DATE_TIME_MINUTES).toLocalDate();
     }
 
     /**
