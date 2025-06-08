@@ -149,6 +149,7 @@ public class MiDataDetailService {
         // 요청 정제
         List<ChartsPersonalizeReq> requests = ChartsPersonalizeReq.filterPersonalizeRequests(rawRequests);
         if (requests.isEmpty()) {
+            // todo 초기화를 의도했다면?
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "No valid parameter values in the array.");
         }
 
@@ -230,7 +231,7 @@ public class MiDataDetailService {
         ChartBundleRes bundle = generateChartBundle(gds, settingsContextV3);
 
         // 6. 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()), gds.getPeriodUnitSeparateCd());
+        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()), settingsContextV3.finalizedInterval());
 
     }
 
@@ -602,7 +603,7 @@ public class MiDataDetailService {
      * @throws AppErrorException 지정된 상품 데이터소스가 존재하지 않거나 삭제된 경우
      */
     private GoodsDataSourceDetail getValidatedGoodsDataSource(Integer gdsNo, Integer gdNo, Integer goodsNo) {
-        return goodsDataSourceDetailRepository.findGoodsDataSourceWithGoodsTree(gdsNo, gdNo, goodsNo)
+        return goodsDataSourceDetailRepository.queryDetailsWithAllAssociations(gdsNo, gdNo, goodsNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_INVALID, "It doesn't exist in the [goods-data-source]. goodsDataSource: %s, goodsDataNo: %s, goodsNo: %s".formatted(gdsNo, gdNo, goodsNo)));
     }
 

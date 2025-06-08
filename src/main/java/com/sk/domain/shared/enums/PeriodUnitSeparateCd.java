@@ -48,17 +48,4 @@ public enum PeriodUnitSeparateCd {
         return this.temporalUnit.getDuration().compareTo(minUnit.temporalUnit.getDuration()) >= 0;
     }
 
-    public LocalDate alignStart(LocalDate start) {
-        return switch (this) {
-            case D -> start;
-            case W -> start.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            case M -> start.withDayOfMonth(1);
-            case Y -> start.withDayOfYear(1);
-        };
-    }
-
-    public static LocalDate resolveInclusiveStart(PeriodUnitSeparateCd unit, LocalDate startDate) {
-        return (unit == D || unit == W) ? startDate : unit.alignStart(startDate);
-    }
-
 }

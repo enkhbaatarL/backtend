@@ -5,7 +5,6 @@ import com.sk.common.utils.MathUtil;
 import com.sk.domain.mi.service.chart.dto.BucketBoundary;
 import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import io.micrometer.common.util.StringUtils;
@@ -46,11 +45,11 @@ public class ChartAggregationService {
 
 
         Interval interval = ctx.finalizedInterval();
-        LocalDate inclusiveStart = PeriodUnitSeparateCd.resolveInclusiveStart(gds.getPeriodUnitSeparateCd(), ctx.finalizedStartDate());
+        LocalDate inclusiveStart = Interval.resolveInclusiveStart(ctx.finalizedInterval(), ctx.finalizedStartDate());
         LocalDate exclusiveEnd = ctx.finalizedEndDate().plusDays(1);
 
         // 버킷 생성
-        List<BucketBoundary> boundaries = BucketBoundary.build(dates, exclusiveEnd, inclusiveStart, interval);
+        List<BucketBoundary> boundaries = BucketBoundary.generateBucketsWithLookback(dates, exclusiveEnd, inclusiveStart, interval);
 
         return aggregate(sortedData, boundaries, targetColumns, gds);
     }
