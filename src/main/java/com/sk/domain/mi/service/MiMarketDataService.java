@@ -916,7 +916,7 @@ public class MiMarketDataService {
                 LEFT JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
                 WHERE %s
-                ORDER BY tgsrc.mod_dtm DESC
+                ORDER BY tgd.gds_data_nm ASC
                 """.formatted(select, where);
 
         String countSql = """
