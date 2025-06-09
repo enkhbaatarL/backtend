@@ -103,7 +103,7 @@ public class ChatbotTalkQna extends BaseEntity {
     public static ChatbotTalkQna of(QnaReq.Insert talkReq, ChatbotTalk talk) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
-            .userQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
+            .userQuestionCntt(talkReq.question())
             .isRecommended(Boolean.FALSE)
             .isNotRecommended(Boolean.FALSE)
             .answerStatusCd(AnswerStatusCd.PENDING) // default
@@ -113,7 +113,7 @@ public class ChatbotTalkQna extends BaseEntity {
     public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk, AnswerStatusCd answerStatusCd) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
-            .userQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
+            .userQuestionCntt(talkReq.question())
             .answerStatusCd(answerStatusCd)
             .build();
     }
