@@ -302,7 +302,9 @@ public class MiDataDetailController {
         @RequestParam(value = "endDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate
     ) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentDisposition(ContentDisposition.attachment().filename("%s.xlsx".formatted(DateUtil.currentYmdHms())).build());
+
+        String title = "raw_data_%s.xlsx".formatted(DateUtil.currentYmdHms());
+        headers.setContentDisposition(ContentDisposition.attachment().filename(title).build());
 
         ByteArrayInputStream in = miDataDetailService.downloadGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, startDate, endDate);
 

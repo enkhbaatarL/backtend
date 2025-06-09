@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
@@ -63,8 +64,8 @@ public class ChatbotTalk extends BaseEntity {
         return ChatbotTalk.builder()
                 .chatbotTalkUuid(chatRoomId)
                 .user(user)
-                .talkTitleNm(talkReq.question().substring(0, Math.min(talkReq.question().length(), 100)))
-                .talkFirstQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
+                .talkTitleNm(StringUtils.abbreviate(talkReq.question(), 100))
+                .talkFirstQuestionCntt(StringUtils.abbreviate(talkReq.question(), 250))
                 .talkBeginDt(DateUtil.currentYmd())
                 .finalTalkDt(DateUtil.currentYmd())
                 .build();

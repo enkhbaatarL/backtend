@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sk.common.config.redis.CacheType;
 import com.sk.common.utils.ClauseUtil;
 import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
 import com.sk.domain.shared.mapper.dynamic.MetadataMapper;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.sk.common.config.database.DataSourceContextHolder;
@@ -165,6 +167,11 @@ public class MybatisDynamicQueryService {
         return dynamicMapper.selectDoubleValueResultData(params);
     }
 
+    @Cacheable(
+        cacheNames = CacheType.SCHEMA_COLUMN_TYPES_CONSTANT,
+        key = "#dynamicDataReq.targetDataSource() + ':' + #dynamicDataReq.tableName() + ':' + T(com.sk.common.utils.ClauseUtil).getSelectColumnList(#dynamicDataReq.columns()).get(0)",
+        unless = "#result == null"
+    )
     public SchemaMetadata getMeta(DynamicDataReq dynamicDataReq) {
 
         DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());

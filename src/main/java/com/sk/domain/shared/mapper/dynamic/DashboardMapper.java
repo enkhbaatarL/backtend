@@ -5,9 +5,10 @@ import java.util.Optional;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorExplanatoryMap;
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorGraphMap;
-import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartFactorMap;
+import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap;
+import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorGraphMap;
+import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap;
+import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
 
 @Mapper
 public interface DashboardMapper {
@@ -61,4 +62,14 @@ public interface DashboardMapper {
      * @return DashboardChartFactorGraphMap
      */
     Optional<DashboardChartFactorGraphMap> chartFactorGraph(String marketIndexAnalysisTargetCd, String mnemonicCd);
+    
+    /**
+     * 차트 요약 조회
+     * 
+     * @param queryWhere 조회 조건
+     * @param startDate 시작 날짜
+     * @param endDate 종료 날짜
+     * @return DashboardChartSummaryMap
+     */
+    Optional<DashboardChartSummaryMap> chartSummary(String queryWhere, String startDate, String endDate);
 }

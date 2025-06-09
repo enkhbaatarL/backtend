@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 
@@ -22,7 +22,7 @@ public record Series(
 
 ) {
 
-    public static Series of(ModelAgentRes.Output.Message.Content.Chart chart) {
+    public static Series of(ModelAgentRes.Message.Content.Chart chart) {
 
         List<String> timestamps = chart.date().stream().map(s -> s.replaceAll("-", "")).toList();
         List<BigDecimal> values = chart.value().stream().map(BigDecimal::valueOf).toList();
@@ -36,8 +36,11 @@ public record Series(
 
     }
 
-    public static List<Series> ofList(List<ModelAgentRes.Output.Message.Content.Chart> charts) {
-        return charts != null ? charts.stream().map(Series::of).collect(Collectors.toList()) : List.of();
+    public static List<Series> ofList(List<ModelAgentRes.Message.Content.Chart> charts) {
+        if (charts == null) return Collections.emptyList();
+        return charts.stream()
+            .map(Series::of)
+            .toList();
     }
 
 }

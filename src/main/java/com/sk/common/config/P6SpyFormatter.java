@@ -12,6 +12,8 @@ import java.util.Locale;
 @Component
 public class P6SpyFormatter implements MessageFormattingStrategy {
 
+    private static final int SQL_SHOW_LIMIT_LENGTH = 5000;
+
     @PostConstruct
     public void setLogMessageFormat() {
         P6SpyOptions.getActiveInstance().setLogMessageFormat(this.getClass().getName());
@@ -20,7 +22,12 @@ public class P6SpyFormatter implements MessageFormattingStrategy {
     @Override
     public String formatMessage(int connectionId, String now, long elapsed, String category, String prepared, String sql, String url) {
         sql = formatSql(category, sql);
-        return String.format("[%s] | %d ms | %s", category, elapsed, formatSql(category, sql));
+
+        if (sql != null && sql.length() > SQL_SHOW_LIMIT_LENGTH) {
+            return String.format("[%s] | %d ms | %s...", category, elapsed, sql.substring(0, SQL_SHOW_LIMIT_LENGTH));
+        }
+
+        return String.format("[%s] | %d ms | %s", category, elapsed, sql);
     }
 
     private String formatSql(String category, String sql) {

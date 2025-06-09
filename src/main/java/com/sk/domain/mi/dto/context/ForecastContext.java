@@ -10,16 +10,16 @@ public record ForecastContext(
 
     ChartPredictSettingDetail forecast,
     List<String> fulfillDates,
-    List<ChartPredictSettingDetail> spots,
+    List<ChartPredictSettingDetail> actual,
     List<ChartPredictSettingDetail> futures
 
 ) {
 
-    public static ForecastContext of(ChartPredictSettingDetail forecast, List<String> fulfillDates, List<ChartPredictSettingDetail> spots, List<ChartPredictSettingDetail> futures) {
+    public static ForecastContext of(ChartPredictSettingDetail forecast, List<String> fulfillDates, List<ChartPredictSettingDetail> actual, List<ChartPredictSettingDetail> futures) {
         return ForecastContext.builder()
             .forecast(forecast)
             .fulfillDates(fulfillDates)
-            .spots(spots)
+            .actual(actual)
             .futures(futures)
             .build();
     }
