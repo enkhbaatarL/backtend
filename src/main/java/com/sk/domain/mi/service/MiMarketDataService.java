@@ -954,15 +954,14 @@ public class MiMarketDataService {
             String goodsDataNm = (String) row[3];
             int goodsDataSrcNo = (Integer) row[4];
             String goodsDataSrcNm = (String) row[5];
-            // LocalDateTime modifyDt = ((Timestamp) row[6]).toLocalDateTime();
+            LocalDateTime modifyDt = ((Timestamp) row[6]).toLocalDateTime();
             String targetDbNm = (String) row[7];
             String targetTableNm = (String) row[8];
             String queryConditionCntt = (String) row[9];
             String tableColumnListNm = (String) row[10];
 
             boolean isViewable = isDataViewable(companyNo, userNo, role, goodsNo);
-            Double lastVal = 0.0;
-            LocalDateTime modifyDt = null;
+            Double lastValue = 0.0;
             if (isViewable) {
                 if (targetDbNm != null && targetTableNm != null && queryConditionCntt != null && tableColumnListNm != null) {
                     // 컬럼 목록을 쉼표로 분리하고 공백 제거
@@ -972,19 +971,9 @@ public class MiMarketDataService {
 
                     if (cols.length >= 2) {
                         // 최소 2개의 컬럼이 필요 (날짜, 기본 데이터)
-                        Object[] lastValue = getLastValue(
+                        lastValue = getLastValue(
                                 targetDbNm, targetTableNm, queryConditionCntt,
                                 cols[MARKET_DATA_DATE_COLUMN_INDEX], cols[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX]);
-
-                        if (lastValue != null) {
-                            lastVal = (lastValue[0] != null)
-                                    ? ((Number) lastValue[0]).doubleValue()
-                                    : null;
-
-                            modifyDt = (lastValue[1] != null)
-                                    ? ((Timestamp) lastValue[1]).toLocalDateTime()
-                                    : null;
-                        }
                     }
                 }
             }
@@ -992,7 +981,7 @@ public class MiMarketDataService {
             return new DataCatalogRes(
                     providerNo, goodsNo, goodsDataNo,
                     goodsDataNm, goodsDataSrcNo, goodsDataSrcNm,
-                    isViewable, lastVal, modifyDt);
+                    isViewable, lastValue, modifyDt);
         })
                 .toList();
 
@@ -1022,17 +1011,17 @@ public class MiMarketDataService {
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    private Object[] getLastValue(String targetDbNm, String targetTableNm, String queryConditionCntt, String dateColumnName, String valueColumnName) {
+    private Double getLastValue(String targetDbNm, String targetTableNm, String queryConditionCntt, String dateColumnName, String valueColumnName) {
 
         if (!(StringUtils.hasText(targetDbNm) && StringUtils.hasText(targetTableNm) && StringUtils.hasText(queryConditionCntt)
                 && StringUtils.hasText(dateColumnName) && StringUtils.hasText(valueColumnName))) {
-            return new Object[] {0.0, null};
+            return 0.0;
         }
 
         DataSourceContextHolder.setDataSourceKey(targetDbNm);
         try {
             String sql = String.format("""
-                    SELECT %s, mod_dtm
+                    SELECT %s
                     FROM %s.%s
                     WHERE %s
                     ORDER BY %s DESC
@@ -1043,11 +1032,10 @@ public class MiMarketDataService {
                     queryConditionCntt, // 조건식
                     dateColumnName); // 정렬
 
-            @SuppressWarnings("unchecked")
-            List<Object[]> result = em.createNativeQuery(sql).getResultList();
-            return result.get(0);
+            Object result = em.createNativeQuery(sql).getSingleResult();
+            return result != null ? ((Number) result).doubleValue() : 0.0;
         } catch (Exception e) {
-            return new Object[] {0.0, null};
+            return 0.0;
         } finally {
             DataSourceContextHolder.clearDataSourceKey();
         }
