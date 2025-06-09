@@ -6,7 +6,6 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -529,8 +528,6 @@ public class MiMarketDataService {
      */
     @Transactional
     private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate) {
-        // private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate) {
-
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null) {
             return Collections.emptyList();
         }
@@ -590,7 +587,6 @@ public class MiMarketDataService {
         // 월별로 데이터 그룹화
         Map<String, List<Map<String, Object>>> monthlyGroupedData = new TreeMap<>();
         for (Map<String, Object> row : rawData) {
-
             LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
 
             // e.g. 2024-06-01 ~ 2025-05-31 범위 내 데이터만 처리
@@ -601,7 +597,6 @@ public class MiMarketDataService {
             String yearMonth = DateUtil.toYearMonth(date); // YYYYMM (예: 202406)
 
             monthlyGroupedData.computeIfAbsent(yearMonth, k -> new ArrayList<>()).add(row);
-
         }
 
         // 월별 평균 계산 및 DTO 생성
