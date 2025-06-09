@@ -30,7 +30,7 @@ public record MessageBundle(
 
 ) {
 
-    public static MessageBundle of(ModelAgentRes.Output.Message message, Map<Integer, GoodsDataSourceDetail> gdsMap) {
+    public static MessageBundle of(ModelAgentRes.Message message, Map<Integer, GoodsDataSourceDetail> gdsMap) {
         String updatedMarkdown = MarkdownUtil.insertTableIds(message.content().text());
         return MessageBundle.builder()
             .content(updatedMarkdown)

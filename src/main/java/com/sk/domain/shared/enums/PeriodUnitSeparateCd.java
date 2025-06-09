@@ -4,7 +4,10 @@ import com.sk.domain.shared.enums.chart.Interval;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalUnit;
 
 @Getter
@@ -26,15 +29,6 @@ public enum PeriodUnitSeparateCd {
             case W -> Interval.ONE_WEEK;
             case M -> Interval.ONE_MONTH;
             case Y -> Interval.ONE_YEAR;
-        };
-    }
-
-    public boolean shouldNotAggregate(Interval interval) {
-        return switch (this) {
-            case D -> interval == Interval.ONE_DAY;
-            case W -> interval == Interval.ONE_WEEK;
-            case M -> interval == Interval.ONE_MONTH;
-            case Y -> interval == Interval.ONE_YEAR;
         };
     }
 

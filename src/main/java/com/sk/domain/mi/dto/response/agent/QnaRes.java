@@ -1,20 +1,15 @@
 package com.sk.domain.mi.dto.response.agent;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import org.apache.commons.lang3.ObjectUtils;
 
-import java.util.Map;
 import java.util.Optional;
 
 public record QnaRes(
@@ -34,10 +29,10 @@ public record QnaRes(
     @Schema(description = "비추천 여부", example = "false")
     Boolean isNotRecommended,
 
-    @Schema(description = "답변 상태 코드", example = "COMPLETE", allowableValues = {"COMPLETE", "PENDING", "FAIL"})
+    @Schema(description = "답변 상태 코드", example = "COMPLETE", allowableValues = {"COMPLETE", "PENDING", "FAIL", "FAIL_FORBIDDEN_WORDS", "FAIL_EXCEED_LENGTH"})
     AnswerStatusCd statusCd,
 
-    @Schema(description = "답변 상태 명", example = "완료", allowableValues = {"완료", "대기", "실패"})
+    @Schema(description = "답변 상태 명", example = "완료", allowableValues = {"완료", "대기", "실패", "금지어로 인한 실패", "길이 초과로 인한 실패"})
     String statusNm,
 
     @Schema(description = "피드백 코드", example = "OTHER", allowableValues = {"BUG_ISSUE", "NO_POSSIBLE_RESPONSE", "NOT_FOLLOW_REQUEST", "INACCURATE_INFORMATION", "INCOMPLETE_RESPONSE", "OTHER"})
@@ -66,7 +61,9 @@ public record QnaRes(
             entity.getAnswerStatusCd(),
             entity.getAnswerStatusCd().getDescription(),
             entity.getAssessmentFeedbackCd(),
-            Optional.ofNullable(entity.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null),
+            Optional.ofNullable(entity.getAssessmentFeedbackCd())
+                .map(AssessmentFeedbackCd::getDescription)
+                .orElse(null),
             entity.getAssessmentFeedbackCntt(),
             AuditInfo.ofSimple(
                 entity.getCreateUserId(),
@@ -105,7 +102,10 @@ public record QnaRes(
             .statusCd(qna.getAnswerStatusCd())
             .statusNm(qna.getAnswerStatusCd().getDescription())
             .feedbackCd(qna.getAssessmentFeedbackCd())
-            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null))
+            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd())
+                .map(AssessmentFeedbackCd::getDescription)
+                .orElse(null)
+            )
             .feedbackComment(qna.getAssessmentFeedbackCntt())
             .auditInfo(AuditInfo.ofSimple(
                 qna.getCreateUserId(),

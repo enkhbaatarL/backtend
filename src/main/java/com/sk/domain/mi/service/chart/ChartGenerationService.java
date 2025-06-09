@@ -5,6 +5,7 @@ import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
 import com.sk.domain.shared.entity.master.tmd.DataSourceGroupMapping;
@@ -124,25 +125,23 @@ public class ChartGenerationService {
         }
 
         // 비교 데이터소스 조회
-        List<DataSourceGroupMapping> comparisons = dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainDataSource);
+        List<DataSourceGroupMapping> comparisons = dataSourceGroupMappingRepository.queryWithFullComparisonDetailsByMainDataSource(mainDataSource);
 
         if (comparisons.isEmpty()) {
             return Collections.emptyList();
         }
 
+        PermissionRes permissions = authorizationService.getUserPermissions();
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
+
         // 각 비교 데이터소스에 대한 차트 데이터 생성 (비교군 차트 권한체크)
         return comparisons.stream()
             .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
-            .filter(comparison -> authorizationService.hasGoodsViewPermission(comparison.getCompareGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo()))
+            .filter(comparison -> goodsViewableMap.getOrDefault(comparison.getCompareGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo(), false))
             .map(comparison -> {
                 List<Integer> finalizedCompIds = settingsContext.finalizedCompIds();
                 boolean isVisible = finalizedCompIds.contains(comparison.getId().getCompareGoodsDataSourceNo());
-                return generateChartData(
-                    comparison.getCompareGoodsDataSourceDetail(),
-                    settingsContext,
-                    isVisible, // '비교군' 차트 화면 노출 여부
-                    Boolean.FALSE // 메인 차트 여부
-                );
+                return generateChartData(comparison.getCompareGoodsDataSourceDetail(), settingsContext, isVisible, Boolean.FALSE);
             })
             .toList();
     }

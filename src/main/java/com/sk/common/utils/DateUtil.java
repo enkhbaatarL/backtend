@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Locale;
 
 import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
@@ -270,6 +271,23 @@ public final class DateUtil {
      */
     public static String toYyyyMm(LocalDate date) {
         return date == null ? null : date.format(YYYY_MM);
+    }
+
+    public static LocalDate firstDayOfMonth(LocalDate d) {
+        return d.with(TemporalAdjusters.firstDayOfMonth());
+    }
+
+    public static LocalDate firstDayOfQuarter(LocalDate d) {
+        int month = ((d.getMonthValue() - 1) / 3) * 3 + 1;
+        return LocalDate.of(d.getYear(), month, 1);
+    }
+
+    public static LocalDate firstDayOfHalf(LocalDate d) {
+        return LocalDate.of(d.getYear(), (d.getMonthValue() <= 6 ? 1 : 7), 1);
+    }
+
+    public static LocalDate firstDayOfYear(LocalDate d) {
+        return LocalDate.of(d.getYear(), 1, 1);
     }
 
 }

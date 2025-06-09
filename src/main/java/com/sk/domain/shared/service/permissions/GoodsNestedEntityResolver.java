@@ -33,12 +33,8 @@ public class GoodsNestedEntityResolver {
                 yield goodsData.getGoods().getGoodsNo();
             }
 
-            case "goodsDataSourceNo" -> {
-                GoodsDataSourceDetail gds = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(id)
-                    .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [goods-datasource]. goodsDatasourceNo: %s".formatted(id)));
-
-                yield gds.getGoodsData().getGoods().getGoodsNo();
-            }
+            case "goodsDataSourceNo" -> goodsDataSourceDetailRepository.queryGoodsNoByGoodsDataSourceNo(id)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [goods-datasource]. goodsDatasourceNo: %s".formatted(id)));
 
             default -> throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Unsupported resourceIdParam: " + paramName);
         };

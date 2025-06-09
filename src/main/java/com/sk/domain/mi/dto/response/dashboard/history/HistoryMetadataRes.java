@@ -83,7 +83,7 @@ public record HistoryMetadataRes(
         private static Target of(ForecastContext forecastContext) {
             return Target.builder()
                 .fulfillmentDates(forecastContext.fulfillDates())
-                .settingDetails(SettingDetail.ofList(forecastContext.spots(), forecastContext.futures()))
+                .settingDetails(SettingDetail.ofList(forecastContext.actual(), forecastContext.futures()))
                 .build();
         }
 
