@@ -8,9 +8,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 import com.sk.common.properties.JwtProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableAsync
 @EnableCaching
+@EnableScheduling
 @EnableJpaAuditing
 @SpringBootApplication
 @EnableConfigurationProperties(JwtProperties.class)

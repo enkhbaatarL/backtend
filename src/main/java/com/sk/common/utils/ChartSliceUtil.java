@@ -4,7 +4,7 @@ import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.charts.Series;
-import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+import com.sk.domain.shared.enums.chart.Interval;
 import lombok.experimental.UtilityClass;
 
 import java.time.LocalDate;
@@ -118,14 +118,14 @@ public class ChartSliceUtil {
     /**
      * 차트 번들의 모든 데이터를 시작일 기준으로 잘라내어 새로운 번들 생성
      *
-     * @param src                  원본 차트 번들
-     * @param start                시작일자
-     * @param periodUnitSeparateCd 적재주기
+     * @param src      원본 차트 번들
+     * @param start    시작일자
+     * @param interval 적재주기
      * @return 잘라낸 새 차트 번들
      */
-    public static ChartBundleRes sliceBundle(ChartBundleRes src, LocalDate start, PeriodUnitSeparateCd periodUnitSeparateCd) {
+    public static ChartBundleRes sliceBundle(ChartBundleRes src, LocalDate start, Interval interval) {
 
-        LocalDate alignStart = periodUnitSeparateCd.alignStart(start);
+        LocalDate alignStart = Interval.resolveInclusiveStart(interval, start);
 
         // 메인차트 슬라이싱
         Chart main = sliceChart(src.mainChart(), alignStart);
