@@ -272,5 +272,4 @@ public final class DateUtil {
         return date == null ? null : date.format(YYYY_MM);
     }
 
-    // YYYYMMDD
 }
