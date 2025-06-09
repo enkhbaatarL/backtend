@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +34,7 @@ import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
@@ -63,13 +63,13 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.MarketDataChartSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +114,8 @@ public class MiMarketDataService {
      * @return 마켓 데이터 목록
      */
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo, Authentication authentication) {
-        String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR)); // 2년 전
+        // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR)); // 2년 전
+        LocalDate START_DATE = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
@@ -138,7 +139,6 @@ public class MiMarketDataService {
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
 
-        // TODO: 차트 설정 조회 (데이터 상세에서 지우면 조회 자체가 안되야함)
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
@@ -205,7 +205,7 @@ public class MiMarketDataService {
             }
 
             // 마지막 데이터 값
-            LocalDate lastUpdateDt = DateUtil.fromIsoToLocalDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
+            LocalDate lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
 
             // 마지막 데이터 값
             Double lastValue = Double.parseDouble(rawData.get(rawData.size() - 1).get(defaultDataColumnName).toString());
@@ -217,7 +217,7 @@ public class MiMarketDataService {
             List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
             if (!indexStartDateData.isEmpty()) {
                 String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
-                indexStartDate = DateUtil.fromIsoToLocalDate(rawDate);
+                indexStartDate = DateUtil.parseDate(rawDate);
             } else {
                 indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
             }
@@ -306,7 +306,8 @@ public class MiMarketDataService {
      * @return 마켓 데이터 목록
      */
     public List<MiMarketDataSummaryRes> getMarketDataSummary(Integer customerCompanyNo, Authentication authentication) {
-        String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH)); // 2달 전
+        // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH)); // 2달 전
+        LocalDate START_DATE = LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH);
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
@@ -395,7 +396,7 @@ public class MiMarketDataService {
             }
 
             // 마지막 데이터 날짜 값
-            LocalDate lastUpdateDt = DateUtil.fromIsoToLocalDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
+            LocalDate lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - 1).get(dateColumnName));
 
             // 마지막 데이터 값
             Double lastValue = Double.parseDouble(rawData.get(rawData.size() - 1).get(defaultDataColumnName).toString());
@@ -407,7 +408,7 @@ public class MiMarketDataService {
             List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
             if (!indexStartDateData.isEmpty()) {
                 String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
-                indexStartDate = DateUtil.fromIsoToLocalDate(rawDate);
+                indexStartDate = DateUtil.parseDate(rawDate);
             } else {
                 indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
             }
@@ -527,13 +528,18 @@ public class MiMarketDataService {
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
-    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate) {
+    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate) {
+        // private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate) {
 
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null) {
             return Collections.emptyList();
         }
 
-        String whereClause = "%s >= '%s'".formatted(dateColumnName, startDate);
+        // 날짜 컬럼 스키마 조회
+        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
+        String dateRange = DateBindingUtil.single(meta, startDate);
+
+        String whereClause = "%s >= '%s'".formatted(dateColumnName, dateRange);
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
@@ -584,22 +590,18 @@ public class MiMarketDataService {
         // 월별로 데이터 그룹화
         Map<String, List<Map<String, Object>>> monthlyGroupedData = new TreeMap<>();
         for (Map<String, Object> row : rawData) {
-            String dateStr = row.get(dateColumnName).toString(); // 예: 2023-01-01T00:00
-            try {
-                LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateUtil.ISO_LOCAL_DATE_TIME_MINUTES);
-                LocalDate date = dateTime.toLocalDate();
 
-                // e.g. 2024-06-01 ~ 2025-05-31 범위 내 데이터만 처리
-                if (date.isBefore(adjustedStartDate) || date.isAfter(endDate.withDayOfMonth(endDate.lengthOfMonth()))) {
-                    continue;
-                }
+            LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
 
-                String yearMonth = DateUtil.toYearMonth(dateTime); // YYYYMM (예: 202406)
-                monthlyGroupedData.computeIfAbsent(yearMonth, k -> new ArrayList<>()).add(row);
-            } catch (DateTimeParseException e) {
-                log.warn("Invalid date format: {}, skipping row", dateStr, e);
+            // e.g. 2024-06-01 ~ 2025-05-31 범위 내 데이터만 처리
+            if (date.isBefore(adjustedStartDate) || date.isAfter(endDate.withDayOfMonth(endDate.lengthOfMonth()))) {
                 continue;
             }
+
+            String yearMonth = DateUtil.toYearMonth(date); // YYYYMM (예: 202406)
+
+            monthlyGroupedData.computeIfAbsent(yearMonth, k -> new ArrayList<>()).add(row);
+
         }
 
         // 월별 평균 계산 및 DTO 생성
@@ -614,7 +616,7 @@ public class MiMarketDataService {
             if (monthData.isEmpty()) {
                 // 데이터 없는 경우: 오늘의 일자 또는 월의 마지막 날
                 int dayOfMonth = Math.min(todayDayOfMonth, currentMonth.lengthOfMonth());
-                representativeDate = DateUtil.toIso(currentMonth.withDayOfMonth(dayOfMonth));
+                representativeDate = DateUtil.toYmdHyphen(currentMonth.withDayOfMonth(dayOfMonth));
             } else {
                 // 데이터 있는 경우: 기존 로직
                 representativeDate = selectRepresentativeDate(monthData, dateColumnName, yearMonth, todayDayOfMonth);
@@ -674,14 +676,8 @@ public class MiMarketDataService {
         // 날짜별 데이터 맵 생성
         Map<LocalDate, Map<String, Object>> dateDataMap = new TreeMap<>();
         for (Map<String, Object> row : monthData) {
-            String dateStr = row.get(dateColumnName).toString();
-            try {
-                LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateUtil.ISO_LOCAL_DATE_TIME_MINUTES);
-                LocalDate date = dateTime.toLocalDate();
-                dateDataMap.put(date, row);
-            } catch (DateTimeParseException e) {
-                log.warn("Invalid date format in representative date selection: {}, skipping", dateStr, e);
-            }
+            LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
+            dateDataMap.put(date, row);
         }
 
         // 기준 날짜부터 역순으로 확인 (targetDay, targetDay-1, ...)
@@ -809,7 +805,6 @@ public class MiMarketDataService {
         int previousCount = 0;
 
         for (Map<String, Object> row : rawData) {
-            String dateStr = row.get(dateColumnName).toString();
             Object value = row.get(defaultDataColumnName);
             if (value == null) {
                 continue;
@@ -823,20 +818,16 @@ public class MiMarketDataService {
                 continue;
             }
 
-            try {
-                LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateUtil.ISO_LOCAL_DATE_TIME_MINUTES);
-                LocalDate date = dateTime.toLocalDate();
-                if (!date.isBefore(currentStartDate) && !date.isAfter(currentEndDate)) {
-                    currentSum += val;
-                    currentCount++;
-                } else if (!date.isBefore(previousStartDate) && !date.isAfter(previousEndDate)) {
-                    previousSum += val;
-                    previousCount++;
-                }
-            } catch (DateTimeParseException e) {
-                log.warn("Invalid date format in change rate calculation: {}, skipping", dateStr, e);
-                continue;
+            LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
+
+            if (!date.isBefore(currentStartDate) && !date.isAfter(currentEndDate)) {
+                currentSum += val;
+                currentCount++;
+            } else if (!date.isBefore(previousStartDate) && !date.isAfter(previousEndDate)) {
+                previousSum += val;
+                previousCount++;
             }
+
         }
 
         // 데이터가 없으면 null 반환
