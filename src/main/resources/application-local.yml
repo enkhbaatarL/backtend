@@ -112,7 +112,7 @@ api:
     url: http://localhost:8081
     connection-timeout: 1s
     read-timeout: 20s
-  auth:-token:
+  auth-token:
     url: https://dev-mi.sk.com
     connection-timeout: 1s
     read-timeout: 20s  

@@ -34,9 +34,9 @@ public class RestClientHttpApiConfig {
     }
 
     @Bean
-    public AuthTokenApi authTokenApi(@Value("${api.auth:-token.url}") String url,
-            @Value("${api.auth:-token.connection-timeout:1s}") Duration connectTimeout,
-            @Value("${api.auth:-token.read-timeout:10s}") Duration readTimeout) {
+    public AuthTokenApi authTokenApi(@Value("${api.auth-token.url}") String url,
+            @Value("${api.auth-token.connection-timeout:1s}") Duration connectTimeout,
+            @Value("${api.auth-token.read-timeout:10s}") Duration readTimeout) {
 
         return new RestClientBuilder()
                 .url(url)

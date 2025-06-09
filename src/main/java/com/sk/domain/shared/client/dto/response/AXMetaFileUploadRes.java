@@ -1,11 +1,15 @@
 package com.sk.domain.shared.client.dto.response;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 // @formatter:off
 public record AXMetaFileUploadRes(
        @JsonProperty("data")
-        Data[] data
+        List<Data> data
     ){
 
         public record Data(
@@ -22,7 +26,7 @@ public record AXMetaFileUploadRes(
             String knowledgeConfig,
 
             @JsonProperty("status")
-            String status = "added"
+            String status
         ) {
 
         } 

@@ -11,6 +11,7 @@ import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
 
 import com.sk.domain.shared.client.dto.request.AXMetaFileInfoRegReq;
+import com.sk.domain.shared.client.dto.response.AXMetaFileInfoRegRes;
 import com.sk.domain.shared.client.dto.response.AXMetaFileUploadRes;
 
 @HttpExchange
@@ -20,6 +21,6 @@ public interface AxPlatformApi {
     AXMetaFileUploadRes postMessage(@RequestPart(value = "files") MultipartFile file, @RequestHeader("Authorization") String authToken);
 
     @PutExchange("/api/v1/datasource/{datasourceId}")
-    AXMetaFileUploadRes putMessage(@PathVariable String datasourceId, @RequestBody AXMetaFileInfoRegReq req);
+    AXMetaFileInfoRegRes putMessage(@PathVariable String datasourceId, @RequestBody AXMetaFileInfoRegReq req);
 
 }
