@@ -69,9 +69,11 @@ public class MariAgentService {
 
         Integer companyNo = authorizationService.getCompanyNoWithPriority();
         CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
 
-        List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository.findByMarketIndexAnalysisTargetCdAndIsDeletedFalseOrderByMajorQuestionRnk(company.getMarketIndexAnalysisTargetCd());
+        List<ChatbotMajorQuestion> majorQuestions = chatbotMajorQuestionRepository
+                .findByMarketIndexAnalysisTargetCdAndIsDeletedFalseOrderByMajorQuestionRnk(company.getMarketIndexAnalysisTargetCd());
         return MajorQuestionRes.ofList(majorQuestions);
     }
 
@@ -146,12 +148,12 @@ public class MariAgentService {
     public QnaRes postChatRoomQna(UUID chatRoomId, QnaReq.Insert talkReq, User user) {
 
         ChatbotTalk talk = chatbotTalkRepository
-            .findByChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString())
-            .map(existingTalk -> {
-                validateTalkOwnership(existingTalk, user, chatRoomId.toString());
-                return existingTalk;
-            })
-            .orElseGet(() -> chatbotTalkRepository.save(ChatbotTalk.of(chatRoomId.toString(), talkReq, user)));
+                .findByChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString())
+                .map(existingTalk -> {
+                    validateTalkOwnership(existingTalk, user, chatRoomId.toString());
+                    return existingTalk;
+                })
+                .orElseGet(() -> chatbotTalkRepository.save(ChatbotTalk.of(chatRoomId.toString(), talkReq, user)));
 
         AnswerStatusCd validationStatus = validateQuestion(talkReq.question());
 
@@ -163,8 +165,8 @@ public class MariAgentService {
         ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
 
         return executeModelAgent(qna)
-            .map(answer -> QnaRes.of(qna, answer))
-            .orElse(QnaRes.of(qna));
+                .map(answer -> QnaRes.of(qna, answer))
+                .orElse(QnaRes.of(qna));
     }
 
     /**
@@ -178,8 +180,10 @@ public class MariAgentService {
     @Transactional
     public QnaRes patchQnaAssessment(UUID chatRoomId, Integer qnaNo, QnaAssessmentReq qnaAssessmentReq) {
 
-        ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(qnaNo, chatRoomId.toString())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. chatRoomId: %s, qnaNo: %s".formatted(chatRoomId.toString(), qnaNo)));
+        ChatbotTalkQna qna = chatbotTalkQnaRepository
+                .findByChatbotTalkQnaNoAndChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(qnaNo, chatRoomId.toString())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "It doesn't exist in the [qna]. chatRoomId: %s, qnaNo: %s".formatted(chatRoomId.toString(), qnaNo)));
 
         qna.update(qnaAssessmentReq);
 
@@ -200,7 +204,8 @@ public class MariAgentService {
         ChatbotTalk talk = findAndValidateTalkOwnership(chatRoomId, user);
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalkAndIsDeletedFalse(qnaNo, talk)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. chatRoomId: %s, qnaNo: %s".formatted(chatRoomId, qnaNo)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "It doesn't exist in the [qna]. chatRoomId: %s, qnaNo: %s".formatted(chatRoomId, qnaNo)));
 
         AnswerStatusCd validationStatus = validateQuestion(qna.getUserQuestionCntt());
 
@@ -213,12 +218,12 @@ public class MariAgentService {
 
         // 현재 qna 이후의 대화는 모두 삭제
         qnaList.stream()
-            .filter(entity -> entity.getChatbotTalkQnaNo() > qnaNo)
-            .forEach(BaseEntity::softDelete);
+                .filter(entity -> entity.getChatbotTalkQnaNo() > qnaNo)
+                .forEach(BaseEntity::softDelete);
 
         return executeModelAgent(qna)
-            .map(answer -> QnaRes.of(qna, answer))
-            .orElse(QnaRes.of(qna));
+                .map(answer -> QnaRes.of(qna, answer))
+                .orElse(QnaRes.of(qna));
     }
 
     /**
@@ -230,7 +235,7 @@ public class MariAgentService {
     private Optional<AnswerRes> executeModelAgent(ChatbotTalkQna qna) {
         try {
 
-//            ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getUserQuestionCntt());
+            // ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getUserQuestionCntt());
             ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Integer> relatedGdsNos = extractRelatedGdsNos(modelAgentRes);
@@ -242,8 +247,8 @@ public class MariAgentService {
             }
 
             Map<Integer, GoodsDataSourceDetail> gdsMap = goodsDataSourceDetailRepository.findByGoodsDataSourceNoInAndIsDeletedFalse(relatedGdsNos)
-                .stream()
-                .collect(Collectors.toMap(GoodsDataSourceDetail::getGoodsDataSourceNo, Function.identity()));
+                    .stream()
+                    .collect(Collectors.toMap(GoodsDataSourceDetail::getGoodsDataSourceNo, Function.identity()));
 
             AnswerRes answerRes = AnswerRes.of(modelAgentRes, gdsMap);
             qna.updateCompleteResult(modelAgentRes, answerRes);
@@ -251,7 +256,8 @@ public class MariAgentService {
             return Optional.ofNullable(answerRes);
 
         } catch (Exception e) {
-            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(),
+                    qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
             qna.updateFailResult();
             return Optional.empty();
         }
@@ -270,7 +276,8 @@ public class MariAgentService {
 
         // 1. ID로 엔티티 조회
         ChatbotTalk talk = chatbotTalkRepository.findByChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString())
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [talk(chat-room)]. chatRoomId: %s".formatted(chatRoomId)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                        "It doesn't exist in the [talk(chat-room)]. chatRoomId: %s".formatted(chatRoomId)));
 
         // 2. 소유권 검증
         validateTalkOwnership(talk, user, chatRoomId.toString());
@@ -287,7 +294,8 @@ public class MariAgentService {
      */
     private void validateTalkOwnership(ChatbotTalk talk, User currentUser, String requestedChatRoomId) {
         if (!Objects.equals(currentUser.getUserNo(), talk.getUser().getUserNo())) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "You can only control talks(chatRooms) you started. (chatRoomId: %s)".formatted(requestedChatRoomId));
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "You can only control talks(chatRooms) you started. (chatRoomId: %s)".formatted(requestedChatRoomId));
         }
     }
 
@@ -310,15 +318,15 @@ public class MariAgentService {
      */
     private List<Integer> extractRelatedGdsNos(ModelAgentRes modelAgentRes) {
         return Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::messages)
-            .orElse(Collections.emptyList()) // null 체크 강화
-            .stream()
-            .map(ModelAgentRes.Message::content)
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Message.Content::relatedData)
-            .filter(Objects::nonNull)
-            .flatMap(List::stream)
-            .toList();
+                .map(ModelAgentRes::messages)
+                .orElse(Collections.emptyList()) // null 체크 강화
+                .stream()
+                .map(ModelAgentRes.Message::content)
+                .filter(Objects::nonNull)
+                .map(ModelAgentRes.Message.Content::relatedData)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .toList();
     }
 
 }

@@ -73,10 +73,8 @@ public class MiSignalMapController {
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         String title = miSignalMapService.getTitle(cNo);
-        log.info("  ========>>>>>>>>> Signal Map Title: {}", title);
 
         String latestUpdatedDt = miSignalMapService.getLatestUpdatedDt(cNo);
-        log.info("  ========>>>>>>>>> Latest Updated Date: {}", latestUpdatedDt);
 
         List<ScreenCategoryDto> datas = miSignalMapService.getSignalMap(cNo, period, filter);
 

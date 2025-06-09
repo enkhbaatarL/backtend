@@ -1,6 +1,7 @@
 package com.sk.domain.shared.client.config;
 
 import com.sk.common.http.RestClientBuilder;
+import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.ModelAgentApi;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,18 @@ public class RestClientHttpApiConfig {
                 .connectionTimeout(connectTimeout)
                 .readTimeout(readTimeout)
                 .build(ModelAgentApi.class);
+    }
+
+    @Bean
+    public AuthTokenApi authTokenApi(@Value("${api.auth-token.url}") String url,
+            @Value("${api.auth-token.connection-timeout:1s}") Duration connectTimeout,
+            @Value("${api.auth-token.read-timeout:10s}") Duration readTimeout) {
+
+        return new RestClientBuilder()
+                .url(url)
+                .connectionTimeout(connectTimeout)
+                .readTimeout(readTimeout)
+                .build(AuthTokenApi.class);
     }
 
     @Bean
