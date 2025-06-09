@@ -2,7 +2,7 @@ package com.sk.domain.mi.dto.response.agent.talk;
 
 import com.sk.common.model.TableRes;
 import com.sk.common.utils.MarkdownUtil;
-import com.sk.domain.shared.client.dto.response.ModelAgentRes;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;

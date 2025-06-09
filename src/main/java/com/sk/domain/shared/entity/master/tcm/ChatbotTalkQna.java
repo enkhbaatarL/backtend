@@ -6,7 +6,7 @@ import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.shared.client.dto.response.ModelAgentRes;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -142,25 +142,13 @@ public class ChatbotTalkQna extends BaseEntity {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
         this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
         this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
-                .map(ModelAgentRes::output)
-                .map(ModelAgentRes.Output::messages)
-                .orElseGet(Collections::emptyList)
-                .stream()
-                .filter(Objects::nonNull)
-                .map(ModelAgentRes.Output.Message::usageMetadata)
-                .filter(Objects::nonNull)
-                .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::inputTokens)
-                .sum();
+                .map(ModelAgentRes::usage)
+                .map(ModelAgentRes.Usage::promptTokens)
+                .orElse(0);
         this.outputTokenCnt = Optional.ofNullable(modelAgentRes)
-                .map(ModelAgentRes::output)
-                .map(ModelAgentRes.Output::messages)
-                .orElseGet(Collections::emptyList)
-                .stream()
-                .filter(Objects::nonNull)
-                .map(ModelAgentRes.Output.Message::usageMetadata)
-                .filter(Objects::nonNull)
-                .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::outputTokens)
-                .sum();
+                .map(ModelAgentRes::usage)
+                .map(ModelAgentRes.Usage::completionTokens)
+                .orElse(0);
     }
 
     public void updateFailResult() {

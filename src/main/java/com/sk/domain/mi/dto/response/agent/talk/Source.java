@@ -6,7 +6,7 @@ import lombok.Builder;
 import java.util.Collections;
 import java.util.List;
 
-import com.sk.domain.shared.client.dto.response.ModelAgentRes;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 
 @Builder
 public record Source(
@@ -25,10 +25,11 @@ public record Source(
     }
 
     public static List<Source> ofList(List<ModelAgentRes.Message.Content.Source> sources) {
-        if (sources == null) return Collections.emptyList();
+        if (sources == null)
+            return Collections.emptyList();
         return sources.stream()
-            .map(Source::of)
-            .toList();
+                .map(Source::of)
+                .toList();
     }
 
 }

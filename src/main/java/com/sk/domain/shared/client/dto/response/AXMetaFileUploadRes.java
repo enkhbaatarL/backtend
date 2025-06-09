@@ -19,7 +19,10 @@ public record AXMetaFileUploadRes(
             String fileMetaData,
 
             @JsonProperty("knowledge_config")
-            String knowledgeConfig
+            String knowledgeConfig,
+
+            @JsonProperty("status")
+            String status = "added"
         ) {
 
         } 

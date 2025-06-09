@@ -1,26 +1,17 @@
 package com.sk.domain.admin.listener;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
-
 import com.sk.common.utils.JsonFileWriter;
 import com.sk.common.utils.MultipartFileUtil;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;
 import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.dto.AXMetaFileDto;
+import com.sk.domain.shared.client.dto.request.AXMetaFileInfoRegReq;
 import com.sk.domain.shared.client.dto.response.AXMetaFileUploadRes;
 import com.sk.domain.shared.client.dto.response.AuthTokenRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -86,8 +77,8 @@ public class AXEventListener {
             AXMetaFileUploadRes axMetaFileUploadRes = axPlatformApi.postMessage(multipartFile, "Bearer ".concat(authTokenRes.accessToken()));
             System.out.println("   ===>>> axMetaFileUploadRes: " + axMetaFileUploadRes.toString());
 
-            String datasourceId = "";
-            // axPlatformApi.putMessage(datasourceId, new )
+            String datasourceId = "3532b434-d39e-4111-8c38-46238350a85e";
+            // axPlatformApi.putMessage(datasourceId, new AXMetaFileInfoRegReq(new Moi))
 
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);

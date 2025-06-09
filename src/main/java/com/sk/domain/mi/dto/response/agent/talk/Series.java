@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
-import com.sk.domain.shared.client.dto.response.ModelAgentRes;
+import com.sk.domain.shared.client.dto.ModelAgentRes;
 
 @Builder
 public record Series(
@@ -37,10 +37,11 @@ public record Series(
     }
 
     public static List<Series> ofList(List<ModelAgentRes.Message.Content.Chart> charts) {
-        if (charts == null) return Collections.emptyList();
+        if (charts == null)
+            return Collections.emptyList();
         return charts.stream()
-            .map(Series::of)
-            .toList();
+                .map(Series::of)
+                .toList();
     }
 
 }
