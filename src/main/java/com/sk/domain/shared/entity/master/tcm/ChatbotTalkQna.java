@@ -139,29 +139,21 @@ public class ChatbotTalkQna extends BaseEntity {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
         this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
         this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
-            .map(ModelAgentRes.Output::messages)
-            .orElseGet(Collections::emptyList)
-            .stream()
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message::usageMetadata)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::inputTokens)
-            .sum();
+            .map(ModelAgentRes::usage)
+            .map(ModelAgentRes.Usage::promptTokens)
+            .orElse(0);
         this.outputTokenCnt = Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
-            .map(ModelAgentRes.Output::messages)
-            .orElseGet(Collections::emptyList)
-            .stream()
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message::usageMetadata)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::outputTokens)
-            .sum();
+            .map(ModelAgentRes::usage)
+            .map(ModelAgentRes.Usage::completionTokens)
+            .orElse(0);
     }
 
     public void updateFailResult() {
         this.answerStatusCd = AnswerStatusCd.FAIL;
+    }
+
+    public void updateFailResult(AnswerStatusCd validationStatus) {
+        this.answerStatusCd = validationStatus;
     }
 
 }

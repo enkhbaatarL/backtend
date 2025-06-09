@@ -31,6 +31,7 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import com.sk.domain.test.DummyResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,13 +45,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MariAgentService {
 
+    @Value("${features.validation.model-agent.write-length:-1}")
+    private int writeLimit;
+
     private final AuthorizationService authorizationService;
 
     private final ModelAgentApi modelAgentApi;
 
+    private final ProhibitedWordService prohibitedWordService;
+
     private final ChatbotTalkRepository chatbotTalkRepository;
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
-    private final ProhibitedWordRepository prohibitedWordRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
@@ -163,29 +168,6 @@ public class MariAgentService {
     }
 
     /**
-     * 질문에 대한 밸리데이션 체크 (금칙어, 길이)
-     * 실패 사유가 있을 경우 AnswerStatusCd 반환, 아니면 null
-     */
-    private AnswerStatusCd validateQuestion(String question) {
-        if (question.length() > 2000) {
-            return AnswerStatusCd.FAIL_EXCEED_LENGTH;
-        }
-        if (isProhibitedWordUsed(question)) {
-            return AnswerStatusCd.FAIL_FORBIDDEN_WORDS;
-        }
-        return null;
-    }
-
-    /**
-     * 금칙어 포함 여부
-     */
-    private boolean isProhibitedWordUsed(String question) {
-        return prohibitedWordRepository.findByIsUsedTrueAndIsDeletedFalse()
-            .stream()
-            .anyMatch(word -> question.contains(word.getProhibitedWordName()));
-    }
-
-    /**
      * 주어진 ID와 Q&A 번호를 사용하여 Q&A의 평가 정보를 업데이트합니다.
      *
      * @param chatRoomId       채팅룸 ID
@@ -219,6 +201,13 @@ public class MariAgentService {
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.findByChatbotTalkQnaNoAndChatbotTalkAndIsDeletedFalse(qnaNo, talk)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [qna]. chatRoomId: %s, qnaNo: %s".formatted(chatRoomId, qnaNo)));
+
+        AnswerStatusCd validationStatus = validateQuestion(qna.getUserQuestionCntt());
+
+        if (validationStatus != null) {
+            qna.updateFailResult(validationStatus);
+            return QnaRes.of(qna);
+        }
 
         List<ChatbotTalkQna> qnaList = chatbotTalkQnaRepository.findByChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString());
 
@@ -303,17 +292,30 @@ public class MariAgentService {
     }
 
     /**
+     * 질문에 대한 밸리데이션 체크 (길이, 금칙어)
+     * 실패 사유가 있을 경우 AnswerStatusCd 반환, 아니면 null
+     */
+    private AnswerStatusCd validateQuestion(String question) {
+        if (writeLimit > 0 && question.length() > writeLimit) {
+            return AnswerStatusCd.FAIL_EXCEED_LENGTH;
+        }
+        if (prohibitedWordService.containsProhibitedWord(question)) {
+            return AnswerStatusCd.FAIL_FORBIDDEN_WORDS;
+        }
+        return null;
+    }
+
+    /**
      * 데이터소스 번호 추출
      */
     private List<Integer> extractRelatedGdsNos(ModelAgentRes modelAgentRes) {
         return Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
-            .map(ModelAgentRes.Output::messages)
+            .map(ModelAgentRes::messages)
             .orElse(Collections.emptyList()) // null 체크 강화
             .stream()
-            .map(ModelAgentRes.Output.Message::content)
+            .map(ModelAgentRes.Message::content)
             .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message.Content::relatedData)
+            .map(ModelAgentRes.Message.Content::relatedData)
             .filter(Objects::nonNull)
             .flatMap(List::stream)
             .toList();

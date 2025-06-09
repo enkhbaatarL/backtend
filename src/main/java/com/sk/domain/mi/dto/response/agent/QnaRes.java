@@ -1,20 +1,15 @@
 package com.sk.domain.mi.dto.response.agent;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.shared.client.dto.ModelAgentRes;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import org.apache.commons.lang3.ObjectUtils;
 
-import java.util.Map;
 import java.util.Optional;
 
 public record QnaRes(
@@ -107,7 +102,10 @@ public record QnaRes(
             .statusCd(qna.getAnswerStatusCd())
             .statusNm(qna.getAnswerStatusCd().getDescription())
             .feedbackCd(qna.getAssessmentFeedbackCd())
-            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd()).map(AssessmentFeedbackCd::getDescription).orElse(null))
+            .feedbackNm(Optional.ofNullable(qna.getAssessmentFeedbackCd())
+                .map(AssessmentFeedbackCd::getDescription)
+                .orElse(null)
+            )
             .feedbackComment(qna.getAssessmentFeedbackCntt())
             .auditInfo(AuditInfo.ofSimple(
                 qna.getCreateUserId(),

@@ -16,7 +16,7 @@ public record AnswerRes(
 
     public static AnswerRes of(ModelAgentRes modelAgentRes, Map<Integer, GoodsDataSourceDetail> gdsMap) {
         return AnswerRes.builder()
-            .bundles(modelAgentRes.output().messages()
+            .bundles(modelAgentRes.messages()
                 .stream()
                 .map(message -> MessageBundle.of(message, gdsMap))
                 .toList()
