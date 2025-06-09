@@ -101,6 +101,31 @@ public class MailService {
      * @param to 받는 사람
      * @param subject 메일 제목
      * @param content 메일 내용
+     */
+    public void sendMailNoAccessLog(String to, String subject, String content) {
+        MimeMessage message = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(mailProperties.getFrom());
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content, true);
+            javaMailSender.send(message);
+
+            log.info("Mail sent successfully");
+        } catch (Exception e) {
+
+            log.error("Mail sending failed", e);
+            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
+                    String.format("Mail sending failed: %s", e.getMessage()));
+        }
+    }
+
+    /**
+     * 메일 발송
+     * @param to 받는 사람
+     * @param subject 메일 제목
+     * @param content 메일 내용
      * @param emailAccessLog 이메일 전송 로그
      */
     public void sendMail(String to, String subject, String content, EmailAccessLog emailAccessLog) {

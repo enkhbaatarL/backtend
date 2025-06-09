@@ -49,4 +49,9 @@ public record TestReq() {
 			@Schema(description = "엑셀 조건 내용", example = "1") String excelConditionCntt
 	) {
 	}
+
+	public record sendEmail(
+			@NotEmpty @Schema(description = "이메일 주소", example = "abc@twolinecode.com") String email
+	) {
+	}
 }
