@@ -1,15 +1,28 @@
 package com.sk.domain.admin.listener;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
 import com.sk.common.utils.JsonFileWriter;
+import com.sk.common.utils.MultipartFileUtil;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;
+import com.sk.domain.shared.client.AuthTokenApi;
+import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.dto.AXMetaFileDto;
+import com.sk.domain.shared.client.dto.response.AXMetaFileUploadRes;
+import com.sk.domain.shared.client.dto.response.AuthTokenRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AXEventListener {
     private final JsonFileWriter jsonFileWriter;
+    private final AuthTokenApi authTokenApi;
+    private final AxPlatformApi axPlatformApi;
 
     @Async
     @EventListener
@@ -55,7 +70,24 @@ public class AXEventListener {
             // JSON 파일 생성
             jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
 
+            File file = new File(directoryPath + File.separator + uniqueFilename.concat(".json"));
+            MultipartFileUtil multipartFile = new MultipartFileUtil("files", file, null);
+
             // todo: API 호출 로직 작성
+            AuthTokenRes authTokenRes = authTokenApi.getMessage();
+            if (authTokenRes == null || authTokenRes.accessToken() == null) {
+                // log.error("Failed to retrieve access token");
+                System.out.println("   ===>>> Failed to retrieve access token: " + authTokenRes);
+                return;
+            }
+            System.out.println("   ===>>> authTokenRes: " + authTokenRes.toString());
+            System.out.println("   ===>>> Access Token: " + authTokenRes.accessToken());
+
+            AXMetaFileUploadRes axMetaFileUploadRes = axPlatformApi.postMessage(multipartFile, "Bearer ".concat(authTokenRes.accessToken()));
+            System.out.println("   ===>>> axMetaFileUploadRes: " + axMetaFileUploadRes.toString());
+
+            String datasourceId = "";
+            // axPlatformApi.putMessage(datasourceId, new )
 
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);
