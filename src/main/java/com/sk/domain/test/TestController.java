@@ -201,4 +201,10 @@ public class TestController {
     public String decodeFromBase64(@RequestParam("ciphertext") String ciphertext) {
         return new String(testService.decodeFromBase64(ciphertext));
     }
+
+    // 이메일 발송 테스트
+    @PostMapping("/send-email")
+    public Boolean sendEmail(@RequestBody @Valid TestReq.sendEmail testReq) {
+        return testService.sendEmail(testReq);
+    }
 }

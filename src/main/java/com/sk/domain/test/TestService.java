@@ -3,8 +3,7 @@ package com.sk.domain.test;
 import java.util.Base64;
 import java.util.List;
 
-import com.sk.domain.admin.service.ExcelService;
-import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -17,13 +16,13 @@ import com.sk.common.utils.JwtUtil;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.admin.service.ExcelService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
-import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
 import com.sk.domain.shared.mapper.hynix.tlm.HynixEmailAccessLogMapper;
 import com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
@@ -31,7 +30,9 @@ import com.sk.domain.shared.repository.master.tcm.ComponentInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.AuthService;
+import com.sk.domain.shared.service.MailService;
 
+import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
@@ -51,9 +52,8 @@ public class TestService {
     private final AdminPermissionRepository adminPermissionRepository;
     private final ComponentInfoRepository componentInfoRepository;
     private final ExcelService excelService;
-    private final DynamicMapper dynamicMapper;
-    private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final AuthService authService;
+    private final MailService mailService;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -182,5 +182,16 @@ public class TestService {
 
     public byte[] decodeFromBase64(String stringToDecode) {
         return Base64.getDecoder().decode(stringToDecode);
+    }
+
+    public Boolean sendEmail(TestReq.sendEmail testReq) {
+        String to = testReq.email();
+        String subject = "TEST MAIL";
+        String content = """
+                <h1>TEST MAIL</h1>
+                <p>TEST MAIL</p>
+                """;;
+        mailService.sendMailNoAccessLog(to, subject, content);
+        return true;
     }
 }

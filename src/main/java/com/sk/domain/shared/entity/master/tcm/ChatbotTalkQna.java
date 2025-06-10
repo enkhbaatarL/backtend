@@ -85,7 +85,10 @@ public class ChatbotTalkQna extends BaseEntity {
     private Integer outputTokenCnt;
 
     @Builder
-    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt, String chatbotAnswerCntt, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd answerStatusCd, AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt, Integer inputTokenCnt, Integer outputTokenCnt) {
+    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
+            Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt, String chatbotAnswerCntt, Boolean isRecommended,
+            Boolean isNotRecommended, AnswerStatusCd answerStatusCd, AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt,
+            Integer inputTokenCnt, Integer outputTokenCnt) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.chatbotTalkQnaNo = chatbotTalkQnaNo;
         this.chatbotTalk = chatbotTalk;
@@ -102,20 +105,20 @@ public class ChatbotTalkQna extends BaseEntity {
 
     public static ChatbotTalkQna of(QnaReq.Insert talkReq, ChatbotTalk talk) {
         return ChatbotTalkQna.builder()
-            .chatbotTalk(talk)
-            .userQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
-            .isRecommended(Boolean.FALSE)
-            .isNotRecommended(Boolean.FALSE)
-            .answerStatusCd(AnswerStatusCd.PENDING) // default
-            .build();
+                .chatbotTalk(talk)
+                .userQuestionCntt(talkReq.question())
+                .isRecommended(Boolean.FALSE)
+                .isNotRecommended(Boolean.FALSE)
+                .answerStatusCd(AnswerStatusCd.PENDING) // default
+                .build();
     }
 
     public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk, AnswerStatusCd answerStatusCd) {
         return ChatbotTalkQna.builder()
-            .chatbotTalk(talk)
-            .userQuestionCntt(talkReq.question().substring(0, Math.min(talkReq.question().length(), 250)))
-            .answerStatusCd(answerStatusCd)
-            .build();
+                .chatbotTalk(talk)
+                .userQuestionCntt(talkReq.question())
+                .answerStatusCd(answerStatusCd)
+                .build();
     }
 
     public void update(QnaAssessmentReq dto) {
@@ -139,30 +142,21 @@ public class ChatbotTalkQna extends BaseEntity {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
         this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
         this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
-            .map(ModelAgentRes.Output::messages)
-            .orElseGet(Collections::emptyList)
-            .stream()
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message::usageMetadata)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::inputTokens)
-            .sum();
+                .map(ModelAgentRes::usage)
+                .map(ModelAgentRes.Usage::promptTokens)
+                .orElse(0);
         this.outputTokenCnt = Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
-            .map(ModelAgentRes.Output::messages)
-            .orElseGet(Collections::emptyList)
-            .stream()
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message::usageMetadata)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.UsageMetadata::outputTokens)
-            .sum();
+                .map(ModelAgentRes::usage)
+                .map(ModelAgentRes.Usage::completionTokens)
+                .orElse(0);
     }
 
     public void updateFailResult() {
         this.answerStatusCd = AnswerStatusCd.FAIL;
     }
 
-}
+    public void updateFailResult(AnswerStatusCd validationStatus) {
+        this.answerStatusCd = validationStatus;
+    }
 
+}

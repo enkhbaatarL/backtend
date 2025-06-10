@@ -112,8 +112,12 @@ api:
     url: http://localhost:8081
     connection-timeout: 1s
     read-timeout: 20s
+  auth-token:
+    url: https://dev-mi.sk.com
+    connection-timeout: 1s
+    read-timeout: 20s  
   ax-platform:
-    url: https://aip.sktai.io
+    url: https://devadxp.adotbiz.ai
     connection-timeout: 1s
     read-timeout: 20s
 
@@ -153,3 +157,11 @@ aes:
 
 server:
   domain: http://localhost:8080
+
+features:
+  validation:
+    model-agent:
+      write-length: -1 # -1 means no limit
+  scheduling:
+    prohibited-word:
+      refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)

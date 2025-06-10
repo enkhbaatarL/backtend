@@ -111,4 +111,12 @@ public enum Interval {
             .orElse(null);
     }
 
+    public static LocalDate resolveInclusiveStart(Interval interval, LocalDate startDate) {
+        return switch (interval) {
+            case ONE_DAY, ONE_WEEK, TWO_WEEK -> startDate;
+            case ONE_MONTH, THREE_MONTH, SIX_MONTH -> startDate.withDayOfMonth(1);
+            case ONE_YEAR -> startDate.withDayOfYear(1);
+        };
+    }
+
 }

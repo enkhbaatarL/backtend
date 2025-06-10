@@ -44,21 +44,21 @@ public class MiGoodsPermissionService {
         return permissionRes;
     }
 
-    //    @Cacheable(
-//        cacheNames = CacheType.PERMISSIONS_CONSTANT,
-//        key = "'acadmin'",
-//        unless = "#result.companies == null || #result.companies.empty"
-//    )
+    @Cacheable(
+        cacheNames = CacheType.PERMISSIONS_CONSTANT,
+        key = "'admin'",
+        unless = "#result.companies == null || #result.companies.empty"
+    )
     public PermissionRes getAccessAdminGoodsPermissions() {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findAdminGoodsPermissions();
         return PermissionRes.fromAuthorityMappings(goodsMappings);
     }
 
-    //    @Cacheable(
-//        cacheNames = CacheType.PERMISSIONS_CONSTANT,
-//        key = "'company:'+#companyNo",
-//        unless = "#result.companies == null || #result.companies.empty"
-//    )
+    @Cacheable(
+        cacheNames = CacheType.PERMISSIONS_CONSTANT,
+        key = "'company:'+#companyNo",
+        unless = "#result.companies == null || #result.companies.empty"
+    )
     public PermissionRes getPlusOperatorGoodsPermissions(Integer companyNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findPlusOperatorGoodsPermissions(companyNo);
         return PermissionRes.fromAuthorityMappings(goodsMappings);

@@ -40,7 +40,12 @@ public class CustomChartPredictSettingDetailRepositoryImpl implements CustomChar
                     .fetchJoin()
                 .leftJoin(goodsData.goods, goods)
                     .fetchJoin()
-                .where(chartPredictSetting.customerCompany.eq(customerCompany))
+                .where(chartPredictSetting.customerCompany.eq(customerCompany)
+                        .and(chartPredictSetting.isDeleted.isFalse())
+                        .and(chartPredictSettingDetail.isDeleted.isFalse())
+                        .and(goodsDataSourceDetail.isDeleted.isFalse())
+                        .and(goodsData.isDeleted.isFalse())
+                        .and(goods.isDeleted.isFalse()))
                 .fetch();
 
         // 단일 ChartPredictSetting 추출

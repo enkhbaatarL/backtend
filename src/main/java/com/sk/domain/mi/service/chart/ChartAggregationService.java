@@ -43,12 +43,13 @@ public class ChartAggregationService {
             .distinct() // 중복 날짜 제거
             .toList();
 
+
         Interval interval = ctx.finalizedInterval();
-        LocalDate inclusiveStart = ctx.finalizedStartDate();
+        LocalDate inclusiveStart = Interval.resolveInclusiveStart(ctx.finalizedInterval(), ctx.finalizedStartDate());
         LocalDate exclusiveEnd = ctx.finalizedEndDate().plusDays(1);
 
         // 버킷 생성
-        List<BucketBoundary> boundaries = BucketBoundary.build(dates, exclusiveEnd, inclusiveStart, interval);
+        List<BucketBoundary> boundaries = BucketBoundary.generateBucketsWithLookback(dates, exclusiveEnd, inclusiveStart, interval);
 
         return aggregate(sortedData, boundaries, targetColumns, gds);
     }
@@ -58,10 +59,6 @@ public class ChartAggregationService {
         if (ObjectUtils.isEmpty(sortedData)) {
             return Collections.emptyList();
         }
-
-//        if (gds.getPeriodUnitSeparateCd().shouldNotAggregate(boundaries.get(0).interval())) {
-//            return sortedData;
-//        }
 
         String dateColumn = targetColumns.get(RenderAs.DATE.getIndex());
         String volumeColumn = gds.getTradeVolumeColumnNm();
@@ -115,9 +112,13 @@ public class ChartAggregationService {
         return rows.stream()
             .filter(r -> {
                 LocalDate d = DateUtil.parseDate(r.get(dateCol));
-                return d != null && !d.isBefore(start) && d.isBefore(exclusiveEnd);
+                return d != null && isBetween(d, start, exclusiveEnd);
             })
             .collect(Collectors.toList());
+    }
+
+    private static boolean isBetween(LocalDate d, LocalDate start, LocalDate exclusiveEnd) {
+        return (d.isEqual(start) || d.isAfter(start)) && d.isBefore(exclusiveEnd);
     }
 
     private Map<String, Object> aggregateCandle(List<Map<String, Object>> bucket, LocalDate representative, String dateCol, String volumeCol, List<String> targetCols) {

@@ -11,6 +11,7 @@ import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.repository.master.tmd.custom.CustomGoodsDataSourceDetailRepository;
+import org.springframework.data.repository.query.Param;
 
 public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsDataSourceDetail, Integer>, CustomGoodsDataSourceDetailRepository {
     /**
@@ -30,6 +31,14 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
 
     @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
+
+    @Query("""
+        SELECT gds.goodsData.goods.goodsNo
+        FROM GoodsDataSourceDetail gds
+        WHERE gds.goodsDataSourceNo = :goodsDataSourceNo
+        AND gds.isDeleted = false
+        """)
+    Optional<Integer> queryGoodsNoByGoodsDataSourceNo(@Param("goodsDataSourceNo") Integer goodsDataSourceNo);
 
     @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
     List<GoodsDataSourceDetail> findByGoodsDataSourceNoInAndIsDeletedFalse(List<Integer> goodsDataSourceNos);
@@ -58,6 +67,23 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             AND gd.goodsDataNo = :goodsDataNo
             AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsDataSourceDetail> findGoodsDataSourceWithGoodsTree(Integer goodsDataSourceNo, Integer goodsDataNo, Integer goodsNo);
+    Optional<GoodsDataSourceDetail> queryGoodsDataSourceWithGoodsTree(Integer goodsDataSourceNo, Integer goodsDataNo, Integer goodsNo);
+
+    @Query(value = """
+            SELECT DISTINCT gds
+            FROM GoodsDataSourceDetail gds
+            JOIN FETCH gds.goodsData gd
+            JOIN FETCH gd.goods g
+            JOIN FETCH g.provider p
+            LEFT JOIN FETCH p.providerDataColumns
+            WHERE gds.isDeleted = false
+            AND gds.goodsDataUseManagementCd = 'backend'
+            AND gd.isDeleted = false
+            AND g.isDeleted = false
+            AND gds.goodsDataSourceNo = :goodsDataSourceNo
+            AND gd.goodsDataNo = :goodsDataNo
+            AND g.goodsNo = :goodsNo
+            """)
+    Optional<GoodsDataSourceDetail> queryDetailsWithAllAssociations(@Param("goodsDataSourceNo")Integer goodsDataSourceNo, @Param("goodsDataNo")Integer goodsDataNo, @Param("goodsNo")Integer goodsNo);
 
 }

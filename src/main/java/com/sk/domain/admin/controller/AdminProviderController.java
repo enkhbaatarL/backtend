@@ -15,7 +15,9 @@ import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.admin.service.AdminGoodsService;
 import com.sk.domain.admin.service.AdminProviderService;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.FileService;
@@ -31,6 +33,8 @@ import jakarta.validation.constraints.Min;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -53,7 +57,8 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel", "text/csv");
-    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt",
+    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm",
+            "xlsx", "ppt",
             "pptx");
 
     /*********************************************************************************************************************
@@ -547,15 +552,31 @@ public class AdminProviderController {
         return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, false, fileHash));
     }
 
-    @ApiOrder(92)
-    @Operation(summary = "같은(파일명 and 해쉬값) 비정형 데이타 파일 존재하는지 체크", description = "같은(파일명 and 해쉬값) 비정형 데이타 파일이 존재하는지 체크합니다.")
+    @ApiOrder(101)
+    @Operation(summary = "동일한 file 존재 여부 체크", description = "")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping(value = "/goods-datas/upload-file/unstructured-data/exist")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public BaseResponse<FileExistRes> uploadUnstructuredDataFile(
-            @RequestParam(value = "fileName", required = false, defaultValue = "") String fileName,
-            @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash) {
+    public BaseResponse<FileExistRes> fileExists(
+            @RequestParam(value = "fileName", required = true, defaultValue = "") String fileName,
+            @RequestParam(value = "fileHash", required = true, defaultValue = "") String fileHash,
+            @RequestParam(value = "goodsDataNm", required = true, defaultValue = "") String goodsDataNm) {
 
-        return BaseResponseFactory.create(fileService.fileExist(fileName, fileHash));
+        List<GoodsData> goodsDatas = goodsDataService.getGoodsData(goodsDataNm);
+        if (goodsDatas.size() > 0) {
+            List<UploadedFile> uploadedFiles = fileService.fileExist(fileName, fileHash);
+            if (uploadedFiles.size() > 0) {
+                for (GoodsData goodsData : goodsDatas) {
+                    for (UploadedFile uploadedFile : uploadedFiles) {
+                        if (goodsData.getGoodsDataNo() != null && uploadedFile.getFileRelationshipObjectDistinguishNo() != null
+                                && goodsData.getGoodsDataNo().equals(uploadedFile.getFileRelationshipObjectDistinguishNo())) {
+                            return BaseResponseFactory.create(new FileExistRes(true));
+                        }
+                    }
+                }
+            }
+
+        }
+        return BaseResponseFactory.create(new FileExistRes(false));
     }
 }

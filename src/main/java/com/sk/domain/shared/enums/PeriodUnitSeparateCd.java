@@ -32,15 +32,6 @@ public enum PeriodUnitSeparateCd {
         };
     }
 
-    public boolean shouldNotAggregate(Interval interval) {
-        return switch (this) {
-            case D -> interval == Interval.ONE_DAY;
-            case W -> interval == Interval.ONE_WEEK;
-            case M -> interval == Interval.ONE_MONTH;
-            case Y -> interval == Interval.ONE_YEAR;
-        };
-    }
-
     public long toSeconds(int count) {
         return temporalUnit.getDuration().multipliedBy(count).toSeconds();
     }
@@ -55,15 +46,6 @@ public enum PeriodUnitSeparateCd {
      */
     public boolean isGreaterOrEqual(PeriodUnitSeparateCd minUnit) {
         return this.temporalUnit.getDuration().compareTo(minUnit.temporalUnit.getDuration()) >= 0;
-    }
-
-    public LocalDate alignStart(LocalDate start) {
-        return switch (this) {
-            case D -> start;
-            case W -> start.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            case M -> start.withDayOfMonth(1);
-            case Y -> start.withDayOfYear(1);
-        };
     }
 
 }
