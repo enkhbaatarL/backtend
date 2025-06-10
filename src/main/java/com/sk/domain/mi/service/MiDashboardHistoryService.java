@@ -258,10 +258,11 @@ public class MiDashboardHistoryService {
 
         // 2. 최소/최대 날짜 추출
         LocalDate minDate = dates.stream().min(LocalDate::compareTo).orElse(LocalDate.now());
+        LocalDate baseDate = minDate.isBefore(fulfillDate) ? minDate : fulfillDate.with(TemporalAdjusters.firstDayOfMonth());
         LocalDate maxDate = dates.stream().max(LocalDate::compareTo).orElse(LocalDate.now());
 
-        // 3. 해당 달의 1일/말일로 변환 (예측구간)
-        String start = DateUtil.toYmd(minDate.with(TemporalAdjusters.firstDayOfMonth()));
+        // 3. 해당 달의 1일/말일로 변환 (실제가/선물가)
+        String start = DateUtil.toYmd(baseDate);
         String end = DateUtil.toYmd(maxDate.with(TemporalAdjusters.lastDayOfMonth()));
 
         List<DoubleValueResultData> counterpartResults = getCounterPartResultData(counterpart.getGoodsDataSourceDetail(), start, end);
@@ -269,7 +270,7 @@ public class MiDashboardHistoryService {
         int goodsNo = counterpart.getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo();
         boolean permitted = authorizationService.hasGoodsViewPermission(goodsNo);
 
-        return HistoryDataRes.ofList(forecast.getChartPredictSetting(), forecastResults, counterpartResults, counterpart.getIsFuture(), permitted);
+        return HistoryDataRes.ofList(forecast.getChartPredictSetting(), forecastResults, counterpartResults, counterpart.getIsFuture(), permitted, fulfillDate);
     }
 
     /**
