@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -47,11 +47,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphDatasource;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
@@ -86,6 +89,7 @@ import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.ChartPredictDataType;
 import com.sk.domain.shared.enums.chart.ChartPredictLineType;
 import com.sk.domain.shared.enums.dashboard.DashboardChartDataTableType;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.mapper.dynamic.DashboardMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
@@ -181,8 +185,7 @@ public class MiDashboardService {
                         return null;
                     }
 
-                    String rawDate = lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME).toString();
-                    return DateUtil.fromYmd(rawDate);
+                    return DateUtil.parseDate(lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                 })
                 .collect(Collectors.toList());
 
@@ -344,7 +347,7 @@ public class MiDashboardService {
                                     return null;
                                 }
                                 try {
-                                    LocalDate date = DateUtil.fromYmd(dateValue.toString());
+                                    LocalDate date = DateUtil.parseDate(dateValue);
                                     return date.withDayOfMonth(1); // 월의 첫 번째 날로 변환
                                 } catch (Exception e) {
                                     return null; // 잘못된 날짜 형식 무시
@@ -578,20 +581,14 @@ public class MiDashboardService {
                     }
 
                     if (monthlyAverages == null) {
-                        String END_DATE = chartPredictSettingDetail.getIsChartLinePredictVal() ? DateUtil.toYmd(endDate)
-                                : DateUtil.toYmdHyphen(endDate);
-                        String START_DATE = chartPredictSettingDetail.getIsChartLinePredictVal() ? DateUtil.toYmd(startDate)
-                                : DateUtil.toYmdHyphen(startDate);
-
                         // 원시 데이터 조회
                         List<Map<String, Object>> rawData = chartPredictSettingDetail.getIsChartLinePredictVal()
-                                ? getForcastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, START_DATE, END_DATE)
-                                : getActualDataRows(goodsDataSource, dateColumnName, START_DATE, END_DATE);
+                                ? getForcastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, startDate, endDate)
+                                : getActualDataRows(goodsDataSource, dateColumnName, startDate, endDate);
 
                         // 예측 데이터인 경우
                         if (chartPredictSettingDetail.getIsChartLinePredictVal() && !rawData.isEmpty()) {
-                            String lastUpdatedStr = rawData.get(rawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME).toString();
-                            lastUpdated = DateUtil.fromYmd(lastUpdatedStr);
+                            lastUpdated = DateUtil.parseDate(rawData.get(rawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                             dashboardDataSource = DashboardDataSource.of(goodsDataSource, chartPredictSettingDetail);
                         }
 
@@ -679,17 +676,8 @@ public class MiDashboardService {
         Map<String, List<Double>> monthlyValues = new TreeMap<>();
         Map<String, String> monthlyPredictDates = new TreeMap<>(); // prdc_fulf_dt 저장
         for (Map<String, Object> row : rawData) {
-            String yearMonth = null;
+            String yearMonth = DateUtil.toYyyyMm(DateUtil.parseDate(row.get(dateColumnName)));
             String predictDate = null;
-
-            // TODO: 날짜 타입 범용적으로 다시 작업
-            // 날짜 칼럼 값이 LocalDateTime 타입인 경우
-            if (row.get(dateColumnName) instanceof LocalDateTime) {
-                yearMonth = DateUtil.toYyyyMm((LocalDateTime) row.get(dateColumnName));
-            } else if (row.get(dateColumnName) instanceof String) {
-                // 날짜 칼럼 값이 String 타입인 경우
-                yearMonth = DateUtil.toYyyyMm(DateUtil.fromYmd((String) row.get(dateColumnName)));
-            }
 
             // 예측 데이터인 경우에만 예측수행날짜가 있다
             if (isPredict) {
@@ -809,11 +797,14 @@ public class MiDashboardService {
      */
     @Transactional
     private List<Map<String, Object>> getForcastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
-            String startDate,
-            String endDate) {
+            LocalDate startDate,
+            LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
             return Collections.emptyList();
         }
+
+        String END_DATE = DateUtil.toYmd(endDate);
+        String START_DATE = DateUtil.toYmd(startDate);
 
         String dbQueryConditionCntt = goodsDataSourceDetail.getQueryConditionCntt();
         String dbColumnList = goodsDataSourceDetail.getTableColumnListNm();
@@ -860,7 +851,7 @@ public class MiDashboardService {
                 MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
                 MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
                 goodsDataSourceDetail.getTargetTableNm(),
-                dateColumnName, startDate, endDate,
+                dateColumnName, START_DATE, END_DATE,
                 key1, value1,
                 key2, value2,
                 MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
@@ -885,13 +876,15 @@ public class MiDashboardService {
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
-    private List<Map<String, Object>> getActualDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String startDate,
-            String endDate) {
+    private List<Map<String, Object>> getActualDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate,
+            LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
             return Collections.emptyList();
         }
 
-        String whereClause = "%s >= '%s' AND %s <= '%s'".formatted(dateColumnName, startDate, dateColumnName, endDate);
+        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
+        Pair<String, String> range = DateBindingUtil.range(meta, startDate, endDate);
+        String whereClause = ClauseUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
@@ -1072,8 +1065,6 @@ public class MiDashboardService {
         // 엑셀 파일 생성
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet(EXCEL_SHEET_NAME);
-            // int maxWidth = 10 * 256;
-            // sheet.setDefaultColumnWidth(maxWidth);
 
             int EXCEL_HEADER_ROW_INDEX = 0; // 엑셀 헤더 행 인덱스
             int EXCEL_HEADER_COLUMN_INDEX = 0; // 엑셀 헤더 열 인덱스
@@ -1390,22 +1381,15 @@ public class MiDashboardService {
         // 기본 데이터 칼럼
         String actualDefaultDataColumnName = actualTableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
-        ChartPredictSetting chartPredictSetting = chartPredictSettingRepository.findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
+        // ChartPredictSetting chartPredictSetting = chartPredictSettingRepository.findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
+        //         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
 
         LocalDate endDate = baseDate.with(TemporalAdjusters.lastDayOfMonth());
 
         LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
 
-        // TODO: 날짜 타입 변환
-        // 차트 조회 종료 날짜(2025-01-01)
-        String END_DATE = DateUtil.toYmdHyphen(endDate);
-        // 차트 조회 시작 날짜(2025-01-01)
-        String START_DATE = DateUtil.toYmdHyphen(startDate);
-
-        // TODO: 날짜 타입 변환
         // 그래프 RawData 조회
-        List<Map<String, Object>> graphRawData = getActualDataRows(actualGoodsDataSourceDetail, actualDateColumnName, START_DATE, END_DATE);
+        List<Map<String, Object>> graphRawData = getActualDataRows(actualGoodsDataSourceDetail, actualDateColumnName, startDate, endDate);
 
         // 월별 날짜 생성
         List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
@@ -1417,7 +1401,9 @@ public class MiDashboardService {
         DashboardChartFactorGraphMetadata graphMetadata = DashboardChartFactorGraphMetadata.of(
                 actualGoodsDataSourceDetail);
 
+        DashboardChartFactorGraphDatasource graphDatasource = DashboardChartFactorGraphDatasource.of(actualGoodsDataSourceDetail);
+
         return DashboardChartFactorGraphRes.of(chartFactorGraphExplanatory != null ? chartFactorGraphExplanatory.getExplanatoryDetailCntt() : null,
-                graphMetadata, monthlyAverages);
+                graphMetadata, monthlyAverages, graphDatasource);
     }
 }
