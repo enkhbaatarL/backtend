@@ -100,7 +100,6 @@ public class MiNotificationController {
 				.create(miNotificationService.createNotificationSetting(goodsDataSourceNo, notifications, user));
 	}
 
-	// TODO: 커서기반 페이지네이션 필요
 	@RequiredPermission(roles = {Role.USER})
 	@Parameters({
 			@Parameter(name = "goodsDataSourceNo", description = "상품 데이터 소스 번호(PK)", required = true),

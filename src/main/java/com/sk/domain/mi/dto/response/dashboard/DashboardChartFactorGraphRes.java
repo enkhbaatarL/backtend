@@ -14,21 +14,25 @@ public record DashboardChartFactorGraphRes(
 
     @Schema(description = "차트 메타데이터") DashboardChartFactorGraphMetadata graphMetadata,
 
-    @Schema(description = "차트 데이터") List<DashboardChartRawData> rawData
+    @Schema(description = "차트 데이터") List<DashboardChartRawData> rawData,
+
+    @Schema(description = "차트 데이터 소스") DashboardChartFactorGraphDatasource datasource
 ) {
     @Builder
-    public DashboardChartFactorGraphRes(String summary, DashboardChartFactorGraphMetadata graphMetadata, List<DashboardChartRawData> rawData) {
+    public DashboardChartFactorGraphRes(String summary, DashboardChartFactorGraphMetadata graphMetadata, List<DashboardChartRawData> rawData, DashboardChartFactorGraphDatasource datasource) {
         this.summary = summary;
         this.graphMetadata = graphMetadata;
         this.rawData = rawData;
+        this.datasource = datasource;
     }
 
     public static DashboardChartFactorGraphRes of(String summary, DashboardChartFactorGraphMetadata graphMetadata,
-            List<DashboardChartRawData> rawData) {
+            List<DashboardChartRawData> rawData, DashboardChartFactorGraphDatasource datasource) {
         return DashboardChartFactorGraphRes.builder()
                 .summary(summary)
                 .graphMetadata(graphMetadata)
                 .rawData(rawData)
+                .datasource(datasource)
                 .build();
     }
 }

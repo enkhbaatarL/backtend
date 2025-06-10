@@ -54,6 +54,7 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphDatasource;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
@@ -1380,26 +1381,13 @@ public class MiDashboardService {
         // 기본 데이터 칼럼
         String actualDefaultDataColumnName = actualTableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
-        ChartPredictSetting chartPredictSetting = chartPredictSettingRepository.findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
+        // ChartPredictSetting chartPredictSetting = chartPredictSettingRepository.findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
+        //         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
 
         LocalDate endDate = baseDate.with(TemporalAdjusters.lastDayOfMonth());
 
         LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
 
-
-
-        
-        // // TODO: 날짜 타입 변환
-        // // 차트 조회 종료 날짜(2025-01-01)
-        // String END_DATE = DateUtil.toYmdHyphen(endDate);
-        // // 차트 조회 시작 날짜(2025-01-01)
-        // String START_DATE = DateUtil.toYmdHyphen(startDate);
-
-
-
-
-        // TODO: 날짜 타입 변환
         // 그래프 RawData 조회
         List<Map<String, Object>> graphRawData = getActualDataRows(actualGoodsDataSourceDetail, actualDateColumnName, startDate, endDate);
 
@@ -1413,7 +1401,9 @@ public class MiDashboardService {
         DashboardChartFactorGraphMetadata graphMetadata = DashboardChartFactorGraphMetadata.of(
                 actualGoodsDataSourceDetail);
 
+        DashboardChartFactorGraphDatasource graphDatasource = DashboardChartFactorGraphDatasource.of(actualGoodsDataSourceDetail);
+
         return DashboardChartFactorGraphRes.of(chartFactorGraphExplanatory != null ? chartFactorGraphExplanatory.getExplanatoryDetailCntt() : null,
-                graphMetadata, monthlyAverages);
+                graphMetadata, monthlyAverages, graphDatasource);
     }
 }

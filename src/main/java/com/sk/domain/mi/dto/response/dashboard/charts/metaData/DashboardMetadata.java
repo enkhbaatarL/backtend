@@ -19,7 +19,7 @@ public record DashboardMetadata(
 
 		@Schema(description = "기준 날짜(YYYY-MM)", example = "2021-01") String baseDate,
 
-		@Schema(description = "데이터 테이블 타입", example = "GOODS_DATA_SOURCE") DashboardChartDataTableType dataTableType) {
+		@Schema(description = "데이터 테이블 타입", example = "FORECAST_SINGLE_LAYER") DashboardChartDataTableType dataTableType) {
 	@Builder
 	public DashboardMetadata(String marketIndexAnalysisTargetCd, LocalDate lastUpdateDt, String currency,
 			String currentUnitCd, String baseDate, DashboardChartDataTableType dataTableType) {
