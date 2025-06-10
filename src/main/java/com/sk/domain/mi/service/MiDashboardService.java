@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,8 +38,6 @@ import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +73,7 @@ import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartLine;
 import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartRawData;
 import com.sk.domain.mi.dto.response.dashboard.charts.metaData.DashboardChartFactorGraphMetadata;
 import com.sk.domain.mi.dto.response.dashboard.charts.metaData.DashboardMetadata;
+import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
 import com.sk.domain.mi.dto.response.dashboard.summary.DashboardSummary;
 import com.sk.domain.mi.dto.response.dashboard.summary.DashboardSummaryRes;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
@@ -84,8 +82,6 @@ import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.Claim;
-import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.ChartPredictDataType;
 import com.sk.domain.shared.enums.chart.ChartPredictLineType;
 import com.sk.domain.shared.enums.dashboard.DashboardChartDataTableType;
@@ -226,7 +222,7 @@ public class MiDashboardService {
      * @return DashboardSummaryRes
      */
     public DashboardSummaryRes getDashboardSummary(int companyNo, String date) {
-        List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date);
+        List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date, null);
 
         boolean isFileDownload = summaries.stream()
                 .anyMatch(summary -> summary.explanatoryFilePath() != null);
@@ -239,10 +235,10 @@ public class MiDashboardService {
      * 
      * @param companyNo 회사 번호
      * @param date      날짜
-     * @return byte[]
+     * @return byte[]z
      */
-    public byte[] getDashboardSummaryFileDownload(int companyNo, String date) {
-        List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date);
+    public byte[] getDashboardSummaryFileDownload(int companyNo, String date, String predictDate) {
+        List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date, predictDate);
 
         List<String> filePaths = summaries.stream()
                 .map(DashboardSummary::explanatoryFilePath)
@@ -263,13 +259,13 @@ public class MiDashboardService {
      * @param date      날짜
      * @return List<DashboardSummary>
      */
-    public List<DashboardSummary> getDashboardSummaries(int companyNo, String date) {
-        LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
+    public List<DashboardSummary> getDashboardSummaries(int companyNo, String date, String predictDate) {
+        String baseDate = date != null ? date : DateUtil.toYmd(LocalDate.now());
 
-        // 월 첫 번째 날
-        String startDate = DateUtil.toYmd(baseDate.withDayOfMonth(1));
-        // 월 마지막 날
-        String endDate = DateUtil.toYmd(baseDate.with(TemporalAdjusters.lastDayOfMonth()));
+        String startDate = predictDate != null ? 
+            DateUtil.toYmd(DateUtil.parseDate(predictDate).withDayOfMonth(1)) : null;
+        String endDate = predictDate != null ? 
+            DateUtil.toYmd(DateUtil.parseDate(predictDate).with(TemporalAdjusters.lastDayOfMonth())) : null;
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
@@ -286,12 +282,17 @@ public class MiDashboardService {
 
         return chartPredictSettingDetails.stream()
                 .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-                .map(chartPredictSettingDetail -> {
+                .flatMap(chartPredictSettingDetail -> {
                     GoodsDataSourceDetail goodsDataSourceDetail = chartPredictSettingDetail.getGoodsDataSourceDetail();
+                    if (goodsDataSourceDetail == null || goodsDataSourceDetail.getQueryConditionCntt() == null) {
+                        return Stream.empty();
+                    }
+
                     String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
-                    // summary 데이터 리스트 조회
-                    return dashboardMapper.chartSummary(queryWhere, startDate, endDate).orElse(null);
+                   // summary 데이터 리스트 조회
+                    List<DashboardChartSummaryMap> summaries = dashboardMapper.chartSummary(queryWhere, baseDate, startDate, endDate);
+                    return summaries != null ? summaries.stream() : Stream.empty();
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.collectingAndThen(
@@ -327,8 +328,7 @@ public class MiDashboardService {
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
-        // 데이터가 존재하는 월별 날짜 수집
-        Set<LocalDate> existingDates = chartPredictSettingDetails.parallelStream()
+        return DashboardChartDateRes.of(chartPredictSettingDetails.parallelStream()
                 .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
                 .flatMap(chartPredictSettingDetail -> {
                     GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
@@ -338,27 +338,17 @@ public class MiDashboardService {
 
                     // 데이터 조회
                     List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource, MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
-
-                    // rawData에서 날짜 추출 및 월별 첫 번째 날로 변환
                     return rawData.stream()
                             .map(row -> {
                                 Object dateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
                                 if (dateValue == null) {
                                     return null;
                                 }
-                                try {
-                                    LocalDate date = DateUtil.parseDate(dateValue);
-                                    return date.withDayOfMonth(1); // 월의 첫 번째 날로 변환
-                                } catch (Exception e) {
-                                    return null; // 잘못된 날짜 형식 무시
-                                }
+                                return DateUtil.parseDate(dateValue);
                             })
                             .filter(Objects::nonNull);
                 })
-                .collect(Collectors.toSet()); // 중복 제거
-
-        return DashboardChartDateRes.of(existingDates.stream()
-                .sorted(Comparator.reverseOrder())
+                .distinct()
                 .collect(Collectors.toList()));
     }
 
@@ -931,11 +921,12 @@ public class MiDashboardService {
         // yyyyMM 형식으로 데이터 묶기 위함
         int startDateLength = 1;
         int endDateLength = 6;
-        String GROUP_BY = "SUBSTRING(%s, %d, %d)".formatted(dateColumnName, startDateLength, endDateLength);
-        String ORDER_BY = String.format("%s DESC", GROUP_BY);
+        String dateColumn = String.format("MAX(%s) as %s", dateColumnName, dateColumnName);
+        String groupBy = "SUBSTRING(%s, %d, %d)".formatted(dateColumnName, startDateLength, endDateLength);
+        String orderBy = String.format("%s DESC", groupBy);
 
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofGroupByOrderBy(goodsDataSourceDetail.getTargetDbNm(),
-                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(), GROUP_BY, ORDER_BY));
+                goodsDataSourceDetail.getTargetTableNm(), dateColumn, goodsDataSourceDetail.getQueryConditionCntt(), groupBy, orderBy));
     }
 
     /**
@@ -1051,7 +1042,7 @@ public class MiDashboardService {
         // 날짜 범위 설정
         LocalDate endDate = baseDate.plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt())
                 .with(TemporalAdjusters.lastDayOfMonth());
-        LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH);
+        LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
         // 월별 날짜 생성
         List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
 

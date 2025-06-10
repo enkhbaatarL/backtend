@@ -27,8 +27,11 @@
         <if test="additionalWhereClause != null and additionalWhereClause != ''">
             AND ${additionalWhereClause}
         </if>
-        <if test="orderByColumns != null and orderByColumns != ''">
-            ORDER BY ${orderByColumns}
+        <if test="groupByColumn != null and groupByColumn != ''">
+            GROUP BY ${groupByColumn}
+        </if>
+        <if test="orderByColumn != null and orderByColumn != ''">
+            ORDER BY ${orderByColumn}
         </if>
         <if test="limit != null and limit != ''">
             LIMIT ${limit}

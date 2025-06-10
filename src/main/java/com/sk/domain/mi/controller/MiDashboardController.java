@@ -127,7 +127,7 @@ public class MiDashboardController {
 	@ApiOrder(6)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
-			@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202505")
+			@Parameter(name = "date", description = "조회할 년월(YYYYMMDD)", example = "20250511")
 	})
 	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -135,14 +135,15 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<DashboardSummaryRes> getDashboardSummary(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date) {
+			@RequestParam(value = "date", required = true) String date) {
 		return BaseResponseFactory.create(miDashboardService.getDashboardSummary(companyNo, date));
 	}
 
 	@ApiOrder(7)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
-			@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202505")
+			@Parameter(name = "date", description = "조회할 년월(YYYYMMDD), ", example = "20250511"),
+			@Parameter(name = "predictDate", description = "예측 날짜(YYYYMM)", example = "202506")
 	})
 	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -150,13 +151,14 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public ResponseEntity<byte[]> getDashboardSummaryFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date) throws UnsupportedEncodingException {
+			@RequestParam(value = "date", required = true) String date,
+			@RequestParam(value = "predictDate", required = false) String predictDate) throws UnsupportedEncodingException {
 
 		String FILE_PREFIX = "dashboard_summary";
 		String encodedFileName = URLEncoder.encode(
 				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
 				StandardCharsets.UTF_8.toString());
-		byte[] fileData = miDashboardService.getDashboardSummaryFileDownload(companyNo, date);
+		byte[] fileData = miDashboardService.getDashboardSummaryFileDownload(companyNo, date, predictDate);
 
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
