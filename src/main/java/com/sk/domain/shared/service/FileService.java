@@ -463,18 +463,9 @@ public class FileService {
         }
     }
 
-    public FileExistRes fileExist(String fileName, String fileHash) {
-        List<UploadedFile> list = uploadedFileRepository.findByFileNameAndFileHash(Normalizer.normalize(fileName, Normalizer.Form.NFC),
+    public List<UploadedFile> fileExist(String fileName, String fileHash) {
+        return uploadedFileRepository.findByFileNameAndFileHash(Normalizer.normalize(fileName, Normalizer.Form.NFC),
                 fileHash);
-
-        if (list.size() > 0) {
-            UploadedFile uploadedFile = list.get(0);
-            boolean fileUsed = uploadedFile.getFileRelationshipObjectSeparateCd() != null
-                    && !uploadedFile.getFileRelationshipObjectSeparateCd().equals(FileRelationshipObjectSeparateCode.TEMP.getCode());
-            return FileExistRes.of(uploadedFile.getFileNo(), true, fileUsed);
-        } else {
-            return FileExistRes.of(0L, false, false);
-        }
     }
 
     private String getFileExtension(String fileName) {

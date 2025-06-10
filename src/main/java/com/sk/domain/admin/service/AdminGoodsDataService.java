@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -110,18 +111,6 @@ public class AdminGoodsDataService {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(providerNo, goodsNo, keyword, pageable));
-
-        // switch (role) {
-        // case ADMIN, API_SUB_ADMIN:
-        // return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForAdmin(providerNo, goodsNo, keyword, pageable));
-
-        // case OPERATOR, API_PLUS_OPERATOR:
-        // return PaginationRes
-        // .toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNoForOperator(companyNo, providerNo, goodsNo, keyword, pageable));
-
-        // default:
-        // throw CustomAuthorizationException.of(Error.AUTH_INSUFFICIENT_PERMISSIONS);
-        // }
     }
 
     /**
@@ -690,5 +679,9 @@ public class AdminGoodsDataService {
     private String nowOffsetDateTime() {
         return ZonedDateTime.now(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
+    }
+
+    public List<GoodsData> getGoodsData(String goodsDataNm) {
+        return goodsDataRepository.findByGoodsDataNm(goodsDataNm);
     }
 }

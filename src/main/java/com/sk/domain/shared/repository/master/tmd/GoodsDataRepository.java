@@ -191,4 +191,11 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                     """)
     List<LatestInsightsRes> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
+    @Query(value = """
+            SELECT gd
+            FROM GoodsData gd
+            WHERE gd.isDeleted = false
+                AND gd.goodsDataNm = :goodsDataNm
+            """)
+    List<GoodsData> findByGoodsDataNm(String goodsDataNm);
 }
