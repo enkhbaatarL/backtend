@@ -3,7 +3,6 @@ package com.sk.domain.mi.dto.response.dashboard.history;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MathUtil;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
-import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.PriceType;
 import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
@@ -27,15 +26,9 @@ public record HistoryDataRes(
     PriceEntry counterpart
 ) {
 
-    public static List<HistoryDataRes> ofList(ChartPredictSetting setting, List<TargetPredictResultData> forecastResults, List<DoubleValueResultData> counterPartResults, Boolean isFuture, Boolean isCounterPartPermitted) {
+    public static List<HistoryDataRes> ofList(ChartPredictSetting setting, List<TargetPredictResultData> forecastResults, List<DoubleValueResultData> counterPartResults, Boolean isFuture, Boolean isCounterPartPermitted, LocalDate fulfillDate) {
 
         PeriodUnitSeparateCd periodCd = setting.getScopePeriodUnitSeparateCd();
-
-//        Map<LocalDate, BigDecimal> forecastMap = forecastResults.stream()
-//            .collect(Collectors.toMap(r -> DateUtil.fromYmd(r.getPredictResultDate()), TargetPredictResultData::getPredictResultValue));
-//
-//        Map<LocalDate, BigDecimal> counterpartMap = counterPartResults.stream()
-//            .collect(Collectors.toMap(DoubleValueResultData::getDate, DoubleValueResultData::getValue));
 
         Map<String, BigDecimal> forecastMap = forecastResults.stream()
             .filter(r -> r != null && r.getPredictResultDate() != null && r.getPredictResultValue() != null)
@@ -62,11 +55,23 @@ public record HistoryDataRes(
 
         SortedSet<String> dates = new TreeSet<>();
         dates.addAll(forecastMap.keySet());
-        dates.addAll(counterpartMap.keySet());
+//        dates.addAll(counterpartMap.keySet());
 
         List<HistoryDataRes> result = new ArrayList<>(dates.size());
         BigDecimal prevForecast = null;
         BigDecimal prevCounter  = null;
+
+        // Monthly 예측값 && counterPart 실제가인 경우, 예측 시점 달 실제가를 포함
+        if (PeriodUnitSeparateCd.M == periodCd && !isFuture) {
+            result.add(HistoryDataRes.builder()
+                .date(DateUtil.format(fulfillDate, periodCd))
+                .counterpart(PriceEntry.of(
+                    PriceType.ACTUAL,
+                    PriceStat.ifPermittedOrNull(counterpartMap.get(DateUtil.format(fulfillDate, periodCd)), null, false, false, isCounterPartPermitted),
+                    isCounterPartPermitted
+                ))
+                .build());
+        }
 
         for (String date : dates) {
 
