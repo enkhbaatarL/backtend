@@ -367,34 +367,35 @@ public class MiDashboardService {
      * 
      * @param customerCompanyNo
      * @param date
-     * @param authentication
      * @return
      */
-    public DashboardChartRes getChart(Integer customerCompanyNo, String date, Authentication authentication) {
+    public DashboardChartRes getChart(Integer customerCompanyNo, String date) {
         String finalDate = (date == null || date.isEmpty()) ? DateUtil.toYearMonth(LocalDate.now()) : date;
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
-        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        }
-        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // }
+        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
-        // 권한 조회
-        PermissionRes permissionRes = switch (role) {
-            case USER -> {
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-            }
-            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> {
-                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-            }
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        // // 권한 조회
+        // PermissionRes permissionRes = switch (role) {
+        //     case USER -> {
+        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        //     }
+        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        //     case API_PLUS_OPERATOR -> {
+        //         Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+        //     }
+        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // };
+
+        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -524,7 +525,7 @@ public class MiDashboardService {
                     Goods goods = goodsData.getGoods();
 
                     // 권한 조회
-                    boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo)
+                    boolean isPermitted = permissionRes.getGoodsViewableMap(customerCompanyNo)
                             .getOrDefault(goods.getGoodsNo(), false);
 
                     // 예측 데이터가 아닌 경우 권한 없으면 다운로드 불가
@@ -945,30 +946,32 @@ public class MiDashboardService {
      * @param authentication 인증 정보
      * @return DashboardChartRes
      */
-    public byte[] getChartFileDownload(int customerCompanyNo, String date, Authentication authentication) throws IOException {
+    public byte[] getChartFileDownload(int customerCompanyNo, String date) throws IOException {
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
-        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        }
-        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // }
+        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
-        // 권한 조회
-        PermissionRes permissionRes = switch (role) {
-            case USER -> {
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-            }
-            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> {
-                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-            }
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        // // 권한 조회
+        // PermissionRes permissionRes = switch (role) {
+        //     case USER -> {
+        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        //     }
+        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        //     case API_PLUS_OPERATOR -> {
+        //         Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+        //     }
+        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // };
+
+        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -1320,31 +1323,32 @@ public class MiDashboardService {
      * @return DashboardChartFactorGraphRes
      */
     public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate, String date,
-            String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd,
-            Authentication authentication) {
+            String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd) {
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
         customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
-        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        }
-        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // }
+        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
-        // 권한 조회
-        PermissionRes permissionRes = switch (role) {
-            case USER -> {
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-            }
-            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> {
-                Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
-            }
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        // // 권한 조회
+        // PermissionRes permissionRes = switch (role) {
+        //     case USER -> {
+        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        //     }
+        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        //     case API_PLUS_OPERATOR -> {
+        //         Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
+        //     }
+        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // };
+
+        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
@@ -1372,7 +1376,7 @@ public class MiDashboardService {
         Goods actualGoods = actualGoodsData.getGoods();
 
         // 권한 조회
-        Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(actualGoods.getGoodsNo(), false);
+        Boolean isPermitted = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(actualGoods.getGoodsNo(), false);
 
         String[] actualTableColumnList = actualGoodsDataSourceDetail.getTableColumnListNm().split(",");
         // 날짜 칼럼

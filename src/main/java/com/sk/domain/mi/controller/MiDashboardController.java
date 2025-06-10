@@ -10,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -91,9 +90,8 @@ public class MiDashboardController {
 	@GetMapping("/companies/{companyNo}/market-datas")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<List<MiMarketDataSummaryRes>> getMarketDataSummary(
-			@PathVariable("companyNo") Integer companyNo,
-			Authentication authentication) {
-		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo, authentication));
+			@PathVariable("companyNo") Integer companyNo) {
+		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo));
 	}
 
 	@ApiOrder(4)
@@ -179,9 +177,8 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<DashboardChartRes> getChart(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date,
-			Authentication authentication) {
-		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date, authentication));
+			@RequestParam(value = "date", required = false) String date) {
+		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date));
 	}
 
 	@ApiOrder(9)
@@ -195,9 +192,8 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public ResponseEntity<byte[]> getChartFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date,
-			Authentication authentication) throws IOException {
-		byte[] fileData = miDashboardService.getChartFileDownload(companyNo, date, authentication);
+			@RequestParam(value = "date", required = false) String date) throws IOException {
+		byte[] fileData = miDashboardService.getChartFileDownload(companyNo, date);
 
 		
 		String FILE_PREFIX = "dashboard_data_table";
@@ -270,9 +266,8 @@ public class MiDashboardController {
 			@RequestParam(value = "mnemonicCd", required = true) String mnemonicCd,
 			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm,
 			@RequestParam(value = "predictionInputMnemonicCd", required = true) String predictionInputMnemonicCd,
-			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd,
-			Authentication authentication) {
+			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd) {
 		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, date, mnemonicCd,
-				explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd, authentication));
+				explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd));
 	}
 }

@@ -67,6 +67,7 @@ import com.sk.domain.shared.repository.master.tcm.MarketDataChartSettingReposito
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -100,6 +101,7 @@ public class MiMarketDataService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
     private final MiGoodsPermissionService miGoodsPermissionService;
+    private final AuthorizationService authorizationService;
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -112,32 +114,34 @@ public class MiMarketDataService {
      * @param authentication 인증 정보
      * @return 마켓 데이터 목록
      */
-    public List<MiMarketDataRes> getMarketDatas(Integer companyNo, Authentication authentication) {
+    public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
         // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR)); // 2년 전
         LocalDate START_DATE = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
-        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        }
-        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // }
+        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
-        // 권한 조회
-        PermissionRes permissionRes = switch (role) {
-            case USER -> {
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-            }
-            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> {
-                Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
-            }
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        // // 권한 조회
+        // PermissionRes permissionRes = switch (role) {
+        //     case USER -> {
+        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        //     }
+        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        //     case API_PLUS_OPERATOR -> {
+        //         Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
+        //     }
+        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // };
 
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
@@ -147,7 +151,7 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(mainGoods.getGoodsNo(), false);
+            Boolean isPermitted = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(mainGoods.getGoodsNo(), false);
 
             String cacheKey = getMarketDataCacheKey(marketDataChartSetting.getMarketDataSettingNo());
 
@@ -304,31 +308,33 @@ public class MiMarketDataService {
      * @param customerCompanyNo 고객사 번호
      * @return 마켓 데이터 목록
      */
-    public List<MiMarketDataSummaryRes> getMarketDataSummary(Integer customerCompanyNo, Authentication authentication) {
+    public List<MiMarketDataSummaryRes> getMarketDataSummary(Integer customerCompanyNo) {
         // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH)); // 2달 전
         LocalDate START_DATE = LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH);
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
 
-        if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        }
-        Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
+        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
+        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // }
+        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
-        // 권한 조회
-        PermissionRes permissionRes = switch (role) {
-            case USER -> {
-                Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-                yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-            }
-            case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-            case API_PLUS_OPERATOR -> {
-                Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-                yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-            }
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        };
+        // // 권한 조회
+        // PermissionRes permissionRes = switch (role) {
+        //     case USER -> {
+        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        //     }
+        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        //     case API_PLUS_OPERATOR -> {
+        //         Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+        //     }
+        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // };
+
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 차트 설정 조회
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
@@ -340,7 +346,7 @@ public class MiMarketDataService {
             Goods mainGoods = mainGoodsData.getGoods();
 
             // 권한 조회
-            Boolean isPermitted = permissionRes.getAdminGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
+            Boolean isPermitted = permissionRes.getGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
 
             String cacheKey = getMarketDataSummaryCacheKey(marketDataChartSetting.getMarketDataSettingNo());
 
