@@ -1,8 +1,8 @@
 package com.sk.domain.shared.repository.master.tmd.custom;
 
+import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsCriticalValueSetting.goodsCriticalValueSetting;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
-import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
 
 import java.util.List;
@@ -50,7 +50,8 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
                         goodsDataSourceDetail.goodsDataSourceNm,
                         goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
                         goodsCriticalValueSetting.criticalValueSettingVol,
-                        goodsCriticalValueSetting.criticalValueSettingUnitNm))
+                        goodsCriticalValueSetting.criticalValueSettingUnitNm,
+                        goodsCriticalValueSetting.isPredictData))
                 .from(goodsCriticalValueSetting)
                 .leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
                 .leftJoin(goodsDataSourceDetail.goodsData, goodsData)
@@ -73,13 +74,15 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
     }
 
     @Override
-    public Page<MiNotificationSettingGoodsDataSourceRes> findNotificationSettingGoodsDataSourceByConditions(int page, int size, String search, User user) {
+    public Page<MiNotificationSettingGoodsDataSourceRes> findNotificationSettingGoodsDataSourceByConditions(int page, int size, String search,
+            User user) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(goodsDataSourceDetail.isDeleted.isFalse())
-                .and(goodsCriticalValueSetting.isDeleted.isFalse())
                 .and(goodsData.isDeleted.isFalse())
+                .and(goods.isDeleted.isFalse())
+                .and(goodsCriticalValueSetting.isDeleted.isFalse())
                 .and(goodsCriticalValueSetting.user.eq(user));
 
         if (search != null && !search.isEmpty()) {
@@ -93,7 +96,8 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
                         goodsData.goodsDataNm,
                         goodsDataSourceDetail.goodsDataSourceNo,
                         goodsDataSourceDetail.goodsDataSourceNm,
-                        goodsCriticalValueSetting.count().intValue()))
+                        goodsCriticalValueSetting.count().intValue(),
+                        goodsDataSourceDetail.isPredictData))
                 .from(goodsDataSourceDetail)
                 .join(goodsDataSourceDetail.goodsData, goodsData)
                 .leftJoin(goodsData.goods, goods)

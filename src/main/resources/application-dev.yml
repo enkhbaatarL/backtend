@@ -80,7 +80,6 @@ spring:
             singlelogout:
               url: https://dev-mi.sk.com/saml2/SingleLogout
             assertingparty:
-              entity-id: gdisso.sk.com
               metadata-uri: classpath:saml/idp/devn.gdisso.sk.com.metadata.xml
             signing:
               credentials:
