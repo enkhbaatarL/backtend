@@ -59,10 +59,7 @@ public final class ChartBundleFactory {
         List<String> timestamps = buildTimestamps(xAxis, convertedData);
         List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, gds.getTradeVolumeColumnNm(), isVisible);
 
-        String goodsDataSourceNm = gds.getGoodsDataSourceNm();
-        String goodsDataNm = gds.getGoodsData().getGoodsDataNm();
-
-        return Chart.of(gds.getGoodsDataSourceNo(), goodsDataSourceNm, goodsDataNm, new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()).toString(), chartType, timestamps, series);
+        return Chart.of(gds, new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()).toString(), chartType, timestamps, series);
     }
 
     /**
