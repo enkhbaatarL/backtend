@@ -6,7 +6,11 @@ import java.util.Optional;
 import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -99,6 +103,17 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
                 AND gdc.goodsDataManagementSeparateCd = :goodsDataManagementSeparateCode
                 AND gdc.goodsData.goodsDataNo = :goodsDataNo
             """)
-    List<GoodsDataCategoryProjection> findGoodsDataAndIsDeleted(Integer goodsDataNo, String goodsDataManagementSeparateCode);
+    List<GoodsDataCategoryProjection> findGoodsDataAndIsDeleted(@Param("goodsDataNo") Integer goodsDataNo,
+            @Param("goodsDataManagementSeparateCode") String goodsDataManagementSeparateCode);
 
+    @Transactional
+    @Modifying(clearAutomatically = true) // flush & 1차 캐시 동기화
+
+    @Query("""
+            UPDATE GoodsDataCategory gdc
+            SET gdc.isDeleted = true
+            WHERE gdc.goodsData.goodsDataNo = :goodsDataNo
+            AND gdc.isDeleted = false
+            """)
+    void softDeleteByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 }

@@ -297,124 +297,236 @@ public class AdminGoodsDataService {
      * @param providerNo 프로바이더 번호
      * @param dto 데이터 등록 요청 정보
      */
+    @Transactional
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
-        // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
-        GoodsData savedGoodsData = goodsDataRepository
-                .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                        dto.dataContributorNm(), false, true));
+        // todo: 데이터 이름이 같고, Summary, Description, 첨부 파일이 같으면 동일한 데이터이고, 첨부파일이 다르다면, 누적으로 추가 해주고, 다른 정보는 업데이트 한다.
+        List<GoodsData> goodsDatas = goodsDataRepository.findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(
+                dto.goodsDataNm(),
+                dto.goodsDataExpn(),
+                dto.goodsDataSummaryCntt(),
+                PageRequest.of(0, 1));
+        if (goodsDatas.size() > 0) {
+            GoodsData goodsData = goodsDatas.get(0);
 
-        // todo: 프로바이더 타입 카테고리 등록
-        Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
+            System.out.println("   ===>>>   이미 존재하는 데이터입니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
+                    + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
 
-        goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_".concat(provider.getProviderId()), "",
-                GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+            // 비정형 데이타
+            if (dto.unstructuredDataList() != null) {
+                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                        .stream()
+                        .map(file -> file.getFileNo())
+                        .toList();
+                List<Long> newFileNos = dto.unstructuredDataList()
+                        .stream()
+                        .map(UnstructuredDataReq::fileNo)
+                        .toList();
 
-        // 문서 타입 카테고리 등록
-        if (dto.docCategoryList() != null) {
-            List<GoodsDataCategory> goodsDataCategoryList = dto.docCategoryList().stream()
-                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
-                            GoodsDataManagementSeparateCode.GDAT.getCode(), null))
-                    .toList();
-            goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
-        }
+                Set<Long> oldFileSet = new HashSet<>(oldFileNos);
+                Set<Long> newFileSet = new HashSet<>(newFileNos);
 
-        // 언어 타입 카테고리 등록
-        if (dto.langCategoryList() != null) {
-            List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
-                    .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
-                            GoodsDataManagementSeparateCode.GDAT.getCode(), null))
-                    .toList();
-            goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
-        }
-
-        // 정형 데이타 저장
-        if (dto.structuredDataList() != null) {
-            for (StructuredDataReq structuredData : dto.structuredDataList()) {
-                // 컴포넌트 타입 조회
-                ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
-                        .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
-                                String.format("Component information could not be found. componentTypeId: %s", structuredData.componentTypeId())));
-
-                /**
-                 * 정책 : 컴포넌트타입 + 상품데이터 => Unique Key 로서의 역할 (1 데이터소스상세 => 1 정형 그래프) 250424
-                 * 그래프 하나를 그리기 위한 데이터는 엑셀 컴포넌트 하나와 매핑(하나의 그래프에서 엑셀 컴포넌트가 2개 이상일 수 없다)
-                 */
-                GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
-                        .findByGoodsDataAndComponentInfoAndIsDeletedFalse(savedGoodsData, componentInfo)
-                        .orElseGet(() -> goodsDataSourceDetailRepository
-                                .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(), componentInfo.getTargetDbNm(),
-                                        componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
-                                        componentInfo.getGoodsDataSourceUnitNm(),
-                                        componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
-                                        componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
-
-                fileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
-                        FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
-
-                /**
-                 * 데이터소스상세 조회 후 데이터소스상세 없는 경우 생성
-                 */
-
-                /**
-                 * 단위 변환 기본 매핑 기준
-                 * 1. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 아닌 경우
-                 *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 중
-                 *        단위변환기본에서 convertTargetDetailTypeNm 값이 Null 이거나 convertTargetDetailTypeNm 값이 데이터소스상세 convertTargetDetailTypeNm 값과 일치하는 데이터 조회
-                 * 2. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 경우
-                 *      : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 조회
-                 */
-                List<UnitConvert> unitConverts = unitConvertRepository
-                        .findUnitConvertsByConditions(goodsDataSourceDetail);
-
-                if (!unitConverts.isEmpty()) {
-                    goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
-                            .map(unitConvert -> GoodsDataUnitConvert.of(goodsDataSourceDetail, unitConvert))
-                            .toList());
+                Set<Long> filesToAdd = new HashSet<>(newFileSet);
+                filesToAdd.removeAll(oldFileSet);
+                if (filesToAdd.isEmpty()) {
+                    System.out.println("   ===>>>   추가할 파일이 없습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
+                            + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
+                    return;
                 }
 
-                // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), null,
-                        GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(goodsDataSourceDetail.getGoodsDataSourceNo())));
+                for (Long fileNo : filesToAdd) {
+                    System.out.println("   ===>>>   추가할 파일이 있습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
+                            + ", 요약: " + goodsData.getGoodsDataSummaryCntt() + ", fileNo: " + fileNo);
+                    fileService.updateFile(
+                            fileNo,
+                            goodsData.getGoodsDataNo(),
+                            FileRelationshipObjectSeparateCode.GUDAT.getCode(),
+                            DateUtil.endYmd());
+
+                    dto.unstructuredDataList()
+                            .stream()
+                            .filter(data -> fileNo.equals(data.fileNo()))
+                            .findFirst()
+                            .ifPresent(data -> goodsDataCategoryRepository.save(
+                                    GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
+                                            GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
+                }
+
+                // A.X Platform 에 파일 업로드 연동
+                List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                        .stream()
+                        .map(file -> file.getOriginalFileNm())
+                        .toList();
+
+                String documentId = goodsData.getGoodsDataDistinguishId();
+
+                AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
+                        .gdsNo(goodsData.getGoods().getGoodsNo())
+                        .documentId(documentId)
+                        .documentReleaseDate(nowOffsetDateTime())
+                        .headline(goodsData.getGoodsDataNm())
+                        .synopsis(goodsData.getGoodsDataExpn() + goodsData.getGoodsDataSummaryCntt())
+                        .contributor(goodsData.getDataContributorNm())
+                        .authors(List.of(""))
+                        .documentFileName(fileNameList)
+                        .language("")
+                        .countries(List.of(""))
+                        .build();
+
+                publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, false));
             }
-        }
 
-        // 비정형 데이타 저장
-        if (dto.unstructuredDataList() != null) {
-            List<String> fileNameList = new ArrayList<>();
+            // 카테고리 기존거 삭제 후 새로 등록
+            System.out.println("   ===>>>   기존 데이터의 카테고리를 삭제합니다. " + goodsData.getGoodsDataNo());
+            goodsDataCategoryRepository.softDeleteByGoodsDataNo(goodsData.getGoodsDataNo());
 
-            for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
+            // 프로바이더 타입 카테고리 등록
+            Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-                fileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
-                        FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
+            goodsDataCategoryRepository.save(GoodsDataCategory.of(goodsData, "A_".concat(provider.getProviderId()), "",
+                    GoodsDataManagementSeparateCode.GDAT.getCode(), null));
 
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
-                        GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
-
-                UploadedFile uploadedFile = fileService.getFile(unstructuredData.fileNo());
-                fileNameList.add(uploadedFile.getOriginalFileNm());
+            // 문서 타입 카테고리 등록
+            if (dto.docCategoryList() != null) {
+                List<GoodsDataCategory> goodsDataCategoryList = dto.docCategoryList().stream()
+                        .map(categoryCodeId -> GoodsDataCategory.of(goodsData, categoryCodeId.codeId(), "",
+                                GoodsDataManagementSeparateCode.GDAT.getCode(), null))
+                        .toList();
+                goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
             }
 
-            // A.X Platform 에 파일 업로드 연동
-            String documentId = UUID.randomUUID().toString();
+            // 언어 타입 카테고리 등록
+            if (dto.langCategoryList() != null) {
+                List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
+                        .map(categoryCodeId -> GoodsDataCategory.of(goodsData, categoryCodeId.codeId(), "",
+                                GoodsDataManagementSeparateCode.GDAT.getCode(), null))
+                        .toList();
+                goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
+            }
 
-            AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
-                    .gdsNo(goods.getGoodsNo())
-                    .documentId(documentId)
-                    .documentReleaseDate(nowOffsetDateTime())
-                    .headline(savedGoodsData.getGoodsDataNm())
-                    .synopsis(savedGoodsData.getGoodsDataExpn() + savedGoodsData.getGoodsDataSummaryCntt())
-                    .contributor(savedGoodsData.getDataContributorNm())
-                    .authors(List.of(""))
-                    .documentFileName(fileNameList)
-                    .language("")
-                    .countries(List.of(""))
-                    .build();
+            goodsData.updateModifyDt();
+        } else {
+            // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
+            GoodsData savedGoodsData = goodsDataRepository
+                    .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
+                            dto.dataContributorNm(), false, true));
 
-            publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, true));
+            // 프로바이더 타입 카테고리 등록
+            Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
+                    .orElseThrow(
+                            () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "provider no: %d".formatted(providerNo)));
 
-            savedGoodsData.updateGoodsDataDistinguishId(documentId);
+            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_".concat(provider.getProviderId()), "",
+                    GoodsDataManagementSeparateCode.GDAT.getCode(), null));
+
+            // 문서 타입 카테고리 등록
+            if (dto.docCategoryList() != null) {
+                List<GoodsDataCategory> goodsDataCategoryList = dto.docCategoryList().stream()
+                        .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
+                                GoodsDataManagementSeparateCode.GDAT.getCode(), null))
+                        .toList();
+                goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
+            }
+
+            // 언어 타입 카테고리 등록
+            if (dto.langCategoryList() != null) {
+                List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
+                        .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
+                                GoodsDataManagementSeparateCode.GDAT.getCode(), null))
+                        .toList();
+                goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
+            }
+
+            // 정형 데이타 저장
+            if (dto.structuredDataList() != null) {
+                for (StructuredDataReq structuredData : dto.structuredDataList()) {
+                    // 컴포넌트 타입 조회
+                    ComponentInfo componentInfo = componentInfoRepository.findByComponentTypeIdAndIsDeletedFalse(structuredData.componentTypeId())
+                            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
+                                    String.format("Component information could not be found. componentTypeId: %s",
+                                            structuredData.componentTypeId())));
+
+                    /**
+                    * 정책 : 컴포넌트타입 + 상품데이터 => Unique Key 로서의 역할 (1 데이터소스상세 => 1 정형 그래프) 250424
+                    * 그래프 하나를 그리기 위한 데이터는 엑셀 컴포넌트 하나와 매핑(하나의 그래프에서 엑셀 컴포넌트가 2개 이상일 수 없다)
+                    */
+                    GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+                            .findByGoodsDataAndComponentInfoAndIsDeletedFalse(savedGoodsData, componentInfo)
+                            .orElseGet(() -> goodsDataSourceDetailRepository
+                                    .save(GoodsDataSourceDetail.of(savedGoodsData, componentInfo.getGoodsDataSourceNm(),
+                                            componentInfo.getTargetDbNm(),
+                                            componentInfo.getTargetTableNm(), componentInfo.getQueryConditionCntt(), null,
+                                            componentInfo.getGoodsDataSourceUnitNm(),
+                                            componentInfo.getGoodsDataSourceCurrencyUnitNm(), componentInfo.getTableColumnListNm(), componentInfo,
+                                            componentInfo.getIsCandleChartPossible(), componentInfo.getConvertTargetDetailTypeNm())));
+
+                    fileService.updateFile(structuredData.fileNo(), goodsDataSourceDetail.getGoodsDataSourceNo(),
+                            FileRelationshipObjectSeparateCode.GDATS.getCode(), DateUtil.endYmd());
+
+                    /**
+                    * 데이터소스상세 조회 후 데이터소스상세 없는 경우 생성
+                    */
+
+                    /**
+                    * 단위 변환 기본 매핑 기준
+                    * 1. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 아닌 경우
+                    * : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 중
+                    * 단위변환기본에서 convertTargetDetailTypeNm 값이 Null 이거나 convertTargetDetailTypeNm 값이 데이터소스상세 convertTargetDetailTypeNm 값과 일치하는 데이터 조회
+                    * 2. 데이터소스상세 convertTargetDetailTypeNm 값이 Null 경우
+                    * : 데이터소스상세에서 goodsDataSourceUnitNm 값과 단위변환기본에서 convertPreviousUnitNm 값이 일치하는 데이터 조회
+                    */
+                    List<UnitConvert> unitConverts = unitConvertRepository
+                            .findUnitConvertsByConditions(goodsDataSourceDetail);
+
+                    if (!unitConverts.isEmpty()) {
+                        goodsDataUnitConvertRepository.saveAll(unitConverts.stream()
+                                .map(unitConvert -> GoodsDataUnitConvert.of(goodsDataSourceDetail, unitConvert))
+                                .toList());
+                    }
+
+                    // gds_data_keywd_nm 명은 카테고리 정한 뒤에 임의 값을 넣을 필요가 있을때 사용하는 값입니다. 발간일자의 날자값, 산업구분의 산업상세내역
+                    goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, structuredData.componentTypeId(), null,
+                            GoodsDataManagementSeparateCode.GDATS.getCode(), Long.valueOf(goodsDataSourceDetail.getGoodsDataSourceNo())));
+                }
+            }
+
+            // 비정형 데이타 저장
+            if (dto.unstructuredDataList() != null) {
+                for (UnstructuredDataReq unstructuredData : dto.unstructuredDataList()) {
+
+                    fileService.updateFile(unstructuredData.fileNo(), savedGoodsData.getGoodsDataNo(),
+                            FileRelationshipObjectSeparateCode.GUDAT.getCode(), DateUtil.endYmd());
+
+                    goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
+                            GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
+                }
+
+                // A.X Platform 에 파일 업로드 연동
+                List<String> fileNameList = fileService.getFiles(savedGoodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                        .stream()
+                        .map(file -> file.getOriginalFileNm())
+                        .toList();
+
+                String documentId = UUID.randomUUID().toString();
+
+                AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
+                        .gdsNo(goods.getGoodsNo())
+                        .documentId(documentId)
+                        .documentReleaseDate(nowOffsetDateTime())
+                        .headline(savedGoodsData.getGoodsDataNm())
+                        .synopsis(savedGoodsData.getGoodsDataExpn() + savedGoodsData.getGoodsDataSummaryCntt())
+                        .contributor(savedGoodsData.getDataContributorNm())
+                        .authors(List.of(""))
+                        .documentFileName(fileNameList)
+                        .language("")
+                        .countries(List.of(""))
+                        .build();
+
+                publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, true));
+
+                savedGoodsData.updateGoodsDataDistinguishId(documentId);
+            }
         }
 
         return;
@@ -581,8 +693,6 @@ public class AdminGoodsDataService {
 
         // 비정형데이타 수정
         if (dto.unstructuredDataList() != null) {
-            List<String> fileNameList = new ArrayList<>();
-
             List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                     .stream()
                     .map(file -> file.getFileNo())
@@ -622,12 +732,14 @@ public class AdminGoodsDataService {
                         .ifPresent(data -> goodsDataCategoryRepository.save(
                                 GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
-
-                UploadedFile uploadedFile = fileService.getFile(fileNo);
-                fileNameList.add(uploadedFile.getOriginalFileNm());
             }
 
             // A.X Platform 에 파일 업로드 연동
+            List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                    .stream()
+                    .map(file -> file.getOriginalFileNm())
+                    .toList();
+
             String documentId = goodsData.getGoodsDataDistinguishId();
 
             AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
