@@ -4,9 +4,8 @@ import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
-import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.shared.client.dto.ModelAgentRes;
+import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -21,9 +20,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Getter

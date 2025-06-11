@@ -15,6 +15,9 @@ spring:
         maximum-pool-size: 10
         idle-timeout: 10m
         max-lifetime: 15m
+        connection-test-query: SELECT 1
+        validation-timeout: 3000
+        minimum-idle: 5
     tenants:
       - company-cd: SKCC
         jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
@@ -26,6 +29,9 @@ spring:
           maximum-pool-size: 10
           idle-timeout: 10m
           max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
       - company-cd: SKT
         jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -36,6 +42,9 @@ spring:
           maximum-pool-size: 10
           idle-timeout: 10m
           max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
       - company-cd: midb
         jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -46,6 +55,9 @@ spring:
           maximum-pool-size: 10
           idle-timeout: 10m
           max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -68,7 +80,6 @@ spring:
             singlelogout:
               url: https://dev-mi.sk.com/saml2/SingleLogout
             assertingparty:
-              entity-id: gdisso.sk.com
               metadata-uri: classpath:saml/idp/devn.gdisso.sk.com.metadata.xml
             signing:
               credentials:

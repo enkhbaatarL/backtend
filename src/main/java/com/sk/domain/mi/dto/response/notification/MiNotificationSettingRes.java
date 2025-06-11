@@ -8,6 +8,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
+import com.sk.domain.shared.enums.NotificationType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -29,13 +30,14 @@ public record MiNotificationSettingRes(
 
         @Schema(description = "임계치설정량", example = "100") BigDecimal criticalValueSettingVol,
 
-        @Schema(description = "임계치설정단위명", example = "kg / %") String criticalValueSettingUnitNm) {
+        @Schema(description = "임계치설정단위명", example = "kg / %") String criticalValueSettingUnitNm,
+
+        @Schema(description = "알림 타입 ACTUAL: 실제 or FORECAST: 예측", example = "ACTUAL") NotificationType notificationType) {
 
     @Builder
-    @QueryProjection
     public MiNotificationSettingRes(Integer userGoodsNotificationSettingNo, Integer userNo, Integer goodsNo, Integer goodsDataNo,
             Integer goodsDataSourceNo, String goodsDataSourceNm, NotiCrtvlSptCd notificationCriticalValueSeparateCd,
-            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
+            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm, NotificationType notificationType) {
         this.userGoodsNotificationSettingNo = userGoodsNotificationSettingNo;
         this.userNo = userNo;
         this.goodsNo = goodsNo;
@@ -45,6 +47,16 @@ public record MiNotificationSettingRes(
         this.notificationCriticalValueSeparateCd = notificationCriticalValueSeparateCd;
         this.criticalValueSettingVol = criticalValueSettingVol;
         this.criticalValueSettingUnitNm = criticalValueSettingUnitNm;
+        this.notificationType = notificationType;
+    }
+
+    @QueryProjection
+    public MiNotificationSettingRes(Integer userGoodsNotificationSettingNo, Integer userNo, Integer goodsNo, Integer goodsDataNo,
+            Integer goodsDataSourceNo, String goodsDataSourceNm, NotiCrtvlSptCd notificationCriticalValueSeparateCd,
+            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm, Boolean isPredictData) {
+        this(userGoodsNotificationSettingNo, userNo, goodsNo, goodsDataNo, goodsDataSourceNo, goodsDataSourceNm,
+                notificationCriticalValueSeparateCd, criticalValueSettingVol, criticalValueSettingUnitNm,
+                isPredictData ? NotificationType.FORECAST : NotificationType.ACTUAL);
     }
 
     public static MiNotificationSettingRes of(GoodsCriticalValueSetting dto, GoodsDataSourceDetail goodsDataSourceDetail) {
@@ -56,6 +68,7 @@ public record MiNotificationSettingRes(
                 .notificationCriticalValueSeparateCd(dto.getNotificationCriticalValueSeparateCd())
                 .criticalValueSettingVol(dto.getCriticalValueSettingVol())
                 .criticalValueSettingUnitNm(dto.getCriticalValueSettingUnitNm())
+                .notificationType(dto.getIsPredictData() ? NotificationType.FORECAST : NotificationType.ACTUAL)
                 .build();
     }
 
@@ -70,6 +83,7 @@ public record MiNotificationSettingRes(
                 .notificationCriticalValueSeparateCd(dto.getNotificationCriticalValueSeparateCd())
                 .criticalValueSettingVol(dto.getCriticalValueSettingVol())
                 .criticalValueSettingUnitNm(dto.getCriticalValueSettingUnitNm())
+                .notificationType(dto.getIsPredictData() ? NotificationType.FORECAST : NotificationType.ACTUAL)
                 .build();
     }
 }

@@ -136,9 +136,12 @@
             , expp_cntt_file_path_nm 
           FROM tmm_bztgtprdcexppcnttm
          WHERE ${queryWhere}
-           AND prdc_fulf_dt between #{startDate} and #{endDate}
+           AND prdc_fulf_dt = #{date}
            AND del_yn = 'N'
-         ORDER BY prdc_fulf_dt DESC
-         LIMIT 1
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            AND prdc_rslt_dt BETWEEN #{startDate} AND #{endDate}
+        </if>
+         ORDER BY prdc_fulf_dt DESC,
+                  prdc_rslt_dt DESC
    </select>
 </mapper>

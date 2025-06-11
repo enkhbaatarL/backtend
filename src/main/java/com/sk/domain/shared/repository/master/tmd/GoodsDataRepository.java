@@ -199,6 +199,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """)
     List<GoodsData> findByGoodsDataNm(String goodsDataNm);
 
+    List<GoodsData> findByGoodsDataDistinguishIdInAndIsDeletedFalse(List<String> distinguishIds);
+
     @Query(value = """
             SELECT gd
             FROM GoodsData gd

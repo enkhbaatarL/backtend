@@ -104,4 +104,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
                 AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
             """)
     List<UploadedFile> findByFileNameAndFileHash(@Param("fileName") String fileName, @Param("fileHash") String fileHash);
+
+    List<UploadedFile> findByFileRelationshipObjectDistinguishNoInAndIsDeletedFalse(List<Integer> goodsDataNos);
+
 }

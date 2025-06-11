@@ -67,6 +67,17 @@ public class DataSourceFactory {
         hikariDataSource.setMaxLifetime(dataSourceConfig.getHikari().getMaxLifetime().toMillis());
         hikariDataSource.setPoolName("%s-%s".formatted(dataSourceConfig.getCompanyCd().toLowerCase(), "pool"));
 
+        // 자동 재연결 설정
+        if (dataSourceConfig.getHikari().getConnectionTestQuery() != null) {
+            hikariDataSource.setConnectionTestQuery(dataSourceConfig.getHikari().getConnectionTestQuery());
+        }
+        if (dataSourceConfig.getHikari().getValidationTimeout() != null) {
+            hikariDataSource.setValidationTimeout(dataSourceConfig.getHikari().getValidationTimeout().toMillis());
+        }
+        if (dataSourceConfig.getHikari().getMinimumIdle() > 0) {
+            hikariDataSource.setMinimumIdle(dataSourceConfig.getHikari().getMinimumIdle());
+        }
+
         return hikariDataSource;
     }
 

@@ -67,9 +67,10 @@ public interface DashboardMapper {
      * 차트 요약 조회
      * 
      * @param queryWhere 조회 조건
+     * @param date 날짜
      * @param startDate 시작 날짜
      * @param endDate 종료 날짜
-     * @return DashboardChartSummaryMap
+     * @return List<DashboardChartSummaryMap>
      */
-    Optional<DashboardChartSummaryMap> chartSummary(String queryWhere, String startDate, String endDate);
+    List<DashboardChartSummaryMap> chartSummary(String queryWhere, String date, String startDate, String endDate);
 }

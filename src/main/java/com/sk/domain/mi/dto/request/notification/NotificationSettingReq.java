@@ -3,6 +3,7 @@ package com.sk.domain.mi.dto.request.notification;
 import java.math.BigDecimal;
 
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
+import com.sk.domain.shared.enums.NotificationType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
@@ -18,8 +19,11 @@ public record NotificationSettingReq() {
 
         @DecimalMin(value = "0.0", message = "알림 임계치는 0.0 이상이어야 합니다.")
         @Schema(description = "알림 임계치", example = "100.0")
-        BigDecimal criticalValueSettingVol
+        BigDecimal criticalValueSettingVol,
 
+        @NotNull
+        @Schema(description = "알림 타입 ACTUAL: 실제 or FORECAST: 예측", example = "FORECAST", allowableValues = {"FORECAST", "ACTUAL"})
+        NotificationType notificationType
     ) {}
 
     public record UpdateSetting(
