@@ -242,7 +242,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         List<Tuple> companies = queryFactory
             .select(customerCompany.customerCompanyNo, customerCompany.customerCompanyCd, customerCompany.customerCompanyNm)
             .from(customerCompany)
-            .where(customerCompany.isDeleted.isFalse().and(customerCompany.isMipManagementCompany.isFalse()))
+            .where(customerCompany.isDeleted.isFalse())
             .orderBy(customerCompany.customerCompanyNm.asc())
             .fetch();
 
