@@ -60,7 +60,7 @@ public final class DummyResponses {
               "content": {
                 "text": "## 📦 2023년 연간 재고 회전율 분석\\n\\n2023년 전체 평균 재고 회전일수는 **28.5일**로, 2022년(31.2일) 대비 **8.7%% 개선**되었습니다. 이는 SCM 최적화 프로젝트의 성과로 분석됩니다.\\n\\n### 제품 카테고리별 재고 회전일수 (2023년)\\n| 카테고리 | 평균 재고일수 | 2022년 대비 | 비고 |\\n|---|---|---|---|\\n| 패션 의류 | 45.1일 | ▼ 5.2일 | 계절성 상품 재고 관리 개선 |\\n| 디지털 가전 | 18.5일 | ▼ 2.1일 | 수요 예측 정확도 향상 |\\n| 생활 용품 | 33.8일 | ▼ 1.9일 | 안정적 수요 유지 |\\n\\n아래는 2023년 주차별 전체 재고 회전일수 변화 추이입니다.",
                 "charts": [
-                  { "order": 1, "legend": "주차별 재고 회전일수", "date": [%s], "value": [%s] }
+                  { "order": 1, "legend": "주차별 재고 회전일수", "type": "actual", "date": [%s], "value": [%s] }
                 ],
                 "sources": [],
                 "vector_sources": [
@@ -82,9 +82,9 @@ public final class DummyResponses {
               "content": {
                 "text": "## 🏦 경쟁사 주가 비교 (지난 30일)\\n\\n최근 한 달간, 당사('OurStock')의 주가는 경쟁사 A에 비해 높은 변동성을 보였으나 꾸준히 우상향하는 패턴을 유지했습니다. 경쟁사 B는 안정적인 흐름을 보였습니다.",
                 "charts": [
-                  { "order": 1, "legend": "OurStock 주가 (USD)", "date": [%s], "value": [%s] },
-                  { "order": 2, "legend": "Competitor A 주가 (USD)", "date": [%s], "value": [%s] },
-                  { "order": 3, "legend": "Competitor B 주가 (USD)", "date": [%s], "value": [%s] }
+                  { "order": 1, "legend": "OurStock 주가 (USD)", "type": "actual", "date": [%s], "value": [%s] },
+                  { "order": 2, "legend": "Competitor A 주가 실제가(USD)", "type": "actual", "date": [%s], "value": [%s] },
+                  { "order": 3, "legend": "Competitor B 주가 예측가(USD)", "type": "predict", "date": [%s], "value": [%s] }
                 ],
                 "sources": [{"source_nm": "Yahoo Finance", "url": "https://finance.yahoo.com"}],
                 "vector_sources": [
