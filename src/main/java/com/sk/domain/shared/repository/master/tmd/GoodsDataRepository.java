@@ -198,4 +198,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goodsDataNm = :goodsDataNm
             """)
     List<GoodsData> findByGoodsDataNm(String goodsDataNm);
+
+    List<GoodsData> findByGoodsDataDistinguishIdInAndIsDeletedFalse(List<String> distinguishIds);
+
 }

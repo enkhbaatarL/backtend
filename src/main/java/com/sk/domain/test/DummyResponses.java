@@ -38,10 +38,12 @@ public final class DummyResponses {
               "content": {
                 "text": "## 📈 2024년 5월 제품 판매 실적 분석\\n\\n지난 5월, 신제품 **'AI 스마트워치 Pro'**의 출시 효과로 웨어러블 카테고리의 매출이 전월 대비 **23.5%%** 상승하며 가장 큰 성장을 기록했습니다. 반면, '4K 게이밍 모니터'는 경쟁 심화로 소폭 감소했습니다.\\n\\n### 카테고리별 상세 실적\\n| 카테고리 | 주요 제품 | 판매량 (개) | 매출액 (백만 $) | 전월 대비 증감률 |\\n|---|---|---|---|---|\\n| 웨어러블 | AI 스마트워치 Pro | 3,450 | 1.38 | ▲ 23.5%% |\\n| 스마트홈 | AI 스피커 Plus | 1,820 | 0.22 | ▲ 8.1%% |\\n| 오디오 | 무선 이어폰 Z | 2,130 | 0.43 | ▼ 2.1%% |\\n| 디스플레이 | 4K 게이밍 모니터 | 980 | 0.59 | ▼ 4.5%% |\\n\\n'AI 스마트워치 Pro'의 일별 판매량은 월말로 갈수록 꾸준히 증가하는 양상을 보였습니다.",
                 "charts": [
-                  { "order": 1, "legend": "AI 스마트워치 Pro 일별 판매량", "date": [%s], "value": [%s] }
+                  { "order": 1, "legend": "AI 스마트워치 Pro 일별 판매량", "type": "actual", "date": [%s], "value": [%s] }
                 ],
                 "sources": [{"source_nm": "내부 판매 데이터베이스", "url": "internal://sales-db/monthly_report_202405"}],
-                "vector_sources": [{"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024"}],
+                "vector_sources": [
+                    {"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024", "gds_data_dstg_id": "45b4f8db-3f60-424e-a836-89d6df9ff3d3"}
+                ],
                 "related_data": [20, 3]
               }
             }
@@ -61,7 +63,9 @@ public final class DummyResponses {
                   { "order": 1, "legend": "주차별 재고 회전일수", "date": [%s], "value": [%s] }
                 ],
                 "sources": [],
-                "vector_sources": [{"source": "WMS_Annual_Report_2023", "title": "Warehouse Management System - Annual Inventory Turnover"}],
+                "vector_sources": [
+                    {"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024", "gds_data_dstg_id": "45b4f8db-3f60-424e-a836-89d6df9ff3d3"}
+                ],
                 "related_data": [20, 3]
               }
             }
@@ -83,7 +87,9 @@ public final class DummyResponses {
                   { "order": 3, "legend": "Competitor B 주가 (USD)", "date": [%s], "value": [%s] }
                 ],
                 "sources": [{"source_nm": "Yahoo Finance", "url": "https://finance.yahoo.com"}],
-                "vector_sources": [{"source": "Stock_Data_API", "title": "Last 30 Days Stock Prices"}],
+                "vector_sources": [
+                    {"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024", "gds_data_dstg_id": "45b4f8db-3f60-424e-a836-89d6df9ff3d3"}
+                ],
                 "related_data": [20, 3]
               }
             }
