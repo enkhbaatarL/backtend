@@ -1,5 +1,7 @@
 package com.sk.common.utils;
 
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+import com.sk.domain.shared.enums.chart.Range;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,11 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Locale;
-
-import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import org.apache.commons.lang3.tuple.Pair;
-
-import com.sk.domain.shared.enums.chart.Range;
 
 /**
  * LocalDate 관련 유틸리티 클래스
@@ -200,10 +198,7 @@ public final class DateUtil {
      * ISO 형식의 날짜 문자열을 LocalDate로 변환
      */
     public static LocalDate fromIsoToLocalDate(String dateStr) {
-        return dateStr == null ? null :
-            (dateStr.length() == 6) ? YearMonth.parse(dateStr, YYYYMM).atDay(1) :
-            (dateStr.length() == 8) ? LocalDate.parse(dateStr, YYYYMMDD) :
-                LocalDateTime.parse(dateStr, ISO_LOCAL_DATE_TIME_MINUTES).toLocalDate();
+        return dateStr == null ? null : LocalDateTime.parse(dateStr, ISO_LOCAL_DATE_TIME_MINUTES).toLocalDate();
     }
 
     /**

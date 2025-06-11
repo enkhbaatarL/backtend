@@ -9,7 +9,6 @@ import com.sk.common.model.TableRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
-import com.sk.domain.mi.dto.response.charts.ChartMetadata;
 import com.sk.domain.mi.dto.response.charts.ChartMetadataSimple;
 import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
@@ -28,6 +27,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -36,12 +38,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.ByteArrayInputStream;
-import java.time.LocalDate;
-import java.util.List;
 
 @Tag(name = "05. 상품 데이터 상세 API", description = "상품 데이터 상세 API 입니다.")
 @Slf4j
@@ -266,8 +263,8 @@ public class MiDataDetailController {
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
-        @RequestParam(value = "startDate") String startDate,
-        @RequestParam(value = "endDate") String endDate
+        @RequestParam(value = "startDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
+        @RequestParam(value = "endDate") @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate
     ) {
         return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, page, size, startDate, endDate));
     }
