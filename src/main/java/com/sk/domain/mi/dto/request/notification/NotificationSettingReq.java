@@ -22,7 +22,7 @@ public record NotificationSettingReq() {
         BigDecimal criticalValueSettingVol,
 
         @NotNull
-        @Schema(description = "알림 타입 ACTUAL: 실제 or FORECAST: 예측", example = "ACTUAL")
+        @Schema(description = "알림 타입 ACTUAL: 실제 or FORECAST: 예측", example = "FORECAST", allowableValues = {"FORECAST", "ACTUAL"})
         NotificationType notificationType
     ) {}
 
