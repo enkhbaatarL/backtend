@@ -313,10 +313,11 @@ public class AdminGoodsDataService {
 
             // 비정형 데이타
             if (dto.unstructuredDataList() != null) {
-                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                         .stream()
                         .map(file -> file.getFileNo())
                         .toList();
+
                 List<Long> newFileNos = dto.unstructuredDataList()
                         .stream()
                         .map(UnstructuredDataReq::fileNo)
@@ -352,7 +353,7 @@ public class AdminGoodsDataService {
                 }
 
                 // A.X Platform 에 파일 업로드 연동
-                List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                         .stream()
                         .map(file -> file.getOriginalFileNm())
                         .toList();
@@ -373,10 +374,14 @@ public class AdminGoodsDataService {
                         .build();
 
                 publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, false));
+            } else {
+                System.out.println("   ===>>>   비정형 데이타가 없습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
+                        + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
+
+                return;
             }
 
             // 카테고리 기존거 삭제 후 새로 등록
-            System.out.println("   ===>>>   기존 데이터의 카테고리를 삭제합니다. " + goodsData.getGoodsDataNo());
             goodsDataCategoryRepository.softDeleteByGoodsDataNo(goodsData.getGoodsDataNo());
 
             // 프로바이더 타입 카테고리 등록
@@ -393,6 +398,7 @@ public class AdminGoodsDataService {
                         .map(categoryCodeId -> GoodsDataCategory.of(goodsData, categoryCodeId.codeId(), "",
                                 GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                         .toList();
+
                 goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
             }
 
@@ -402,6 +408,7 @@ public class AdminGoodsDataService {
                         .map(categoryCodeId -> GoodsDataCategory.of(goodsData, categoryCodeId.codeId(), "",
                                 GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                         .toList();
+
                 goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
             }
 
@@ -503,7 +510,7 @@ public class AdminGoodsDataService {
                 }
 
                 // A.X Platform 에 파일 업로드 연동
-                List<String> fileNameList = fileService.getFiles(savedGoodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                List<String> fileNameList = fileService.getFiles(savedGoodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                         .stream()
                         .map(file -> file.getOriginalFileNm())
                         .toList();
@@ -631,7 +638,7 @@ public class AdminGoodsDataService {
         // 정형 데이타 수정
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
-                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                         .stream()
                         .map(file -> file.getFileNo())
                         .toList();
@@ -735,7 +742,7 @@ public class AdminGoodsDataService {
             }
 
             // A.X Platform 에 파일 업로드 연동
-            List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
+            List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                     .stream()
                     .map(file -> file.getOriginalFileNm())
                     .toList();
