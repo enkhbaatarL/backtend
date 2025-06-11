@@ -154,11 +154,6 @@ public class FileService {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
-        if (uploadedFileRepository.findByFileNameAndFileHash(Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC), fileHash)
-                .size() > 0) {
-            throw AppErrorException.of(ResultCode.Error.FILE_ALREADY_EXIST);
-        }
-
         try {
             String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
@@ -360,9 +355,9 @@ public class FileService {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String fileName = getFileName(uploadedFile.getStoragePathNm());
 
-            objectStorageService.deleteFile(bucketName, fileName);
-
             uploadedFile.softDelete();
+
+            objectStorageService.deleteFile(bucketName, fileName);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
         }
@@ -385,9 +380,9 @@ public class FileService {
                 String bucketName = getBucketName(f.getStoragePathNm());
                 String fileName = getFileName(f.getStoragePathNm());
 
-                objectStorageService.deleteFile(bucketName, fileName);
-
                 f.softDelete();
+
+                objectStorageService.deleteFile(bucketName, fileName);
             } catch (Exception e) {
                 throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
             }
@@ -418,9 +413,9 @@ public class FileService {
             String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
-            objectStorageService.moveFile(bucketName, oldPath, newPath);
-
             uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
+
+            objectStorageService.moveFile(bucketName, oldPath, newPath);
 
             return uploadedFile;
         } catch (Exception e) {
