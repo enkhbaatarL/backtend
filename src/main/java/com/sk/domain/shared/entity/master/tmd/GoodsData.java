@@ -134,6 +134,10 @@ public class GoodsData extends BaseEntity {
         this.isMetaDataUploaded = isMetaDataUploaded;
     }
 
+    public void updateModifyDt() {
+        this.modifyDt = LocalDateTime.now();
+    }
+
     public void softDelete() {
         super.softDelete();
     }
