@@ -810,7 +810,7 @@ public class MiDashboardService {
         String key2 = null;
         String value2 = null;
 
-        if (matcher.matches()) {
+        if (matcher.find()) {
             key1 = matcher.group(1);
             value1 = matcher.group(2);
             key2 = matcher.group(3);
