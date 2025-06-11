@@ -37,6 +37,9 @@ public class DataSourceProperties {
         private int maximumPoolSize;
         private Duration maxLifetime;
         private Duration idleTimeout;
+        private String connectionTestQuery;
+        private Duration validationTimeout;
+        private int minimumIdle;
     }
 
 }
