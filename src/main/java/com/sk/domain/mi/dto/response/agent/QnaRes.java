@@ -20,7 +20,7 @@ public record QnaRes(
     @Schema(description = "질의문", example = "삼성전자 주가는?")
     String question,
 
-    @Schema(description = "AI응답", example = "?")
+    @Schema(description = "AI응답")
     AnswerRes answer,
 
     @Schema(description = "추천 여부", example = "true")
