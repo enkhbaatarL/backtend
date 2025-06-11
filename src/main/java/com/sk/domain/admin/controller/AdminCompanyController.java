@@ -393,4 +393,13 @@ public class AdminCompanyController {
     public BaseResponse<List<CompanyTypeAndCompanyRes>> getCompanyTypeAndCompanies() {
         return BaseResponseFactory.create(adminCompanyService.getCompanyTypeAndCompanies());
     }
+
+    @ApiOrder(23)
+    @Operation(summary = "등록된 모든 고객사 + 관리사 목록 조회 API(without pagination)", description = "드랍다운 메뉴 필터에 쓰일 고객사 + 관리사 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/list")
+    @RequiredPermission(roles = {Role.ADMIN})
+    public BaseResponse<List<CompanyRes>> getCompanyList() {
+        return BaseResponseFactory.create(adminCompanyService.getCompanyList());
+    }
 }
