@@ -108,13 +108,18 @@ public class GoodsDataSourceDetail extends BaseEntity {
     @Comment("거래량컬럼명")
     private String tradeVolumeColumnNm;
 
+    @Column(name = "prdc_data_yn", nullable = false, columnDefinition = "char(1)")
+    @Comment("예측데이터여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)   
+    private Boolean isPredictData;
+
     @Builder
     public GoodsDataSourceDetail(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataSourceNo, String goodsDataSourceNm, String targetDbNm, String targetTableNm,
             String queryConditionCntt, String goodsDataSourceExpn, String goodsDataSourceUnitNm, String goodsDataSourceCurrencyUnitNm,
             String tableColumnListNm, GoodsData goodsData,
             ComponentInfo componentInfo, String goodsDataSourceRmk, String goodsDataUseManagementCd, Boolean isCandleChartPossible,
-            String convertTargetDetailTypeNm, PeriodUnitSeparateCd periodUnitSeparateCd, String tradeVolumeColumnNm) {
+            String convertTargetDetailTypeNm, PeriodUnitSeparateCd periodUnitSeparateCd, String tradeVolumeColumnNm, Boolean isPredictData) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -133,6 +138,7 @@ public class GoodsDataSourceDetail extends BaseEntity {
         this.convertTargetDetailTypeNm = convertTargetDetailTypeNm;
         this.periodUnitSeparateCd = periodUnitSeparateCd;
         this.tradeVolumeColumnNm = tradeVolumeColumnNm;
+        this.isPredictData = isPredictData;
     }
 
     public static GoodsDataSourceDetail of(GoodsData goodsData, String goodsDataSourceNm, String targetDbNm, String targetTableNm,

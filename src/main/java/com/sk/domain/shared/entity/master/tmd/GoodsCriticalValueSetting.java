@@ -10,6 +10,7 @@ import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
+import com.sk.domain.shared.enums.NotificationType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -66,7 +67,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
 
     @Column(name = "prdc_data_yn", nullable = false, columnDefinition = "char(1)")
     @Comment("예측데이터여부")
-    @Convert(converter = BooleanToYNAttributeConverter.class)   
+    @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isPredictData;
 
     @Builder
@@ -74,13 +75,14 @@ public class GoodsCriticalValueSetting extends BaseEntity {
             LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, User user, GoodsDataSourceDetail goodsDataSourceDetail,
             NotiCrtvlSptCd notificationCriticalValueSeparateCd,
-            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm) {
+            BigDecimal criticalValueSettingVol, String criticalValueSettingUnitNm, Boolean isPredictData) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.user = user;
         this.goodsDataSourceDetail = goodsDataSourceDetail;
         this.notificationCriticalValueSeparateCd = notificationCriticalValueSeparateCd;
         this.criticalValueSettingVol = criticalValueSettingVol;
         this.criticalValueSettingUnitNm = criticalValueSettingUnitNm;
+        this.isPredictData = isPredictData;
     }
 
     public static GoodsCriticalValueSetting of(
@@ -93,6 +95,7 @@ public class GoodsCriticalValueSetting extends BaseEntity {
                 .criticalValueSettingUnitNm(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
                 .goodsDataSourceDetail(goodsDataSourceDetail)
                 .user(user)
+                .isPredictData(dto.notificationType() == NotificationType.FORECAST)
                 .build();
     }
 
