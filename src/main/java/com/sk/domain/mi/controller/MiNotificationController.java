@@ -126,7 +126,7 @@ public class MiNotificationController {
 	})
 	@ApiOrder(4)
 	@Operation(summary = "알림 설정 상세 조회", description = "상품 데이터의 알림 설정을 상세조회합니다.")
-	@ApiResponse(responseCode = "200", description = "알림 조회 성공")
+	@ApiResponse(responseCode = "200", description = "알림 설정 조회 성공")
 	@GetMapping("/goodsdata/{goodsDataSourceNo}/notification-settings/{notificationSettingNo}")
 	public BaseResponse<MiNotificationSettingRes> getNotificationSetting(
 			@PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
@@ -142,7 +142,7 @@ public class MiNotificationController {
 	})
 	@ApiOrder(5)
 	@Operation(summary = "알림 설정 삭제", description = "알림 설정을 삭제합니다.")
-	@ApiResponse(responseCode = "200", description = "알림 삭제 성공")
+	@ApiResponse(responseCode = "200", description = "알림 설정 삭제 성공")
 	@DeleteMapping("/goodsdata/{goodsDataSourceNo}/notification-settings/{notificationSettingNo}")
 	public BaseResponse<MiNotificationSettingRes> deleteNotificationSetting(
 			@PathVariable(value = "goodsDataSourceNo") @Min(value = 1) Integer goodsDataSourceNo,
@@ -152,7 +152,6 @@ public class MiNotificationController {
 				.create(miNotificationService.deleteNotificationSetting(goodsDataSourceNo, notificationSettingNo, user));
 	}
 
-	// TODO: 커서기반 페이지네이션 필요
 	@RequiredPermission(roles = {Role.USER})
 	@Parameters({
 			@Parameter(name = "page", description = "페이지 번호", required = true),

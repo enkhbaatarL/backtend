@@ -196,6 +196,7 @@ public class MiNotificationService {
     /**
      * 알림 내역 조회 처리
      * 
+     * 
      * @param emailSendSn
      * @param user
      * @return

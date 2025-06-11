@@ -10,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -91,9 +90,8 @@ public class MiDashboardController {
 	@GetMapping("/companies/{companyNo}/market-datas")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<List<MiMarketDataSummaryRes>> getMarketDataSummary(
-			@PathVariable("companyNo") Integer companyNo,
-			Authentication authentication) {
-		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo, authentication));
+			@PathVariable("companyNo") Integer companyNo) {
+		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo));
 	}
 
 	@ApiOrder(4)
@@ -129,7 +127,7 @@ public class MiDashboardController {
 	@ApiOrder(6)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
-			@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202505")
+			@Parameter(name = "date", description = "조회할 년월(YYYYMMDD)", example = "20250511")
 	})
 	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -137,14 +135,15 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<DashboardSummaryRes> getDashboardSummary(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date) {
+			@RequestParam(value = "date", required = true) String date) {
 		return BaseResponseFactory.create(miDashboardService.getDashboardSummary(companyNo, date));
 	}
 
 	@ApiOrder(7)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
-			@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202505")
+			@Parameter(name = "date", description = "조회할 년월(YYYYMMDD), ", example = "20250511"),
+			@Parameter(name = "predictDate", description = "예측 날짜(YYYYMM)", example = "202506")
 	})
 	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -152,13 +151,14 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public ResponseEntity<byte[]> getDashboardSummaryFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date) throws UnsupportedEncodingException {
+			@RequestParam(value = "date", required = true) String date,
+			@RequestParam(value = "predictDate", required = false) String predictDate) throws UnsupportedEncodingException {
 
 		String FILE_PREFIX = "dashboard_summary";
 		String encodedFileName = URLEncoder.encode(
 				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
 				StandardCharsets.UTF_8.toString());
-		byte[] fileData = miDashboardService.getDashboardSummaryFileDownload(companyNo, date);
+		byte[] fileData = miDashboardService.getDashboardSummaryFileDownload(companyNo, date, predictDate);
 
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -179,9 +179,8 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public BaseResponse<DashboardChartRes> getChart(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date,
-			Authentication authentication) {
-		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date, authentication));
+			@RequestParam(value = "date", required = false) String date) {
+		return BaseResponseFactory.create(miDashboardService.getChart(companyNo, date));
 	}
 
 	@ApiOrder(9)
@@ -195,9 +194,8 @@ public class MiDashboardController {
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
 	public ResponseEntity<byte[]> getChartFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
-			@RequestParam(value = "date", required = false) String date,
-			Authentication authentication) throws IOException {
-		byte[] fileData = miDashboardService.getChartFileDownload(companyNo, date, authentication);
+			@RequestParam(value = "date", required = false) String date) throws IOException {
+		byte[] fileData = miDashboardService.getChartFileDownload(companyNo, date);
 
 		
 		String FILE_PREFIX = "dashboard_data_table";
@@ -270,9 +268,8 @@ public class MiDashboardController {
 			@RequestParam(value = "mnemonicCd", required = true) String mnemonicCd,
 			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm,
 			@RequestParam(value = "predictionInputMnemonicCd", required = true) String predictionInputMnemonicCd,
-			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd,
-			Authentication authentication) {
+			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd) {
 		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, date, mnemonicCd,
-				explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd, authentication));
+				explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd));
 	}
 }

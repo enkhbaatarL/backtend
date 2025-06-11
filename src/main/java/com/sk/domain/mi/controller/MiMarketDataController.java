@@ -45,9 +45,8 @@ public class MiMarketDataController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
             Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     @GetMapping("/companies/{companyNo}/market-datas")
-    public BaseResponse<List<MiMarketDataRes>> getMarketDatas(@PathVariable("companyNo") Integer companyNo,
-            Authentication authentication) {
-        return BaseResponseFactory.create(miMarketDataService.getMarketDatas(companyNo, authentication));
+    public BaseResponse<List<MiMarketDataRes>> getMarketDatas(@PathVariable("companyNo") Integer companyNo) {
+        return BaseResponseFactory.create(miMarketDataService.getMarketDatas(companyNo));
     }
 
     @ApiOrder(2)
