@@ -68,6 +68,8 @@ public class AdminUserController {
                 .create(adminUserService.getUserInfos(page, size, companyCd, userNm, emailAddress));
     }
 
+    /**
+     * 2025-06-11 사용 안함
     @ApiOrder(2)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -90,6 +92,7 @@ public class AdminUserController {
         return BaseResponseFactory
                 .create(adminUserService.getAdminUserInfos(page, size, companyType, companyCd, userNm, emailAddress));
     }
+    */
 
     @ApiOrder(3)
     @Operation(summary = "사용자 등록 API", description = "사용자 정보를 등록합니다.")

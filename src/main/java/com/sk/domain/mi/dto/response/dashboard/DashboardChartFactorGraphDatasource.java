@@ -12,22 +12,26 @@ public record DashboardChartFactorGraphDatasource(
 
         @Schema(description = "상품 번호") Integer goodsNo,
 
-        @Schema(description = "상품 데이터 번호") Integer goodsDataNo
+        @Schema(description = "상품 데이터 번호") Integer goodsDataNo,
+
+        @Schema(description = "권한 여부", example = "true") Boolean isPermitted
 ) {
     @Builder
-    public DashboardChartFactorGraphDatasource(Integer goodsDataSourceNo, String goodsDataSourceNm, Integer goodsNo, Integer goodsDataNo) {
+    public DashboardChartFactorGraphDatasource(Integer goodsDataSourceNo, String goodsDataSourceNm, Integer goodsNo, Integer goodsDataNo, Boolean isPermitted) {
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataSourceNm = goodsDataSourceNm;
         this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
+        this.isPermitted = isPermitted;
     }
 
-    public static DashboardChartFactorGraphDatasource of(GoodsDataSourceDetail goodsDataSourceDetail) {
+    public static DashboardChartFactorGraphDatasource of(GoodsDataSourceDetail goodsDataSourceDetail, Boolean isPermitted) {
         return DashboardChartFactorGraphDatasource.builder()
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
                 .goodsNo(goodsDataSourceDetail.getGoodsData().getGoodsDataNo())
                 .goodsDataNo(goodsDataSourceDetail.getGoodsData().getGoods().getGoodsNo())
+                .isPermitted(isPermitted)
                 .build();
     }
 }

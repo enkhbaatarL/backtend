@@ -1396,7 +1396,7 @@ public class MiDashboardService {
         DashboardChartFactorGraphMetadata graphMetadata = DashboardChartFactorGraphMetadata.of(
                 actualGoodsDataSourceDetail);
 
-        DashboardChartFactorGraphDatasource graphDatasource = DashboardChartFactorGraphDatasource.of(actualGoodsDataSourceDetail);
+        DashboardChartFactorGraphDatasource graphDatasource = DashboardChartFactorGraphDatasource.of(actualGoodsDataSourceDetail, isPermitted);
 
         return DashboardChartFactorGraphRes.of(chartFactorGraphExplanatory != null ? chartFactorGraphExplanatory.getExplanatoryDetailCntt() : null,
                 graphMetadata, monthlyAverages, graphDatasource);
