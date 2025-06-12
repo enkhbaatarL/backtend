@@ -12,19 +12,6 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * <p>Markdown 유틸리티.
- * GFM(GitHub‑Flavored Markdown) 테이블을 다루는 두 가지 핵심 기능을 제공한다.</p>
- *
- * <ol>
- *     <li>{@link #insertTableIds(String)} : 모든 테이블 앞에 <code><!-- tableId:{UUID} --></code> 주석을 강제 삽입해
- *     수정된 Markdown 문자열을 반환한다. 이미 존재하는 경우에는 그대로 유지한다.</li>
- *     <li>{@link #parseTablesWithIds(String)} : Markdown 문서에서 테이블을 찾아 {@link TableRes} 리스트로 변환한다.
- *     바로 위에 있는 tableId 주석을 추출해 {@code tableId} 필드에 매핑하고, 주석이 없다면 새로운 UUID를 부여한다.</li>
- * </ol>
- *
- * <p>모든 정규식 패턴은 <strong>static final</strong> 상수로 정의해 재사용되므로 런타임마다 재컴파일되지 않는다.</p>
- */
 @UtilityClass
 public final class MarkdownUtil {
 
@@ -49,7 +36,7 @@ public final class MarkdownUtil {
     private static final Pattern DELIM_ROW = Pattern.compile("^\\s*\\|?\\s*:?-{3,}.*\\|.*");
 
     /**
-     * 모든 테이블 위에 <code><!-- tableId:{UUID} --></code> 주석을 보장한다.
+     * 모든 테이블 위에 <!-- tableId:{UUID} --> 주석을 보장한다.
      * 이미 존재한다면 유지하고, 없으면 새로 삽입한다.
      *
      * @param markdown 원본 Markdown 문자열
