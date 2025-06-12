@@ -12,19 +12,25 @@ public record DynamicDataReq(
     @Schema(description = "조건 절", example = "id = 1") String whereClause,
     @Schema(description = "추가 조건 절", example = "id = 1") String additionalWhereClause,
     @Schema(description = "정렬 기준", example = "order by date") String orderByColumn,
+    @Schema(description = "정렬 방향", example = "desc") String orderByDirection,
     @Schema(description = "집계 기준", example = "group by date") String groupByColumn,
     @Schema(description = "조회 건수", example = "10") int limit,
     @Schema(description = "오프셋", example = "0") int offset
 ) {
 
+    public enum Direction {
+        ASC, DESC
+    }
+
     @Builder
-    public DynamicDataReq(String targetDataSource, String columns, String tableName, String whereClause, String additionalWhereClause, String orderByColumn, String groupByColumn, int limit, int offset) {
+    public DynamicDataReq(String targetDataSource, String columns, String tableName, String whereClause, String additionalWhereClause, String orderByColumn, String orderByDirection, String groupByColumn, int limit, int offset) {
         this.targetDataSource = targetDataSource;
         this.columns = columns;
         this.tableName = tableName;
         this.whereClause = whereClause;
         this.additionalWhereClause = additionalWhereClause;
         this.orderByColumn = orderByColumn;
+        this.orderByDirection = orderByDirection;
         this.groupByColumn = groupByColumn;
         this.limit = limit;
         this.offset = offset;
@@ -62,7 +68,7 @@ public record DynamicDataReq(
             .build();
     }
 
-    public static DynamicDataReq ofPagingQuery(GoodsDataSourceDetail gds, String additionalWhereClause, String orderByColumn, int page, int size) {
+    public static DynamicDataReq ofPagingQuery(GoodsDataSourceDetail gds, String additionalWhereClause, String orderByColumn, Direction orderByDirection, int page, int size) {
         return DynamicDataReq.builder()
             .targetDataSource(gds.getTargetDbNm())
             .columns(gds.getTableColumnListNm())
@@ -70,6 +76,7 @@ public record DynamicDataReq(
             .whereClause(gds.getQueryConditionCntt())
             .additionalWhereClause(additionalWhereClause)
             .orderByColumn(orderByColumn)
+            .orderByDirection(orderByDirection.name())
             .limit(size)
             .offset((page - 1) * size)
             .build();
