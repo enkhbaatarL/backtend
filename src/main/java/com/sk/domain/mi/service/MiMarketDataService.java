@@ -17,12 +17,11 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.support.PageableExecutionUtils;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +32,7 @@ import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.ClauseUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
@@ -59,7 +59,6 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
@@ -117,7 +116,9 @@ public class MiMarketDataService {
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
         // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR)); // 2년 전
         LocalDate START_DATE = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
+        LocalDate END_DATE = LocalDate.now();
 
+        // 고객사 조회
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
@@ -191,7 +192,7 @@ public class MiMarketDataService {
             String defaultDataColumnName = tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
             // 원시 데이터 조회
-            List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE);
+            List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
@@ -255,7 +256,7 @@ public class MiMarketDataService {
                     String compareDefaultDataColumnName = compareTableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
                     // 비교군 원시 데이터 조회
-                    List<Map<String, Object>> compareRawData = getMarketDataRows(compareGoodsDataSource, compareDateColumnName, START_DATE);
+                    List<Map<String, Object>> compareRawData = getMarketDataRows(compareGoodsDataSource, compareDateColumnName, START_DATE, END_DATE);
                     // 비교군 월별 데이터로 변환
                     List<MarketDataChartRawData> compareChart = convertToMonthlyData(compareRawData, compareDateColumnName,
                             compareDefaultDataColumnName, LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
@@ -311,6 +312,8 @@ public class MiMarketDataService {
     public List<MiMarketDataSummaryRes> getMarketDataSummary(Integer customerCompanyNo) {
         // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH)); // 2달 전
         LocalDate START_DATE = LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH);
+        LocalDate END_DATE = LocalDate.now();
+
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
@@ -386,7 +389,7 @@ public class MiMarketDataService {
             String defaultDataColumnName = tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
             // 원시 데이터 조회
-            List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE);
+            List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
@@ -533,16 +536,17 @@ public class MiMarketDataService {
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
-    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate) {
+    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate, LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null) {
             return Collections.emptyList();
         }
 
         // 날짜 컬럼 스키마 조회
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
-        String dateRange = DateBindingUtil.single(meta, startDate);
+        Pair<String, String> dateRange = DateBindingUtil.range(meta, startDate, endDate);
 
-        String whereClause = "%s >= '%s'".formatted(dateColumnName, dateRange);
+        String whereClause = ClauseUtil.createBetweenClause(dateColumnName, dateRange.getLeft(), dateRange.getRight());
+
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
