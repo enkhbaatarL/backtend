@@ -29,8 +29,8 @@ public record DashboardChartFactorGraphDatasource(
         return DashboardChartFactorGraphDatasource.builder()
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
-                .goodsNo(goodsDataSourceDetail.getGoodsData().getGoodsDataNo())
-                .goodsDataNo(goodsDataSourceDetail.getGoodsData().getGoods().getGoodsNo())
+                .goodsDataNo(goodsDataSourceDetail.getGoodsData().getGoodsDataNo())
+                .goodsNo(goodsDataSourceDetail.getGoodsData().getGoods().getGoodsNo())
                 .isPermitted(isPermitted)
                 .build();
     }
