@@ -37,11 +37,13 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -524,37 +526,29 @@ public class MiDataDetailService {
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }
 
-  /**
-   * 상품 데이터 소스의 원천 데이터를 조회합니다.
-   *
-   * @param goodsNo 상품 번호
-   * @param gdNo 상품 데이터 번호
-   * @param gdsNo 상품 데이터소스 번호
-   * @param page 페이지 번호
-   * @param size 페이지 크기
-   * @param startDate 조회 시작일
-   * @param endDate 조회 종료일
-   * @return 페이징된 원천 데이터 테이블 응답
-   */
-  public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(
-      Integer goodsNo,
-      Integer gdNo,
-      Integer gdsNo,
-      Integer page,
-      Integer size,
-      LocalDate startDate,
-      LocalDate endDate) {
+    /**
+     * 상품 데이터 소스의 원천 데이터를 조회합니다.
+     *
+     * @param goodsNo   상품 번호
+     * @param gdNo      상품 데이터 번호
+     * @param gdsNo     상품 데이터소스 번호
+     * @param page      페이지 번호
+     * @param size      페이지 크기
+     * @param startDate 조회 시작일
+     * @param endDate   조회 종료일
+     * @return 페이징된 원천 데이터 테이블 응답
+     */
+    public PaginationTableRes<TableRes.Row, TableRes.Column> getGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, Integer page, Integer size, LocalDate startDate, LocalDate endDate) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
-    RawDataQueryContext queryContext =
-        prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
+        RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
 
         // Count 쿼리 실행
         List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, queryContext.whereClause()));
         int totalElements = extractTotalElements(countQuery);
 
         // Paging 데이터 쿼리 실행
-        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofPagingQuery(gds, queryContext.whereClause(), queryContext.dateColumn(), page, size));
+        List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofPagingQuery(gds, queryContext.whereClause(), queryContext.dateColumn(), DynamicDataReq.Direction.DESC, page, size));
 
         // 테이블 응답 생성
         TableRes table = buildTableResponse(dataQuery, queryContext);
@@ -643,8 +637,8 @@ public class MiDataDetailService {
         }
 
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
-    Pair<String, String> range =
-        DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
+        Pair<String, String> range =
+            DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
 
         String additionalWhereClause = ClauseUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
 

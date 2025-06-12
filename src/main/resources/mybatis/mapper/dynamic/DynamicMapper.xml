@@ -32,6 +32,9 @@
         </if>
         <if test="orderByColumn != null and orderByColumn != ''">
             ORDER BY ${orderByColumn}
+            <if test="orderByDirection != null and orderByDirection != ''">
+                ${orderByDirection}
+            </if>
         </if>
         <if test="limit != null and limit != ''">
             LIMIT ${limit}

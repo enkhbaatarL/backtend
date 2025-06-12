@@ -10,6 +10,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import com.sk.common.properties.JwtProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.util.TimeZone;
+
 @EnableAsync
 @EnableCaching
 @EnableScheduling
@@ -19,6 +21,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class MiPlatformApplication {
 
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
         SpringApplication.run(MiPlatformApplication.class, args);
     }
 
