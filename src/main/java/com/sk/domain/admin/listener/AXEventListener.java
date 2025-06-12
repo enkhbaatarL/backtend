@@ -13,10 +13,11 @@ import com.sk.domain.admin.listener.event.AXUploadFileEvent;
 import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.dto.AXMetaFileDto;
-import com.sk.domain.shared.client.dto.request.AXMetaFileInfoRegReq;
-import com.sk.domain.shared.client.dto.request.AXMetaFileInfoRegReq.ModifiedFile;
-import com.sk.domain.shared.client.dto.response.AXMetaFileInfoRegRes;
-import com.sk.domain.shared.client.dto.response.AXMetaFileUploadRes;
+import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq;
+import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq.ModifiedFile;
+import com.sk.domain.shared.client.dto.response.AXMetaRegisterRes;
+import com.sk.domain.shared.client.dto.response.AXMetaLookUpRes;
+import com.sk.domain.shared.client.dto.response.AXMetaUploadRes;
 import com.sk.domain.shared.client.dto.response.AuthTokenRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import lombok.RequiredArgsConstructor;
@@ -50,46 +51,68 @@ public class AXEventListener {
             return;
         }
 
-        if (event.getIsNew() == false) {
-            // 기존 파일 삭제
-        }
-
         try {
             String directoryPath = "./temp";
             File directory = new File(directoryPath);
             if (!directory.exists()) {
                 directory.mkdir();
             }
-            String uniqueFilename = String.valueOf(System.currentTimeMillis());
+            String uniqueFilename = String.valueOf(System.currentTimeMillis()).concat(".json");
 
             // JSON 파일 생성
-            jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename.concat(".json"));
+            jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename);
 
-            File file = new File(directoryPath + File.separator + uniqueFilename.concat(".json"));
+            File file = new File(directoryPath + File.separator + uniqueFilename);
             MultipartFileUtil multipartFile = new MultipartFileUtil("files", file, null);
 
-            // todo: API 호출 로직 작성
             AuthTokenRes authTokenRes = authTokenApi.getMessage();
             if (authTokenRes == null || authTokenRes.accessToken() == null) {
-                // log.error("Failed to retrieve access token");
                 System.out.println("   ===>>> Failed to retrieve access token: " + authTokenRes);
                 return;
             }
             System.out.println("   ===>>> authTokenRes: " + authTokenRes.toString());
-            System.out.println("   ===>>> Access Token: " + authTokenRes.accessToken());
 
-            AXMetaFileUploadRes axMetaFileUploadRes = axPlatformApi.postMessage(multipartFile, "Bearer ".concat(authTokenRes.accessToken()));
-            System.out.println("   ===>>> axMetaFileUploadRes: " + axMetaFileUploadRes.toString());
+            String accessToken = "Bearer ".concat(authTokenRes.accessToken());
 
-            List<ModifiedFile> modifiedFiles = axMetaFileUploadRes.data().stream()
-                    .map(f -> new ModifiedFile(f.fileName(), f.tempFilePath(), f.fileMetaData(), f.knowledgeConfig(), "added")).toList();
+            AXMetaUploadRes uploadRes = axPlatformApi.upload(accessToken, multipartFile);
+            System.out.println("   ===>>> uploadRes: " + uploadRes.toString());
+
+            ModifiedFile uploadFile = new ModifiedFile(uploadRes.data().get(0).fileName(),
+                    null,
+                    uploadRes.data().get(0).tempFilePath(),
+                    uploadRes.data().get(0).fileMetaData(),
+                    uploadRes.data().get(0).knowledgeConfig(),
+                    "added");
+
+            AXMetaRegisterReq registerReq = new AXMetaRegisterReq();
+            registerReq.addModifiedFile(uploadFile);
+
+            if (event.getIsNew() == false) {
+                // 기존 파일 삭제
+                String fileName = goodsData.getMetadUpldFileNm();
+
+                AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, fileName);
+                System.out.println("   ===>>> lookUpRes: " + lookUpRes.toString());
+
+                ModifiedFile deletedFile = new ModifiedFile(null,
+                        lookUpRes.fileId(),
+                        null,
+                        null,
+                        null,
+                        "deleted");
+
+                registerReq.addModifiedFile(deletedFile);
+            }
+
+            System.out.println(" ===>>> registerReq: " + registerReq.toString());
 
             String datasourceId = "3532b434-d39e-4111-8c38-46238350a85e";
-            AXMetaFileInfoRegRes axMetaFileInfoRegRes = axPlatformApi.putMessage(datasourceId, new AXMetaFileInfoRegReq(modifiedFiles));
-            System.out.println("   ===>>> axMetaFileInfoRegRes: " + axMetaFileInfoRegRes.toString());
+            AXMetaRegisterRes registerRes = axPlatformApi.register(accessToken, datasourceId, registerReq);
+            System.out.println(" ===>>> registerRes: " + registerRes.toString());
 
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);
+            goodsData.updateMetadUpldFileNm(uniqueFilename);
         } catch (IOException e) {
             // 예외 처리 로직
             e.printStackTrace();

@@ -1,26 +1,56 @@
 package com.sk.domain.mi.dto.response.agent.talk;
 
+import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import com.sk.domain.shared.client.dto.ModelAgentRes;
 
 @Builder
 public record Series(
 
-        @Schema(description = "순서") Integer order,
+    @Schema(description = "순서")
+    Integer order,
 
-        @Schema(description = "범례") String legend,
+    @Schema(description = "타입", example = "ACTUAL", allowableValues = {"ACTUAL", "FORECAST"})
+    Type type,
 
-        @Schema(description = "timestamps, x축") List<String> timestamps,
+    @Schema(description = "범례")
+    String legend,
 
-        @Schema(description = "값 리스트") List<BigDecimal> values
+    @Schema(description = "timestamps, x축")
+    List<String> timestamps,
+
+    @Schema(description = "값 리스트")
+    List<BigDecimal> values
 
 ) {
+
+    @Getter
+    @RequiredArgsConstructor
+    enum Type {
+
+        ACTUAL("actual"),
+        FORECAST("predict");
+
+        private final String modelRes;
+
+        public static Type typeOf(String modelRes) {
+            if (modelRes == null || modelRes.isEmpty()) {
+                return ACTUAL;
+            }
+            return Arrays.stream(values())
+                .filter(s -> s.modelRes.equalsIgnoreCase(modelRes))
+                .findFirst()
+                .orElse(ACTUAL);
+        }
+
+    }
 
     public static Series of(ModelAgentRes.Message.Content.Chart chart) {
 
@@ -28,20 +58,24 @@ public record Series(
         List<BigDecimal> values = chart.value().stream().map(BigDecimal::valueOf).toList();
 
         return Series.builder()
-                .order(chart.order())
-                .legend(chart.legend())
-                .timestamps(timestamps)
-                .values(values)
-                .build();
+            .order(chart.order())
+            .type(Type.typeOf(chart.type()))
+            .legend(chart.legend())
+            .timestamps(timestamps)
+            .values(values)
+            .build();
 
     }
 
     public static List<Series> ofList(List<ModelAgentRes.Message.Content.Chart> charts) {
+
         if (charts == null)
             return Collections.emptyList();
+
         return charts.stream()
-                .map(Series::of)
-                .toList();
+            .map(Series::of)
+            .toList();
+
     }
 
 }

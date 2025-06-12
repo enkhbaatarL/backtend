@@ -594,4 +594,15 @@ public class AdminCompanyService {
     public List<CompanyTypeAndCompanyRes> getCompanyTypeAndCompanies() {
         return customerCompanyRepository.findCompaniesByTypeWithSubCompanies();
     }
+
+    /**
+     * 등록된 고객사 목록을 조회한다.
+     *
+     * @return List<CompanyRes>
+     */
+    public List<CompanyRes> getCompanyList() {
+        return customerCompanyRepository.findByIsDeletedFalseOrderByCustomerCompanyNmAsc().stream()
+                .map(CompanyRes::of)
+                .collect(Collectors.toList());
+    }
 }

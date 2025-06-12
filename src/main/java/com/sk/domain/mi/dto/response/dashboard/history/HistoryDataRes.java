@@ -61,12 +61,12 @@ public record HistoryDataRes(
         BigDecimal prevForecast = null;
         BigDecimal prevCounter  = null;
 
-        // Monthly 예측값 && counterPart 실제가인 경우, 예측 시점 달 실제가를 포함
-        if (PeriodUnitSeparateCd.M == periodCd && !isFuture) {
+        // Monthly 예측값, 예측 시점 달 실제가 또는 선물가를 포함
+        if (PeriodUnitSeparateCd.M == periodCd) {
             result.add(HistoryDataRes.builder()
                 .date(DateUtil.format(fulfillDate, periodCd))
                 .counterpart(PriceEntry.of(
-                    PriceType.ACTUAL,
+                    isFuture ? PriceType.FUTURE : PriceType.ACTUAL,
                     PriceStat.ifPermittedOrNull(counterpartMap.get(DateUtil.format(fulfillDate, periodCd)), null, false, false, isCounterPartPermitted),
                     isCounterPartPermitted
                 ))

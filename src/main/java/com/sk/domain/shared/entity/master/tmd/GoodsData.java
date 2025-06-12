@@ -79,6 +79,10 @@ public class GoodsData extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isGoodsDataMarked;
 
+    @Column(name = "metad_upld_file_nm", length = 300)
+    @Comment("metad_upld_file_nm")
+    private String metadUpldFileNm;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
@@ -132,6 +136,14 @@ public class GoodsData extends BaseEntity {
 
     public void updateMetaDataUploadStatus(Boolean isMetaDataUploaded) {
         this.isMetaDataUploaded = isMetaDataUploaded;
+    }
+
+    public void updateModifyDt() {
+        this.modifyDt = LocalDateTime.now();
+    }
+
+    public void updateMetadUpldFileNm(String metadUpldFileNm) {
+        this.metadUpldFileNm = metadUpldFileNm;
     }
 
     public void softDelete() {

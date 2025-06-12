@@ -121,6 +121,10 @@ dependencies {
     // pdf https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox
     implementation 'org.apache.pdfbox:pdfbox:3.0.4'
 
+    // https://mvnrepository.com/artifact/com.github.jai-imageio/jai-imageio-jpeg2000
+    // JPEG 2000(.jp2, .jpx) 형식으로 압축된 이미지를 처리하기 위함
+    implementation 'com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0'
+
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 
     implementation "org.commonmark:commonmark:0.24.0"

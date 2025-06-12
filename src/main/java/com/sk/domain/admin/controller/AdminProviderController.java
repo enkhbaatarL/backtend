@@ -562,6 +562,10 @@ public class AdminProviderController {
             @RequestParam(value = "fileHash", required = true, defaultValue = "") String fileHash,
             @RequestParam(value = "goodsDataNm", required = true, defaultValue = "") String goodsDataNm) {
 
+        if (fileName == null || fileName.isEmpty() || fileHash == null || fileHash.isEmpty() || goodsDataNm == null || goodsDataNm.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
+
         List<GoodsData> goodsDatas = goodsDataService.getGoodsData(goodsDataNm);
         if (goodsDatas.size() > 0) {
             List<UploadedFile> uploadedFiles = fileService.fileExist(fileName, fileHash);
@@ -575,8 +579,8 @@ public class AdminProviderController {
                     }
                 }
             }
-
         }
+
         return BaseResponseFactory.create(new FileExistRes(false));
     }
 }

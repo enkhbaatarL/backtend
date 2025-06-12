@@ -38,10 +38,12 @@ public final class DummyResponses {
               "content": {
                 "text": "## 📈 2024년 5월 제품 판매 실적 분석\\n\\n지난 5월, 신제품 **'AI 스마트워치 Pro'**의 출시 효과로 웨어러블 카테고리의 매출이 전월 대비 **23.5%%** 상승하며 가장 큰 성장을 기록했습니다. 반면, '4K 게이밍 모니터'는 경쟁 심화로 소폭 감소했습니다.\\n\\n### 카테고리별 상세 실적\\n| 카테고리 | 주요 제품 | 판매량 (개) | 매출액 (백만 $) | 전월 대비 증감률 |\\n|---|---|---|---|---|\\n| 웨어러블 | AI 스마트워치 Pro | 3,450 | 1.38 | ▲ 23.5%% |\\n| 스마트홈 | AI 스피커 Plus | 1,820 | 0.22 | ▲ 8.1%% |\\n| 오디오 | 무선 이어폰 Z | 2,130 | 0.43 | ▼ 2.1%% |\\n| 디스플레이 | 4K 게이밍 모니터 | 980 | 0.59 | ▼ 4.5%% |\\n\\n'AI 스마트워치 Pro'의 일별 판매량은 월말로 갈수록 꾸준히 증가하는 양상을 보였습니다.",
                 "charts": [
-                  { "order": 1, "legend": "AI 스마트워치 Pro 일별 판매량", "date": [%s], "value": [%s] }
+                  { "order": 1, "legend": "AI 스마트워치 Pro 일별 판매량", "type": "actual", "date": [%s], "value": [%s] }
                 ],
                 "sources": [{"source_nm": "내부 판매 데이터베이스", "url": "internal://sales-db/monthly_report_202405"}],
-                "vector_sources": [{"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024"}],
+                "vector_sources": [
+                    {"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024", "gds_data_dstg_id": "45b4f8db-3f60-424e-a836-89d6df9ff3d3"}
+                ],
                 "related_data": [20, 3]
               }
             }
@@ -58,10 +60,12 @@ public final class DummyResponses {
               "content": {
                 "text": "## 📦 2023년 연간 재고 회전율 분석\\n\\n2023년 전체 평균 재고 회전일수는 **28.5일**로, 2022년(31.2일) 대비 **8.7%% 개선**되었습니다. 이는 SCM 최적화 프로젝트의 성과로 분석됩니다.\\n\\n### 제품 카테고리별 재고 회전일수 (2023년)\\n| 카테고리 | 평균 재고일수 | 2022년 대비 | 비고 |\\n|---|---|---|---|\\n| 패션 의류 | 45.1일 | ▼ 5.2일 | 계절성 상품 재고 관리 개선 |\\n| 디지털 가전 | 18.5일 | ▼ 2.1일 | 수요 예측 정확도 향상 |\\n| 생활 용품 | 33.8일 | ▼ 1.9일 | 안정적 수요 유지 |\\n\\n아래는 2023년 주차별 전체 재고 회전일수 변화 추이입니다.",
                 "charts": [
-                  { "order": 1, "legend": "주차별 재고 회전일수", "date": [%s], "value": [%s] }
+                  { "order": 1, "legend": "주차별 재고 회전일수", "type": "actual", "date": [%s], "value": [%s] }
                 ],
                 "sources": [],
-                "vector_sources": [{"source": "WMS_Annual_Report_2023", "title": "Warehouse Management System - Annual Inventory Turnover"}],
+                "vector_sources": [
+                    {"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024", "gds_data_dstg_id": "45b4f8db-3f60-424e-a836-89d6df9ff3d3"}
+                ],
                 "related_data": [20, 3]
               }
             }
@@ -78,12 +82,14 @@ public final class DummyResponses {
               "content": {
                 "text": "## 🏦 경쟁사 주가 비교 (지난 30일)\\n\\n최근 한 달간, 당사('OurStock')의 주가는 경쟁사 A에 비해 높은 변동성을 보였으나 꾸준히 우상향하는 패턴을 유지했습니다. 경쟁사 B는 안정적인 흐름을 보였습니다.",
                 "charts": [
-                  { "order": 1, "legend": "OurStock 주가 (USD)", "date": [%s], "value": [%s] },
-                  { "order": 2, "legend": "Competitor A 주가 (USD)", "date": [%s], "value": [%s] },
-                  { "order": 3, "legend": "Competitor B 주가 (USD)", "date": [%s], "value": [%s] }
+                  { "order": 1, "legend": "OurStock 주가 (USD)", "type": "actual", "date": [%s], "value": [%s] },
+                  { "order": 2, "legend": "Competitor A 주가 실제가(USD)", "type": "actual", "date": [%s], "value": [%s] },
+                  { "order": 3, "legend": "Competitor B 주가 예측가(USD)", "type": "predict", "date": [%s], "value": [%s] }
                 ],
                 "sources": [{"source_nm": "Yahoo Finance", "url": "https://finance.yahoo.com"}],
-                "vector_sources": [{"source": "Stock_Data_API", "title": "Last 30 Days Stock Prices"}],
+                "vector_sources": [
+                    {"source": "SalesDB_202405", "title": "Monthly Sales Report for May 2024", "gds_data_dstg_id": "45b4f8db-3f60-424e-a836-89d6df9ff3d3"}
+                ],
                 "related_data": [20, 3]
               }
             }
