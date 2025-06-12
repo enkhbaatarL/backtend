@@ -299,7 +299,6 @@ public class AdminGoodsDataService {
      */
     @Transactional
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
-        // todo: 데이터 이름이 같고, Summary, Description, 첨부 파일이 같으면 동일한 데이터이고, 첨부파일이 다르다면, 누적으로 추가 해주고, 다른 정보는 업데이트 한다.
         List<GoodsData> goodsDatas = goodsDataRepository.findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(
                 dto.goodsDataNm(),
                 dto.goodsDataExpn(),
@@ -337,6 +336,7 @@ public class AdminGoodsDataService {
                 for (Long fileNo : filesToAdd) {
                     System.out.println("   ===>>>   추가할 파일이 있습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
                             + ", 요약: " + goodsData.getGoodsDataSummaryCntt() + ", fileNo: " + fileNo);
+
                     fileService.updateFile(
                             fileNo,
                             goodsData.getGoodsDataNo(),

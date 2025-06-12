@@ -7,7 +7,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 // @formatter:off
-public record AXMetaFileInfoRegRes(
+public record AXMetaRegisterRes(
         @JsonProperty("project_id")    
         String projectId,
 

@@ -4,10 +4,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 // @formatter:off
-public record AXMetaFileUploadRes(
+public record AXMetaUploadRes(
        @JsonProperty("data")
         List<Data> data
     ){
@@ -23,10 +21,7 @@ public record AXMetaFileUploadRes(
             String fileMetaData,
 
             @JsonProperty("knowledge_config")
-            String knowledgeConfig,
-
-            @JsonProperty("status")
-            String status
+            String knowledgeConfig
         ) {
 
         } 
