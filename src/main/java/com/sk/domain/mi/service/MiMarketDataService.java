@@ -725,7 +725,7 @@ public class MiMarketDataService {
         LocalDate yesterday = today.minusDays(1);
 
         // 이번 주
-        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() % 7); // 알요일
+        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() % 7); // 일요일
         LocalDate thisWeekEnd = today;
         // 지난 주
         LocalDate lastWeekStart = thisWeekStart.minusWeeks(1);

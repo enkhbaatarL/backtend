@@ -38,15 +38,12 @@ public class CustomUserInfoRepositoryImpl implements CustomUserInfoRepository {
 
 		Pageable pageable = PageRequest.of(page - 1, size);
 
-		/**
-		 * 관리자는 관리사에서 조회
-		 * 사용자 / 운영자는 고객사에서 조회
-		 */
 		BooleanExpression existsExpression = queryFactory.selectFrom(customerCompany)
 				.where(customerCompany.customerCompanyCd.eq(companyCd)
 						.and(customerCompany.isUsed.isTrue())
 						.and(customerCompany.isDeleted.isFalse())
-						.and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
+						// .and(customerCompany.isMipManagementCompany.eq(userRoleCd == UserRoleCd.ADMIN)))
+				)
 				.exists();
 
 		BooleanBuilder builder = new BooleanBuilder();
