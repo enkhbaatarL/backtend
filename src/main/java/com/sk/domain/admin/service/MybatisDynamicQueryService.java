@@ -82,7 +82,8 @@ public class MybatisDynamicQueryService {
         params.put("tableName", tableName);
         params.put("whereClause", whereClause);
         params.put("additionalWhereClause", additionalWhereClause);
-        params.put("orderByColumns", dynamicDataReq.orderByColumn());
+        params.put("orderByColumn", dynamicDataReq.orderByColumn());
+        params.put("orderByDirection", dynamicDataReq.orderByDirection());
         params.put("limit", dynamicDataReq.limit());
         params.put("offset", dynamicDataReq.offset());
         return dynamicMapper.selectDynamic(params);
