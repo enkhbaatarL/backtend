@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,12 +14,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.opensaml.xmlsec.encryption.P;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,11 +28,14 @@ import org.thymeleaf.util.StringUtils;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
+import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import com.sk.domain.shared.dto.response.rpa.CrackSpreadDataRes;
 import com.sk.domain.shared.entity.compositeKey.tmd.UserHistoryId;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
@@ -39,10 +43,12 @@ import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmd.UserHistory;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
@@ -78,6 +84,7 @@ public class SchedulerService {
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_HOURS = 24;
+    private final int ALARM_BATCH_DAYS = 1;
 
     // brentTimeSpreadCalculate 계산용
     private static final String LLCC_01 = "LLCC.01";
@@ -146,6 +153,8 @@ public class SchedulerService {
                 String selectColumns = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTableColumnListNm();
                 String[] selectQueryArray = selectColumns.split(",");
 
+                GoodsDataSourceDetail goodsDataSourceDetail = goodsCriticalValueSettingData.getGoodsDataSourceDetail();
+
                 /**
                  * 현재 정책으로 TableColumnListNm의 칼럼 순서는
                  * 메트릭 : 날짜(date), 기본 컬럼(x), 컬럼1(y1), 컬럼2(y2), 컬럼3(y3), ...
@@ -157,14 +166,23 @@ public class SchedulerService {
                 String columns = mybatisQueryTemplate.getSelectQueryForAlarm(selectColumns, targetTableNm, dateColumn, defaultSelectColumn,
                         ALARM_PREV_DATA_ALIAS);
                 String targetTableAlias = mybatisQueryTemplate.getTableAliasForAlarm(targetTableNm);
-                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(ALARM_BATCH_HOURS);
                 String orderByQuery = mybatisQueryTemplate.getOrderByQueryForAlarm(dateColumn, defaultSelectColumn);
 
+                // 날짜 범위 설정
+                LocalDate startDate = LocalDate.now().minusDays(ALARM_BATCH_DAYS);
+                LocalDate endDate = LocalDate.now();
+
+                // 날짜 범위 조회
+                SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
+                Pair<String, String> dateRange = DateBindingUtil.range(meta, startDate, endDate);
+
+                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(dateColumn, dateRange.getLeft(), dateRange.getRight());
+
                 // 임계치 설정 1개에 대한 데이터 리스트
-                List<Map<String, Object>> queryResult = mybatisDynamicQueryService
+                List<Map<String, Object>> rowDatas = mybatisDynamicQueryService
                         .getDynamicRawQuery(DynamicDataDetailReq.ofOrderBy(targetDatabaseNm, targetTableAlias, columns, whereQuery, orderByQuery));
 
-                for (Map<String, Object> rowData : queryResult) {
+                for (Map<String, Object> rowData : rowDatas) {
                     Object createdTimeData = rowData.get(dateColumn); // 데이터 발생일 (date 칼럼)
                     Object prevData = rowData.get(ALARM_PREV_DATA_ALIAS); // 임계치 비교를 위한 이전 데이터(Default 데이터)
                     Object currentData = rowData.get(defaultSelectColumn); // 임계치 비교를 위한 기준 데이터(Default 데이터)

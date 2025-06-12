@@ -719,6 +719,7 @@ public class MiDashboardService {
             } else {
                 // 월별 평균 계산
                 double average = values.stream()
+                        .filter(Objects::nonNull)
                         .mapToDouble(Double::doubleValue)
                         .average()
                         .orElse(0.0);

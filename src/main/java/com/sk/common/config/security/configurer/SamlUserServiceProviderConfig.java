@@ -43,8 +43,7 @@ public class SamlUserServiceProviderConfig {
                         .authenticationManager(new ProviderManager(authenticationProvider))
                         .successHandler(customSamlUserAuthenticationSuccessHandler)
                         .failureHandler(customSamlAuthenticationFailureHandler))
-                .saml2Logout(withDefaults())
-                //TODO: 세션 정책
+                .saml2Logout(withDefaults()) //TODO: 세션 정책
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
