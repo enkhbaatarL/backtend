@@ -1,9 +1,8 @@
 package com.sk.domain.shared.client.dto.response;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 // @formatter:off
@@ -26,6 +25,9 @@ public record AXMetaRegisterRes(
         @JsonProperty("description")   
         String description,
 
+        @JsonProperty("s3_config")   
+        String s3Config,
+
         @JsonProperty("is_deleted")    
         boolean isDeleted,
 
@@ -35,11 +37,13 @@ public record AXMetaRegisterRes(
         @JsonProperty("id")            
         String id,
 
-        @JsonProperty("created_at")    
-        Instant createdAt,
+        @JsonProperty("created_at")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+        LocalDateTime createdAt,
 
-        @JsonProperty("updated_at")    
-        Instant updatedAt,
+        @JsonProperty("updated_at")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+        LocalDateTime updatedAt,
 
         @JsonProperty("status")        
         String status,
@@ -52,44 +56,46 @@ public record AXMetaRegisterRes(
     ){
 
         public record FileDetail(
-            @JsonProperty("id")              
-            String id,
-
-            @JsonProperty("datasource_id")   
+            @JsonProperty("datasource_id")
             String datasourceId,
 
-            @JsonProperty("file_name")       
+            @JsonProperty("file_name")
             String fileName,
 
-            @JsonProperty("file_path")       
+            @JsonProperty("file_path")
             String filePath,
 
-            @JsonProperty("file_size")       
+            @JsonProperty("file_size")
             long fileSize,
 
-            @JsonProperty("is_deleted")      
-            boolean isDeleted,
+            @JsonProperty("file_metadata")
+            String fileMetadata,
 
-            @JsonProperty("created_at")      
-            Instant createdAt,
+            @JsonProperty("knowledge_config")
+            String knowledgeConfig,
 
-            @JsonProperty("updated_at")      
-            Instant updatedAt,
-
-            @JsonProperty("created_by")      
+            @JsonProperty("created_by")
             String createdBy,
 
-            @JsonProperty("updated_by")      
+            @JsonProperty("updated_by")
             String updatedBy,
 
-            @JsonProperty("s3_etag")         
-            String s3Etag,
+            @JsonProperty("is_deleted")
+            boolean isDeleted,
 
-            @JsonProperty("file_metadata")   
-            Map<String, Object> fileMetadata,
+            @JsonProperty("id")
+            String id,
 
-            @JsonProperty("knowledge_config") 
-            Map<String, Object> knowledgeConfig
+            @JsonProperty("created_at")
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+            LocalDateTime createdAt,
+
+            @JsonProperty("updated_at")
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+            LocalDateTime updatedAt,
+
+            @JsonProperty("s3_etag")
+            String s3Etag
         ) {
             
         } 

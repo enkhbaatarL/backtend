@@ -373,7 +373,7 @@ public class AdminGoodsDataService {
                         .countries(List.of(""))
                         .build();
 
-                publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, false));
+                publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
             } else {
                 System.out.println("   ===>>>   비정형 데이타가 없습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
                         + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
@@ -530,7 +530,7 @@ public class AdminGoodsDataService {
                         .countries(List.of(""))
                         .build();
 
-                publisher.publishEvent(new AXUploadFileEvent(savedGoodsData, axMetaFileDto, true));
+                publisher.publishEvent(new AXUploadFileEvent(savedGoodsData.getGoodsDataNo(), axMetaFileDto, true));
 
                 savedGoodsData.updateGoodsDataDistinguishId(documentId);
             }
@@ -762,7 +762,7 @@ public class AdminGoodsDataService {
                     .countries(List.of(""))
                     .build();
 
-            publisher.publishEvent(new AXUploadFileEvent(goodsData, axMetaFileDto, false));
+            publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
         }
     }
 
