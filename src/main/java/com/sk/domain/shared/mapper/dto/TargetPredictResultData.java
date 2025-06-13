@@ -24,3 +24,4 @@ public class TargetPredictResultData {
      */
     private BigDecimal predictResultValue;
 }
+ 
