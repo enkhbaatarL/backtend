@@ -37,14 +37,19 @@ public class CorrelationAnalysisResultId implements Serializable {
     @Comment("예측결과일자")
     private String predictionResultDt;
 
+    @Column(name = "prdc_input_mnmnc_cd", length = 50, nullable = false)
+    @Comment("예측입력MNEMONIC코드")
+    private String predictionInputMnemonicCd;
+
     @Builder
     public CorrelationAnalysisResultId(String marketIndexAnalysisTargetCd, String analysisFulfilmentDt,
-            String mnemonicCd, String correlationCalculationCycleCd, String predictionResultDt) {
+            String mnemonicCd, String correlationCalculationCycleCd, String predictionResultDt, String predictionInputMnemonicCd) {
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
         this.analysisFulfilmentDt = analysisFulfilmentDt;
         this.mnemonicCd = mnemonicCd;
         this.correlationCalculationCycleCd = correlationCalculationCycleCd;
         this.predictionResultDt = predictionResultDt;
+        this.predictionInputMnemonicCd = predictionInputMnemonicCd;
     }
 
 }
