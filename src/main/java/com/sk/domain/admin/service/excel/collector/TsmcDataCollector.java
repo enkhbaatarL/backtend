@@ -1,4 +1,4 @@
-package com.sk.domain.admin.service.excel;
+package com.sk.domain.admin.service.excel.collector;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -18,7 +18,7 @@ import com.sk.common.utils.ExcelParsedUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class OecdCliDataCollector extends PivotDataCollector {
+public class TsmcDataCollector extends PivotDataCollector {
     private static final int HEADER_ROW_INDEX = 6; // 7행, extractExcelHeader 에서 비어있는 6행은 count를 안함
     private static final int HEADER_COLUMN_INDEX = 2; // 헤더 추출 후 비어있는 Cell 제외한 CODE 시작 열
     private static final int VALUE_COLUMN_INDEX = 3; // 비어있는 Cell 제외한 Value 시작 열
@@ -84,14 +84,6 @@ public class OecdCliDataCollector extends PivotDataCollector {
             }
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
             //TODO: 필요시 구현
-
-            // TODO 파싱 잘못되고 있음 다시 확인 해야함!!!!!!!!!!!
-            // for (int i = 0; i <= currentRowNumTemp; i++) {
-            //     Row row = rowIterator.next();
-            //     int rowNum = row.getRowNum();
-            //     log.debug("rowNum: {}", rowNum);
-            // }
-            
         }
         return result;
     }
