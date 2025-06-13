@@ -14,11 +14,12 @@ import org.apache.poi.ss.usermodel.Sheet;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelParsedUtil;
+import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class OecdCliDataCollector extends PivotDataCollector {
+public class OecdCliDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 6; // 7행, extractExcelHeader 에서 비어있는 6행은 count를 안함
     private static final int HEADER_COLUMN_INDEX = 2; // 헤더 추출 후 비어있는 Cell 제외한 CODE 시작 열
     private static final int VALUE_COLUMN_INDEX = 3; // 비어있는 Cell 제외한 Value 시작 열

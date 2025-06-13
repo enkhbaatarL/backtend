@@ -187,6 +187,7 @@ public class MiDashboardService {
 
         // 예측 데이터 마지막 업데이트 중에 가장 날짜가 최근인 값
         LocalDate lastUpdated = lastUpdatedList.stream()
+                .filter(Objects::nonNull)
                 .max(LocalDate::compareTo)
                 .orElse(null);
         return DashboardInfoRes.of(chartPredictSetting, lastUpdated);
@@ -240,7 +241,14 @@ public class MiDashboardService {
     public byte[] getDashboardSummaryFileDownload(int companyNo, String date, String predictDate) {
         List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date, predictDate);
 
+        if (summaries == null || summaries.isEmpty()) {
+            log.warn("No dashboard summaries found for companyNo: {}, date: {}, predictDate: {}", 
+                     companyNo, date, predictDate);
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "대시보드 요약 데이터가 없습니다.");
+        }
+
         List<String> filePaths = summaries.stream()
+                .filter(Objects::nonNull)
                 .map(DashboardSummary::explanatoryFilePath)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
