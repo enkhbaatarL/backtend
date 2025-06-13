@@ -307,9 +307,6 @@ public class AdminGoodsDataService {
         if (goodsDatas.size() > 0) {
             GoodsData goodsData = goodsDatas.get(0);
 
-            System.out.println("   ===>>>   이미 존재하는 데이터입니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
-                    + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
-
             // 비정형 데이타
             if (dto.unstructuredDataList() != null) {
                 List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
@@ -328,15 +325,10 @@ public class AdminGoodsDataService {
                 Set<Long> filesToAdd = new HashSet<>(newFileSet);
                 filesToAdd.removeAll(oldFileSet);
                 if (filesToAdd.isEmpty()) {
-                    System.out.println("   ===>>>   추가할 파일이 없습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
-                            + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
                     return;
                 }
 
                 for (Long fileNo : filesToAdd) {
-                    System.out.println("   ===>>>   추가할 파일이 있습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
-                            + ", 요약: " + goodsData.getGoodsDataSummaryCntt() + ", fileNo: " + fileNo);
-
                     fileService.updateFile(
                             fileNo,
                             goodsData.getGoodsDataNo(),
@@ -375,9 +367,6 @@ public class AdminGoodsDataService {
 
                 publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
             } else {
-                System.out.println("   ===>>>   비정형 데이타가 없습니다. 데이터명: " + goodsData.getGoodsDataNm() + ", 설명: " + goodsData.getGoodsDataExpn()
-                        + ", 요약: " + goodsData.getGoodsDataSummaryCntt());
-
                 return;
             }
 

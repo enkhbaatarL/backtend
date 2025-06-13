@@ -13,7 +13,7 @@ public interface SignalMapProjection {
 
     String getInstmNm();
 
-    String getMnmncCd();
+    String getPrdcInputMnmncCd();
 
     BigDecimal getCorrCalcVal();
 }
