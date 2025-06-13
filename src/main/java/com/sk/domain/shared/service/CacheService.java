@@ -49,10 +49,6 @@ public class CacheService {
 
     /**
      * 태그 엔티티에 포함되어 있는 사용자 목록을 대상으로 캐시를 무효화한다.
-     * todo-M
-     *  - 1. 적용 대상을 선정해야 함 -> OK
-     *  - 2. 태그 key 삭제 여부 -> 하지말자
-     *  - 3. 회사 권한일 경우? -> 회사 권한으로 자신의 권한을 알고 싶다면? companyNo를 기반으로 자신의 조회 권한을 알 수 있는 API 뚫어야 함
      *
      * @param cacheType TAG_COMPANY, TAG_PROVIDER, TAG_GOODS
      * @param entityId  companyNo, providerNo, goodsNo
