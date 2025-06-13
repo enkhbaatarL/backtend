@@ -5,6 +5,7 @@ import java.util.List;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -62,7 +63,7 @@ public class AdminCompanyController {
     private final AdminCompanyService adminCompanyService;
 
     @ApiOrder(1)
-    @Operation(summary = "그룹사 목록 조회 API (without pagination)", description = "그룹사 목록을 조회합니다. <br>'companyNm' 필드를 기준으로 오름차순(ASC) 정렬되며, 우선순위는 숫자 > 알파벳 > 한국어 순입니다.")
+    @Operation(summary = "그룹사 목록 조회 API (without pagination)", description = "그룹사 목록을 조회합니다. <br>'companyNm' 필드를 기준으로 오름차순(ASC) 정렬됩니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/group-companies")
     @RequiredPermission(roles = {Role.ADMIN})

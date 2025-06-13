@@ -41,13 +41,4 @@ public class CompanyInfo extends BaseEntity {
         this.companyEngNm = companyEngNm;
     }
 
-//    public static CompanyInfo of(CustomerCompanyReq customerCompanyReq) {
-//        return CompanyInfo.builder()
-//            .companyCd(customerCompanyReq.companyCd())
-//            .companyNm(customerCompanyReq.companyNm())
-//            .companyEngNm(customerCompanyReq.companyEngNm())
-//            .isDeleted(Boolean.FALSE)
-//            .build();
-//    }
-
 }

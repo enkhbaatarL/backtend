@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface CompanyInfoRepository extends JpaRepository<CompanyInfo, Long> {
 
-    List<CompanyInfo> findByIsDeletedFalse();
+    List<CompanyInfo> findByIsDeletedFalseOrderByCompanyNm();
 
     Optional<CompanyInfo> findByCompanyCdAndIsDeletedFalse(String companyCd);
 
