@@ -31,10 +31,10 @@ public class PermissionAspect {
     private final GoodsNestedEntityResolver goodsNestedEntityResolver;
 
     /**
-     * 주어진 @RequiredPermission 어노테이션을 기반으로 메서드 접근 권한을 검사합니다.
+     * 주어진 @RequiredPermission 어노테이션을 기반으로 API 접근 권한을 검사합니다.
      *
-     * @param joinPoint          호출된 메서드의 실행 시점 정보를 포함합니다.
-     * @param requiredPermission 메서드에 요구되는 권한 정보입니다.
+     * @param joinPoint          호출된 메서드의 실행 시점 정보
+     * @param requiredPermission 메서드에 요구되는 권한 정보
      */
     @Before("@annotation(requiredPermission)")
     public void checkPermission(JoinPoint joinPoint, RequiredPermission requiredPermission) {
@@ -90,9 +90,9 @@ public class PermissionAspect {
     /**
      * 주어진 상품 번호(goodsNo)에 대해 보기(View) 또는 다운로드(Download) 권한을 확인합니다.
      *
-     * @param strategy   권한 확인에 사용할 PermissionStrategy 객체입니다.
-     * @param goodsNo 확인할 상품의 식별자 번호입니다.
-     * @param rp      권한 확인 조건을 제공하는 RequiredPermission 객체입니다.
+     * @param strategy 권한 확인에 사용할 PermissionStrategy 객체입니다.
+     * @param goodsNo  확인할 상품의 식별자 번호입니다.
+     * @param rp       권한 확인 조건을 제공하는 RequiredPermission 객체입니다.
      */
     private void checkViewOrDownload(PermissionStrategy strategy, Integer goodsNo, RequiredPermission rp) {
         // [VIEW] 권한 체크

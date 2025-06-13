@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -98,7 +99,7 @@ public class MiMariAgentController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<PaginationRes<QnaRes>> getChatRoomQnaList(
         @PathVariable(value = "chatRoomId") UUID chatRoomId,
-        @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "3") int size,
         @UserResolve User user
     ) {

@@ -3,12 +3,16 @@ package com.sk.domain.shared.entity.master.tmm;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -47,12 +51,19 @@ public class MarketIndexData extends BaseEntity {
     @Comment("통화코드")
     private String currencyCd;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", nullable = false)
+    @Comment("상품데이터소스번호")
+    private GoodsDataSourceDetail goodsDataSourceDetail;
+
     @Builder
-    public MarketIndexData(String ricCd, String isinCd, String mnemonicCd, String nationCd, String currencyCd) {
+    public MarketIndexData(String ricCd, String isinCd, String mnemonicCd, String nationCd, String currencyCd,
+            GoodsDataSourceDetail goodsDataSourceDetail) {
         this.ricCd = ricCd;
         this.isinCd = isinCd;
         this.mnemonicCd = mnemonicCd;
         this.nationCd = nationCd;
         this.currencyCd = currencyCd;
+        this.goodsDataSourceDetail = goodsDataSourceDetail;
     }
 }

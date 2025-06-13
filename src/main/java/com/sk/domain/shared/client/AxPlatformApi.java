@@ -27,5 +27,6 @@ public interface AxPlatformApi {
             @RequestBody AXMetaRegisterReq req);
 
     @PostExchange("/api/v1/datasource/{datasourceId}/files")
-    AXMetaLookUpRes lookup(@RequestHeader("Authorization") String authToken, @RequestParam(name = "file_name") String fileName);
+    AXMetaLookUpRes lookup(@RequestHeader("Authorization") String authToken, @PathVariable String datasourceId,
+            @RequestParam(name = "file_name") String fileName);
 }
