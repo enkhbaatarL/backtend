@@ -56,4 +56,4 @@ springdoc:
     doc-expansion: none
 
 security:
-  enabled: false
+  enabled: true
