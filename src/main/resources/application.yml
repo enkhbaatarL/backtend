@@ -10,11 +10,10 @@ spring:
       repositories:
         enabled: false
 
-  # session:
-  #   store-type: redis
-  #   redis:
-  #     flush-mode: on-save        # 세션 저장 타이밍 설정 (on-save 또는 immediate)
-  #     namespace: spring:session  # Redis key prefix (파드 간 세션 충돌 방지에 유리)
+  session:
+    redis:
+      flush-mode: on-save        # 세션 저장 타이밍 설정 (on-save 또는 immediate)
+      namespace: spring:session  # Redis key prefix (파드 간 세션 충돌 방지에 유리)
 
   jpa:
     hibernate:
@@ -57,4 +56,4 @@ springdoc:
     doc-expansion: none
 
 security:
-  enabled: true
+  enabled: false
