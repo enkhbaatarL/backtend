@@ -37,7 +37,7 @@ public class CorrelationAnalysisResultId implements Serializable {
     @Comment("예측결과일자")
     private String predictionResultDt;
 
-    @Column(name = "prdc_input_mnmnc_cd", length = 50, nullable = false)
+    @Column(name = "prdc_inpt_mnmnc_cd", length = 50, nullable = false)
     @Comment("예측입력MNEMONIC코드")
     private String predictionInputMnemonicCd;
 
