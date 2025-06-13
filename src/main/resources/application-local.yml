@@ -6,8 +6,7 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       company-cd: master
-#      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: ${SKT_MI_DB_USERNAME_MASTER:min}
       password: ${SKT_MI_DB_PASSWORD_MASTER:min}
@@ -21,8 +20,7 @@ spring:
         minimum-idle: 5
     tenants:
       - company-cd: SKCC
-#        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
         password: ${SKT_MI_DB_PASSWORD_MASTER:min}
@@ -35,8 +33,7 @@ spring:
           validation-timeout: 3000
           minimum-idle: 5
       - company-cd: SKT
-#        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
         password: ${SKT_MI_DB_PASSWORD_MASTER:min}
@@ -49,8 +46,7 @@ spring:
           validation-timeout: 3000
           minimum-idle: 5
       - company-cd: midb
-#        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://10.220.250.109:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
         password: ${SKT_MI_DB_PASSWORD_MASTER:min}

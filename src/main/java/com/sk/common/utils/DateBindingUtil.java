@@ -20,9 +20,6 @@ public class DateBindingUtil {
     private static final DateTimeFormatter F_YMD = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter F_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /**
-     * Granularity 판정
-     */
     public static DateGranularity resolve(SchemaMetadata m) {
         String dt = m.getDataType().toLowerCase();
         Integer len = m.getCharacterMaximumLength();
