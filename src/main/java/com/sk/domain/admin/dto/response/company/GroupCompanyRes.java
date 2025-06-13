@@ -4,7 +4,6 @@ import com.sk.domain.shared.entity.master.tif.CompanyInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-import java.util.Comparator;
 import java.util.List;
 
 public record GroupCompanyRes(
@@ -35,9 +34,8 @@ public record GroupCompanyRes(
             .build();
     }
 
-    public static List<GroupCompanyRes> ofListOrderByAsc(List<CompanyInfo> companies, Comparator<CompanyInfo> comparator) {
+    public static List<GroupCompanyRes> ofList(List<CompanyInfo> companies) {
         return companies.stream()
-            .sorted(comparator)
             .map(GroupCompanyRes::of)
             .toList();
     }
