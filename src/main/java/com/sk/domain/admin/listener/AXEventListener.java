@@ -2,14 +2,13 @@ package com.sk.domain.admin.listener;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JsonFileWriter;
 import com.sk.common.utils.MultipartFileUtil;
@@ -19,7 +18,6 @@ import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.dto.AXMetaFileDto;
 import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq;
 import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq.ModifiedFile;
-import com.sk.domain.shared.client.dto.response.AXMetaRegisterRes;
 import com.sk.domain.shared.client.dto.response.AXMetaLookUpRes;
 import com.sk.domain.shared.client.dto.response.AXMetaUploadRes;
 import com.sk.domain.shared.client.dto.response.AuthTokenRes;
@@ -49,7 +47,7 @@ public class AXEventListener {
 
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo).orElse(null);
         if (goodsData == null) {
-            log.error("GoodsData is null");
+            log.error("GoodsData not found: goodsDataNo= {}", goodsDataNo);
             return;
         }
         AXMetaFileDto axMetaFileDto = event.getAxMetaFileDto();
@@ -66,7 +64,6 @@ public class AXEventListener {
             }
             String uniqueFilename = String.valueOf(System.currentTimeMillis()).concat(".json");
 
-            // JSON 파일 생성
             jsonFileWriter.write(axMetaFileDto, directoryPath + File.separator + uniqueFilename);
 
             File file = new File(directoryPath + File.separator + uniqueFilename);
@@ -74,7 +71,6 @@ public class AXEventListener {
 
             AuthTokenRes authTokenRes = authTokenApi.getMessage();
             if (authTokenRes == null || authTokenRes.accessToken() == null) {
-                System.out.println("   ===>>> Failed to retrieve access token: " + authTokenRes);
                 return;
             }
 
@@ -93,12 +89,12 @@ public class AXEventListener {
             registerReq.addModifiedFile(uploadFile);
 
             if (event.getIsNew() == false && goodsData.getMetadUpldFileNm() != null && !goodsData.getMetadUpldFileNm().isEmpty()) {
-                // 기존 파일 삭제
                 String fileName = goodsData.getMetadUpldFileNm();
 
-                AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, fileName);
+                AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, datasourceId, fileName);
 
-                ModifiedFile deletedFile = new ModifiedFile(null,
+                ModifiedFile deletedFile = new ModifiedFile(
+                        fileName,
                         lookUpRes.fileId(),
                         null,
                         null,
@@ -115,8 +111,7 @@ public class AXEventListener {
             goodsData.updateMetadUpldFileNm(uniqueFilename);
         } catch (IOException e) {
             // 예외 처리 로직
-            e.printStackTrace();
-            // log.error(documentId, e);
+            log.error("onUploadFileEvent: " + e.getMessage());
         }
     }
 }

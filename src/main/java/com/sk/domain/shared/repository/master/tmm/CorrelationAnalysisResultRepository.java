@@ -42,14 +42,14 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
                 IA.corr_calc_cyc_cd                 AS corrCalcCycCd,
                 IA.anly_fulf_dt                     AS anlyFulfDt,
                 IA.instm_nm                         AS instmNm,
-                IA.mnmnc_cd                         AS mnmncCd,
+                IA.prdc_input_mnmnc_cd              AS prdc_input_mnmnc_cd,
                 SUM(IA.corr_calc_val)               AS corrCalcVal
             FROM (
                 SELECT a.anly_fulf_dt
                      , a.prdc_rslt_dt
                      , a.corr_calc_cyc_cd
                      , a.corr_calc_val
-                     , a.mnmnc_cd
+                     , a.prdc_input_mnmnc_cd
                      , a.instm_nm
                      , c.instm_scrn_ctgr_nm
                      , c.instm_scrn_dtl_ctgr_nm
@@ -65,7 +65,7 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
                     AND a.del_yn = c.del_yn
                     AND a.del_yn = 'N'
                     AND c.data_mdl_use_yn = 'Y'
-                    AND (b.ric_cd = a.mnmnc_cd OR b.mnmnc_cd = a.mnmnc_cd)
+                    AND (b.ric_cd = a.prdc_input_mnmnc_cd OR b.mnmnc_cd = a.prdc_input_mnmnc_cd)
             ) IA
             WHERE IA.corr_calc_cyc_cd = :period
             AND (:filter IS NULL OR IA.instm_scrn_ctgr_nm LIKE CONCAT('%', :filter, '%'))
@@ -73,7 +73,7 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
                 IA.instm_scrn_ctgr_nm,
                 IA.instm_scrn_dtl_ctgr_nm,
                 IA.corr_calc_cyc_cd,
-                IA.mnmnc_cd
+                IA.prdc_input_mnmnc_cd
             ORDER BY
                 IA.instm_scrn_ctgr_nm ASC,
                 IA.instm_scrn_dtl_ctgr_nm ASC,
