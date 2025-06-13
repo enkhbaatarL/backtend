@@ -20,7 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OecdCliDataCollector extends PivotDataCollector {
     private static final int HEADER_ROW_INDEX = 6; // 7행, extractExcelHeader 에서 비어있는 6행은 count를 안함
-    private static final int HEADER_COLUMN_INDEX = 2; // 3열
+    private static final int HEADER_COLUMN_INDEX = 2; // 헤더 추출 후 비어있는 Cell 제외한 CODE 시작 열
+    private static final int VALUE_COLUMN_INDEX = 3; // 비어있는 Cell 제외한 Value 시작 열
     private static final int DATA_START_ROW_INDEX = 8; // 9행 (0-based index)
     private static final int DATE_COLUMN_INDEX = 1; // B열 (0-based index)
     private static final int MAX_MEMBER_NAME_LENGTH = 50; // oecd_mem_nm 최대 길이
@@ -43,14 +44,6 @@ public class OecdCliDataCollector extends PivotDataCollector {
             
             int currentRowNumTemp = sheet.getLastRowNum();
             log.debug("Current row num: {}", currentRowNumTemp);
-
-            // TODO 파싱 잘못되고 있음 다시 확인 해야함!!!!!!!!!!!
-            // for (int i = 0; i <= currentRowNumTemp; i++) {
-            //     Row row = rowIterator.next();
-            //     int rowNum = row.getRowNum();
-            //     log.debug("rowNum: {}", rowNum);
-            // }
-            
 
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
@@ -80,16 +73,25 @@ public class OecdCliDataCollector extends PivotDataCollector {
                 String date = DateUtil.fromYyyyMmmToYyyyMm(dateCell.getStringCellValue().trim());
 
                 // 데이터 파싱
-                for (int i = HEADER_COLUMN_INDEX; i < row.getLastCellNum() && i < periodCodes.size(); i++) {
+                for (int i = VALUE_COLUMN_INDEX; i < row.getLastCellNum() && i < periodCodes.size() + VALUE_COLUMN_INDEX; i++) {
                     Cell valueCell = row.getCell(i);
                     if (valueCell == null)
                         continue;
                     double value = valueCell.getNumericCellValue();
-                    result.add(new Object[] {date, periodCodes.get(i - 1), value});
+                    Object periodCode = periodCodes.get(i - VALUE_COLUMN_INDEX);
+                    result.add(new Object[] {date, periodCode, value});
                 }
             }
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
+            //TODO: 필요시 구현
 
+            // TODO 파싱 잘못되고 있음 다시 확인 해야함!!!!!!!!!!!
+            // for (int i = 0; i <= currentRowNumTemp; i++) {
+            //     Row row = rowIterator.next();
+            //     int rowNum = row.getRowNum();
+            //     log.debug("rowNum: {}", rowNum);
+            // }
+            
         }
         return result;
     }
