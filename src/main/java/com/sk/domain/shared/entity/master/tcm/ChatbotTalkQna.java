@@ -149,6 +149,7 @@ public class ChatbotTalkQna extends BaseEntity {
 
     public void updateFailResult() {
         this.answerStatusCd = AnswerStatusCd.FAIL;
+        this.chatbotAnswerCntt = null;
     }
 
     public void updateFailResult(AnswerStatusCd validationStatus) {

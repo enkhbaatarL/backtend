@@ -23,37 +23,39 @@ public class RestClientHttpApiConfig {
      */
     @Bean
     public ModelAgentApi modelAgentApi(@Value("${api.model-agent.url}") String url,
-            @Value("${api.model-agent.connection-timeout:1s}") Duration connectTimeout,
-            @Value("${api.model-agent.read-timeout:10s}") Duration readTimeout) {
+                                       @Value("${api.model-agent.connection-timeout:1s}") Duration connectTimeout,
+                                       @Value("${api.model-agent.read-timeout:10s}") Duration readTimeout,
+                                       @Value("${api.model-agent.api-key}") String apiKey) {
 
         return new RestClientBuilder()
-                .url(url)
-                .connectionTimeout(connectTimeout)
-                .readTimeout(readTimeout)
-                .build(ModelAgentApi.class);
+            .url(url)
+            .headers("Authorization", "Bearer " + apiKey)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(ModelAgentApi.class);
     }
 
     @Bean
     public AuthTokenApi authTokenApi(@Value("${api.auth-token.url}") String url,
-            @Value("${api.auth-token.connection-timeout:1s}") Duration connectTimeout,
-            @Value("${api.auth-token.read-timeout:10s}") Duration readTimeout) {
+                                     @Value("${api.auth-token.connection-timeout:1s}") Duration connectTimeout,
+                                     @Value("${api.auth-token.read-timeout:10s}") Duration readTimeout) {
 
         return new RestClientBuilder()
-                .url(url)
-                .connectionTimeout(connectTimeout)
-                .readTimeout(readTimeout)
-                .build(AuthTokenApi.class);
+            .url(url)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(AuthTokenApi.class);
     }
 
     @Bean
     public AxPlatformApi axPlatformApi(@Value("${api.ax-platform.url}") String url,
-            @Value("${api.ax-platform.connection-timeout:1s}") Duration connectTimeout,
-            @Value("${api.ax-platform.read-timeout:10s}") Duration readTimeout) {
+                                       @Value("${api.ax-platform.connection-timeout:1s}") Duration connectTimeout,
+                                       @Value("${api.ax-platform.read-timeout:10s}") Duration readTimeout) {
 
         return new RestClientBuilder()
-                .url(url)
-                .connectionTimeout(connectTimeout)
-                .readTimeout(readTimeout)
-                .build(AxPlatformApi.class);
+            .url(url)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(AxPlatformApi.class);
     }
 }
