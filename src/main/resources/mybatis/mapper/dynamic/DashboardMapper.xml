@@ -8,7 +8,7 @@
          WHERE ${queryWhere}
            AND tb.prdc_fulf_dt = #{predictDate}
            AND tb.del_yn = 'N'
-         ORDER BY tb.expp_rnk
+         ORDER BY tb.expp_lvl_nm
     </select>
 
     <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap">

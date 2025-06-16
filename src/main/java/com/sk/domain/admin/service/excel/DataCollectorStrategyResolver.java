@@ -2,6 +2,11 @@ package com.sk.domain.admin.service.excel;
 
 import org.springframework.stereotype.Component;
 
+import com.sk.domain.admin.service.excel.collector.DefaultDataCollector;
+import com.sk.domain.admin.service.excel.collector.NinoSstDataCollector;
+import com.sk.domain.admin.service.excel.collector.OecdCliDataCollector;
+import com.sk.domain.admin.service.excel.collector.PivotDataCollector;
+import com.sk.domain.admin.service.excel.collector.TsmcDataCollector;
 import com.sk.domain.shared.enums.ComponentType;
 
 @Component
@@ -13,6 +18,8 @@ public class DataCollectorStrategyResolver {
             return new NinoSstDataCollector();
         } else if (componentType == ComponentType.OECD_CLI) {
             return new OecdCliDataCollector();
+        } else if (componentType == ComponentType.TSMC) {
+            return new TsmcDataCollector();
         } else {
             return new DefaultDataCollector();
         }
