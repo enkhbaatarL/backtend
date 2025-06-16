@@ -33,7 +33,7 @@ public record Series(
 
     @Getter
     @RequiredArgsConstructor
-    enum Type {
+    public enum Type {
 
         ACTUAL("actual"),
         FORECAST("predict");

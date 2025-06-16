@@ -111,9 +111,10 @@ logging:
 
 api:
   model-agent:
-    url: http://localhost:8081
+    url: https://adxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
     read-timeout: 20s
+    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
   ax-platform:
     url: https://aip.sktai.io
     connection-timeout: 1s

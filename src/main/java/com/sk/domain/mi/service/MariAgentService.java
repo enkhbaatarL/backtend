@@ -171,7 +171,13 @@ public class MariAgentService {
 
         ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
 
-        return executeModelAgent(talkReq, qna)
+        // 히스토리 조회
+        List<ChatbotTalkQna> histories = chatbotTalkQnaRepository.findByChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString())
+            .stream()
+            .sorted(Comparator.comparing(ChatbotTalkQna::getChatbotTalkQnaNo))
+            .toList();
+
+        return executeModelAgent(talkReq, qna, histories)
             .map(answer -> QnaRes.of(qna, answer))
             .orElse(QnaRes.of(qna));
     }
@@ -226,7 +232,13 @@ public class MariAgentService {
             .filter(entity -> entity.getChatbotTalkQnaNo() > qnaNo)
             .forEach(BaseEntity::softDelete);
 
-        return executeModelAgent(QnaReq.Insert.ofDefault(qna.getUserQuestionCntt()), qna)
+        // 히스토리 조회
+        List<ChatbotTalkQna> histories = qnaList.stream()
+            .filter(entity -> entity.getChatbotTalkQnaNo() < qnaNo)
+            .sorted(Comparator.comparing(ChatbotTalkQna::getChatbotTalkQnaNo))
+            .toList();
+
+        return executeModelAgent(QnaReq.Insert.ofDefault(qna.getUserQuestionCntt()), qna, histories)
             .map(answer -> QnaRes.of(qna, answer))
             .orElse(QnaRes.of(qna));
     }
@@ -236,13 +248,13 @@ public class MariAgentService {
      *
      * @return Optional<AnswerRes>
      */
-    private Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna) {
+    private Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna, List<ChatbotTalkQna> histories) {
 
         try {
 
-//            ModelAgentReq req = ModelAgentReq.of(talkReq, qna.getChatbotTalk().getChatbotTalkUuid());
-//             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
-            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
+            ModelAgentReq req = ModelAgentReq.of(talkReq, histories);
+             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getChatbotTalk().getChatbotTalkUuid(), req);
+//            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
 
