@@ -1,6 +1,7 @@
 package com.sk.domain.shared.client.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ public record ModelAgentRes(
             List<Integer> relatedData
         ) {
 
+            @Builder
             public record Chart(
                 int order,
                 String type,

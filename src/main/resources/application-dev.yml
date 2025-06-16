@@ -123,13 +123,14 @@ logging:
 
 api:
   model-agent:
-    url: http://localhost:8081
+    url: https://devadxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
     read-timeout: 20s
+    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
   auth-token:
     url: https://dev-mi.sk.com
     connection-timeout: 1s
-    read-timeout: 20s  
+    read-timeout: 20s
   ax-platform:
     url: https://devadxp.adotbiz.ai
     connection-timeout: 1s

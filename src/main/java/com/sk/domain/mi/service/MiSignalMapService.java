@@ -1,21 +1,23 @@
 package com.sk.domain.mi.service;
 
-import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.opensaml.xmlsec.encryption.P;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.ScreenDetailCategoryDto;
+import com.sk.domain.mi.dto.response.signalMap.SignalMapDataCache;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapDataDto;
-import com.sk.domain.mi.dto.response.signalMap.SignalMapDataRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapProjection;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
@@ -23,8 +25,6 @@ import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepos
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmm.CorrelationAnalysisResultRepository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,10 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MiSignalMapService {
-    private final EntityManager em;
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final CorrelationAnalysisResultRepository correlationAnalysisResultRepository;
+
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public List<SignalMapPeriodRes> getSignalMapPeriodType(int companyNo) {
         return correlationAnalysisResultRepository.findPeriosdByCustomerCompanyNo(companyNo);
@@ -68,6 +70,19 @@ public class MiSignalMapService {
      */
     public List<ScreenCategoryDto> getSignalMap(int companyNo, String period, String filter) {
 
+        String cacheKey = "signalMapData::companyNo:" + companyNo + "::period:" + period + "::filter:" + filter;
+        String cachedData = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedData != null) {
+            try {
+                SignalMapDataCache signalMapDataCache = objectMapper.readValue(cachedData, SignalMapDataCache.class);
+                if (signalMapDataCache.data() != null) {
+                    return signalMapDataCache.data();
+                }
+            } catch (Exception e) {
+                log.error("Failed to parse cached data for key: {}", cacheKey, e);
+            }
+        }
+
         List<SignalMapProjection> rawList = correlationAnalysisResultRepository.findSignalMapData(companyNo, period, filter);
 
         Map<String, Map<String, List<SignalMapProjection>>> grouped = rawList.stream()
@@ -97,7 +112,14 @@ public class MiSignalMapService {
 
             result.add(new ScreenCategoryDto(screenCategoryName, screenDetailCategoryDtoList));
         }
+
+        try {
+            String json = objectMapper.writeValueAsString(SignalMapDataCache.of(result));
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(3600)); // 캐시 유효기간 1시간 설정
+        } catch (Exception e) {
+            log.error("Error processing signal map data", e);
+        }
+
         return result;
     }
-
 }
