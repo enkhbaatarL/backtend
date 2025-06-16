@@ -6,6 +6,7 @@ import com.sk.domain.admin.service.excel.collector.DefaultDataCollector;
 import com.sk.domain.admin.service.excel.collector.NinoSstDataCollector;
 import com.sk.domain.admin.service.excel.collector.OecdCliDataCollector;
 import com.sk.domain.admin.service.excel.collector.PivotDataCollector;
+import com.sk.domain.admin.service.excel.collector.PmiManufactureDataCollector;
 import com.sk.domain.admin.service.excel.collector.TsmcDataCollector;
 import com.sk.domain.shared.enums.ComponentType;
 
@@ -20,6 +21,8 @@ public class DataCollectorStrategyResolver {
             return new OecdCliDataCollector();
         } else if (componentType == ComponentType.TSMC) {
             return new TsmcDataCollector();
+        } else if (componentType == ComponentType.PMI_MANUFACTURE) {
+            return new PmiManufactureDataCollector();
         } else {
             return new DefaultDataCollector();
         }
