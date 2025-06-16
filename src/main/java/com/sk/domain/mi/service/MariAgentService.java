@@ -253,8 +253,8 @@ public class MariAgentService {
         try {
 
             ModelAgentReq req = ModelAgentReq.of(talkReq, histories);
-             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(qna.getChatbotTalk().getChatbotTalkUuid(), req);
-//            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
+//             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
+            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
 
