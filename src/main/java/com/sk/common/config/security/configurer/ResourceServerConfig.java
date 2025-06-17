@@ -5,6 +5,8 @@ import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.jwt.CustomJwtAuthenticationConverter;
 import com.sk.common.config.security.jwt.CustomJwtDecoder;
 import com.sk.common.filter.ExceptionHandlerFilter;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,9 +23,6 @@ import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -50,7 +49,7 @@ public class ResourceServerConfig {
                 .anyRequest().permitAll()
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();
     }
@@ -77,7 +76,7 @@ public class ResourceServerConfig {
                     .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )
                 .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
             return http.build();
 
