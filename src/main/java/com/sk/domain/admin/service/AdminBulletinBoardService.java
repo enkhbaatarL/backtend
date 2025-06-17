@@ -3,8 +3,11 @@ package com.sk.domain.admin.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -31,9 +34,12 @@ import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.enums.BulletinBoardType;
 import com.sk.domain.shared.enums.FaqCategory;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
@@ -213,8 +219,30 @@ public class AdminBulletinBoardService {
         if (dto.fileNo() == null) {
             fileService.deleteFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode());
         } else {
-            fileService.updateFile(dto.fileNo(), bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(),
-                    DateUtil.endYmd());
+            List<Long> oldFileNos = fileService.getFiles(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())
+                    .stream()
+                    .map(file -> file.getFileNo())
+                    .toList();
+
+            List<Long> newFileNos = new ArrayList<>();
+            newFileNos.add(dto.fileNo());
+
+            Set<Long> oldFileSet = new HashSet<>(oldFileNos);
+            Set<Long> newFileSet = new HashSet<>(newFileNos);
+
+            Set<Long> filesToDelete = new HashSet<>(oldFileSet);
+            filesToDelete.removeAll(newFileSet);
+            for (Long fileNo : filesToDelete) {
+                System.out.println("   ===>> DEL fileNo = " + fileNo);
+                fileService.deleteFile(fileNo);
+            }
+
+            Set<Long> filesToAdd = new HashSet<>(newFileSet);
+            filesToAdd.removeAll(oldFileSet);
+            for (Long fileNo : filesToAdd) {
+                System.out.println("  ===>> ADD fileNo = " + fileNo);
+                fileService.updateFile(fileNo, bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(), DateUtil.endYmd());
+            }
         }
 
         if (dto.isWholePost() != null) {

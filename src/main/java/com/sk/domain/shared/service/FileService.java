@@ -407,20 +407,21 @@ public class FileService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-        try {
-            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String oldPath = getFileName(uploadedFile.getStoragePathNm());
-            String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
-            String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
+        if (uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
+            try {
+                String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+                String oldPath = getFileName(uploadedFile.getStoragePathNm());
+                String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
+                String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
-            uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
+                uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
 
-            objectStorageService.moveFile(bucketName, oldPath, newPath);
-
-            return uploadedFile;
-        } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
+                objectStorageService.moveFile(bucketName, oldPath, newPath);
+            } catch (Exception e) {
+                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
+            }
         }
+        return uploadedFile;
     }
 
     /**
