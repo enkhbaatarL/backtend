@@ -9,7 +9,7 @@ import org.springframework.web.service.annotation.PostExchange;
 @HttpExchange
 public interface ModelAgentApi {
 
-    @PostExchange("/8af869ae-fb18-4011-ad3f-df37728741e9/invoke")
+    @PostExchange("/e2592c59-eeef-45e1-abd6-bc04babacc4d/invoke")
     ModelAgentRes postMessage(@RequestBody ModelAgentReq req);
 
 }
