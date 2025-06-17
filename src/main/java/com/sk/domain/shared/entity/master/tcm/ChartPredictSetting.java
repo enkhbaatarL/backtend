@@ -66,4 +66,7 @@ public class ChartPredictSetting extends BaseEntity {
     @Comment("기본기간단위구분코드")
     private PeriodUnitSeparateCd defaultPeriodUnitSeparateCd;
 
+    @Column(name = "prdc_tgt_repr_spt_nm", length = 255)
+    @Comment("예측대상대표품명")
+    private String predictTargetRepresentSpecNm;
 }

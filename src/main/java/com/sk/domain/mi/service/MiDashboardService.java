@@ -451,7 +451,8 @@ public class MiDashboardService {
                         .findFirst()
                         .orElse(null),
                 finalDate,
-                dataTableType);
+                dataTableType,
+                chartPredictSetting.getPredictTargetRepresentSpecNm());
 
         // associatedCharts에서 DashboardChart 리스트 추출
         List<DashboardChart> finalCharts = associatedCharts.stream()
@@ -459,10 +460,10 @@ public class MiDashboardService {
                 .map(chart -> {
                     DashboardChartLine actualLines = chart.actualChartLines() != null
                             ? chart.actualChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     DashboardChartLine forecastLines = chart.forecastChartLines() != null
                             ? chart.forecastChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     return new DashboardChart(
                             chart.chartLineDescription(),
                             chart.chartLineType(),
@@ -604,7 +605,7 @@ public class MiDashboardService {
                     }
 
                     DashboardChartLine dashboardChartLine = DashboardChartLine.of(isPermitted, chartPredictDataType,
-                            goodsDataSource.getGoodsDataSourceNo(), monthlyAverages);
+                            goodsDataSource.getGoodsDataSourceNo(), monthlyAverages, chartPredictSettingDetail.getPredictChartDetailExpn());
 
                     // DashboardChart 생성
                     Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
@@ -1023,10 +1024,10 @@ public class MiDashboardService {
                 .map(chart -> {
                     DashboardChartLine actualLines = chart.actualChartLines() != null
                             ? chart.actualChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     DashboardChartLine forecastLines = chart.forecastChartLines() != null
                             ? chart.forecastChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     return new DashboardChart(
                             chart.chartLineDescription(),
                             chart.chartLineType(),
