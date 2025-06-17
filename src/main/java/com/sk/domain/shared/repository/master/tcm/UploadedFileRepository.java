@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tcm;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -81,9 +82,10 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
                 AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
                 AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
                 """)
-    UploadedFile findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
+    List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
-            @Param("fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode);
+            @Param("fileRelationshipObjectSeparateCode") String fileRelationshipObjectSeparateCode,
+            Pageable pageable);
 
     @Query(value = """
             SELECT u
