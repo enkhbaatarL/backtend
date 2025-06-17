@@ -153,7 +153,7 @@ public class ExcelService {
      * @throws IOException
      */
     @Transactional
-    public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt) throws IOException {
+    public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt, String category) throws IOException {
         try {
             validateComponentInfo(componentInfo);
             List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
@@ -177,7 +177,7 @@ public class ExcelService {
             }
 
             FileTypeStrategy strategy = fileTypeStrategyResolver.resolve(ExcelParsedUtil.validateFile(file));
-            List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt);
+            List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt, category);
 
             if (criteriaDt != null) {
                 columnNames.add(CRITERIA_DT_COLUMN_NAME);

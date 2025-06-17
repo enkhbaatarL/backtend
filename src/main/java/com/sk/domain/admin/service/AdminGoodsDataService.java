@@ -776,7 +776,7 @@ public class AdminGoodsDataService {
                         String.format("Component information could not be found. componentTypeId: %s",
                                 structuredDataFileReq.componentTypeId())));
 
-        excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt());
+        excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt(), structuredDataFileReq.category());
 
         FileUploadRes fileUploadRes = fileService.uploadFile(companyCd, role, file, isPublic);
 

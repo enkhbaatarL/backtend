@@ -42,7 +42,7 @@ public class CsvFileParsed implements FileTypeStrategy {
      * @throws IOException 파일 처리 중 오류 발생 시
      */
     @Override
-    public List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt)
+    public List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt, String category)
             throws IOException {
         char delimiter = ExcelParsedUtil.detectDelimiter(file);
         InputStreamReader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
@@ -64,7 +64,7 @@ public class CsvFileParsed implements FileTypeStrategy {
                         : List.of("column_0"); // 최소 1개 컬럼 보장
             }
             log.debug("CSV headers: {}", headers);
-            List<Object[]> result = strategy.processData(csvParser, headers, criteriaDt);
+            List<Object[]> result = strategy.processData(csvParser, headers, criteriaDt, category);
             csvParser.close();
             reader.close();
             return result;
