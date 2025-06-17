@@ -76,13 +76,16 @@ public class MiMarketDataController {
     @ApiOrder(3)
     @Operation(summary = "Recent Viewed 목록 조회", description = "Recent Viewed 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/recent-viewed")
+    @GetMapping("/companies/{companyNo}/recent-viewed")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<List<RecentViewedRes>> getDataCatalog() {
+    public BaseResponse<List<RecentViewedRes>> getDataCatalog(
+            @PathVariable("companyNo") Integer companyNo) {
 
         int userNo = authorizationService.getUserNo();
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory
-                .create(miMarketDataService.getRecentViewed(userNo));
+                .create(miMarketDataService.getRecentViewed(cNo, userNo));
     }
 }
