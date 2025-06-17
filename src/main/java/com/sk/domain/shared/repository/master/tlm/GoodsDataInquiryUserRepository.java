@@ -13,33 +13,58 @@ import java.util.List;
 public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataInquiryUser, GoodsDataInquiryUserId> {
 
     @Query(value = """
-            SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
-            p.providerNo,
-            p.providerNm,
-            g.goodsNo,
-            gd.goodsDataNo,
-            gd.goodsDataNm,
-            gd.goodsDataExpn,
-            MAX(gdiu.createDt)
-            )
-            FROM GoodsDataInquiryUser gdiu
-                LEFT JOIN GoodsData gd ON gd.goodsDataNo = gdiu.id.goodsData.goodsDataNo
-                LEFT JOIN Goods g ON g = gdiu.id.goodsData.goods
-                LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
-                JOIN (
-                SELECT DISTINCT gdsd.goodsData.goodsDataNo as goodsDataNo
-                FROM GoodsDataSourceDetail gdsd
-                WHERE gdsd.isDeleted = false AND gdsd.goodsDataUseManagementCd = 'backend'
-                ) gud ON gud.goodsDataNo = gd.goodsDataNo
-            WHERE gdiu.id.userLoginId = :userLoginId
-                AND gdiu.isDeleted = false
-                AND p.isDeleted = false
-                AND p.isUsed = true
-                AND g.isDeleted = false
-                AND g.isUsed = true
-                AND gd.isDeleted = false
-            GROUP BY p.providerNo, p.providerNm, g.goodsNo, gd.goodsDataNo, gd.goodsDataNm, gd.goodsDataExpn
-            ORDER BY MAX(gdiu.createDt) DESC
+                SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
+                    p.providerNo,
+                    p.providerNm,
+                    g.goodsNo,
+                    gd.goodsDataNo,
+                    gd.goodsDataNm,
+                    gd.goodsDataExpn,
+                    MAX(gdiu.id.inquiryDtm)
+                )
+                FROM GoodsDataInquiryUser gdiu
+                JOIN gdiu.id.goodsData gd
+                JOIN gd.goods g
+                JOIN g.provider p
+                WHERE
+                    gdiu.id.userLoginId = :userLoginId
+                    AND EXISTS (
+                            SELECT 1
+                            FROM CustomerCompanyProviderMapping ccpm
+                                JOIN ccpm.customerCompany cc
+                                JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = cc
+                                JOIN AuthManageGoodsMapping amgm ON amgm.customerCompanyGoodsMapping.customerCompany = cc
+                            WHERE
+                                ccpm.isDeleted = false
+                                AND ccpm.isUsed = true
+                                AND ccgm.isDeleted = false
+                                AND ccgm.isUsed = true
+                                AND amgm.isDeleted = false
+                                AND ccgm.id.goodsAuthManagementSeparateCd = amgm.customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd
+                                AND ccgm.goods.goodsNo = g.goodsNo
+                                AND cc.customerCompanyNo = :companyNo
+                                AND amgm.useBeginDate <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                                AND amgm.useEndDate >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                                AND amgm.goodsAuthCd = 'VIEW'
+                                AND (ccgm.id.goodsAuthManagementSeparateCd = 'COMPANY' OR amgm.user.userNo = :userNo)
+                    )
+                    AND EXISTS (
+                            SELECT 1
+                            FROM GoodsDataSourceDetail gdsd
+                            WHERE gdsd.goodsData = gd
+                                AND gdsd.isDeleted = false
+                                AND gdsd.goodsDataUseManagementCd = 'backend'
+                    )
+                GROUP BY
+                    p.providerNo,
+                    p.providerNm,
+                    g.goodsNo,
+                    gd.goodsDataNo,
+                    gd.goodsDataNm,
+                    gd.goodsDataExpn
+                ORDER BY
+                    MAX(gdiu.id.inquiryDtm) DESC
             """)
-    List<RecentViewedRes> findRecentViewdByUserLoginId(@Param("userLoginId") String userLoginId, Pageable pageable);
+    List<RecentViewedRes> findRecentViewdByUserLoginId(@Param("companyNo") int companyNo, @Param("userNo") int userNo,
+            @Param("userLoginId") String userLoginId, Pageable pageable);
 }

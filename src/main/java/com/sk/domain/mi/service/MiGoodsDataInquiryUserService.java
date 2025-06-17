@@ -28,8 +28,8 @@ public class MiGoodsDataInquiryUserService {
         goodsDataInquiryUserRepository.save(GoodsDataInquiryUser.of(GoodsDataInquiryUserId.of(goodsData, subject)));
     }
 
-    public List<RecentViewedRes> getGoodsDataInquiryUser(String userLoginId, Pageable pageable) {
-        return goodsDataInquiryUserRepository.findRecentViewdByUserLoginId(userLoginId, pageable);
+    public List<RecentViewedRes> getGoodsDataInquiryUser(int companyNo, int userNo, String userLoginId, Pageable pageable) {
+        return goodsDataInquiryUserRepository.findRecentViewdByUserLoginId(companyNo, userNo, userLoginId, pageable);
     }
 
 }
