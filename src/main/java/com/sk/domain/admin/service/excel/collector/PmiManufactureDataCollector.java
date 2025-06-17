@@ -3,18 +3,15 @@ package com.sk.domain.admin.service.excel.collector;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
 import com.sk.common.utils.DateUtil;
-import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PmiManufactureDataCollector implements DataCollectorStrategy {
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
+    private static final int DATE_COLUMN_INDEX = 0; // 날짜 열 인덱스
+    private static final int TIME_COLUMN_INDEX = 1; // 시간 열 인덱스
     private static final Pattern INPUT_PATTERN = Pattern.compile("^(\\w{3}\\s\\d{2},\\s\\d{4})\\s\\((\\w{3})\\)$");
 
     @Override
@@ -31,15 +30,15 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
             // Sheet sheet = (Sheet) data;
             // Iterator<Row> rowIterator = sheet.iterator();
             // while (rowIterator.hasNext()) {
-            //     Row row = rowIterator.next();
-            //     // 데이터 시작 행 인덱스 조건
-            //     if (row.getRowNum() < DEFAULT_DATA_START_ROW_INDEX)
-            //         continue;
+            // Row row = rowIterator.next();
+            // // 데이터 시작 행 인덱스 조건
+            // if (row.getRowNum() < DEFAULT_DATA_START_ROW_INDEX)
+            // continue;
 
-            //     // 데이터 파
-            //     Object[] rowData = ExcelParsedUtil.parseExcelRow(row, actualColumns, category);
-            //     if (rowData.length > 0)
-            //         result.add(rowData);
+            // // 데이터 파
+            // Object[] rowData = ExcelParsedUtil.parseExcelRow(row, actualColumns, category);
+            // if (rowData.length > 0)
+            // result.add(rowData);
             // }
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
             CSVParser csvParser = (CSVParser) data;
@@ -67,11 +66,12 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
      */
     public static Object[] parseCsvPmiManufactureRecord(CSVRecord record, List<String> columnNames, String category) {
         List<Object> rowData = new ArrayList<>();
+        if (category != null) {
+            rowData.add(category);
+        }
         for (int i = 0; i < columnNames.size(); i++) {
-
             String value = i < record.size() ? record.get(i) : null;
-            if (i == 0) { // 첫 열 데이터는 전처리 후 저장
-
+            if (i == DATE_COLUMN_INDEX) { // 첫 열 데이터는 전처리 후 저장
                 // 입력 파싱
                 Matcher matcher = INPUT_PATTERN.matcher(value.trim());
                 if (!matcher.matches()) {
@@ -100,18 +100,13 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
                 rowData.add(actualDateFormatted);
                 rowData.add(predictedDateFormatted);
 
-            } else if (i == 1) {
+            } else if (i == TIME_COLUMN_INDEX) {
                 int time = parseTime(value);
                 rowData.add(time);
             } else {
                 rowData.add(value != null && !value.trim().isEmpty() ? value.trim() : null);
             }
         }
-
-        if (category != null) {
-            rowData.add(category);
-        }
-
         return rowData.toArray();
     }
 

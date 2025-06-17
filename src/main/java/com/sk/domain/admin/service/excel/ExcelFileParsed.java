@@ -42,7 +42,7 @@ public class ExcelFileParsed implements FileTypeStrategy {
         try {
             Sheet sheet = workbook.getSheetAt(0); // 첫번째 시트
             DataCollectorStrategy strategy = dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm());
-            List<Object[]> result = strategy.processData(sheet, Arrays.asList(componentInfo.getExcelTableColumnListNm().split(",")), criteriaDt, category);
+            List<Object[]> result = strategy.processData(sheet, Arrays.asList(componentInfo.getExcelColumnListNm().split(",")), criteriaDt, category);
             workbook.close();
             return result;
         } catch (IOException e) {
