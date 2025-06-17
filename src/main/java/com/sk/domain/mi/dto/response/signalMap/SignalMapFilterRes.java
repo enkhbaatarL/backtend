@@ -10,6 +10,11 @@ public record SignalMapFilterRes(
         @Schema(description = "코드명", example = "")
         String codeNm
 ) {
-
+public SignalMapFilterRes(
+        String codeId,
+        String codeNm) {
+    this.codeId = codeId;
+    this.codeNm = codeNm;
+  }
 }
 // @formatter:on
