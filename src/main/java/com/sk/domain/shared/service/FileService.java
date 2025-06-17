@@ -281,7 +281,7 @@ public class FileService {
     * @param filePathList 파일번호목록
     * @return byte[] 
     */
-    public byte[] downloadFiles2(List<String> urlList) {
+    public byte[] directDownloadFiles(List<String> urlList) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
 
