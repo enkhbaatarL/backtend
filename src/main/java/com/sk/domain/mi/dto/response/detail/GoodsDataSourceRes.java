@@ -83,10 +83,10 @@ public record GoodsDataSourceRes(
             BASE_DEFAULT_INTERVAL = new EnumMap<>(Range.class);
             BASE_DEFAULT_INTERVAL.put(Range.ONE_WEEK, Interval.ONE_DAY);
             BASE_DEFAULT_INTERVAL.put(Range.ONE_MONTH, Interval.ONE_DAY);
-            BASE_DEFAULT_INTERVAL.put(Range.THREE_MONTHS, Interval.ONE_WEEK);
-            BASE_DEFAULT_INTERVAL.put(Range.SIX_MONTHS, Interval.ONE_MONTH);
-            BASE_DEFAULT_INTERVAL.put(Range.ONE_YEAR, Interval.ONE_MONTH);
-            BASE_DEFAULT_INTERVAL.put(Range.TWO_YEARS, Interval.THREE_MONTH);
+            BASE_DEFAULT_INTERVAL.put(Range.THREE_MONTHS, Interval.ONE_DAY);
+            BASE_DEFAULT_INTERVAL.put(Range.SIX_MONTHS, Interval.ONE_DAY);
+            BASE_DEFAULT_INTERVAL.put(Range.ONE_YEAR, Interval.ONE_DAY);
+            BASE_DEFAULT_INTERVAL.put(Range.TWO_YEARS, Interval.ONE_WEEK);
             BASE_DEFAULT_INTERVAL.put(Range.CUSTOM, Interval.ONE_DAY);
         }
 

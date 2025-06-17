@@ -18,6 +18,7 @@ import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.ScreenDetailCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapDataCache;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapDataDto;
+import com.sk.domain.mi.dto.response.signalMap.SignalMapFilterRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapProjection;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
@@ -44,7 +45,7 @@ public class MiSignalMapService {
         return correlationAnalysisResultRepository.findPeriosdByCustomerCompanyNo(companyNo);
     }
 
-    public List<String> getSignalMapFilterType(int companyNo) {
+    public List<SignalMapFilterRes> getSignalMapFilterType(int companyNo) {
         return chartPredictSettingDetailRepository.findFilterTypeByCompanyNo(companyNo);
     }
 

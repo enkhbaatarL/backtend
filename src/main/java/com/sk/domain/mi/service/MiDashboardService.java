@@ -127,7 +127,7 @@ public class MiDashboardService {
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
     private static final String DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT = "Unit"; // 차트 데이터 테이블 헤더 단위 컬럼명
-    
+
     private static final String EXCEL_SHEET_NAME = "dashboard_chart";
 
     private final StringRedisTemplate redisTemplate;
@@ -258,7 +258,7 @@ public class MiDashboardService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "다운로드 가능한 파일이 없습니다.");
         }
 
-        return fileService.downloadFiles2(filePaths);
+        return fileService.directDownloadFiles(filePaths);
     }
 
     /**
@@ -1202,8 +1202,9 @@ public class MiDashboardService {
                     forecastRow.createCell(EXCEL_LABEL_COLUMN_INDEX).setCellValue(FORECAST_KEY);
 
                     DashboardChartLine forecastChartLine = chart.forecastChartLines();
-                    if(forecastChartLine != null) {
-                        List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData() != null ? forecastChartLine.rawData() : Collections.emptyList();
+                    if (forecastChartLine != null) {
+                        List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData() != null ? forecastChartLine.rawData()
+                                : Collections.emptyList();
                         for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
                             Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
                             if (forecastValue != null) {
@@ -1219,8 +1220,9 @@ public class MiDashboardService {
                     actualRow.createCell(EXCEL_LABEL_COLUMN_INDEX).setCellValue(ACTUAL_KEY);
 
                     DashboardChartLine actualChartLine = chart.actualChartLines();
-                        if(actualChartLine != null) {
-                            List<DashboardChartRawData> actualRawData = actualChartLine.rawData() != null ? actualChartLine.rawData() : Collections.emptyList();
+                    if (actualChartLine != null) {
+                        List<DashboardChartRawData> actualRawData = actualChartLine.rawData() != null ? actualChartLine.rawData()
+                                : Collections.emptyList();
                         for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
                             Double actualValue = actualRawData.get(i - headerStartIndex).value();
                             if (actualValue != null) {

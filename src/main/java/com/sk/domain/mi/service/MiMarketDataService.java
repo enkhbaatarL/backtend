@@ -123,26 +123,26 @@ public class MiMarketDataService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         // }
         // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // // 권한 조회
         // PermissionRes permissionRes = switch (role) {
-        //     case USER -> {
-        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        //     }
-        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        //     case API_PLUS_OPERATOR -> {
-        //         Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
-        //     }
-        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // case USER -> {
+        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        // }
+        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // case API_PLUS_OPERATOR -> {
+        // Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
+        // }
+        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
         PermissionRes permissionRes = authorizationService.getUserPermissions();
-        
+
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
@@ -314,27 +314,26 @@ public class MiMarketDataService {
         LocalDate START_DATE = LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH);
         LocalDate END_DATE = LocalDate.now();
 
-
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
 
         // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         // }
         // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // // 권한 조회
         // PermissionRes permissionRes = switch (role) {
-        //     case USER -> {
-        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        //     }
-        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        //     case API_PLUS_OPERATOR -> {
-        //         Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-        //     }
-        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // case USER -> {
+        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        // }
+        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // case API_PLUS_OPERATOR -> {
+        // Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+        // }
+        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
         PermissionRes permissionRes = authorizationService.getUserPermissions();
@@ -536,7 +535,8 @@ public class MiMarketDataService {
      * @return 조건에 맞는 데이터 행 목록
      */
     @Transactional
-    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate, LocalDate endDate) {
+    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate,
+            LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null) {
             return Collections.emptyList();
         }
@@ -546,7 +546,6 @@ public class MiMarketDataService {
         Pair<String, String> dateRange = DateBindingUtil.range(meta, startDate, endDate);
 
         String whereClause = ClauseUtil.createBetweenClause(dateColumnName, dateRange.getLeft(), dateRange.getRight());
-
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
@@ -1043,11 +1042,11 @@ public class MiMarketDataService {
      * @param userNo 사용자 번호
      * @return List<RecentViewedRes>
      */
-    public List<RecentViewedRes> getRecentViewed(int userNo) {
+    public List<RecentViewedRes> getRecentViewed(int companyNo, int userNo) {
         User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "사용자 정보를 찾을 수 없습니다."));
 
-        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(user.getUserLoginId(), PageRequest.of(0, 5));
+        return miGoodsDataInquiryUserService.getGoodsDataInquiryUser(companyNo, userNo, user.getUserLoginId(), PageRequest.of(0, 5));
     }
 }

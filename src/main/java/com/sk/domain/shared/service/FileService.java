@@ -210,9 +210,9 @@ public class FileService {
 
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String fileName = getFileName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
-            byte[] fileData = objectStorageService.downloadFile(bucketName, fileName);
+            byte[] fileData = objectStorageService.downloadFile(bucketName, filePath);
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
@@ -251,7 +251,7 @@ public class FileService {
 
             for (UploadedFile f : uploadedFiles) {
                 String bucketName = getBucketName(f.getStoragePathNm());
-                String filePath = getFileName(f.getStoragePathNm());
+                String filePath = getFilePath(f.getStoragePathNm());
                 String fileName = f.getOriginalFileNm();
 
                 // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
@@ -277,47 +277,19 @@ public class FileService {
     }
 
     /**
-    * 1개 파일을 다운로드 한다.
-    *
-    * @param filePath 파일 전체 경로
-    * @return FileDownloadRes
-    */
-    public FileDownloadRes downloadFile2(String filePath) {
-        UploadedFile uploadedFile = uploadedFileRepository.findByFilePath(filePath)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file path: %s", filePath)));
-
-        try {
-            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String fileName = getFileName(uploadedFile.getStoragePathNm());
-
-            byte[] fileData = objectStorageService.downloadFile(bucketName, fileName);
-
-            return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
-        } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
-        }
-    }
-
-    /**
     * 1개 이상 파일을 다운로드 한다.
     *
     * @param filePathList 파일번호목록
     * @return byte[] 
     */
-    public byte[] downloadFiles2(List<String> filePathList) {
-        List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFilePathList(filePathList);
-        if (uploadedFiles.isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file path list: %s", filePathList));
-        }
-
+    public byte[] directDownloadFiles(List<String> urlList) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
 
-            for (UploadedFile f : uploadedFiles) {
-                String bucketName = getBucketName(f.getStoragePathNm());
-                String filePath = getFileName(f.getStoragePathNm());
-                String fileName = f.getOriginalFileNm();
+            for (String url : urlList) {
+                String bucketName = getBucketName(url);
+                String filePath = getFilePath(url);
+                String fileName = getFileName(url);
 
                 // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
                 try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
@@ -354,11 +326,11 @@ public class FileService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String fileName = getFileName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
             uploadedFile.softDelete();
 
-            objectStorageService.deleteFile(bucketName, fileName);
+            objectStorageService.deleteFile(bucketName, filePath);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
         }
@@ -379,11 +351,11 @@ public class FileService {
         fileList.forEach(f -> {
             try {
                 String bucketName = getBucketName(f.getStoragePathNm());
-                String fileName = getFileName(f.getStoragePathNm());
+                String filePath = getFilePath(f.getStoragePathNm());
 
                 f.softDelete();
 
-                objectStorageService.deleteFile(bucketName, fileName);
+                objectStorageService.deleteFile(bucketName, filePath);
             } catch (Exception e) {
                 throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
             }
@@ -408,20 +380,21 @@ public class FileService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-        try {
-            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String oldPath = getFileName(uploadedFile.getStoragePathNm());
-            String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
-            String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
+        if (uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
+            try {
+                String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+                String oldPath = getFilePath(uploadedFile.getStoragePathNm());
+                String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
+                String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
-            uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
+                uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
 
-            objectStorageService.moveFile(bucketName, oldPath, newPath);
-
-            return uploadedFile;
-        } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
+                objectStorageService.moveFile(bucketName, oldPath, newPath);
+            } catch (Exception e) {
+                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
+            }
         }
+        return uploadedFile;
     }
 
     /**
@@ -436,9 +409,9 @@ public class FileService {
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String fileName = getFileName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
-            return objectStorageService.getUrl(bucketName, fileName);
+            return objectStorageService.getUrl(bucketName, filePath);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
@@ -451,9 +424,9 @@ public class FileService {
 
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
-            String fileName = getFileName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
-            return objectStorageService.getUrl(bucketName, fileName);
+            return objectStorageService.getUrl(bucketName, filePath);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
@@ -507,11 +480,28 @@ public class FileService {
      * @throws MalformedURLException URL 파싱 실패 시
      * @throws IllegalArgumentException URL에 파일 경로 정보가 없는 경우
      */
-    private String getFileName(String path) throws MalformedURLException {
+    private String getFilePath(String path) throws MalformedURLException {
         String[] segments = extractPathSegments(path);
         if (segments.length < 3) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "URL에 파일 경로 정보가 포함되어 있지 않습니다.");
         }
         return String.join("/", Arrays.copyOfRange(segments, 2, segments.length));
+    }
+
+    /**
+     * URL에서 파일 경로와 파일 이름(버킷 이후의 나머지 경로)을 추출합니다.
+     * 예: "https://kr.object.ncloudstorage.com/버킷명/폴더/파일명.jpg" → "파일명.jpg"
+     *
+     * @param path URL 문자열
+     * @return 파일 경로 및 파일 이름
+     * @throws MalformedURLException URL 파싱 실패 시
+     * @throws IllegalArgumentException URL에 파일 경로 정보가 없는 경우
+     */
+    private String getFileName(String path) throws MalformedURLException {
+        String[] segments = extractPathSegments(path);
+        if (segments.length < 3) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "URL에 파일 경로 정보가 포함되어 있지 않습니다.");
+        }
+        return segments[segments.length - 1]; // 마지막 요소가 파일 이름
     }
 }

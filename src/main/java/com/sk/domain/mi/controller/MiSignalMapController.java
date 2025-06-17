@@ -15,6 +15,7 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapDataRes;
+import com.sk.domain.mi.dto.response.signalMap.SignalMapFilterRes;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes;
 import com.sk.domain.mi.service.MiSignalMapService;
 import com.sk.domain.shared.enums.Role;
@@ -51,7 +52,7 @@ public class MiSignalMapController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/filters")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<List<String>> getSignalMapFilterType(@PathVariable(value = "companyNo") Integer companyNo) {
+    public BaseResponse<List<SignalMapFilterRes>> getSignalMapFilterType(@PathVariable(value = "companyNo") Integer companyNo) {
         return BaseResponseFactory.create(miSignalMapService.getSignalMapFilterType(companyNo));
     }
 
