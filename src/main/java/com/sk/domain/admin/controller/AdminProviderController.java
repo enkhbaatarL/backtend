@@ -31,6 +31,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -557,7 +558,7 @@ public class AdminProviderController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping(value = "/goods-datas/upload-file/unstructured-data/exist")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public BaseResponse<FileExistRes> fileExists(
+    public BaseResponse<List<FileExistRes>> fileExists(
             @RequestParam(value = "fileName", required = true, defaultValue = "") String fileName,
             @RequestParam(value = "fileHash", required = true, defaultValue = "") String fileHash,
             @RequestParam(value = "goodsDataNm", required = true, defaultValue = "") String goodsDataNm) {
@@ -565,6 +566,8 @@ public class AdminProviderController {
         if (fileName == null || fileName.isEmpty() || fileHash == null || fileHash.isEmpty() || goodsDataNm == null || goodsDataNm.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
         }
+
+        List<FileExistRes> result = new ArrayList<>();
 
         List<GoodsData> goodsDatas = goodsDataService.getGoodsData(goodsDataNm);
         if (goodsDatas.size() > 0) {
@@ -574,13 +577,13 @@ public class AdminProviderController {
                     for (UploadedFile uploadedFile : uploadedFiles) {
                         if (goodsData.getGoodsDataNo() != null && uploadedFile.getFileRelationshipObjectDistinguishNo() != null
                                 && goodsData.getGoodsDataNo().equals(uploadedFile.getFileRelationshipObjectDistinguishNo())) {
-                            return BaseResponseFactory.create(new FileExistRes(true));
+                            result.add(new FileExistRes(goodsData.getGoodsDataNo(), uploadedFile.getFileNo()));
                         }
                     }
                 }
             }
         }
 
-        return BaseResponseFactory.create(new FileExistRes(false));
+        return BaseResponseFactory.create(result);
     }
 }
