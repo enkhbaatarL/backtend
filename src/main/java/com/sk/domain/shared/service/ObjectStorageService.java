@@ -191,7 +191,9 @@ public class ObjectStorageService {
     * @return
     */
     public void deleteFile(String bucketName, String fileName) {
-        objectStorageClient.deleteObject(new DeleteObjectRequest(bucketName, fileName));
+        if (objectStorageClient.doesObjectExist(bucketName, fileName)) {
+            objectStorageClient.deleteObject(new DeleteObjectRequest(bucketName, fileName));
+        }
     }
 
     /**
@@ -203,9 +205,10 @@ public class ObjectStorageService {
     * @return
     */
     public void copyFile(String bucketName, String oldPath, String newPath) {
-        objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
-
-        copyACL(bucketName, oldPath, newPath);
+        if (objectStorageClient.doesObjectExist(bucketName, oldPath)) {
+            objectStorageClient.copyObject(bucketName, oldPath, bucketName, newPath);
+            copyACL(bucketName, oldPath, newPath);
+        }
     }
 
     /**
