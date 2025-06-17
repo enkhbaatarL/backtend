@@ -126,7 +126,8 @@ public class MiDashboardService {
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
-
+    private static final String DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT = "Unit"; // 차트 데이터 테이블 헤더 단위 컬럼명
+    
     private static final String EXCEL_SHEET_NAME = "dashboard_chart";
 
     private final StringRedisTemplate redisTemplate;
@@ -242,8 +243,8 @@ public class MiDashboardService {
         List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date, predictDate);
 
         if (summaries == null || summaries.isEmpty()) {
-            log.warn("No dashboard summaries found for companyNo: {}, date: {}, predictDate: {}", 
-                     companyNo, date, predictDate);
+            log.warn("No dashboard summaries found for companyNo: {}, date: {}, predictDate: {}",
+                    companyNo, date, predictDate);
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "대시보드 요약 데이터가 없습니다.");
         }
 
@@ -270,10 +271,8 @@ public class MiDashboardService {
     public List<DashboardSummary> getDashboardSummaries(int companyNo, String date, String predictDate) {
         String baseDate = date != null ? date : DateUtil.toYmd(LocalDate.now());
 
-        String startDate = predictDate != null ? 
-            DateUtil.toYmd(DateUtil.parseDate(predictDate).withDayOfMonth(1)) : null;
-        String endDate = predictDate != null ? 
-            DateUtil.toYmd(DateUtil.parseDate(predictDate).with(TemporalAdjusters.lastDayOfMonth())) : null;
+        String startDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).withDayOfMonth(1)) : null;
+        String endDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).with(TemporalAdjusters.lastDayOfMonth())) : null;
 
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
@@ -298,7 +297,7 @@ public class MiDashboardService {
 
                     String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
-                   // summary 데이터 리스트 조회
+                    // summary 데이터 리스트 조회
                     List<DashboardChartSummaryMap> summaries = dashboardMapper.chartSummary(queryWhere, baseDate, startDate, endDate);
                     return summaries != null ? summaries.stream() : Stream.empty();
                 })
@@ -375,22 +374,22 @@ public class MiDashboardService {
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
         // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         // }
         // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // // 권한 조회
         // PermissionRes permissionRes = switch (role) {
-        //     case USER -> {
-        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        //     }
-        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        //     case API_PLUS_OPERATOR -> {
-        //         Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-        //     }
-        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // case USER -> {
+        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        // }
+        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // case API_PLUS_OPERATOR -> {
+        // Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+        // }
+        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
         PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
@@ -556,7 +555,8 @@ public class MiDashboardService {
                     // 날짜 범위 설정
                     LocalDate endDate = baseDate.plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt())
                             .with(TemporalAdjusters.lastDayOfMonth());
-                    LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH);
+                    LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH)
+                            .withDayOfMonth(1);
 
                     String cacheKey = getDashboardChartCacheKey(chartPredictSettingDetail.getChartPredictSettingDetailNo(),
                             baseDate.toString());
@@ -953,22 +953,22 @@ public class MiDashboardService {
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
         // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         // }
         // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // // 권한 조회
         // PermissionRes permissionRes = switch (role) {
-        //     case USER -> {
-        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        //     }
-        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        //     case API_PLUS_OPERATOR -> {
-        //         Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-        //     }
-        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // case USER -> {
+        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        // }
+        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // case API_PLUS_OPERATOR -> {
+        // Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
+        // }
+        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
         PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
@@ -1092,7 +1092,7 @@ public class MiDashboardService {
             Row headerRow = sheet.createRow(EXCEL_HEADER_ROW_INDEX);
 
             // TODO: SK on 에서 Vehiicles 값은 어디서???
-            String headerUnit = currentUnitCd != null ? String.format("%s/%s", currency, currentUnitCd) : currency;
+            String headerUnit = currentUnitCd != null ? String.format("%s/%s", currency, currentUnitCd) : DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT;
             headerRow.createCell(0).setCellValue(String.format(headerUnit)); // TODO: 매직 넘버 수정 필요
 
             Cell headerCell = headerRow.createCell(0);
@@ -1201,13 +1201,15 @@ public class MiDashboardService {
                     forecastRow.createCell(EXCEL_LABEL_COLUMN_INDEX).setCellValue(FORECAST_KEY);
 
                     DashboardChartLine forecastChartLine = chart.forecastChartLines();
-                    List<DashboardChartRawData> forecastRawData = forecastChartLine != null ? forecastChartLine.rawData() : Collections.emptyList();
-                    for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
-                        Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
-                        if (forecastValue != null) {
-                            forecastRow.createCell(i).setCellValue(forecastValue);
-                        } else {
-                            forecastRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                    if(forecastChartLine != null) {
+                        List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData() != null ? forecastChartLine.rawData() : Collections.emptyList();
+                        for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
+                            Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
+                            if (forecastValue != null) {
+                                forecastRow.createCell(i).setCellValue(forecastValue);
+                            } else {
+                                forecastRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                            }
                         }
                     }
 
@@ -1216,13 +1218,15 @@ public class MiDashboardService {
                     actualRow.createCell(EXCEL_LABEL_COLUMN_INDEX).setCellValue(ACTUAL_KEY);
 
                     DashboardChartLine actualChartLine = chart.actualChartLines();
-                    List<DashboardChartRawData> actualRawData = actualChartLine != null ? actualChartLine.rawData() : Collections.emptyList();
-                    for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
-                        Double actualValue = actualRawData.get(i - headerStartIndex).value();
-                        if (actualValue != null) {
-                            actualRow.createCell(i).setCellValue(actualValue);
-                        } else {
-                            actualRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                        if(actualChartLine != null) {
+                            List<DashboardChartRawData> actualRawData = actualChartLine.rawData() != null ? actualChartLine.rawData() : Collections.emptyList();
+                        for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
+                            Double actualValue = actualRawData.get(i - headerStartIndex).value();
+                            if (actualValue != null) {
+                                actualRow.createCell(i).setCellValue(actualValue);
+                            } else {
+                                actualRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                            }
                         }
                     }
 
@@ -1330,22 +1334,22 @@ public class MiDashboardService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        //     throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
+        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
         // }
         // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
 
         // // 권한 조회
         // PermissionRes permissionRes = switch (role) {
-        //     case USER -> {
-        //         Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        //         yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        //     }
-        //     case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        //     case API_PLUS_OPERATOR -> {
-        //         Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        //         yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
-        //     }
-        //     default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        // case USER -> {
+        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
+        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
+        // }
+        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // case API_PLUS_OPERATOR -> {
+        // Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
+        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
+        // }
+        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
         PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
@@ -1386,7 +1390,7 @@ public class MiDashboardService {
         String actualDefaultDataColumnName = actualTableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
         // ChartPredictSetting chartPredictSetting = chartPredictSettingRepository.findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
-        //         .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
+        // .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
 
         LocalDate endDate = baseDate.with(TemporalAdjusters.lastDayOfMonth());
 

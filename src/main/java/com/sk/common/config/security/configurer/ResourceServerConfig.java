@@ -44,7 +44,7 @@ public class ResourceServerConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-            .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**")
+            .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**", "/api/v1/common/health-check")
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()
