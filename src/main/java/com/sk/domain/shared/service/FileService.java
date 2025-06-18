@@ -1,12 +1,15 @@
 package com.sk.domain.shared.service;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -288,6 +291,8 @@ public class FileService {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
 
+            Set<String> addedNames = new HashSet<>();
+
             for (String url : urlList) {
                 String bucketName = getBucketName(url);
                 String filePath = getFilePath(url);
@@ -297,6 +302,16 @@ public class FileService {
                 try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
                     if (s3is == null)
                         continue;
+
+                    // 중복된 파일 이름 처리
+                    if (!addedNames.add(fileName)) {
+                        String base = FilenameUtils.getBaseName(fileName); // report
+                        String ext = FilenameUtils.getExtension(fileName); // pdf
+                        int idx = 1;
+                        while (!addedNames.add(
+                                fileName = base + "_" + idx++ + (ext.isEmpty() ? "" : "." + ext)))
+                            ;
+                    }
 
                     zos.putNextEntry(new ZipEntry(fileName));
                     byte[] buffer = new byte[4096];
