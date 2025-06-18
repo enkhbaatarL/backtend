@@ -1,5 +1,6 @@
 package com.sk.domain.shared.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -8,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SamlService {
 
     private final UserRepository userRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
     private final StringRedisTemplate redisTemplate;
     private final AuthService authService;
 
@@ -52,6 +56,12 @@ public class SamlService {
                         (u.getUserRoleCd().equals(UserRoleCd.ADMIN) || u.getUserRoleCd().equals(UserRoleCd.OPERATOR)))
                 .findFirst()
                 .orElse(users.get(0));
+
+        // 사용자 정보 조회
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        customerCompanyRepository.findActiveByCustomerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo(), currentDate)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("SAML 사용자 인증 실패: %s", userLoginId)));
+
 
         GenerateTokenRes generateTokenRes = authService.generateToken(user, response);
 

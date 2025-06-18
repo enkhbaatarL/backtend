@@ -778,7 +778,7 @@ public class AdminGoodsDataService {
 
         excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt(), structuredDataFileReq.category());
 
-        FileUploadRes fileUploadRes = fileService.uploadFile(companyCd, role, file, isPublic);
+        FileUploadRes fileUploadRes = fileService.uploadStructuredFile(companyCd, role, file, isPublic);
 
         return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
                 fileUploadRes.fileSize(), fileUploadRes.fileUrl());
