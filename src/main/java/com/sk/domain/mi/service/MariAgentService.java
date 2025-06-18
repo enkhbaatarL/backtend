@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.JsonUtil;
+import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.ChatRoomReq;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
@@ -33,7 +34,6 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import com.sk.domain.test.DummyResponses;
-import com.sk.domain.admin.service.TokenQuotaGuard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -259,8 +259,8 @@ public class MariAgentService {
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
 
-            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), modelAgentRes.usage().totalTokens());
-            log.info("[Model-Agent API call] company: {}, token-usage: {}, allowed: {}", authorizationService.getCompanyNoWithPriority(), modelAgentRes.usage().totalTokens(), quotaResult.allowed());
+            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), modelAgentRes.output().usage().totalTokens());
+            log.info("[Model-Agent API call token usage] company: {}, token-usage: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.usage(), quotaResult.allowed());
 
             AnswerRes answerRes = AnswerRes.of(modelAgentRes, related);
             qna.updateCompleteResult(modelAgentRes, answerRes);
@@ -378,12 +378,12 @@ public class MariAgentService {
      */
     private List<Integer> extractRelatedGdsNos(ModelAgentRes modelAgentRes) {
         return Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::messages)
+            .map(s -> s.output().messages())
             .orElse(Collections.emptyList()) // null 체크 강화
             .stream()
-            .map(ModelAgentRes.Message::content)
+            .map(ModelAgentRes.Output.Message::content)
             .filter(Objects::nonNull)
-            .map(ModelAgentRes.Message.Content::relatedData)
+            .map(ModelAgentRes.Output.Message.Content::relatedData)
             .filter(Objects::nonNull)
             .flatMap(List::stream)
             .toList();
@@ -394,15 +394,15 @@ public class MariAgentService {
      */
     private List<String> extractDistinguishIds(ModelAgentRes modelAgentRes) {
         return Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::messages)
+            .map(s -> s.output().messages())
             .orElse(Collections.emptyList()) // null 체크 강화
             .stream()
-            .map(ModelAgentRes.Message::content)
+            .map(ModelAgentRes.Output.Message::content)
             .filter(Objects::nonNull)
-            .map(ModelAgentRes.Message.Content::vectorSources)
+            .map(ModelAgentRes.Output.Message.Content::vectorSources)
             .filter(Objects::nonNull)
             .flatMap(List::stream)
-            .map(ModelAgentRes.Message.Content.VectorSource::gdsDataDstgId)
+            .map(ModelAgentRes.Output.Message.Content.VectorSource::gdsDataDstgId)
             .toList();
     }
 

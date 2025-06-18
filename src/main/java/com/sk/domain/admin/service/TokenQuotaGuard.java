@@ -35,7 +35,7 @@ public class TokenQuotaGuard {
     // ② 실제 사용량 누적 & 초과 여부 반환 (모델 호출 후)
     public QuotaResult addAndCheck(Integer companyId, long delta) {
         String key = key(companyId);
-        Long usage = redis.execute(quotaScript, Collections.singletonList(key), String.valueOf(delta), String.valueOf(tokenUsageLimit));
+        long usage = redis.execute(quotaScript, Collections.singletonList(key), String.valueOf(delta), String.valueOf(tokenUsageLimit));
         // 1 = 한도 내, 0 = 한도 초과
         return new QuotaResult(tokenUsageLimit >= usage, usage);
     }

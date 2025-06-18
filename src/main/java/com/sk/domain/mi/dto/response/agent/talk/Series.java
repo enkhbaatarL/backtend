@@ -52,7 +52,7 @@ public record Series(
 
     }
 
-    public static Series of(ModelAgentRes.Message.Content.Chart chart) {
+    public static Series of(ModelAgentRes.Output.Message.Content.Chart chart) {
 
         List<String> timestamps = chart.date().stream().map(s -> s.replaceAll("-", "")).toList();
         List<BigDecimal> values = chart.value().stream().map(BigDecimal::valueOf).toList();
@@ -67,7 +67,7 @@ public record Series(
 
     }
 
-    public static List<Series> ofList(List<ModelAgentRes.Message.Content.Chart> charts) {
+    public static List<Series> ofList(List<ModelAgentRes.Output.Message.Content.Chart> charts) {
 
         if (charts == null)
             return Collections.emptyList();
