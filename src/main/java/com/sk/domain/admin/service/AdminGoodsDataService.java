@@ -627,7 +627,7 @@ public class AdminGoodsDataService {
         // 정형 데이타 수정
         if (dto.structuredDataList() != null) {
             for (StructuredDataReq structuredData : dto.structuredDataList()) {
-                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
+                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GDATS.getCode())
                         .stream()
                         .map(file -> file.getFileNo())
                         .toList();
