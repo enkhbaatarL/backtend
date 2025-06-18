@@ -122,9 +122,6 @@ public class FileController {
     public ResponseEntity<byte[]> downloadFiles(
             @RequestParam(value = "prefix", required = true) String prefix,
             @RequestBody @Valid List<FileDownloadReq> body) throws UnsupportedEncodingException {
-        // List<Long> ids = Arrays.stream(fileNos.split(","))
-        // .map(Long::valueOf)
-        // .toList();
 
         byte[] fileData = fileService.downloadFiles(body);
         String encodedFileName = URLEncoder.encode(prefix.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
@@ -185,14 +182,15 @@ public class FileController {
 
         return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
     }
-    // @ApiOrder(7)
-    // @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
-    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    // @GetMapping("/presigned-url/{fileNo}")
-    // public BaseResponse<String> getPresignedUrl(
-    // @PathVariable(value = "fileNo") @Min(value = 1) Long fileNo) {
 
-    // return BaseResponseFactory.create(fileService.getPresignedUrl(fileNo));
-    // }
+    @ApiOrder(99)
+    @Operation(summary = "presigned URL 생성", description = "presigned URL 생성합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/presigned-url")
+    public BaseResponse<String> getPresignedUrl(
+            @RequestParam(value = "filePath", required = true) String filePath) {
+
+        return BaseResponseFactory.create(fileService.getPresignedUrl(filePath));
+    }
 
 }
