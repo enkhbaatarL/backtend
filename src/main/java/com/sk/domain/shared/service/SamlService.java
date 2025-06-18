@@ -36,6 +36,7 @@ public class SamlService {
      */
     @Transactional
     public GenerateTokenRes samlCallback(String sessionId, HttpServletResponse response) {
+        // String userLoginId = redisTemplate.opsForValue().get(sessionId);
         String userLoginId = redisTemplate.opsForValue().get(sessionId);
 
         if (userLoginId == null) {
@@ -52,6 +53,11 @@ public class SamlService {
                         (u.getUserRoleCd().equals(UserRoleCd.ADMIN) || u.getUserRoleCd().equals(UserRoleCd.OPERATOR)))
                 .findFirst()
                 .orElse(users.get(0));
+
+        // 사용자 정보 조회
+        
+
+
 
         GenerateTokenRes generateTokenRes = authService.generateToken(user, response);
 
