@@ -149,7 +149,7 @@ public class MiBulletinBoardService {
         }
 
         return MiNoticeDetailRes.of(bulletinBoard.getBulletinNo(), categoryName, bulletinBoard.getBulletinTitleNm(),
-                bulletinBoard.getBulletinCntt(), uploadFiles.size() > 0 ? fileService.getUrl(uploadFiles.get(0)) : null);
+                bulletinBoard.getBulletinCntt(), uploadFiles.size() > 0 ? fileService.getSecureUrl(uploadFiles.get(0)) : null);
     }
 
     /**

@@ -51,6 +51,9 @@ public class FileService {
     @Value("${ncp.storage.prefix}")
     private String prefix;
 
+    @Value("${server.domain}")
+    private String serverDomain;
+
     public void getAll() {
         objectStorageService.getAll();
         return;
@@ -426,6 +429,38 @@ public class FileService {
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
             return objectStorageService.getUrl(bucketName, filePath);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    public String getSecureUrl(Long fileNo) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
+
+            return PathUtil.IncludeTrailingPathDelimiter(serverDomain) + PathUtil.IncludeTrailingPathDelimiter("image")
+                    + PathUtil.IncludeTrailingPathDelimiter(bucketName) + filePath;
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    public String getSecureUrl(UploadedFile uploadedFile) {
+        if (uploadedFile == null) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 파일이 없습니다.");
+        }
+
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
+
+            return PathUtil.IncludeTrailingPathDelimiter(serverDomain) + PathUtil.IncludeTrailingPathDelimiter("image")
+                    + PathUtil.IncludeTrailingPathDelimiter(bucketName) + filePath;
+
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
