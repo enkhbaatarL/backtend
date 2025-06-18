@@ -127,7 +127,6 @@ api:
     connection-timeout: 1s
     read-timeout: 20s
     api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
-    app-id: ${SKT_MI_MODEL_APP_ID:35157f25-3896-489d-9518-ffe9dfa706f8}
   auth-token:
     url: https://dev-mi.sk.com
     connection-timeout: 1s
@@ -178,6 +177,7 @@ features:
   validation:
     model-agent:
       write-length: -1 # -1 means no limit
+      token-usage-limit: 100000000
   scheduling:
     prohibited-word:
       refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)

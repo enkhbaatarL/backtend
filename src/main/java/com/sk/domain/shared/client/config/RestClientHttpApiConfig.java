@@ -25,12 +25,11 @@ public class RestClientHttpApiConfig {
     public ModelAgentApi modelAgentApi(@Value("${api.model-agent.url}") String url,
                                        @Value("${api.model-agent.connection-timeout:1s}") Duration connectTimeout,
                                        @Value("${api.model-agent.read-timeout:10s}") Duration readTimeout,
-                                       @Value("${api.model-agent.api-key}") String apiKey,
-                                       @Value("${api.model-agent.app-id}") String appId) {
+                                       @Value("${api.model-agent.api-key}") String apiKey) {
 
         return new RestClientBuilder()
             .url(url)
-            .headers("Authorization", "Bearer " + apiKey, "app_id", appId)
+            .headers("Authorization", "Bearer " + apiKey)
             .connectionTimeout(connectTimeout)
             .readTimeout(readTimeout)
             .build(ModelAgentApi.class);

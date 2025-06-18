@@ -32,7 +32,7 @@ public final class DummyResponses {
 
     /* --- 샘플 1: 단일 메시지, 단일 차트 (월간 판매 실적) --- */
     private static final String SAMPLE_1 = String.format("""
-        {
+        { "output": {
           "messages": [
             {
               "content": {
@@ -49,12 +49,12 @@ public final class DummyResponses {
             }
           ],
           "usage": { "completion_tokens": 450, "prompt_tokens": 120, "total_tokens": 570 }
-        }
+        }}}
         """, generateDates(31, "daily", 2024, 5, 1), generateRandomValues(31, 30, 80));
 
     /* --- 샘플 2: 단일 메시지, 단일 차트 (연간 재고 분석) --- */
     private static final String SAMPLE_2 = String.format("""
-        {
+        { "output": {
           "messages": [
             {
               "content": {
@@ -71,12 +71,12 @@ public final class DummyResponses {
             }
           ],
           "usage": { "completion_tokens": 420, "prompt_tokens": 110, "total_tokens": 530 }
-        }
+        }}
         """, generateDates(52, "weekly", 2023, 1, 2), generateRandomValues(52, 25, 35));
 
     /* --- 샘플 3: 단일 메시지, 다중 차트 (경쟁사 주가 비교) --- */
     private static final String SAMPLE_3 = String.format("""
-        {
+        { "output": {
           "messages": [
             {
               "content": {
@@ -95,7 +95,7 @@ public final class DummyResponses {
             }
           ],
           "usage": { "completion_tokens": 350, "prompt_tokens": 90, "total_tokens": 440 }
-        }
+        }}
         """,
         generateDates(30, "daily", 2024, 4, 1), generateRandomValues(30, 150, 180), // OurStock
         generateDates(30, "daily", 2024, 4, 1), generateRandomValues(30, 120, 200), // Competitor A
@@ -104,7 +104,7 @@ public final class DummyResponses {
 
     /* --- 샘플 4: 다중 메시지, 각 메시지에 차트 포함 (분기별 실적과 다음 분기 예측) --- */
     private static final String SAMPLE_4 = String.format("""
-        {
+        { "output": {
           "messages": [
             {
               "content": {
@@ -130,7 +130,7 @@ public final class DummyResponses {
             }
           ],
           "usage": { "completion_tokens": 520, "prompt_tokens": 150, "total_tokens": 670 }
-        }
+        }}
         """, generateDates(13, "weekly", 2024, 4, 7), generateRandomValues(13, 9.5, 11.5));
 
 

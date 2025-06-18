@@ -138,12 +138,12 @@ public class ChatbotTalkQna extends BaseEntity {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
         this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
         this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
-                .map(ModelAgentRes::usage)
-                .map(ModelAgentRes.Usage::promptTokens)
+                .map(s -> s.output().usage())
+                .map(ModelAgentRes.Output.Usage::promptTokens)
                 .orElse(0);
         this.outputTokenCnt = Optional.ofNullable(modelAgentRes)
-                .map(ModelAgentRes::usage)
-                .map(ModelAgentRes.Usage::completionTokens)
+                .map(s -> s.output().usage())
+                .map(ModelAgentRes.Output.Usage::completionTokens)
                 .orElse(0);
     }
 

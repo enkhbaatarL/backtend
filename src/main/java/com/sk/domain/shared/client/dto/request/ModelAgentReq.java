@@ -43,7 +43,7 @@ public record ModelAgentReq(
             @Builder
             public record Ai(
                 String text,
-                List<ModelAgentRes.Message.Content.Chart> chart
+                List<ModelAgentRes.Output.Message.Content.Chart> chart
             ) {
             }
 
@@ -62,7 +62,7 @@ public record ModelAgentReq(
                                 .chart(
                                     Optional.ofNullable(b.series()).orElse(List.of()).stream()
                                         .filter(Objects::nonNull)
-                                        .map(c -> ModelAgentRes.Message.Content.Chart.builder()
+                                        .map(c -> ModelAgentRes.Output.Message.Content.Chart.builder()
                                             .order(c.order())
                                             .type(Optional.ofNullable(c.type()).map(Series.Type::getModelRes).orElse(null))
                                             .legend(c.legend())

@@ -14,7 +14,7 @@ public record AnswerRes(
 
     public static AnswerRes of(ModelAgentRes modelAgentRes, List<Related> related) {
         return AnswerRes.builder()
-                .bundles(modelAgentRes.messages()
+                .bundles(modelAgentRes.output().messages()
                         .stream()
                         .map(message -> MessageBundle.of(message, related))
                         .toList())

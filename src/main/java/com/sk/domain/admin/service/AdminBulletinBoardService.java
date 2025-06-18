@@ -184,7 +184,7 @@ public class AdminBulletinBoardService {
                         f.getFileNo(),
                         f.getOriginalFileNm(),
                         f.getFileSize(),
-                        fileService.getUrl(f.getFileNo())))
+                        fileService.getSecureUrl(f.getFileNo())))
                 .toList();
 
         return NoticeDetailRes.of(bulletinBoard, target, fileInfo);

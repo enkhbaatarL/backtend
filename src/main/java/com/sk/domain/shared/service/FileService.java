@@ -1,12 +1,15 @@
 package com.sk.domain.shared.service;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -50,6 +53,9 @@ public class FileService {
 
     @Value("${ncp.storage.prefix}")
     private String prefix;
+
+    @Value("${server.domain}")
+    private String serverDomain;
 
     public void getAll() {
         objectStorageService.getAll();
@@ -285,6 +291,8 @@ public class FileService {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
 
+            Set<String> addedNames = new HashSet<>();
+
             for (String url : urlList) {
                 String bucketName = getBucketName(url);
                 String filePath = getFilePath(url);
@@ -294,6 +302,16 @@ public class FileService {
                 try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
                     if (s3is == null)
                         continue;
+
+                    // 중복된 파일 이름 처리
+                    if (!addedNames.add(fileName)) {
+                        String base = FilenameUtils.getBaseName(fileName); // report
+                        String ext = FilenameUtils.getExtension(fileName); // pdf
+                        int idx = 1;
+                        while (!addedNames.add(
+                                fileName = base + "_" + idx++ + (ext.isEmpty() ? "" : "." + ext)))
+                            ;
+                    }
 
                     zos.putNextEntry(new ZipEntry(fileName));
                     byte[] buffer = new byte[4096];
@@ -426,6 +444,38 @@ public class FileService {
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
             return objectStorageService.getUrl(bucketName, filePath);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    public String getSecureUrl(Long fileNo) {
+        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
+                .orElseThrow(
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
+
+            return PathUtil.IncludeTrailingPathDelimiter(serverDomain) + PathUtil.IncludeTrailingPathDelimiter("image")
+                    + PathUtil.IncludeTrailingPathDelimiter(bucketName) + filePath;
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    public String getSecureUrl(UploadedFile uploadedFile) {
+        if (uploadedFile == null) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 파일이 없습니다.");
+        }
+
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
+
+            return PathUtil.IncludeTrailingPathDelimiter(serverDomain) + PathUtil.IncludeTrailingPathDelimiter("image")
+                    + PathUtil.IncludeTrailingPathDelimiter(bucketName) + filePath;
+
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
