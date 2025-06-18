@@ -60,11 +60,14 @@ public class MiInsightsController {
     @ApiOrder(2)
     @Operation(summary = "Insights 검색에서 사용할 고급필터", description = "Insights 검색에서 사용할 고급필터 데이타를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/advanced-filter")
+    @GetMapping("/companies/{companyNo}/advanced-filter")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<GoodsDataFilterRes> getAdvancedFilter() {
+    public BaseResponse<GoodsDataFilterRes> getAdvancedFilter(@PathVariable(value = "companyNo") Integer companyNo) {
 
-        return BaseResponseFactory.create(miInsightsService.getAdvancedFilter());
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
+
+        return BaseResponseFactory.create(miInsightsService.getAdvancedFilter(cNo));
     }
 
     @ApiOrder(3)
