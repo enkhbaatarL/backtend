@@ -34,7 +34,6 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
             """)
     List<SignalMapPeriodRes> findPeriosdByCompanyNo(@Param("companyNo") Integer companyNo);
 
-    // todo: 필터 관련 수정 필요
     @Query(value = """
             SELECT
                 IA.instm_scrn_ctgr_nm               AS instmScrnCtgrNm,
@@ -60,7 +59,7 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
                 WHERE a.mrkt_idx_anly_tgt_cd = (select tc.mrkt_idx_anly_tgt_cd from midb.tmd_custcpnym tc where tc.cust_cpny_no = :companyNo)
                     AND a.mrkt_idx_anly_tgt_cd = c.mrkt_idx_anly_tgt_cd
                     AND a.anly_fulf_dt = (select max(tc.anly_fulf_dt) from midb.tmm_corranlyrsltd tc where tc.mrkt_idx_anly_tgt_cd = a.mrkt_idx_anly_tgt_cd)
-                    AND (:filter IS NULL OR a.mnmn_cd = :filter)
+                    AND (:filter IS NULL OR a.mnmnc_cd = :filter)
                     AND b.mrkt_idx_data_no = c.mrkt_idx_data_no
                     AND a.del_yn = b.del_yn
                     AND a.del_yn = c.del_yn
