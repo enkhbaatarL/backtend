@@ -9,6 +9,8 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
@@ -22,6 +24,10 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
     
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+        if (criteriaDt == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, String.format("criteriaDt is null: %s", criteriaDt));
+        }
+
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;
