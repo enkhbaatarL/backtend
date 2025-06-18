@@ -23,7 +23,6 @@ import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PathUtil;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
-import com.sk.domain.admin.dto.response.file.FileExistRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.request.file.FileDownloadReq;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
@@ -427,6 +426,23 @@ public class FileService {
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
             return objectStorageService.getUrl(bucketName, filePath);
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    /**
+    * 파일에 대한 URL을 생성한다.
+    *
+    * @param fileNo 파일번호
+    * @return URL
+    */
+    public String getPresignedUrl(String url) {
+        try {
+            String bucketName = getBucketName(url);
+            String filePath = getFilePath(url);
+
+            return objectStorageService.getPresignedUrl(bucketName, filePath);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
         }
