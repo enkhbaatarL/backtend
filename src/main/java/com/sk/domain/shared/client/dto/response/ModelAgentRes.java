@@ -7,47 +7,47 @@ import java.util.List;
 
 @Builder
 public record ModelAgentRes(
-    Output output,
-    Metadata metadata
+        Output output,
+        Metadata metadata
 ) {
 
     public record Output(
-        List<Message> messages,
-        Usage usage
+            List<Message> messages
     ) {
 
         public record Message(
-            Message.Content content,
-            String type,
-            String id
+                Message.Content content,
+                Usage usage,
+                String type,
+                String id
         ) {
 
             public record Content(
-                String text,
-                List<Message.Content.Chart> charts,
-                List<Message.Content.Source> sources,
+                    String text,
+                    List<Message.Content.Chart> charts,
+                    List<Message.Content.Source> sources,
 
-                @JsonProperty("vector_sources")
-                List<VectorSource> vectorSources,
+                    @JsonProperty("vector_sources")
+                    List<VectorSource> vectorSources,
 
-                @JsonProperty("related_data")
-                List<Integer> relatedData
+                    @JsonProperty("related_data")
+                    List<Integer> relatedData
             ) {
 
                 @Builder
                 public record Chart(
-                    int order,
-                    String type,
-                    String legend,
-                    List<String> date,
-                    List<Double> value
+                        int order,
+                        String type,
+                        String legend,
+                        List<String> date,
+                        List<Double> value
                 ) {
                 }
 
                 public record Source(
-                    String url,
-                    @JsonProperty("source_nm")
-                    String sourceNm
+                        String url,
+                        @JsonProperty("source_nm")
+                        String sourceNm
                 ) {
                 }
 
@@ -55,72 +55,73 @@ public record ModelAgentRes(
                  * 새로 추가된 벡터 소스 정보를 담습니다.
                  */
                 public record VectorSource(
-                    String source,
-                    String title,
-                    @JsonProperty("gds_no")
-                    String gdsNo,
-                    @JsonProperty("gds_data_dstg_id")
-                    String gdsDataDstgId
+                        String source,
+                        String title,
+                        @JsonProperty("gds_no")
+                        String gdsNo,
+                        @JsonProperty("gds_data_dstg_id")
+                        String gdsDataDstgId
                 ) {
                 }
             }
-        }
 
-        public record Usage(
+            public record Usage(
 
-            @JsonProperty("completion_tokens")
-            int completionTokens,
+                    @JsonProperty("completion_tokens")
+                    int completionTokens,
 
-            @JsonProperty("prompt_tokens")
-            int promptTokens,
+                    @JsonProperty("prompt_tokens")
+                    int promptTokens,
 
-            @JsonProperty("total_tokens")
-            int totalTokens,
+                    @JsonProperty("total_tokens")
+                    int totalTokens,
 
-            @JsonProperty("completion_tokens_details")
-            CompletionTokensDetails completionTokensDetails,
+                    @JsonProperty("completion_tokens_details")
+                    CompletionTokensDetails completionTokensDetails,
 
-            @JsonProperty("prompt_tokens_details")
-            PromptTokensDetails promptTokensDetails
-
-        ) {
-            public record CompletionTokensDetails(
-
-                @JsonProperty("accepted_prediction_tokens")
-                int acceptedPredictionTokens,
-
-                @JsonProperty("audio_tokens")
-                int audioTokens,
-
-                @JsonProperty("reasoning_tokens")
-                int reasoningTokens,
-
-                @JsonProperty("rejected_prediction_tokens")
-                int rejectedPredictionTokens
+                    @JsonProperty("prompt_tokens_details")
+                    PromptTokensDetails promptTokensDetails
 
             ) {
-            }
+                public record CompletionTokensDetails(
 
-            public record PromptTokensDetails(
+                        @JsonProperty("accepted_prediction_tokens")
+                        int acceptedPredictionTokens,
 
-                @JsonProperty("audio_tokens")
-                int audioTokens,
+                        @JsonProperty("audio_tokens")
+                        int audioTokens,
 
-                @JsonProperty("cached_tokens")
-                int cachedTokens
+                        @JsonProperty("reasoning_tokens")
+                        int reasoningTokens,
 
-            ) {
+                        @JsonProperty("rejected_prediction_tokens")
+                        int rejectedPredictionTokens
+
+                ) {
+                }
+
+                public record PromptTokensDetails(
+
+                        @JsonProperty("audio_tokens")
+                        int audioTokens,
+
+                        @JsonProperty("cached_tokens")
+                        int cachedTokens
+
+                ) {
+                }
+
             }
 
         }
     }
 
     public record Metadata(
-        @JsonProperty("run_id")
-        String runId,
+            @JsonProperty("run_id")
+            String runId,
 
-        @JsonProperty("feedback_tokens")
-        List<Object> feedbackTokens
+            @JsonProperty("feedback_tokens")
+            List<Object> feedbackTokens
     ) {
     }
 }
