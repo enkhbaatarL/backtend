@@ -1,4 +1,6 @@
 package com.sk.domain.mi.service;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -301,7 +303,31 @@ public class MiDashboardService {
 
                     // summary 데이터 리스트 조회
                     List<DashboardChartSummaryMap> summaries = dashboardMapper.chartSummary(queryWhere, baseDate, startDate, endDate);
-                    return summaries != null ? summaries.stream() : Stream.empty();
+
+                    // explanatoryFilePath 디코딩
+                    Stream<DashboardChartSummaryMap> decodedSummaries = summaries != null ? summaries.stream().map(summary -> {
+                        if (summary.getExplanatoryFilePath() == null) {
+                            return summary;
+                        }
+                        try {
+                            String decodedPath = URLDecoder.decode(summary.getExplanatoryFilePath(), StandardCharsets.UTF_8);
+                            log.debug("Decoded explanatoryFilePath: {}", decodedPath);
+                            return DashboardChartSummaryMap.builder()
+                                .marketIndexAnalysisTargetCd(summary.getMarketIndexAnalysisTargetCd())
+                                .predictionFulfillDt(summary.getPredictionFulfillDt())
+                                .mnemonicCd(summary.getMnemonicCd())
+                                .predictionResultDt(summary.getPredictionResultDt())
+                                .explanatoryTitleContent(summary.getExplanatoryTitleContent())
+                                .explanatorySummaryContent(summary.getExplanatorySummaryContent())
+                                .explanatoryFilePath(decodedPath)
+                                .build();
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Failed to decode explanatoryFilePath: {}, error: {}", 
+                                summary.getExplanatoryFilePath(), e.getMessage());
+                            return summary; // 디코딩 실패 시 원본 반환
+                        }
+                    }) : Stream.empty();
+                    return decodedSummaries;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.collectingAndThen(
@@ -414,7 +440,7 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
-        Boolean isDownloadFunction = false; // 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
+        Boolean isDownloadFunction = false; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
@@ -1000,7 +1026,7 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
-        Boolean isDownloadFunction = true; // 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
+        Boolean isDownloadFunction = true; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
