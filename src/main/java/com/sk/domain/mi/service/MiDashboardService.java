@@ -583,7 +583,7 @@ public class MiDashboardService {
                     if (monthlyAverages == null) {
                         // 원시 데이터 조회
                         List<Map<String, Object>> rawData = chartPredictSettingDetail.getIsChartLinePredictVal()
-                                ? getForcastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, startDate, endDate)
+                                ? getForecastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, startDate, endDate)
                                 : getActualDataRows(goodsDataSource, dateColumnName, startDate, endDate);
 
                         // 예측 데이터인 경우
@@ -797,7 +797,7 @@ public class MiDashboardService {
      * @return List<Map<String, Object>>
      */
     @Transactional
-    private List<Map<String, Object>> getForcastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
+    private List<Map<String, Object>> getForecastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
             LocalDate startDate,
             LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
@@ -861,7 +861,7 @@ public class MiDashboardService {
                 key2, value2);
         String orderByColumns = String.format("%s", MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
-        return mybatisDynamicQueryService.getDynamicForcast(
+        return mybatisDynamicQueryService.getDynamicForecast(
                 DynamicDataDetailReq.ofInnerJoin(goodsDataSourceDetail.getTargetDbNm(), tableName, columns, innerJoin, orderByColumns));
     }
 
@@ -1075,7 +1075,7 @@ public class MiDashboardService {
             int EXCEL_LABEL_COLUMN_INDEX = 1; // 엑셀 라벨 열 인덱스
             int MAX_COLUMNS_TO_AUTO_SIZE = 50;
 
-            String FORECAST_KEY = "Forcast";
+            String FORECAST_KEY = "Forecast";
             String ACTUAL_KEY = "Actual";
             String NOT_EXIST_VALUE = "-";
 
@@ -1130,7 +1130,7 @@ public class MiDashboardService {
                 DashboardChartLine actualChartLine = mainChart.actualChartLines();
                 List<DashboardChartRawData> actualRawData = actualChartLine.rawData();
 
-                // 두번째 행: Forcast
+                // 두번째 행: Forecast
                 Row forecastRow = sheet.createRow(EXCEL_FORECAST_DATA_ROW_INDEX);
                 forecastRow.createCell(0).setCellValue(FORECAST_KEY); // TODO: 매직 넘버 수정 필요
                 for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
