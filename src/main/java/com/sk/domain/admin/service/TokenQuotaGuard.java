@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Collections;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -37,7 +36,7 @@ public class TokenQuotaGuard {
         String key = key(companyId);
         long usage = redis.execute(quotaScript, Collections.singletonList(key), String.valueOf(delta), String.valueOf(tokenUsageLimit));
         // 1 = 한도 내, 0 = 한도 초과
-        return new QuotaResult(tokenUsageLimit >= usage, usage);
+        return new QuotaResult(tokenUsageLimit >= usage, usage, delta);
     }
 
     // ───────── private ─────────
@@ -48,7 +47,8 @@ public class TokenQuotaGuard {
 
     public record QuotaResult(
         boolean allowed,
-        long usage
+        long usage,
+        long delta
     ) {}
 
 }

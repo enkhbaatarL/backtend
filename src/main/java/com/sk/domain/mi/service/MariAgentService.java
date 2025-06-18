@@ -259,11 +259,11 @@ public class MariAgentService {
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
 
-            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), modelAgentRes.output().usage().totalTokens());
-            log.info("[Model-Agent API call token usage] company: {}, token-usage: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.usage(), quotaResult.allowed());
-
             AnswerRes answerRes = AnswerRes.of(modelAgentRes, related);
             qna.updateCompleteResult(modelAgentRes, answerRes);
+
+            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), qna.getInputTokenCnt() + qna.getOutputTokenCnt());
+            log.info("[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.delta(), quotaResult.usage(), quotaResult.allowed());
 
             return Optional.ofNullable(answerRes);
 
