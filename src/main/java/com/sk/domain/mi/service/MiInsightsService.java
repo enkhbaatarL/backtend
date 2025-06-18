@@ -121,10 +121,10 @@ public class MiInsightsService {
      *
      * @return GoodsDataFilterRes
      */
-    public GoodsDataFilterRes getAdvancedFilter() {
+    public GoodsDataFilterRes getAdvancedFilter(int companyNo) {
 
         List<GoodsDataCategoryRes> documentTypes = commonCodeDetailRepository.findDocTypeCategory();
-        List<GoodsDataCategoryRes> providers = commonCodeDetailRepository.findProviderTypeCategory();
+        List<GoodsDataCategoryRes> providers = commonCodeDetailRepository.findProviderTypeCategory(companyNo);
         List<GoodsDataCategoryRes> languages = commonCodeDetailRepository.findLangTypeCategory();
 
         return GoodsDataFilterRes.of(documentTypes, providers, languages);
