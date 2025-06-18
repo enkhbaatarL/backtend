@@ -28,7 +28,7 @@ public record MessageBundle(
 
 ) {
 
-    public static MessageBundle of(ModelAgentRes.Message message, List<Related> related) {
+    public static MessageBundle of(ModelAgentRes.Output.Message message, List<Related> related) {
         String updatedMarkdown = MarkdownUtil.insertTableIds(message.content().text());
         return MessageBundle.builder()
             .content(updatedMarkdown)

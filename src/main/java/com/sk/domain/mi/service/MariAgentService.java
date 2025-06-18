@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.JsonUtil;
+import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.ChatRoomReq;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
@@ -13,7 +14,6 @@ import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.shared.client.ModelAgentApi;
-import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
@@ -56,6 +56,7 @@ public class MariAgentService {
     private final AuthorizationService authorizationService;
 
     private final ModelAgentApi modelAgentApi;
+    private final TokenQuotaGuard tokenQuotaGuard;
 
     private final ProhibitedWordService prohibitedWordService;
 
@@ -252,11 +253,14 @@ public class MariAgentService {
 
         try {
 
-            ModelAgentReq req = ModelAgentReq.of(talkReq, histories);
+//            ModelAgentReq req = ModelAgentReq.of(talkReq, histories);
 //             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
             ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
+
+            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), modelAgentRes.output().usage().totalTokens());
+            log.info("[Model-Agent API call token usage] company: {}, token-usage: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.usage(), quotaResult.allowed());
 
             AnswerRes answerRes = AnswerRes.of(modelAgentRes, related);
             qna.updateCompleteResult(modelAgentRes, answerRes);
@@ -353,12 +357,19 @@ public class MariAgentService {
      * 실패 사유가 있을 경우 AnswerStatusCd 반환, 아니면 null
      */
     private AnswerStatusCd validateQuestion(String question) {
+
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+
         if (writeLimit > 0 && question.length() > writeLimit) {
             return AnswerStatusCd.FAIL_EXCEED_LENGTH;
         }
         if (prohibitedWordService.containsProhibitedWord(question)) {
             return AnswerStatusCd.FAIL_FORBIDDEN_WORDS;
         }
+        if (!tokenQuotaGuard.hasCapacity(companyNo)) {
+            return AnswerStatusCd.FAIL_EXCEED_TOKEN;
+        }
+
         return null;
     }
 
@@ -367,12 +378,12 @@ public class MariAgentService {
      */
     private List<Integer> extractRelatedGdsNos(ModelAgentRes modelAgentRes) {
         return Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::messages)
+            .map(s -> s.output().messages())
             .orElse(Collections.emptyList()) // null 체크 강화
             .stream()
-            .map(ModelAgentRes.Message::content)
+            .map(ModelAgentRes.Output.Message::content)
             .filter(Objects::nonNull)
-            .map(ModelAgentRes.Message.Content::relatedData)
+            .map(ModelAgentRes.Output.Message.Content::relatedData)
             .filter(Objects::nonNull)
             .flatMap(List::stream)
             .toList();
@@ -383,15 +394,15 @@ public class MariAgentService {
      */
     private List<String> extractDistinguishIds(ModelAgentRes modelAgentRes) {
         return Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::messages)
+            .map(s -> s.output().messages())
             .orElse(Collections.emptyList()) // null 체크 강화
             .stream()
-            .map(ModelAgentRes.Message::content)
+            .map(ModelAgentRes.Output.Message::content)
             .filter(Objects::nonNull)
-            .map(ModelAgentRes.Message.Content::vectorSources)
+            .map(ModelAgentRes.Output.Message.Content::vectorSources)
             .filter(Objects::nonNull)
             .flatMap(List::stream)
-            .map(ModelAgentRes.Message.Content.VectorSource::gdsDataDstgId)
+            .map(ModelAgentRes.Output.Message.Content.VectorSource::gdsDataDstgId)
             .toList();
     }
 

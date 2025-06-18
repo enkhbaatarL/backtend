@@ -93,6 +93,7 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.FileService;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -108,10 +109,11 @@ public class MiDashboardService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
-    private final MiGoodsPermissionService miGoodsPermissionService;
+    // private final MiGoodsPermissionService miGoodsPermissionService;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final DashboardMapper dashboardMapper;
     private final FileService fileService;
+    private final AuthorizationService authorizationService;
 
     private final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
     private final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
@@ -392,7 +394,9 @@ public class MiDashboardService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        
+        // PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -410,9 +414,11 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
+        Boolean isDownloadFunction = false; // 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
+                isDownloadFunction,
                 customerCompanyNo,
                 baseDate,
                 chartPredictSetting,
@@ -499,6 +505,7 @@ public class MiDashboardService {
      * 
      * @param chartPredictSettingDetails 차트 설정 상세 목록
      * @param permissionRes 권한 정보
+     * @param isDownloadFunction 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
      * @param customerCompanyNo 고객 회사 번호
      * @param baseDate 기준 날짜
      * @param chartPredictSetting 차트 설정
@@ -510,6 +517,7 @@ public class MiDashboardService {
     private List<DashboardChartData> processChartData(
             List<ChartPredictSettingDetail> chartPredictSettingDetails,
             PermissionRes permissionRes,
+            Boolean isDownloadFunction,
             Integer customerCompanyNo,
             LocalDate baseDate,
             ChartPredictSetting chartPredictSetting,
@@ -523,13 +531,14 @@ public class MiDashboardService {
                     Goods goods = goodsData.getGoods();
 
                     // 권한 조회
-                    boolean isPermitted = permissionRes.getGoodsViewableMap(customerCompanyNo)
+                    boolean isPermitted = isDownloadFunction ? permissionRes.getGoodsDownloadableMap(customerCompanyNo)
+                            .getOrDefault(goods.getGoodsNo(), false) : permissionRes.getGoodsViewableMap(customerCompanyNo)
                             .getOrDefault(goods.getGoodsNo(), false);
 
-                    // 예측 데이터가 아닌 경우 권한 없으면 다운로드 불가
-                    if (!isPermitted && !chartPredictSettingDetail.getIsChartLinePredictVal()) {
-                        isFileDownload[0] = false;
-                    }
+                    // 예측 데이터가 아닌 경우 권한 없으면 다운로드 불가 => 예측 데이터도 권한 체크 하는걸로 한다고 함
+                    // if (!isPermitted && !chartPredictSettingDetail.getIsChartLinePredictVal()) {
+                    //     isFileDownload[0] = false;
+                    // }
 
                     // 차트 데이터 타입 설정
                     ChartPredictDataType chartPredictDataType;
@@ -972,7 +981,8 @@ public class MiDashboardService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -990,9 +1000,11 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
+        Boolean isDownloadFunction = true; // 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
+                isDownloadFunction,
                 customerCompanyNo,
                 baseDate,
                 chartPredictSetting,
@@ -1355,7 +1367,8 @@ public class MiDashboardService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
