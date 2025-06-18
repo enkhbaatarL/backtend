@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.opensaml.xmlsec.encryption.P;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,11 +41,19 @@ public class MiSignalMapService {
     private final ObjectMapper objectMapper;
 
     public List<SignalMapPeriodRes> getSignalMapPeriodType(int companyNo) {
-        return correlationAnalysisResultRepository.findPeriosdByCustomerCompanyNo(companyNo);
+        return correlationAnalysisResultRepository.findPeriosdByCompanyNo(companyNo);
     }
 
     public List<SignalMapFilterRes> getSignalMapFilterType(int companyNo) {
-        return chartPredictSettingDetailRepository.findFilterTypeByCompanyNo(companyNo);
+        List<Object[]> filterTypes = chartPredictSettingDetailRepository.findFilterTypeByCompanyNo(companyNo);
+
+        List<SignalMapFilterRes> result = filterTypes.stream()
+                .map(obj -> new SignalMapFilterRes(
+                        (String) obj[0],
+                        (String) obj[1]))
+                .collect(Collectors.toList());
+
+        return result;
     }
 
     public String getTitle(int companyNo) {
