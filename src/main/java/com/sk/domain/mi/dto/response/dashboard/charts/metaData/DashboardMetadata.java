@@ -19,19 +19,24 @@ public record DashboardMetadata(
 
 		@Schema(description = "기준 날짜(YYYY-MM)", example = "2021-01") String baseDate,
 
-		@Schema(description = "데이터 테이블 타입", example = "FORECAST_SINGLE_LAYER") DashboardChartDataTableType dataTableType) {
+		@Schema(description = "데이터 테이블 타입", example = "FORECAST_SINGLE_LAYER") DashboardChartDataTableType dataTableType,
+
+		@Schema(description = "테이블 헤더 명", example = "Vehicles") String tableHeader) {
+
 	@Builder
 	public DashboardMetadata(String marketIndexAnalysisTargetCd, LocalDate lastUpdateDt, String currency,
-			String currentUnitCd, String baseDate, DashboardChartDataTableType dataTableType) {
+			String currentUnitCd, String baseDate, DashboardChartDataTableType dataTableType, String tableHeader) {
 		this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
 		this.lastUpdateDt = lastUpdateDt;
 		this.currency = currency;
 		this.currentUnitCd = currentUnitCd;
 		this.baseDate = baseDate;
 		this.dataTableType = dataTableType;
+		this.tableHeader = tableHeader;
 	}
 
-	public static DashboardMetadata of(String marketIndexAnalysisTargetCd, LocalDate lastUpdateDt, GoodsDataSourceDetail goodsDataSourceDetail, String baseDate, DashboardChartDataTableType dataTableType) {
+	public static DashboardMetadata of(String marketIndexAnalysisTargetCd, LocalDate lastUpdateDt, GoodsDataSourceDetail goodsDataSourceDetail,
+			String baseDate, DashboardChartDataTableType dataTableType, String tableHeader) {
 		return DashboardMetadata.builder()
 				.marketIndexAnalysisTargetCd(marketIndexAnalysisTargetCd)
 				.lastUpdateDt(lastUpdateDt)
@@ -39,6 +44,7 @@ public record DashboardMetadata(
 				.currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
 				.baseDate(baseDate)
 				.dataTableType(dataTableType)
+				.tableHeader(tableHeader)
 				.build();
 	}
 }

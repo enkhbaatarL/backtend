@@ -20,7 +20,7 @@ public class DefaultDataCollector implements DataCollectorStrategy {
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

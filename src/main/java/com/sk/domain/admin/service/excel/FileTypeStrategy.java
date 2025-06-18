@@ -11,6 +11,6 @@ import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
  * 엑셀 파싱 전략
  */
 public interface FileTypeStrategy {
-    List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt)
+    List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt, String category)
             throws IOException;
 }

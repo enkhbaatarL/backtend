@@ -28,7 +28,7 @@ public class TsmcDataCollector implements DataCollectorStrategy {
 
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;
@@ -88,14 +88,4 @@ public class TsmcDataCollector implements DataCollectorStrategy {
         }
         return result;
     }
-
-    // private List<String> createDefaultHeaders(int size) {
-    //     return IntStream.range(0, Math.max(1, size))
-    //             .mapToObj(i -> "P" + i) // 짧은 코드 (P0, P1, ...)
-    //             .collect(Collectors.toList());
-    // }
-
-    // private String truncatePeriodCode(String code) {
-    //     return code.length() > MAX_MEMBER_NAME_LENGTH ? code.substring(0, MAX_MEMBER_NAME_LENGTH) : code;
-    // }
 }

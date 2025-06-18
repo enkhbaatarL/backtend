@@ -28,7 +28,7 @@ public class OecdCliDataCollector implements DataCollectorStrategy {
     private static final int MAX_MEMBER_NAME_LENGTH = 50; // oecd_mem_nm 최대 길이
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

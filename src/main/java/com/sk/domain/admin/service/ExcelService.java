@@ -38,7 +38,6 @@ public class ExcelService {
 
     private static final int DEFAULT_HEADER_ROW_INDEX = 0;
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1;
-    private static final String CRITERIA_DT_COLUMN_NAME = "crtr_dt";
 
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final FileTypeStrategyResolver fileTypeStrategyResolver;
@@ -153,7 +152,7 @@ public class ExcelService {
      * @throws IOException
      */
     @Transactional
-    public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt) throws IOException {
+    public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt, String category) throws IOException {
         try {
             validateComponentInfo(componentInfo);
             List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
@@ -177,11 +176,7 @@ public class ExcelService {
             }
 
             FileTypeStrategy strategy = fileTypeStrategyResolver.resolve(ExcelParsedUtil.validateFile(file));
-            List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt);
-
-            if (criteriaDt != null) {
-                columnNames.add(CRITERIA_DT_COLUMN_NAME);
-            }
+            List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt, category);
 
             return saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
         } catch (Exception e) {

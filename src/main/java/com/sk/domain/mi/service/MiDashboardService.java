@@ -93,6 +93,7 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.FileService;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -108,10 +109,11 @@ public class MiDashboardService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
-    private final MiGoodsPermissionService miGoodsPermissionService;
+    // private final MiGoodsPermissionService miGoodsPermissionService;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final DashboardMapper dashboardMapper;
     private final FileService fileService;
+    private final AuthorizationService authorizationService;
 
     private final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
     private final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
@@ -127,7 +129,7 @@ public class MiDashboardService {
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
     private static final String DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT = "Unit"; // 차트 데이터 테이블 헤더 단위 컬럼명
-    
+
     private static final String EXCEL_SHEET_NAME = "dashboard_chart";
 
     private final StringRedisTemplate redisTemplate;
@@ -258,7 +260,7 @@ public class MiDashboardService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "다운로드 가능한 파일이 없습니다.");
         }
 
-        return fileService.downloadFiles2(filePaths);
+        return fileService.directDownloadFiles(filePaths);
     }
 
     /**
@@ -392,7 +394,9 @@ public class MiDashboardService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        
+        // PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -410,9 +414,11 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
+        Boolean isDownloadFunction = false; // 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
+                isDownloadFunction,
                 customerCompanyNo,
                 baseDate,
                 chartPredictSetting,
@@ -451,7 +457,8 @@ public class MiDashboardService {
                         .findFirst()
                         .orElse(null),
                 finalDate,
-                dataTableType);
+                dataTableType,
+                chartPredictSetting.getPredictTargetRepresentSpecNm());
 
         // associatedCharts에서 DashboardChart 리스트 추출
         List<DashboardChart> finalCharts = associatedCharts.stream()
@@ -459,10 +466,10 @@ public class MiDashboardService {
                 .map(chart -> {
                     DashboardChartLine actualLines = chart.actualChartLines() != null
                             ? chart.actualChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     DashboardChartLine forecastLines = chart.forecastChartLines() != null
                             ? chart.forecastChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     return new DashboardChart(
                             chart.chartLineDescription(),
                             chart.chartLineType(),
@@ -498,6 +505,7 @@ public class MiDashboardService {
      * 
      * @param chartPredictSettingDetails 차트 설정 상세 목록
      * @param permissionRes 권한 정보
+     * @param isDownloadFunction 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
      * @param customerCompanyNo 고객 회사 번호
      * @param baseDate 기준 날짜
      * @param chartPredictSetting 차트 설정
@@ -509,6 +517,7 @@ public class MiDashboardService {
     private List<DashboardChartData> processChartData(
             List<ChartPredictSettingDetail> chartPredictSettingDetails,
             PermissionRes permissionRes,
+            Boolean isDownloadFunction,
             Integer customerCompanyNo,
             LocalDate baseDate,
             ChartPredictSetting chartPredictSetting,
@@ -522,13 +531,14 @@ public class MiDashboardService {
                     Goods goods = goodsData.getGoods();
 
                     // 권한 조회
-                    boolean isPermitted = permissionRes.getGoodsViewableMap(customerCompanyNo)
+                    boolean isPermitted = isDownloadFunction ? permissionRes.getGoodsDownloadableMap(customerCompanyNo)
+                            .getOrDefault(goods.getGoodsNo(), false) : permissionRes.getGoodsViewableMap(customerCompanyNo)
                             .getOrDefault(goods.getGoodsNo(), false);
 
-                    // 예측 데이터가 아닌 경우 권한 없으면 다운로드 불가
-                    if (!isPermitted && !chartPredictSettingDetail.getIsChartLinePredictVal()) {
-                        isFileDownload[0] = false;
-                    }
+                    // 예측 데이터가 아닌 경우 권한 없으면 다운로드 불가 => 예측 데이터도 권한 체크 하는걸로 한다고 함
+                    // if (!isPermitted && !chartPredictSettingDetail.getIsChartLinePredictVal()) {
+                    //     isFileDownload[0] = false;
+                    // }
 
                     // 차트 데이터 타입 설정
                     ChartPredictDataType chartPredictDataType;
@@ -582,7 +592,7 @@ public class MiDashboardService {
                     if (monthlyAverages == null) {
                         // 원시 데이터 조회
                         List<Map<String, Object>> rawData = chartPredictSettingDetail.getIsChartLinePredictVal()
-                                ? getForcastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, startDate, endDate)
+                                ? getForecastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, startDate, endDate)
                                 : getActualDataRows(goodsDataSource, dateColumnName, startDate, endDate);
 
                         // 예측 데이터인 경우
@@ -604,7 +614,7 @@ public class MiDashboardService {
                     }
 
                     DashboardChartLine dashboardChartLine = DashboardChartLine.of(isPermitted, chartPredictDataType,
-                            goodsDataSource.getGoodsDataSourceNo(), monthlyAverages);
+                            goodsDataSource.getGoodsDataSourceNo(), monthlyAverages, chartPredictSettingDetail.getPredictChartDetailExpn());
 
                     // DashboardChart 생성
                     Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
@@ -796,7 +806,7 @@ public class MiDashboardService {
      * @return List<Map<String, Object>>
      */
     @Transactional
-    private List<Map<String, Object>> getForcastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
+    private List<Map<String, Object>> getForecastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
             LocalDate startDate,
             LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
@@ -860,7 +870,7 @@ public class MiDashboardService {
                 key2, value2);
         String orderByColumns = String.format("%s", MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
-        return mybatisDynamicQueryService.getDynamicForcast(
+        return mybatisDynamicQueryService.getDynamicForecast(
                 DynamicDataDetailReq.ofInnerJoin(goodsDataSourceDetail.getTargetDbNm(), tableName, columns, innerJoin, orderByColumns));
     }
 
@@ -971,7 +981,8 @@ public class MiDashboardService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -989,9 +1000,11 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
+        Boolean isDownloadFunction = true; // 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
+                isDownloadFunction,
                 customerCompanyNo,
                 baseDate,
                 chartPredictSetting,
@@ -1023,10 +1036,10 @@ public class MiDashboardService {
                 .map(chart -> {
                     DashboardChartLine actualLines = chart.actualChartLines() != null
                             ? chart.actualChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     DashboardChartLine forecastLines = chart.forecastChartLines() != null
                             ? chart.forecastChartLines()
-                            : DashboardChartLine.of(null, null, null, null);
+                            : DashboardChartLine.of(null, null, null, null, null);
                     return new DashboardChart(
                             chart.chartLineDescription(),
                             chart.chartLineType(),
@@ -1074,7 +1087,7 @@ public class MiDashboardService {
             int EXCEL_LABEL_COLUMN_INDEX = 1; // 엑셀 라벨 열 인덱스
             int MAX_COLUMNS_TO_AUTO_SIZE = 50;
 
-            String FORECAST_KEY = "Forcast";
+            String FORECAST_KEY = "Forecast";
             String ACTUAL_KEY = "Actual";
             String NOT_EXIST_VALUE = "-";
 
@@ -1129,7 +1142,7 @@ public class MiDashboardService {
                 DashboardChartLine actualChartLine = mainChart.actualChartLines();
                 List<DashboardChartRawData> actualRawData = actualChartLine.rawData();
 
-                // 두번째 행: Forcast
+                // 두번째 행: Forecast
                 Row forecastRow = sheet.createRow(EXCEL_FORECAST_DATA_ROW_INDEX);
                 forecastRow.createCell(0).setCellValue(FORECAST_KEY); // TODO: 매직 넘버 수정 필요
                 for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
@@ -1201,8 +1214,9 @@ public class MiDashboardService {
                     forecastRow.createCell(EXCEL_LABEL_COLUMN_INDEX).setCellValue(FORECAST_KEY);
 
                     DashboardChartLine forecastChartLine = chart.forecastChartLines();
-                    if(forecastChartLine != null) {
-                        List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData() != null ? forecastChartLine.rawData() : Collections.emptyList();
+                    if (forecastChartLine != null) {
+                        List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData() != null ? forecastChartLine.rawData()
+                                : Collections.emptyList();
                         for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
                             Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
                             if (forecastValue != null) {
@@ -1218,8 +1232,9 @@ public class MiDashboardService {
                     actualRow.createCell(EXCEL_LABEL_COLUMN_INDEX).setCellValue(ACTUAL_KEY);
 
                     DashboardChartLine actualChartLine = chart.actualChartLines();
-                        if(actualChartLine != null) {
-                            List<DashboardChartRawData> actualRawData = actualChartLine.rawData() != null ? actualChartLine.rawData() : Collections.emptyList();
+                    if (actualChartLine != null) {
+                        List<DashboardChartRawData> actualRawData = actualChartLine.rawData() != null ? actualChartLine.rawData()
+                                : Collections.emptyList();
                         for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
                             Double actualValue = actualRawData.get(i - headerStartIndex).value();
                             if (actualValue != null) {
@@ -1352,7 +1367,8 @@ public class MiDashboardService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        // PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+        PermissionRes permissionRes = authorizationService.getUserPermissions();
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
