@@ -554,6 +554,11 @@ public class AdminProviderController {
     }
 
     @ApiOrder(101)
+    @Parameters({
+            @Parameter(name = "fileName", required = true, description = "파일명"),
+            @Parameter(name = "fileHash", required = true, description = "파일해시값"),
+            @Parameter(name = "goodsDataNm", required = true, description = "상품데이타명")
+    })
     @Operation(summary = "동일한 file 존재 여부 체크", description = "")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping(value = "/goods-datas/upload-file/unstructured-data/exist")
