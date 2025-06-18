@@ -1,11 +1,10 @@
 package com.sk.domain.shared.service;
 
-import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -13,11 +12,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.text.Normalizer;
+
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.sk.common.enums.ResultCode;
@@ -32,6 +32,7 @@ import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -96,50 +97,8 @@ public class FileService {
     */
     @Transactional
     public FileUploadRes uploadFile(String companyCd, Role role, MultipartFile file, boolean isPublic) {
-        if (file == null) {
-            throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
-        }
-
-        if (file.getSize() <= 0) {
-            throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
-        }
-
-        try {
-            String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
-            String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
-            long fileSize = file.getSize();
-            String mimeTypeNm = file.getContentType();
-
-            String customerCompanyCd = companyCd.toLowerCase();
-            String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
-            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
-            String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
-                    + PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR)
-                    + storageFileNm;
-            Integer fileRelationshipObjectDistinguishNo = 0;
-            String fileRelationshipObjectSeparateCd = FileRelationshipObjectSeparateCode.TEMP.getCode();
-
-            // Object Storage 저장
-            String fileName = PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR) + storageFileNm;
-            String fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
-
-            // DB 에 저장
-            UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
-                    originalFileNm,
-                    storageFileNm,
-                    storagePathNm,
-                    fileSize,
-                    fileExtNm,
-                    mimeTypeNm,
-                    DateUtil.endYmd(),
-                    fileRelationshipObjectDistinguishNo,
-                    fileRelationshipObjectSeparateCd,
-                    null));
-
-            return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
-        } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 업로드 중 오류가 발생했습니다." + e.getMessage());
-        }
+        String separateCode = FileRelationshipObjectSeparateCode.TEMP.getCode();
+        return upload(companyCd, role, file, isPublic, null, separateCode);
     }
 
     /**
@@ -148,10 +107,48 @@ public class FileService {
     * @param companyCd 회사코드
     * @param role 역할
     * @param file 단일 파일 업로드
+    * @param isPublic 공용 여부
+    * @param fileHash 파일 해시
     * @return FileUploadRes
     */
     @Transactional
     public FileUploadRes uploadFile(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash) {
+        String bucketDir = FileRelationshipObjectSeparateCode.TEMP.getCode();
+        return upload(companyCd, role, file, isPublic, fileHash, bucketDir);
+    }
+
+    /**
+     * 정형파일을 업로드 한다.
+     * 정형파일 업로드시 OAuth2.0 인증의 경우 버킷 디렉토리가 정형 디렉토리로 바로 설정된다.
+     * 
+     * @param companyCd 회사코드
+     * @param role 역할
+     * @param file 단일 파일 업로드
+     * @param isPublic 공용 여부
+     * @return FileUploadRes
+     */
+    @Transactional
+    public FileUploadRes uploadStructuredFile(String companyCd, Role role, MultipartFile file, boolean isPublic) {
+        String bucketDir = switch (role) {
+            case USER, ADMIN, OPERATOR, SYSTEM -> FileRelationshipObjectSeparateCode.TEMP.getCode();
+            case API_SUB_ADMIN, API_PLUS_OPERATOR -> FileRelationshipObjectSeparateCode.GDATS.getCode();
+            default -> throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "역할 코드가 올바르지 않습니다.");
+        };
+
+        return upload(companyCd, role, file, isPublic, null, bucketDir);
+    }
+
+    /**
+     * 파일을 업로드 한다.
+     * 
+     * @param companyCd 회사코드
+     * @param role 역할
+     * @param file 단일 파일 업로드
+     * @param isPublic 공용 여부
+     * @param fileHash 파일 해시
+     * @return FileUploadRes
+     */
+    private FileUploadRes upload(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash, String separateCode) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -170,13 +167,13 @@ public class FileService {
             String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
-                    + PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR)
+                    + PathUtil.IncludeTrailingPathDelimiter(separateCode)
                     + storageFileNm;
             Integer fileRelationshipObjectDistinguishNo = 0;
-            String fileRelationshipObjectSeparateCd = FileRelationshipObjectSeparateCode.TEMP.getCode();
+            String fileRelationshipObjectSeparateCd = separateCode;
 
             // Object Storage 저장
-            String fileName = PathUtil.IncludeTrailingPathDelimiter(TEMP_DIR) + storageFileNm;
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(separateCode) + storageFileNm;
             String fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
 
             // DB 에 저장
