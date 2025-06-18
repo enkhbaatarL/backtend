@@ -1,7 +1,5 @@
 package com.sk.common.utils;
 
-import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
-import com.sk.domain.shared.enums.chart.Range;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,7 +9,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Locale;
+
 import org.apache.commons.lang3.tuple.Pair;
+
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+import com.sk.domain.shared.enums.chart.Range;
 
 /**
  * LocalDate 관련 유틸리티 클래스
@@ -26,6 +28,8 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYY_MMM_ENG = DateTimeFormatter.ofPattern("yyyy-MMM", Locale.ENGLISH);
     public static final DateTimeFormatter YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     public static final DateTimeFormatter YYYY_MM = DateTimeFormatter.ofPattern("yyyy-MM");
+    public static final DateTimeFormatter YYYYMMDD_ENG = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ENGLISH);
+
 
     private DateUtil() {
     }
@@ -288,4 +292,10 @@ public final class DateUtil {
         return LocalDate.of(d.getYear(), 1, 1);
     }
 
+    /**
+     * "MMM dd, yyyy" 문자열을 "yyyyMMdd" LocalDate로 변환
+     */
+    public static LocalDate fromYyyyMmDdEng(String dateStr) {
+        return dateStr != null ? LocalDate.parse(dateStr, YYYYMMDD_ENG) : null;
+    }
 }

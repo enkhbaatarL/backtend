@@ -26,7 +26,7 @@ public class PivotDataCollector implements DataCollectorStrategy {
     private static final int MAX_PERIOD_CODE_LENGTH = 10; // oni_anly_perd_spt_cd 최대 길이
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

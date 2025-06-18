@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 public class ComponentInfo extends BaseEntity {
 
     @Id
-    @Column(name = "cmpnt_type_id", nullable = false, length = 30)
+    @Column(name = "cmpnt_type_id", nullable = false, length = 100)
     @Comment("컴포넌트유형ID")
     private String componentTypeId;
 

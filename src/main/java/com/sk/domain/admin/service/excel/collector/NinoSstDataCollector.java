@@ -30,7 +30,7 @@ public class NinoSstDataCollector implements DataCollectorStrategy {
      * @return 변환된 데이터 리스트 (YR, MON, sst_pstn_spt_cd, sst_idx, sst_avg_dvat)
      */
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

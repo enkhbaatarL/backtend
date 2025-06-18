@@ -149,7 +149,7 @@
     </insert>
 
     <!-- 예측 데이터 조회 -->
-    <select id="selectDynamicForcastChart" parameterType="map" resultType="map">
+    <select id="selectDynamicForecastChart" parameterType="map" resultType="map">
         SELECT
         <if test="columns != null and columns != ''">
             ${columns}

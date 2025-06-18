@@ -130,6 +130,9 @@ public class ExcelParsedUtil {
      */
     public static Object[] parseExcelRow(Row row, List<String> columnNames, String criteriaDt) {
         List<Object> rowData = new ArrayList<>();
+        if (criteriaDt != null) {
+            rowData.add(criteriaDt);
+        }
         for (int i = 0; i < columnNames.size(); i++) {
             Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
             Object value = null;
@@ -158,9 +161,6 @@ public class ExcelParsedUtil {
                 }
             }
             rowData.add(value);
-        }
-        if (criteriaDt != null) {
-            rowData.add(criteriaDt);
         }
         return rowData.toArray();
     }

@@ -86,6 +86,7 @@ public class FileService {
     * @param companyCd 회사코드
     * @param role 역할
     * @param file 단일 파일 업로드
+    * @param isPublic 공용 여부
     * @return FileUploadRes
     */
     @Transactional
