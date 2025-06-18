@@ -55,4 +55,12 @@ public interface CustomerCompanyRepository extends JpaRepository<CustomerCompany
     List<CustomerCompany> findByIsDeletedFalseAndIsMipManagementCompanyFalseOrderByCustomerCompanyNmAsc();
 
     Long countByIsMipManagementCompanyTrueAndIsDeletedFalse();
+
+    @Query("SELECT c FROM CustomerCompany c " +
+           "WHERE c.customerCompanyNo = :customerCompanyNo " +
+           "AND c.isUsed = true " +
+           "AND c.isDeleted = false " +
+           "AND :currentDate BETWEEN c.useBeginDt AND c.useEndDt")
+    Optional<CustomerCompany> findActiveByCustomerCompanyNo(@Param("customerCompanyNo") Integer customerCompanyNo,
+                                                           @Param("currentDate") String currentDate);
 }
