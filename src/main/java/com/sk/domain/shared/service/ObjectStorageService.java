@@ -3,20 +3,26 @@ package com.sk.domain.shared.service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.GroupGrantee;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -233,6 +239,31 @@ public class ObjectStorageService {
     */
     public String getUrl(String bucketName, String fileName) {
         return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
+    }
+
+    /**
+    * 파일의 URL을 생성한다.
+    *
+    * @param bucketName 버킷 이름
+    * @param fileName 파일 Full Path
+    * @return 
+    */
+    public String getPresignedUrl(String bucketName, String fileName) {
+        // presigned URL 만료 시간 설정 (예: 1시간 후 만료)
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime() + (1000 * 60 * 60);
+        expiration.setTime(expTimeMillis);
+
+        // presigned URL 생성 요청
+        GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, fileName)
+                .withMethod(HttpMethod.GET)
+                .withExpiration(expiration);
+
+        generatePresignedUrlRequest.addRequestParameter(Headers.S3_CANNED_ACL,
+                CannedAccessControlList.PublicRead.toString());
+
+        URL url = objectStorageClient.generatePresignedUrl(generatePresignedUrlRequest);
+        return url.toString();
     }
 
     /**
