@@ -57,12 +57,13 @@ public class RestClientBuilder {
         HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
         requestFactory.setConnectTimeout(connectionTimeout);
         requestFactory.setReadTimeout(readTimeout);
+        requestFactory.setConnectionRequestTimeout(readTimeout);
 
         RestClient restClient = RestClientDefaultConfig.defaultRestClientBuilder()
                 .baseUrl(url)
                 .requestFactory(requestFactory)
                 .build();
-        
+
 
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             restClient = restClient.mutate().defaultHeader(entry.getKey(), entry.getValue()).build();

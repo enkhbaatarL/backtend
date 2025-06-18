@@ -11,7 +11,8 @@ public enum AnswerStatusCd {
     PENDING("P", "대기", "대기"),
     FAIL("F", "실패", "실패"),
     FAIL_FORBIDDEN_WORDS("F1", "실패", "금칙어"),
-    FAIL_EXCEED_LENGTH("F2", "실패", "길이제한 초과");
+    FAIL_EXCEED_LENGTH("F2", "실패", "길이제한 초과"),
+    FAIL_EXCEED_TOKEN("F3", "실패", "토큰 한도 초과");
 
     private final String code;
     private final String description;
