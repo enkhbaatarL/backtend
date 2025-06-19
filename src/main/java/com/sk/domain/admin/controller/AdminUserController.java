@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.TrimmedNotEmpty;
 import com.sk.common.model.BaseResponse;
@@ -24,7 +25,6 @@ import com.sk.domain.admin.dto.response.user.UserDetailRes;
 import com.sk.domain.admin.dto.response.user.UserInfoRes;
 import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.admin.service.AdminUserService;
-import com.sk.domain.shared.enums.CompanyType;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +38,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@AccessIpCheck
 @Tag(name = "02. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
 @RestController
