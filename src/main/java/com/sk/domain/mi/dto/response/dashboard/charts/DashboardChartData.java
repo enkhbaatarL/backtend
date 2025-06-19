@@ -19,36 +19,29 @@ public record DashboardChartData(
         GoodsDataSourceDetail forecastGoodsDataSourceDetail, // Forecast 데이터 소스(알림 세팅을 위한 데이터)
 
         @Schema(description = "차트 데이터")
-        DashboardChart dashboardChart, // 차트 데이터
-
-        @Schema(description = "다운로드 가능 여부")
-        boolean isFileDownload // 다운로드 가능 여부
+        DashboardChart dashboardChart // 차트 데이터
 ) {
 
     @Builder
     public DashboardChartData(LocalDate lastUpdated,
             DashboardDataSource dashboardDataSource,
             GoodsDataSourceDetail forecastGoodsDataSourceDetail,
-            DashboardChart dashboardChart,
-            boolean isFileDownload) {
+            DashboardChart dashboardChart) {
         this.lastUpdated = lastUpdated;
         this.dashboardDataSource = dashboardDataSource;
         this.forecastGoodsDataSourceDetail = forecastGoodsDataSourceDetail;
         this.dashboardChart = dashboardChart;
-        this.isFileDownload = isFileDownload;
     }
 
     public static DashboardChartData of(LocalDate lastUpdated,
             DashboardDataSource dashboardDataSource,
             GoodsDataSourceDetail forecastGoodsDataSourceDetail,
-            DashboardChart dashboardChart,
-            boolean isFileDownload) {
+            DashboardChart dashboardChart) {
         return DashboardChartData.builder()
                 .lastUpdated(lastUpdated)
                 .dashboardDataSource(dashboardDataSource)
                 .forecastGoodsDataSourceDetail(forecastGoodsDataSourceDetail)
                 .dashboardChart(dashboardChart)
-                .isFileDownload(isFileDownload)
                 .build();
     }
 }

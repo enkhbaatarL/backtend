@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -21,6 +22,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@AccessIpCheck
 @Tag(name = "05. 알림 API", description = "알림 API 입니다.")
 @Slf4j
 @RestController

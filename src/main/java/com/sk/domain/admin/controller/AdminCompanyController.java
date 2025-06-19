@@ -2,10 +2,6 @@ package com.sk.domain.admin.controller;
 
 import java.util.List;
 
-import com.sk.common.annotation.RequiredPermission;
-import com.sk.domain.shared.enums.PermissionCondition;
-import com.sk.domain.shared.enums.Role;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationExtensionRes;
@@ -41,6 +39,7 @@ import com.sk.domain.admin.dto.response.company.LatestUpdatedRes;
 import com.sk.domain.admin.dto.response.company.ProviderWithGoodsCntRes;
 import com.sk.domain.admin.service.AdminCompanyService;
 import com.sk.domain.shared.enums.ActivationStatus;
+import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -52,7 +51,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-
+@AccessIpCheck
 @Tag(name = "01. 고객사 API", description = "고객사 API 입니다.")
 @Slf4j
 @RestController

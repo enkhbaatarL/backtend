@@ -44,7 +44,7 @@ public class SamlController {
     }
 
     @Parameters({
-        @Parameter(name = "sessionId", description = "SAML 세션 ID", required = true)
+            @Parameter(name = "sessionId", description = "SAML 세션 ID", required = true)
     })
     @ApiOrder(2)
     @Operation(summary = "SAML 콜백", description = "SAML 콜백을 진행합니다.")

@@ -142,4 +142,14 @@ public class User extends BaseEntity {
     public void updateNotificationSetting(Boolean isUserNotificationSetting) {
         this.isUserNotificationSetting = isUserNotificationSetting;
     }
+
+    public void userDelete() {
+        this.softDelete(); // 삭제 시 삭제 여부 확인
+        this.userNm = ""; // 삭제 시 사용자명 삭제
+        this.userLoginId = null; // 삭제 시 사용자 로그인 ID 삭제
+        this.positionNm = null; // 삭제 시 직위명 삭제
+        this.jobGradeNm = null; // 삭제 시 직급명 삭제
+        this.onDutyNm = null; // 삭제 시 직책명 삭제
+        this.departmentNm = null; // 삭제 시 부서명 삭제
+    }
 }

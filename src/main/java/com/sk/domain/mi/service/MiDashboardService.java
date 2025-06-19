@@ -145,7 +145,8 @@ public class MiDashboardService {
      * @return boolean
      */
     public boolean getDataExists(int companyNo) {
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
         return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
@@ -158,7 +159,8 @@ public class MiDashboardService {
      * @return DashboardInfoRes
      */
     public DashboardInfoRes getDashboardInfo(int companyNo) {
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
         // 차트 설정 조회
@@ -268,8 +270,9 @@ public class MiDashboardService {
         String startDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).withDayOfMonth(1)) : null;
         String endDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).with(TemporalAdjusters.lastDayOfMonth())) : null;
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -341,8 +344,9 @@ public class MiDashboardService {
      * @return DashboardChartDateRes
      */
     public DashboardChartDateRes getChartDates(int companyNo) {
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -388,8 +392,9 @@ public class MiDashboardService {
         String finalDate = (date == null || date.isEmpty()) ? DateUtil.toYearMonth(LocalDate.now()) : date;
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
@@ -405,11 +410,10 @@ public class MiDashboardService {
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
         // 차트 데이터 조회
-        boolean[] isFileDownload = {true};
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
-        Boolean isDownloadFunction = false; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
+        Boolean isDownloadFunction = Boolean.FALSE; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
@@ -417,7 +421,6 @@ public class MiDashboardService {
                 customerCompanyNo,
                 baseDate,
                 chartPredictSetting,
-                isFileDownload,
                 actualGoodsDataSourceDetail,
                 chartMap);
 
@@ -489,8 +492,12 @@ public class MiDashboardService {
 
         // isFileDownload 최종 값
         boolean finalIsFileDownload = chartDataResults.stream()
-                .map(DashboardChartData::isFileDownload)
-                .reduce(true, (a, b) -> a && b);
+                .map(DashboardChartData::dashboardChart) // DashboardChart 추출
+                .filter(Objects::nonNull) // dashboardChart가 null인 경우 필터링
+                .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
+                .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
+                .map(DashboardChartLine::isPermitted) // isPermitted 값 추출
+                .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
 
         return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources, finalIsFileDownload);
     }
@@ -516,7 +523,6 @@ public class MiDashboardService {
             Integer customerCompanyNo,
             LocalDate baseDate,
             ChartPredictSetting chartPredictSetting,
-            boolean[] isFileDownload,
             GoodsDataSourceDetail[] actualGoodsDataSourceDetail,
             Map<Integer, DashboardChart> chartMap) {
         return chartPredictSettingDetails.stream()
@@ -644,7 +650,7 @@ public class MiDashboardService {
                         }
                     });
 
-                    return DashboardChartData.of(lastUpdated, dashboardDataSource, actualGoodsDataSourceDetail[0], dashboardChart, isFileDownload[0]);
+                    return DashboardChartData.of(lastUpdated, dashboardDataSource, actualGoodsDataSourceDetail[0], dashboardChart);
                 })
                 .collect(Collectors.toList());
     }
@@ -961,8 +967,9 @@ public class MiDashboardService {
     public byte[] getChartFileDownload(int customerCompanyNo, String date) throws IOException {
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
@@ -978,11 +985,10 @@ public class MiDashboardService {
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
         // 차트 데이터 조회
-        boolean[] isFileDownload = {true};
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
-        Boolean isDownloadFunction = true; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
+        Boolean isDownloadFunction = Boolean.TRUE; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
@@ -990,14 +996,18 @@ public class MiDashboardService {
                 customerCompanyNo,
                 baseDate,
                 chartPredictSetting,
-                isFileDownload,
                 actualGoodsDataSourceDetail,
                 chartMap);
 
         // isFileDownload 최종 값
         boolean finalIsFileDownload = chartDataResults.stream()
-                .map(DashboardChartData::isFileDownload)
-                .reduce(true, (a, b) -> a && b);
+                .map(DashboardChartData::dashboardChart) // DashboardChart 추출
+                .filter(Objects::nonNull) // dashboardChart가 null인 경우 필터링
+                .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
+                .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
+                .map(DashboardChartLine::isPermitted) // isPermitted 값 추출
+                .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
+
         // 데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
         if (!finalIsFileDownload) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "다운로드 가능한 데이터가 없습니다.");
@@ -1126,25 +1136,29 @@ public class MiDashboardService {
 
                 // 두번째 행: Forecast
                 Row forecastRow = sheet.createRow(EXCEL_FORECAST_DATA_ROW_INDEX);
-                forecastRow.createCell(0).setCellValue(FORECAST_KEY); // TODO: 매직 넘버 수정 필요
-                for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
-                    Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
-                    if (forecastValue != null) {
-                        forecastRow.createCell(i).setCellValue(forecastValue);
-                    } else {
-                        forecastRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                forecastRow.createCell(0).setCellValue(FORECAST_KEY);
+                if (forecastRawData != null) {
+                    for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
+                        Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
+                        if (forecastValue != null) {
+                            forecastRow.createCell(i).setCellValue(forecastValue);
+                        } else {
+                            forecastRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                        }
                     }
                 }
 
                 // 세번째 행: Actual
                 Row actualRow = sheet.createRow(EXCEL_ACTUAL_DATA_ROW_INDEX);
-                actualRow.createCell(0).setCellValue(ACTUAL_KEY); // TODO: 매직 넘버 수정 필요
-                for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
-                    Double actualValue = actualRawData.get(i - headerStartIndex).value();
-                    if (actualValue != null) {
-                        actualRow.createCell(i).setCellValue(actualValue);
-                    } else {
-                        actualRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                actualRow.createCell(0).setCellValue(ACTUAL_KEY);
+                if (actualRawData != null) {
+                    for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
+                        Double actualValue = actualRawData.get(i - headerStartIndex).value();
+                        if (actualValue != null) {
+                            actualRow.createCell(i).setCellValue(actualValue);
+                        } else {
+                            actualRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                        }
                     }
                 }
 
@@ -1280,8 +1294,10 @@ public class MiDashboardService {
      * @return DashboardChartFactorRes
      */
     public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
-        customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+        // 사용자 정보 조회
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
@@ -1327,8 +1343,9 @@ public class MiDashboardService {
             String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd) {
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
-        customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
