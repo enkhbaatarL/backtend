@@ -72,12 +72,12 @@ public class MiInsightsController {
 
     @ApiOrder(3)
     @Parameters({
-            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-            @Parameter(name = "keyword", description = "데이타명 검색"),
-            @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = InsightsSortType.class)),
-            @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간 필터", schema = @Schema(implementation = InsightsPeriodType.class)),
-            @Parameter(name = "filters", description = "고급 필터(A_INSIGHT, A_CMMDT_MRKT_RPT, A_LSEG, A_WOODMAC, A_KOR, A_ENG 등)"),
+            @Parameter(name = "page", description = "페이지번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당항목수 (기본값: 10)"),
+            @Parameter(name = "keyword", description = "검색키워드"),
+            @Parameter(name = "sort", description = "정렬기준", schema = @Schema(implementation = InsightsSortType.class)),
+            @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간필터", schema = @Schema(implementation = InsightsPeriodType.class)),
+            @Parameter(name = "filters", description = "고급필터(A_INSIGHT, A_CMMDT_MRKT_RPT, A_LSEG, A_WOODMAC, A_KOR, A_ENG 등)"),
     })
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
