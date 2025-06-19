@@ -1,4 +1,5 @@
 package com.sk.domain.mi.service;
+
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
@@ -199,17 +200,6 @@ public class MiDashboardService {
     }
 
     /**
-     * Latest Data 목록 조회
-     *
-     * @param companyNo
-     * @return List<LatestDataRes>
-     */
-    public List<LatestDataRes> getLatestData(int companyNo) {
-
-        return goodsDataRepository.findLatestData(companyNo, PageRequest.of(0, 5));
-    }
-
-    /**
      * Latest Insights 목록 조회
      *
      * @param companyNo
@@ -313,17 +303,17 @@ public class MiDashboardService {
                             String decodedPath = URLDecoder.decode(summary.getExplanatoryFilePath(), StandardCharsets.UTF_8);
                             log.debug("Decoded explanatoryFilePath: {}", decodedPath);
                             return DashboardChartSummaryMap.builder()
-                                .marketIndexAnalysisTargetCd(summary.getMarketIndexAnalysisTargetCd())
-                                .predictionFulfillDt(summary.getPredictionFulfillDt())
-                                .mnemonicCd(summary.getMnemonicCd())
-                                .predictionResultDt(summary.getPredictionResultDt())
-                                .explanatoryTitleContent(summary.getExplanatoryTitleContent())
-                                .explanatorySummaryContent(summary.getExplanatorySummaryContent())
-                                .explanatoryFilePath(decodedPath)
-                                .build();
+                                    .marketIndexAnalysisTargetCd(summary.getMarketIndexAnalysisTargetCd())
+                                    .predictionFulfillDt(summary.getPredictionFulfillDt())
+                                    .mnemonicCd(summary.getMnemonicCd())
+                                    .predictionResultDt(summary.getPredictionResultDt())
+                                    .explanatoryTitleContent(summary.getExplanatoryTitleContent())
+                                    .explanatorySummaryContent(summary.getExplanatorySummaryContent())
+                                    .explanatoryFilePath(decodedPath)
+                                    .build();
                         } catch (IllegalArgumentException e) {
-                            log.warn("Failed to decode explanatoryFilePath: {}, error: {}", 
-                                summary.getExplanatoryFilePath(), e.getMessage());
+                            log.warn("Failed to decode explanatoryFilePath: {}, error: {}",
+                                    summary.getExplanatoryFilePath(), e.getMessage());
                             return summary; // 디코딩 실패 시 원본 반환
                         }
                     }) : Stream.empty();
@@ -539,12 +529,13 @@ public class MiDashboardService {
 
                     // 권한 조회
                     boolean isPermitted = isDownloadFunction ? permissionRes.getGoodsDownloadableMap(customerCompanyNo)
-                            .getOrDefault(goods.getGoodsNo(), false) : permissionRes.getGoodsViewableMap(customerCompanyNo)
-                            .getOrDefault(goods.getGoodsNo(), false);
+                            .getOrDefault(goods.getGoodsNo(), false)
+                            : permissionRes.getGoodsViewableMap(customerCompanyNo)
+                                    .getOrDefault(goods.getGoodsNo(), false);
 
                     // 예측 데이터가 아닌 경우 권한 없으면 다운로드 불가 => 예측 데이터도 권한 체크 하는걸로 한다고 함
                     // if (!isPermitted && !chartPredictSettingDetail.getIsChartLinePredictVal()) {
-                    //     isFileDownload[0] = false;
+                    // isFileDownload[0] = false;
                     // }
 
                     // 차트 데이터 타입 설정
@@ -624,7 +615,11 @@ public class MiDashboardService {
                             goodsDataSource.getGoodsDataSourceNo(), monthlyAverages, chartPredictSettingDetail.getPredictChartDetailExpn());
 
                     // DashboardChart 생성
-                    Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(); //chartMap sort해서 actual 데이터 먼저 나오도록 먼저 정리
+                    Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(); // chartMap
+                                                                                                                                       // sort해서
+                                                                                                                                       // actual 데이터
+                                                                                                                                       // 먼저 나오도록 먼저
+                                                                                                                                       // 정리
                     DashboardChart dashboardChart = chartMap.compute(goodsDataSourceNo, (key, existingChart) -> {
                         if (existingChart == null) {
                             return DashboardChart.of(

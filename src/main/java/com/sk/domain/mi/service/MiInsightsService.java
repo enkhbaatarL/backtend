@@ -160,7 +160,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
                 .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
                 .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
-                .append(" tgd.mod_dtm AS modifyDt");
+                .append(" MAX(tf.mod_dtm) AS modifyDt");
 
         StringBuilder where = new StringBuilder()
                 .append(" tc.cust_cpny_no = :companyNo")
@@ -173,7 +173,8 @@ public class MiInsightsService {
                 .append(" AND tgd.del_yn = 'N'")
                 .append(" AND tgd.gds_data_mark_yn  = 'Y'")
                 .append(" AND tgdc.del_yn = 'N'")
-                .append(" AND EXISTS (SELECT 1 FROM midb.tcm_filel tf2 WHERE tf2.file_rel_obj_dstg_no = tgd.gds_data_no AND tf2.file_rel_obj_spt_cd = 'GUDAT' AND tf2.del_yn = 'N')");
+                .append(" AND tf.file_rel_obj_spt_cd = 'GUDAT'")
+                .append(" AND tf.del_yn = 'N'");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -188,13 +189,14 @@ public class MiInsightsService {
                     " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND FIND_IN_SET(tgdc2.gds_data_ctgr_cd, :filters) > 0)");
         }
 
+        String periodWhere = " AND (SELECT MAX(tf.mod_dtm) from midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgdc.gds_data_no AND tf.file_rel_obj_spt_cd = 'GUDAT')";
         switch (period) {
-            case ONE_DAY -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
-            case ONE_WEEK -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
-            case ONE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
-            case THREE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
-            case SIX_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
-            case TWELVE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
+            case ONE_DAY -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
+            case ONE_WEEK -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
+            case ONE_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+            case THREE_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
+            case SIX_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
+            case TWELVE_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
             case ALL_DATES -> {
             } // no filter
         }
@@ -218,6 +220,7 @@ public class MiInsightsService {
                 JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                JOIN midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -230,6 +233,7 @@ public class MiInsightsService {
                 JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                JOIN midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgd.gds_data_no
                 WHERE
                 """ + where;
 
