@@ -1,10 +1,9 @@
 package com.sk.common.utils;
 
 import com.sk.common.model.TableRes;
-import lombok.experimental.UtilityClass;
+import org.commonmark.ext.gfm.tables.*;
 import org.commonmark.node.*;
 import org.commonmark.parser.Parser;
-import org.commonmark.ext.gfm.tables.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@UtilityClass
 public final class MarkdownUtil {
 
     /**

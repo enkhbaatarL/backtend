@@ -1,12 +1,10 @@
 package com.sk.common.utils;
 
-import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.stream.Stream;
 
-@UtilityClass
 public class ClauseUtil {
 
     public static final String BIZ_TARGET_FULFILL_DT_COLUMN = "prdc_fulf_dt";
@@ -39,7 +37,7 @@ public class ClauseUtil {
         return String.join(" as ", column, alias);
     }
 
-    public List<String> getSelectColumnList(String selectClause) {
+    public static List<String> getSelectColumnList(String selectClause) {
         if (StringUtils.isBlank(selectClause)) {
             return List.of();
         }
@@ -48,7 +46,7 @@ public class ClauseUtil {
             .toList();
     }
 
-    public String[] getSelectColumnArrays(String selectClause) {
+    public static String[] getSelectColumnArrays(String selectClause) {
         if (StringUtils.isBlank(selectClause)) {
             return new String[0];
         }
@@ -57,7 +55,7 @@ public class ClauseUtil {
             .toArray(String[]::new);
     }
 
-    public String getMaxClause(String columnName, String alias) {
+    public static String getMaxClause(String columnName, String alias) {
         if (StringUtils.isBlank(alias) || StringUtils.isBlank(alias)) {
             return "max(%s)".formatted(alias);
         }
