@@ -7,8 +7,8 @@ import com.sk.common.config.security.oauth2.AesPasswordEncoder;
 import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
 import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
 import com.sk.common.filter.ExceptionHandlerFilter;
-import com.sk.common.utils.JwtUtil;
 import com.sk.common.properties.JwtProperties;
+import com.sk.common.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,9 +38,6 @@ public class AuthorizationServerConfig {
     @Value("${server.domain}")
     private String serverDomain;
 
-    @Value("${security.enabled:false}")
-    private boolean securityEnabled;
-
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
     private final ExceptionHandlerFilter exceptionHandlerFilter;
@@ -54,61 +51,42 @@ public class AuthorizationServerConfig {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        if (securityEnabled) {
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
 
-            OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
+        // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
+        authorizationServerConfigurer
+            .clientAuthentication(clientAuth -> clientAuth.errorResponseHandler(customAuthenticationFailureHandler)) // BasicAuthenticationFilter
+            .tokenEndpoint(tokenEndpoint ->
+                tokenEndpoint
+                    .accessTokenResponseHandler(customAccessTokenResponseHandler)
+                    .errorResponseHandler(customAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
+            );
 
-            // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
-            authorizationServerConfigurer
-                .clientAuthentication(clientAuth -> clientAuth.errorResponseHandler(customAuthenticationFailureHandler)) // BasicAuthenticationFilter
-                .tokenEndpoint(tokenEndpoint ->
-                    tokenEndpoint
-                        .accessTokenResponseHandler(customAccessTokenResponseHandler)
-                        .errorResponseHandler(customAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
-                );
+        // Authorization Server 관련 경로 매칭
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
+            .securityMatcher("/api/v1/oauth2/token") // Authorization Server 경로 제한
+            .with(authorizationServerConfigurer, withDefaults())
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                .accessDeniedHandler(new CustomAccessDeniedHandler())
+            )
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/v1/oauth2/token").permitAll()
+                .anyRequest().authenticated()
+            )
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-            // Authorization Server 관련 경로 매칭
-            http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-                .securityMatcher("/api/v1/oauth2/token") // Authorization Server 경로 제한
-                .with(authorizationServerConfigurer, withDefaults())
-                .exceptionHandling(exceptions -> exceptions
-                    .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
-                    .accessDeniedHandler(new CustomAccessDeniedHandler())
-                )
-                .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers("/api/v1/oauth2/token").permitAll()
-                    .anyRequest().authenticated()
-                )
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-            return http.build();
-
-        } else {
-
-            http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .securityMatcher("/api/v1/oauth2/token")
-                .authorizeHttpRequests(authorize -> authorize
-                    .anyRequest().permitAll() // 보안 비활성화 시 모든 요청 허용
-                )
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-            return http.build();
-        }
+        return http.build();
     }
 
     @Bean
     public OAuth2TokenGenerator<?> tokenGenerator() {
         CustomJwtEncoder jwtEncoder = new CustomJwtEncoder(jwtUtil, registeredClientRepository, jwtProperties);
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
-        return new DelegatingOAuth2TokenGenerator(
-            jwtGenerator,
-            new OAuth2AccessTokenGenerator()
-        );
+        return new DelegatingOAuth2TokenGenerator(jwtGenerator, new OAuth2AccessTokenGenerator());
     }
 
     @Bean

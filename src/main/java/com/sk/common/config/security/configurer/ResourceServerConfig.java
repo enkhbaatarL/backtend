@@ -5,10 +5,8 @@ import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.jwt.CustomJwtAuthenticationConverter;
 import com.sk.common.config.security.jwt.CustomJwtDecoder;
 import com.sk.common.filter.ExceptionHandlerFilter;
-import java.util.Arrays;
-import java.util.List;
+import com.sk.common.filter.SessionValidationFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -18,11 +16,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -30,11 +32,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class ResourceServerConfig {
 
-    @Value("${security.enabled:false}")
-    private boolean securityEnabled;
-
     private final CustomJwtDecoder customJwtDecoder;
     private final ExceptionHandlerFilter exceptionHandlerFilter;
+    private final SessionValidationFilter sessionValidationFilter;
     private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
 
     @Bean
@@ -49,7 +49,7 @@ public class ResourceServerConfig {
                 .anyRequest().permitAll()
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
 
         return http.build();
     }
@@ -58,38 +58,26 @@ public class ResourceServerConfig {
     @Order(4)
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        if (securityEnabled) {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
+            .addFilterBefore(sessionValidationFilter, BearerTokenAuthenticationFilter.class)
+            .securityMatcher("/api/**") // Resource Server 경로 매칭
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .decoder(customJwtDecoder)
+                    .jwtAuthenticationConverter(customJwtAuthenticationConverter))
+                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                .accessDeniedHandler(new CustomAccessDeniedHandler())
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
-            http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-                .securityMatcher("/api/**") // Resource Server 경로 매칭
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                    .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                    .jwt(jwt -> jwt
-                        .decoder(customJwtDecoder)
-                        .jwtAuthenticationConverter(customJwtAuthenticationConverter))
-                    .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
-                    .accessDeniedHandler(new CustomAccessDeniedHandler())
-                )
-                .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
-
-            return http.build();
-
-        } else {
-
-            return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .securityMatcher("/api/**") // Resource Server 경로 매칭
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .build();
-        }
+        return http.build();
 
     }
 

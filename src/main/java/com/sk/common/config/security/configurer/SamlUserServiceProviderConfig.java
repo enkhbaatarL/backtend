@@ -1,7 +1,5 @@
 package com.sk.common.config.security.configurer;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import com.sk.common.config.security.saml.CustomSamlAuthenticationFailureHandler;
 import com.sk.common.config.security.saml.CustomSamlUserAuthenticationSuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +13,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Slf4j
 @Configuration
@@ -30,21 +30,22 @@ public class SamlUserServiceProviderConfig {
     @Order(2)
     SecurityFilterChain samlUserSecurityFilterChain(HttpSecurity http) throws Exception {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
-    http.cors(cors -> cors.configurationSource(corsConfigurationSource))
-        // .securityMatcher("/login/saml2/user", "/saml2/sso/mi", "/saml2/authenticate/**",
-        //         "/saml2/service-provider-metadata/mi", "/saml/metadata", "/saml/SingleLogout",
-        // "/login/saml2/saml-callback")
-        .securityMatcher("/saml2/**", "/saml/**", "/login/**")
-        .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-        .saml2Login(
-            saml2 ->
-                saml2
-                    .authenticationManager(new ProviderManager(authenticationProvider))
-                    .successHandler(customSamlUserAuthenticationSuccessHandler)
-                    .failureHandler(customSamlAuthenticationFailureHandler))
-        .saml2Logout(withDefaults()) // TODO: 세션 정책
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+            // .securityMatcher("/login/saml2/user", "/saml2/sso/mi", "/saml2/authenticate/**",
+            //         "/saml2/service-provider-metadata/mi", "/saml/metadata", "/saml/SingleLogout",
+            // "/login/saml2/saml-callback")
+            .securityMatcher("/saml2/**", "/saml/**", "/login/**")
+            .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+            .saml2Login(
+                saml2 ->
+                    saml2
+                        .authenticationManager(new ProviderManager(authenticationProvider))
+                        .successHandler(customSamlUserAuthenticationSuccessHandler)
+                        .failureHandler(customSamlAuthenticationFailureHandler))
+            .saml2Logout(withDefaults()) // TODO: 세션 정책
+            .sessionManagement(
+                session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         return http.build();
     }
+
 }
