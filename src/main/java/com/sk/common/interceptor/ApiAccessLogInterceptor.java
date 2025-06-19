@@ -61,7 +61,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
             MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG),
             MDCUtil.getValue(MDCUtil.ACCESS_IP_ADDRESS),
             ObjectUtils.isNotEmpty(role) ? Role.valueOf(role) : Role.SYSTEM,
-            subject
+            ObjectUtils.isNotEmpty(subject) ? subject : "SYSTEM"
         );
 
         apiAccessLogRepository.save(accessLog);
