@@ -185,12 +185,12 @@ public class AuthorizationService {
     }
 
     public boolean hasGoodsViewPermission(Integer goodsNo) {
-        PermissionRes userPermissions = getUserPermissions();
+        PermissionRes userPermissions = getPermissions();
         Map<Integer, Boolean> goodsViewableMap = userPermissions.getGoodsViewableMap(getCompanyNoWithPriority());
         return goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
     }
 
-    public PermissionRes getUserPermissions() {
+    public PermissionRes getPermissions() {
         return switch (getCurrentRole()) {
             case USER -> goodsPermissionService.getUserGoodsPermissions(getUserNo());
             case ADMIN -> goodsPermissionService.getAccessAdminGoodsPermissions();
