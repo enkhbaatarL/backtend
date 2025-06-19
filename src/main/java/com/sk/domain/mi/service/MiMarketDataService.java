@@ -108,7 +108,7 @@ public class MiMarketDataService {
 
     /**
      * 마켓 데이터 조회
-     * 
+     *
      * @param customerCompanyNo 고객사 번호
      * @param authentication 인증 정보
      * @return 마켓 데이터 목록
@@ -141,7 +141,7 @@ public class MiMarketDataService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
 
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
@@ -305,7 +305,7 @@ public class MiMarketDataService {
 
     /**
      * 마켓 데이터 요약 조회 (그래프 제외)
-     * 
+     *
      * @param customerCompanyNo 고객사 번호
      * @return 마켓 데이터 목록
      */
@@ -336,7 +336,7 @@ public class MiMarketDataService {
         // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         // };
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
 
         // 차트 설정 조회
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
@@ -476,7 +476,7 @@ public class MiMarketDataService {
 
     /**
      * 마켓데이터 캐시 키 생성
-     * 
+     *
      * @param marketDataSettingNo 마켓데이터 설정 번호
      * @return 캐시 키
      */
@@ -486,7 +486,7 @@ public class MiMarketDataService {
 
     /**
      * 마켓데이터 요약 캐시 키 생성
-     * 
+     *
      * @param marketDataSettingNo 마켓데이터 설정 번호
      * @return 캐시 키
      */
@@ -496,7 +496,7 @@ public class MiMarketDataService {
 
     /**
      * Redis에 MarketData 캐시 저장
-     * 
+     *
      * @param key 캐시 키
      * @param cache 캐시 객체
      */
@@ -511,7 +511,7 @@ public class MiMarketDataService {
 
     /**
      * Redis에 MarketDataSummary 캐시 저장
-     * 
+     *
      * @param key 캐시 키
      * @param cache 캐시 객체
      */

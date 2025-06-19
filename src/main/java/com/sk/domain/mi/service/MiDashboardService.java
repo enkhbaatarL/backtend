@@ -153,7 +153,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 기본 정보 조회
-     * 
+     *
      * @param companyNo
      * @return DashboardInfoRes
      */
@@ -212,7 +212,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 Summary 데이터 조회
-     * 
+     *
      * @param companyNo 회사 번호
      * @param date      날짜
      * @return DashboardSummaryRes
@@ -228,7 +228,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 Summary 파일 다운로드
-     * 
+     *
      * @param companyNo 회사 번호
      * @param date      날짜
      * @return byte[]z
@@ -257,7 +257,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 예측 데이터 Summary List 데이터 조회
-     * 
+     *
      * @param companyNo 회사 번호
      * @param date      날짜
      * @return List<DashboardSummary>
@@ -336,7 +336,7 @@ public class MiDashboardService {
 
     /**
      * 조회 가능한 차트 날짜 조회
-     * 
+     *
      * @param companyNo
      * @return DashboardChartDateRes
      */
@@ -379,7 +379,7 @@ public class MiDashboardService {
 
     /**
      * 대시보드 차트 데이터 조회
-     * 
+     *
      * @param customerCompanyNo
      * @param date
      * @return
@@ -391,7 +391,7 @@ public class MiDashboardService {
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -497,7 +497,7 @@ public class MiDashboardService {
 
     /**
      * 차트 데이터 조회
-     * 
+     *
      * @param chartPredictSettingDetails 차트 설정 상세 목록
      * @param permissionRes 권한 정보
      * @param isDownloadFunction 다운로드 기능 여부(해당 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
@@ -952,7 +952,7 @@ public class MiDashboardService {
 
     /**
      * 차트 파일 다운로드
-     * 
+     *
      * @param companyNo 고객사 번호
      * @param date 조회할 년월
      * @param authentication 인증 정보
@@ -964,7 +964,7 @@ public class MiDashboardService {
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(customerCompanyNo)
                 .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -1257,7 +1257,7 @@ public class MiDashboardService {
 
     /**
      * 차트 주요 요인 분석 카테고리 조회
-     * 
+     *
      * @param goodsDataSourceNo 데이터소스 번호
      * @param predictDate 예측 날짜
      * @return DashboardChartFactorCategoryRes
@@ -1273,7 +1273,7 @@ public class MiDashboardService {
 
     /**
      * 차트 주요 요인 분석 조회
-     * 
+     *
      * @param goodsDataSourceNo 데이터소스 번호
      * @param predictDate 예측 날짜
      * @param explanatoryLevelNm 주요 요인 레벨명
@@ -1317,7 +1317,7 @@ public class MiDashboardService {
 
     /**
      * 차트 주요 요인 분석 라인 그래프 조회
-     * 
+     *
      * @param goodsDataSourceNo 데이터소스 번호
      * @param predictDate 예측 날짜
      * @param explanatoryLevelNm 주요 요인 레벨명
@@ -1330,7 +1330,7 @@ public class MiDashboardService {
         customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
