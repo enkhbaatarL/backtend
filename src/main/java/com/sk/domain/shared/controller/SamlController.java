@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +44,7 @@ public class SamlController {
     }
 
     @Parameters({
-        @Parameter(name = "sessionId", description = "SAML 세션 ID", required = true)
+            @Parameter(name = "sessionId", description = "SAML 세션 ID", required = true)
     })
     @ApiOrder(2)
     @Operation(summary = "SAML 콜백", description = "SAML 콜백을 진행합니다.")
@@ -53,9 +52,8 @@ public class SamlController {
     @GetMapping("/callback")
     public BaseResponse<GenerateTokenRes> samlCallback(
             @RequestParam(value = "sessionId", required = true) String sessionId,
-            HttpServletResponse response,
-            HttpServletRequest request) {
-        return BaseResponseFactory.create(samlService.samlCallback(sessionId, response, request));
+            HttpServletResponse response) {
+        return BaseResponseFactory.create(samlService.samlCallback(sessionId, response));
     }
 
     /**

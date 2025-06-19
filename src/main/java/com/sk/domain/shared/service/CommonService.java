@@ -1,18 +1,95 @@
 package com.sk.domain.shared.service;
 
-import com.sk.domain.shared.dto.response.common.UserDetailRes;
-import com.sk.domain.shared.entity.master.tmd.User;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.domain.shared.dto.response.common.UserDetailRes;
+import com.sk.domain.shared.entity.master.tam.AdminPermission;
+import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.UserRoleCd;
+import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CommonService {
 
+    private final AdminPermissionRepository adminPermissionRepository;
+
+    /**
+     * 사용자 정보를 조회합니다.
+     * 
+     * @param user
+     * @return
+     */
     public UserDetailRes getUserDetail(User user) {
+
+        //TODO: 페이지 접근 퍼미션 타입
         return UserDetailRes.of(user);
     }
 
+    /**
+     * 관리자 또는 운영자의 경우 허용된 IP에서만 접근 가능
+     * 
+     * @param user
+     * @param request
+     * @return
+     */
+    public Boolean adminAccessCheck(User user, HttpServletRequest request) {
+        // 관리자 또는 운영자의 경우 허용된 IP에서만 접근 가능
+        if (!user.getUserRoleCd().equals(UserRoleCd.ADMIN) && !user.getUserRoleCd().equals(UserRoleCd.OPERATOR)) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("권한 없는 사용자 접근: %s", user.getUserLoginId()));
+        }
+
+        // 클라이언트 IP 주소 추출
+        String clientIp = getClientIp(request);
+
+        List<AdminPermission> existingPermissions = adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(user.getUserNo());
+
+        // IP 검증 로직 (예: 허용된 IP 목록에 clientIp가 포함되어 있는지 확인)
+        boolean isAllowedIp = existingPermissions.stream()
+                .anyMatch(permission -> permission.getId().getIpAddress().equals(clientIp)); // 허용 IP 필드가 있다고 가정
+
+        if (!isAllowedIp) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_IP_NOT_ALLOWED, String.format("권한 없는 IP 접근: %s", clientIp));
+        }
+        return true;
+    }
+
+    /**
+    * 클라이언트 IP 주소를 추출하는 메서드
+    * 
+    * @param request
+    * @return 클라이언트 IP 주소
+    */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // X-Forwarded-For 헤더에 여러 IP가 포함된 경우 첫 번째 IP만 사용
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
 }

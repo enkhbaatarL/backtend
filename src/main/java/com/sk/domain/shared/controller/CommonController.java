@@ -1,5 +1,16 @@
 package com.sk.domain.shared.controller;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.boot.info.BuildProperties;
+import org.springframework.core.env.Environment;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
@@ -8,23 +19,13 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.dto.response.common.UserDetailRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.CommonService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.info.BuildProperties;
-import org.springframework.boot.info.InfoProperties;
-import org.springframework.core.env.Environment;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Map;
-import java.util.Optional;
 
 @Tag(name = "04. Common API", description = "공통 API 입니다.")
 @Slf4j
@@ -61,7 +62,11 @@ public class CommonController {
         return BaseResponseFactory.create(commonService.getUserDetail(user));
     }
 
-
-    
-
+    @ApiOrder(3)
+    @Operation(summary = "Admin 페이지 접근 권한 확인 API(ADMIN, OPERATOR Token만 검증)", description = "Admin 페이지 접근 권한 확인을 위한 API입니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/admin-access-check")
+    public BaseResponse<Boolean> adminAccessCheck(@UserResolve User user, HttpServletRequest request) {
+        return BaseResponseFactory.create(commonService.adminAccessCheck(user, request));
+    }
 }
