@@ -61,4 +61,7 @@ public class CommonController {
         return BaseResponseFactory.create(commonService.getUserDetail(user));
     }
 
+
+    
+
 }

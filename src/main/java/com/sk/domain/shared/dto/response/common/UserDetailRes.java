@@ -46,6 +46,9 @@ public record UserDetailRes(
     @Schema(description = "고객회사 명")
     String companyNm
 
+
+    //TODO: 유저페이지, 관리자페이지, 둘다페이지 접근 가능 여부 ()
+
 ) {
 
     @Builder
