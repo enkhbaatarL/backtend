@@ -175,7 +175,8 @@ public class MiInsightsService {
                 .append(" AND tp.use_yn = 'Y'")
                 .append(" AND tgd.del_yn = 'N'")
                 .append(" AND tgd.gds_data_mark_yn  = 'Y'")
-                .append(" AND tgdc.del_yn = 'N'");
+                .append(" AND tgdc.del_yn = 'N'")
+                .append(" AND EXISTS (SELECT 1 FROM midb.tcm_filel tf2 WHERE tf2.file_rel_obj_dstg_no = tgd.gds_data_no AND tf2.file_rel_obj_spt_cd = 'GUDAT' AND tf2.del_yn = 'N')");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -201,11 +202,11 @@ public class MiInsightsService {
             } // no filter
         }
 
-        String groupBy = " GROUP BY tg.prvd_no, tc.gds_no, tgd.gds_data_no ";
+        String groupBy = " GROUP BY tp.prvd_nm, tg.gds_nm, tgd.gds_data_nm ";
 
         String orderBy = switch (sort) {
-            case NEWEST -> " ORDER BY tgd.mod_dtm DESC, tgd.gds_data_nm DESC ";
-            case OLDEST -> " ORDER BY tgd.mod_dtm ASC, tgd.gds_data_nm ASC ";
+            case NEWEST -> " ORDER BY modifyDt DESC ";
+            case OLDEST -> " ORDER BY modifyDt ASC ";
             case MOST_RELEVANT -> " ";
         };
 
@@ -220,13 +221,6 @@ public class MiInsightsService {
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
-                LEFT JOIN midb.tcm_commcdd tccd ON tccd.cd_id = tgdc.gds_data_ctgr_cd
-                JOIN (
-                    SELECT DISTINCT gds_data_no
-                    FROM midb.tmd_gdsdatactgrl
-                    WHERE del_yn = 'N'
-                    AND gds_data_mnagt_spt_cd = 'GUDAT'
-                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -239,13 +233,6 @@ public class MiInsightsService {
                 LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
-                LEFT JOIN midb.tcm_commcdd tccd ON tccd.cd_id = tgdc.gds_data_ctgr_cd
-                JOIN (
-                    SELECT DISTINCT gds_data_no
-                    FROM midb.tmd_gdsdatactgrl
-                    WHERE del_yn = 'N'
-                    AND gds_data_mnagt_spt_cd = 'GUDAT'
-                ) gud ON gud.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where;
 
