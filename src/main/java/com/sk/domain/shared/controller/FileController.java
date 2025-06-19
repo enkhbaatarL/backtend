@@ -56,17 +56,17 @@ public class FileController {
     private final FileService fileService;
     private final CustomerCompanyRepository customerCompanyRepository;
 
-    @ApiOrder(1)
-    @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/all")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER})
-    public BaseResponse<String> getAll() {
+    // @ApiOrder(1)
+    // @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/all")
+    // @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER})
+    // public BaseResponse<String> getAll() {
 
-        fileService.getAll();
+    // fileService.getAll();
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 
     @ApiOrder(2)
     @Operation(summary = "파일 업로드", description = "파일을 업로드합니다.")

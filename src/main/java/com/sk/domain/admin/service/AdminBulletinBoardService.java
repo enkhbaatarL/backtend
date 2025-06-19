@@ -159,7 +159,6 @@ public class AdminBulletinBoardService {
             }
         }
 
-        System.out.println("===>> savedBulletinBoard = " + savedBulletinBoard.getBulletinNo());
         return savedBulletinBoard;
     }
 
@@ -233,14 +232,12 @@ public class AdminBulletinBoardService {
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-                System.out.println("   ===>> DEL fileNo = " + fileNo);
                 fileService.deleteFile(fileNo);
             }
 
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-                System.out.println("  ===>> ADD fileNo = " + fileNo);
                 fileService.updateFile(fileNo, bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(), DateUtil.endYmd());
             }
         }
