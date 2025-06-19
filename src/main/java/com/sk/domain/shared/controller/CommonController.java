@@ -16,7 +16,7 @@ import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.shared.dto.response.common.UserDetailRes;
+import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.CommonService;
 
@@ -58,8 +58,8 @@ public class CommonController {
     @Operation(summary = "사용자 정보 조회 API", description = "인증된 사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/user-detail")
-    public BaseResponse<UserDetailRes> getUserInfo(@UserResolve User user) {
-        return BaseResponseFactory.create(commonService.getUserDetail(user));
+    public BaseResponse<UserAccessPageRes> getUserInfo(@UserResolve User user, HttpServletRequest request) {
+        return BaseResponseFactory.create(commonService.getUserDetail(user, request));
     }
 
     @ApiOrder(3)
