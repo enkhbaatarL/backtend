@@ -4,7 +4,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.shared.enums.DateGranularity;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
-import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDate;
@@ -12,7 +11,6 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 
-@UtilityClass
 public class DateBindingUtil {
 
     private static final DateTimeFormatter F_Y = DateTimeFormatter.ofPattern("yyyy");
@@ -30,10 +28,12 @@ public class DateBindingUtil {
                 case 4 -> DateGranularity.YEAR_VARCHAR;
                 case 6 -> DateGranularity.MONTH_VARCHAR;
                 case 8 -> DateGranularity.DAY_VARCHAR;
-                default -> throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "unsupported data column: %s, length: %s".formatted(dt, len));
+                default ->
+                    throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "unsupported data column: %s, length: %s".formatted(dt, len));
             };
             case "date", "datetime", "timestamp" -> DateGranularity.DATETIME;
-            default -> throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "unsupported data column: %s".formatted(dt));
+            default ->
+                throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "unsupported data column: %s".formatted(dt));
         };
     }
 
