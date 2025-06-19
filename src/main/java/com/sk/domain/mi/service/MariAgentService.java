@@ -14,6 +14,7 @@ import com.sk.domain.mi.dto.response.agent.QnaRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.shared.client.ModelAgentApi;
+import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
@@ -253,9 +254,13 @@ public class MariAgentService {
 
         try {
 
-//            ModelAgentReq req = ModelAgentReq.of(talkReq, histories);
-//             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
-            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
+            Integer companyNo = authorizationService.getCompanyNoWithPriority();
+            CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
+
+            ModelAgentReq req = ModelAgentReq.of(talkReq, histories, company.getCustomerCompanyCd(), authorizationService.getUserNo());
+             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
+//            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
 

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,7 +73,7 @@ public record GoodsDataRes(
 
     }
 
-    public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes, Integer priorityCompanyNo) {
+    public static GoodsDataRes of(Integer goodsNo, GoodsData entity, List<GoodsDataCategoryProjection> categoryProjections, PermissionRes permissionRes, Integer priorityCompanyNo, LocalDate latestDate) {
         return GoodsDataRes.builder()
             .goodsDataNm(entity.getGoodsDataNm())
             .goodsDataExpn(entity.getGoodsDataExpn())
@@ -85,7 +86,7 @@ public record GoodsDataRes(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
                 entity.getModifyUserId(),
-                entity.getModifyDt()))
+                ObjectUtils.isNotEmpty(latestDate) ? latestDate.atStartOfDay() : entity.getModifyDt()))
             .build();
     }
 

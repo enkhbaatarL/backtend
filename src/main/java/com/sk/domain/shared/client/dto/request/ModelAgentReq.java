@@ -30,7 +30,13 @@ public record ModelAgentReq(
         @JsonProperty("web_search")
         Boolean shouldWebSearch,
 
-        List<History> histories
+        List<History> histories,
+
+        @JsonProperty("company_code")
+        String companyCd,
+
+        @JsonProperty("user_num")
+        Integer userNo
 
     ) {
 
@@ -88,19 +94,21 @@ public record ModelAgentReq(
 
         }
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories) {
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, String companyCd, Integer userNo) {
             return Input.builder()
                 .message(talkReq.question())
                 .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
                 .histories(History.ofList(histories))
+                .companyCd(companyCd)
+                .userNo(userNo)
                 .build();
         }
 
     }
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, String companyCd, Integer userNo) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories))
+            .input(Input.of(talkReq, histories, companyCd, userNo))
             .build();
     }
 
