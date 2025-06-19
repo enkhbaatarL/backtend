@@ -60,19 +60,19 @@ public class ObjectStorageService {
     @Value("${ncp.storage.prefix}")
     private String prefix;
 
-    @PostConstruct
-    public void init() {
-        // getBucketList();
-    }
+    // @PostConstruct
+    // public void init() {
+    // // getBucketList();
+    // }
 
-    public void getBucketList() {
-        List<Bucket> buckets = objectStorageClient.listBuckets();
-        System.out.println("Bucket List: ");
-        for (Bucket bucket : buckets) {
-            System.out.println(" name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
-                    + bucket.getOwner().getId());
-        }
-    }
+    // public void getBucketList() {
+    // List<Bucket> buckets = objectStorageClient.listBuckets();
+    // System.out.println("Bucket List: ");
+    // for (Bucket bucket : buckets) {
+    // System.out.println(" name=" + bucket.getName() + ", creation_date=" + bucket.getCreationDate() + ", owner="
+    // + bucket.getOwner().getId());
+    // }
+    // }
 
     public S3Object getObject(String bucketName, String fileName) {
         return objectStorageClient.getObject(bucketName, fileName);
@@ -290,72 +290,72 @@ public class ObjectStorageService {
     }
 
     // debug
-    public void getAll() {
-        List<Bucket> buckets = objectStorageClient.listBuckets();
-        for (Bucket bucket : buckets) {
-            String bucketName = bucket.getName();
-            System.out.println("");
-            System.out.println("bucketName:" + bucketName);
+    // public void getAll() {
+    // List<Bucket> buckets = objectStorageClient.listBuckets();
+    // for (Bucket bucket : buckets) {
+    // String bucketName = bucket.getName();
+    // System.out.println("");
+    // System.out.println("bucketName:" + bucketName);
 
-            if (bucketName.equals("mi-airflow") || bucketName.equals("mi-etl") || bucketName.equals("mi-unstructure-data")
-                    || bucketName.equals("mi-unstructure-data")) {
-                continue;
-            }
-            // list all in the bucket
-            try {
-                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                        .withBucketName(bucketName)
-                        .withMaxKeys(300);
+    // if (bucketName.equals("mi-airflow") || bucketName.equals("mi-etl") || bucketName.equals("mi-unstructure-data")
+    // || bucketName.equals("mi-unstructure-data")) {
+    // continue;
+    // }
+    // // list all in the bucket
+    // try {
+    // ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+    // .withBucketName(bucketName)
+    // .withMaxKeys(300);
 
-                ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+    // ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
 
-                System.out.println("Object List:");
-                while (true) {
-                    for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                        if (objectSummary.getKey().contains("airflow") || objectSummary.getKey().contains("docker")) {
-                            continue;
-                        }
+    // System.out.println("Object List:");
+    // while (true) {
+    // for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+    // if (objectSummary.getKey().contains("airflow") || objectSummary.getKey().contains("docker")) {
+    // continue;
+    // }
 
-                        System.out.println(" name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
-                                + objectSummary.getOwner().getId());
-                    }
+    // System.out.println(" name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
+    // + objectSummary.getOwner().getId());
+    // }
 
-                    if (objectListing.isTruncated()) {
-                        objectListing = objectStorageClient.listNextBatchOfObjects(objectListing);
-                    } else {
-                        break;
-                    }
-                }
-            } catch (AmazonS3Exception e) {
-                System.err.println(e.getErrorMessage());
-                System.exit(1);
-            }
+    // if (objectListing.isTruncated()) {
+    // objectListing = objectStorageClient.listNextBatchOfObjects(objectListing);
+    // } else {
+    // break;
+    // }
+    // }
+    // } catch (AmazonS3Exception e) {
+    // System.err.println(e.getErrorMessage());
+    // System.exit(1);
+    // }
 
-            // top level folders and files in the bucket
-            try {
-                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                        .withBucketName(bucketName)
-                        .withDelimiter("/")
-                        .withMaxKeys(300);
+    // // top level folders and files in the bucket
+    // try {
+    // ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+    // .withBucketName(bucketName)
+    // .withDelimiter("/")
+    // .withMaxKeys(300);
 
-                ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
+    // ObjectListing objectListing = objectStorageClient.listObjects(listObjectsRequest);
 
-                System.out.println("Folder List:");
-                for (String commonPrefixes : objectListing.getCommonPrefixes()) {
-                    System.out.println(" name=" + commonPrefixes);
-                }
+    // System.out.println("Folder List:");
+    // for (String commonPrefixes : objectListing.getCommonPrefixes()) {
+    // System.out.println(" name=" + commonPrefixes);
+    // }
 
-                System.out.println("File List:");
-                for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                    System.out.println(
-                            " name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
-                                    + objectSummary.getOwner().getId());
-                }
-            } catch (AmazonS3Exception e) {
-                e.printStackTrace();
-            } catch (SdkClientException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    // System.out.println("File List:");
+    // for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+    // System.out.println(
+    // " name=" + objectSummary.getKey() + ", size=" + objectSummary.getSize() + ", owner="
+    // + objectSummary.getOwner().getId());
+    // }
+    // } catch (AmazonS3Exception e) {
+    // e.printStackTrace();
+    // } catch (SdkClientException e) {
+    // e.printStackTrace();
+    // }
+    // }
+    // }
 }

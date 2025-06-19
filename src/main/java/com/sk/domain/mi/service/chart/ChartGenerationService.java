@@ -131,7 +131,7 @@ public class ChartGenerationService {
             return Collections.emptyList();
         }
 
-        PermissionRes permissions = authorizationService.getUserPermissions();
+        PermissionRes permissions = authorizationService.getPermissions();
         Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 
         // 각 비교 데이터소스에 대한 차트 데이터 생성 (비교군 차트 권한체크)

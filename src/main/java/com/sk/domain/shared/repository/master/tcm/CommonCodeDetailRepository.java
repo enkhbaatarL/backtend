@@ -27,6 +27,10 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
                 AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
                 AND ccd.highCodeId = 'A_PROVIDERS'
                 AND ccpm.customerCompany.customerCompanyNo = :companyNo
+                AND p.isUsed = true
+                AND p.isDeleted = false
+                AND ccpm.isUsed = true
+                AND ccpm.isDeleted = false
             ORDER BY ccd.codeRnk
             """)
     List<GoodsDataCategoryRes> findProviderTypeCategory(@Param("companyNo") int companyNo);

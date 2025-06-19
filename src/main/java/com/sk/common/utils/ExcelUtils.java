@@ -3,7 +3,6 @@ package com.sk.common.utils;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.TableRes;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -18,7 +17,6 @@ import java.util.stream.IntStream;
 
 
 @Slf4j
-@UtilityClass
 public class ExcelUtils {
 
     private static final Pattern INVALID_SHEET_NAME_PATTERN = Pattern.compile("[:\\\\/?*\\[\\]]");

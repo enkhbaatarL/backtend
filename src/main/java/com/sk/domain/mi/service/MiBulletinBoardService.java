@@ -82,10 +82,10 @@ public class MiBulletinBoardService {
     /**
      * 공지사항 목록을 페이지네이션 처리하여 조회한다.
      *
-     * @param user 사용자 정보
+     * @param companyNo 고객사 번호
+     * @param userNo 사용자 번호
      * @param page 조회할 페이지 번호 (min 1)
      * @param size 조회할 요소 사이즈 (min 1)
-     * @param customerCompanyNo 고객사 번호
      * @param category
      * @param keyword
      * @return PaginationRes<MiNoticeRes>

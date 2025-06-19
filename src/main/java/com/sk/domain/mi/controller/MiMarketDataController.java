@@ -51,9 +51,9 @@ public class MiMarketDataController {
 
     @ApiOrder(2)
     @Parameters({
-            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)"),
-            @Parameter(name = "keyword", description = "데이타명 검색")
+            @Parameter(name = "page", description = "페이지번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당항목수 (기본값: 10)"),
+            @Parameter(name = "keyword", description = "검색키워드")
     })
     @Operation(summary = "Data Catalog 목록 조회 - with pagination", description = "Data Catalog 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")

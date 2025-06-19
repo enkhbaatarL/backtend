@@ -92,7 +92,7 @@ public class MiDataDetailService {
             .filter(ca -> StringUtils.isNotEmpty(ca.getHighCodeId()))
             .toList();
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
 
         // 상품-데이터 조회 이력 적재
         goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authorizationService.getSubject());
@@ -111,7 +111,7 @@ public class MiDataDetailService {
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
         List<UploadedFile> documents = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(goodsData.getGoodsDataNo());
 
-        PermissionRes permissionRes = authorizationService.getUserPermissions();
+        PermissionRes permissionRes = authorizationService.getPermissions();
         Boolean goodsViewable = permissionRes.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
 
         return UnstructuredDataRes.ofList(documents, goodsViewable);

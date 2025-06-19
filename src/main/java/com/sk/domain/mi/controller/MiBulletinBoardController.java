@@ -58,10 +58,10 @@ public class MiBulletinBoardController {
 
     @ApiOrder(2)
     @Parameters({
-            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+            @Parameter(name = "page", description = "페이지번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당항목수 (기본값: 20)"),
             @Parameter(name = "category", description = "카테고리"),
-            @Parameter(name = "keyword", description = "제목 또는 내용")
+            @Parameter(name = "keyword", description = "검색키워드")
     })
     @Operation(summary = "공지사항 목록 조회 - with pagination", description = "공지사항 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -128,10 +128,10 @@ public class MiBulletinBoardController {
 
     @ApiOrder(12)
     @Parameters({
-            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
+            @Parameter(name = "page", description = "페이지번호 (기본값: 1)"),
+            @Parameter(name = "size", description = "페이지당항목수 (기본값: 20)"),
             @Parameter(name = "category", description = "카테고리"),
-            @Parameter(name = "keyword", description = "제목 또는 내용")
+            @Parameter(name = "keyword", description = "검색키워드")
     })
     @Operation(summary = "FAQ 목록 조회 - with pagination", description = "FAQ 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")

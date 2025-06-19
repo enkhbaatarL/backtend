@@ -5,7 +5,6 @@ import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.shared.enums.chart.Interval;
-import lombok.experimental.UtilityClass;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-@UtilityClass
 public class ChartSliceUtil {
 
     /**

@@ -34,12 +34,9 @@ import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardCustomerCompanyMapping;
-import com.sk.domain.shared.entity.master.tcm.UploadedFile;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.enums.BulletinBoardType;
 import com.sk.domain.shared.enums.FaqCategory;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
-import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
@@ -159,7 +156,6 @@ public class AdminBulletinBoardService {
             }
         }
 
-        System.out.println("===>> savedBulletinBoard = " + savedBulletinBoard.getBulletinNo());
         return savedBulletinBoard;
     }
 
@@ -233,14 +229,12 @@ public class AdminBulletinBoardService {
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             for (Long fileNo : filesToDelete) {
-                System.out.println("   ===>> DEL fileNo = " + fileNo);
                 fileService.deleteFile(fileNo);
             }
 
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
-                System.out.println("  ===>> ADD fileNo = " + fileNo);
                 fileService.updateFile(fileNo, bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode(), DateUtil.endYmd());
             }
         }
