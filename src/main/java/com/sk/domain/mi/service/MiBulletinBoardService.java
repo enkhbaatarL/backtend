@@ -158,7 +158,10 @@ public class MiBulletinBoardService {
     * @param
     * @return PopupRes
     */
-    public PopupRes getPopup() {
+    public PopupRes getPopup(int companyNo) {
+        
+        todo: companyNo 번호를 이용해서 작업하자
+
         BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
         if (bulletinBoard == null) {
             return null;

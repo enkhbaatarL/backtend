@@ -277,8 +277,7 @@ public class AdminBulletinBoardService {
         // 팝업 1개만 유지
         if (bulletinBoard.getIsPopupUse() != dto.isPopupUse()) {
             if (dto.isPopupUse()) {
-                bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse(BulletinBoardType.NOTICE.getCode()).stream()
-                        .forEach(b -> b.updateIsPopupUse(false));
+                bulletinBoardRepository.updateAllPopupFalse();
             }
         }
 

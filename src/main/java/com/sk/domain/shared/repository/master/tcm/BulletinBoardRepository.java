@@ -32,8 +32,6 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     *
     *******************************************************************/
 
-    List<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(String bulletinTypeCode);
-
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.bbs.NoticeRes(
                 b.bulletinNo,
@@ -180,6 +178,13 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             )
             """)
     Optional<BulletinBoard> findByIsPopupUseTrue();
+
+    @Query("""
+            UPDATE BulletinBoard b
+            SET b.isPopupUse = false
+            WHERE b.bulletinTypeCd = 'NOTICE'
+            """)
+    void updateAllPopupFalse();
 
     /*******************************************************************
     *

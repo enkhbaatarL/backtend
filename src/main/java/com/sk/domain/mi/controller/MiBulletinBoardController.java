@@ -105,8 +105,13 @@ public class MiBulletinBoardController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/notices/popup")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
-    public BaseResponse<PopupRes> getPopup() {
-        return BaseResponseFactory.create(miBulletinBoardService.getPopup());
+    public BaseResponse<PopupRes> getPopup(
+            @RequestParam(value = "customerCompanyNo", required = true, defaultValue = "1") @Min(value = 1) int customerCompanyNo) {
+
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? customerCompanyNo : authorizationService.getCompanyNo();
+
+        return BaseResponseFactory.create(miBulletinBoardService.getPopup(cNo));
     }
 
     // todo : 알림용 공지사항 리스트 조회
