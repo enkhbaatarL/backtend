@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PermissionStrategyFactory {
 
-    private final MiGoodsPermissionService userService;
     private final AuthorizationService authService;
 
     public PermissionStrategy getStrategy(PermissionCondition condition) {
@@ -21,7 +20,7 @@ public class PermissionStrategyFactory {
 
         if (role == Role.ADMIN) {
             if (condition == PermissionCondition.THIRD_PARTY_ADMIN_ONLY) {
-                return new AdminWithThirdPartyAccessStrategy(userService, authService);
+                return new AdminWithThirdPartyAccessStrategy(authService);
             }
             return new AdminPermissionStrategy();
         }
@@ -35,10 +34,10 @@ public class PermissionStrategyFactory {
         }
 
         if (role == Role.API_PLUS_OPERATOR) {
-            return new ApiPlusOperatorPermissionStrategy(userService, authService);
+            return new ApiPlusOperatorPermissionStrategy(authService);
         }
 
-        return new UserPermissionStrategy(userService, authService);
+        return new UserPermissionStrategy(authService);
     }
 
 }

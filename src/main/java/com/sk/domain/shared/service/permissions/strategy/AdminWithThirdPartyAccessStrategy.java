@@ -1,14 +1,12 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.service.MiGoodsPermissionService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 /**
  * 타사접근권한이 있는 ADMIN 권한 전략
@@ -16,7 +14,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
 
-    private final MiGoodsPermissionService userService;
     private final AuthorizationService authorizationService;
 
     @Override
@@ -26,24 +23,14 @@ public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
 
     @Override
     public boolean canViewGoods(Integer goodsNo) {
-        return getGoodsAuth(goodsNo)
-            .map(PermissionRes.GoodsAuthRes::isViewable)
-            .orElse(false);
+        PermissionRes permissions = authorizationService.getPermissions();
+        return permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     @Override
     public boolean canDownloadGoods(Integer goodsNo) {
-        return getGoodsAuth(goodsNo)
-            .map(PermissionRes.GoodsAuthRes::isDownloadable)
-            .orElse(false);
-    }
-
-    private Optional<PermissionRes.GoodsAuthRes> getGoodsAuth(Integer goodsNo) {
-        return userService.getAccessAdminGoodsPermissions().companies().stream()
-            .flatMap(company -> company.providers().stream())
-            .flatMap(provider -> provider.goods().stream())
-            .filter(goods -> goods.goodsNo().equals(goodsNo))
-            .findFirst();
+        PermissionRes permissions = authorizationService.getPermissions();
+        return permissions.getGoodsDownloadableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     @Override

@@ -1,15 +1,12 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.service.MiGoodsPermissionService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
 
 /**
  * API_PLUS_OPERATOR 권한 전략
@@ -19,8 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ApiPlusOperatorPermissionStrategy implements PermissionStrategy {
 
-    private final MiGoodsPermissionService userService;
-    private final AuthorizationService authService;
+    private final AuthorizationService authorizationService;
 
     @Override
     public boolean canAccessApi(Role[] allowedRoles, PermissionCondition condition) {
@@ -29,30 +25,19 @@ public class ApiPlusOperatorPermissionStrategy implements PermissionStrategy {
 
     @Override
     public boolean canViewGoods(Integer goodsNo) {
-        return getGoodsAuth(goodsNo)
-            .map(PermissionRes.GoodsAuthRes::isViewable)
-            .orElse(false);
+        PermissionRes permissions = authorizationService.getPermissions();
+        return permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     @Override
     public boolean canDownloadGoods(Integer goodsNo) {
-        return getGoodsAuth(goodsNo)
-            .map(PermissionRes.GoodsAuthRes::isDownloadable)
-            .orElse(false);
-    }
-
-    private Optional<PermissionRes.GoodsAuthRes> getGoodsAuth(Integer goodsNo) {
-        Integer companyNo = authService.getCompanyNo();
-        return userService.getPlusOperatorGoodsPermissions(companyNo).companies().stream()
-            .flatMap(company -> company.providers().stream())
-            .flatMap(provider -> provider.goods().stream())
-            .filter(goods -> goods.goodsNo().equals(goodsNo))
-            .findFirst();
+        PermissionRes permissions = authorizationService.getPermissions();
+        return permissions.getGoodsDownloadableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     @Override
     public boolean canAccessCompany(Integer companyNo) {
-        return companyNo.equals(authService.getCompanyNo());
+        return companyNo.equals(authorizationService.getCompanyNo());
     }
 
 }
