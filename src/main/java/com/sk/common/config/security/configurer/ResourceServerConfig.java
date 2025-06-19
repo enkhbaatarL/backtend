@@ -18,6 +18,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -75,7 +76,8 @@ public class ResourceServerConfig {
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy()));
 
         return http.build();
 
