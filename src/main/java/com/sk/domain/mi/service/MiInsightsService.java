@@ -217,10 +217,10 @@ public class MiInsightsService {
                 SELECT
                   """ + select + """
                 FROM midb.tam_custcpnygdsmappl tc
-                LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
-                LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
-                LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
+                JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -229,10 +229,10 @@ public class MiInsightsService {
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
                 FROM midb.tam_custcpnygdsmappl tc
-                LEFT JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
-                LEFT JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
-                LEFT JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                LEFT JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
+                JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
                 WHERE
                 """ + where;
 

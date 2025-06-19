@@ -132,9 +132,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.modifyDt
             )
             FROM CustomerCompanyGoodsMapping ccgm
-            LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
-            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
+            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
+            JOIN Provider p ON p.providerNo = g.provider.providerNo
+            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
             WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
                 AND ccgm.isDeleted = false
                 AND ccgm.isUsed = true
@@ -159,10 +159,10 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.modifyDt as modifyDt
             )
             FROM CustomerCompanyGoodsMapping ccgm
-            LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
-            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
-            LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
+            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
+            JOIN Provider p ON p.providerNo = g.provider.providerNo
+            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
+            JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
             WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
                 AND ccgm.isDeleted = false
                 AND ccgm.isUsed = true

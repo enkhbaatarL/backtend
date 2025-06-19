@@ -58,10 +58,10 @@ public class FileService {
     @Value("${server.domain}")
     private String serverDomain;
 
-    public void getAll() {
-        objectStorageService.getAll();
-        return;
-    }
+    // public void getAll() {
+    // objectStorageService.getAll();
+    // return;
+    // }
 
     /**
     * 파일를 조회한다.
