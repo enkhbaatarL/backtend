@@ -99,17 +99,10 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.modifyDt as modifyDt,
                 FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd) as goodsDataCategoryCd
             FROM CustomerCompanyGoodsMapping ccgm
-            LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
-            LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
-            LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            LEFT JOIN CommonCodeDetail ccd ON ccd.id.codeId = gdc.goodsDataCategoryCd
-            JOIN (
-                SELECT DISTINCT gdc.goodsData.goodsDataNo as goodsDataNo
-                FROM GoodsDataCategory gdc
-                WHERE gdc.isDeleted = false
-                AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
-            ) gud ON gud.goodsDataNo = gd.goodsDataNo
+            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
+            JOIN Provider p ON p.providerNo = g.provider.providerNo
+            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
+            JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
             WHERE ccgm.id.customerCompanyNo                = :customerCompanyNo
                 AND ccgm.isDeleted                           = false
                 AND ccgm.isUsed                              = true
@@ -120,9 +113,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.isDeleted                             = false
                 AND gd.isGoodsDataMarked                     = true
                 AND gdc.isDeleted                            = false
-                AND ccd.highCodeId                            = 'A_TYPES'
-            GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
-            ORDER BY gd.goodsDataNo DESC
+                AND EXISTS (SELECT 1 FROM UploadedFile uf WHERE uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo AND uf.fileRelationshipObjectSeparateCd = 'GUDAT' AND uf.isDeleted = false)
+            GROUP BY p.providerNm, g.goodsNm, gd.goodsDataNm
+            ORDER BY modifyDt DESC
             """)
     List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
@@ -163,19 +156,13 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 g.goodsNm,
                 gd.goodsDataNo,
                 gd.goodsDataNm,
-                gd.modifyDt
+                gd.modifyDt as modifyDt
             )
             FROM CustomerCompanyGoodsMapping ccgm
             LEFT JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
             LEFT JOIN Provider p ON p.providerNo = g.provider.providerNo
             LEFT JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
             LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            JOIN (
-                SELECT DISTINCT gdc.goodsData.goodsDataNo as goodsDataNo
-                FROM GoodsDataCategory gdc
-                WHERE gdc.isDeleted = false
-                AND gdc.goodsDataManagementSeparateCd = 'GUDAT'
-            ) gud ON gud.goodsDataNo = gd.goodsDataNo
             WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
                 AND ccgm.isDeleted = false
                 AND ccgm.isUsed = true
@@ -186,8 +173,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.isDeleted = false
                 AND gd.isGoodsDataMarked = true
                 AND gdc.isDeleted = false
-            GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm
-            ORDER BY gd.modifyDt DESC
+                AND EXISTS (SELECT 1 FROM UploadedFile uf WHERE uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo AND uf.fileRelationshipObjectSeparateCd = 'GUDAT' AND uf.isDeleted = false)
+            GROUP BY p.providerNm, g.goodsNm, gd.goodsDataNm
+            ORDER BY modifyDt DESC
                     """)
     List<LatestInsightsRes> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
