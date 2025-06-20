@@ -26,6 +26,8 @@ public class CommonService {
     private final AdminPermissionRepository adminPermissionRepository;
     private final UserRepository userRepository;
 
+    private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
+
     /**
      * 사용자 정보를 조회합니다.
      * 
@@ -44,16 +46,14 @@ public class CommonService {
         Boolean miUserCheck = miUser != null;
 
         // Admin or Operator 조회
-        User adminUser = userList.stream().filter(u -> u.getUserRoleCd().equals(UserRoleCd.ADMIN) || u.getUserRoleCd().equals(UserRoleCd.OPERATOR)).findFirst().orElse(null);
+        User adminUser = userList.stream().filter(u -> u.getUserRoleCd().equals(UserRoleCd.ADMIN) || u.getUserRoleCd().equals(UserRoleCd.OPERATOR))
+                .findFirst().orElse(null);
 
         Boolean adminUserCheck = adminUser != null ? isAdminUser(adminUser, request) : false;
 
-        UserAccessPageType userAccessPageType = 
-            (miUserCheck && adminUserCheck) ? UserAccessPageType.BOTH :
-            (miUserCheck) ? UserAccessPageType.MI :
-            (adminUserCheck) ? UserAccessPageType.ADMIN : 
-            UserAccessPageType.NONE;
-        
+        UserAccessPageType userAccessPageType = (miUserCheck && adminUserCheck) ? UserAccessPageType.BOTH
+                : (miUserCheck) ? UserAccessPageType.MI : (adminUserCheck) ? UserAccessPageType.ADMIN : UserAccessPageType.NONE;
+
         return UserAccessPageRes.of(user, userAccessPageType);
     }
 
@@ -87,6 +87,18 @@ public class CommonService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("권한 없는 사용자 접근: %s", user.getUserLoginId()));
         }
 
+        checkIp(user, request);
+        return true;
+    }
+
+    /**
+     * 관리자 또는 운영자의 경우 허용된 IP에서만 접근 가능
+     * 
+     * @param user
+     * @param request
+     * @return
+     */
+    public void checkIp(User user, HttpServletRequest request) {
         // 클라이언트 IP 주소 추출
         String clientIp = getClientIp(request);
 
@@ -94,12 +106,14 @@ public class CommonService {
 
         // IP 검증 로직 (예: 허용된 IP 목록에 clientIp가 포함되어 있는지 확인)
         boolean isAllowedIp = existingPermissions.stream()
-                .anyMatch(permission -> permission.getId().getIpAddress().equals(clientIp)); // 허용 IP 필드가 있다고 가정
+                .anyMatch(permission -> {
+                    String ipAddress = permission.getId().getIpAddress();
+                    return ipAddress.equals(clientIp) || ipAddress.equals(ALL_ALLOW_IP_ADDRESS);
+                }); // 허용 IP 필드가 있다고 가정
 
         if (!isAllowedIp) {
             throw AppErrorException.of(ResultCode.Error.AUTH_IP_NOT_ALLOWED, String.format("권한 없는 IP 접근: %s", clientIp));
         }
-        return true;
     }
 
     /**
