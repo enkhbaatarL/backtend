@@ -67,9 +67,9 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
                 modifierCompany.customerCompanyNm
             ))
             .from(customerCompanyGoodsMapping)
-            .leftJoin(creator).on(customerCompanyGoodsMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR)))
+            .leftJoin(creator).on(customerCompanyGoodsMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR).and(creator.isDeleted.isFalse())))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompanyGoodsMapping.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR)))
+            .leftJoin(modifier).on(customerCompanyGoodsMapping.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR).and(modifier.isDeleted.isFalse())))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
@@ -153,9 +153,9 @@ public class CustomCustomerCompanyGoodsMappingRepositoryImpl implements CustomCu
                 modifierCompany.customerCompanyNm
             ))
             .from(customerCompanyGoodsMapping)
-            .leftJoin(creator).on(customerCompanyGoodsMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR)))
+            .leftJoin(creator).on(customerCompanyGoodsMapping.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR).and(creator.isDeleted.isFalse())))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompanyGoodsMapping.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR)))
+            .leftJoin(modifier).on(customerCompanyGoodsMapping.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.in(UserRoleCd.ADMIN, UserRoleCd.OPERATOR).and(modifier.isDeleted.isFalse())))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())

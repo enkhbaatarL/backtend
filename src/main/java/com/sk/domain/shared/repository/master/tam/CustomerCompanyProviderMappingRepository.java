@@ -41,9 +41,9 @@ public interface CustomerCompanyProviderMappingRepository extends JpaRepository<
             FROM CustomerCompanyProviderMapping ccpm
               LEFT JOIN FETCH ccpm.provider prvd
               LEFT JOIN FETCH ccpm.customerCompany comp
-              LEFT JOIN User creator ON creator.userLoginId = ccpm.createUserId AND creator.userRoleCd = 'ADMIN'
+              LEFT JOIN User creator ON creator.userLoginId = ccpm.createUserId AND creator.userRoleCd = 'ADMIN' and creator.isDeleted = false
               LEFT JOIN creator.customerCompany creatorCompany
-              LEFT JOIN User modifier ON modifier.userLoginId = ccpm.modifyUserId AND modifier.userRoleCd = 'ADMIN'
+              LEFT JOIN User modifier ON modifier.userLoginId = ccpm.modifyUserId AND modifier.userRoleCd = 'ADMIN' and modifier.isDeleted = false
               LEFT JOIN modifier.customerCompany modifierCompany
             WHERE ccpm.isDeleted = false
               AND ccpm.id.customerCompanyNo = :customerCompanyNo

@@ -31,9 +31,9 @@ public interface CustomerCompanyRepository extends JpaRepository<CustomerCompany
                 )
             )
             FROM CustomerCompany cc
-              LEFT JOIN User creator ON creator.userLoginId = cc.createUserId AND creator.userRoleCd = 'ADMIN'
+              LEFT JOIN User creator ON creator.userLoginId = cc.createUserId AND creator.userRoleCd = 'ADMIN' and creator.isDeleted = false
               LEFT JOIN creator.customerCompany creatorCompany
-              LEFT JOIN User modifier ON modifier.userLoginId = cc.modifyUserId AND modifier.userRoleCd = 'ADMIN'
+              LEFT JOIN User modifier ON modifier.userLoginId = cc.modifyUserId AND modifier.userRoleCd = 'ADMIN' and modifier.isDeleted = false
               LEFT JOIN modifier.customerCompany modifierCompany
             WHERE cc.isDeleted = false
               AND cc.customerCompanyNo = :customerCompanyNo
