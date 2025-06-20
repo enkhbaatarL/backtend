@@ -157,6 +157,10 @@ public class ChartGenerationService {
         String selectClause = CombineUtil.getMaxClause(dateColumnName, "latestDate");
         List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofMaxQuery(gds, selectClause));
 
+        if (data == null || data.isEmpty() || data.get(0) == null || data.get(0).get("latestDate") == null) {
+            return null;
+        }
+
         return DateUtil.parseDate(data.get(0).get("latestDate"));
     }
 

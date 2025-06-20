@@ -31,9 +31,6 @@ public class SamlUserServiceProviderConfig {
     SecurityFilterChain samlUserSecurityFilterChain(HttpSecurity http) throws Exception {
         OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
         http.cors(cors -> cors.configurationSource(corsConfigurationSource))
-            // .securityMatcher("/login/saml2/user", "/saml2/sso/mi", "/saml2/authenticate/**",
-            //         "/saml2/service-provider-metadata/mi", "/saml/metadata", "/saml/SingleLogout",
-            // "/login/saml2/saml-callback")
             .securityMatcher("/saml2/**", "/saml/**", "/login/**")
             .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
             .saml2Login(

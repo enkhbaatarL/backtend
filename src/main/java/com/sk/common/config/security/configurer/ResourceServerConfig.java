@@ -65,9 +65,7 @@ public class ResourceServerConfig {
             .addFilterBefore(sessionValidationFilter, BearerTokenAuthenticationFilter.class)
             .securityMatcher("/api/**") // Resource Server 경로 매칭
             .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .decoder(customJwtDecoder)
@@ -76,8 +74,10 @@ public class ResourceServerConfig {
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy()));
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // TTL 갱신
+//                .sessionFixation().none()
+                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
+            );
 
         return http.build();
 
