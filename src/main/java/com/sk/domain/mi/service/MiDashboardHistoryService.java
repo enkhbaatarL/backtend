@@ -4,7 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.TableRes;
-import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
@@ -299,24 +299,24 @@ public class MiDashboardHistoryService {
     }
 
     private List<DoubleValueResultData> getCounterPartResultData(GoodsDataSourceDetail gds, String start, String end) {
-        String[] cols = ClauseUtil.getSelectColumnArrays(gds.getTableColumnListNm());
+        String[] cols = CombineUtil.getSelectColumnArrays(gds.getTableColumnListNm());
         String dateCol = cols[0].strip();
         String valueCol = cols[1].strip();
-        String select = ClauseUtil.createSelectClause(ClauseUtil.concatAlias(dateCol, "date"), ClauseUtil.concatAlias(valueCol, "value"));
-        String where = ClauseUtil.createBetweenClause(dateCol, start, end);
+        String select = CombineUtil.createSelectClause(CombineUtil.concatAlias(dateCol, "date"), CombineUtil.concatAlias(valueCol, "value"));
+        String where = CombineUtil.createBetweenClause(dateCol, start, end);
         return queryService.getDoubleValueResultQuery(DynamicDataReq.of(gds, select, where, dateCol));
     }
 
     private List<TargetPredictResultData> getPredictResultGroupedData(GoodsDataSourceDetail gds) {
-        String select = ClauseUtil.BIZ_TARGET_FULFILL_DT_COLUMN;
-        String groupBy = ClauseUtil.BIZ_TARGET_FULFILL_DT_COLUMN;
+        String select = CombineUtil.BIZ_TARGET_FULFILL_DT_COLUMN;
+        String groupBy = CombineUtil.BIZ_TARGET_FULFILL_DT_COLUMN;
         return queryService.getPredictResultQuery(DynamicDataReq.ofGroupByQuery(gds, select, groupBy));
     }
 
     private List<TargetPredictResultData> getPredictResultData(GoodsDataSourceDetail gds, LocalDate fulfillDate) {
-        String select = ClauseUtil.getBizTargetSelectClause(gds.getTableColumnListNm());
-        String where = ClauseUtil.createWhereClause(ClauseUtil.BIZ_TARGET_FULFILL_DT_COLUMN, DateUtil.toYmd(fulfillDate));
-        String resultDtColumn = ClauseUtil.BIZ_TARGET_RESULT_DT_COLUMN;
+        String select = CombineUtil.getBizTargetSelectClause(gds.getTableColumnListNm());
+        String where = CombineUtil.createWhereClause(CombineUtil.BIZ_TARGET_FULFILL_DT_COLUMN, DateUtil.toYmd(fulfillDate));
+        String resultDtColumn = CombineUtil.BIZ_TARGET_RESULT_DT_COLUMN;
         return queryService.getPredictResultQuery(DynamicDataReq.of(gds, select, where, resultDtColumn));
     }
 

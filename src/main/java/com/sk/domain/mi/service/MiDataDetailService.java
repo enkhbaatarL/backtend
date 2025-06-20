@@ -637,7 +637,7 @@ public class MiDataDetailService {
     private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
 
-        List<String> columns = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
+        List<String> columns = CombineUtil.getSelectColumnList(gds.getTableColumnListNm());
 
         if (columns.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Table column list is not defined for goodsDataSourceNo: %s".formatted(gds.getGoodsDataSourceNo()));
@@ -647,7 +647,7 @@ public class MiDataDetailService {
         Pair<String, String> range =
             DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
 
-        String additionalWhereClause = ClauseUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
+        String additionalWhereClause = CombineUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
 
         return new RawDataQueryContext(columns, columnExpressions, columns.get(0), additionalWhereClause);
     }

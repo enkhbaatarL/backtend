@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.sk.common.config.redis.CacheType;
-import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.CombineUtil;
 import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
@@ -166,14 +166,14 @@ public class MybatisDynamicQueryService {
 
     @Cacheable(
         cacheNames = CacheType.SCHEMA_COLUMN_TYPES_CONSTANT,
-        key = "#dynamicDataReq.targetDataSource() + ':' + #dynamicDataReq.tableName() + ':' + T(com.sk.common.utils.ClauseUtil).getSelectColumnList(#dynamicDataReq.columns()).get(0)",
+        key = "#dynamicDataReq.targetDataSource() + ':' + #dynamicDataReq.tableName() + ':' + T(com.sk.common.utils.CombineUtil).getSelectColumnList(#dynamicDataReq.columns()).get(0)",
         unless = "#result == null"
     )
     public SchemaMetadata getMeta(DynamicDataReq dynamicDataReq) {
 
         DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
 
-        List<String> select = ClauseUtil.getSelectColumnList(dynamicDataReq.columns());
+        List<String> select = CombineUtil.getSelectColumnList(dynamicDataReq.columns());
 
         Map<String, Object> params = new HashMap<>();
         params.put("dbName", dynamicDataReq.targetDataSource());
