@@ -7,12 +7,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationExtensionRes;
 import com.sk.domain.admin.dto.response.notification.AdminNotificationCountRes;
 import com.sk.domain.admin.dto.response.notification.AdminNotificationRes;
 import com.sk.domain.admin.service.AdminNotificationService;
+import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +44,7 @@ public class AdminNotificationController {
     })
     @Operation(summary = "알림 조회 API", description = "알림 조회 API 입니다.")
     @GetMapping("/notifications")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationExtensionRes<AdminNotificationRes, AdminNotificationCountRes>> getNotifications(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
