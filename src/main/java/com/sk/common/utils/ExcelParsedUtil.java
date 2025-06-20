@@ -98,9 +98,6 @@ public class ExcelParsedUtil {
     public static List<String> extractExcelHeader(Sheet sheet, int headerRowIndex) {
         List<String> headers = new ArrayList<>();
         Iterator<Row> rowIterator = sheet.iterator();
-
-        //TODO: 비어있는 행은 감지 못함(수정 필요)
-
         // 헤더 행까지 이동
         Row headerRow = null;
         while (rowIterator.hasNext()) {

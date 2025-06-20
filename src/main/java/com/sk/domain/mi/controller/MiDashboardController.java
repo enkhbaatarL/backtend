@@ -33,6 +33,7 @@ import com.sk.domain.mi.dto.response.dashboard.summary.DashboardSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.service.MiDashboardService;
 import com.sk.domain.mi.service.MiMarketDataService;
+import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 
@@ -44,7 +45,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Tag(name = "01. Dashboard API", description = "Dashboard API 입니다.")
+@Tag(name = "01-1. Dashboard API", description = "Dashboard API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/dashboard")
@@ -61,7 +62,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 데이터 존재 여부 조회", description = "대시보드 데이터 존재 여부를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/data/exists")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<Boolean> getDataExists(
 			@PathVariable("companyNo") Integer companyNo) {
 
@@ -78,7 +80,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 기본 정보 조회", description = "대시보드 기본 정보를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/info")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardInfoRes> getDashboardInfo(
 			@PathVariable("companyNo") Integer companyNo) {
 		return BaseResponseFactory.create(miDashboardService.getDashboardInfo(companyNo));
@@ -88,7 +91,8 @@ public class MiDashboardController {
 	@Operation(summary = "DashBoard 화면에서 쓰이는 Market Data 목록 조회", description = "DashBoard 화면에서 쓰이는 Market Data 목록을 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/market-datas")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<List<MiMarketDataSummaryRes>> getMarketDataSummary(
 			@PathVariable("companyNo") Integer companyNo) {
 		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo));
@@ -101,7 +105,8 @@ public class MiDashboardController {
 	@Operation(summary = "Latest Insights 목록 조회", description = "Latest Insights 목록을 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/latest-insights")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<List<LatestInsightsRes>> getLatestInsights(
 			@PathVariable("companyNo") Integer companyNo) {
 
@@ -118,7 +123,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 차트 조회 가능한 날짜 리스트", description = "대시보드 차트 조회 가능한 날짜 리스트를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart-dates")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardChartDateRes> getChartDates(
 			@PathVariable("companyNo") Integer companyNo) {
 		return BaseResponseFactory.create(miDashboardService.getChartDates(companyNo));
@@ -132,7 +138,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/summary")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardSummaryRes> getDashboardSummary(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "date", required = true) String date) {
@@ -148,7 +155,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 Summary 데이터 조회", description = "대시보드 Summary 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/summary/file-download")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public ResponseEntity<byte[]> getDashboardSummaryFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "date", required = true) String date,
@@ -176,7 +184,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 차트 데이터 조회(Drill Down #1)", description = "대시보드 차트 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardChartRes> getChart(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "date", required = false) String date) {
@@ -191,18 +200,18 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 차트 데이터 다운로드(Drill Down #1)", description = "대시보드 차트 데이터를 다운로드합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/file-download")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public ResponseEntity<byte[]> getChartFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "date", required = false) String date) throws IOException {
 		byte[] fileData = miDashboardService.getChartFileDownload(companyNo, date);
 
-		
 		String FILE_PREFIX = "dashboard_data_table";
 		String encodedFileName = URLEncoder.encode(
 				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".xlsx"),
 				StandardCharsets.UTF_8.toString());
-		
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentLength(fileData.length);
 		headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -219,7 +228,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 차트 주요 요인 분석 카테고리 조회(Drill Down #2)", description = "대시보드 차트 주요 요인 분석 카테고리를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/factor/category")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardChartFactorCategoryRes> getChartFactorCategory(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "predictDate", required = true) String predictDate,
@@ -236,7 +246,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 차트 주요 요인 분석 조회(Drill Down #2)", description = "대시보드 차트 주요 요인 분석 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/factors")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardChartFactorRes> getChartFactors(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "predictDate", required = true) String predictDate,
@@ -259,7 +270,8 @@ public class MiDashboardController {
 	@Operation(summary = "대시보드 차트 주요 요인 분석 라인 그래프(Drill Down #3)", description = "대시보드 차트 주요 요인 분석 라인 그래프를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart/factor/graph")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER})
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<DashboardChartFactorGraphRes> getChartFactorGraph(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
