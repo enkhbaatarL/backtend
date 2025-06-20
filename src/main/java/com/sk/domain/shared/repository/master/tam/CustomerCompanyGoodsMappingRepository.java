@@ -38,9 +38,9 @@ public interface CustomerCompanyGoodsMappingRepository
             )
             FROM CustomerCompanyGoodsMapping ccgm
               LEFT JOIN FETCH ccgm.goods goods
-              LEFT JOIN User creator ON creator.userLoginId = ccgm.createUserId AND creator.userRoleCd = 'ADMIN'
+              LEFT JOIN User creator ON creator.userLoginId = ccgm.createUserId AND creator.userRoleCd = 'ADMIN' and creator.isDeleted = false
               LEFT JOIN creator.customerCompany creatorCompany
-              LEFT JOIN User modifier ON modifier.userLoginId = ccgm.modifyUserId AND modifier.userRoleCd = 'ADMIN'
+              LEFT JOIN User modifier ON modifier.userLoginId = ccgm.modifyUserId AND modifier.userRoleCd = 'ADMIN' and modifier.isDeleted = false
               LEFT JOIN modifier.customerCompany modifierCompany
             WHERE ccgm.isDeleted = false
               AND ccgm.id.customerCompanyNo = :customerCompanyNo
