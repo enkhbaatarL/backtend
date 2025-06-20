@@ -100,20 +100,6 @@ public class TestController {
         return BaseResponseFactory.create(testService.checkToken(testVerifyTokenReq));
     }
 
-    @Operation(summary = "테스트(멀티테넌시 master mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 master mybatis) 알림 기록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/sktelecom-email-access-log-mybatis")
-    public BaseResponse<List<EmailAccessLog>> getSkTelecomEmailAccessLogByMybatis() {
-        return BaseResponseFactory.create(testService.getSkTelecomEmailAccessLogByMybatis());
-    }
-
-    @Operation(summary = "테스트(멀티테넌시 secondary mybatis) 알림 기록 조회", description = "테스트(멀티테넌시 secondary mybatis) 알림 기록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/secondary-email-access-log-mybatis")
-    public BaseResponse<List<EmailAccessLog>> getHynixEmailAccessLogByMybatis() {
-        return BaseResponseFactory.create(testService.getHynixEmailAccessLogByMybatis());
-    }
-
     @GetMapping("/token")
     public BaseResponse<String> getToken(@RequestParam("loginUserId") String loginUserId,
             @RequestParam("role") UserRoleCd role) {
@@ -125,12 +111,6 @@ public class TestController {
         return BaseResponseFactory.create(testService.delete(id));
     }
 
-    // TODO: 컴포넌트가 아닌 데이터소스를 불러와야 함
-    // @PostMapping("/dynamic-query")
-    // public BaseResponse<List<Map<String, Object>>> getDynamicQuery(
-    // @RequestBody @Valid TestReq.uploadStructuredDataFile testReq) {
-    // return BaseResponseFactory.create(testService.getDynamicData(testReq));
-    // }
 
     @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
