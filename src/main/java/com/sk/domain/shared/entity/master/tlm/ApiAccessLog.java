@@ -36,7 +36,6 @@ public class ApiAccessLog extends BaseEntity {
     @Comment("API접속일련번호")
     private Integer apiAccessSn;
 
-    @CreatedBy
     @Column(name = "usr_logn_id", nullable = false, length = 50)
     @Comment("사용자로그인ID")
     private String userLoginId;
@@ -83,11 +82,11 @@ public class ApiAccessLog extends BaseEntity {
         this.errorMessageCntt = errorMessageCntt;
     }
 
-    public static ApiAccessLog of(String uri, String httpMethodNm, String body, String errorMessageCntt, String accessIpAddress, Role role) {
+    public static ApiAccessLog of(String uri, String httpMethodNm, String body, String errorMessageCntt, String accessIpAddress, Role role, String subject) {
         return ApiAccessLog.builder()
             .apiEndpointUrl(uri)
             .httpMethodNm(httpMethodNm)
-            // .userLoginId(userLoginId)
+            .userLoginId(subject)
             .requestDataCntt(body)
             .errorMessageCntt(errorMessageCntt)
             .accessIpAddress(accessIpAddress)
