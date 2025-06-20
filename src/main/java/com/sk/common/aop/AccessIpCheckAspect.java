@@ -18,9 +18,9 @@ import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.CommonService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccessIpCheckAspect {
     
-    private final AdminPermissionRepository adminPermissionRepository;
+    private final CommonService commonService;
     private final UserRepository userRepository;
     
     @Around("@annotation(com.sk.common.annotation.AccessIpCheck) || @within(com.sk.common.annotation.AccessIpCheck)")
@@ -59,43 +59,11 @@ public class AccessIpCheckAspect {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "User is not authenticated"));
 
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        String clientIp = getClientIp(request);
 
-        List<AdminPermission> existingPermissions = adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(user.getUserNo());
-
-        // IP 검증 로직 (예: 허용된 IP 목록에 clientIp가 포함되어 있는지 확인)
-        boolean isAllowedIp = existingPermissions.stream()
-                .anyMatch(permission -> permission.getId().getIpAddress().equals(clientIp)); // 허용 IP 필드가 있다고 가정
-
-        if (!isAllowedIp) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_IP_NOT_ALLOWED, String.format("권한 없는 IP 접근: %s", clientIp));
-        }
+        // 허용 IP 검증
+        commonService.checkIp(user, request);
 
         // 문제 없으면 다음 처리로 넘어감
         return joinPoint.proceed();
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        // 다중 IP가 포함된 경우 첫 번째 IP 사용
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
     }
 }
