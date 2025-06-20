@@ -50,7 +50,7 @@ public class ResourceServerConfig {
                 .anyRequest().permitAll()
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();
     }
@@ -74,8 +74,7 @@ public class ResourceServerConfig {
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // TTL 갱신
-//                .sessionFixation().none()
+                .sessionCreationPolicy(SessionCreationPolicy.NEVER) // TTL 갱신
                 .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
             );
 
