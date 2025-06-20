@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ClauseUtil {
+public class CombineUtil {
 
     public static final String BIZ_TARGET_FULFILL_DT_COLUMN = "prdc_fulf_dt";
     public static final String BIZ_TARGET_RESULT_DT_COLUMN = "prdc_rslt_dt";

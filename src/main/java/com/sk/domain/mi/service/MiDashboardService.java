@@ -47,7 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
@@ -57,7 +57,6 @@ import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphDatasource;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
-import com.sk.domain.mi.dto.response.dashboard.LatestDataRes;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactor;
 import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorCategoryRes;
@@ -902,7 +901,7 @@ public class MiDashboardService {
 
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
         Pair<String, String> range = DateBindingUtil.range(meta, startDate, endDate);
-        String whereClause = ClauseUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
+        String whereClause = CombineUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }

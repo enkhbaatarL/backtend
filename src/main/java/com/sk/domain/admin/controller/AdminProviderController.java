@@ -89,7 +89,7 @@ public class AdminProviderController {
 
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel", "text/csv");
+            "application/vnd.ms-excel", "text/csv", "application/haansoftxlsx");
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList("txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm",
             "xlsx", "ppt",
             "pptx");
@@ -544,10 +544,10 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
-        String mimeType = file.getContentType();
-        if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
-            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-        }
+        // String mimeType = file.getContentType();
+        // if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
+        //     throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        // }
 
         return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
     }
