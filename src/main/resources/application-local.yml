@@ -125,6 +125,7 @@ api:
     connection-timeout: 1s
     read-timeout: 20s
     api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
+    app-id: ${SKT_MI_MODEL_AGENT_APP_ID:e3064bc4-1871-4072-8f79-ed5271c50f81}
   auth-token:
     url: https://dev-mi.sk.com
     connection-timeout: 1s
