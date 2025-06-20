@@ -114,7 +114,8 @@ api:
     url: https://adxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
     read-timeout: 20s
-    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
+    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-688a6f372985fa406fd70ca29731c0d4}
+    app-id: ${SKT_MI_MODEL_AGENT_APP_ID:5fde7dbd-a380-41f3-978a-05798509a4f5}
   ax-platform:
     url: https://aip.sktai.io
     connection-timeout: 1s
