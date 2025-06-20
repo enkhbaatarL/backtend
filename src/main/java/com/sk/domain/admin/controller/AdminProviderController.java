@@ -544,10 +544,10 @@ public class AdminProviderController {
             throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         }
 
-        String mimeType = file.getContentType();
-        if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
-            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-        }
+        // String mimeType = file.getContentType();
+        // if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
+        //     throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        // }
 
         return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
     }
