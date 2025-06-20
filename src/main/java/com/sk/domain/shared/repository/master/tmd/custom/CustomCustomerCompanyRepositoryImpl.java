@@ -81,9 +81,9 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 modifier.departmentNm,
                 modifierCompany.customerCompanyNm))
             .from(customerCompany)
-            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN).and(creator.isDeleted.isFalse())))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN).and(modifier.isDeleted.isFalse())))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
@@ -135,9 +135,9 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
                 modifier.departmentNm,
                 modifierCompany.customerCompanyNm))
             .from(customerCompany)
-            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(creator).on(customerCompany.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN).and(creator.isDeleted.isFalse())))
             .leftJoin(creator.customerCompany, creatorCompany)
-            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+            .leftJoin(modifier).on(customerCompany.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN).and(modifier.isDeleted.isFalse())))
             .leftJoin(modifier.customerCompany, modifierCompany)
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())

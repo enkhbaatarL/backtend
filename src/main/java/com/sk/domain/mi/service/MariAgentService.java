@@ -40,7 +40,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.ResourceAccessException;
 
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -260,6 +262,8 @@ public class MariAgentService {
 
             ModelAgentReq req = ModelAgentReq.of(talkReq, histories, company.getCustomerCompanyCd(), authorizationService.getUserNo());
              ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
+
+             // 테스트용 더미 데이터
 //            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Related> related = prepareAnswerDataResources(modelAgentRes);
@@ -272,11 +276,17 @@ public class MariAgentService {
 
             return Optional.ofNullable(answerRes);
 
+        } catch (ResourceAccessException e) {
+            log.error("[Model-Agent API call timeout] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+            qna.updateFailResult(AnswerStatusCd.FAIL_TIMED_OUT);
+            return Optional.empty();
+
         } catch (Exception e) {
             log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
             qna.updateFailResult();
             return Optional.empty();
         }
+
     }
 
     private List<Related> prepareAnswerDataResources(ModelAgentRes modelAgentRes) {

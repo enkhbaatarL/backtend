@@ -99,9 +99,9 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 				.distinct()
 				.from(user)
 				.leftJoin(user.customerCompany, customerCompany)
-				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN).and(creator.isDeleted.isFalse())))
 				.leftJoin(creator.customerCompany, creatorCompany)
-				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN).and(modifier.isDeleted.isFalse())))
 				.leftJoin(modifier.customerCompany, modifierCompany)
 				.where(builder)
 				.offset(pageable.getOffset())
@@ -157,9 +157,9 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 					modifierCompany.customerCompanyNm))
 				.from(user)
 				.leftJoin(user.customerCompany, customerCompany)
-				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN)))
+				.leftJoin(creator).on(user.createUserId.eq(creator.userLoginId).and(creator.userRoleCd.eq(UserRoleCd.ADMIN).and(creator.isDeleted.isFalse())))
 				.leftJoin(creator.customerCompany, creatorCompany)
-				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN)))
+				.leftJoin(modifier).on(user.modifyUserId.eq(modifier.userLoginId).and(modifier.userRoleCd.eq(UserRoleCd.ADMIN).and(modifier.isDeleted.isFalse())))
 				.leftJoin(modifier.customerCompany, modifierCompany)
 				.where(
 						user.userNo.eq(userNo),

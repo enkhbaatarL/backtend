@@ -69,7 +69,9 @@ public record QnaRes(
                 entity.getCreateUserId(),
                 entity.getCreateDt(),
                 entity.getModifyUserId(),
-                entity.getModifyDt()));
+                entity.getModifyDt()
+            )
+        );
     }
 
     @Builder
@@ -109,7 +111,8 @@ public record QnaRes(
                 qna.getCreateUserId(),
                 qna.getCreateDt(),
                 qna.getModifyUserId(),
-                qna.getModifyDt()))
+                qna.getModifyDt())
+            )
             .build();
     }
 
@@ -131,7 +134,8 @@ public record QnaRes(
                 qna.getCreateUserId(),
                 qna.getCreateDt(),
                 qna.getModifyUserId(),
-                qna.getModifyDt()))
+                qna.getModifyDt())
+            )
             .build();
     }
 
