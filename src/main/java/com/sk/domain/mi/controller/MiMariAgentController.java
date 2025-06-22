@@ -12,7 +12,7 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
-import com.sk.domain.mi.service.MariAgentService;
+import com.sk.domain.mi.service.agent.MariAgentService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;

@@ -999,7 +999,7 @@ public class MiMarketDataService {
         switch (role) {
             case ADMIN -> {
                 PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
-                return permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
             }
 
             case USER -> {
