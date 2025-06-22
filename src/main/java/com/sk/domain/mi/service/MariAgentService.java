@@ -56,6 +56,9 @@ public class MariAgentService {
     @Value("${features.validation.model-agent.write-length:-1}")
     private int writeLimit;
 
+    @Value("${api.model-agent.app-id}")
+    private String appId;
+
     private final AuthorizationService authorizationService;
 
     private final ModelAgentApi modelAgentApi;
@@ -261,7 +264,7 @@ public class MariAgentService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
 
             ModelAgentReq req = ModelAgentReq.of(talkReq, histories, company.getCustomerCompanyCd(), authorizationService.getUserNo());
-             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(req);
+             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, req);
 
              // 테스트용 더미 데이터
 //            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
