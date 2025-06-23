@@ -65,7 +65,7 @@ public class JwtUtil {
             .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
             .claim(Claim.COMPANY_DOMAIN.getCode(), ObjectUtils.defaultIfNull(user.getCustomerCompany().getCustomerCompanyMipUrl(), miDefaultDomain))
             .claim(Claim.AUTH_METHOD.getCode(), Claim.AuthMethodValue.SAML2.getCode()) // 인증 방식 추가
-            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getSaml2().getAccessTokenExpiry().toMillis())))
             .compact();
     }
 
@@ -78,13 +78,13 @@ public class JwtUtil {
             .claim(Claim.ROLE.getCode(), registeredClient.getClientSettings().getSetting(Claim.ROLE.getCode()))
             .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), Boolean.FALSE)
             .claim(Claim.AUTH_METHOD.getCode(), Claim.AuthMethodValue.OAUTH2_CLIENT_CREDENTIALS.getCode()) // 인증 방식 추가
-            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getAccessTokenExpiry())))
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getOauth2().getAccessTokenExpiry().toMillis())))
             .compact();
     }
 
     // 리프레시 토큰 생성
     public String generateRefreshToken(User user) {
-        Instant expirationInstant = Instant.now().plusMillis(jwtProperties.getRefreshTokenExpiry());
+        Instant expirationInstant = Instant.now().plusMillis(jwtProperties.getSaml2().getRefreshTokenExpiry().toMillis());
         long expirationUnixTime = expirationInstant.getEpochSecond();
 
         String refreshToken = createTokenBuilder(user.getUserLoginId())

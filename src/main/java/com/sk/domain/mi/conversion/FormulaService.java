@@ -17,7 +17,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public enum FormulaService {
 
-    //    WAFER_TO_CHIP_EA("WAFER_TO_CHIP_EA", "웨이퍼 -> 칩 개수 단위 변환"),
     BOLLINGER_BANDS("BOLLINGER_BANDS", BollingerBandsConversion.class, "볼린저밴드"),
     MOVING_AVERAGE("MOVING_AVERAGE", MovingAverageConversion.class, "이동평균선"),
     STANDARD_DEVIATION("STANDARD_DEVIATION", StandardDeviationConversion.class, "표준편차"),

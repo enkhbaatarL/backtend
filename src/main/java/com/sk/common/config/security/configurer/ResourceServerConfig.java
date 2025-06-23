@@ -35,7 +35,7 @@ public class ResourceServerConfig {
 
     private final CustomJwtDecoder customJwtDecoder;
     private final ExceptionHandlerFilter exceptionHandlerFilter;
-    private final SessionValidationFilter sessionValidationFilter;
+//    private final SessionValidationFilter sessionValidationFilter;
     private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
 
     @Bean
@@ -62,7 +62,7 @@ public class ResourceServerConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-            .addFilterBefore(sessionValidationFilter, BearerTokenAuthenticationFilter.class)
+//            .addFilterBefore(sessionValidationFilter, BearerTokenAuthenticationFilter.class)
             .securityMatcher("/api/**") // Resource Server 경로 매칭
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
@@ -74,8 +74,8 @@ public class ResourceServerConfig {
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.NEVER) // TTL 갱신
-                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+//                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
             );
 
         return http.build();
