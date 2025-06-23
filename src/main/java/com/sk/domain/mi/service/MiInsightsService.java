@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -66,7 +67,9 @@ public class MiInsightsService {
      * @return List<FocusedDataRes>
      */
     public List<FocusedDataDto> getFocused(int companyNo) {
-        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, PageRequest.of(0, 500));
+        LocalDateTime threshold = LocalDateTime.now().minusDays(30);
+
+        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
         List<FocusedDataDto> result = new ArrayList<>();
         List<FocusedDataDto> mutableList = dataList.stream()
@@ -97,7 +100,11 @@ public class MiInsightsService {
 
             while (it.hasNext() && count < limit && result.size() < 8) {
                 FocusedDataDto data = it.next();
-                if (data.getGoodsDataCategoryCd().contains(type)) {
+                if (data.getGoodsDataCategoryCd().contains(type) && data.getGoodsDataCategoryCd().contains("A_ENG")
+                        && !data.getGoodsDataCategoryCd().contains("A_KOR") && !data.getGoodsDataCategoryCd().contains("A_OTHERS")) {
+
+                    System.out.println("Focused Data: [" + data.getGoodsDataNo() + "] " + data.getGoodsDataCategoryCd() + " - " + type);
+
                     data.setGoodsDataCategoryCd(type);
                     result.add(data);
                     it.remove();
@@ -149,6 +156,12 @@ public class MiInsightsService {
             String filters) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
+        List<String> filterList = (filters != null) ? List.of(filters.split(",")) : new ArrayList<>();
+        filterList = filterList.stream()
+                .map(String::trim)
+                .filter(f -> !f.isEmpty())
+                .collect(Collectors.toList());
+        int filterCount = filterList.size();
 
         StringBuilder select = new StringBuilder()
                 .append(" tp.prvd_no AS providerNo,")
@@ -184,9 +197,9 @@ public class MiInsightsService {
             }
         }
 
-        if (filters != null && !filters.isBlank()) {
+        if (filterCount > 0) {
             where.append(
-                    " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND FIND_IN_SET(tgdc2.gds_data_ctgr_cd, :filters) > 0)");
+                    " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND tgdc2.gds_data_ctgr_cd IN (:filterList) GROUP BY tgdc2.gds_data_no HAVING COUNT(DISTINCT tgdc2.gds_data_ctgr_cd) = :filterCount)");
         }
 
         String periodWhere = " AND (SELECT MAX(tf.mod_dtm) from midb.tcm_filel tf WHERE tf.file_rel_obj_dstg_no = tgdc.gds_data_no AND tf.file_rel_obj_spt_cd = 'GUDAT')";
@@ -253,9 +266,11 @@ public class MiInsightsService {
             }
         }
 
-        if (filters != null && !filters.isBlank()) {
-            contentQuery.setParameter("filters", filters.replaceAll("\\s+", ""));
-            countQuery.setParameter("filters", filters.replaceAll("\\s+", ""));
+        if (filterCount > 0) {
+            contentQuery.setParameter("filterList", filterList);
+            countQuery.setParameter("filterList", filterList);
+            contentQuery.setParameter("filterCount", filterCount);
+            countQuery.setParameter("filterCount", filterCount);
         }
 
         contentQuery.setFirstResult((page - 1) * size);
