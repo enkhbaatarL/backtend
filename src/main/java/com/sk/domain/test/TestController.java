@@ -190,25 +190,25 @@ public class TestController {
         return testService.sendEmail(testReq);
     }
 
-    // 레디스 캐시 삭제
-    @Operation(summary = "레디스 캐시 삭제", description = "레디스 캐시를 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @DeleteMapping("/redis-cache")
-    public Boolean deleteRedisCache(@RequestBody @Valid TestReq.deleteRedisCache testReq) {
-        return testService.deleteRedisCache(testReq);
-    }
+    // // 레디스 캐시 삭제
+    // @Operation(summary = "레디스 캐시 삭제", description = "레디스 캐시를 삭제합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @DeleteMapping("/redis-cache")
+    // public Boolean deleteRedisCache(@RequestBody @Valid TestReq.deleteRedisCache testReq) {
+    //     return testService.deleteRedisCache(testReq);
+    // }
 
-    // 레디스 조회
-    @Parameters({
-            @Parameter(name = "key", description = "조회하고자 하는 redis 키(type : key*), 키가 없으면 모든 키를 조회합니다.", required = false),
-            @Parameter(name = "size", description = "크기 (기본값 : 1000)", required = false)
-    })
-    @Operation(summary = "레디스 조회", description = "레디스 조회를 진행합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/redis-cache")
-    public BaseResponse<Map<String, Object>> getRedisCache(
-            @RequestParam(value = "key", required = false) String key,
-            @RequestParam(value = "size", required = false, defaultValue = "1000") @Min(1) int size) {
-        return BaseResponseFactory.create(testService.getRedisCache(key, size));
-    }
+    // // 레디스 조회
+    // @Parameters({
+    //         @Parameter(name = "key", description = "조회하고자 하는 redis 키(type : key*), 키가 없으면 모든 키를 조회합니다.", required = false),
+    //         @Parameter(name = "size", description = "크기 (기본값 : 1000)", required = false)
+    // })
+    // @Operation(summary = "레디스 조회", description = "레디스 조회를 진행합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/redis-cache")
+    // public BaseResponse<Map<String, Object>> getRedisCache(
+    //         @RequestParam(value = "key", required = false) String key,
+    //         @RequestParam(value = "size", required = false, defaultValue = "1000") @Min(1) int size) {
+    //     return BaseResponseFactory.create(testService.getRedisCache(key, size));
+    // }
 }

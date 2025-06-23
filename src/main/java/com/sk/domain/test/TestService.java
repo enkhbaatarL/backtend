@@ -185,34 +185,34 @@ public class TestService {
         return true;
     }
 
-    public Boolean deleteRedisCache(TestReq.deleteRedisCache testReq) {
-        // redisTemplate.delete(testReq.key());
-        return true;
-    }
+    // public Boolean deleteRedisCache(TestReq.deleteRedisCache testReq) {
+    //     // redisTemplate.delete(testReq.key());
+    //     return true;
+    // }
 
-    public Map<String, Object> getRedisCache(String key, int size) {
-        List<String> keys = new ArrayList<>();
+    // public Map<String, Object> getRedisCache(String key, int size) {
+    //     List<String> keys = new ArrayList<>();
 
-        // SCAN 옵션 설정
-        ScanOptions scanOptions = ScanOptions.scanOptions()
-                .match(key)
-                .count(size)
-                .build();
+    //     // SCAN 옵션 설정
+    //     ScanOptions scanOptions = ScanOptions.scanOptions()
+    //             .match(key)
+    //             .count(size)
+    //             .build();
 
-        // Redis 연결을 통해 SCAN 실행
-        try (var cursor = redisTemplate.getConnectionFactory().getConnection().scan(scanOptions)) {
-            while (cursor.hasNext()) {
-                keys.add(new String(cursor.next()));
-            }
-        }
+    //     // Redis 연결을 통해 SCAN 실행
+    //     try (var cursor = redisTemplate.getConnectionFactory().getConnection().scan(scanOptions)) {
+    //         while (cursor.hasNext()) {
+    //             keys.add(new String(cursor.next()));
+    //         }
+    //     }
 
-        // 키에 해당하는 값 조회
-        Map<String, Object> result = keys.stream()
-                .collect(Collectors.toMap(
-                        k -> k,
-                        k -> redisTemplate.opsForValue().get(k)
-                ));
+    //     // 키에 해당하는 값 조회
+    //     Map<String, Object> result = keys.stream()
+    //             .collect(Collectors.toMap(
+    //                     k -> k,
+    //                     k -> redisTemplate.opsForValue().get(k)
+    //             ));
 
-        return result;
-    }
+    //     return result;
+    // }
 }
