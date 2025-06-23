@@ -180,7 +180,7 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
                 AND (b.isWholePost = 'Y' OR (b.isWholePost = 'N' AND c.customerCompanyNo = :customerCompanyNo))
             )
             """)
-    Optional<BulletinBoard> findByIsPopupUseTrue(int companyNo);
+    Optional<BulletinBoard> findByIsPopupUseTrue(int customerCompanyNo);
 
     @Query("""
             UPDATE BulletinBoard b

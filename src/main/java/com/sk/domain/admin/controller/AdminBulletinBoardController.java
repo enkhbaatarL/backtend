@@ -198,14 +198,14 @@ public class AdminBulletinBoardController {
         return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, true));
     }
 
-    @ApiOrder(9)
-    @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/notices/popup")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
-    public BaseResponse<PopupRes> getPopup() {
-        return BaseResponseFactory.create(adminBulletinBoardService.getPopup());
-    }
+    // @ApiOrder(9)
+    // @Operation(summary = "공지사항 팝업 조회", description = "공지사항 팝업을 조회합니다. 없으면 data에 null 리턴합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/notices/popup")
+    // @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR})
+    // public BaseResponse<PopupRes> getPopup() {
+    // return BaseResponseFactory.create(adminBulletinBoardService.getPopup());
+    // }
 
     /*******************************************************************
      *

@@ -120,8 +120,7 @@ public class AdminBulletinBoardService {
 
         // 팝업 1개만 유지
         if (dto.isPopupUse()) {
-            bulletinBoardRepository.findByBulletinTypeCdAndIsDeletedFalse(BulletinBoardType.NOTICE.getCode()).stream()
-                    .forEach(b -> b.updateIsPopupUse(false));
+            bulletinBoardRepository.updateAllPopupFalse();
         }
 
         BulletinBoard savedBulletinBoard = bulletinBoardRepository.save(BulletinBoard.ofNotice(
@@ -309,30 +308,30 @@ public class AdminBulletinBoardService {
         return bulletinBoard;
     }
 
-    /**
-    * 팝업용 공지사항을 조회한다.
-    *
-    * @param
-    * @return PopupRes
-    */
-    public PopupRes getPopup() {
-        BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
-        if (bulletinBoard == null) {
-            return null;
-        }
+    // /**
+    // * 팝업용 공지사항을 조회한다.
+    // *
+    // * @param
+    // * @return PopupRes
+    // */
+    // public PopupRes getPopup() {
+    // BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
+    // if (bulletinBoard == null) {
+    // return null;
+    // }
 
-        List<BulletinBoardFileDto> fileInfo = uploadedFileRepository
-                .findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())
-                .stream()
-                .map(f -> new BulletinBoardFileDto(
-                        f.getFileNo(),
-                        f.getOriginalFileNm(),
-                        f.getFileSize(),
-                        fileService.getUrl(f.getFileNo())))
-                .toList();
+    // List<BulletinBoardFileDto> fileInfo = uploadedFileRepository
+    // .findByRelationshipObjectInfo(bulletinBoard.getBulletinNo(), FileRelationshipObjectSeparateCode.BBS.getCode())
+    // .stream()
+    // .map(f -> new BulletinBoardFileDto(
+    // f.getFileNo(),
+    // f.getOriginalFileNm(),
+    // f.getFileSize(),
+    // fileService.getUrl(f.getFileNo())))
+    // .toList();
 
-        return PopupRes.of(bulletinBoard, fileInfo);
-    }
+    // return PopupRes.of(bulletinBoard, fileInfo);
+    // }
 
     /**
      * FAQ에서 사용 할 필터를 조회한다.
