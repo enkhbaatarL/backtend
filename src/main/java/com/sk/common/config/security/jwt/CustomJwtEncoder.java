@@ -47,7 +47,7 @@ public class CustomJwtEncoder implements JwtEncoder {
 
         Optional.ofNullable(registeredClient).orElseThrow(() -> AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER));
 
-        Date expiryDate = new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiry());
+        Date expiryDate = new Date(System.currentTimeMillis() + jwtProperties.getOauth2().getAccessTokenExpiry().toMillis());
 
         return new Jwt(
             jwtUtil.generateAccessToken(clientId, registeredClient),

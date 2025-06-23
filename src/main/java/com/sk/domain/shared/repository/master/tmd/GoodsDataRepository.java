@@ -116,10 +116,11 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gdc.isDeleted                            = false
                 AND uf.fileRelationshipObjectSeparateCd = 'GUDAT'
                 AND uf.isDeleted = false
+                AND uf.modifyDt >= :threshold
             GROUP BY p.providerNm, g.goodsNm, gd.goodsDataNm
             ORDER BY modifyDt DESC
             """)
-    List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
+    List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 

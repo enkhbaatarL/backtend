@@ -1,12 +1,10 @@
 package com.sk.domain.test;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 
-import com.sk.common.annotation.RequiredPermission;
-import com.sk.domain.shared.enums.PermissionCondition;
-import com.sk.domain.shared.enums.Role;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,16 +14,20 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
-import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
+import com.sk.domain.shared.enums.PermissionCondition;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -34,6 +36,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -111,7 +114,6 @@ public class TestController {
         return BaseResponseFactory.create(testService.delete(id));
     }
 
-
     @Operation(summary = "데이타의 정형 데이타 파일 업로드", description = "데이타의 정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/goodsdatas/upload-file/structureddata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -187,4 +189,26 @@ public class TestController {
     public Boolean sendEmail(@RequestBody @Valid TestReq.sendEmail testReq) {
         return testService.sendEmail(testReq);
     }
+
+    // // 레디스 캐시 삭제
+    // @Operation(summary = "레디스 캐시 삭제", description = "레디스 캐시를 삭제합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @DeleteMapping("/redis-cache")
+    // public Boolean deleteRedisCache(@RequestBody @Valid TestReq.deleteRedisCache testReq) {
+    //     return testService.deleteRedisCache(testReq);
+    // }
+
+    // // 레디스 조회
+    // @Parameters({
+    //         @Parameter(name = "key", description = "조회하고자 하는 redis 키(type : key*), 키가 없으면 모든 키를 조회합니다.", required = false),
+    //         @Parameter(name = "size", description = "크기 (기본값 : 1000)", required = false)
+    // })
+    // @Operation(summary = "레디스 조회", description = "레디스 조회를 진행합니다.")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/redis-cache")
+    // public BaseResponse<Map<String, Object>> getRedisCache(
+    //         @RequestParam(value = "key", required = false) String key,
+    //         @RequestParam(value = "size", required = false, defaultValue = "1000") @Min(1) int size) {
+    //     return BaseResponseFactory.create(testService.getRedisCache(key, size));
+    // }
 }

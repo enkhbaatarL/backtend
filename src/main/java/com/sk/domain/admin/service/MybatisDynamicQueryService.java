@@ -164,11 +164,11 @@ public class MybatisDynamicQueryService {
         return dynamicMapper.selectDoubleValueResultData(params);
     }
 
-    // @Cacheable(
-    //     cacheNames = CacheType.SCHEMA_COLUMN_TYPES_CONSTANT,
-    //     key = "#dynamicDataReq.targetDataSource() + ':' + #dynamicDataReq.tableName() + ':' + T(com.sk.common.utils.CombineUtil).getSelectColumnList(#dynamicDataReq.columns()).get(0)",
-    //     unless = "#result == null"
-    // )
+//     @Cacheable(
+//         cacheNames = CacheType.SCHEMA_COLUMN_TYPES_CONSTANT,
+//         key = "#root.target.schemaKey(#dynamicDataReq)",
+//         unless = "#result == null"
+//     )
     public SchemaMetadata getMeta(DynamicDataReq dynamicDataReq) {
 
         DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
@@ -205,4 +205,9 @@ public class MybatisDynamicQueryService {
         params.put("orderByColumns", orderByColumns);
         return dynamicMapper.selectDynamicForecastChart(params);
     }
+
+    private String schemaKey(DynamicDataReq req) {
+        return req.targetDataSource() + ':' + req.tableName() + ':' + CombineUtil.getSelectColumnList(req.columns()).get(0);
+    }
+
 }

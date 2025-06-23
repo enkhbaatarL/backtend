@@ -199,7 +199,7 @@ public class MiMarketDataService {
             if (rawData.isEmpty()) {
                 isPermitted = false;
 
-                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting);
+                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL);
                 MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
                 List<MarketDataChart> compareCharts = Collections.emptyList();
 
@@ -999,7 +999,7 @@ public class MiMarketDataService {
         switch (role) {
             case ADMIN -> {
                 PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
-                return permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
             }
 
             case USER -> {

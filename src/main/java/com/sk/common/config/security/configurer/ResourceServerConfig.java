@@ -5,7 +5,6 @@ import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.jwt.CustomJwtAuthenticationConverter;
 import com.sk.common.config.security.jwt.CustomJwtDecoder;
 import com.sk.common.filter.ExceptionHandlerFilter;
-import com.sk.common.filter.SessionValidationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -35,7 +32,6 @@ public class ResourceServerConfig {
 
     private final CustomJwtDecoder customJwtDecoder;
     private final ExceptionHandlerFilter exceptionHandlerFilter;
-    private final SessionValidationFilter sessionValidationFilter;
     private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
 
     @Bean
@@ -62,7 +58,6 @@ public class ResourceServerConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-            .addFilterBefore(sessionValidationFilter, BearerTokenAuthenticationFilter.class)
             .securityMatcher("/api/**") // Resource Server 경로 매칭
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
@@ -74,8 +69,8 @@ public class ResourceServerConfig {
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.NEVER) // TTL 갱신
-                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+//                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
             );
 
         return http.build();

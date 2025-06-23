@@ -36,8 +36,8 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
 
     @Query(value = """
             SELECT
-                IA.instm_scrn_ctgr_nm               AS instmScrnCtgrNm,
-                IA.instm_scrn_dtl_ctgr_nm           AS instmScrnDtlCtgrNm,
+                IFNULL(IA.instm_scrn_ctgr_nm, '')               AS instmScrnCtgrNm,
+                IFNULL(IA.instm_scrn_dtl_ctgr_nm, '')           AS instmScrnDtlCtgrNm,
                 IA.corr_calc_cyc_cd                 AS corrCalcCycCd,
                 IA.anly_fulf_dt                     AS anlyFulfDt,
                 IA.instm_nm                         AS instmNm,
@@ -76,7 +76,7 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
             ORDER BY
                 IA.instm_scrn_ctgr_nm ASC,
                 IA.instm_scrn_dtl_ctgr_nm ASC,
-                IA.corr_calc_cyc_cd DESC
+                ABS(corrCalcVal) DESC
             """, nativeQuery = true)
     List<SignalMapProjection> findSignalMapData(
             @Param("companyNo") int companyNo,
