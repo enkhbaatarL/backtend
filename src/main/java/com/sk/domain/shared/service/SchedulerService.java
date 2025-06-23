@@ -19,7 +19,6 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.opensaml.xmlsec.encryption.P;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,7 +82,6 @@ public class SchedulerService {
     private final UserHistoryRepository userHistoryRepository;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
-    private final int ALARM_BATCH_HOURS = 24;
     private final int ALARM_BATCH_DAYS = 1;
 
     // brentTimeSpreadCalculate 계산용
@@ -113,7 +111,7 @@ public class SchedulerService {
 
         if (!users.isEmpty()) {
             users.stream()
-                    .peek(User::softDelete)
+                    .peek(User::userDelete)
                     .collect(Collectors.toList());
 
             LocalDateTime now = LocalDateTime.now();
