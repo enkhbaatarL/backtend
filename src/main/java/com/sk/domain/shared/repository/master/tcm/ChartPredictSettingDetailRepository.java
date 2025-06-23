@@ -30,6 +30,7 @@ public interface ChartPredictSettingDetailRepository
                     AND tm.del_yn = 'N'
                     AND tmd.del_yn = 'N'
                     AND tmd.chrt_line_prdc_val_yn = 'N'
+                    AND tmd.futr_yn = 'N'
                     AND tgds.del_yn = 'N'
                     AND tgds.gds_data_use_mnagt_cd = 'backend'
             """, nativeQuery = true)
