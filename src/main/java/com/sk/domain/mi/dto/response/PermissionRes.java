@@ -239,24 +239,4 @@ public record PermissionRes(
 
     }
 
-    /**
-     * 타사 접속 가능한 관리자 상품 'VIEW' 권한 Map
-     *
-     * 타사 접속 가능한 관리자의 경우, 상품 권한이 회사 기준으로 관리되므로
-     * 권한 중복을 피하기 위해 `companyNo`를 기준으로 필터링하여 상품 권한을 조회한다.
-     *
-     * @param companyNo 회사번호
-     * @return Map<Integer, Boolean> 상품번호, VIEW 권한 여부
-     */
-    @JsonIgnore
-    public Map<Integer, Boolean> getAdminGoodsViewableMap(Integer companyNo) {
-
-        return this.companies.stream()
-            .filter(obj -> obj.companyNo.equals(companyNo))
-            .flatMap(obj2 -> obj2.providers.stream()
-                .flatMap(obj3 -> obj3.goods.stream()))
-            .collect(Collectors.toMap(GoodsAuthRes::goodsNo, GoodsAuthRes::isDownloadable));
-
-    }
-
 }
