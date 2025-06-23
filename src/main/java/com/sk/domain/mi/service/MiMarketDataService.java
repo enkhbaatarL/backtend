@@ -32,7 +32,7 @@ import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
@@ -546,7 +546,7 @@ public class MiMarketDataService {
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
         Pair<String, String> dateRange = DateBindingUtil.range(meta, startDate, endDate);
 
-        String whereClause = ClauseUtil.createBetweenClause(dateColumnName, dateRange.getLeft(), dateRange.getRight());
+        String whereClause = CombineUtil.createBetweenClause(dateColumnName, dateRange.getLeft(), dateRange.getRight());
 
         return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
@@ -999,7 +999,7 @@ public class MiMarketDataService {
         switch (role) {
             case ADMIN -> {
                 PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
-                return permissionRes.getAdminGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
             }
 
             case USER -> {

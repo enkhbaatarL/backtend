@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.enums.ResultCode;
@@ -53,6 +54,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@AccessIpCheck
 @Tag(name = "04. 게시판 관리 API", description = "게시판 관리 API 입니다.")
 @Slf4j
 @RestController

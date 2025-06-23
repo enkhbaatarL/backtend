@@ -1,6 +1,6 @@
 package com.sk.domain.mi.service.chart;
 
-import com.sk.common.utils.ClauseUtil;
+import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
@@ -59,7 +59,7 @@ public class ChartGenerationService {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
-        List<String> targetColumns = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
+        List<String> targetColumns = CombineUtil.getSelectColumnList(gds.getTableColumnListNm());
 
         String dateColumnName = targetColumns.get(RenderAs.DATE.getIndex()).trim();
         String volumeColumnNm = Optional.ofNullable(gds.getTradeVolumeColumnNm()).map(String::trim).orElse(null);
@@ -151,11 +151,15 @@ public class ChartGenerationService {
 
         if (gds == null) return null;
 
-        List<String> selectColumnList = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
+        List<String> selectColumnList = CombineUtil.getSelectColumnList(gds.getTableColumnListNm());
         String dateColumnName = selectColumnList.get(RenderAs.DATE.getIndex()).trim();
 
-        String selectClause = ClauseUtil.getMaxClause(dateColumnName, "latestDate");
+        String selectClause = CombineUtil.getMaxClause(dateColumnName, "latestDate");
         List<Map<String, Object>> data = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofMaxQuery(gds, selectClause));
+
+        if (data == null || data.isEmpty() || data.get(0) == null || data.get(0).get("latestDate") == null) {
+            return null;
+        }
 
         return DateUtil.parseDate(data.get(0).get("latestDate"));
     }
@@ -187,7 +191,7 @@ public class ChartGenerationService {
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
         Pair<String, String> range = DateBindingUtil.range(meta, startDate, DateUtil.fromYmd(contextV3.finalizedRangeBetween().getRight()));
 
-        String additionalWhereClause = ClauseUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
+        String additionalWhereClause = CombineUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
 
         // select 절에 거래량 컬럼 추가
         String selectClause = Optional.ofNullable(gds.getTradeVolumeColumnNm())

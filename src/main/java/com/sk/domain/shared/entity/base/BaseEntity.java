@@ -68,40 +68,4 @@ public abstract class BaseEntity extends TimeBaseEntity {
         this.isDeleted = Boolean.TRUE;
     }
 
-    // todo 지울 예정
-    public String accessCreatorNm() {
-//        return OptionalUtil.safelyAccess(() -> this.creator.getUserNm()).orElse(null);
-        return null;
-    }
-
-    // todo 지울 예정
-    public String accessModifierNm() {
-//        return OptionalUtil.safelyAccess(() -> this.modifier.getUserNm()).orElse(null);
-        return null;
-    }
-
-    // todo 지울 예정
-    public String accessCreatorDeptNm() {
-//        return OptionalUtil.safelyAccess(() -> this.creator.getDepartmentNm()).orElse(null);
-        return null;
-    }
-
-    // todo 지울 예정
-    public String accessModifierDeptNm() {
-//        return OptionalUtil.safelyAccess(() -> this.modifier.getDepartmentNm()).orElse(null);
-        return null;
-    }
-
-    // todo 지울 예정
-    public String accessCreatorCompanyNm() {
-//        return OptionalUtil.safelyAccess(() -> this.creator.getCustomerCompany().getCustomerCompanyNm()).orElse(null);
-        return null;
-    }
-
-    // todo 지울 예정
-    public String accessModifierCompanyNm() {
-//        return OptionalUtil.safelyAccess(() -> this.modifier.getCustomerCompany().getCustomerCompanyNm()).orElse(null);
-        return null;
-    }
-
 }

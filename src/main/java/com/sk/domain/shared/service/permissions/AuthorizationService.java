@@ -62,6 +62,18 @@ public class AuthorizationService {
     }
 
     /**
+     * 회사코드 조회
+     */
+    public String getCompanyCd() {
+        Jwt jwt = getCurrentJwt();
+        String companyCd = jwt.getClaimAsString(Claim.COMPANY_CD.getCode());
+        if (companyCd == null) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Company Code not found");
+        }
+        return companyCd;
+    }
+
+    /**
      * 우선순위에 따른 회사번호 조회
      *   1. 헤더의 X-Company-No
      *   2. token claim

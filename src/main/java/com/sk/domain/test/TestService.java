@@ -1,9 +1,7 @@
 package com.sk.domain.test;
 
 import java.util.Base64;
-import java.util.List;
 
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -19,12 +17,9 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.ExcelService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
-import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserRoleCd;
-import com.sk.domain.shared.mapper.hynix.tlm.HynixEmailAccessLogMapper;
-import com.sk.domain.shared.mapper.sktelecom.tlm.SkTelecomEmailAccessLogMapper;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tcm.ComponentInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
@@ -32,7 +27,6 @@ import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.AuthService;
 import com.sk.domain.shared.service.MailService;
 
-import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
@@ -45,8 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 public class TestService {
 
     private final JwtUtil jwtUtil;
-    private final SkTelecomEmailAccessLogMapper skTelecomEmailAccessLogMapper;
-    private final HynixEmailAccessLogMapper hynixEmailAccessLogMapper;
     private final UserRepository userRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final AdminPermissionRepository adminPermissionRepository;
@@ -112,16 +104,6 @@ public class TestService {
      */
     public Boolean checkToken(TestReq.verifyToken testVerifyTokenReq) {
         return jwtUtil.isTokenValid(testVerifyTokenReq.token());
-    }
-
-    public List<EmailAccessLog> getSkTelecomEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("SKT");
-        return skTelecomEmailAccessLogMapper.getEmailAccessLogs();
-    }
-
-    public List<EmailAccessLog> getHynixEmailAccessLogByMybatis() {
-        DataSourceContextHolder.setDataSourceKey("SKCC");
-        return hynixEmailAccessLogMapper.getHynixEmailAccessLogs();
     }
 
     @Transactional

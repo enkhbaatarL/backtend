@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.TrimmedNotEmpty;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -24,7 +26,7 @@ import com.sk.domain.admin.dto.response.user.UserDetailRes;
 import com.sk.domain.admin.dto.response.user.UserInfoRes;
 import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.admin.service.AdminUserService;
-import com.sk.domain.shared.enums.CompanyType;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +40,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@AccessIpCheck
 @Tag(name = "02. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
 @RestController
@@ -58,6 +61,7 @@ public class AdminUserController {
     @Operation(summary = "그룹사 사용자 목록 인터페이스 테이블 조회 API", description = "사용자 목록을 인터페이스 테이블에서 조회합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 목록 조회 성공")
     @GetMapping("/group-users")
+    @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<UserInfoRes>> getUserInfos(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
@@ -98,11 +102,12 @@ public class AdminUserController {
     @Operation(summary = "사용자 등록 API", description = "사용자 정보를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 등록 성공")
     @PostMapping("/users")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<List<UserRes>> saveUserInfo(
             @RequestBody @Valid UserReq.Insert userReq) {
         return BaseResponseFactory.create(adminUserService.saveUserInfo(userReq));
     }
-
+	
     @ApiOrder(4)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
@@ -115,6 +120,7 @@ public class AdminUserController {
     @Operation(summary = "사용자 목록 조회 API", description = "사용자 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 목록 조회 성공")
     @GetMapping("/users")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<UserDetailRes>> getUsers(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
@@ -134,6 +140,7 @@ public class AdminUserController {
     @Operation(summary = "사용자 상세 조회 API", description = "사용자 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 상세 조회 성공")
     @GetMapping("/users/{userNo}")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<UserDetailRes> getUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.getUser(userNo));
@@ -146,6 +153,7 @@ public class AdminUserController {
     @Operation(summary = "사용자 등록 삭제 API", description = "사용자 정보를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 등록 삭제 성공")
     @DeleteMapping("/users/{userNo}")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<UserRes> deleteUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.deleteUser(userNo));
@@ -155,6 +163,7 @@ public class AdminUserController {
     @Operation(summary = "운영자, 관리자 등록 API", description = "운영자, 관리자를 등록합니다.")
     @ApiResponse(responseCode = "200", description = "운영자, 관리자 등록 성공")
     @PostMapping("/admin-user")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<UserRes> saveAdminUser(
             @RequestBody @Valid AdminReq.Insert adminReq) {
         return BaseResponseFactory.create(adminUserService.saveAdminUser(adminReq));
@@ -174,6 +183,7 @@ public class AdminUserController {
     @Operation(summary = "운영자, 관리자 목록 조회 API", description = "운영자, 관리자 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "운영자, 관리자 목록 조회 성공")
     @GetMapping("/admin-users")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<PaginationRes<UserDetailRes>> getAdminUsers(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
@@ -194,6 +204,7 @@ public class AdminUserController {
     @Operation(summary = "운영자, 관리자 상세 조회 API", description = "운영자, 관리자 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "운영자, 관리자 상세 조회 성공")
     @GetMapping("/admin-users/{userNo}")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<AdminRes> getAdminUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.getAdminUser(userNo));
@@ -206,6 +217,7 @@ public class AdminUserController {
     @Operation(summary = "운영자, 관리자 수정 API", description = "운영자, 관리자 정보를 수정합니다. (접근 허용 IP는 수정되는 값이 아닌 적용 되는 값 모두 필요)")
     @ApiResponse(responseCode = "200", description = "운영자, 관리자 수정 성공")
     @PatchMapping("/admin-users/{userNo}")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<UserRes> patchAdminUser(
             @PathVariable(value = "userNo") Integer userNo,
             @RequestBody @Valid AdminReq.Update adminReq) {
@@ -219,6 +231,7 @@ public class AdminUserController {
     @Operation(summary = "운영자, 관리자 삭제 API", description = "운영자, 관리자 정보를 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "운영자, 관리자 삭제 성공")
     @DeleteMapping("/admin-users/{userNo}")
+	@RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<UserRes> deleteAdminUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.deleteAdminUser(userNo));

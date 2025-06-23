@@ -58,7 +58,8 @@ public class MiMarketDataController {
     @Operation(summary = "Data Catalog 목록 조회 - with pagination", description = "Data Catalog 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/data-catalog")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+            Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<PaginationRes<DataCatalogRes>> getDataCatalog(
             @PathVariable("companyNo") Integer companyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
@@ -77,7 +78,8 @@ public class MiMarketDataController {
     @Operation(summary = "Recent Viewed 목록 조회", description = "Recent Viewed 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/recent-viewed")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+            Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<List<RecentViewedRes>> getDataCatalog(
             @PathVariable("companyNo") Integer companyNo) {
 

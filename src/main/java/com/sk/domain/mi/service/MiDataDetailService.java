@@ -97,7 +97,14 @@ public class MiDataDetailService {
         // 상품-데이터 조회 이력 적재
         goodsDataInquiryUserService.createGoodsDataInquiryUser(goodsData, authorizationService.getSubject());
 
-        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority());
+        List<GoodsDataSourceDetail> gdsNo = goodsDataSourceDetailRepository.findByGoodsDataAndIsDeletedFalse(goodsData);
+
+        // 상품 데이터 소스가 존재하는 경우, 최신 1개의 최근 수정일을 조회한다.
+        LocalDate recent = gdsNo.stream().findFirst()
+            .map(chartGenerationService::getLatestDate)
+            .orElse(null);
+
+        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority(), recent);
     }
 
     /**
@@ -630,7 +637,7 @@ public class MiDataDetailService {
     private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
         Map<String, String> columnExpressions = getColumnExpressions(gds);
 
-        List<String> columns = ClauseUtil.getSelectColumnList(gds.getTableColumnListNm());
+        List<String> columns = CombineUtil.getSelectColumnList(gds.getTableColumnListNm());
 
         if (columns.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Table column list is not defined for goodsDataSourceNo: %s".formatted(gds.getGoodsDataSourceNo()));
@@ -640,7 +647,7 @@ public class MiDataDetailService {
         Pair<String, String> range =
             DateBindingUtil.range(meta, DateUtil.fromYmd(startDate), DateUtil.fromYmd(endDate));
 
-        String additionalWhereClause = ClauseUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
+        String additionalWhereClause = CombineUtil.createBetweenClause(columns.get(0), range.getLeft(), range.getRight());
 
         return new RawDataQueryContext(columns, columnExpressions, columns.get(0), additionalWhereClause);
     }

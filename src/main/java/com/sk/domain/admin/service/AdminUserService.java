@@ -181,7 +181,7 @@ public class AdminUserService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("사용자 정보를 찾을 수 없습니다. userNo: %s", userNo)));
 
-        user.softDelete();
+        user.userDelete();
 
         UserHistory userHistory = UserHistory.builder()
                 .id(new UserHistoryId(user.getUserNo(), LocalDateTime.now()))
@@ -365,7 +365,7 @@ public class AdminUserService {
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         String.format("사용자 정보를 찾을 수 없습니다. userNo: %s", userNo)));
 
-        user.softDelete();
+        user.userDelete();
 
         adminPermissionRepository.findByIdUserNoAndIsDeletedFalse(userNo).forEach(AdminPermission::softDelete);
 
