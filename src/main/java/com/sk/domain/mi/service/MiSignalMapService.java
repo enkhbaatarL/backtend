@@ -114,6 +114,11 @@ public class MiSignalMapService {
                                         proj.getCorrCalcVal()))
                                 .collect(Collectors.toList());
 
+                        // 20개 초과 시 잘라냄
+                        if (itemDtoList.size() > 20) {
+                            itemDtoList.subList(20, itemDtoList.size()).clear();
+                        }
+
                         return new ScreenDetailCategoryDto(screenDetailCategoryName, itemDtoList);
                     })
                     .collect(Collectors.toList());

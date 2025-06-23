@@ -1,17 +1,23 @@
 package com.sk.domain.shared.controller;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.shared.dto.request.file.PdgImageReq;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.SchedulerService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * 스케쥴러용 API
@@ -26,6 +32,7 @@ public class SchedulerController {
     @ApiOrder(1)
     @Operation(summary = "GDI 탈퇴 유저 soft delete 처리 API", description = "GDI 탈퇴 유저 soft delete 처리 API 입니다.")
     @DeleteMapping("/group-users")
+    @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.SYSTEM})
     @ApiResponse(responseCode = "200", description = "GDI 탈퇴 유저 soft delete 처리 성공")
     public BaseResponse<Boolean> processGdiUserSoftDelete() {
         return BaseResponseFactory.create(schedulerService.processGdiUserSoftDelete());
@@ -34,6 +41,7 @@ public class SchedulerController {
     @ApiOrder(2)
     @Operation(summary = "알림 발송 API", description = "배치에 쓰일 API로 임계치 확인 후 해당 유저에게 알림(이메일) 발송 API 입니다.")
     @PostMapping("/notification")
+    @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.SYSTEM})
     @ApiResponse(responseCode = "200", description = "알림 발송 성공")
     public BaseResponse<Boolean> createNotification() {
         return BaseResponseFactory.create(schedulerService.createNotification());
@@ -47,7 +55,8 @@ public class SchedulerController {
             """
     )
     @PostMapping("/pdf-to-images")
-    @ApiResponse(responseCode = "200", description = "알림 발송 성공")
+    @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.SYSTEM})
+    @ApiResponse(responseCode = "200", description = "PDF파일 이미지 변환 성공")
     public BaseResponse<Boolean> processPdfToImages(
         @RequestBody(required = false) PdgImageReq pdgImageReq
     ) {
@@ -57,6 +66,7 @@ public class SchedulerController {
     @ApiOrder(4)
     @Operation(summary = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드", description = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드 API 입니다.")
     @PostMapping("/maket-data/calculate-spread")
+    @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.SYSTEM})
     @ApiResponse(responseCode = "200", description = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드 성공")
     public BaseResponse<Boolean> processTifFuturesSpread() {
         return BaseResponseFactory.create(schedulerService.processTifFuturesSpread());
