@@ -99,7 +99,7 @@ cache:
 jwt:
   secret-key: ${SKT_MI_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
   saml2:
-    access-token-expiry: 25m
+    access-token-expiry: 15m
     refresh-token-expiry: 30m
   oauth2:
     access-token-expiry: 10h
