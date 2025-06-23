@@ -1,7 +1,13 @@
 package com.sk.domain.test;
 
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -46,6 +52,8 @@ public class TestService {
     private final ExcelService excelService;
     private final AuthService authService;
     private final MailService mailService;
+
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -175,5 +183,36 @@ public class TestService {
                 """;;
         mailService.sendMailNoAccessLog(to, subject, content);
         return true;
+    }
+
+    public Boolean deleteRedisCache(TestReq.deleteRedisCache testReq) {
+        // redisTemplate.delete(testReq.key());
+        return true;
+    }
+
+    public Map<String, Object> getRedisCache(String key, int size) {
+        List<String> keys = new ArrayList<>();
+
+        // SCAN 옵션 설정
+        ScanOptions scanOptions = ScanOptions.scanOptions()
+                .match(key)
+                .count(size)
+                .build();
+
+        // Redis 연결을 통해 SCAN 실행
+        try (var cursor = redisTemplate.getConnectionFactory().getConnection().scan(scanOptions)) {
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next()));
+            }
+        }
+
+        // 키에 해당하는 값 조회
+        Map<String, Object> result = keys.stream()
+                .collect(Collectors.toMap(
+                        k -> k,
+                        k -> redisTemplate.opsForValue().get(k)
+                ));
+
+        return result;
     }
 }
