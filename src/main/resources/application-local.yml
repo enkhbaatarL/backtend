@@ -178,6 +178,8 @@ server:
   domain: http://localhost:8080
 
 features:
+  pdf-viewer:
+    dpi: 300
   validation:
     model-agent:
       write-length: -1 # -1 means no limit
