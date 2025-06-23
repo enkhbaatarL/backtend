@@ -189,7 +189,7 @@ public class MiInsightsService {
                     " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND FIND_IN_SET(tgdc2.gds_data_ctgr_cd, :filters) > 0)");
         }
 
-        String periodWhere = " AND (SELECT MAX(tf.mod_dtm) from midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgdc.gds_data_no AND tf.file_rel_obj_spt_cd = 'GUDAT')";
+        String periodWhere = " AND (SELECT MAX(tf.mod_dtm) from midb.tcm_filel tf WHERE tf.file_rel_obj_dstg_no = tgdc.gds_data_no AND tf.file_rel_obj_spt_cd = 'GUDAT')";
         switch (period) {
             case ONE_DAY -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
             case ONE_WEEK -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
