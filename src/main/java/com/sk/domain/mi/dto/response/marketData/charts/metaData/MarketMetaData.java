@@ -87,9 +87,17 @@ public record MarketMetaData(
                 .build();
     }
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting) {
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String interval) {
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
+                .goodsNo(goodsData.getGoods().getGoodsNo())
+                .goodsDataNo(goodsData.getGoodsDataNo())
+                .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
+                .goodsDataNm(goodsData.getGoodsDataNm())
+                .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
+                .currency(goodsDataSourceDetail.getGoodsDataSourceCurrencyUnitNm())
+                .currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
+                .interval(interval)
                 .build();
     }
 }

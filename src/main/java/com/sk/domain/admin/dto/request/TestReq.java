@@ -54,4 +54,9 @@ public record TestReq() {
 			@NotEmpty @Schema(description = "이메일 주소", example = "abc@twolinecode.com") String email
 	) {
 	}
+
+	public record deleteRedisCache(
+			@Schema(description = "삭제하고자 하는 redis 키(type : key*), 키가 없으면 모든 키를 삭제합니다.", example = "abc") String key
+	) {
+	}
 }
