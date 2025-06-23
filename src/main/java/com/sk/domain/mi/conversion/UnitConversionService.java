@@ -114,18 +114,6 @@ public class UnitConversionService {
     }
 
     /**
-     * 시계열데이터 변환
-     *
-     * @param timeSeriesValues 변환시킬 시계열데이터
-     * @param windowSize       윈도우사이즈
-     * @return List<BigDecimal>
-     */
-    public List<BigDecimal> convertTimeSeriesToMovingAverage(List<BigDecimal> timeSeriesValues, int windowSize) {
-        return unitConversionContext.convertTimeSeries(FormulaService.MOVING_AVERAGE, timeSeriesValues, windowSize);
-    }
-
-
-    /**
      * 특정 결과 타입을 반환하는 시계열 데이터 변환
      *
      * @param unitConversionNo 단위변환번호
@@ -148,11 +136,28 @@ public class UnitConversionService {
 
     }
 
+    /**
+     * 이동평균선 시계열데이터 변환
+     *
+     * @param timeSeriesValues 변환시킬 시계열데이터
+     * @param windowSize       윈도우사이즈
+     * @return List<BigDecimal>
+     */
+    public List<BigDecimal> convertTimeSeriesToMovingAverage(List<BigDecimal> timeSeriesValues, int windowSize) {
+        return unitConversionContext.convertTimeSeries(FormulaService.MOVING_AVERAGE, timeSeriesValues, windowSize);
+    }
+
+    /**
+     * 볼린져밴드 시계열데이터 변환
+     *
+     * @param timeSeriesValues 변환시킬 시계열데이터
+     * @param windowSize       윈도우사이즈
+     * @return List<BollingerBandResult>
+     */
     public List<BollingerBandResult> convertTimeSeriesToBollingerBands(List<BigDecimal> timeSeriesValues, int windowSize) {
         return unitConversionContext.convertTimeSeriesResult(FormulaService.BOLLINGER_BANDS, timeSeriesValues, windowSize);
     }
 
-    // todo 캐싱
     private UnitConvert findActiveUnitConvert(Integer unitConversionNo) {
         return unitConvertRepository.findByUnitConvNoAndIsDeletedFalse(unitConversionNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
