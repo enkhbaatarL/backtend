@@ -155,14 +155,12 @@ public class MiBulletinBoardService {
     /**
     * 팝업용 공지사항을 조회한다.
     *
-    * @param
+    * @param companyNo 고객사 번호
     * @return PopupRes
     */
     public PopupRes getPopup(int companyNo) {
-        
-        todo: companyNo 번호를 이용해서 작업하자
 
-        BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue().orElse(null);
+        BulletinBoard bulletinBoard = bulletinBoardRepository.findByIsPopupUseTrue(companyNo).orElse(null);
         if (bulletinBoard == null) {
             return null;
         }
