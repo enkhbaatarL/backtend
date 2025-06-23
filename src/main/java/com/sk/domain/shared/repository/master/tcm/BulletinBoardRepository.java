@@ -32,8 +32,6 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     *
     *******************************************************************/
 
-    List<BulletinBoard> findByBulletinTypeCdAndIsDeletedFalse(String bulletinTypeCode);
-
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.bbs.NoticeRes(
                 b.bulletinNo,
@@ -173,13 +171,23 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
     @Query(value = """
             SELECT b
             FROM BulletinBoard b
+            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
+            LEFT JOIN m.customerCompany c
             WHERE b.isDeleted = false
-            AND b.isPopupUse = true
-            AND (b.popupPostBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-            AND b.popupPostEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND b.isPopupUse = true
+                AND (b.popupPostBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND b.popupPostEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND (b.isWholePost = 'Y' OR (b.isWholePost = 'N' AND c.customerCompanyNo = :customerCompanyNo))
             )
             """)
-    Optional<BulletinBoard> findByIsPopupUseTrue();
+    Optional<BulletinBoard> findByIsPopupUseTrue(int customerCompanyNo);
+
+    @Query("""
+            UPDATE BulletinBoard b
+            SET b.isPopupUse = false
+            WHERE b.bulletinTypeCd = 'NOTICE'
+            """)
+    void updateAllPopupFalse();
 
     /*******************************************************************
     *

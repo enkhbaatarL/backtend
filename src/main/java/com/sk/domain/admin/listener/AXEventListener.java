@@ -19,6 +19,7 @@ import com.sk.domain.shared.client.dto.AXMetaFileDto;
 import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq;
 import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq.ModifiedFile;
 import com.sk.domain.shared.client.dto.response.AXMetaLookUpRes;
+import com.sk.domain.shared.client.dto.response.AXMetaRegisterRes;
 import com.sk.domain.shared.client.dto.response.AXMetaUploadRes;
 import com.sk.domain.shared.client.dto.response.AuthTokenRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -77,6 +78,7 @@ public class AXEventListener {
             String accessToken = "Bearer ".concat(authTokenRes.accessToken());
 
             AXMetaUploadRes uploadRes = axPlatformApi.upload(accessToken, multipartFile);
+            System.out.println("   ===>>>   upload: " + uploadRes);
 
             ModifiedFile uploadFile = new ModifiedFile(uploadRes.data().get(0).fileName(),
                     null,
@@ -92,6 +94,7 @@ public class AXEventListener {
                 String fileName = goodsData.getMetadUpldFileNm();
 
                 AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, datasourceId, fileName);
+                System.out.println("   ===>>>   lookup: " + lookUpRes);
 
                 ModifiedFile deletedFile = new ModifiedFile(
                         fileName,
@@ -104,7 +107,8 @@ public class AXEventListener {
                 registerReq.addModifiedFile(deletedFile);
             }
 
-            axPlatformApi.register(accessToken, datasourceId, registerReq);
+            AXMetaRegisterRes axMetaRegisterRes = axPlatformApi.register(accessToken, datasourceId, registerReq);
+            System.out.println("   ===>>>   register: " + axMetaRegisterRes);
 
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);

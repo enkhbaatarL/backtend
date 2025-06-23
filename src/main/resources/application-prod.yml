@@ -98,8 +98,12 @@ cache:
 
 jwt:
   secret-key: ${SKT_MI_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
-  access-token-expiry: 36000000  # 10 hours (10h * 1000ms * 60s * 60m)
-  refresh-token-expiry: 604800000  # 7 days (7d * 24h * 1000ms * 60s * 60m)
+  saml2:
+    access-token-expiry: 25m
+    refresh-token-expiry: 30m
+  oauth2:
+    access-token-expiry: 10h
+    refresh-token-expiry: 7d
 
 logging:
   config: classpath:logback-prod.xml
@@ -114,7 +118,8 @@ api:
     url: https://adxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
     read-timeout: 20s
-    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
+    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-688a6f372985fa406fd70ca29731c0d4}
+    app-id: ${SKT_MI_MODEL_AGENT_APP_ID:5fde7dbd-a380-41f3-978a-05798509a4f5}
   ax-platform:
     url: https://aip.sktai.io
     connection-timeout: 1s

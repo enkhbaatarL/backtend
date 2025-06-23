@@ -26,15 +26,15 @@ public enum Interval {
     ONE_WEEK("1W", "1주", PeriodUnitSeparateCd.W, 1,
         EnumSet.of(Range.ONE_MONTH, Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
     TWO_WEEK("2W", "2주", PeriodUnitSeparateCd.W, 2,
-        EnumSet.of(Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
+        EnumSet.of(Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
     ONE_MONTH("1M", "1개월", PeriodUnitSeparateCd.M, 1,
         EnumSet.of(Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
     THREE_MONTH("3M", "3개월", PeriodUnitSeparateCd.M, 3,
-        EnumSet.of(Range.TWO_YEARS, Range.CUSTOM)),
+        EnumSet.of(Range.THREE_MONTHS, Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
     SIX_MONTH("6M", "6개월", PeriodUnitSeparateCd.M, 6,
-        EnumSet.of(Range.CUSTOM)),
+        EnumSet.of(Range.SIX_MONTHS, Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM)),
     ONE_YEAR("1Y", "1년", PeriodUnitSeparateCd.Y, 1,
-        EnumSet.of(Range.CUSTOM));
+        EnumSet.of(Range.ONE_YEAR, Range.TWO_YEARS, Range.CUSTOM));
 
     private final String code;
     private final String description;

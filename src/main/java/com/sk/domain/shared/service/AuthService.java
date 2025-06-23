@@ -78,7 +78,7 @@ public class AuthService {
 
 		// 리프레시 토큰을 쿠키에 설정
 		ResponseCookie responseRefreshCookie = ResponseCookie.from(REFRESH_TOKEN_HEADER, renewedRefreshToken)
-				.maxAge(jwtProperties.getRefreshTokenExpiry() / 1000)
+				.maxAge(jwtProperties.getSaml2().getRefreshTokenExpiry())
 				.path("/")
 				.secure(true)
 				.httpOnly(true)
