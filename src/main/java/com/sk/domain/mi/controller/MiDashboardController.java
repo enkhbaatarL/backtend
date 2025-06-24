@@ -262,10 +262,10 @@ public class MiDashboardController {
 			@Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "63"),
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
 			@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202505"),
-			@Parameter(name = "mnemonicCd", description = "주요 요인 명칭 코드", example = "NGCC.01"),
 			@Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "WEATHER"),
 			@Parameter(name = "predictionInputMnemonicCd", description = "예측 입력 명칭 코드", example = "EIAGS48"),
-			@Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드", example = "EN_LNG")
+			@Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드", example = "EN_LNG"),
+			@Parameter(name = "predictionInputMnemonicDetailCd", description = "예측 입력 명칭 상세코드", example = "EIAGS48.01")
 	})
 	@Operation(summary = "대시보드 차트 주요 요인 분석 라인 그래프(Drill Down #3)", description = "대시보드 차트 주요 요인 분석 라인 그래프를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -277,11 +277,11 @@ public class MiDashboardController {
 			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
 			@RequestParam(value = "predictDate", required = true) String predictDate,
 			@RequestParam(value = "date", required = true) String date,
-			@RequestParam(value = "mnemonicCd", required = true) String mnemonicCd,
 			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm,
 			@RequestParam(value = "predictionInputMnemonicCd", required = true) String predictionInputMnemonicCd,
-			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd) {
-		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, date, mnemonicCd,
-				explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd));
+			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd,
+			@RequestParam(value = "predictionInputMnemonicDetailCd", required = true) String predictionInputMnemonicDetailCd) {
+		return BaseResponseFactory.create(miDashboardService.getChartFactorGraph(companyNo, goodsDataSourceNo, predictDate, date,
+				explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd, predictionInputMnemonicDetailCd));
 	}
 }
