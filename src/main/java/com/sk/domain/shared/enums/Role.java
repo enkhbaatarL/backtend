@@ -37,7 +37,7 @@ public enum Role {
     API_PLUS_OPERATOR("API_PLUS_OPERATOR", "운영자(Private 상품 업로드, 자사 권한 상품 리소스 접근)"),
 
     /**
-     * 기본 Default Role
+     * 기본 Default Role / 실제 발급되는 claim은 아님.
      */
     SYSTEM("SYSTEM", "시스템");
 

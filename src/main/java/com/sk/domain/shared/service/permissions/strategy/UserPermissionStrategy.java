@@ -33,9 +33,5 @@ public class UserPermissionStrategy implements PermissionStrategy {
         return permissions.getGoodsDownloadableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
-    @Override
-    public boolean canAccessCompany(Integer companyNo) {
-        return companyNo.equals(authorizationService.getCompanyNo());
-    }
 }
 

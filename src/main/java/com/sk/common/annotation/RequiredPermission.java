@@ -21,11 +21,6 @@ public @interface RequiredPermission {
     Role[] roles() default {};
 
     /**
-     * 회사 번호를 파라미터에서 가져올 경우 파라미터 이름
-     */
-    String companyParam() default "";
-
-    /**
      * 상품 번호를 파라미터에서 가져올 경우 파라미터 이름
      */
     String goodsParam() default "";

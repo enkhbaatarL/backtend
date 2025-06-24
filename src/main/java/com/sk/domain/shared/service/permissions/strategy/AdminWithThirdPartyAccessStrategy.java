@@ -33,12 +33,6 @@ public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
         return permissions.getGoodsDownloadableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
-    @Override
-    public boolean canAccessCompany(Integer companyNo) {
-        // 타사 접근 권한이 있는 ADMIN은 모든 회사에 접근 가능
-        return true;
-    }
-
 }
 
 

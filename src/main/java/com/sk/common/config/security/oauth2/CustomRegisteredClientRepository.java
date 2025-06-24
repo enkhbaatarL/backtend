@@ -1,6 +1,7 @@
 package com.sk.common.config.security.oauth2;
 
 import com.sk.domain.shared.entity.master.tif.ClientAccessInfo;
+import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tif.ClientAccessInfoRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,6 @@ public class CustomRegisteredClientRepository implements RegisteredClientReposit
 
     @Override
     public void save(RegisteredClient registeredClient) {
-        // todo 필요 시
     }
 
     @Override
@@ -44,9 +44,9 @@ public class CustomRegisteredClientRepository implements RegisteredClientReposit
             .clientAuthenticationMethod(new ClientAuthenticationMethod(client.getCertMethodNm()))
             .authorizationGrantType(new AuthorizationGrantType(client.getCertTypeNm()))
             .clientSettings(ClientSettings.builder()
-                .setting("companyNo", client.getCustomerCompany().getCustomerCompanyNo())
-                .setting("companyCd", client.getCustomerCompany().getCustomerCompanyCd())
-                .setting("role", client.getCustomerCompany().getIsMipManagementCompany() ? Role.API_SUB_ADMIN : Role.API_PLUS_OPERATOR)
+                .setting(Claim.COMPANY_NO.getCode(), client.getCustomerCompany().getCustomerCompanyNo())
+                .setting(Claim.COMPANY_CD.getCode(), client.getCustomerCompany().getCustomerCompanyCd())
+                .setting(Claim.ROLE.getCode(), client.getCustomerCompany().getIsMipManagementCompany() ? Role.API_SUB_ADMIN : Role.API_PLUS_OPERATOR)
                 .requireProofKey(false)
                 .requireAuthorizationConsent(false)  // 명시적 동의 필요 없음
                 .build())
