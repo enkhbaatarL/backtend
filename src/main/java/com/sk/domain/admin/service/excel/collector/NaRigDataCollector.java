@@ -86,7 +86,8 @@ public class NaRigDataCollector implements DataCollectorStrategy {
                 } else if (i == DATE_COLUMN_INDEX) {
                     String dateStr = cell.getStringCellValue();
                     String dateStrWithoutHyphen = dateStr != null && !dateStr.trim().isEmpty() ? dateStr.replaceAll("-", "") : null;
-                    value = dateStrWithoutHyphen != null ? Long.parseLong(dateStrWithoutHyphen) : null;
+                    String dateStrWithoutSlash = dateStrWithoutHyphen != null && !dateStrWithoutHyphen.trim().isEmpty() ? dateStrWithoutHyphen.replaceAll("/", "") : null;
+                    value = dateStrWithoutSlash != null ? Long.parseLong(dateStrWithoutSlash) : null;
                 } else {
                     switch (cell.getCellType()) {
                         case STRING:
