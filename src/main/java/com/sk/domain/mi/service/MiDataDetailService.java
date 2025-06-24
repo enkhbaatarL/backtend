@@ -290,7 +290,7 @@ public class MiDataDetailService {
             }
 
             // 범위와 인터벌 상관관계 검증
-            if (!interval.isAllowedRange(range, startDate, endDate)) {
+            if (ObjectUtils.isNotEmpty(range) && !interval.isAllowedRange(range, startDate, endDate)) {
                 String customRangeInfo = range == Range.CUSTOM ? " (from %s to %s)".formatted(DateUtil.toYmd(startDate), DateUtil.toYmd(endDate)) : "";
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
                     "Requested range (%s%s) is not compatible with the requested interval (%s).".formatted(

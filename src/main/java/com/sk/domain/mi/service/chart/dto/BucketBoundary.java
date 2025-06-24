@@ -79,35 +79,6 @@ public record BucketBoundary(
         return Collections.unmodifiableList(buckets);
     }
 
-//    /**
-//     * 룩백 데이터(dates)가 rangeStart 이전에 존재하면, rangeStart‑1 을 새로운 anchor 로 삼아
-//     * 추가 버킷(extended boundaries) 를 만든다.
-//     */
-//    public static List<BucketBoundary> generateBucketsWithLookback(List<LocalDate> dates, LocalDate anchorExclusiveEnd, LocalDate inclusiveStart, Interval interval) {
-//
-//        // 1) display용 boundaries
-//        List<BucketBoundary> boundaries = generateBuckets(anchorExclusiveEnd, inclusiveStart, interval);
-//
-//        // 2) earliest raw date 확인(LOOKBACK을 위한 데이터)
-//        LocalDate earliest = dates.stream().min(LocalDate::compareTo).orElse(inclusiveStart);
-//
-//        if (!earliest.isBefore(inclusiveStart)) {
-//            // 룩백 없음 → 그대로 리턴
-//            return boundaries;
-//        }
-//
-//        // 3) 추가 버킷 생성
-//        LocalDate cursor = inclusiveStart;
-//        while (!cursor.isBefore(earliest.plusDays(1))) {
-//            LocalDate extStart = calculatePreviousBoundary(cursor, interval);
-//            if (extStart.isBefore(earliest)) extStart = earliest;
-//            boundaries.add(BucketBoundary.of(extStart, cursor, interval));
-//            if (extStart.equals(earliest)) break;
-//            cursor = extStart;
-//        }
-//        return boundaries;
-//    }
-
     /**
      * 차트 표시 기간 외에, 기술적 지표 계산을 위한 이전 데이터(Lookback)를 포함하는 BucketBoundary 리스트를 생성합니다.
      *
