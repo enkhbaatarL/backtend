@@ -50,8 +50,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 	@Override
 	@Transactional
-	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-			Authentication authentication) throws IOException {
+	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
 		log.info("SAML 사용자 인증 시작");
 
 		Saml2Authentication saml2Authentication = (Saml2Authentication) authentication;

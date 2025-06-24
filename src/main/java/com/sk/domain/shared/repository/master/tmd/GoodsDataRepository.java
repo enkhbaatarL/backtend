@@ -97,13 +97,16 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.goodsDataNm as goodsDataNm,
                 MAX(uf.modifyDt) as modifyDt,
                 FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd) as goodsDataCategoryCd
-            FROM CustomerCompanyGoodsMapping ccgm
+            FROM CustomerCompanyProviderMapping ccpm
+            JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
             JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
             JOIN Provider p ON p.providerNo = g.provider.providerNo
             JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
             JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
             JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
-            WHERE ccgm.id.customerCompanyNo                = :customerCompanyNo
+            WHERE ccpm.id.customerCompanyNo = :customerCompanyNo
+                AND ccpm.isDeleted                           = false
+                AND ccpm.isUsed                              = true
                 AND ccgm.isDeleted                           = false
                 AND ccgm.isUsed                              = true
                 AND g.isDeleted                              = false
@@ -133,13 +136,16 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.goodsDataNm,
                 MAX(uf.modifyDt) as modifyDt
             )
-            FROM CustomerCompanyGoodsMapping ccgm
+            FROM CustomerCompanyProviderMapping ccpm
+            JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
             JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
             JOIN Provider p ON p.providerNo = g.provider.providerNo
             JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
             JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
             JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
-            WHERE ccgm.id.customerCompanyNo = :customerCompanyNo
+            WHERE ccpm.id.customerCompanyNo = :customerCompanyNo
+                AND ccpm.isDeleted                           = false
+                AND ccpm.isUsed                              = true
                 AND ccgm.isDeleted = false
                 AND ccgm.isUsed = true
                 AND g.isDeleted = false

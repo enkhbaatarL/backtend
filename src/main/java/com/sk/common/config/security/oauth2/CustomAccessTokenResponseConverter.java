@@ -25,8 +25,6 @@ public class CustomAccessTokenResponseConverter implements Converter<OAuth2Acces
         String tokenType = accessToken.getTokenType().getValue();
         Instant expiresAt = accessToken.getExpiresAt();
         Instant issuedAt = accessToken.getIssuedAt();
-        // todo 필요 시 추가
-//        Set<String> scopes = accessToken.getScopes();
 
         // expiresInSeconds 변환
         long expiresIn = Duration.between(Instant.now(), expiresAt).getSeconds();
