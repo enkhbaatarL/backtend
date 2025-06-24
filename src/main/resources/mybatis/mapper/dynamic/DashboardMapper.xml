@@ -23,7 +23,7 @@
         <result property="explanatoryDirectionSymbolNm" column="expp_dir_symb_nm"/>
         <result property="dirRank" column="dir_rank"/>
     </resultMap>
-    <select id="chartFactors" resultMap="dashboardChartFactorMap">
+    <!-- <select id="chartFactors" resultMap="dashboardChartFactorMap">
         SELECT 
             tb.mrkt_idx_anly_tgt_cd
           , tb.prdc_fulf_dt
@@ -43,6 +43,69 @@
            AND tb.del_yn = 'N'
          ORDER BY tb.expp_rnk
          LIMIT #{limit}
+    </select> -->
+    <select id="chartFactors" resultMap="dashboardChartFactorMap">
+         SELECT mrkt_idx_anly_tgt_cd
+              , prdc_fulf_dt
+              , prdc_inpt_mnmnc_dtl_cd
+              , prdc_inpt_mnmnc_cd
+              , expp_lvl_dtl_nm
+              , expp_scre
+              , prdc_rslt_ym
+              , expp_lvl_nm
+              , mnmnc_cd
+              , expp_dir_symb_nm
+              , expp_dir_synb_scre
+              , expp_rnk
+              , dir_rank
+          FROM (
+            select OA.mrkt_idx_anly_tgt_cd /* 시장지수분석대상코드 */
+              , OA.mnmnc_cd /* MNEMONIC코드 예측대상값 */
+              , OA.prdc_fulf_dt /* 예측수행일자 */
+              , OA.prdc_rslt_ym /* 예측결과년월 */
+              , OA.prdc_inpt_mnmnc_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+              , MIN(OA.prdc_inpt_mnmnc_dtl_cd) AS prdc_inpt_mnmnc_dtl_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+              , MIN(OA.expp_lvl_nm) AS expp_lvl_nm /* 설명력레벨명 설명력산출변수 카테고리 */
+              , MIN(OA.expp_lvl_dtl_nm) AS expp_lvl_dtl_nm /* 설명력레벨상세명 설명력산출변수명 */
+              , AVG(OA.expp_scre) AS expp_scre /* 설명력점수 */
+              , SUM(OA.expp_dir_synb_scre) AS expp_dir_synb_scre /* 설명력방향 기준 점수 */
+              , OA.expp_dir_symb_nm AS expp_dir_symb_nm
+              , OA.expp_rnk AS expp_rnk
+              , CASE WHEN SUM(OA.expp_dir_synb_scre) = 1 THEN '+'
+                  WHEN SUM(OA.expp_dir_synb_scre) = -1 THEN '-'
+                  WHEN SUM(OA.expp_dir_synb_scre) = 0 THEN '0'
+                  END AS expp_dir_symn_nm /* 설명력방향 */
+              , RANK() OVER (PARTITION BY SUM(OA.expp_dir_synb_scre) ORDER BY AVG(OA.expp_scre) DESC) AS dir_rank
+              from (
+                select a.mrkt_idx_anly_tgt_cd /* 시장지수분석대상코드 */
+                    , a.mnmnc_cd /* MNEMONIC코드 예측대상값 */
+                    , a.prdc_fulf_dt /* 예측수행일자 */
+                    , a.prdc_rslt_dt /* 예측결과일자 */
+                    , SUBSTR(a.prdc_rslt_dt, 1, 6) AS prdc_rslt_ym /* 예측결과년월 */
+                    , a.prdc_inpt_mnmnc_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+                    , a.prdc_inpt_mnmnc_dtl_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+                    , a.expp_lvl_nm /* 설명력레벨명 설명력산출변수 카테고리 */
+                    , a.expp_lvl_dtl_nm /* 설명력레벨상세명 설명력산출변수명 */
+                    , a.expp_scre /* 설명력점수 */
+                    , a.expp_rnk /* 설명력순위 점수기준 전체 순위 */
+                    , a.expp_dir_symb_nm /* 설명력방향 */
+                    , CASE WHEN a.expp_dir_symb_nm = '+' THEN 1
+                        WHEN a.expp_dir_symb_nm = '-' THEN -1
+                        WHEN a.expp_dir_symb_nm = '0' THEN 0
+                        END AS expp_dir_synb_scre /* 설명력방향 기준 점수 */
+                  from tmm_bztgtprdcexppinfom a
+                where ${queryWhere}
+                  and a.expp_lvl_nm = #{explanatoryLevelNm}
+                  and a.del_yn = 'N'
+                  and a.expp_scre != 0
+                  and a.expp_dir_symb_nm != '0'
+                  and a.prdc_fulf_dt = #{predictDate}
+                ) OA
+                GROUP BY OA.mrkt_idx_anly_tgt_cd, OA.mnmnc_cd, OA.prdc_fulf_dt, OA.prdc_rslt_ym, OA.prdc_inpt_mnmnc_cd
+          ) OOA
+          WHERE OOA.expp_dir_symn_nm = #{direction}
+          ORDER BY expp_scre DESC
+          LIMIT #{limit}
     </select>
 
     <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap">

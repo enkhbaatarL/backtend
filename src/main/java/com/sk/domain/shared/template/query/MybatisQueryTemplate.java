@@ -1,10 +1,13 @@
 package com.sk.domain.shared.template.query;
 
+import java.time.LocalDate;
+
 import org.springframework.stereotype.Component;
 
 @Component
 public class MybatisQueryTemplate {
     private final String CREATED_DATE_COLUMN = "crt_dtm"; //모든 TABLE 고정, 데이터 생성 일자
+    private final String MODIFIED_DATE_COLUMN = "mod_dtm"; //모든 TABLE 고정, 데이터 수정 일자
 
     /**
      * 알림 조회 쿼리 테이블 별칭 템플릿
@@ -50,7 +53,7 @@ public class MybatisQueryTemplate {
      * @param hours
      * @return
      */
-    public String getWhereQueryForAlarm(String dateColumn, String startDate, String endDate) {
+    public String getWhereQueryForAlarm(String startDate, String endDate) {
         // return String.format("""
         //         t1.%s >= DATE_SUB(NOW(), INTERVAL %d HOUR)
         //         AND t1.del_yn = 'N'
@@ -59,7 +62,7 @@ public class MybatisQueryTemplate {
         return String.format("""
                 t1.%s BETWEEN '%s' AND '%s'
                 AND t1.del_yn = 'N'
-                """, dateColumn, startDate, endDate);
+                """, MODIFIED_DATE_COLUMN, startDate, endDate);
     }
 
     /**

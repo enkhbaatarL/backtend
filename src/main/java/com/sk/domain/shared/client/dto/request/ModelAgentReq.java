@@ -32,8 +32,9 @@ public record ModelAgentReq(
 
         List<History> histories,
 
+        // 06-24 회사번호 변경요청(문자열로 요청받음..)
         @JsonProperty("company_code")
-        String companyCd,
+        String companyNo,
 
         @JsonProperty("user_num")
         Integer userNo
@@ -94,21 +95,21 @@ public record ModelAgentReq(
 
         }
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, String companyCd, Integer userNo) {
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
             return Input.builder()
                 .message(talkReq.question())
                 .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
                 .histories(History.ofList(histories))
-                .companyCd(companyCd)
+                .companyNo(String.valueOf(companyNo))
                 .userNo(userNo)
                 .build();
         }
 
     }
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, String companyCd, Integer userNo) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyCd, userNo))
+            .input(Input.of(talkReq, histories, companyNo, userNo))
             .build();
     }
 

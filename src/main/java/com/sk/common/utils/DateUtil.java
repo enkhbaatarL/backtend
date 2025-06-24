@@ -298,4 +298,11 @@ public final class DateUtil {
     public static LocalDate fromYyyyMmDdEng(String dateStr) {
         return dateStr != null ? LocalDate.parse(dateStr, YYYYMMDD_ENG) : null;
     }
+
+    /**
+     * LocalDate를 "yyyy-MM-dd HH:mm:ss" 문자열로 변환
+     */
+    public static String toYyyyMmDdHms(LocalDateTime dateTime) {
+        return dateTime != null ? dateTime.format(YYYY_MM_DD_HH_MM_SS) : null;
+    }
 }
