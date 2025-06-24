@@ -2,7 +2,6 @@ package com.sk.domain.mi.dto.response.insights;
 
 import java.time.LocalDateTime;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 @Getter

@@ -8,8 +8,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JsonFileWriter;
 import com.sk.common.utils.MultipartFileUtil;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;

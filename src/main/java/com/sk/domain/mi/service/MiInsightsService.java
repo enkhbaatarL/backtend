@@ -243,7 +243,7 @@ public class MiInsightsService {
             } // no filter
         }
 
-        String groupBy = " GROUP BY tp.prvd_nm, tg.gds_nm, tgd.gds_data_nm ";
+        String groupBy = " GROUP BY tgd.gds_data_no ";
 
         String orderBy = switch (sort) {
             case NEWEST -> " ORDER BY modifyDt DESC ";
