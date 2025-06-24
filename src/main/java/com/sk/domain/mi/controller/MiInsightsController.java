@@ -51,10 +51,11 @@ public class MiInsightsController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<List<FocusedDataDto>> getFocused(@PathVariable(value = "companyNo") Integer companyNo) {
 
+        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(miInsightsService.getFocused(cNo));
+        return BaseResponseFactory.create(miInsightsService.getFocused(cNo, userNo, role));
     }
 
     @ApiOrder(2)
