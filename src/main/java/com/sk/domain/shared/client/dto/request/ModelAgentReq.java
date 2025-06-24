@@ -32,9 +32,9 @@ public record ModelAgentReq(
 
         List<History> histories,
 
-        // 06-24 회사번호 변경요청
+        // 06-24 회사번호 변경요청(문자열로 요청받음..)
         @JsonProperty("company_code")
-        Integer companyNo,
+        String companyNo,
 
         @JsonProperty("user_num")
         Integer userNo
@@ -100,7 +100,7 @@ public record ModelAgentReq(
                 .message(talkReq.question())
                 .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
                 .histories(History.ofList(histories))
-                .companyNo(companyNo)
+                .companyNo(String.valueOf(companyNo))
                 .userNo(userNo)
                 .build();
         }
