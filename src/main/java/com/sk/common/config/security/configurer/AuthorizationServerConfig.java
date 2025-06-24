@@ -4,8 +4,8 @@ import com.sk.common.config.security.CustomAccessDeniedHandler;
 import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.jwt.CustomJwtEncoder;
 import com.sk.common.config.security.oauth2.AesPasswordEncoder;
-import com.sk.common.config.security.oauth2.CustomAccessTokenResponseHandler;
-import com.sk.common.config.security.oauth2.CustomAuthenticationFailureHandler;
+import com.sk.common.config.security.oauth2.CustomOauthAuthenticationSuccessHandler;
+import com.sk.common.config.security.oauth2.CustomOauthAuthenticationFailureHandler;
 import com.sk.common.filter.ExceptionHandlerFilter;
 import com.sk.common.properties.JwtProperties;
 import com.sk.common.utils.JwtUtil;
@@ -42,8 +42,8 @@ public class AuthorizationServerConfig {
     private final JwtProperties jwtProperties;
     private final ExceptionHandlerFilter exceptionHandlerFilter;
     private final RegisteredClientRepository registeredClientRepository;
-    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
-    private final CustomAccessTokenResponseHandler customAccessTokenResponseHandler;
+    private final CustomOauthAuthenticationFailureHandler customOauthAuthenticationFailureHandler;
+    private final CustomOauthAuthenticationSuccessHandler customOauthAuthenticationSuccessHandler;
 
     private final CorsConfigurationSource corsConfigurationSource;
 
@@ -55,11 +55,11 @@ public class AuthorizationServerConfig {
 
         // 토큰 엔드포인트 커스터마이징 (grant_type: client_credentials 지원)
         authorizationServerConfigurer
-            .clientAuthentication(clientAuth -> clientAuth.errorResponseHandler(customAuthenticationFailureHandler)) // BasicAuthenticationFilter
+            .clientAuthentication(clientAuth -> clientAuth.errorResponseHandler(customOauthAuthenticationFailureHandler)) // BasicAuthenticationFilter
             .tokenEndpoint(tokenEndpoint ->
                 tokenEndpoint
-                    .accessTokenResponseHandler(customAccessTokenResponseHandler)
-                    .errorResponseHandler(customAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
+                    .accessTokenResponseHandler(customOauthAuthenticationSuccessHandler)
+                    .errorResponseHandler(customOauthAuthenticationFailureHandler) // OAuth2TokenEndpointFilter
             );
 
         // Authorization Server 관련 경로 매칭
