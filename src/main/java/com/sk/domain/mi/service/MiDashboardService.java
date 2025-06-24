@@ -1383,7 +1383,7 @@ public class MiDashboardService {
      * @return DashboardChartFactorGraphRes
      */
     public DashboardChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo, String predictDate, String date,
-            String mnemonicCd, String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd) {
+            String explanatoryLevelNm, String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd, String predictionInputMnemonicDetailCd) {
         LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
 
         String currentDate = DateUtil.toYmd(LocalDate.now());
@@ -1404,7 +1404,7 @@ public class MiDashboardService {
 
         // 그래프 Table 조회
         DashboardChartFactorGraphMap chartFactorGraph = dashboardMapper
-                .chartFactorGraph(marketIndexAnalysisTargetCd, mnemonicCd)
+                .chartFactorGraph(marketIndexAnalysisTargetCd, predictionInputMnemonicDetailCd)
                 .orElse(null);
 
         // 그래프 RawData GoodsDataSourceNo

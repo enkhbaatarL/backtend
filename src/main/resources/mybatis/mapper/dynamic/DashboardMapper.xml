@@ -176,7 +176,7 @@
            AND a.del_yn = b.del_yn
            AND a.del_yn = 'N'
            AND b.mrkt_idx_anly_tgt_cd = #{marketIndexAnalysisTargetCd}
-           AND (a.ric_cd = #{mnemonicCd} OR a.mnmnc_cd = #{mnemonicCd})
+           AND (a.ric_cd = #{predictionInputMnemonicDetailCd} OR a.mnmnc_cd = #{predictionInputMnemonicDetailCd})
          LIMIT 1
     </select>
 

@@ -58,10 +58,10 @@ public interface DashboardMapper {
      * 차트 주요 요인 분석 영향 데이터 테이블 조회(Drill Down #3)
      * 
      * @param marketIndexAnalysisTargetCd 시장지수분석대상코드
-     * @param mnemonicCd MNEMONIC코드
+     * @param predictionInputMnemonicDetailCd 예측 입력 명칭 상세코드
      * @return DashboardChartFactorGraphMap
      */
-    Optional<DashboardChartFactorGraphMap> chartFactorGraph(String marketIndexAnalysisTargetCd, String mnemonicCd);
+    Optional<DashboardChartFactorGraphMap> chartFactorGraph(String marketIndexAnalysisTargetCd, String predictionInputMnemonicDetailCd);
     
     /**
      * 차트 요약 조회
