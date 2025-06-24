@@ -205,9 +205,11 @@ public class MiInsightsService {
                 .append(" MAX(tf.mod_dtm) AS modifyDt");
 
         StringBuilder where = new StringBuilder()
-                .append(" tc.cust_cpny_no = :companyNo")
-                .append(" AND tc.del_yn = 'N'")
-                .append(" AND tc.use_yn = 'Y'")
+                .append(" tcp.cust_cpny_no = :companyNo")
+                .append(" AND tcp.del_yn = 'N'")
+                .append(" AND tcp.use_yn = 'Y'")
+                .append(" AND tcg.del_yn = 'N'")
+                .append(" AND tcg.use_yn = 'Y'")
                 .append(" AND tg.del_yn = 'N'")
                 .append(" AND tg.use_yn = 'Y'")
                 .append(" AND tp.del_yn = 'N'")
@@ -257,8 +259,9 @@ public class MiInsightsService {
         String contentSql = """
                 SELECT
                   """ + select + """
-                FROM midb.tam_custcpnygdsmappl tc
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
+                FROM tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
                 JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
@@ -270,8 +273,9 @@ public class MiInsightsService {
 
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
-                FROM midb.tam_custcpnygdsmappl tc
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tc.gds_no
+                FROM tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
                 JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
