@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,12 +28,10 @@ import org.thymeleaf.util.StringUtils;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
-import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import com.sk.domain.shared.dto.response.rpa.CrackSpreadDataRes;
@@ -47,7 +46,6 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmd.UserHistory;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
-import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
@@ -170,11 +168,13 @@ public class SchedulerService {
                 LocalDate startDate = LocalDate.now().minusDays(ALARM_BATCH_DAYS);
                 LocalDate endDate = LocalDate.now();
 
-                // 날짜 범위 조회
-                SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
-                Pair<String, String> dateRange = DateBindingUtil.range(meta, startDate, endDate);
+                LocalDateTime startDateTime = LocalDateTime.of(startDate, LocalTime.MIN);
+                LocalDateTime endDateTime = LocalDateTime.of(endDate, LocalTime.MAX);
 
-                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(dateColumn, dateRange.getLeft(), dateRange.getRight());
+                String startDateStr = DateUtil.toYyyyMmDdHms(startDateTime);
+                String endDateStr = DateUtil.toYyyyMmDdHms(endDateTime);
+
+                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(startDateStr, endDateStr);
 
                 // 임계치 설정 1개에 대한 데이터 리스트
                 List<Map<String, Object>> rowDatas = mybatisDynamicQueryService
