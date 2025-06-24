@@ -26,8 +26,7 @@ public class CustomSamlAuthenticationFailureHandler implements AuthenticationFai
 	private String loginErrorUrl;
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-            AuthenticationException exception) throws IOException, ServletException {
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException {
         log.error("SAML 인증 실패 : {}", exception.getMessage());
 
         if (exception instanceof Saml2AuthenticationException saml2Ex) {
@@ -40,8 +39,8 @@ public class CustomSamlAuthenticationFailureHandler implements AuthenticationFai
             throw CustomAuthenticationException.of(AuthComponent.SAML_SERVICE_PROVIDER, resultCode,
                     ObjectUtils.isNotEmpty(description) ? description : errorCode, exception);
         } else {
-            throw CustomAuthenticationException.of(AuthComponent.SAML_SERVICE_PROVIDER, ResultCode.Error.AUTH_REQUIRED,
-                    exception.getMessage(), exception);
+            throw CustomAuthenticationException.of(AuthComponent.SAML_SERVICE_PROVIDER, ResultCode.Error.AUTH_REQUIRED, exception.getMessage(), exception);
         }
     }
+
 }

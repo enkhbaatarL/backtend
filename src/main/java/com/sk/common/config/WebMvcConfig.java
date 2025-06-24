@@ -1,19 +1,16 @@
 package com.sk.common.config;
 
-import java.util.List;
-
+import com.sk.common.interceptor.ApiAccessLogInterceptor;
+import com.sk.common.resolver.UserArgumentResolver;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.sk.common.interceptor.ApiAccessLogInterceptor;
-import com.sk.common.resolver.UserArgumentResolver;
-
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -27,16 +24,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(apiAccessLogInterceptor)
             .addPathPatterns("/api/**"); // API 경로에만 적용
     }
-
-    // 2025.05.21 -> CORS 설정 Spring Security 에서 처리함.
-//    @Override
-//    public void addCorsMappings(CorsRegistry registry) {
-//        registry.addMapping("/**")
-//            .allowedOriginPatterns("*")
-//            .allowedMethods("*")
-//            .allowedHeaders("*")
-//            .allowCredentials(true);
-//    }
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
