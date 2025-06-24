@@ -2,6 +2,7 @@ package com.sk.domain.shared.service;
 
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -228,12 +229,24 @@ public class MailService {
      */
     public String setCriticalValueSettingContent(String criticalValueSettingVol, String criticalValueSettingUnitNm,
             String notificationCriticalValueSeparateCd) {
-        // 조건에 따른 단위와 변경 유형 매핑
-        Map<String, String[]> settings = Map.of(
-                NotiCrtvlSptCd.DECRATE.getDescription(), new String[] {"%", notificationCriticalValueSeparateCd + " 초과"},
-                NotiCrtvlSptCd.INCRATE.getDescription(), new String[] {"%", notificationCriticalValueSeparateCd + " 초과"},
-                NotiCrtvlSptCd.UPPER.getDescription(), new String[] {criticalValueSettingUnitNm, "이상으로 " + notificationCriticalValueSeparateCd},
-                NotiCrtvlSptCd.LOWER.getDescription(), new String[] {criticalValueSettingUnitNm, "이하로 " + notificationCriticalValueSeparateCd});
+
+        Map<String, String[]> settings = new HashMap<>();
+
+        if (criticalValueSettingUnitNm != null) {
+            // 조건에 따른 단위와 변경 유형 매핑
+            settings = Map.of(
+                    NotiCrtvlSptCd.DECRATE.getDescription(), new String[] {"%", notificationCriticalValueSeparateCd + " 초과"},
+                    NotiCrtvlSptCd.INCRATE.getDescription(), new String[] {"%", notificationCriticalValueSeparateCd + " 초과"},
+                    NotiCrtvlSptCd.UPPER.getDescription(), new String[] {criticalValueSettingUnitNm, "이상으로 " + notificationCriticalValueSeparateCd},
+                    NotiCrtvlSptCd.LOWER.getDescription(), new String[] {criticalValueSettingUnitNm, "이하로 " + notificationCriticalValueSeparateCd});
+        } else {
+            // 조건에 따른 단위와 변경 유형 매핑
+            settings = Map.of(
+                    NotiCrtvlSptCd.DECRATE.getDescription(), new String[] {"%", notificationCriticalValueSeparateCd + " 초과"},
+                    NotiCrtvlSptCd.INCRATE.getDescription(), new String[] {"%", notificationCriticalValueSeparateCd + " 초과"},
+                    NotiCrtvlSptCd.UPPER.getDescription(), new String[] {"이상으로 " + notificationCriticalValueSeparateCd},
+                    NotiCrtvlSptCd.LOWER.getDescription(), new String[] {"이하로 " + notificationCriticalValueSeparateCd});
+        }
 
         // 기본값: 빈 단위와 변경 유형
         String[] setting = settings.getOrDefault(notificationCriticalValueSeparateCd, new String[] {"", ""});
@@ -254,12 +267,24 @@ public class MailService {
     */
     public String setCriticalValueSettingHtmlContentBody(String criticalValueSettingUnitNm,
             String notificationCriticalValueSeparateCd) {
-        // 조건에 따른 단위와 변경 유형 매핑
-        Map<String, String[]> settings = Map.of(
-                NotiCrtvlSptCd.DECRATE.getDescription(), new String[] {"%", " 초과"},
-                NotiCrtvlSptCd.INCRATE.getDescription(), new String[] {"%", " 초과"},
-                NotiCrtvlSptCd.UPPER.getDescription(), new String[] {criticalValueSettingUnitNm, "이상으로 " + notificationCriticalValueSeparateCd},
-                NotiCrtvlSptCd.LOWER.getDescription(), new String[] {criticalValueSettingUnitNm, "이하로 " + notificationCriticalValueSeparateCd});
+
+        Map<String, String[]> settings = new HashMap<>();
+
+        if (criticalValueSettingUnitNm != null) {
+            // 조건에 따른 단위와 변경 유형 매핑
+            settings = Map.of(
+                    NotiCrtvlSptCd.DECRATE.getDescription(), new String[] {"%", " 초과"},
+                    NotiCrtvlSptCd.INCRATE.getDescription(), new String[] {"%", " 초과"},
+                    NotiCrtvlSptCd.UPPER.getDescription(), new String[] {criticalValueSettingUnitNm, "이상으로 " + notificationCriticalValueSeparateCd},
+                    NotiCrtvlSptCd.LOWER.getDescription(), new String[] {criticalValueSettingUnitNm, "이하로 " + notificationCriticalValueSeparateCd});
+        } else {
+            // 조건에 따른 단위와 변경 유형 매핑
+            settings = Map.of(
+                    NotiCrtvlSptCd.DECRATE.getDescription(), new String[] {"%", " 초과"},
+                    NotiCrtvlSptCd.INCRATE.getDescription(), new String[] {"%", " 초과"},
+                    NotiCrtvlSptCd.UPPER.getDescription(), new String[] {"이상으로 " + notificationCriticalValueSeparateCd},
+                    NotiCrtvlSptCd.LOWER.getDescription(), new String[] {"이하로 " + notificationCriticalValueSeparateCd});
+        }
 
         // 기본값: 빈 단위와 변경 유형
         String[] setting = settings.getOrDefault(notificationCriticalValueSeparateCd, new String[] {"", ""});

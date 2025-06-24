@@ -46,7 +46,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 	private final CustomerCompanyRepository customerCompanyRepository;
 	private final StringRedisTemplate redisTemplate;
 
-	private final int LOGIN_SESSION_EXPIRE_TIME = 60 * 10; //로그인 세션 유지시간 10분
+	private final int LOGIN_REDIS_KEY_EXPIRE_TIME = 60 * 10; // 로그인 레디스 키 유지시간 10분
 
 	@Override
 	@Transactional
@@ -87,7 +87,8 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 		String sessionId = UUID.randomUUID().toString();
 
-		redisTemplate.opsForValue().set(sessionId, principal.getName(), Duration.ofSeconds(LOGIN_SESSION_EXPIRE_TIME));
+		// GET /api/v1/saml2/callback 요청 시 사용자 정보를 가져오기 위한 데이터로 레디스에 저장
+		redisTemplate.opsForValue().set(sessionId, principal.getName(), Duration.ofSeconds(LOGIN_REDIS_KEY_EXPIRE_TIME));
 
 		// // 프론트엔드 콜백 URL로 리다이렉트, 액세스 토큰을 쿼리 파라미터로 전달
 		response.sendRedirect(loginCallbackUrl + "?sessionId=" + sessionId);
