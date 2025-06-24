@@ -16,11 +16,11 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class CustomAccessTokenResponseHandler implements AuthenticationSuccessHandler {
+public class CustomOauthAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final CustomAccessTokenResponseConverter customAccessTokenResponseConverter;
 
-    public CustomAccessTokenResponseHandler(CustomAccessTokenResponseConverter customAccessTokenResponseConverter) {
+    public CustomOauthAuthenticationSuccessHandler(CustomAccessTokenResponseConverter customAccessTokenResponseConverter) {
         this.customAccessTokenResponseConverter = customAccessTokenResponseConverter;
     }
 
