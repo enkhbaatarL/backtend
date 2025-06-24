@@ -29,10 +29,5 @@ public class AdminPermissionStrategy implements PermissionStrategy {
         return false;
     }
 
-    @Override
-    public boolean canAccessCompany(Integer companyNo) {
-        // 관리자는 회사 접근 권한 없음
-        return false;
-    }
 }
 

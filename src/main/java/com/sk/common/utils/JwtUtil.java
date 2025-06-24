@@ -133,11 +133,6 @@ public class JwtUtil {
         }
     }
 
-    // 사용자 이름 추출
-    public String extractUsername(String token) {
-        return extractClaims(token).getSubject();
-    }
-
     // 토큰 만료 여부 확인
     public boolean isTokenExpired(String token) {
         return extractClaims(token)
@@ -163,4 +158,5 @@ public class JwtUtil {
             return false; // 서명 오류, 구조 오류 등
         }
     }
+
 }
