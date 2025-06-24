@@ -40,29 +40,13 @@ public class OecdCliDataCollector implements DataCollectorStrategy {
             periodCodes = periodCodes.stream().map(this::truncatePeriodCode).collect(Collectors.toList());
             log.debug("Excel period codes: {}", periodCodes);
 
-            int lastRowNum = -1; // 이전 행 번호 추적
-
-            
-            int currentRowNumTemp = sheet.getLastRowNum();
-            log.debug("Current row num: {}", currentRowNumTemp);
-
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
-                int currentRowNum = row.getRowNum();
 
                 // 데이터 시작 행 인덱스 조건
                 if (row.getRowNum() < DATA_START_ROW_INDEX) {
                     continue;
                 }
-                
-                // 행 번호가 연속적이지 않으면 비어 있는 행이 있다고 간주
-                if (lastRowNum != -1 && currentRowNum > lastRowNum + 1) {
-                    log.debug("Detected empty row(s) between row {} and row {}, stopping processing", lastRowNum, currentRowNum);
-                    break;
-                }
-
-                // 행 번호 업데이트 (비어있는 행 처리 위함)
-                lastRowNum = currentRowNum;
 
                 // 데이터 파싱
                 Cell dateCell = row.getCell(DATE_COLUMN_INDEX);
@@ -71,14 +55,19 @@ public class OecdCliDataCollector implements DataCollectorStrategy {
                 }
 
                 // 날짜 타입 변환
-                String date = DateUtil.fromYyyyMmmToYyyyMm(dateCell.getStringCellValue().trim());
+                String date = null;
+                // 날짜 파싱 실패시 행 종료
+                try {
+                    date = DateUtil.fromYyyyMmmToYyyyMm(dateCell.getStringCellValue().trim());
+                } catch (Exception e) {
+                    log.error("Failed to parse date: {}", dateCell.getStringCellValue().trim());
+                    break;
+                }
 
                 // 데이터 파싱
                 for (int i = VALUE_COLUMN_INDEX; i < row.getLastCellNum() && i < periodCodes.size() + VALUE_COLUMN_INDEX; i++) {
                     Cell valueCell = row.getCell(i);
-                    if (valueCell == null)
-                        continue;
-                    double value = valueCell.getNumericCellValue();
+                    Object value = valueCell.getCellType() == CellType.NUMERIC ? valueCell.getNumericCellValue() : null;
                     Object periodCode = periodCodes.get(i - VALUE_COLUMN_INDEX);
                     result.add(new Object[] {date, periodCode, value});
                 }
