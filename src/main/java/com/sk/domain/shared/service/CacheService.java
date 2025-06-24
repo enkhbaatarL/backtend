@@ -19,6 +19,15 @@ public class CacheService {
 
     /**
      * 사용자 권한 목록을 기준으로 Company, Provider, Goods 태그 엔티티에 사용자를 추가한다.
+     * <p>
+     * redis-key:
+     * - tag:company:user:{companyNo}
+     * - tag:provider:user:{providerNo}
+     * - tag:goods:user:{goodsNo}
+     * example:
+     * - tag:company:user:2008
+     * - tag:provider:user:5018
+     * - tag:goods:user:70028
      *
      * @param userNo      사용자 번호
      * @param permissions 권한 객체
@@ -29,20 +38,20 @@ public class CacheService {
 
         permissions.getPermittedCompanies().forEach(companyNo -> {
             String createdKey = "%s%s%s".formatted(CacheType.TAG_COMPANY.getCachePrefix(), CacheType.TAG_COMPANY.getCacheName(), companyNo);
-            log.info("Redis key(company) has been created. {}", createdKey);
             redisTemplate.opsForSet().add(createdKey, userKey);
+            log.info("Redis key(company) has been created. key: {}, additional value: {}", createdKey, userKey);
         });
 
         permissions.getPermittedProviders().forEach(providerNo -> {
             String createdKey = "%s%s%s".formatted(CacheType.TAG_PROVIDER.getCachePrefix(), CacheType.TAG_PROVIDER.getCacheName(), providerNo);
-            log.info("Redis key(provider) has been created. {}", createdKey);
             redisTemplate.opsForSet().add(createdKey, userKey);
+            log.info("Redis key(provider) has been created. key: {}, additional value: {}", createdKey, userKey);
         });
 
         permissions.getPermittedGoods().forEach(goodsNo -> {
             String createdKey = "%s%s%s".formatted(CacheType.TAG_GOODS.getCachePrefix(), CacheType.TAG_GOODS.getCacheName(), goodsNo);
-            log.info("Redis key(goods) has been created. {}", createdKey);
             redisTemplate.opsForSet().add(createdKey, userKey);
+            log.info("Redis key(goods) has been created. key: {}, additional value: {}", createdKey, userKey);
         });
 
     }
@@ -56,18 +65,18 @@ public class CacheService {
     public void invalidateUsersForTagEntity(CacheType cacheType, Integer entityId) {
 
         String lookupKey = "%s%s%s".formatted(cacheType.getCachePrefix(), cacheType.getCacheName(), entityId);
-        Set<String> affectedUsers = redisTemplate.opsForSet().members(lookupKey);
+        Set<String> relatedUsers = redisTemplate.opsForSet().members(lookupKey);
 
 
-        if (ObjectUtils.isNotEmpty(affectedUsers)) {
-            affectedUsers.forEach(userNo -> {
-                // 1. 캐시에서 사용자 권한 삭제
+        if (ObjectUtils.isNotEmpty(relatedUsers)) {
+            relatedUsers.forEach(userNo -> {
+                // 1. 사용자 권한 캐시 무효화
                 String permissionKey = "%s%s::%s".formatted(CacheType.PERMISSIONS.getCachePrefix(), CacheType.PERMISSIONS.getCacheName(), userNo);
                 redisTemplate.delete(permissionKey);
-                log.info("Redis key(permissions) has been removed. {}", permissionKey);
+                log.info("redis perm-key(permissions) has been removed. key: {}", permissionKey);
                 // 2. 역방향 인덱스에서 해당 사용자 제거
                 redisTemplate.opsForSet().remove(lookupKey, userNo);
-                log.info("Element(userNo) '{}' has been removed from Redis key '{}'.", userNo, lookupKey);
+                log.info("Removed userNo '{}' from Redis set '{}'", userNo, lookupKey);
             });
         }
     }
@@ -80,7 +89,7 @@ public class CacheService {
     public void invalidateUsers(Integer userNo) {
         String permissionKey = "%s%s::%s".formatted(CacheType.PERMISSIONS.getCachePrefix(), CacheType.PERMISSIONS.getCacheName(), userNo);
         redisTemplate.delete(permissionKey);
-        log.info("Redis key(permissions) has been removed. {}", permissionKey);
+        log.info("redis perm-key(permissions) has been removed. key: {}", permissionKey);
     }
 
 }

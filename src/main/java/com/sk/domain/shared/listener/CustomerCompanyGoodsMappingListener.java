@@ -27,6 +27,9 @@ public class CustomerCompanyGoodsMappingListener {
         CustomerCompanyGoodsMappingListener.applicationContext = applicationContext;
     }
 
+    /**
+     * CustomerCompanyGoodsMapping(고객사-상품 매핑) Disabled or Deleted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
+     */
     @PostUpdate
     public void checkDisabled(CustomerCompanyGoodsMapping ccgm) {
 
@@ -37,16 +40,22 @@ public class CustomerCompanyGoodsMappingListener {
             List<User> users = ccgm.getCustomerCompany().getUsers();
             List<Integer> userNos = users.stream().map(User::getUserNo).toList();
 
-            log.info("The CustomerCompanyGoodsMapping(companyNo: {}, goodsNo: {}) has been disabled. Subsequently, the userNos({}) cache will be invalidated.",
-                ccgm.getCustomerCompany().getCustomerCompanyNo(), ccgm.getGoods().getGoodsNo(),
-                userNos);
+            log.info("The CustomerCompanyGoodsMapping(companyNo: {}, goodsNo: {}) has been disabled or deleted. The related user's({}) cache will be invalidated accordingly.",
+                ccgm.getCustomerCompany().getCustomerCompanyNo(),
+                ccgm.getGoods().getGoodsNo(),
+                userNos
+            );
 
-            // 회사-상품 매핑이 제거 되었으므로 해당하는 회사에 소속된 모든 사용자 캐싱 무효화
+            // 고객사-상품 매핑이 제거 되었으므로 해당하는 회사에 소속된 모든 사용자 캐싱 무효화
             users.forEach(user -> cacheService.invalidateUsers(user.getUserNo()));
+
         }
 
     }
 
+    /**
+     * CustomerCompanyGoodsMapping(고객사-상품 매핑) Persisted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
+     */
     @PostPersist
     public void checkPersisted(CustomerCompanyGoodsMapping ccgm) {
 
@@ -55,9 +64,11 @@ public class CustomerCompanyGoodsMappingListener {
         List<User> users = ccgm.getCustomerCompany().getUsers();
         List<Integer> userNos = users.stream().map(User::getUserNo).toList();
 
-        log.info("The CustomerCompanyGoodsMapping(companyNo: {}, goodsNo: {}) has been persisted. Subsequently, the userNos({}) cache will be invalidated.",
-            ccgm.getCustomerCompany().getCustomerCompanyNo(), ccgm.getGoods().getGoodsNo(),
-            userNos);
+        log.info("The CustomerCompanyGoodsMapping(companyNo: {}, goodsNo: {}) has been persisted. The related user's({}) cache will be invalidated accordingly.",
+            ccgm.getCustomerCompany().getCustomerCompanyNo(),
+            ccgm.getGoods().getGoodsNo(),
+            userNos
+        );
 
         // 회사-상품 매핑이 추가 되었으므로 해당하는 회사에 소속된 모든 사용자 캐싱 무효화
         users.forEach(user -> cacheService.invalidateUsers(user.getUserNo()));

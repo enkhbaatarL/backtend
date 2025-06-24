@@ -27,7 +27,7 @@ public class CustomerCompanyProviderMappingListener {
     }
 
     /**
-     * CustomerCompanyProviderMapping Disabled 감지하여 Goods 태그 엔티티 캐싱 무효화를 요청한다.
+     * CustomerCompanyProviderMapping(고객사-프로바이더 매핑) Disabled or Deleted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
      */
     @PostUpdate
     public void checkDisabled(CustomerCompanyProviderMapping ccpm) {
@@ -39,15 +39,22 @@ public class CustomerCompanyProviderMappingListener {
             List<User> users = ccpm.getCustomerCompany().getUsers();
             List<Integer> userNos = users.stream().map(User::getUserNo).toList();
 
-            log.info("The CustomerCompanyProviderMapping(companyNo: {}, providerNo: {}) has been disabled. Subsequently, the userNos({}) cache will be invalidated.",
-                ccpm.getCustomerCompany().getCustomerCompanyNo(), ccpm.getProvider().getProviderNo(),
-                userNos);
+            log.info("The CustomerCompanyProviderMapping(companyNo: {}, providerNo: {}) has been disabled or deleted. The related user's({}) cache will be invalidated accordingly.",
+                ccpm.getCustomerCompany().getCustomerCompanyNo(),
+                ccpm.getProvider().getProviderNo(),
+                userNos
+            );
+
             // 회사-프로바이더 매핑이 제거 되었으므로 해당하는 회사에 소속된 모든 사용자 캐싱 무효화
             users.forEach(user -> cacheService.invalidateUsers(user.getUserNo()));
+
         }
 
     }
 
+    /**
+     * CustomerCompanyProviderMapping(고객사-프로바이더 매핑) Persisted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
+     */
     @PostPersist
     public void checkPersisted(CustomerCompanyProviderMapping ccpm) {
 
@@ -56,9 +63,11 @@ public class CustomerCompanyProviderMappingListener {
         List<User> users = ccpm.getCustomerCompany().getUsers();
         List<Integer> userNos = users.stream().map(User::getUserNo).toList();
 
-        log.info("The CustomerCompanyProviderMapping(companyNo: {}, providerNo: {}) has been persisted. Subsequently, the userNos({}) cache will be invalidated.",
-            ccpm.getCustomerCompany().getCustomerCompanyNo(), ccpm.getProvider().getProviderNo(),
-            userNos);
+        log.info("The CustomerCompanyProviderMapping(companyNo: {}, providerNo: {}) has been persisted. The related user's({}) cache will be invalidated accordingly.",
+            ccpm.getCustomerCompany().getCustomerCompanyNo(),
+            ccpm.getProvider().getProviderNo(),
+            userNos
+        );
 
         // 회사-프로바이더 매핑이 추가 되었으므로 해당하는 회사에 소속된 모든 사용자 캐싱 무효화
         ccpm.getCustomerCompany().getUsers().forEach(user -> cacheService.invalidateUsers(user.getUserNo()));

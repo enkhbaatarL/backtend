@@ -24,14 +24,14 @@ public class CustomerCompanyListener {
     }
 
     /**
-     * CustomerCompany Disabled 감지하여 CustomerCompany 태그 엔티티 캐싱 무효화를 요청한다.
+     * CustomerCompany(고객회사) Disabled or Deleted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
      */
     @PostUpdate
     public void checkDisabled(CustomerCompany customerCompany) {
 
         if (BooleanUtils.isFalse(customerCompany.getIsUsed()) || BooleanUtils.isTrue(customerCompany.getIsDeleted())) {
             CacheService cacheService = applicationContext.getBean(CacheService.class);
-            log.info("The companyNo({}) has been disabled. Subsequently, the related user cache will be invalidated", customerCompany.getCustomerCompanyNo());
+            log.info("The company({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", customerCompany.getCustomerCompanyNo());
             cacheService.invalidateUsersForTagEntity(CacheType.TAG_COMPANY, customerCompany.getCustomerCompanyNo());
         }
 
