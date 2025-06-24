@@ -15,7 +15,6 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
-import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.mi.service.MiInsightsService;
@@ -51,10 +50,11 @@ public class MiInsightsController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<List<FocusedDataDto>> getFocused(@PathVariable(value = "companyNo") Integer companyNo) {
 
+        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(miInsightsService.getFocused(cNo));
+        return BaseResponseFactory.create(miInsightsService.getFocused(cNo, userNo, role));
     }
 
     @ApiOrder(2)

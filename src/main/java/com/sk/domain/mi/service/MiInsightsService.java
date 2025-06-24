@@ -14,10 +14,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
@@ -26,6 +30,7 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
@@ -48,6 +53,7 @@ public class MiInsightsService {
     private final EntityManager entityManager;
     private final GoodsRepository goodsRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
+    private final MiGoodsPermissionService miGoodsPermissionService;
 
     /**
      * Focused 목록 조회
@@ -66,7 +72,7 @@ public class MiInsightsService {
      * @param companyNo
      * @return List<FocusedDataRes>
      */
-    public List<FocusedDataDto> getFocused(int companyNo) {
+    public List<FocusedDataDto> getFocused(int companyNo, int userNo, Role role) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(30);
 
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
@@ -77,7 +83,7 @@ public class MiInsightsService {
                         res.getProviderNo(), res.getProviderNm(),
                         res.getGoodsNo(), res.getGoodsNm(),
                         res.getGoodsDataNo(), res.getGoodsDataNm(),
-                        res.getModifyDt(), res.getGoodsDataCategoryCd()))
+                        res.getModifyDt(), res.getGoodsDataCategoryCd(), false))
                 .collect(Collectors.toList());
 
         Map<String, Integer> quotas = new LinkedHashMap<>();
@@ -103,9 +109,10 @@ public class MiInsightsService {
                 if (data.getGoodsDataCategoryCd().contains(type) && data.getGoodsDataCategoryCd().contains("A_ENG")
                         && !data.getGoodsDataCategoryCd().contains("A_KOR") && !data.getGoodsDataCategoryCd().contains("A_OTHERS")) {
 
-                    System.out.println("Focused Data: [" + data.getGoodsDataNo() + "] " + data.getGoodsDataCategoryCd() + " - " + type);
-
+                    boolean isViewable = isDataViewable(companyNo, userNo, role, data.getGoodsNo());
+                    data.setIsViewable(isViewable);
                     data.setGoodsDataCategoryCd(type);
+
                     result.add(data);
                     it.remove();
                     count++;
@@ -118,6 +125,28 @@ public class MiInsightsService {
         }
 
         return result;
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    boolean isDataViewable(int companyNo, int userNo, Role role, int goodsNo) {
+
+        if (companyNo <= 0 || userNo <= 0 || goodsNo <= 0 || role == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
+        }
+
+        switch (role) {
+            case ADMIN -> {
+                PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
+                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+            }
+
+            case USER -> {
+                PermissionRes permissionRes = miGoodsPermissionService.getUserGoodsPermissions(userNo);
+                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
+            }
+
+            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
+        }
     }
 
     /**
@@ -214,7 +243,7 @@ public class MiInsightsService {
             } // no filter
         }
 
-        String groupBy = " GROUP BY tp.prvd_nm, tg.gds_nm, tgd.gds_data_nm ";
+        String groupBy = " GROUP BY tgd.gds_data_no ";
 
         String orderBy = switch (sort) {
             case NEWEST -> " ORDER BY modifyDt DESC ";

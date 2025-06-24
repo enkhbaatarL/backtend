@@ -52,12 +52,12 @@ public class AuthorizationService {
         Jwt jwt = getCurrentJwt();
         Object companyNoObj = jwt.getClaim(Claim.COMPANY_NO.getCode());
         if (companyNoObj == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Company not found");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "companyNo not found");
         }
         try {
             return Integer.parseInt(companyNoObj.toString());
         } catch (NumberFormatException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid company number");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid companyNo: %s".formatted(companyNoObj.toString()));
         }
     }
 
@@ -68,15 +68,15 @@ public class AuthorizationService {
         Jwt jwt = getCurrentJwt();
         String companyCd = jwt.getClaimAsString(Claim.COMPANY_CD.getCode());
         if (companyCd == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Company Code not found");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "companyCd not found");
         }
         return companyCd;
     }
 
     /**
      * 우선순위에 따른 회사번호 조회
-     *   1. 헤더의 X-Company-No
-     *   2. token claim
+     * 1. 헤더의 X-Company-No
+     * 2. token claim
      */
     public Integer getCompanyNoWithPriority() {
         return Optional.ofNullable(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO))
@@ -91,12 +91,12 @@ public class AuthorizationService {
         Jwt jwt = getCurrentJwt();
         Object userNoObj = jwt.getClaim(Claim.USER_NO.getCode());
         if (userNoObj == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "User not found");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "userNo not found");
         }
         try {
             return Integer.parseInt(userNoObj.toString());
         } catch (NumberFormatException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid user number");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid userNo: %s".formatted(userNoObj.toString()));
         }
     }
 
@@ -107,12 +107,12 @@ public class AuthorizationService {
         Jwt jwt = getCurrentJwt();
         String role = jwt.getClaimAsString(Claim.ROLE.getCode());
         if (role == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Role not found");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "role not found");
         }
         try {
             return Role.valueOf(role);
         } catch (IllegalArgumentException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid role: %s".formatted(role));
         }
     }
 
@@ -123,23 +123,25 @@ public class AuthorizationService {
         Jwt jwt = getCurrentJwt();
         Object isOtherServiceAccessPossible = jwt.getClaim(Claim.OTHER_SERVICE_ACCESS.getCode());
         if (isOtherServiceAccessPossible == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Third party access info not found");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "isOtherServiceAccessPossible not found");
         }
         try {
             return Boolean.parseBoolean(isOtherServiceAccessPossible.toString());
         } catch (NumberFormatException e) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid third party access format");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INVALID_CREDENTIALS, "Invalid isOtherServiceAccessPossible format");
         }
     }
 
     /**
      * Subject 조회
+     *  - 사용자 로그인아이디
+     *  - 회사코드
      */
     public String getSubject() {
         Jwt jwt = getCurrentJwt();
         String subject = jwt.getSubject();
         if (subject == null) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Subject not found");
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "subject not found");
         }
         try {
             return subject;
@@ -148,58 +150,16 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * 관리자여부 조회
-     */
-    public boolean isAdmin() {
-        return Role.ADMIN.equals(getCurrentRole());
-    }
-
-    /**
-     * 회사 접근권한 검증
-     */
-    public void validateCompanyAccess(Integer companyNo, PermissionRes allowedPermissions) {
-        if (!allowedPermissions.getPermittedCompanies().contains(companyNo)) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "No permission for company: %d".formatted(companyNo));
-        }
-    }
-
-    /**
-     * 관리자권한 검증
-     */
-    public void validateAdmin() {
-        if (!isAdmin()) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Admin permission required");
-        }
-    }
-
-    /**
-     * 프로바이더 접근권한 검증
-     */
-    public void validateProviderAccess(Integer providerNo, PermissionRes allowedPermissions) {
-        if (!allowedPermissions.getPermittedProviders().contains(providerNo)) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
-                "No permission for provider: %d".formatted(providerNo));
-        }
-    }
-
-    /**
-     * 특정상품 권한여부 조회
-     */
-    private boolean checkPermission(Integer userNo, Integer goodsNo, GoodsAuthCd authCd) {
-        List<AuthManageGoodsMapping> userPermissions = authManageGoodsMappingRepository.findUserGoodsPermissions(userNo);
-
-        return userPermissions.stream()
-            .filter(mapping -> !mapping.getIsDeleted())
-            .filter(mapping -> mapping.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo().equals(goodsNo))
-            .anyMatch(mapping -> mapping.getGoodsAuthCd() == authCd);
-    }
-
     public boolean hasGoodsViewPermission(Integer goodsNo) {
-        PermissionRes userPermissions = getPermissions();
-        Map<Integer, Boolean> goodsViewableMap = userPermissions.getGoodsViewableMap(getCompanyNoWithPriority());
+        PermissionRes permissions = getPermissions();
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(getCompanyNoWithPriority());
         return goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
+    }
+
+    public boolean hasGoodsDownloadPermission(Integer goodsNo) {
+        PermissionRes permissions = getPermissions();
+        Map<Integer, Boolean> goodsDownloadableMap = permissions.getGoodsDownloadableMap(getCompanyNoWithPriority());
+        return goodsDownloadableMap.getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     public PermissionRes getPermissions() {

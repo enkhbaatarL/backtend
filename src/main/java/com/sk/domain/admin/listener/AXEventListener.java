@@ -8,8 +8,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JsonFileWriter;
 import com.sk.common.utils.MultipartFileUtil;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;
@@ -78,7 +76,7 @@ public class AXEventListener {
             String accessToken = "Bearer ".concat(authTokenRes.accessToken());
 
             AXMetaUploadRes uploadRes = axPlatformApi.upload(accessToken, multipartFile);
-            System.out.println("   ===>>>   upload: " + uploadRes);
+            log.info("AX Platform :: upload: " + uploadRes);
 
             ModifiedFile uploadFile = new ModifiedFile(uploadRes.data().get(0).fileName(),
                     null,
@@ -94,7 +92,7 @@ public class AXEventListener {
                 String fileName = goodsData.getMetadUpldFileNm();
 
                 AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, datasourceId, fileName);
-                System.out.println("   ===>>>   lookup: " + lookUpRes);
+                log.info("AX Platform :: lookup: " + lookUpRes);
 
                 ModifiedFile deletedFile = new ModifiedFile(
                         fileName,
@@ -108,14 +106,14 @@ public class AXEventListener {
             }
 
             AXMetaRegisterRes axMetaRegisterRes = axPlatformApi.register(accessToken, datasourceId, registerReq);
-            System.out.println("   ===>>>   register: " + axMetaRegisterRes);
+            log.info("AX Platform :: register: " + axMetaRegisterRes);
 
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);
             goodsData.updateMetadUpldFileNm(uniqueFilename);
         } catch (IOException e) {
             // 예외 처리 로직
-            log.error("onUploadFileEvent: " + e.getMessage());
+            log.error("AX Platform :: onUploadFileEvent: " + e.getMessage());
         }
     }
 }

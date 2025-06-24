@@ -43,10 +43,10 @@ public class ChartAggregationService {
             .distinct() // 중복 날짜 제거
             .toList();
 
-
         Interval interval = ctx.finalizedInterval();
         LocalDate inclusiveStart = Interval.resolveInclusiveStart(ctx.finalizedInterval(), ctx.finalizedStartDate());
-        LocalDate exclusiveEnd = ctx.finalizedEndDate().plusDays(1);
+//        LocalDate exclusiveEnd = ctx.finalizedEndDate();
+        LocalDate exclusiveEnd = dates.get(dates.size() - 1);
 
         // 버킷 생성
         List<BucketBoundary> boundaries = BucketBoundary.generateBucketsWithLookback(dates, exclusiveEnd, inclusiveStart, interval);
