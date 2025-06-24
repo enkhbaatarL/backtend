@@ -66,11 +66,11 @@ public class MariAgentGatewayService {
             Integer companyNo = authorizationService.getCompanyNoWithPriority();
             Integer userNo = authorizationService.getUserNo();
 
-            CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
+//            CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+//                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
 
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, company.getCustomerCompanyCd(), authorizationService.getUserNo());
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo());
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
