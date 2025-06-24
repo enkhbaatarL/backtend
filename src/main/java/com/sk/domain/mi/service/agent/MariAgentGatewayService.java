@@ -7,6 +7,7 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.shared.client.ModelAgentApi;
+import com.sk.domain.shared.client.dto.request.ModelAgentHeaders;
 import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
@@ -23,10 +24,12 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
 
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -61,11 +64,15 @@ public class MariAgentGatewayService {
         try {
 
             Integer companyNo = authorizationService.getCompanyNoWithPriority();
+            Integer userNo = authorizationService.getUserNo();
+
             CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
 
-            ModelAgentReq req = ModelAgentReq.of(talkReq, histories, company.getCustomerCompanyCd(), authorizationService.getUserNo());
-            ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, req);
+            Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, company.getCustomerCompanyCd(), authorizationService.getUserNo());
+
+            ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
             // 테스트용 더미 데이터
 //            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
@@ -81,8 +88,17 @@ public class MariAgentGatewayService {
             return Optional.ofNullable(answerRes);
 
         } catch (ResourceAccessException e) {
-            log.error("[Model-Agent API call timeout] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
-            qna.updateFailResult(AnswerStatusCd.FAIL_TIMED_OUT);
+
+            Throwable root = NestedExceptionUtils.getMostSpecificCause(e);
+
+            if (root instanceof SocketTimeoutException) {
+                log.error("[Model-Agent API call read-timeout] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+                qna.updateFailResult(AnswerStatusCd.FAIL_TIMED_OUT);
+            } else {
+                log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+                qna.updateFailResult();
+            }
+
             return Optional.empty();
 
         } catch (Exception e) {

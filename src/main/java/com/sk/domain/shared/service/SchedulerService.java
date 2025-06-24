@@ -20,6 +20,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,6 +67,9 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class SchedulerService {
+
+    @Value("${features.pdf-viewer.dpi:300}")
+    private int dpiValue;
 
     private final UserRepository userRepository;
     private final UserInfoRepository userInfoRepository;
@@ -310,8 +314,8 @@ public class SchedulerService {
                                 int pageNo = pageIndex + 1;
                                 log.info("[PDF-TO-IMAGES] -> Rendering page: {}", pageNo);
 
-                                // 페이지를 이미지로 렌더링 (DPI 150으로 설정)
-                                BufferedImage image = renderer.renderImageWithDPI(pageIndex, 150, ImageType.RGB);
+                                // 페이지를 이미지로 렌더링
+                                BufferedImage image = renderer.renderImageWithDPI(pageIndex, dpiValue, ImageType.RGB);
                                 String imageName = StringUtils.concat(StringUtil.formatPageNumber(pageNo), ".", Extension.JPEG.getCode());
                                 String imagePath = StringUtils.concat(prefix, "/", imageName);
 
