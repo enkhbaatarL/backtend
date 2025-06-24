@@ -212,12 +212,12 @@ public class SchedulerService {
                     // 데이터, 임계치 설정 비교
                     switch (goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd()) {
                         case UPPER:
-                            // currentData가 prevData보다 criticalValueSettingVol만큼 상승
-                            isMatch = currentValue.subtract(prevValue).compareTo(criticalValueSettingVol) >= 0;
+                            // currentData가(절대값) criticalValueSettingVol(기준치)보다 상승
+                            isMatch = currentValue.compareTo(criticalValueSettingVol) >= 0;
                             break;
                         case LOWER:
-                            // currentData가 prevData보다 criticalValueSettingVol만큼 하락
-                            isMatch = prevValue.subtract(currentValue).compareTo(criticalValueSettingVol) >= 0;
+                            // currentData가(절대값) criticalValueSettingVol(기준치)보다 하락
+                            isMatch = currentValue.compareTo(criticalValueSettingVol) <= 0;
                             break;
                         case INCRATE:
                             // currentData가 prevData보다 criticalValueSettingVol% 상승
