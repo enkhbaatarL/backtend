@@ -1,12 +1,11 @@
 package com.sk.domain.mi.service;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -219,12 +218,29 @@ public class MiDashboardService {
      * @return DashboardSummaryRes
      */
     public DashboardSummaryRes getDashboardSummary(int companyNo, String date) {
-        List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date, null);
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
-        boolean isFileDownload = summaries.stream()
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        // 예측 데이터 조회
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        // 대시보드 요약 파일 다운로드 가능 여부 체크
+        boolean isDownloadable = isDownloadableDashboardSummaryFile(chartPredictSettingDetails, companyNo);
+
+        List<DashboardSummary> summaries = getDashboardSummaries(chartPredictSettingDetails, date, null);
+
+        boolean isFileExists = summaries.stream()
                 .anyMatch(summary -> summary.explanatoryFilePath() != null);
 
-        return DashboardSummaryRes.of(summaries, isFileDownload);
+        return DashboardSummaryRes.of(summaries, isFileExists && isDownloadable);
     }
 
     /**
@@ -235,7 +251,28 @@ public class MiDashboardService {
      * @return byte[]z
      */
     public byte[] getDashboardSummaryFileDownload(int companyNo, String date, String predictDate) {
-        List<DashboardSummary> summaries = getDashboardSummaries(companyNo, date, predictDate);
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+
+        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        }
+
+        // 예측 데이터 조회
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        boolean isDownloadable = isDownloadableDashboardSummaryFile(chartPredictSettingDetails, companyNo);
+
+        if (!isDownloadable) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_ACCESS_DENIED, String.format("다운로드 권한이 없습니다. %s", companyNo));
+        }
+
+        // 대시보드 요약 데이터 조회
+        List<DashboardSummary> summaries = getDashboardSummaries(chartPredictSettingDetails, date, predictDate);
 
         if (summaries == null || summaries.isEmpty()) {
             log.warn("No dashboard summaries found for companyNo: {}, date: {}, predictDate: {}",
@@ -259,29 +296,16 @@ public class MiDashboardService {
     /**
      * 대시보드 예측 데이터 Summary List 데이터 조회
      *
-     * @param companyNo 회사 번호
-     * @param date      날짜
+     * @param chartPredictSettingDetails 차트 설정 상세 목록
+     * @param date 날짜
+     * @param predictDate 예측 날짜
      * @return List<DashboardSummary>
      */
-    public List<DashboardSummary> getDashboardSummaries(int companyNo, String date, String predictDate) {
+    private List<DashboardSummary> getDashboardSummaries(List<ChartPredictSettingDetail> chartPredictSettingDetails, String date, String predictDate) {
         String baseDate = date != null ? date : DateUtil.toYmd(LocalDate.now());
 
         String startDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).withDayOfMonth(1)) : null;
         String endDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).with(TemporalAdjusters.lastDayOfMonth())) : null;
-
-        String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
-
-        // 차트 설정 조회
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
-        }
-
-        // 예측 데이터 조회
-        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
         return chartPredictSettingDetails.stream()
                 .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
@@ -334,6 +358,31 @@ public class MiDashboardService {
                         map -> map.values().stream()
                                 .map(DashboardSummary::of)
                                 .collect(Collectors.toList())));
+    }
+
+    /**
+     * 대시보드 요약 파일 다운로드 가능 여부 체크
+     *
+     * @param chartPredictSettingDetails 차트 설정 상세 목록
+     * @param permissionRes 권한 정보
+     * @param companyNo 회사 번호
+     * @return boolean
+     */
+    private boolean isDownloadableDashboardSummaryFile(List<ChartPredictSettingDetail> chartPredictSettingDetails,
+            int companyNo) {
+
+        PermissionRes permissionRes = authorizationService.getPermissions();
+
+        return chartPredictSettingDetails.stream()
+                .allMatch(chartPredictSettingDetail -> {
+                    GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+                            .findByGoodsDataSourceNoAndIsDeletedFalse(chartPredictSettingDetail.getGoodsDataSourceDetail().getGoodsDataSourceNo())
+                            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                                    String.format("데이터소스 조회 실패: %s", chartPredictSettingDetail.getGoodsDataSourceDetail().getGoodsDataSourceNo())));
+                    GoodsData goodsData = goodsDataSourceDetail.getGoodsData();
+                    Goods goods = goodsData.getGoods();
+                    return permissionRes.getGoodsDownloadableMap(companyNo).getOrDefault(goods.getGoodsNo(), false);
+                });
     }
 
     /**
@@ -1165,7 +1214,8 @@ public class MiDashboardService {
 
                 for (int i = EXCEL_FUTURES_DATA_ROW_INDEX; i < futuresCharts.size() + EXCEL_FUTURES_DATA_ROW_INDEX; i++) {
                     Row futuresRow = sheet.createRow(i);
-                    futuresRow.createCell(EXCEL_DESCRIPTION_ROW_INDEX).setCellValue(futuresCharts.get(i - EXCEL_FUTURES_DATA_ROW_INDEX).chartLineDescription());
+                    futuresRow.createCell(EXCEL_DESCRIPTION_ROW_INDEX)
+                            .setCellValue(futuresCharts.get(i - EXCEL_FUTURES_DATA_ROW_INDEX).chartLineDescription());
 
                     DashboardChartLine futuresChartLine = futuresCharts.get(i - EXCEL_FUTURES_DATA_ROW_INDEX).actualChartLines();
                     List<DashboardChartRawData> futuresRawData = futuresChartLine.rawData();
@@ -1290,7 +1340,7 @@ public class MiDashboardService {
         // 사용자 정보 조회
         String currentDate = DateUtil.toYmd(LocalDate.now());
         customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));

@@ -318,25 +318,6 @@ public class MiMarketDataService {
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
 
-        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        // }
-        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
-
-        // // 권한 조회
-        // PermissionRes permissionRes = switch (role) {
-        // case USER -> {
-        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        // }
-        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        // case API_PLUS_OPERATOR -> {
-        // Integer companyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(companyNo);
-        // }
-        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        // };
-
         PermissionRes permissionRes = authorizationService.getPermissions();
 
         // 차트 설정 조회
