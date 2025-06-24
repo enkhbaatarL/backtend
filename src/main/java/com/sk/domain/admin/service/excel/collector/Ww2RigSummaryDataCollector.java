@@ -39,8 +39,9 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
             // periodCodes.removeIf(code -> code == null || code.isEmpty());
             String dateStr = periodCodes.stream().findFirst().orElse(null);
             String yearMonth = null;
-            if (dateStr != null) {
-                LocalDate date = DateUtil.parseDate(dateStr);
+            if (dateStr != null && !dateStr.isEmpty()) {
+                dateStr = dateStr.trim() + "-" + LocalDate.now().getYear();
+                LocalDate date = DateUtil.fromDdMmmYyyy(dateStr);
                 yearMonth = DateUtil.toYearMonth(date);
             }
 
