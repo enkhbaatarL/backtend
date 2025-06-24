@@ -2,6 +2,7 @@ package com.sk.common.config.security.saml;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,9 +16,13 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.entity.master.tlm.UserAccessLog;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tlm.UserAccessLogRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +43,7 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 	private final UserRepository userRepository;
 	private final UserAccessLogRepository userAccessLogRepository;
+	private final CustomerCompanyRepository customerCompanyRepository;
 	private final StringRedisTemplate redisTemplate;
 
 	private final int LOGIN_SESSION_EXPIRE_TIME = 60 * 10; //로그인 세션 유지시간 10분
@@ -58,9 +64,22 @@ public class CustomSamlUserAuthenticationSuccessHandler implements Authenticatio
 
 		List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(loginId);
 		if (users.isEmpty()) {
-			log.error("SAML 사용자 인증 실패: {}", loginId);
+			log.error("SAML 사용자 인증 실패, 사용자 없음 : {}", loginId);
 			response.sendRedirect(loginErrorUrl + "?errorCode=" + ResultCode.Error.AUTH_REQUIRED.getCode());
-			throw new UsernameNotFoundException(String.format("SAML 사용자 인증 실패: %s", loginId));
+			throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, String.format("SAML 사용자 인증 실패, 사용자 없음: %s", loginId));
+		}
+
+		// users -> 모두 같은 회사이기 때문에 하나만 선택
+		User user = users.get(0);
+		// 사용자 정보 조회
+		String currentDate = DateUtil.toYmd(LocalDate.now());
+		CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(user.getCustomerCompany().getCustomerCompanyNo(), currentDate)
+			.orElse(null);
+
+		if (customerCompany == null) {
+			log.error("SAML 사용자 인증 실패, 회사권한 없음 : {}", loginId);
+			response.sendRedirect(loginErrorUrl + "?errorCode=" + ResultCode.Error.AUTH_REQUIRED.getCode());
+			throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, String.format("SAML 사용자 인증 실패, 회사권한 없음: %s", loginId));
 		}
 
 		UserAccessLog userAccessLog = UserAccessLog.of(principal.getName());
