@@ -1393,7 +1393,7 @@ public class MiDashboardService {
         PermissionRes permissionRes = authorizationService.getPermissions();
 
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
-                .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "GoodsDataSourceDetail not found"));
 
         String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
@@ -1413,7 +1413,7 @@ public class MiDashboardService {
         // Date 기준
         GoodsDataSourceDetail actualGoodsDataSourceDetail = goodsDataSourceDetailRepository
                 .findByGoodsDataSourceNoAndIsDeletedFalse(actualGoodsDataSourceNo)
-                .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Actual GoodsDataSourceDetail not found"));
         GoodsData actualGoodsData = actualGoodsDataSourceDetail.getGoodsData();
         Goods actualGoods = actualGoodsData.getGoods();
 
