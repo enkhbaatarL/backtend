@@ -20,9 +20,6 @@ public enum CacheType {
 
     CHATBOT_TOKEN_USAGE("chatbot:", "token-usage:company:%s:%s", null);
 
-
-
-
     public static final String PERMISSIONS_CONSTANT = "permissions";
     public static final String SCHEMA_COLUMN_TYPES_CONSTANT = "column";
 
