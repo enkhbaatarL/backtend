@@ -80,7 +80,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MiMarketDataService {
 
-    private static final int MARKET_DATA_CACHE_TTL = 1; // 마켓데이터 캐시 유효 기간 (1시간)
+    private static final int MARKET_DATA_CACHE_TTL = 1; // 마켓데이터 캐시 유효 기간 (1초)
+    //TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
+    // private static final int MARKET_DATA_CACHE_TTL = 3600; // 마켓데이터 캐시 유효 기간 (1시간)
 
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
@@ -446,17 +448,6 @@ public class MiMarketDataService {
     }
 
     /**
-     * 자정까지의 TTL 계산
-     */
-    private long getSecondsUntilMidnightForCache() {
-        // LocalDateTime now = LocalDateTime.now();
-        // LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
-        // return Duration.between(now, midnight).getSeconds();
-
-        return Duration.ofHours(MARKET_DATA_CACHE_TTL).getSeconds();
-    }
-
-    /**
      * 마켓데이터 캐시 키 생성
      *
      * @param marketDataSettingNo 마켓데이터 설정 번호
@@ -485,7 +476,7 @@ public class MiMarketDataService {
     private void saveToMarketDataCache(String key, MiMarketDataCache cache) {
         try {
             String json = objectMapper.writeValueAsString(cache);
-            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(getSecondsUntilMidnightForCache()));
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(MARKET_DATA_CACHE_TTL));
         } catch (Exception e) {
             log.error("Failed to serialize and save cache for key: {}", key, e);
         }
@@ -500,7 +491,7 @@ public class MiMarketDataService {
     private void saveToMarketDataSummaryCache(String key, MiMarketDataSummaryCache cache) {
         try {
             String json = objectMapper.writeValueAsString(cache);
-            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(getSecondsUntilMidnightForCache()));
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(MARKET_DATA_CACHE_TTL));
         } catch (Exception e) {
             log.error("Failed to serialize and save cache for key: {}", key, e);
         }
