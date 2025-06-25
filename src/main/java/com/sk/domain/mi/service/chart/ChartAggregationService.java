@@ -46,7 +46,7 @@ public class ChartAggregationService {
         Interval interval = ctx.finalizedInterval();
         LocalDate inclusiveStart = Interval.resolveInclusiveStart(ctx.finalizedInterval(), ctx.finalizedStartDate());
 //        LocalDate exclusiveEnd = ctx.finalizedEndDate();
-        LocalDate exclusiveEnd = dates.get(dates.size() - 1);
+        LocalDate exclusiveEnd = dates.size() == 1 ? dates.get(0) : dates.get(dates.size() - 1);
 
         // 버킷 생성
         List<BucketBoundary> boundaries = BucketBoundary.generateBucketsWithLookback(dates, exclusiveEnd, inclusiveStart, interval);
