@@ -386,7 +386,6 @@ public class MiInsightsService {
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
                         (String) row[7], // goodsDataSummaryCntt
-                        // StringUtil.removeDuplicates((String) row[8]), // goodsDataCategory
                         (String) row[8], // goodsDataCategory
                         ((Timestamp) row[9]).toLocalDateTime(), // modifyDt
                         (Integer) row[10] == 1)) // viewable
