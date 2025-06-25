@@ -284,6 +284,7 @@ public class SchedulerService {
      *
      * @return Boolean
      */
+    @Transactional
     public Boolean processPdfToImages(PdgImageReq pdgImageReq) {
 
         log.info("[PDF-TO-IMAGES] Start processing target PDFs...");
