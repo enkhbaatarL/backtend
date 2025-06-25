@@ -27,25 +27,53 @@ public class MybatisQueryTemplate {
      * @param alias
      * @return
      */
-    public String getSelectQueryForAlarm(String columns, String tableName, String dateColumn, String defaultSelectColumn, String alias) {
-        return String.format("""
-                %s
-                ,(
-                    SELECT %s
+    public String getSelectQueryForAlarm(String columns, String tableName, String dateColumn, String defaultSelectColumn, String alias, String conditionKeys) {
+        // return String.format("""
+        //         %s
+        //         ,(
+        //             SELECT %s
+        //             FROM %s t2
+        //             WHERE
+        //             (
+        //                 t2.%s < t1.%s
+        //                 OR (t2.%s = t1.%s AND t2.%s < t1.%s)
+        //                 OR (t2.%s = t1.%s AND t2.%s = t1.%s AND t2.%s < t1.%s)
+        //             )
+        //             AND t2.del_yn = 'N'
+        //             ORDER BY t2.%s DESC, t2.%s DESC, t2.%s DESC
+        //             LIMIT 1
+        //         ) AS %s
+        //         """, columns, defaultSelectColumn, tableName, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN,
+        //         dateColumn, dateColumn, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, dateColumn, dateColumn, defaultSelectColumn, defaultSelectColumn,
+        //         CREATED_DATE_COLUMN, dateColumn, defaultSelectColumn, alias);
+        String selectQuery1 = String.format("""
+                %s,
+                (
+                    SELECT t2.%s
                     FROM %s t2
-                    WHERE
-                    (
-                        t2.%s < t1.%s
-                        OR (t2.%s = t1.%s AND t2.%s < t1.%s)
-                        OR (t2.%s = t1.%s AND t2.%s = t1.%s AND t2.%s < t1.%s)
-                    )
-                    AND t2.del_yn = 'N'
-                    ORDER BY t2.%s DESC, t2.%s DESC, t2.%s DESC
+                    WHERE t2.%s < t1.%s
+                      AND t2.del_yn = 'N'
+                """, 
+                columns, 
+                defaultSelectColumn, 
+                tableName, 
+                dateColumn, dateColumn);
+
+                if (conditionKeys != null) {
+                    String[] conditionKeyArray = conditionKeys.split(",");
+                    for (String conditionKey : conditionKeyArray) {
+                        selectQuery1 += String.format("""
+                                AND t2.%s = t1.%s
+                                """, conditionKey, conditionKey);
+                    }
+                }
+
+                selectQuery1 += String.format("""
+                    ORDER BY t2.%s DESC, t2.%s DESC
                     LIMIT 1
-                ) AS %s
-                """, columns, defaultSelectColumn, tableName, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN,
-                dateColumn, dateColumn, CREATED_DATE_COLUMN, CREATED_DATE_COLUMN, dateColumn, dateColumn, defaultSelectColumn, defaultSelectColumn,
-                CREATED_DATE_COLUMN, dateColumn, defaultSelectColumn, alias);
+                ) AS %s""", dateColumn, defaultSelectColumn, alias);
+
+        return selectQuery1;
     }
 
     /**

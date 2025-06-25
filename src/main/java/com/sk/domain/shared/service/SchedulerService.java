@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -42,7 +45,6 @@ import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmd.UserHistory;
 import com.sk.domain.shared.enums.Extension;
@@ -149,7 +151,7 @@ public class SchedulerService {
             if (goodsCriticalValueSettingData.getUser().getIsUserNotificationSetting()) {
                 String targetDatabaseNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
                 String targetTableNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetTableNm();
-                String queryWhere = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getQueryConditionCntt();
+                String dbQueryConditionCntt = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getQueryConditionCntt();
 
                 String selectColumns = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTableColumnListNm();
                 String[] selectQueryArray = selectColumns.split(",");
@@ -162,9 +164,24 @@ public class SchedulerService {
                 String dateColumn = selectQueryArray[0].trim(); // 날짜 컬럼(eg: 'date')
                 String defaultSelectColumn = selectQueryArray[1].trim(); // 기본 컬럼(알람 기준 컬럼)(eg: 'trdprc_1')
 
+                // 정규 표현식 패턴을 이용해서 getTableColumnList 에서 칼럼, 데이터 추출
+                String pattern = "([a-zA-Z_]+)\\s*=\\s*'([^']*)'";
+                Pattern regex = Pattern.compile(pattern);
+                Matcher matcher = regex.matcher(dbQueryConditionCntt);
+
+                StringJoiner whereKeyJoiner = new StringJoiner(",");
+                
+                // 모든 매칭된 key 수집
+                while (matcher.find()) {
+                    String key = matcher.group(1); // 첫 번째 그룹: key
+                    whereKeyJoiner.add(key);
+                }
+
+                String whereKey = whereKeyJoiner.length() > 0 ? whereKeyJoiner.toString() : null;
+
                 String columns = mybatisQueryTemplate.getSelectQueryForAlarm(selectColumns, targetTableNm, dateColumn, defaultSelectColumn,
-                        ALARM_PREV_DATA_ALIAS);
-                String targetTableAlias = mybatisQueryTemplate.getTableAliasForAlarm(targetTableNm);
+                        ALARM_PREV_DATA_ALIAS, whereKey);
+
                 String orderByQuery = mybatisQueryTemplate.getOrderByQueryForAlarm(dateColumn, defaultSelectColumn);
 
                 // 날짜 범위 설정
@@ -177,7 +194,9 @@ public class SchedulerService {
                 String startDateStr = DateUtil.toYyyyMmDdHms(startDateTime);
                 String endDateStr = DateUtil.toYyyyMmDdHms(endDateTime);
 
-                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(startDateStr, endDateStr, queryWhere);
+                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(startDateStr, endDateStr, dbQueryConditionCntt);
+
+                String targetTableAlias = mybatisQueryTemplate.getTableAliasForAlarm(targetTableNm);
 
                 // 임계치 설정 1개에 대한 데이터 리스트
                 List<Map<String, Object>> rowDatas = mybatisDynamicQueryService
@@ -188,9 +207,9 @@ public class SchedulerService {
                     Object prevData = rowData.get(ALARM_PREV_DATA_ALIAS); // 임계치 비교를 위한 이전 데이터(Default 데이터)
                     Object currentData = rowData.get(defaultSelectColumn); // 임계치 비교를 위한 기준 데이터(Default 데이터)
 
-                    // prevData 또는 currentData가 null인 경우 스킵 (첫번째 row 데이터는 preData가 null)
-                    if (prevData == null || currentData == null) {
-                        log.warn("Skipping row due to null data: prevData={}, currentData={}", prevData, currentData);
+                    // currentData가 null인 경우 스킵 (첫번째 row 데이터는 preData가 null)
+                    if (currentData == null) {
+                        log.warn("Skipping row due to null data: currentData={}", currentData);
                         continue;
                     }
 
@@ -198,10 +217,9 @@ public class SchedulerService {
                     BigDecimal prevValue;
                     BigDecimal currentValue;
                     try {
-                        prevValue = new BigDecimal(prevData.toString());
                         currentValue = new BigDecimal(currentData.toString());
                     } catch (NumberFormatException e) {
-                        log.error("Failed to convert data to BigDecimal: prevData={}, currentData={}", prevData, currentData, e);
+                        log.error("Failed to convert data to BigDecimal: currentData={}", currentData, e);
                         continue;
                     }
 
@@ -219,11 +237,34 @@ public class SchedulerService {
                             isMatch = currentValue.compareTo(criticalValueSettingVol) <= 0;
                             break;
                         case INCRATE:
+                            if (prevData == null) {
+                                log.warn("Skipping row due to null data: prevData={}", prevData);
+                                continue;
+                            }
+
+                            try {
+                                prevValue = new BigDecimal(prevData.toString());
+                            } catch (NumberFormatException e) {
+                                log.error("Failed to convert data to BigDecimal: prevData={}", prevData, e);
+                                continue;
+                            }
+
                             // currentData가 prevData보다 criticalValueSettingVol% 상승
                             BigDecimal percentIncrease = calculatePercentChange(currentValue, prevValue);
                             isMatch = percentIncrease.compareTo(criticalValueSettingVol) >= 0;
                             break;
                         case DECRATE:
+                            if (prevData == null) {
+                                log.warn("Skipping row due to null data: prevData={}", prevData);
+                                continue;
+                            }
+
+                            try {
+                                prevValue = new BigDecimal(prevData.toString());
+                            } catch (NumberFormatException e) {
+                                log.error("Failed to convert data to BigDecimal: prevData={}", prevData, e);
+                                continue;
+                            }
                             // currentData가 prevData보다 criticalValueSettingVol% 하락
                             BigDecimal percentDecrease = calculatePercentChange(currentValue, prevValue);
                             isMatch = percentDecrease.compareTo(criticalValueSettingVol.negate()) <= 0;
