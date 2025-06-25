@@ -214,7 +214,7 @@ public class MailService {
         context.setVariable("settingUnit", criticalValueSettingContentBody); // {알람 임계치 단위}
 
         // 데이터 상세보기 링크
-        String detailLink = String.format("mi/data-detail/%s/%s/%s", serverDomain, goods.getGoodsNo(), goodsData.getGoodsDataNo());
+        String detailLink = String.format("%s/mi/data-detail/%s/%s", serverDomain, goods.getGoodsNo(), goodsData.getGoodsDataNo());
         context.setVariable("detailLink", detailLink);
         return templateEngine.process("notification", context);
     }
