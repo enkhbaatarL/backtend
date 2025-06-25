@@ -170,7 +170,8 @@ public class MiMarketDataService {
                         // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                         MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
                                 MARKET_DATA_INTERVAL, miMarketDataCache.marketMetaData().indexStartDt(),
-                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt());
+                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt(),
+                                miMarketDataCache.marketMetaData().recentChangeRate());
 
                         return MiMarketDataRes.of(isPermitted, marketMetaData);
                     }
@@ -197,11 +198,32 @@ public class MiMarketDataService {
             // 원시 데이터 조회
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
+            // Index Start date 데이터 조회
+            LocalDate indexStartDate;
+            List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
+            if (!indexStartDateData.isEmpty()) {
+                String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
+                indexStartDate = DateUtil.parseDate(rawDate);
+            } else {
+                indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
+            }
+
+            // 마지막 데이터 날짜 값
+            LocalDate lastUpdateDt;
+            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, dateColumnName);
+            if (!lastUpdateDtData.isEmpty()) {
+                String rawDate = lastUpdateDtData.get(0).get(dateColumnName).toString();
+                lastUpdateDt = DateUtil.parseDate(rawDate);
+            } else {
+                lastUpdateDt = null;
+            }
+
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
-                isPermitted = false;
+                // isPermitted = false;
 
-                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL);
+                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL,
+                        lastUpdateDt);
                 MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
                 List<MarketDataChart> compareCharts = Collections.emptyList();
 
@@ -211,12 +233,20 @@ public class MiMarketDataService {
                 return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
             }
 
-            // 마지막 데이터 값
-            LocalDate lastUpdateDt = null;
-            for (int i = 1; i <= rawData.size(); i++) {
-                if (rawData.get(rawData.size() - i).get(dateColumnName) != null) {
-                    lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - i).get(dateColumnName));
-                    break;
+            // 가장 최근 Raw 전날 Data 대비 가장 최근 Raw Data 계산 (증감률, 둘다 null이 아니라는 가정), 증감률 계산
+            List<Map<String, Object>> recentChangeRate = getRecentChangeRate(mainGoodsDataSource, dateColumnName, defaultDataColumnName);
+            Double recentChangeRateValue = null;
+            if (recentChangeRate.size() == 2) {
+                Map<String, Object> fromData = recentChangeRate.get(0);
+                Map<String, Object> toData = recentChangeRate.get(1);
+
+                if (fromData.get(defaultDataColumnName) != null && toData.get(defaultDataColumnName) != null) {
+                    Double fromValue = Double.parseDouble(fromData.get(defaultDataColumnName).toString());
+                    Double toValue = Double.parseDouble(toData.get(defaultDataColumnName).toString());
+
+                    Double changeRate = (toValue - fromValue) / fromValue * 100;
+                    BigDecimal bd = BigDecimal.valueOf(changeRate).setScale(2, RoundingMode.HALF_UP);
+                    recentChangeRateValue = bd.doubleValue();
                 }
             }
 
@@ -231,28 +261,29 @@ public class MiMarketDataService {
                 }
             }
 
-            // Index Start date 데이터 조회
-            LocalDate indexStartDate;
-            List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
-            if (!indexStartDateData.isEmpty()) {
-                String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
-                indexStartDate = DateUtil.parseDate(rawDate);
-            } else {
-                indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
-            }
-
             // 월별 데이터로 변환
             List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
                     LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
             MarketDataChart mainChart = MarketDataChart.of(monthlyData);
 
+            // 기획상 Rank 1,2순위만 계산
+            CalculatePeriodChangeRes calculatePeriodChangeRes = null;
+            if (marketDataChartSetting.getChartMarkRank() != null && marketDataChartSetting.getChartMarkRank() <= 2) {
+                // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
+                Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
+                        CalculatePeriodChangeType.YOY);
+                // 기간 변화 유형별 계산
+                calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+                        calculatePeriodChangeTypes);
+            }
+
             // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
-            Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
-                    CalculatePeriodChangeType.YOY);
-            // 기간 변화 유형별 계산
-            CalculatePeriodChangeRes calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-                    calculatePeriodChangeTypes);
+            // Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
+            // CalculatePeriodChangeType.YOY);
+            // // 기간 변화 유형별 계산
+            // CalculatePeriodChangeRes calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+            // calculatePeriodChangeTypes);
 
             // 비교군 데이터소스 조회
             List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
@@ -282,7 +313,7 @@ public class MiMarketDataService {
             // 마켓데이터 메타데이터 생성
             MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, calculatePeriodChangeRes,
                     MARKET_DATA_INTERVAL, indexStartDate,
-                    lastValue, lastUpdateDt);
+                    lastValue, lastUpdateDt, recentChangeRateValue);
 
             // 캐시 저장
             MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
@@ -293,7 +324,7 @@ public class MiMarketDataService {
                 // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                 MarketMetaData marketMetaDataNoPermitted = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
                         MARKET_DATA_INTERVAL, indexStartDate,
-                        lastValue, lastUpdateDt);
+                        lastValue, lastUpdateDt, recentChangeRateValue);
 
                 return MiMarketDataRes.of(isPermitted, marketMetaDataNoPermitted);
             }
@@ -561,9 +592,88 @@ public class MiMarketDataService {
             return Collections.emptyList();
         }
 
+        String selectColumns = String.format("""
+                MIN(%s) AS %s
+                """, dateColumnName, dateColumnName);
+
+        String whereClause = goodsDataSourceDetail.getQueryConditionCntt() != null ? String.format("""
+                %s
+                AND del_yn = 'N'
+                """, goodsDataSourceDetail.getQueryConditionCntt()) : String.format("""
+                del_yn = 'N'
+                """);
+
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofLimit(goodsDataSourceDetail.getTargetDbNm(),
-                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(),
+                goodsDataSourceDetail.getTargetTableNm(), selectColumns, whereClause,
                 MARKET_DATA_INDEX_START_DATE_LIMIT));
+    }
+
+    /**
+     * Index Start Date 데이터 조회
+     *
+     * @param goodsDataSourceDetail 데이터소스 상세 정보
+     * @param dateColumnName        날짜 컬럼명
+     * @return 조건에 맞는 데이터 행 목록
+     */
+    @Transactional
+    private List<Map<String, Object>> getLastUpdateDtData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+
+        if (goodsDataSourceDetail == null || dateColumnName == null) {
+            return Collections.emptyList();
+        }
+
+        String selectColumns = String.format("""
+                MAX(%s) AS %s
+                """, dateColumnName, dateColumnName);
+
+        String whereClause = goodsDataSourceDetail.getQueryConditionCntt() != null ? String.format("""
+                %s
+                AND del_yn = 'N'
+                """, goodsDataSourceDetail.getQueryConditionCntt()) : String.format("""
+                del_yn = 'N'
+                """);
+
+        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofLimit(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), selectColumns, whereClause,
+                MARKET_DATA_INDEX_START_DATE_LIMIT));
+    }
+
+    /**
+     * 증감률 데이터 조회
+     * 
+     * @param goodsDataSourceDetail 데이터소스 상세 정보
+     * @param dateColumnName        날짜 컬럼명
+     * @return 조건에 맞는 데이터 행 목록
+     */
+    @Transactional
+    private List<Map<String, Object>> getRecentChangeRate(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
+            String defaultDataColumnName) {
+        if (goodsDataSourceDetail == null || dateColumnName == null) {
+            return Collections.emptyList();
+        }
+
+        String fromQuery = String.format("""
+                (
+                    SELECT
+                        %s
+                        , DENSE_RANK() OVER (ORDER BY %s DESC) AS date_rank
+                        , ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s DESC, %s DESC) AS rn
+                    FROM %s
+                    WHERE del_yn = 'N'
+                ) AS table_alias
+                """, goodsDataSourceDetail.getTableColumnListNm(), dateColumnName, dateColumnName, dateColumnName, defaultDataColumnName,
+                goodsDataSourceDetail.getTargetTableNm());
+
+        String whereClause = String.format("""
+                date_rank <= 2 AND rn = 1
+                        """);
+
+        String orderByQuery = String.format("""
+                %s DESC, %s DESC
+                """, dateColumnName, defaultDataColumnName);
+
+        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofOrderBy(goodsDataSourceDetail.getTargetDbNm(), fromQuery,
+                goodsDataSourceDetail.getTableColumnListNm(), whereClause, orderByQuery));
     }
 
     /**
