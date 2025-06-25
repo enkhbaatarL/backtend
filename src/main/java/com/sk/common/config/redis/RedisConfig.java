@@ -125,8 +125,7 @@ public class RedisConfig {
 
     // 캐시 매니저 설정
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory,
-                                          @Value("${cache.redis.time-to-live}") Duration cacheTimeToLive) {
+    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, @Value("${cache.redis.time-to-live}") Duration cacheTimeToLive) {
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
             .entryTtl(cacheTimeToLive)
             .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))

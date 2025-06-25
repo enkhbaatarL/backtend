@@ -40,8 +40,7 @@ public class SamlUserServiceProviderConfig {
                         .successHandler(customSamlUserAuthenticationSuccessHandler)
                         .failureHandler(customSamlAuthenticationFailureHandler))
             .saml2Logout(withDefaults())
-            .sessionManagement(
-                session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         return http.build();
     }
 

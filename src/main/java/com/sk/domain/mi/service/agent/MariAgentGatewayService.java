@@ -1,7 +1,5 @@
 package com.sk.domain.mi.service.agent;
 
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
@@ -12,7 +10,6 @@ import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
@@ -91,19 +88,19 @@ public class MariAgentGatewayService {
 
             Throwable root = NestedExceptionUtils.getMostSpecificCause(e);
 
-            if (root instanceof SocketTimeoutException) {
-                log.error("[Model-Agent API call read-timeout] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+            if (root instanceof SocketTimeoutException err) {
+                log.error("[Model-Agent API call read-timeout] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), err.getMessage(), err);
                 qna.updateFailResult(AnswerStatusCd.FAIL_TIMED_OUT);
             } else {
                 log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
-                qna.updateFailResult();
+                qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
             }
 
             return Optional.empty();
 
         } catch (Exception e) {
             log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
-            qna.updateFailResult();
+            qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
             return Optional.empty();
         }
 

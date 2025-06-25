@@ -24,15 +24,21 @@ public class ProviderListener {
     }
 
     /**
-     * Provider Disabled 감지하여 Provider 태그 엔티티 캐싱 무효화를 요청한다.
+     * Provider(프로바이더) Disabled or Deleted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
      */
     @PostUpdate
     public void checkDisabled(Provider provider) {
 
-        if (BooleanUtils.isFalse(provider.getIsUsed()) || BooleanUtils.isTrue(provider.getIsDeleted())) {
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
-            log.info("The providerNo({}) has been disabled. Subsequently, the related user cache will be invalidated", provider.getProviderNo());
-            cacheService.invalidateUsersForTagEntity(CacheType.TAG_PROVIDER, provider.getProviderNo());
+        try {
+
+            if (BooleanUtils.isFalse(provider.getIsUsed()) || BooleanUtils.isTrue(provider.getIsDeleted())) {
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+                log.info("The provider({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", provider.getProviderNo());
+                cacheService.invalidateUsersForTagEntity(CacheType.TAG_PROVIDER, provider.getProviderNo());
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for Provider: {}", e.getMessage(), e);
         }
 
     }
