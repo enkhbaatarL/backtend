@@ -2,7 +2,6 @@ package com.sk.domain.mi.service;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -13,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFileDto;
 import com.sk.domain.admin.dto.response.bbs.BulletinBoardFilterDto;
 import com.sk.domain.admin.dto.response.bbs.FaqFilterRes;
