@@ -195,6 +195,7 @@ public class MiInsightsService {
      * Insights 목록 조회
      *
      * @param companyNo 고객사 번호
+     * @param userNo    사용자 번호
      * @param page      페이지 번호
      * @param size      페이지 사이즈
      * @param keyword   검색어
@@ -205,6 +206,7 @@ public class MiInsightsService {
      */
     public PaginationRes<InsightsDataRes> getInsights(
             int companyNo,
+            int userNo,
             int page,
             int size,
             String keyword,
@@ -230,7 +232,8 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
                 .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
                 .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
-                .append(" MAX(tf.mod_dtm) AS modifyDt");
+                .append(" MAX(tf.mod_dtm) AS modifyDt,")
+                .append(" IFNULL(tamgm.gds_auth_mnagt_spt_cd = 'COMPANY' OR tamgm.usr_no = :userNo, false) AS viewable");
 
         StringBuilder where = new StringBuilder()
                 .append(" tcp.cust_cpny_no = :companyNo")
@@ -286,14 +289,28 @@ public class MiInsightsService {
 
         String contentSql = """
                 SELECT
-                  """ + select + """
-                FROM tam_custcpnyprvdmappl tcp
+                """ + select + """
+                FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
-                JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
+                JOIN midb.tmd_prvdm tp on tp.prvd_no = tcp.prvd_no
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
                 JOIN midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgd.gds_data_no
+                LEFT JOIN (
+                            SELECT
+                                tamgm2.cust_cpny_no as cust_cpny_no,
+                                tamgm2.gds_no as gds_no,
+                                tamgm2.gds_auth_mnagt_spt_cd as gds_auth_mnagt_spt_cd,
+                                tamgm2.usr_no as usr_no
+                                FROM midb.tam_authmnagtgdsmappl tamgm2
+                            WHERE tamgm2.del_yn = 'N'
+                                AND tamgm2.gds_auth_cd = 'VIEW'
+                                AND tamgm2.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
+                                AND tamgm2.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')) tamgm
+                                ON tamgm.cust_cpny_no = tcg.cust_cpny_no
+                                    AND tamgm.gds_no = tcg.gds_no
+                                    AND tamgm.gds_auth_mnagt_spt_cd = tcg.gds_auth_mnagt_spt_cd
                 WHERE
                 """ + where + """
                 """ + groupBy + """
@@ -301,21 +318,38 @@ public class MiInsightsService {
 
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
-                FROM tam_custcpnyprvdmappl tcp
+                FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
                 JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
                 JOIN midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgd.gds_data_no
+                LEFT JOIN (
+                            SELECT
+                                tamgm2.cust_cpny_no as cust_cpny_no,
+                                tamgm2.gds_no as gds_no,
+                                tamgm2.gds_auth_mnagt_spt_cd as gds_auth_mnagt_spt_cd,
+                                tamgm2.usr_no as usr_no
+                                FROM midb.tam_authmnagtgdsmappl tamgm2
+                            WHERE tamgm2.del_yn = 'N'
+                                AND tamgm2.gds_auth_cd = 'VIEW'
+                                AND tamgm2.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
+                                AND tamgm2.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')) tamgm
+                                ON tamgm.cust_cpny_no = tcg.cust_cpny_no
+                                    AND tamgm.gds_no = tcg.gds_no
+                                    AND tamgm.gds_auth_mnagt_spt_cd = tcg.gds_auth_mnagt_spt_cd
                 WHERE
-                """ + where;
+                """
+                + where;
 
         Query contentQuery = entityManager.createNativeQuery(contentSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
 
         contentQuery.setParameter("companyNo", companyNo);
         countQuery.setParameter("companyNo", companyNo);
+
+        contentQuery.setParameter("userNo", userNo);
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -350,8 +384,8 @@ public class MiInsightsService {
                         (String) row[6], // goodsDataExpn
                         (String) row[7], // goodsDataSummaryCntt
                         StringUtil.removeDuplicates((String) row[8]), // goodsDataCategory
-                        ((Timestamp) row[9]).toLocalDateTime() // modifyDt
-                ))
+                        ((Timestamp) row[9]).toLocalDateTime(), // modifyDt
+                        (Integer) row[10] == 1)) // viewable
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 

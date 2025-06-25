@@ -73,7 +73,7 @@ public class MiSignalMapService {
      * 
      * @param companyNo 고객사 번호
      * @param period    주기 코드(예: "3M", "6M", "9M", "1Y", "TOT")
-     * @param filters   (현재는 사용되지 않지만, 추후 WHERE 절에 추가 조건이 필요할 때 사용할 수 있습니다)
+     * @param filters   
      * @return List<ScreenCategoryDto>
      */
     public List<ScreenCategoryDto> getSignalMap(int companyNo, String period, String filter) {

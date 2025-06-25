@@ -34,7 +34,10 @@ public record InsightsDataRes(
         String goodsDataCategory,
 
         @Schema(description = "상품데이터 수정 시간", example = "") 
-        LocalDateTime modifyDt) {
+        LocalDateTime modifyDt,
+        
+        @Schema(description = "보기 권한", example = "true")
+        Boolean isViewable) {
 
 }
 // @formatter:on
