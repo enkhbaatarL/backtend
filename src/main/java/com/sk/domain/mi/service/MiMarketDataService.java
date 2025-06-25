@@ -81,7 +81,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MiMarketDataService {
 
     private static final int MARKET_DATA_CACHE_TTL = 1; // 마켓데이터 캐시 유효 기간 (1초)
-    //TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
+    // TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
     // private static final int MARKET_DATA_CACHE_TTL = 3600; // 마켓데이터 캐시 유효 기간 (1시간)
 
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
@@ -887,8 +887,9 @@ public class MiMarketDataService {
                 """;
 
         String where = """
-                tc.cust_cpny_no = :companyNo
-                AND tc.del_yn   = 'N' AND tc.use_yn   = 'Y'
+                tcp.cust_cpny_no = :companyNo
+                AND tcp.del_yn   = 'N' AND tcp.use_yn   = 'Y'
+                AND tcg.del_yn   = 'N' AND tcg.use_yn   = 'Y'
                 AND tg.del_yn   = 'N' AND tg.use_yn   = 'Y'
                 AND tp.del_yn   = 'N' AND tp.use_yn   = 'Y'
                 AND tgd.del_yn  = 'N'
@@ -902,8 +903,9 @@ public class MiMarketDataService {
 
         String contentSql = """
                 SELECT %s
-                FROM midb.tam_custcpnygdsmappl  tc
-                JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tc.gds_no
+                FROM midb.tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
+                JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tcg.gds_no
                 JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
                 JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
                 JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
@@ -913,8 +915,9 @@ public class MiMarketDataService {
 
         String countSql = """
                 SELECT COUNT(*) AS totalCount
-                FROM midb.tam_custcpnygdsmappl  tc
-                JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tc.gds_no
+                FROM midb.tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
+                JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tcg.gds_no
                 JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
                 JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
                 JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
