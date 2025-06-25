@@ -30,7 +30,7 @@ public class ChartAggregationService {
      */
     public List<Map<String, Object>> aggregate(List<Map<String, Object>> sortedData, ChartSettingsContext ctx, List<String> targetColumns, GoodsDataSourceDetail gds) {
 
-        if (Interval.ONE_DAY == ctx.finalizedInterval()) {
+        if (ObjectUtils.isEmpty(sortedData) || Interval.ONE_DAY == ctx.finalizedInterval()) {
             return sortedData;
         }
 
@@ -45,8 +45,7 @@ public class ChartAggregationService {
 
         Interval interval = ctx.finalizedInterval();
         LocalDate inclusiveStart = Interval.resolveInclusiveStart(ctx.finalizedInterval(), ctx.finalizedStartDate());
-//        LocalDate exclusiveEnd = ctx.finalizedEndDate();
-        LocalDate exclusiveEnd = dates.size() == 1 ? dates.get(0) : dates.get(dates.size() - 1);
+        LocalDate exclusiveEnd = inclusiveStart.isBefore(dates.get(dates.size() - 1)) ? dates.get(dates.size() - 1) : ctx.finalizedEndDate();
 
         // 버킷 생성
         List<BucketBoundary> boundaries = BucketBoundary.generateBucketsWithLookback(dates, exclusiveEnd, inclusiveStart, interval);
