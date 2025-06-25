@@ -4,15 +4,19 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StringUtil {
 
-    private StringUtil() {}
+    private StringUtil() {
+    }
 
     public static String stripNewlinesAndTabs(String inputStr) {
-        if (inputStr == null) return null;
+        if (inputStr == null)
+            return null;
         return inputStr.replaceAll("[\r\n]+", "");
     }
 
@@ -21,7 +25,8 @@ public class StringUtil {
     }
 
     public static String maskPartial(String input, int prefix, int suffix) {
-        if (input == null || input.length() <= prefix + suffix) return "*".repeat(input.length());
+        if (input == null || input.length() <= prefix + suffix)
+            return "*".repeat(input.length());
         StringBuilder sb = new StringBuilder();
         sb.append(input, 0, prefix);
         sb.append("*".repeat(input.length() - prefix - suffix));
@@ -36,17 +41,19 @@ public class StringUtil {
         return String.format("page_%03d", pageNumber);
     }
 
-
     public static Pair<String, String> extractBucketAndPath(String url) {
-        if (url == null) return null;
+        if (url == null)
+            return null;
 
         int baseIndex = url.indexOf(".com/");
-        if (baseIndex == -1 || baseIndex + 5 >= url.length()) return null;
+        if (baseIndex == -1 || baseIndex + 5 >= url.length())
+            return null;
 
         String fullPath = url.substring(baseIndex + 5); // ex: skt-mi-d-osb-ss-skhy/TEMP/abc.pdf
         int firstSlash = fullPath.indexOf("/");
 
-        if (firstSlash == -1 || firstSlash + 1 >= fullPath.length()) return null;
+        if (firstSlash == -1 || firstSlash + 1 >= fullPath.length())
+            return null;
 
         String bucket = fullPath.substring(0, firstSlash);
         String path = fullPath.substring(firstSlash + 1);
@@ -55,7 +62,8 @@ public class StringUtil {
     }
 
     public static String stripFileExtension(String path) {
-        if (path == null) return null;
+        if (path == null)
+            return null;
 
         int lastDotIndex = path.lastIndexOf('.');
         int lastSlashIndex = path.lastIndexOf('/');
@@ -72,8 +80,21 @@ public class StringUtil {
             return "";
         }
         return Arrays.stream(parts)
-            .filter(Objects::nonNull)
-            .collect(Collectors.joining("#"));
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("#"));
+    }
+
+    public static String removeDuplicates(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        String[] items = input.split(",");
+        Set<String> unique = new LinkedHashSet<>();
+        for (String item : items) {
+            unique.add(item);
+        }
+        // LinkedHashSet 에 담긴 순서 그대로 다시 콤마로 연결
+        return String.join(",", unique);
     }
 
 }
