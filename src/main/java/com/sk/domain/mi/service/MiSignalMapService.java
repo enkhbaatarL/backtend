@@ -128,7 +128,7 @@ public class MiSignalMapService {
 
         try {
             String json = objectMapper.writeValueAsString(SignalMapDataCache.of(result));
-            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(3600)); // 캐시 유효기간 1시간 설정
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(1)); // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
         } catch (Exception e) {
             log.error("Error processing signal map data", e);
         }
