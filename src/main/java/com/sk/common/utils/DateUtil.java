@@ -29,7 +29,8 @@ public final class DateUtil {
     public static final DateTimeFormatter YYYYMMDDHHMMSS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     public static final DateTimeFormatter YYYY_MM = DateTimeFormatter.ofPattern("yyyy-MM");
     public static final DateTimeFormatter YYYYMMDD_ENG = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ENGLISH);
-    public static final DateTimeFormatter DD_MMM_YYYY = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.KOREA);
+    public static final DateTimeFormatter DD_MMM_YYYY_KOREA = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.KOREA);
+    public static final DateTimeFormatter DD_MMM_YYYY_ENG = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
 
 
     private DateUtil() {
@@ -308,6 +309,14 @@ public final class DateUtil {
     }
 
     public static LocalDate fromDdMmmYyyy(String dateStr) {
-        return dateStr != null ? LocalDate.parse(dateStr, DD_MMM_YYYY) : null;
+        if (dateStr != null){
+            try {
+                return LocalDate.parse(dateStr, DD_MMM_YYYY_KOREA);
+            } catch (DateTimeParseException e) {
+                return LocalDate.parse(dateStr, DD_MMM_YYYY_ENG);
+            }
+        } else {
+            return null;
+        }
     }
 }
