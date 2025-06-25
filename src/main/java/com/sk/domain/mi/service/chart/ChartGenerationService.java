@@ -183,11 +183,9 @@ public class ChartGenerationService {
         }
 
         // 2025-05-23 fix: 메인차트인 경우 ma120을 표현하기 LOOK_BACK Period를 설정
-//        LocalDate startDate = isMainChart
-//            ? LookBack.W_SIZE_120.getLookBackStartDate(contextV3.finalizedStartDate(), contextV3.finalizedInterval(), 30)
-//            : DateUtil.fromYmd(contextV3.finalizedRangeBetween().getLeft());
-
-        LocalDate startDate = DateUtil.fromYmd(contextV3.finalizedRangeBetween().getLeft());
+        LocalDate startDate = isMainChart
+            ? LookBack.W_SIZE_120.getLookBackStartDate(contextV3.finalizedStartDate(), contextV3.finalizedInterval(), 30)
+            : DateUtil.fromYmd(contextV3.finalizedRangeBetween().getLeft());
 
         // 날짜 컬럼 스키마 조회
         SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(gds));
