@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,16 +13,20 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.insights.FocusedDataCache;
 import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
@@ -55,6 +60,9 @@ public class MiInsightsService {
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final MiGoodsPermissionService miGoodsPermissionService;
 
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+
     /**
      * Focused 목록 조회
      * 
@@ -74,6 +82,19 @@ public class MiInsightsService {
      */
     public List<FocusedDataDto> getFocused(int companyNo, int userNo, Role role) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(30);
+
+        String cacheKey = "FocusedData::companyNo:" + companyNo + "::threshold:" + threshold;
+        String cachedData = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedData != null) {
+            try {
+                FocusedDataCache focusedDataCache = objectMapper.readValue(cachedData, FocusedDataCache.class);
+                if (focusedDataCache.data() != null) {
+                    return focusedDataCache.data();
+                }
+            } catch (Exception e) {
+                log.error("Failed to parse cached data for key: {}", cacheKey, e);
+            }
+        }
 
         List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
@@ -122,6 +143,13 @@ public class MiInsightsService {
             if (result.size() >= 8) {
                 break;
             }
+        }
+
+        try {
+            String json = objectMapper.writeValueAsString(FocusedDataCache.of(result));
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(1)); // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+        } catch (Exception e) {
+            log.error("Error processing focused data", e);
         }
 
         return result;
@@ -321,7 +349,7 @@ public class MiInsightsService {
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
                         (String) row[7], // goodsDataSummaryCntt
-                        (String) row[8], // goodsDataCategory
+                        StringUtil.removeDuplicates((String) row[8]), // goodsDataCategory
                         ((Timestamp) row[9]).toLocalDateTime() // modifyDt
                 ))
                 .collect(Collectors.toList());
