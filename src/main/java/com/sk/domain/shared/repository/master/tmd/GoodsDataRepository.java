@@ -183,4 +183,13 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """)
     List<GoodsData> findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(@Param("goodsDataNm") String goodsDataNm,
             @Param("goodsDataExpn") String goodsDataExpn, @Param("goodsDataSummaryCntt") String goodsDataSummaryCntt, Pageable pageable);
+
+    @Query("""
+        SELECT gd.goods.goodsNo
+        FROM GoodsData gd
+        WHERE gd.goodsDataNo = :goodsDataNo
+        AND gd.isDeleted = false
+        """)
+    Optional<Integer> queryGoodsNoByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
+
 }
