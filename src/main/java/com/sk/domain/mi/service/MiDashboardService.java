@@ -121,7 +121,9 @@ public class MiDashboardService {
     private final String CHART_EXPLANATORY_MINUS_DIRECTION = "-";
 
     private final String DASHBOARD_CHART_CACHE_KEY = "dashboard_chart:%d_based_on_date:%s";
-    private static final int DASHBOARD_CHART_CACHE_TTL = 1; // 대시보드 차트 캐시 유효 기간 (1시간)
+    //TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
+    // private static final int DASHBOARD_CHART_CACHE_TTL = 3600; // 대시보드 차트 캐시 유효 기간 (1시간)
+    private static final int DASHBOARD_CHART_CACHE_TTL = 1; // 대시보드 차트 캐시 유효 기간 (1초)
 
     private final int DASHBOARD_CHART_START_DATE_FROM_MONTH = 11; // 차트 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0; // 예측 결과 날짜 컬럼 인덱스
@@ -811,17 +813,6 @@ public class MiDashboardService {
     }
 
     /**
-     * 한시간 후 캐시 만료
-     */
-    private long getSecondsUntilMidnightForCache() {
-        // LocalDateTime now = LocalDateTime.now();
-        // LocalDateTime midnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
-        // return Duration.between(now, midnight).getSeconds();
-
-        return Duration.ofHours(DASHBOARD_CHART_CACHE_TTL).getSeconds();
-    }
-
-    /**
      * 대시보드 그래프 캐시 키 생성
      *
      * @param chartPredictSettingDetailNo 차트 예측 설정 상세 번호
@@ -840,7 +831,7 @@ public class MiDashboardService {
     private void saveDashboardChartCache(String key, DashboardDataCache cache) {
         try {
             String json = objectMapper.writeValueAsString(cache);
-            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(getSecondsUntilMidnightForCache()));
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(DASHBOARD_CHART_CACHE_TTL));
         } catch (Exception e) {
             log.error("Failed to serialize and save cache for key: {}", key, e);
         }

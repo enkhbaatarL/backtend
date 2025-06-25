@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -118,7 +119,7 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
      */
     private static int parseMonth(String monthStr) {
         return LocalDate.parse("01 " + monthStr + " 2000",
-                DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.US))
                 .getMonthValue();
     }
 

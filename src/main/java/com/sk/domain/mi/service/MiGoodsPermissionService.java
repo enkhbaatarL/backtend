@@ -32,11 +32,12 @@ public class MiGoodsPermissionService {
      * @param userNo 사용자 번호
      * @return List<GoodsAuthorityRes>
      */
-    @Cacheable(
-        cacheNames = CacheType.PERMISSIONS_CONSTANT,
-        key = "#userNo",
-        unless = "#result.companies == null || #result.companies.empty"
-    )
+    //TODO: 테스트후 캐시 적용 필요
+    // @Cacheable(
+    //     cacheNames = CacheType.PERMISSIONS_CONSTANT,
+    //     key = "#userNo",
+    //     unless = "#result.companies == null || #result.companies.empty"
+    // )
     public PermissionRes getUserGoodsPermissions(Integer userNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findUserGoodsPermissions(userNo);
 
