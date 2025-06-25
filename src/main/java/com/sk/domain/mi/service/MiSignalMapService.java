@@ -80,6 +80,7 @@ public class MiSignalMapService {
      */
     public List<ScreenCategoryDto> getSignalMap(int companyNo, String period, String filter) {
 
+        // 캐시에서 데이터 조회
         String cacheKey = "signalMapData::companyNo:" + companyNo + "::period:" + period + "::filter:" + filter;
         String cachedData = redisTemplate.opsForValue().get(cacheKey);
         if (cachedData != null) {
@@ -128,6 +129,7 @@ public class MiSignalMapService {
             result.add(new ScreenCategoryDto(screenCategoryName, screenDetailCategoryDtoList));
         }
 
+        // 캐시에 저장
         try {
             String json = objectMapper.writeValueAsString(SignalMapDataCache.of(result));
             redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(DATA_CACHE_TTL));

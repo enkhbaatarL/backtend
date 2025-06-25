@@ -85,6 +85,7 @@ public class MiInsightsService {
     public List<FocusedDataDto> getFocused(int companyNo, int userNo, Role role) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(30);
 
+        // 캐시에서 데이터 조회
         String cacheKey = "FocusedData::companyNo:" + companyNo + "::threshold:" + threshold;
         String cachedData = redisTemplate.opsForValue().get(cacheKey);
         if (cachedData != null) {
@@ -147,6 +148,7 @@ public class MiInsightsService {
             }
         }
 
+        // 캐시에 저장
         try {
             String json = objectMapper.writeValueAsString(FocusedDataCache.of(result));
             redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(DATA_CACHE_TTL));
