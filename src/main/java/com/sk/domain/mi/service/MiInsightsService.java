@@ -129,8 +129,10 @@ public class MiInsightsService {
 
             while (it.hasNext() && count < limit && result.size() < 8) {
                 FocusedDataDto data = it.next();
-                if (data.getGoodsDataCategoryCd().contains(type) && data.getGoodsDataCategoryCd().contains("A_ENG")
-                        && !data.getGoodsDataCategoryCd().contains("A_KOR") && !data.getGoodsDataCategoryCd().contains("A_OTHERS")) {
+                if (data.getGoodsDataCategoryCd().contains(type)
+                        && (data.getGoodsDataCategoryCd().contains("A_ENG")
+                                || (!data.getGoodsDataCategoryCd().contains("A_ENG") && !data.getGoodsDataCategoryCd().contains("A_KOR")
+                                        && !data.getGoodsDataCategoryCd().contains("A_OTHERS")))) {
 
                     boolean isViewable = isDataViewable(companyNo, userNo, role, data.getGoodsNo());
                     data.setIsViewable(isViewable);
