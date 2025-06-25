@@ -1,40 +1,6 @@
 package com.sk.domain.shared.service;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.thymeleaf.util.StringUtils;
-
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.SystemErrorException;
 import com.sk.common.utils.DateUtil;
-import com.sk.common.utils.PdfUtil;
-import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.shared.dto.request.file.PdgImageReq;
@@ -57,9 +23,22 @@ import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepos
 import com.sk.domain.shared.repository.master.tmd.UserHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.template.query.MybatisQueryTemplate;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 스케쥴러용 서비스
@@ -70,13 +49,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SchedulerService {
 
-    @Value("${features.pdf-viewer.dpi:300}")
-    private int dpiValue;
-
     private final UserRepository userRepository;
     private final UserInfoRepository userInfoRepository;
     private final UploadedFileRepository uploadedFileRepository;
-    private final ObjectStorageService objectStorageService;
     private final GoodsCriticalValueSettingRepository goodsCriticalValueSettingRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final MybatisQueryTemplate mybatisQueryTemplate;
@@ -84,6 +59,7 @@ public class SchedulerService {
     private final FuturesRepository futuresRepository;
     private final FuturesSpreadRepository futuresSpreadRepository;
     private final UserHistoryRepository userHistoryRepository;
+    private final PdfToImagesProcessor pdfToImagesProcessor;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_DAYS = 1;
@@ -115,17 +91,17 @@ public class SchedulerService {
 
         if (!users.isEmpty()) {
             users.stream()
-                    .peek(User::userDelete)
-                    .collect(Collectors.toList());
+                .peek(User::userDelete)
+                .collect(Collectors.toList());
 
             LocalDateTime now = LocalDateTime.now();
             List<UserHistory> histories = users.stream()
-                    .map(user -> UserHistory.builder()
-                            .id(new UserHistoryId(user.getUserNo(), now))
-                            .isOtherCompanyServiceAccessPossible(user.getIsOtherServiceAccessPossible())
-                            .user(user)
-                            .build())
-                    .toList();
+                .map(user -> UserHistory.builder()
+                    .id(new UserHistoryId(user.getUserNo(), now))
+                    .isOtherCompanyServiceAccessPossible(user.getIsOtherServiceAccessPossible())
+                    .user(user)
+                    .build())
+                .toList();
             userHistoryRepository.saveAll(histories);
         }
 
@@ -140,7 +116,7 @@ public class SchedulerService {
     @Transactional
     public Boolean createNotification() {
         List<GoodsCriticalValueSetting> goodsCriticalValueSettings = goodsCriticalValueSettingRepository
-                .findAllByIsDeletedFalse();
+            .findAllByIsDeletedFalse();
 
         /**
          * 배치는 24시간 기준으로 작동하며 조회 데이터역시 현재 기준 최근 24시간 이내에 등록된 데이터만을 조회 비교한다.
@@ -170,7 +146,7 @@ public class SchedulerService {
                 Matcher matcher = regex.matcher(dbQueryConditionCntt);
 
                 StringJoiner whereKeyJoiner = new StringJoiner(",");
-                
+
                 // 모든 매칭된 key 수집
                 while (matcher.find()) {
                     String key = matcher.group(1); // 첫 번째 그룹: key
@@ -180,7 +156,7 @@ public class SchedulerService {
                 String whereKey = whereKeyJoiner.length() > 0 ? whereKeyJoiner.toString() : null;
 
                 String columns = mybatisQueryTemplate.getSelectQueryForAlarm(selectColumns, targetTableNm, dateColumn, defaultSelectColumn,
-                        ALARM_PREV_DATA_ALIAS, whereKey);
+                    ALARM_PREV_DATA_ALIAS, whereKey);
 
                 String orderByQuery = mybatisQueryTemplate.getOrderByQueryForAlarm(dateColumn, defaultSelectColumn);
 
@@ -200,7 +176,7 @@ public class SchedulerService {
 
                 // 임계치 설정 1개에 대한 데이터 리스트
                 List<Map<String, Object>> rowDatas = mybatisDynamicQueryService
-                        .getDynamicRawQuery(DynamicDataDetailReq.ofOrderBy(targetDatabaseNm, targetTableAlias, columns, whereQuery, orderByQuery));
+                    .getDynamicRawQuery(DynamicDataDetailReq.ofOrderBy(targetDatabaseNm, targetTableAlias, columns, whereQuery, orderByQuery));
 
                 for (Map<String, Object> rowData : rowDatas) {
                     Object createdTimeData = rowData.get(dateColumn); // 데이터 발생일 (date 칼럼)
@@ -271,7 +247,7 @@ public class SchedulerService {
                             break;
                         default:
                             log.warn("Unknown notification critical value separate code: {}",
-                                    goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd());
+                                goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd());
                             break;
                     }
 
@@ -299,8 +275,8 @@ public class SchedulerService {
             return BigDecimal.ZERO;
         }
         return current.subtract(previous)
-                .divide(previous, 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal("100"));
+            .divide(previous, 4, RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
     }
 
     /**
@@ -308,14 +284,12 @@ public class SchedulerService {
      *
      * @return Boolean
      */
-    @Transactional
     public Boolean processPdfToImages(PdgImageReq pdgImageReq) {
 
         log.info("[PDF-TO-IMAGES] Start processing target PDFs...");
 
         // 타켓 비정형데이터 조회
-        List<UploadedFile> uploadedFiles = uploadedFileRepository.findPdfToImagesTarget(Extension.PDF.getCode(),
-                FileRelationshipObjectSeparateCode.GUDAT.getCode());
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findPdfToImagesTarget(Extension.PDF.getCode(), FileRelationshipObjectSeparateCode.GUDAT.getCode());
 
         List<UploadedFile> filtered = uploadedFiles.stream()
             .filter(file -> CollectionUtils.isEmpty(pdgImageReq.fileNos()) || pdgImageReq.fileNos().contains(file.getFileNo()))
@@ -326,61 +300,11 @@ public class SchedulerService {
 
         filtered.forEach(uploadedFile -> {
 
-            String storagePathNm = uploadedFile.getStoragePathNm();
-            Long fileNo = uploadedFile.getFileNo();
-
-            log.info("[PDF-TO-IMAGES] Processing fileNo: {}", fileNo);
-
-            Pair<String, String> bucketInfo = StringUtil.extractBucketAndPath(storagePathNm);
-            String bucket = bucketInfo.getLeft();
-            String fullPath = bucketInfo.getRight();
-            String prefix = StringUtil.stripFileExtension(fullPath);
-
-            log.info("[PDF-TO-IMAGES] -> Bucket: {}, Path: {}", bucket, fullPath);
-
             try {
-
-                byte[] pdfBytes = objectStorageService.downloadFile(bucketInfo.getLeft(), bucketInfo.getRight());
-                PDDocument document = Loader.loadPDF(pdfBytes);
-                PDFRenderer renderer = new PDFRenderer(document);
-                int numberOfPages = document.getNumberOfPages();
-
-                log.info("[PDF-TO-IMAGES] -> Loaded PDF ({} pages)", numberOfPages);
-
-                IntStream.range(0, numberOfPages)
-                        .forEach(pageIndex -> {
-                            try {
-
-                                int pageNo = pageIndex + 1;
-                                log.info("[PDF-TO-IMAGES] -> Rendering page: {}", pageNo);
-
-                                // 페이지를 이미지로 렌더링
-                                BufferedImage image = renderer.renderImageWithDPI(pageIndex, dpiValue, ImageType.RGB);
-                                String imageName = StringUtils.concat(StringUtil.formatPageNumber(pageNo), ".", Extension.JPEG.getCode());
-                                String imagePath = StringUtils.concat(prefix, "/", imageName);
-
-                                byte[] imageBytes = PdfUtil.imageToJpegByteArray(image, 0.7f);
-
-                                try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
-                                    objectStorageService.uploadFile(imageInputStream, bucket, imagePath, false, "image/jpeg", imageBytes.length);
-                                    log.info("[PDF-TO-IMAGES] -> Uploaded page {} as '{}'", pageNo, imagePath);
-                                }
-
-                            } catch (IOException e) {
-                                log.error("[PDF-TO-IMAGES] Failed to process page {}", pageIndex + 1, e);
-                                throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
-                            }
-                        });
-
-                document.close();
-                log.info("[PDF-TO-IMAGES] -> upload Completed fileNo: {}", fileNo);
-
-                // 완료상태, 페이지 수 업데이트
-                uploadedFile.updateUploadedImagesResult(numberOfPages);
-
-            } catch (IOException e) {
-                log.error("[PDF-TO-IMAGES] Failed to process fileNo: {}", fileNo, e);
-                throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+                // 트랜잭션이 분리된 별도 메소드 호출
+                pdfToImagesProcessor.process(uploadedFile);
+            } catch (Exception e) {
+                log.error("[PDF-TO-IMAGES] Failed to process fileNo: {}. Skipping to next file.", uploadedFile.getFileNo(), e);
             }
 
         });
@@ -420,7 +344,7 @@ public class SchedulerService {
         List<LocalDateTime> dates = dataList.stream().map(CrackSpreadDataRes::date).collect(Collectors.toList());
         List<FuturesSpread> existingSpreads = futuresSpreadRepository.findByCodeAndDateIn(CRACK_SPREAD_CODE, dates);
         Map<LocalDateTime, FuturesSpread> existingByDate = existingSpreads.stream()
-                .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
+            .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
         log.debug("Existing spreads by date: {}", existingByDate);
 
         List<FuturesSpread> spreadsToSave = new ArrayList<>();
@@ -431,8 +355,8 @@ public class SchedulerService {
             BigDecimal ps = null;
             if (dto.clPs() != null && dto.hoPs() != null && dto.rbSettle() != null) {
                 ps = BigDecimal.valueOf(RB_WEIGHT * BARREL_CONVERSION_FACTOR).multiply(dto.rbSettle())
-                        .add(BigDecimal.valueOf(HO_WEIGHT * BARREL_CONVERSION_FACTOR).multiply(dto.hoPs()))
-                        .subtract(BigDecimal.valueOf(CL_WEIGHT).multiply(dto.clPs()));
+                    .add(BigDecimal.valueOf(HO_WEIGHT * BARREL_CONVERSION_FACTOR).multiply(dto.hoPs()))
+                    .subtract(BigDecimal.valueOf(CL_WEIGHT).multiply(dto.clPs()));
             }
 
             // 타입 변환: vm, oi
@@ -450,36 +374,36 @@ public class SchedulerService {
                 // 기존 레코드 업데이트
                 FuturesSpread existing = existingByDate.get(dto.date());
                 target = FuturesSpread.builder()
-                        .dataRegistrationSn(existing.getDataRegistrationSn())
-                        .code(existing.getCode())
-                        .date(existing.getDate())
-                        .ps(ps)
-                        .vm(vm)
-                        .oi(oi)
-                        .po(po)
-                        .ph(ph)
-                        .pl(pl)
-                        .build();
+                    .dataRegistrationSn(existing.getDataRegistrationSn())
+                    .code(existing.getCode())
+                    .date(existing.getDate())
+                    .ps(ps)
+                    .vm(vm)
+                    .oi(oi)
+                    .po(po)
+                    .ph(ph)
+                    .pl(pl)
+                    .build();
             } else {
                 // 새 레코드 생성
                 target = FuturesSpread.builder()
-                        .code(CRACK_SPREAD_CODE)
-                        .date(dto.date())
-                        .ps(ps)
-                        .vm(vm)
-                        .oi(oi)
-                        .po(po)
-                        .ph(ph)
-                        .pl(pl)
-                        .build();
+                    .code(CRACK_SPREAD_CODE)
+                    .date(dto.date())
+                    .ps(ps)
+                    .vm(vm)
+                    .oi(oi)
+                    .po(po)
+                    .ph(ph)
+                    .pl(pl)
+                    .build();
             }
             spreadsToSave.add(target);
         }
 
         log.debug("Prepared {} spreads to save, first date: {}, last date: {}",
-                spreadsToSave.size(),
-                spreadsToSave.isEmpty() ? null : spreadsToSave.get(0).getDate(),
-                spreadsToSave.isEmpty() ? null : spreadsToSave.get(spreadsToSave.size() - 1).getDate());
+            spreadsToSave.size(),
+            spreadsToSave.isEmpty() ? null : spreadsToSave.get(0).getDate(),
+            spreadsToSave.isEmpty() ? null : spreadsToSave.get(spreadsToSave.size() - 1).getDate());
 
         // 배치 저장
         saveInBatches(spreadsToSave);
@@ -496,11 +420,11 @@ public class SchedulerService {
         log.info("Last date for code {}: {}", TIME_SPREAD_CODE, lastDate);
         // LLCC.01, LLCC.03 데이터 조회
         Map<LocalDateTime, List<Futures>> futuresByDate = futuresRepository.findByCodesAfterDate(
-                Arrays.asList(LLCC_01, LLCC_03), lastDate);
+            Arrays.asList(LLCC_01, LLCC_03), lastDate);
         log.debug("Fetched {} date groups, first date: {}, last date: {}",
-                futuresByDate.size(),
-                futuresByDate.keySet().stream().min(LocalDateTime::compareTo).orElse(null),
-                futuresByDate.keySet().stream().max(LocalDateTime::compareTo).orElse(null));
+            futuresByDate.size(),
+            futuresByDate.keySet().stream().min(LocalDateTime::compareTo).orElse(null),
+            futuresByDate.keySet().stream().max(LocalDateTime::compareTo).orElse(null));
 
         List<FuturesSpread> spreadsToSave = new ArrayList<>();
 
@@ -508,7 +432,7 @@ public class SchedulerService {
         List<LocalDateTime> dates = new ArrayList<>(futuresByDate.keySet());
         List<FuturesSpread> existingSpreads = futuresSpreadRepository.findByCodeAndDateIn(TIME_SPREAD_CODE, dates);
         Map<LocalDateTime, FuturesSpread> existingByDate = existingSpreads.stream()
-                .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
+            .collect(Collectors.toMap(FuturesSpread::getDate, s -> s));
 
         // 동일 date의 LLCC.01과 LLCC.03 데이터 매칭 및 계산
         for (Map.Entry<LocalDateTime, List<Futures>> entry : futuresByDate.entrySet()) {
@@ -517,13 +441,13 @@ public class SchedulerService {
 
             // LLCC.01과 LLCC.03 찾기
             Futures llcc01 = futuresForDate.stream()
-                    .filter(f -> LLCC_01.equals(f.getCode()))
-                    .findFirst()
-                    .orElse(null);
+                .filter(f -> LLCC_01.equals(f.getCode()))
+                .findFirst()
+                .orElse(null);
             Futures llcc03 = futuresForDate.stream()
-                    .filter(f -> LLCC_03.equals(f.getCode()))
-                    .findFirst()
-                    .orElse(null);
+                .filter(f -> LLCC_03.equals(f.getCode()))
+                .findFirst()
+                .orElse(null);
 
             // 둘 다 존재해야 계산
             if (llcc01 != null && llcc03 != null) {
@@ -541,28 +465,28 @@ public class SchedulerService {
                     // 기존 레코드 업데이트
                     FuturesSpread existing = existingByDate.get(date);
                     spread = FuturesSpread.builder()
-                            .dataRegistrationSn(existing.getDataRegistrationSn())
-                            .code(existing.getCode())
-                            .date(existing.getDate())
-                            .ps(ps)
-                            .vm(vm)
-                            .oi(oi)
-                            .po(po)
-                            .ph(ph)
-                            .pl(pl)
-                            .build();
+                        .dataRegistrationSn(existing.getDataRegistrationSn())
+                        .code(existing.getCode())
+                        .date(existing.getDate())
+                        .ps(ps)
+                        .vm(vm)
+                        .oi(oi)
+                        .po(po)
+                        .ph(ph)
+                        .pl(pl)
+                        .build();
                 } else {
                     // 새 레코드 생성
                     spread = FuturesSpread.builder()
-                            .code(TIME_SPREAD_CODE)
-                            .date(date)
-                            .ps(ps)
-                            .vm(vm)
-                            .oi(oi)
-                            .po(po)
-                            .ph(ph)
-                            .pl(pl)
-                            .build();
+                        .code(TIME_SPREAD_CODE)
+                        .date(date)
+                        .ps(ps)
+                        .vm(vm)
+                        .oi(oi)
+                        .po(po)
+                        .ph(ph)
+                        .pl(pl)
+                        .build();
                 }
 
                 spreadsToSave.add(spread);
@@ -570,9 +494,9 @@ public class SchedulerService {
         }
 
         log.debug("Prepared {} spreads to save, first date: {}, last date: {}",
-                spreadsToSave.size(),
-                spreadsToSave.isEmpty() ? null : spreadsToSave.get(0).getDate(),
-                spreadsToSave.isEmpty() ? null : spreadsToSave.get(spreadsToSave.size() - 1).getDate());
+            spreadsToSave.size(),
+            spreadsToSave.isEmpty() ? null : spreadsToSave.get(0).getDate(),
+            spreadsToSave.isEmpty() ? null : spreadsToSave.get(spreadsToSave.size() - 1).getDate());
 
         // 배치 저장
         saveInBatches(spreadsToSave);
