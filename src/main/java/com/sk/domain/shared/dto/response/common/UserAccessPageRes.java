@@ -48,12 +48,15 @@ public record UserAccessPageRes(
     @Schema(description = "고객회사 명")
     String companyNm,
 
+    @Schema(description = "사용자 알림 설정 여부")
+    Boolean isUserNotificationSetting,
+
     @Schema(description = "페이지 접근 퍼미션 타입", example = "MI or ADMIN or BOTH")
     UserAccessPageType userAccessPageType
 ) {
 
     @Builder
-    public UserAccessPageRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm, UserAccessPageType userAccessPageType) {
+    public UserAccessPageRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm, Boolean isUserNotificationSetting, UserAccessPageType userAccessPageType) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
@@ -67,6 +70,7 @@ public record UserAccessPageRes(
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
         this.companyNo = companyNo;
         this.companyNm = companyNm;
+        this.isUserNotificationSetting = isUserNotificationSetting;
         this.userAccessPageType = userAccessPageType;
     }
 
@@ -85,6 +89,7 @@ public record UserAccessPageRes(
             .isIndividualInfoAgreement(entity.getIsIndividualInfoAgreement())
             .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
+            .isUserNotificationSetting(entity.getIsUserNotificationSetting())
             .userAccessPageType(userAccessPageType)
             .build();
     }
