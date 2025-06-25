@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MiSignalMapService {
+    private static final int DATA_CACHE_TTL = 1; // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final CorrelationAnalysisResultRepository correlationAnalysisResultRepository;
@@ -73,11 +75,12 @@ public class MiSignalMapService {
      * 
      * @param companyNo 고객사 번호
      * @param period    주기 코드(예: "3M", "6M", "9M", "1Y", "TOT")
-     * @param filters   (현재는 사용되지 않지만, 추후 WHERE 절에 추가 조건이 필요할 때 사용할 수 있습니다)
+     * @param filters   
      * @return List<ScreenCategoryDto>
      */
     public List<ScreenCategoryDto> getSignalMap(int companyNo, String period, String filter) {
 
+        // 캐시에서 데이터 조회
         String cacheKey = "signalMapData::companyNo:" + companyNo + "::period:" + period + "::filter:" + filter;
         String cachedData = redisTemplate.opsForValue().get(cacheKey);
         if (cachedData != null) {
@@ -126,9 +129,10 @@ public class MiSignalMapService {
             result.add(new ScreenCategoryDto(screenCategoryName, screenDetailCategoryDtoList));
         }
 
+        // 캐시에 저장
         try {
             String json = objectMapper.writeValueAsString(SignalMapDataCache.of(result));
-            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(1)); // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(DATA_CACHE_TTL));
         } catch (Exception e) {
             log.error("Error processing signal map data", e);
         }

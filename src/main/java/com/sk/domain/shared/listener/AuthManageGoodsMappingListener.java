@@ -2,18 +2,18 @@ package com.sk.domain.shared.listener;
 
 import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.service.CacheService;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostUpdate;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -27,43 +27,99 @@ public class AuthManageGoodsMappingListener {
         AuthManageGoodsMappingListener.applicationContext = applicationContext;
     }
 
+    /**
+     * AuthManageGoodsMapping(권한-상품 매핑) Disabled or Deleted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
+     */
     @PostUpdate
     public void checkDisabled(AuthManageGoodsMapping amgm) {
 
-        if (BooleanUtils.isTrue(amgm.getIsDeleted()) && ObjectUtils.isNotEmpty(amgm.getUser())) {
+        try {
 
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
+            // 연관된 회사에 소속된 사용자 캐시 무효화
+            if (GoodsAuthManagementSeparateCd.COMPANY == amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd()) {
 
-            log.info("The AuthManageGoodsMapping(userNo: {}, companyNo: {}, goodsNo: {}, goodsAuthCd: {}) has been disabled. Subsequently, the userNo cache will be invalidated.",
-                Optional.ofNullable(amgm.getUser()).map(User::getUserNo).orElse(null),
-                amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getCustomerCompanyCd(),
-                amgm.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo(),
-                amgm.getGoodsAuthCd().getCode()
-            );
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
 
-            // 사용자권한-상품 매핑이 제거 되었으므로 개별 사용자의 캐싱 무효화
-            cacheService.invalidateUsers(amgm.getUser().getUserNo());
+                List<User> users = amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getUsers();
+                List<Integer> userNos = users.stream().map(User::getUserNo).toList();
 
+                log.info("The AuthManageGoodsMapping(companyNo: {}, goodsNo: {}, goodsManagementSeparatedCd: {}) has been disabled. The related user's({}) cache will be invalidated accordingly.",
+                    amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getCustomerCompanyNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd(),
+                    userNos
+                );
+
+                users.forEach(user -> cacheService.invalidateUsers(user.getUserNo()));
+
+            }
+
+            // 해당 사용자 캐시 무효화
+            if (GoodsAuthManagementSeparateCd.INDIVIDUAL == amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd() && ObjectUtils.isNotEmpty(amgm.getUser())) {
+
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+
+                log.info("The AuthManageGoodsMapping(companyNo: {}, goodsNo: {}, goodsManagementSeparatedCd: {}) has been disabled. The related user's({}) cache will be invalidated accordingly.",
+                    amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getCustomerCompanyNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd(),
+                    amgm.getUser().getUserNo()
+                );
+
+                cacheService.invalidateUsers(amgm.getUser().getUserNo());
+
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for AuthManageGoodsMapping: {}", e.getMessage(), e);
         }
 
     }
 
+    /**
+     * AuthManageGoodsMapping(권한-상품 매핑) Persisted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
+     */
     @PostPersist
     public void checkPersisted(AuthManageGoodsMapping amgm) {
 
-        if (ObjectUtils.isNotEmpty(amgm.getUser())) {
+        try {
 
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
+            if (GoodsAuthManagementSeparateCd.COMPANY == amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd()) {
 
-            log.info("The AuthManageGoodsMapping(userNo: {}, companyNo: {}, goodsNo: {}, goodsAuthCd: {}) has been persisted. Subsequently, the userNo cache will be invalidated.",
-                Optional.ofNullable(amgm.getUser()).map(User::getUserNo).orElse(null),
-                amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getCustomerCompanyCd(),
-                amgm.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo(),
-                amgm.getGoodsAuthCd().getCode()
-            );
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
 
-            // 사용자권한-상품 매핑이 추가 되었으므로 개별 사용자의 캐싱 무효화
-            cacheService.invalidateUsers(amgm.getUser().getUserNo());
+                List<User> users = amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getUsers();
+                List<Integer> userNos = users.stream().map(User::getUserNo).toList();
+
+                log.info("The AuthManageGoodsMapping(companyNo: {}, goodsNo: {}, goodsManagementSeparatedCd: {}) has been disabled. The related user's({}) cache will be invalidated accordingly.",
+                    amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getCustomerCompanyNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd(),
+                    userNos
+                );
+
+                // 고객사-상품 매핑이 제거 되었으므로 해당하는 회사에 소속된 모든 사용자 캐싱 무효화
+                users.forEach(user -> cacheService.invalidateUsers(user.getUserNo()));
+
+            }
+
+            if (GoodsAuthManagementSeparateCd.INDIVIDUAL == amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd() && ObjectUtils.isNotEmpty(amgm.getUser())) {
+
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+
+                log.info("The AuthManageGoodsMapping(companyNo: {}, goodsNo: {}, goodsManagementSeparatedCd: {}) has been disabled. The related user's({}) cache will be invalidated accordingly.",
+                    amgm.getCustomerCompanyGoodsMapping().getCustomerCompany().getCustomerCompanyNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getGoods().getGoodsNo(),
+                    amgm.getCustomerCompanyGoodsMapping().getId().getGoodsAuthManagementSeparateCd(),
+                    amgm.getUser().getUserNo()
+                );
+
+                cacheService.invalidateUsers(amgm.getUser().getUserNo());
+
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for AuthManageGoodsMapping: {}", e.getMessage(), e);
         }
 
     }

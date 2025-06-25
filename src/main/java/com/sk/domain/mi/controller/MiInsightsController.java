@@ -92,11 +92,12 @@ public class MiInsightsController {
             @RequestParam(value = "period", required = false, defaultValue = "ALL_DATES") InsightsPeriodType period,
             @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
 
+        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory
-                .create(miInsightsService.getInsights(cNo, page, size, keyword, sort, period, filters));
+                .create(miInsightsService.getInsights(cNo, userNo, page, size, keyword, sort, period, filters));
     }
 
     @ApiOrder(4)

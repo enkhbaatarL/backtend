@@ -24,15 +24,21 @@ public class GoodsListener {
     }
 
     /**
-     * Goods Disabled 감지하여 Goods 태그 엔티티 캐싱 무효화를 요청한다.
+     * Goods(상품) Disabled or Deleted 감지하여 태그 엔티티 캐싱 무효화를 요청한다.
      */
     @PostUpdate
     public void checkDisabled(Goods goods) {
 
-        if (BooleanUtils.isFalse(goods.getIsUsed()) || BooleanUtils.isTrue(goods.getIsDeleted())) {
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
-            log.info("The goodsNo({}) has been disabled. Subsequently, the related user cache will be invalidated", goods.getGoodsNo());
-            cacheService.invalidateUsersForTagEntity(CacheType.TAG_GOODS, goods.getGoodsNo());
+        try {
+
+            if (BooleanUtils.isFalse(goods.getIsUsed()) || BooleanUtils.isTrue(goods.getIsDeleted())) {
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+                log.info("The goods({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", goods.getGoodsNo());
+                cacheService.invalidateUsersForTagEntity(CacheType.TAG_GOODS, goods.getGoodsNo());
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for Goods: {}", e.getMessage(), e);
         }
 
     }

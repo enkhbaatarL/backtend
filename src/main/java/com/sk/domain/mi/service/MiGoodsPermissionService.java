@@ -24,6 +24,10 @@ public class MiGoodsPermissionService {
 
     /**
      * 사용자 번호를 통해 사용자의 상품권한(VIEW, DOWNLOAD) 목록을 조회한다.
+     * 캐시를 사용하여 성능을 최적화한다.
+     * <p>
+     * redis-key:   perm:permissions::{userNo}
+     * example:     perm:permissions::1000091
      *
      * @param userNo 사용자 번호
      * @return List<GoodsAuthorityRes>
@@ -45,21 +49,11 @@ public class MiGoodsPermissionService {
         return permissionRes;
     }
 
-//    @Cacheable(
-//        cacheNames = CacheType.PERMISSIONS_CONSTANT,
-//        key = "'admin'",
-//        unless = "#result.companies == null || #result.companies.empty"
-//    )
     public PermissionRes getAccessAdminGoodsPermissions() {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findAdminGoodsPermissions();
         return PermissionRes.fromAuthorityMappings(goodsMappings);
     }
 
-//    @Cacheable(
-//        cacheNames = CacheType.PERMISSIONS_CONSTANT,
-//        key = "'company:'+#companyNo",
-//        unless = "#result.companies == null || #result.companies.empty"
-//    )
     public PermissionRes getPlusOperatorGoodsPermissions(Integer companyNo) {
         List<AuthManageGoodsMapping> goodsMappings = authManageGoodsMappingRepository.findPlusOperatorGoodsPermissions(companyNo);
         return PermissionRes.fromAuthorityMappings(goodsMappings);
