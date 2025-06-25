@@ -29,10 +29,16 @@ public class ProviderListener {
     @PostUpdate
     public void checkDisabled(Provider provider) {
 
-        if (BooleanUtils.isFalse(provider.getIsUsed()) || BooleanUtils.isTrue(provider.getIsDeleted())) {
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
-            log.info("The provider({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", provider.getProviderNo());
-            cacheService.invalidateUsersForTagEntity(CacheType.TAG_PROVIDER, provider.getProviderNo());
+        try {
+
+            if (BooleanUtils.isFalse(provider.getIsUsed()) || BooleanUtils.isTrue(provider.getIsDeleted())) {
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+                log.info("The provider({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", provider.getProviderNo());
+                cacheService.invalidateUsersForTagEntity(CacheType.TAG_PROVIDER, provider.getProviderNo());
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for Provider: {}", e.getMessage(), e);
         }
 
     }

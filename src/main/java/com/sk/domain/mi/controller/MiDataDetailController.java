@@ -67,7 +67,8 @@ public class MiDataDetailController {
     @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}")
     @RequiredPermission(
         roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsNestedParam = "goodsDataNo", requireViewPermission = true
     )
     public BaseResponse<GoodsDataRes> getGoodsData(
         @PathVariable(value = "goodsNo") Integer goodsNo,

@@ -29,10 +29,16 @@ public class GoodsListener {
     @PostUpdate
     public void checkDisabled(Goods goods) {
 
-        if (BooleanUtils.isFalse(goods.getIsUsed()) || BooleanUtils.isTrue(goods.getIsDeleted())) {
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
-            log.info("The goods({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", goods.getGoodsNo());
-            cacheService.invalidateUsersForTagEntity(CacheType.TAG_GOODS, goods.getGoodsNo());
+        try {
+
+            if (BooleanUtils.isFalse(goods.getIsUsed()) || BooleanUtils.isTrue(goods.getIsDeleted())) {
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+                log.info("The goods({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", goods.getGoodsNo());
+                cacheService.invalidateUsersForTagEntity(CacheType.TAG_GOODS, goods.getGoodsNo());
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for Goods: {}", e.getMessage(), e);
         }
 
     }

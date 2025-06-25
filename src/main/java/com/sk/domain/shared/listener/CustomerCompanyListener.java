@@ -29,11 +29,18 @@ public class CustomerCompanyListener {
     @PostUpdate
     public void checkDisabled(CustomerCompany customerCompany) {
 
-        if (BooleanUtils.isFalse(customerCompany.getIsUsed()) || BooleanUtils.isTrue(customerCompany.getIsDeleted())) {
-            CacheService cacheService = applicationContext.getBean(CacheService.class);
-            log.info("The company({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", customerCompany.getCustomerCompanyNo());
-            cacheService.invalidateUsersForTagEntity(CacheType.TAG_COMPANY, customerCompany.getCustomerCompanyNo());
+        try {
+
+            if (BooleanUtils.isFalse(customerCompany.getIsUsed()) || BooleanUtils.isTrue(customerCompany.getIsDeleted())) {
+                CacheService cacheService = applicationContext.getBean(CacheService.class);
+                log.info("The company({}) has been disabled or deleted. The related user's cache will be invalidated accordingly.", customerCompany.getCustomerCompanyNo());
+                cacheService.invalidateUsersForTagEntity(CacheType.TAG_COMPANY, customerCompany.getCustomerCompanyNo());
+            }
+
+        } catch (Exception e) {
+            log.error("Error while checking cached-state for CustomerCompany: {}", e.getMessage(), e);
         }
+
 
     }
 
