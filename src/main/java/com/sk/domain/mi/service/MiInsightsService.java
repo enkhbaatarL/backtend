@@ -53,6 +53,8 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MiInsightsService {
+    private static final int DATA_CACHE_TTL = 1; // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final GoodsDataRepository goodsDataRepository;
     private final EntityManager entityManager;
@@ -147,7 +149,7 @@ public class MiInsightsService {
 
         try {
             String json = objectMapper.writeValueAsString(FocusedDataCache.of(result));
-            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(1)); // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(DATA_CACHE_TTL));
         } catch (Exception e) {
             log.error("Error processing focused data", e);
         }

@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MiSignalMapService {
+    private static final int DATA_CACHE_TTL = 1; // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final CorrelationAnalysisResultRepository correlationAnalysisResultRepository;
@@ -128,7 +130,7 @@ public class MiSignalMapService {
 
         try {
             String json = objectMapper.writeValueAsString(SignalMapDataCache.of(result));
-            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(1)); // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+            redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(DATA_CACHE_TTL));
         } catch (Exception e) {
             log.error("Error processing signal map data", e);
         }
