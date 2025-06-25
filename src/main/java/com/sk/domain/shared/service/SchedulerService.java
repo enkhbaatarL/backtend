@@ -149,11 +149,10 @@ public class SchedulerService {
             if (goodsCriticalValueSettingData.getUser().getIsUserNotificationSetting()) {
                 String targetDatabaseNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
                 String targetTableNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetTableNm();
+                String queryWhere = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getQueryConditionCntt();
 
                 String selectColumns = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTableColumnListNm();
                 String[] selectQueryArray = selectColumns.split(",");
-
-                GoodsDataSourceDetail goodsDataSourceDetail = goodsCriticalValueSettingData.getGoodsDataSourceDetail();
 
                 /**
                  * 현재 정책으로 TableColumnListNm의 칼럼 순서는
@@ -178,7 +177,7 @@ public class SchedulerService {
                 String startDateStr = DateUtil.toYyyyMmDdHms(startDateTime);
                 String endDateStr = DateUtil.toYyyyMmDdHms(endDateTime);
 
-                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(startDateStr, endDateStr);
+                String whereQuery = mybatisQueryTemplate.getWhereQueryForAlarm(startDateStr, endDateStr, queryWhere);
 
                 // 임계치 설정 1개에 대한 데이터 리스트
                 List<Map<String, Object>> rowDatas = mybatisDynamicQueryService
