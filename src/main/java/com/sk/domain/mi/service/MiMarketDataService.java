@@ -170,8 +170,7 @@ public class MiMarketDataService {
                         // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                         MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
                                 MARKET_DATA_INTERVAL, miMarketDataCache.marketMetaData().indexStartDt(),
-                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt(),
-                                miMarketDataCache.marketMetaData().recentChangeRate());
+                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt(), null);
 
                         return MiMarketDataRes.of(isPermitted, marketMetaData);
                     }
@@ -324,7 +323,7 @@ public class MiMarketDataService {
                 // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                 MarketMetaData marketMetaDataNoPermitted = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
                         MARKET_DATA_INTERVAL, indexStartDate,
-                        lastValue, lastUpdateDt, recentChangeRateValue);
+                        lastValue, lastUpdateDt, null);
 
                 return MiMarketDataRes.of(isPermitted, marketMetaDataNoPermitted);
             }
