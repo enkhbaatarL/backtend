@@ -53,16 +53,24 @@ public class MybatisQueryTemplate {
      * @param hours
      * @return
      */
-    public String getWhereQueryForAlarm(String startDate, String endDate) {
+    public String getWhereQueryForAlarm(String startDate, String endDate, String queryWhere) {
         // return String.format("""
         //         t1.%s >= DATE_SUB(NOW(), INTERVAL %d HOUR)
         //         AND t1.del_yn = 'N'
         //         """, CREATED_DATE_COLUMN, hours);
 
-        return String.format("""
-                t1.%s BETWEEN '%s' AND '%s'
-                AND t1.del_yn = 'N'
-                """, MODIFIED_DATE_COLUMN, startDate, endDate);
+        if (queryWhere == null || queryWhere.isEmpty()) {
+            return String.format("""
+                    t1.%s BETWEEN '%s' AND '%s'
+                    AND t1.del_yn = 'N'
+                    """, MODIFIED_DATE_COLUMN, startDate, endDate);
+        } else {
+            return String.format("""
+                    t1.%s BETWEEN '%s' AND '%s'
+                    AND %s
+                    AND t1.del_yn = 'N'
+                    """, MODIFIED_DATE_COLUMN, startDate, endDate, queryWhere);
+        }
     }
 
     /**

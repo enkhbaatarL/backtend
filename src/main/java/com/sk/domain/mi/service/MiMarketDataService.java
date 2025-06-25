@@ -212,12 +212,24 @@ public class MiMarketDataService {
             }
 
             // 마지막 데이터 값
-            LocalDate lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - 1).get(dateColumnName).toString());
+            LocalDate lastUpdateDt = null;
+            for (int i = 1; i <= rawData.size(); i++) {
+                if (rawData.get(rawData.size() - i).get(dateColumnName) != null) {
+                    lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - i).get(dateColumnName));
+                    break;
+                }
+            }
 
             // 마지막 데이터 값
-            Double lastValue = Double.parseDouble(rawData.get(rawData.size() - 1).get(defaultDataColumnName).toString());
-            BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
-            lastValue = bd.doubleValue();
+            Double lastValue = null;
+            for (int i = 1; i <= rawData.size(); i++) {
+                if (rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
+                    lastValue = Double.parseDouble(rawData.get(rawData.size() - i).get(defaultDataColumnName).toString());
+                    BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
+                    lastValue = bd.doubleValue();
+                    break;
+                }
+            }
 
             // Index Start date 데이터 조회
             LocalDate indexStartDate;
@@ -387,12 +399,24 @@ public class MiMarketDataService {
             }
 
             // 마지막 데이터 날짜 값
-            LocalDate lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - 1).get(dateColumnName));
+            LocalDate lastUpdateDt = null;
+            for (int i = 1; i <= rawData.size(); i++) {
+                if (rawData.get(rawData.size() - i).get(dateColumnName) != null) {
+                    lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - i).get(dateColumnName));
+                    break;
+                }
+            }
 
             // 마지막 데이터 값
-            Double lastValue = Double.parseDouble(rawData.get(rawData.size() - 1).get(defaultDataColumnName).toString());
-            BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
-            lastValue = bd.doubleValue();
+            Double lastValue = null;
+            for (int i = 1; i <= rawData.size(); i++) {
+                if (rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
+                    lastValue = Double.parseDouble(rawData.get(rawData.size() - i).get(defaultDataColumnName).toString());
+                    BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
+                    lastValue = bd.doubleValue();
+                    break;
+                }
+            }
 
             // Index Start date 데이터 조회
             LocalDate indexStartDate;

@@ -35,4 +35,11 @@ public record DashboardChartFactorGraphRes(
                 .datasource(datasource)
                 .build();
     }
+
+    public static DashboardChartFactorGraphRes of(String summary, DashboardChartFactorGraphMetadata graphMetadata) {
+        return DashboardChartFactorGraphRes.builder()
+                .summary(summary)
+                .graphMetadata(graphMetadata)
+                .build();
+    }
 }
