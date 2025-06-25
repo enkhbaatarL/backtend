@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.utils.StringUtil;
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataCache;
@@ -235,7 +234,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
                 .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
-                .append(" GROUP_CONCAT(tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
+                .append(" GROUP_CONCAT(DISTINCT tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
                 .append(" MAX(tf.mod_dtm) AS modifyDt,")
                 .append(" IFNULL(tamgm.gds_auth_mnagt_spt_cd = 'COMPANY' OR tamgm.usr_no = :userNo, false) AS viewable");
 
@@ -387,7 +386,8 @@ public class MiInsightsService {
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
                         (String) row[7], // goodsDataSummaryCntt
-                        StringUtil.removeDuplicates((String) row[8]), // goodsDataCategory
+                        // StringUtil.removeDuplicates((String) row[8]), // goodsDataCategory
+                        (String) row[8], // goodsDataCategory
                         ((Timestamp) row[9]).toLocalDateTime(), // modifyDt
                         (Integer) row[10] == 1)) // viewable
                 .collect(Collectors.toList());
