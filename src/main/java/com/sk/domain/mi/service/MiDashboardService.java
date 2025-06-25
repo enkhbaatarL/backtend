@@ -862,6 +862,10 @@ public class MiDashboardService {
         String dbQueryConditionCntt = goodsDataSourceDetail.getQueryConditionCntt();
         String dbColumnList = goodsDataSourceDetail.getTableColumnListNm();
 
+
+        //TODO: 정규식 패턴 수정 필요 and가 몇개 있을지 모름
+
+
         // 정규 표현식 패턴을 이용해서 getTableColumnList 에서 칼럼, 데이터 추출
         String pattern = "([a-zA-Z_]+)\\s*=\\s*'([^']*)'\\s*and\\s*([a-zA-Z_]+)\\s*=\\s*'([^']*)'";
         Pattern regex = Pattern.compile(pattern);
