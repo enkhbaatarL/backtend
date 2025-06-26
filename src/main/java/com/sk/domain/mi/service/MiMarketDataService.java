@@ -94,6 +94,7 @@ public class MiMarketDataService {
 
     private static final String MARKET_DATA_CACHE_KEY = "market_data:setting:%d";
     private static final String MARKET_DATA_SUMMARY_CACHE_KEY = "market_data_summary:setting:%d";
+    private static final String MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME = "mod_dtm"; // 마지막 업데이트 날짜 컬럼명
 
     private final UserRepository userRepository;
     private final EntityManager entityManager;
@@ -116,35 +117,18 @@ public class MiMarketDataService {
      * @return 마켓 데이터 목록
      */
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
-        // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR)); // 2년 전
         LocalDate START_DATE = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
         LocalDate END_DATE = LocalDate.now();
 
         // 고객사 조회
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
-        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        // }
-        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
-
-        // // 권한 조회
-        // PermissionRes permissionRes = switch (role) {
-        // case USER -> {
-        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        // }
-        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        // case API_PLUS_OPERATOR -> {
-        // Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
-        // }
-        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        // };
-
+        // 권한 조회
         PermissionRes permissionRes = authorizationService.getPermissions();
 
+        // 차트 설정 조회
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
@@ -197,31 +181,37 @@ public class MiMarketDataService {
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
             // Index Start date 데이터 조회
-            LocalDate indexStartDate;
+            LocalDate indexStartDate = null;
             List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
-            if (!indexStartDateData.isEmpty()) {
-                String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
-                indexStartDate = DateUtil.parseDate(rawDate);
-            } else {
-                indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
+            if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
+                Map<String, Object> indexStartDateDataMap = indexStartDateData.get(0);
+                if (indexStartDateDataMap != null) {
+                    Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
+                    if (indexStartDateDataValue != null) {
+                        String rawDate = indexStartDateDataValue.toString();
+                        indexStartDate = DateUtil.parseDate(rawDate);
+                    }
+                }
             }
 
-            // 마지막 데이터 날짜 값
-            LocalDate lastUpdateDt;
-            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, dateColumnName);
-            if (!lastUpdateDtData.isEmpty()) {
-                String rawDate = lastUpdateDtData.get(0).get(dateColumnName).toString();
-                lastUpdateDt = DateUtil.parseDate(rawDate);
-            } else {
-                lastUpdateDt = null;
+            // 마지막 업데이트 날짜 값
+            LocalDate lastUpdateDt = null;
+            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+            if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
+                Map<String, Object> lastUpdateDtDataMap = lastUpdateDtData.get(0);
+                if (lastUpdateDtDataMap != null) {
+                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+                    if (lastUpdateDtDataValue != null) {
+                        String rawDate = lastUpdateDtDataValue.toString();
+                        lastUpdateDt = DateUtil.parseDate(rawDate);
+                    }
+                }
             }
 
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
-                // isPermitted = false;
-
                 MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL,
-                        lastUpdateDt);
+                        indexStartDate, lastUpdateDt);
                 MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
                 List<MarketDataChart> compareCharts = Collections.emptyList();
 
@@ -275,13 +265,6 @@ public class MiMarketDataService {
                 calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
                         calculatePeriodChangeTypes);
             }
-
-            // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
-            // Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
-            // CalculatePeriodChangeType.YOY);
-            // // 기간 변화 유형별 계산
-            // CalculatePeriodChangeRes calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-            // calculatePeriodChangeTypes);
 
             // 비교군 데이터소스 조회
             List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
@@ -354,13 +337,15 @@ public class MiMarketDataService {
      * @return 마켓 데이터 목록
      */
     public List<MiMarketDataSummaryRes> getMarketDataSummary(Integer customerCompanyNo) {
-        // String START_DATE = DateUtil.toYmdHyphen(LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH)); // 2달 전
         LocalDate START_DATE = LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH);
         LocalDate END_DATE = LocalDate.now();
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo)
+        // 고객사 조회
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", customerCompanyNo)));
 
+        // 권한 조회
         PermissionRes permissionRes = authorizationService.getPermissions();
 
         // 차트 설정 조회
@@ -415,25 +400,42 @@ public class MiMarketDataService {
             // 원시 데이터 조회
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
+            // Index Start date 데이터 조회
+            LocalDate indexStartDate = null;
+            List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
+            if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
+                Map<String, Object> indexStartDateDataMap = indexStartDateData.get(0);
+                if (indexStartDateDataMap != null) {
+                    Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
+                    if (indexStartDateDataValue != null) {
+                        String rawDate = indexStartDateDataValue.toString();
+                        indexStartDate = DateUtil.parseDate(rawDate);
+                    }
+                }
+            }
+
+            // 마지막 업데이트 날짜 값
+            LocalDate lastUpdateDt = null;
+            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+            if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
+                Map<String, Object> lastUpdateDtDataMap = lastUpdateDtData.get(0);
+                if (lastUpdateDtDataMap != null) {
+                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+                    if (lastUpdateDtDataValue != null) {
+                        String rawDate = lastUpdateDtDataValue.toString();
+                        lastUpdateDt = DateUtil.parseDate(rawDate);
+                    }
+                }
+            }
+
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
-                isPermitted = false;
-
                 MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting);
 
                 MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
                 saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
 
                 return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
-            }
-
-            // 마지막 데이터 날짜 값
-            LocalDate lastUpdateDt = null;
-            for (int i = 1; i <= rawData.size(); i++) {
-                if (rawData.get(rawData.size() - i).get(dateColumnName) != null) {
-                    lastUpdateDt = DateUtil.parseDate(rawData.get(rawData.size() - i).get(dateColumnName));
-                    break;
-                }
             }
 
             // 마지막 데이터 값
@@ -445,16 +447,6 @@ public class MiMarketDataService {
                     lastValue = bd.doubleValue();
                     break;
                 }
-            }
-
-            // Index Start date 데이터 조회
-            LocalDate indexStartDate;
-            List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
-            if (!indexStartDateData.isEmpty()) {
-                String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
-                indexStartDate = DateUtil.parseDate(rawDate);
-            } else {
-                indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
             }
 
             // DOD, MOM, WOW 계산
@@ -638,7 +630,7 @@ public class MiMarketDataService {
 
     /**
      * 증감률 데이터 조회
-     * 
+     *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록

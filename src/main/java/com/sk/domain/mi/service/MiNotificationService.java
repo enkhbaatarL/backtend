@@ -14,6 +14,7 @@ import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
 import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingGoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingRes;
+import com.sk.domain.mi.dto.response.notification.MiUserNotificationSettingRes;
 import com.sk.domain.shared.entity.compositeKey.tmd.UserHistoryId;
 import com.sk.domain.shared.entity.master.tlm.EmailAccessLog;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
@@ -40,6 +41,18 @@ public class MiNotificationService {
     private final EmailAccessLogRepository emailAccessLogRepository;
     private final UserRepository userRepository;
     private final UserHistoryRepository userHistoryRepository;
+
+
+
+    /**
+     * 사용자 알림 설정 조회
+     * 
+     * @param user
+     * @return
+     */
+    public MiUserNotificationSettingRes getUserNotificationSetting(User user) {
+        return MiUserNotificationSettingRes.of(user);
+    }
 
     /**
      * 사용자 알림 설정 업데이트

@@ -41,6 +41,8 @@ public class MailService {
     private final MailProperties mailProperties;
     private final EmailAccessLogRepository emailAccessLogRepository;
     private final String NOTIFICATION_LOGO_PATH = "templates/src/marketintelligence.png";
+    private final int MAX_RETRY_COUNT = 3; // 메일 발송 최대 재시도 횟수
+    private final int RETRY_DELAY_MILLIS = 1000; // 메일 발송 재시도 대기 시간(ms)
 
     @Value("${server.domain}")
     private String serverDomain;
@@ -105,20 +107,32 @@ public class MailService {
      */
     public void sendMailNoAccessLog(String to, String subject, String content) {
         MimeMessage message = javaMailSender.createMimeMessage();
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(mailProperties.getFrom());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(content, true);
-            javaMailSender.send(message);
+        for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
+            try {
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                helper.setFrom(mailProperties.getFrom());
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(content, true);
 
-            log.info("Mail sent successfully");
-        } catch (Exception e) {
+                javaMailSender.send(message);
+                log.info("Mail sent successfully");
 
-            log.error("Mail sending failed", e);
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
-                    String.format("Mail sending failed: %s", e.getMessage()));
+                return;
+            } catch (Exception e) {
+                if (attempt == MAX_RETRY_COUNT) {
+                    log.error("Mail sending failed after {} attempts", MAX_RETRY_COUNT, e.getMessage());
+                    throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
+                            String.format("Mail sending failed after %d attempts: %s", MAX_RETRY_COUNT, e.getMessage()));
+                }
+                log.warn("Mail sending failed on attempt {}. Retrying after {}ms...", attempt, RETRY_DELAY_MILLIS);
+                try {
+                    Thread.sleep(RETRY_DELAY_MILLIS); // 재시도 전 대기
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt(); // 인터럽트 플래그 복원
+                    log.error("Retry interrupted", ie);
+                }
+            }
         }
     }
 
@@ -131,23 +145,34 @@ public class MailService {
      */
     public void sendMail(String to, String subject, String content, EmailAccessLog emailAccessLog) {
         MimeMessage message = javaMailSender.createMimeMessage();
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(mailProperties.getFrom());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(content, true);
-            javaMailSender.send(message);
+        for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
+            try {
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                helper.setFrom(mailProperties.getFrom());
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(content, true);
 
-            emailAccessLog.sendEmailSuccessUpdate(EmailSendStatusName.SUCCESS);
+                javaMailSender.send(message);
+                log.info("Mail sent successfully");
+                emailAccessLog.sendEmailSuccessUpdate(EmailSendStatusName.SUCCESS);
 
-            log.info("Mail sent successfully");
-        } catch (Exception e) {
-            emailAccessLog.sendEmailFailUpdate(EmailSendStatusName.FAILED, e.getMessage());
-
-            log.error("Mail sending failed", e);
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
-                    String.format("Mail sending failed: %s", e.getMessage()));
+                return;
+            } catch (Exception e) {
+                if (attempt == MAX_RETRY_COUNT) {
+                    emailAccessLog.sendEmailFailUpdate(EmailSendStatusName.FAILED, e.getMessage());
+                    log.error("Mail sending failed after {} attempts", MAX_RETRY_COUNT, e.getMessage());
+                    throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
+                            String.format("Mail sending failed after %d attempts: %s", MAX_RETRY_COUNT, e.getMessage()));
+                }
+                log.warn("Mail sending failed on attempt {}. Retrying after {}ms...", attempt, RETRY_DELAY_MILLIS);
+                try {
+                    Thread.sleep(RETRY_DELAY_MILLIS); // 재시도 전 대기
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt(); // 인터럽트 플래그 복원
+                    log.error("Retry interrupted", ie);
+                }
+            }
         }
     }
 
@@ -161,24 +186,35 @@ public class MailService {
      */
     public void sendMailWithInlineLogo(String to, String subject, String content, EmailAccessLog emailAccessLog, ClassPathResource logo) {
         MimeMessage message = javaMailSender.createMimeMessage();
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(mailProperties.getFrom());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(content, true);
-            helper.addInline("logo", logo);
-            javaMailSender.send(message);
+        for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
+            try {
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                helper.setFrom(mailProperties.getFrom());
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(content, true);
+                helper.addInline("logo", logo);
 
-            emailAccessLog.sendEmailSuccessUpdate(EmailSendStatusName.SUCCESS);
+                javaMailSender.send(message);
+                log.info("Mail sent successfully");
+                emailAccessLog.sendEmailSuccessUpdate(EmailSendStatusName.SUCCESS);
 
-            log.info("Mail sent successfully");
-        } catch (Exception e) {
-            emailAccessLog.sendEmailFailUpdate(EmailSendStatusName.FAILED, e.getMessage());
-
-            log.error("Mail sending failed", e);
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
-                    String.format("Mail sending failed: %s", e.getMessage()));
+                return;
+            } catch (Exception e) {
+                if (attempt == MAX_RETRY_COUNT) {
+                    emailAccessLog.sendEmailFailUpdate(EmailSendStatusName.FAILED, e.getMessage());
+                    log.error("Mail sending failed after {} attempts", MAX_RETRY_COUNT, e.getMessage());
+                    throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
+                            String.format("Mail sending failed after %d attempts: %s", MAX_RETRY_COUNT, e.getMessage()));
+                }
+                log.warn("Mail sending failed on attempt {}. Retrying after {}ms...", attempt, RETRY_DELAY_MILLIS);
+                try {
+                    Thread.sleep(RETRY_DELAY_MILLIS); // 재시도 전 대기
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt(); // 인터럽트 플래그 복원
+                    log.error("Retry interrupted", ie);
+                }
+            }
         }
     }
 

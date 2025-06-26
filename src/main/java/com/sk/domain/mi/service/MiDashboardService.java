@@ -147,7 +147,7 @@ public class MiDashboardService {
     public boolean getDataExists(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
     }
@@ -161,7 +161,7 @@ public class MiDashboardService {
     public DashboardInfoRes getDashboardInfo(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -476,7 +476,7 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
-        Boolean isDownloadFunction = Boolean.FALSE; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
+        Boolean isDownloadFunction = Boolean.TRUE; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
@@ -559,7 +559,7 @@ public class MiDashboardService {
                 .filter(Objects::nonNull) // dashboardChart가 null인 경우 필터링
                 .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
                 .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
-                .map(DashboardChartLine::isPermitted) // isPermitted 값 추출
+                .map(DashboardChartLine::isPermitted) // isDownloadable 값 추출
                 .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
 
         return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources, finalIsFileDownload);
@@ -1054,7 +1054,7 @@ public class MiDashboardService {
                 .filter(Objects::nonNull) // dashboardChart가 null인 경우 필터링
                 .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
                 .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
-                .map(DashboardChartLine::isPermitted) // isPermitted 값 추출
+                .map(DashboardChartLine::isPermitted) // isDownloadable 값 추출
                 .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
 
         // 데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
@@ -1342,7 +1342,7 @@ public class MiDashboardService {
      * @param explanatoryLevelNm 주요 요인 레벨명
      * @return DashboardChartFactorRes
      */
-    public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
+    public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String date, String explanatoryLevelNm) {
         // 사용자 정보 조회
         String currentDate = DateUtil.toYmd(LocalDate.now());
         customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
@@ -1355,11 +1355,11 @@ public class MiDashboardService {
 
         // 차트 주요 요인 분석 조회 (+)
         List<DashboardChartFactorMap> chartPlusFactorsMap = dashboardMapper.chartFactors(queryWhere, explanatoryLevelNm, predictDate,
-                CHART_EXPLANATORY_PLUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
+                date, CHART_EXPLANATORY_PLUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
         // 차트 주요 요인 분석 조회 (-)
         List<DashboardChartFactorMap> chartMinusFactorsMap = dashboardMapper.chartFactors(queryWhere, explanatoryLevelNm, predictDate,
-                CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
+                date, CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
         // Map -> Dto
         List<DashboardChartFactor> chartPlusFactors = chartPlusFactorsMap.stream()

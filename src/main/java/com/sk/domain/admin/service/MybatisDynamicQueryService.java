@@ -1,31 +1,28 @@
 package com.sk.domain.admin.service;
 
+import com.sk.common.config.database.DataSourceContextHolder;
+import com.sk.common.config.redis.CacheType;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.CombineUtil;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
+import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
+import com.sk.domain.shared.mapper.dto.SchemaMetadata;
+import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
+import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
+import com.sk.domain.shared.mapper.dynamic.MetadataMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.sk.common.config.redis.CacheType;
-import com.sk.common.utils.CombineUtil;
-import com.sk.domain.shared.mapper.dto.DoubleValueResultData;
-import com.sk.domain.shared.mapper.dto.SchemaMetadata;
-import com.sk.domain.shared.mapper.dto.TargetPredictResultData;
-import com.sk.domain.shared.mapper.dynamic.MetadataMapper;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
-import com.sk.common.config.database.DataSourceContextHolder;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataSaveAll;
-import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
-import com.sk.domain.shared.mapper.dynamic.DynamicMapper;
-
-import org.springframework.security.core.context.SecurityContextHolder;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -85,6 +82,7 @@ public class MybatisDynamicQueryService {
 
     /**
      * 정형 데이터 저장
+     *
      * @param dynamicDataSaveAll
      */
     public void saveAllDynamicData(DynamicDataSaveAll dynamicDataSaveAll) {
@@ -106,6 +104,7 @@ public class MybatisDynamicQueryService {
 
     /**
      * 정형 데이터 조회 서브쿼리도 함께 조회 하기 때문에 Split후에 검사 하지 않는다
+     *
      * @param dynamicDataReq
      * @return
      */
@@ -164,11 +163,11 @@ public class MybatisDynamicQueryService {
         return dynamicMapper.selectDoubleValueResultData(params);
     }
 
-//     @Cacheable(
-//         cacheNames = CacheType.SCHEMA_COLUMN_TYPES_CONSTANT,
-//         key = "#root.target.schemaKey(#dynamicDataReq)",
-//         unless = "#result == null"
-//     )
+    @Cacheable(
+        cacheNames = CacheType.SCHEMA_COLUMN_TYPES_CONSTANT,
+        keyGenerator = "schemaKeyGen",
+        unless = "#result == null"
+    )
     public SchemaMetadata getMeta(DynamicDataReq dynamicDataReq) {
 
         DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());
@@ -182,8 +181,9 @@ public class MybatisDynamicQueryService {
         return metadataMapper.selectSchemaMetadata(params);
     }
 
-     /**
+    /**
      * 예측 데이터 조회
+     *
      * @param dynamicDataDetailReq
      * @return
      */
@@ -204,10 +204,6 @@ public class MybatisDynamicQueryService {
         params.put("innerJoin", innerJoin);
         params.put("orderByColumns", orderByColumns);
         return dynamicMapper.selectDynamicForecastChart(params);
-    }
-
-    private String schemaKey(DynamicDataReq req) {
-        return req.targetDataSource() + ':' + req.tableName() + ':' + CombineUtil.getSelectColumnList(req.columns()).get(0);
     }
 
 }
