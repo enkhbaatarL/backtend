@@ -42,7 +42,7 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                   """, countQuery = """
             SELECT COUNT(distinct g.goodsNo)
             FROM Goods g
-            LEFT JOIN GoodsData gd on g = gd.goods
+                LEFT JOIN GoodsData gd on g = gd.goods
             WHERE g.isDeleted = false
               AND g.provider.providerNo = :providerNo
               AND (:keyword IS NULL OR (LOWER(g.goodsNm) LIKE CONCAT('%', LOWER(:keyword), '%') OR LOWER(g.goodsExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
@@ -73,13 +73,13 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
                 )
             )
             FROM Goods g
-            LEFT JOIN User cu ON g.createUserId = cu.userLoginId AND (cu.userRoleCd = 'ADMIN' OR cu.userRoleCd = 'OPERATOR')
-            LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
-            LEFT JOIN mu.customerCompany muc
+                LEFT JOIN User cu ON g.createUserId = cu.userLoginId AND (cu.userRoleCd = 'ADMIN' OR cu.userRoleCd = 'OPERATOR')
+                LEFT JOIN cu.customerCompany cuc
+                LEFT JOIN User mu ON g.modifyUserId = mu.userLoginId AND (mu.userRoleCd = 'ADMIN' OR mu.userRoleCd = 'OPERATOR')
+                LEFT JOIN mu.customerCompany muc
             WHERE g.isDeleted = false
-            AND g.provider.providerNo = :providerNo
-            AND g.goodsNo = :goodsNo
+                AND g.provider.providerNo = :providerNo
+                AND g.goodsNo = :goodsNo
             """)
     Optional<GoodsDetailRes> findGoodsDetail(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo);
 
@@ -89,9 +89,9 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             u.userNm
             )
             FROM Goods g
-            LEFT JOIN User u ON u.userLoginId = g.modifyUserId AND (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR')
+                LEFT JOIN User u ON u.userLoginId = g.modifyUserId AND (u.userRoleCd = 'ADMIN' OR u.userRoleCd = 'OPERATOR')
             WHERE g.isDeleted = false
-            AND g.goodsNo = :goodsNo
+                AND g.goodsNo = :goodsNo
             """)
     Optional<GoodsLatestUpdatedRes> findGoodsLatestUpdatedByGoodsNo(@Param("goodsNo") int goodsNo);
 

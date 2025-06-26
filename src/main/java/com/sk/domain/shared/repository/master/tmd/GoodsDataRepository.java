@@ -31,7 +31,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.goodsDataExpn
             )
             FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+                LEFT JOIN gd.customerCompany cc
             WHERE gd.isDeleted = false
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
@@ -41,7 +41,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """, countQuery = """
             SELECT COUNT(DISTINCT gd.goodsDataNo)
             FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+                LEFT JOIN gd.customerCompany cc
             WHERE gd.isDeleted = false
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
@@ -53,8 +53,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
-            gd.goodsDataNo,
-            gd.goodsDataNm
+                gd.goodsDataNo,
+                gd.goodsDataNm
             )
             FROM GoodsData gd
             WHERE gd.isDeleted = false
@@ -98,24 +98,24 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 MAX(uf.modifyDt) as modifyDt,
                 FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd) as goodsDataCategoryCd
             FROM CustomerCompanyProviderMapping ccpm
-            JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
-            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            JOIN Provider p ON p.providerNo = g.provider.providerNo
-            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
-            JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
+                JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
+                JOIN ccgm.goods g
+                JOIN ccpm.provider p
+                JOIN GoodsData gd ON gd.goods = g
+                JOIN GoodsDataCategory gdc ON gdc.goodsData = gd
+                JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
             WHERE ccpm.id.customerCompanyNo = :customerCompanyNo
-                AND ccpm.isDeleted                           = false
-                AND ccpm.isUsed                              = true
-                AND ccgm.isDeleted                           = false
-                AND ccgm.isUsed                              = true
-                AND g.isDeleted                              = false
-                AND g.isUsed                                 = true
-                AND p.isDeleted                              = false
-                AND p.isUsed                                 = true
-                AND gd.isDeleted                             = false
-                AND gd.isGoodsDataMarked                     = true
-                AND gdc.isDeleted                            = false
+                AND ccpm.isDeleted = false
+                AND ccpm.isUsed = true
+                AND ccgm.isDeleted = false
+                AND ccgm.isUsed = true
+                AND g.isDeleted = false
+                AND g.isUsed = true
+                AND p.isDeleted = false
+                AND p.isUsed = true
+                AND gd.isDeleted = false
+                AND gd.isGoodsDataMarked = true
+                AND gdc.isDeleted = false
                 AND uf.fileRelationshipObjectSeparateCd = 'GUDAT'
                 AND uf.isDeleted = false
                 AND uf.modifyDt >= :threshold
@@ -137,15 +137,15 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 MAX(uf.modifyDt) as modifyDt
             )
             FROM CustomerCompanyProviderMapping ccpm
-            JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
-            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            JOIN Provider p ON p.providerNo = g.provider.providerNo
-            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
-            JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
+                JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
+                JOIN ccgm.goods g
+                JOIN ccpm.provider p
+                JOIN GoodsData gd ON gd.goods = g
+                JOIN GoodsDataCategory gdc ON gdc.goodsData = gd
+                JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
             WHERE ccpm.id.customerCompanyNo = :customerCompanyNo
-                AND ccpm.isDeleted                           = false
-                AND ccpm.isUsed                              = true
+                AND ccpm.isDeleted = false
+                AND ccpm.isUsed = true
                 AND ccgm.isDeleted = false
                 AND ccgm.isUsed = true
                 AND g.isDeleted = false
@@ -176,20 +176,20 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             SELECT gd
             FROM GoodsData gd
             WHERE gd.isDeleted = false
-            AND gd.goodsDataNm = :goodsDataNm
-            AND (gd.goodsDataExpn IS NULL OR gd.goodsDataExpn = :goodsDataExpn)
-            AND (gd.goodsDataSummaryCntt IS NULL OR gd.goodsDataSummaryCntt = :goodsDataSummaryCntt)
+                AND gd.goodsDataNm = :goodsDataNm
+                AND (gd.goodsDataExpn IS NULL OR gd.goodsDataExpn = :goodsDataExpn)
+                AND (gd.goodsDataSummaryCntt IS NULL OR gd.goodsDataSummaryCntt = :goodsDataSummaryCntt)
             ORDER BY gd.modifyDt DESC
             """)
     List<GoodsData> findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(@Param("goodsDataNm") String goodsDataNm,
             @Param("goodsDataExpn") String goodsDataExpn, @Param("goodsDataSummaryCntt") String goodsDataSummaryCntt, Pageable pageable);
 
     @Query("""
-        SELECT gd.goods.goodsNo
-        FROM GoodsData gd
-        WHERE gd.goodsDataNo = :goodsDataNo
-        AND gd.isDeleted = false
-        """)
+            SELECT gd.goods.goodsNo
+            FROM GoodsData gd
+            WHERE gd.goodsDataNo = :goodsDataNo
+                AND gd.isDeleted = false
+            """)
     Optional<Integer> queryGoodsNoByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
 }

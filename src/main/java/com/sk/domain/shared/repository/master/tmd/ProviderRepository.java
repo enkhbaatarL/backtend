@@ -39,7 +39,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                 p.createDt
             )
             FROM Provider p
-            LEFT JOIN Goods g ON p = g.provider AND g.isDeleted = false
+                LEFT JOIN Goods g ON p = g.provider AND g.isDeleted = false
             WHERE p.isDeleted = false
             GROUP BY p.providerNo, p.providerNm, p.providerId, p.isUsed, p.createDt
             ORDER BY p.providerNm ASC
@@ -61,8 +61,8 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                 p.createDt
             )
             FROM Provider p
-            LEFT JOIN Goods g ON p = g.provider AND g.isDeleted = false
-            JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
+                LEFT JOIN Goods g ON p = g.provider AND g.isDeleted = false
+                JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
             WHERE p.isDeleted = false
                 AND p.isUsed = true
                 AND cp.isDeleted = false
@@ -100,7 +100,7 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                 p.isUsed
             )
             FROM Provider p
-            JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
+                JOIN CustomerCompanyProviderMapping cp ON p = cp.provider
             WHERE p.isDeleted = false
                 AND p.isUsed = true
                 AND cp.isDeleted = false
@@ -134,10 +134,10 @@ public interface ProviderRepository extends JpaRepository<Provider, Integer> {
                       )
             )
             FROM Provider p
-            LEFT JOIN User cu ON p.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
-            LEFT JOIN cu.customerCompany cuc
-            LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
-            LEFT JOIN mu.customerCompany muc
+                LEFT JOIN User cu ON p.createUserId = cu.userLoginId AND cu.userRoleCd = 'ADMIN'
+                LEFT JOIN cu.customerCompany cuc
+                LEFT JOIN User mu ON p.modifyUserId = mu.userLoginId AND mu.userRoleCd = 'ADMIN'
+                LEFT JOIN mu.customerCompany muc
             WHERE p.isDeleted = false
                 AND p.providerNo = :providerNo
             GROUP BY p.providerNo, p.providerNm, p.providerId, p.providerExpn, p.isUsed,
