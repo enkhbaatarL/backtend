@@ -1325,13 +1325,13 @@ public class MiDashboardService {
      * @param predictDate 예측 날짜
      * @return DashboardChartFactorCategoryRes
      */
-    public DashboardChartFactorCategoryRes getChartFactorCategory(int companyNo, int goodsDataSourceNo, String predictDate) {
+    public DashboardChartFactorCategoryRes getChartFactorCategory(int companyNo, int goodsDataSourceNo, String predictDate, String date) {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
 
         String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
-        return DashboardChartFactorCategoryRes.of(dashboardMapper.chartFactorCategory(queryWhere, predictDate));
+        return DashboardChartFactorCategoryRes.of(dashboardMapper.chartFactorCategory(queryWhere, predictDate, date));
     }
 
     /**

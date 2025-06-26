@@ -19,7 +19,7 @@ public interface DashboardMapper {
      * @param predictDate 예측 날짜
      * @return List<String>
      */
-    List<String> chartFactorCategory(String queryWhere, String predictDate);
+    List<String> chartFactorCategory(String queryWhere, String predictDate, String date);
 
     /**
      * 차트 주요 요인 분석 조회(Drill Down #2)
