@@ -29,12 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,31 +46,6 @@ public class MiDashboardHistoryService {
     private final ChartPredictSettingRepository settingRepo;
     private final ChartPredictSettingDetailRepository settingDetailRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
-
-    /**
-     * 예측가 히스토리 메타데이터 조회
-     */
-//    public HistoryMetadataRes getForecastHistoryMetadata() {
-//        Integer companyNo = authorizationService.getCompanyNoWithPriority();
-//
-//        ChartPredictSetting setting = settingRepo
-//            .findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
-//            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-//                "It doesn't exist in the [chart-predict-setting]. companyNo: %s".formatted(companyNo)));
-//
-//        List<ChartPredictSettingDetail> details = settingDetailRepo.findByChartPredictSettingAndIsDeletedFalse(setting);
-//
-//        Map<Boolean, List<ChartPredictSettingDetail>> partitioned = details.stream()
-//            .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
-//
-//        // 모든 예측가를 ForecastContext 로 변환
-//        List<ForecastContext> forecastContexts = partitioned.getOrDefault(Boolean.TRUE, List.of())
-//            .stream()
-//            .map(forecast -> toForecastContext(forecast, partitioned.get(Boolean.FALSE)))
-//            .toList();
-//
-//        return HistoryMetadataRes.of(setting, forecastContexts);
-//    }
 
     /**
      * 예측가 히스토리 메타데이터 조회
@@ -97,6 +70,12 @@ public class MiDashboardHistoryService {
         // 실제가 또는 선물가
         List<ChartPredictSettingDetail> actualOrFutures = partitioned.get(Boolean.FALSE);
 
+        boolean downloadable = false;
+        if (!actualOrFutures.isEmpty()) {
+            Integer goodsNo = actualOrFutures.get(0).getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo();
+            downloadable = authorizationService.hasGoodsDownloadPermission(goodsNo);
+        }
+
         // 예측가 데이터가 단일 객체인 경우
         if (forecasts.size() == 1) {
 
@@ -115,7 +94,7 @@ public class MiDashboardHistoryService {
                 .filter(ChartPredictSettingDetail::getIsFuture)
                 .toList();
 
-            return HistoryMetadataRes.of(historySetting, List.of(ForecastContext.of(forecast, fulfillDates, actual, futures)));
+            return HistoryMetadataRes.of(historySetting, List.of(ForecastContext.of(forecast, fulfillDates, actual, futures)), downloadable);
 
         } else if (forecasts.size() >= 2) {
             // 예측가 데이터가 복수 객체인 경우
@@ -143,11 +122,11 @@ public class MiDashboardHistoryService {
 
             }).toList();
 
-            return HistoryMetadataRes.of(historySetting, forecastContexts);
+            return HistoryMetadataRes.of(historySetting, forecastContexts, downloadable);
 
         } else {
 
-            return HistoryMetadataRes.of(historySetting);
+            return HistoryMetadataRes.of(historySetting, downloadable);
 
         }
 
@@ -349,12 +328,12 @@ public class MiDashboardHistoryService {
             return TableRes.Row.of(List.of(
                 h.date(),
                 // baseline
-                baseStat != null ? baseStat.price().toPlainString() : "-",
+                baseStat != null && baseStat.price() != null ? baseStat.price().toPlainString() : "-",
                 baseStat != null && baseStat.changeRate() != null ? baseStat.changeRate().toPlainString() : "-",
                 baseStat != null && baseStat.isMaximum() ? "Y" : "-",
                 baseStat != null && baseStat.isMinimum() ? "Y" : "-",
                 // counterpart
-                counterStat != null ? counterStat.price().toPlainString() : "-",
+                counterStat != null && counterStat.price() != null ? counterStat.price().toPlainString() : "-",
                 counterStat != null && counterStat.changeRate() != null ? counterStat.changeRate().toPlainString() : "-",
                 counterStat != null && counterStat.isMaximum() ? "Y" : "-",
                 counterStat != null && counterStat.isMinimum() ? "Y" : "-"

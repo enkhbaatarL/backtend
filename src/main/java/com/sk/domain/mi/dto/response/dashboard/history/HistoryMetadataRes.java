@@ -27,6 +27,9 @@ public record HistoryMetadataRes(
     @Schema(description = "단위", example = "일")
     String unit,
 
+    @Schema(description = "다운로드 권한 여부", example = "true")
+    Boolean isDownloadable,
+
     List<Target> targets
 
 ) {
@@ -93,18 +96,20 @@ public record HistoryMetadataRes(
 
     }
 
-    public static HistoryMetadataRes of(ChartPredictSetting predictSetting, List<ForecastContext> forecastContexts) {
+    public static HistoryMetadataRes of(ChartPredictSetting predictSetting, List<ForecastContext> forecastContexts, boolean downloadable) {
         return HistoryMetadataRes.builder()
             .predictTargetSettingNm(predictSetting.getPredictTargetSettingNm())
             .predictPeriodUnitSeparateCd(predictSetting.getScopePeriodUnitSeparateCd())
             .targets(Target.ofList(forecastContexts))
+            .isDownloadable(downloadable)
             .build();
     }
 
-    public static HistoryMetadataRes of(ChartPredictSetting predictSetting) {
+    public static HistoryMetadataRes of(ChartPredictSetting predictSetting, boolean downloadable) {
         return HistoryMetadataRes.builder()
             .predictTargetSettingNm(predictSetting.getPredictTargetSettingNm())
             .predictPeriodUnitSeparateCd(predictSetting.getScopePeriodUnitSeparateCd())
+            .isDownloadable(downloadable)
             .build();
     }
 
