@@ -24,6 +24,7 @@ import com.sk.domain.mi.dto.request.notification.NotificationSettingReq;
 import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingGoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingRes;
+import com.sk.domain.mi.dto.response.notification.MiUserNotificationSettingRes;
 import com.sk.domain.mi.service.MiNotificationService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
@@ -46,6 +47,17 @@ import lombok.extern.slf4j.Slf4j;
 public class MiNotificationController {
 
 	private final MiNotificationService miNotificationService;
+
+	@RequiredPermission(roles = {Role.USER})
+	@ApiOrder(0)
+	@Operation(summary = "전체 알림 설정 조회", description = "전체 알림 설정을 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "전체 알림 설정 조회 성공")
+	@GetMapping("/notification-setting")
+	public BaseResponse<MiUserNotificationSettingRes> getUserNotificationSetting(
+			@UserResolve User user) {
+		return BaseResponseFactory
+				.create(miNotificationService.getUserNotificationSetting(user));
+	}
 
 	@RequiredPermission(roles = {Role.USER})
 	@ApiOrder(1)
