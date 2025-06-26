@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -120,6 +119,8 @@ public class MiInsightsService {
             }
         }
 
+        PermissionRes permissionRes = authorizationService.getPermissions();
+
         for (Map.Entry<String, Integer> entry : quotas.entrySet()) {
             String type = entry.getKey();
             int limit = entry.getValue();
@@ -134,7 +135,7 @@ public class MiInsightsService {
                                 || (!data.getGoodsDataCategoryCd().contains("A_ENG") && !data.getGoodsDataCategoryCd().contains("A_KOR")
                                         && !data.getGoodsDataCategoryCd().contains("A_OTHERS")))) {
 
-                    boolean isViewable = isDataViewable(companyNo, data.getGoodsNo());
+                    boolean isViewable = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(data.getGoodsNo(), Boolean.FALSE);
                     data.setIsViewable(isViewable);
                     data.setGoodsDataCategoryCd(type);
 
@@ -387,6 +388,8 @@ public class MiInsightsService {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = contentQuery.getResultList();
 
+        PermissionRes permissionRes = authorizationService.getPermissions();
+
         List<InsightsDataRes> content = rows.stream()
                 .map(row -> new InsightsDataRes(
                         (Integer) row[0], // providerNo
@@ -399,7 +402,7 @@ public class MiInsightsService {
                         (String) row[7], // goodsDataSummaryCntt
                         getGoodsDataCategory((Integer) row[4]), // goodsDataCategory
                         ((Timestamp) row[8]).toLocalDateTime(), // modifyDt
-                        isDataViewable(companyNo, (Integer) row[2]))) // viewable
+                        permissionRes.getGoodsViewableMap(companyNo).getOrDefault((Integer) row[2], Boolean.FALSE))) // viewable
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
@@ -412,16 +415,6 @@ public class MiInsightsService {
                 .map(GoodsDataCategory::getGoodsDataCategoryCd)
                 .distinct()
                 .collect(Collectors.joining(","));
-    }
-
-    boolean isDataViewable(int companyNo, int goodsNo) {
-
-        if (companyNo <= 0 || goodsNo <= 0) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
-        }
-
-        PermissionRes permissionRes = authorizationService.getPermissions();
-        return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     /**

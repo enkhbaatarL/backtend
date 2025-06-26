@@ -985,14 +985,7 @@ public class MiMarketDataService {
                 """;
 
         String where = """
-                tcp.cust_cpny_no = :companyNo
-                AND tcp.del_yn = 'N' AND tcp.use_yn = 'Y'
-                AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
-                AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
-                AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
-                AND tgd.del_yn = 'N'
-                AND tgd.gds_data_mark_yn  = 'Y'
-                AND tgsrc.del_yn= 'N'
+                tp.del_yn = 'N' AND tp.use_yn = 'Y'
                 """;
 
         if (StringUtils.hasText(keyword)) {
@@ -1001,24 +994,58 @@ public class MiMarketDataService {
 
         String contentSql = """
                 SELECT %s
-                FROM midb.tam_custcpnyprvdmappl tcp
-                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
-                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tg.prvd_no
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                JOIN midb.tmd_gdsdatasrcd tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
+                FROM midb.tmd_prvdm tp
+                JOIN midb.tmd_gdsm tg
+                        ON tg.prvd_no = tp.prvd_no
+                        AND tg.del_yn = 'N'
+                        AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd
+                        ON tgd.gds_no = tg.gds_no
+                        AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatasrcd tgsrc
+                        ON tgsrc.gds_data_no = tgd.gds_data_no
+                        AND tgsrc.gds_data_use_mnagt_cd = 'backend'
+                        AND tgsrc.del_yn = 'N'
+                LEFT JOIN midb.tam_custcpnyprvdmappl tcp
+                		ON tcp.prvd_no = tp.prvd_no
+                		AND tcp.cust_cpny_no = :companyNo
+                		AND tcp.del_yn = 'N'
+                        AND tcp.use_yn = 'Y'
+                        AND tgd.gds_data_mark_yn  = 'Y'
+                LEFT JOIN midb.tam_custcpnygdsmappl tcg
+                        ON tcg.gds_no = tg.gds_no
+                        AND tcg.cust_cpny_no = :companyNo
+                        AND tcg.del_yn = 'N'
+                        AND tcg.use_yn = 'Y'
                 WHERE %s
                 ORDER BY tgd.gds_data_nm ASC, tgsrc.gds_data_src_nm ASC
                 """.formatted(select, where);
 
         String countSql = """
                 SELECT COUNT(*) AS totalCount
-                FROM midb.tam_custcpnyprvdmappl tcp
-                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
-                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tg.prvd_no
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                JOIN midb.tmd_gdsdatasrcd tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
+                FROM midb.tmd_prvdm tp
+                JOIN midb.tmd_gdsm tg
+                        ON tg.prvd_no = tp.prvd_no
+                        AND tg.del_yn = 'N'
+                        AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd
+                        ON tgd.gds_no = tg.gds_no
+                        AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatasrcd tgsrc
+                        ON tgsrc.gds_data_no = tgd.gds_data_no
+                        AND tgsrc.gds_data_use_mnagt_cd = 'backend'
+                        AND tgsrc.del_yn = 'N'
+                LEFT JOIN midb.tam_custcpnyprvdmappl tcp
+                		ON tcp.prvd_no = tp.prvd_no
+                		AND tcp.cust_cpny_no = :companyNo
+                		AND tcp.del_yn = 'N'
+                        AND tcp.use_yn = 'Y'
+                        AND tgd.gds_data_mark_yn  = 'Y'
+                LEFT JOIN midb.tam_custcpnygdsmappl tcg
+                        ON tcg.gds_no = tg.gds_no
+                        AND tcg.cust_cpny_no = :companyNo
+                        AND tcg.del_yn = 'N'
+                        AND tcg.use_yn = 'Y'
                 WHERE %s
                 """.formatted(where);
 
@@ -1039,6 +1066,8 @@ public class MiMarketDataService {
         List<Object[]> rows = contentQuery.getResultList();
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
+        PermissionRes permissionRes = authorizationService.getPermissions();
+
         List<DataCatalogRes> result = rows.stream().parallel().map(row -> {
 
             int providerNo = (Integer) row[0];
@@ -1053,7 +1082,7 @@ public class MiMarketDataService {
             String queryConditionCntt = (String) row[9];
             String tableColumnListNm = (String) row[10];
 
-            boolean isViewable = isDataViewable(companyNo, goodsNo);
+            boolean isViewable = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
 
             Double lastValue = 0.0;
             LocalDateTime modDtm = modifyDt;
@@ -1084,17 +1113,6 @@ public class MiMarketDataService {
                 .toList();
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(result, pageable, () -> total));
-    }
-
-    // @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    boolean isDataViewable(int companyNo, int goodsNo) {
-
-        if (companyNo <= 0 || goodsNo <= 0) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
-        }
-
-        PermissionRes permissionRes = authorizationService.getPermissions();
-        return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     private record LastValueDto(
