@@ -219,7 +219,7 @@ public class MiMarketDataService {
 
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
-                // isPermitted = false;
+                // isDownloadable = false;
 
                 MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL,
                         lastUpdateDt);
@@ -639,7 +639,7 @@ public class MiMarketDataService {
 
     /**
      * 증감률 데이터 조회
-     * 
+     *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록

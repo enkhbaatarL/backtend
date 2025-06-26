@@ -547,7 +547,7 @@ public class MiDashboardService {
                 .filter(Objects::nonNull) // dashboardChart가 null인 경우 필터링
                 .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
                 .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
-                .map(DashboardChartLine::isPermitted) // isPermitted 값 추출
+                .map(DashboardChartLine::isPermitted) // isDownloadable 값 추출
                 .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
 
         return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources, finalIsFileDownload);
@@ -1044,7 +1044,7 @@ public class MiDashboardService {
                 .filter(Objects::nonNull) // dashboardChart가 null인 경우 필터링
                 .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
                 .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
-                .map(DashboardChartLine::isPermitted) // isPermitted 값 추출
+                .map(DashboardChartLine::isPermitted) // isDownloadable 값 추출
                 .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
 
         // 데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
