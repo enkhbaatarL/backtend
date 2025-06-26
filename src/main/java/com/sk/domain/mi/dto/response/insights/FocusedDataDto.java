@@ -2,45 +2,21 @@ package com.sk.domain.mi.dto.response.insights;
 
 import java.time.LocalDateTime;
 
-import lombok.Getter;
+// GROUP_CONCAT 관련 처리로 인해 interface 로 작성
+public interface FocusedDataDto {
+    int getProviderNo();
 
-@Getter
-public class FocusedDataDto implements FocusedDataRes {
-    private int providerNo;
-    private String providerNm;
-    private int goodsNo;
-    private String goodsNm;
-    private int goodsDataNo;
-    private String goodsDataNm;
-    private LocalDateTime modifyDt;
-    private String goodsDataCategoryCd;
-    private boolean isViewable;
+    String getProviderNm();
 
-    public FocusedDataDto(
-            int providerNo, String providerNm,
-            int goodsNo, String goodsNm,
-            int goodsDataNo, String goodsDataNm,
-            LocalDateTime modifyDt,
-            String goodsDataCategoryCd,
-            boolean isViewable) {
-        this.providerNo = providerNo;
-        this.providerNm = providerNm;
-        this.goodsNo = goodsNo;
-        this.goodsNm = goodsNm;
-        this.goodsDataNo = goodsDataNo;
-        this.goodsDataNm = goodsDataNm;
-        this.modifyDt = modifyDt;
-        this.goodsDataCategoryCd = goodsDataCategoryCd;
-        this.isViewable = isViewable;
-    }
+    int getGoodsNo();
 
-    // setter 추가
-    public void setGoodsDataCategoryCd(String goodsDataCategoryCd) {
-        this.goodsDataCategoryCd = goodsDataCategoryCd;
-    }
+    String getGoodsNm();
 
-    public void setIsViewable(boolean isViewable) {
-        this.isViewable = isViewable;
-    }
+    int getGoodsDataNo();
 
+    String getGoodsDataNm();
+
+    LocalDateTime getModifyDt();
+
+    String getGoodsDataCategoryCd();
 }

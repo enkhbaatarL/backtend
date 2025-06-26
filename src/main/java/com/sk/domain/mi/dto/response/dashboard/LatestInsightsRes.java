@@ -25,7 +25,24 @@ public record LatestInsightsRes(
         String goodsDataNm,
 
         @Schema(description = "상품데이터 수정 시간", example = "") 
-        LocalDateTime modifyDt) {
+        LocalDateTime modifyDt,
 
+        @Schema(description = "보기 권한", example = "true")
+        Boolean isViewable) {
+
+        public LatestInsightsRes(int providerNo, String providerNm,
+                                int goodsNo, String goodsNm,
+                                int goodsDataNo, String goodsDataNm,
+                                LocalDateTime modifyDt,
+                                Boolean isViewable) {
+            this.providerNo = providerNo;
+            this.providerNm = providerNm;
+            this.goodsNo = goodsNo;
+            this.goodsNm = goodsNm;
+            this.goodsDataNo = goodsDataNo;
+            this.goodsDataNm = goodsDataNm;
+            this.modifyDt = modifyDt;
+            this.isViewable = isViewable != null ? isViewable : false; //
+        }
 }
 // @formatter:on

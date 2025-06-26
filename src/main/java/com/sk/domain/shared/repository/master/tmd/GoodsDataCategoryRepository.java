@@ -113,4 +113,12 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             AND gdc.goodsDataCategoryCd != 'PUBDATE'
             """)
     void softDeleteByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
+
+    @Query(value = """
+            SELECT gdc
+            FROM GoodsDataCategory gdc
+            WHERE gdc.isDeleted = false
+                AND gdc.goodsData.goodsDataNo = :goodsDataNo
+            """)
+    List<GoodsDataCategory> findGoodsDataCategoryByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 }
