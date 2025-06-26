@@ -198,24 +198,32 @@ public class MiMarketDataService {
             List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
             // Index Start date 데이터 조회
-            LocalDate indexStartDate;
+            LocalDate indexStartDate = null;
             List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
-            if (!indexStartDateData.isEmpty()) {
-                String rawDate = indexStartDateData.get(0).get(dateColumnName).toString();
-                indexStartDate = DateUtil.parseDate(rawDate);
-            } else {
-                indexStartDate = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
-            }
+            if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
+                Map<String, Object> indexStartDateDataMap = indexStartDateData.get(0);
+                if (indexStartDateDataMap != null) {
+                    Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
+                    if (indexStartDateDataValue != null) {
+                        String rawDate = indexStartDateDataValue.toString();
+                        indexStartDate = DateUtil.parseDate(rawDate);
+                    }
+                }
+            } 
 
             // 마지막 데이터 날짜 값
-            LocalDate lastUpdateDt;
+            LocalDate lastUpdateDt = null;
             List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, dateColumnName);
-            if (!lastUpdateDtData.isEmpty()) {
-                String rawDate = lastUpdateDtData.get(0).get(dateColumnName).toString();
-                lastUpdateDt = DateUtil.parseDate(rawDate);
-            } else {
-                lastUpdateDt = null;
-            }
+            if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
+                Map<String, Object> lastUpdateDtDataMap = lastUpdateDtData.get(0);
+                if (lastUpdateDtDataMap != null) {
+                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(dateColumnName);
+                    if (lastUpdateDtDataValue != null) {
+                        String rawDate = lastUpdateDtDataValue.toString();
+                        lastUpdateDt = DateUtil.parseDate(rawDate);
+                    }
+                }
+            } 
 
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
