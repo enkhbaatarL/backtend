@@ -23,27 +23,6 @@
         <result property="explanatoryDirectionSymbolNm" column="expp_dir_symb_nm"/>
         <result property="dirRank" column="dir_rank"/>
     </resultMap>
-    <!-- <select id="chartFactors" resultMap="dashboardChartFactorMap">
-        SELECT 
-            tb.mrkt_idx_anly_tgt_cd
-          , tb.prdc_fulf_dt
-          , tb.prdc_inpt_mnmnc_dtl_cd
-          , tb.prdc_inpt_mnmnc_cd
-          , tb.expp_lvl_dtl_nm
-          , tb.expp_scre
-          , tb.expp_rnk
-          , tb.mnmnc_cd
-          , tb.expp_dir_symb_nm
-          , RANK() OVER (PARTITION BY tb.expp_dir_symb_nm ORDER BY tb.expp_rnk) AS dir_rank
-          FROM tmm_bztgtprdcexppinfom tb
-         WHERE ${queryWhere}
-           AND tb.expp_lvl_nm = #{explanatoryLevelNm}
-           AND tb.prdc_fulf_dt = #{predictDate}
-           AND tb.expp_dir_symb_nm = #{direction}
-           AND tb.del_yn = 'N'
-         ORDER BY tb.expp_rnk
-         LIMIT #{limit}
-    </select> -->
     <select id="chartFactors" resultMap="dashboardChartFactorMap">
          SELECT mrkt_idx_anly_tgt_cd
               , prdc_fulf_dt
@@ -100,6 +79,7 @@
                   and a.expp_scre != 0
                   and a.expp_dir_symb_nm != '0'
                   and a.prdc_fulf_dt = #{predictDate}
+                  and SUBSTR(a.prdc_rslt_dt, 1, 6) = #{date}
                 ) OA
                 GROUP BY OA.mrkt_idx_anly_tgt_cd, OA.mnmnc_cd, OA.prdc_fulf_dt, OA.prdc_rslt_ym, OA.prdc_inpt_mnmnc_cd
           ) OOA

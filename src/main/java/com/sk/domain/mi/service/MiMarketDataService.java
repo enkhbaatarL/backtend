@@ -94,6 +94,7 @@ public class MiMarketDataService {
 
     private static final String MARKET_DATA_CACHE_KEY = "market_data:setting:%d";
     private static final String MARKET_DATA_SUMMARY_CACHE_KEY = "market_data_summary:setting:%d";
+    private static final String MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME = "mod_dtm"; // 마지막 업데이트 날짜 컬럼명
 
     private final UserRepository userRepository;
     private final EntityManager entityManager;
@@ -124,25 +125,6 @@ public class MiMarketDataService {
         // 고객사 조회
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(companyNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
-
-        // if (!(authentication instanceof JwtAuthenticationToken jwtToken)) {
-        // throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "사용자 권한 조회 실패");
-        // }
-        // Role role = Role.valueOf(jwtToken.getToken().getClaimAsString(Claim.ROLE.getCode()));
-
-        // // 권한 조회
-        // PermissionRes permissionRes = switch (role) {
-        // case USER -> {
-        // Integer userNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.USER_NO.getCode()));
-        // yield miGoodsPermissionService.getUserGoodsPermissions(userNo);
-        // }
-        // case ADMIN, API_SUB_ADMIN -> miGoodsPermissionService.getAccessAdminGoodsPermissions();
-        // case API_PLUS_OPERATOR -> {
-        // Integer operatorCompanyNo = Integer.parseInt(jwtToken.getToken().getClaimAsString(Claim.COMPANY_NO.getCode()));
-        // yield miGoodsPermissionService.getPlusOperatorGoodsPermissions(operatorCompanyNo);
-        // }
-        // default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        // };
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
@@ -211,13 +193,13 @@ public class MiMarketDataService {
                 }
             } 
 
-            // 마지막 데이터 날짜 값
+            // 마지막 업데이트 날짜 값
             LocalDate lastUpdateDt = null;
-            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, dateColumnName);
+            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
             if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
                 Map<String, Object> lastUpdateDtDataMap = lastUpdateDtData.get(0);
                 if (lastUpdateDtDataMap != null) {
-                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(dateColumnName);
+                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
                     if (lastUpdateDtDataValue != null) {
                         String rawDate = lastUpdateDtDataValue.toString();
                         lastUpdateDt = DateUtil.parseDate(rawDate);
@@ -284,13 +266,6 @@ public class MiMarketDataService {
                 calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
                         calculatePeriodChangeTypes);
             }
-
-            // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
-            // Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
-            // CalculatePeriodChangeType.YOY);
-            // // 기간 변화 유형별 계산
-            // CalculatePeriodChangeRes calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-            // calculatePeriodChangeTypes);
 
             // 비교군 데이터소스 조회
             List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
@@ -426,8 +401,6 @@ public class MiMarketDataService {
 
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
-                isPermitted = false;
-
                 MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting);
 
                 MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
