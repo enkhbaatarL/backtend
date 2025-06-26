@@ -147,7 +147,7 @@ public class MiDashboardService {
     public boolean getDataExists(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
     }
@@ -161,7 +161,7 @@ public class MiDashboardService {
     public DashboardInfoRes getDashboardInfo(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
