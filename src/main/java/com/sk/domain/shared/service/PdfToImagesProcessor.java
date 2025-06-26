@@ -6,6 +6,8 @@ import com.sk.common.utils.PdfUtil;
 import com.sk.common.utils.StringUtil;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.Extension;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,6 +31,9 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class PdfToImagesProcessor {
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Value("${features.pdf-viewer.dpi:300}")
     private int dpiValue;
 
@@ -37,8 +42,10 @@ public class PdfToImagesProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(UploadedFile uploadedFile) throws IOException {
 
-        String storagePathNm = uploadedFile.getStoragePathNm();
-        Long fileNo = uploadedFile.getFileNo();
+        UploadedFile merged = entityManager.merge(uploadedFile);
+
+        String storagePathNm = merged.getStoragePathNm();
+        Long fileNo = merged.getFileNo();
 
         log.info("[PDF-TO-IMAGES] Processing fileNo: {}", fileNo);
 
@@ -85,7 +92,7 @@ public class PdfToImagesProcessor {
         log.info("[PDF-TO-IMAGES] -> upload Completed fileNo: {}", fileNo);
 
         // 완료상태, 페이지 수 업데이트
-        uploadedFile.updateUploadedImagesResult(numberOfPages);
+        merged.updateUploadedImagesResult(numberOfPages);
 
     }
 
