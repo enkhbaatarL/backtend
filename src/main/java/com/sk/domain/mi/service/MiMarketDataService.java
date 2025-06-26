@@ -212,7 +212,7 @@ public class MiMarketDataService {
             // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
             if (rawData.isEmpty()) {
                 MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL,
-                        lastUpdateDt);
+                        indexStartDate, lastUpdateDt);
                 MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
                 List<MarketDataChart> compareCharts = Collections.emptyList();
 
