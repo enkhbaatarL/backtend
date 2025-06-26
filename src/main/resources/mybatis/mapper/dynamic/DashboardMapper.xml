@@ -7,6 +7,7 @@
           FROM tmm_bztgtprdcexppinfom tb
          WHERE ${queryWhere}
            AND tb.prdc_fulf_dt = #{predictDate}
+           AND SUBSTR(tb.prdc_rslt_dt, 1, 6) = #{date}
            AND tb.del_yn = 'N'
          ORDER BY tb.expp_lvl_nm
     </select>
