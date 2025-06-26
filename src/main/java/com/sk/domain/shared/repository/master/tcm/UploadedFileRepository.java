@@ -17,7 +17,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.isDeleted = false
                 AND u.fileNo = :fileNo
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
                 """)
     Optional<UploadedFile> findByFileNo(@Param("fileNo") Long fileNo);
 
@@ -26,7 +26,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.isDeleted = false
                 AND u.fileNo IN (:fileNoList)
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
                 """)
     List<UploadedFile> findByFileNoList(@Param("fileNoList") List<Long> fileNoList);
 
@@ -35,7 +35,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.isDeleted = false
                 AND u.storagePathNm = :filePath
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
                 """)
     Optional<UploadedFile> findByFilePath(@Param("filePath") String filePath);
 
@@ -44,7 +44,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.isDeleted = false
                 AND u.storagePathNm IN (:filePathList)
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
                 """)
     List<UploadedFile> findByFilePathList(@Param("filePathList") List<String> filePathList);
 
@@ -54,7 +54,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             WHERE u.isDeleted = false
                 AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
                 AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
                 """)
     List<UploadedFile> findByRelationshipObjectInfo(
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
@@ -69,7 +69,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
                 AND (u.isImageConversionCompleted != true OR u.isImageConversionCompleted IS NULL)
                 AND u.fileExtNm = :fileExtNm
                 AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCd
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
             """)
     List<UploadedFile> findPdfToImagesTarget(@Param("fileExtNm") String fileExtNm,
             @Param("fileRelationshipObjectSeparateCd") String fileRelationshipObjectSeparateCd);
@@ -80,7 +80,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             WHERE u.isDeleted = false
                 AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
                 AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCode
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
                 """)
     List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndFileRelationshipObjectSeparateCode(
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
@@ -92,7 +92,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
                 AND u.isDeleted = false
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
             """)
     List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo);
@@ -103,7 +103,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             WHERE u.originalFileNm = :fileName
                 AND u.fileHashVal = :fileHash
                 AND u.isDeleted = false
-                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= :#{T(java.time.LocalDate).now().format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))})
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
             """)
     List<UploadedFile> findByFileNameAndFileHash(@Param("fileName") String fileName, @Param("fileHash") String fileHash);
 

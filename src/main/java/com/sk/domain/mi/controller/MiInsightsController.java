@@ -15,6 +15,7 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
+import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.mi.service.MiInsightsService;
@@ -48,13 +49,12 @@ public class MiInsightsController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/focused-data")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<List<FocusedDataDto>> getFocused(@PathVariable(value = "companyNo") Integer companyNo) {
+    public BaseResponse<List<FocusedDataRes>> getFocused(@PathVariable(value = "companyNo") Integer companyNo) {
 
-        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
-        return BaseResponseFactory.create(miInsightsService.getFocused(cNo, userNo, role));
+        return BaseResponseFactory.create(miInsightsService.getFocused(cNo));
     }
 
     @ApiOrder(2)
@@ -77,7 +77,9 @@ public class MiInsightsController {
             @Parameter(name = "keyword", description = "검색키워드"),
             @Parameter(name = "sort", description = "정렬기준", schema = @Schema(implementation = InsightsSortType.class)),
             @Parameter(name = "period", in = ParameterIn.QUERY, description = "기간필터", schema = @Schema(implementation = InsightsPeriodType.class)),
-            @Parameter(name = "filters", description = "고급필터(A_INSIGHT, A_CMMDT_MRKT_RPT, A_LSEG, A_WOODMAC, A_KOR, A_ENG 등)"),
+            @Parameter(name = "docFilters", description = "documentTypes 고급필터"),
+            @Parameter(name = "provFilters", description = "providers 고급필터"),
+            @Parameter(name = "langFilters", description = "languages 고급필터"),
     })
     @Operation(summary = "Insights 목록 조회 - with pagination", description = "Insights 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -90,25 +92,26 @@ public class MiInsightsController {
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") InsightsSortType sort,
             @RequestParam(value = "period", required = false, defaultValue = "ALL_DATES") InsightsPeriodType period,
-            @RequestParam(value = "filters", required = false, defaultValue = "") String filters) {
+            @RequestParam(value = "docFilters", required = false, defaultValue = "") String docFilters,
+            @RequestParam(value = "provFilters", required = false, defaultValue = "") String provFilters,
+            @RequestParam(value = "langFilters", required = false, defaultValue = "") String langFilters) {
 
-        int userNo = authorizationService.getUserNo();
         Role role = authorizationService.getCurrentRole();
         int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
         return BaseResponseFactory
-                .create(miInsightsService.getInsights(cNo, userNo, page, size, keyword, sort, period, filters));
+                .create(miInsightsService.getInsights(cNo, page, size, keyword, sort, period, docFilters, provFilters, langFilters));
     }
 
-    @ApiOrder(4)
-    @Operation(summary = "", description = "")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/insights/create-dummy")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<String> createDummy() {
+    // @ApiOrder(4)
+    // @Operation(summary = "", description = "")
+    // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    // @GetMapping("/insights/create-dummy")
+    // @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    // public BaseResponse<String> createDummy() {
 
-        miInsightsService.createDummyData();
+    // miInsightsService.createDummyData();
 
-        return BaseResponseFactory.create("success");
-    }
+    // return BaseResponseFactory.create("success");
+    // }
 }

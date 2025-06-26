@@ -4,9 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
-import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
-
 import jakarta.transaction.Transactional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,7 +12,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.CategoryDataRes;
-import com.sk.domain.admin.dto.response.provider.StructuredDataRes;
 import com.sk.domain.admin.dto.response.provider.UnstructuredDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 
@@ -117,4 +113,12 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             AND gdc.goodsDataCategoryCd != 'PUBDATE'
             """)
     void softDeleteByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
+
+    @Query(value = """
+            SELECT gdc
+            FROM GoodsDataCategory gdc
+            WHERE gdc.isDeleted = false
+                AND gdc.goodsData.goodsDataNo = :goodsDataNo
+            """)
+    List<GoodsDataCategory> findGoodsDataCategoryByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 }

@@ -7,15 +7,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Builder;
 
 public record FocusedDataCache(
-        List<FocusedDataDto> data) {
+        List<FocusedDataRes> data) {
 
     @Builder
     @JsonCreator
-    public FocusedDataCache(List<FocusedDataDto> data) {
+    public FocusedDataCache(List<FocusedDataRes> data) {
         this.data = data;
     }
 
-    public static FocusedDataCache of(List<FocusedDataDto> data) {
+    public static FocusedDataCache of(List<FocusedDataRes> data) {
         return FocusedDataCache.builder()
                 .data(data)
                 .build();

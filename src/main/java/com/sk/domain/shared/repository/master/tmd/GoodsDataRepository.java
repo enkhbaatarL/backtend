@@ -12,7 +12,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.*;
+import com.sk.domain.mi.dto.response.dashboard.LatestInsightsDto;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
+import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
@@ -31,7 +33,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.goodsDataExpn
             )
             FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+                LEFT JOIN gd.customerCompany cc
             WHERE gd.isDeleted = false
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
@@ -41,7 +43,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             """, countQuery = """
             SELECT COUNT(DISTINCT gd.goodsDataNo)
             FROM GoodsData gd
-            LEFT JOIN CustomerCompany cc ON gd.customerCompany = cc
+                LEFT JOIN gd.customerCompany cc
             WHERE gd.isDeleted = false
                 AND gd.goods.provider.providerNo = :providerNo
                 AND gd.goods.goodsNo = :goodsNo
@@ -53,8 +55,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(
-            gd.goodsDataNo,
-            gd.goodsDataNm
+                gd.goodsDataNo,
+                gd.goodsDataNm
             )
             FROM GoodsData gd
             WHERE gd.isDeleted = false
@@ -87,80 +89,155 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
     //
+    // @Query(value = """
+    // SELECT
+    // p.providerNo as providerNo,
+    // p.providerNm as providerNm,
+    // g.goodsNo as goodsNo,
+    // g.goodsNm as goodsNm,
+    // gd.goodsDataNo as goodsDataNo,
+    // gd.goodsDataNm as goodsDataNm,
+    // gd.modifyDt as modifyDt,
+    // IFNULL(FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd), '') as goodsDataCategoryCd
+    // FROM Provider p
+    // JOIN Goods g ON g.provider = p AND g.isDeleted = false AND g.isUsed = true
+    // JOIN GoodsData gd ON gd.goods = g AND gd.isDeleted = false AND gd.isGoodsDataMarked = true
+    // LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData = gd AND gdc.isDeleted = false
+    // JOIN CustomerCompanyProviderMapping ccpm
+    // ON ccpm.provider = p AND ccpm.isDeleted = false AND ccpm.isUsed = true AND ccpm.customerCompany.customerCompanyNo = :customerCompanyNo
+    // JOIN CustomerCompanyGoodsMapping ccgm
+    // ON ccgm.goods = g AND ccgm.isDeleted = false AND ccgm.isUsed = true AND ccgm.customerCompany.customerCompanyNo = :customerCompanyNo
+    // WHERE p.isDeleted = false AND p.isUsed = true
+    // GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm, gd.modifyDt
+    // ORDER BY gd.modifyDt DESC
+    // """)
+
     @Query(value = """
             SELECT
-                p.providerNo as providerNo,
-                p.providerNm as providerNm,
-                g.goodsNo as goodsNo,
-                g.goodsNm as goodsNm,
-                gd.goodsDataNo as goodsDataNo,
-                gd.goodsDataNm as goodsDataNm,
-                MAX(uf.modifyDt) as modifyDt,
-                FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd) as goodsDataCategoryCd
-            FROM CustomerCompanyProviderMapping ccpm
-            JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
-            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            JOIN Provider p ON p.providerNo = g.provider.providerNo
-            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
-            JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
-            WHERE ccpm.id.customerCompanyNo = :customerCompanyNo
-                AND ccpm.isDeleted                           = false
-                AND ccpm.isUsed                              = true
-                AND ccgm.isDeleted                           = false
-                AND ccgm.isUsed                              = true
-                AND g.isDeleted                              = false
-                AND g.isUsed                                 = true
-                AND p.isDeleted                              = false
-                AND p.isUsed                                 = true
-                AND gd.isDeleted                             = false
-                AND gd.isGoodsDataMarked                     = true
-                AND gdc.isDeleted                            = false
-                AND uf.fileRelationshipObjectSeparateCd = 'GUDAT'
-                AND uf.isDeleted = false
-                AND uf.modifyDt >= :threshold
-            GROUP BY p.providerNm, g.goodsNm, gd.goodsDataNm
-            ORDER BY modifyDt DESC
-            """)
-    List<FocusedDataRes> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
+                    tp.prvd_no AS providerNo,
+                    tp.prvd_nm AS providerNm,
+                    tg.gds_no AS goodsNo,
+                    tg.gds_nm AS goodsNm,
+                    tgd.gds_data_no AS goodsDataNo,
+                    tgd.gds_data_nm AS goodsDataNm,
+                    tgd.gds_data_expn AS goodsDataExpn,
+                    tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,
+                    tgd.mod_dtm AS modifyDt,
+                    GROUP_CONCAT(tgdc.gds_data_ctgr_cd) as goodsDataCategoryCd
+                FROM
+                    midb.tmd_prvdm tp
+                JOIN
+                    midb.tmd_gdsm tg
+                        ON tg.prvd_no = tp.prvd_no
+                        AND tg.del_yn = 'N'
+                        AND tg.use_yn = 'Y'
+                JOIN
+                    midb.tmd_gdsdatam tgd
+                        ON tgd.gds_no = tg.gds_no
+                        AND tgd.del_yn = 'N'
+                JOIN
+                    midb.tmd_gdsdatactgrl tgdc
+                        ON tgdc.gds_data_no = tgd.gds_data_no
+                        AND tgdc.del_yn = 'N'
+                LEFT JOIN
+                    midb.tam_custcpnyprvdmappl tcp
+                        ON tcp.prvd_no = tp.prvd_no
+                        AND tcp.cust_cpny_no = :customerCompanyNo
+                        AND tcp.del_yn = 'N'
+                        AND tcp.use_yn = 'Y'
+                        AND tgd.gds_data_mark_yn  = 'Y'
+                LEFT JOIN
+                    midb.tam_custcpnygdsmappl tcg
+                        ON tcg.gds_no = tg.gds_no
+                        AND tcg.cust_cpny_no = :customerCompanyNo
+                        AND tcg.del_yn = 'N'
+                        AND tcg.use_yn = 'Y'
+                WHERE
+                    tp.del_yn = 'N'
+                    AND tp.use_yn = 'Y'
+                    AND tgd.mod_dtm >= :threshold
+                    AND EXISTS (SELECT 1
+                                FROM midb.tcm_filel tf
+                                WHERE tf.del_yn = 'N'
+                                    AND tf.file_rel_obj_spt_cd = 'GUDAT'
+                                    AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)
+                GROUP BY tp.prvd_no, tg.gds_no, tgd.gds_data_no
+                ORDER BY tgd.mod_dtm DESC
+                        """, nativeQuery = true)
+    List<FocusedDataDto> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 
+    // @Query(value = """
+    // SELECT new com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes(
+    // p.providerNo,
+    // p.providerNm,
+    // g.goodsNo,
+    // g.goodsNm,
+    // gd.goodsDataNo,
+    // gd.goodsDataNm,
+    // gd.modifyDt
+    // )
+    // FROM Provider p
+    // JOIN Goods g ON g.provider = p AND g.isDeleted = false AND g.isUsed = true
+    // JOIN GoodsData gd ON gd.goods = g AND gd.isDeleted = false AND gd.isGoodsDataMarked = true
+    // LEFT JOIN CustomerCompanyProviderMapping ccpm
+    // ON ccpm.provider = p AND ccpm.isDeleted = false AND ccpm.isUsed = true AND ccpm.customerCompany.customerCompanyNo = :customerCompanyNo
+    // LEFT JOIN CustomerCompanyGoodsMapping ccgm
+    // ON ccgm.goods = g AND ccgm.isDeleted = false AND ccgm.isUsed = true AND ccgm.customerCompany.customerCompanyNo = :customerCompanyNo
+    // WHERE p.isDeleted = false AND p.isUsed = true
+    // AND EXISTS (SELECT 1
+    // FROM midb.tcm_filel tf
+    // WHERE tf.del_yn = 'N'
+    // AND tf.file_rel_obj_spt_cd = 'GUDAT'
+    // AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)
+    // ORDER BY gd.modifyDt DESC
+    // """)
     @Query(value = """
-            SELECT new com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes(
-                p.providerNo,
-                p.providerNm,
-                g.goodsNo,
-                g.goodsNm,
-                gd.goodsDataNo,
-                gd.goodsDataNm,
-                MAX(uf.modifyDt) as modifyDt
-            )
-            FROM CustomerCompanyProviderMapping ccpm
-            JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = ccpm.customerCompany
-            JOIN Goods g ON g.goodsNo = ccgm.id.goodsNo
-            JOIN Provider p ON p.providerNo = g.provider.providerNo
-            JOIN GoodsData gd ON gd.goods.goodsNo = g.goodsNo
-            JOIN GoodsDataCategory gdc ON gdc.goodsData.goodsDataNo = gd.goodsDataNo
-            JOIN UploadedFile uf ON uf.fileRelationshipObjectDistinguishNo = gd.goodsDataNo
-            WHERE ccpm.id.customerCompanyNo = :customerCompanyNo
-                AND ccpm.isDeleted                           = false
-                AND ccpm.isUsed                              = true
-                AND ccgm.isDeleted = false
-                AND ccgm.isUsed = true
-                AND g.isDeleted = false
-                AND g.isUsed = true
-                AND p.isDeleted = false
-                AND p.isUsed = true
-                AND gd.isDeleted = false
-                AND gd.isGoodsDataMarked = true
-                AND gdc.isDeleted = false
-                AND uf.fileRelationshipObjectSeparateCd = 'GUDAT'
-                AND uf.isDeleted = false
-            GROUP BY p.providerNm, g.goodsNm, gd.goodsDataNm
-            ORDER BY modifyDt DESC
-                    """)
-    List<LatestInsightsRes> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
+            SELECT
+                    tp.prvd_no AS providerNo,
+                    tp.prvd_nm AS providerNm,
+                    tg.gds_no AS goodsNo,
+                    tg.gds_nm AS goodsNm,
+                    tgd.gds_data_no AS goodsDataNo,
+                    tgd.gds_data_nm AS goodsDataNm,
+                    tgd.mod_dtm AS modifyDt
+                FROM
+                    midb.tmd_prvdm tp
+                JOIN
+                    midb.tmd_gdsm tg
+                        ON tg.prvd_no = tp.prvd_no
+                        AND tg.del_yn = 'N'
+                        AND tg.use_yn = 'Y'
+                JOIN
+                    midb.tmd_gdsdatam tgd
+                        ON tgd.gds_no = tg.gds_no
+                        AND tgd.del_yn = 'N'
+                LEFT JOIN
+                    midb.tam_custcpnyprvdmappl tcp
+                        ON tcp.prvd_no = tp.prvd_no
+                        AND tcp.cust_cpny_no = :customerCompanyNo
+                        AND tcp.del_yn = 'N'
+                        AND tcp.use_yn = 'Y'
+                        AND tgd.gds_data_mark_yn  = 'Y'
+                LEFT JOIN
+                    midb.tam_custcpnygdsmappl tcg
+                        ON tcg.gds_no = tg.gds_no
+                        AND tcg.cust_cpny_no = :customerCompanyNo
+                        AND tcg.del_yn = 'N'
+                        AND tcg.use_yn = 'Y'
+                WHERE
+                    tp.del_yn = 'N'
+                    AND tp.use_yn = 'Y'
+                    AND EXISTS (SELECT 1
+                                FROM midb.tcm_filel tf
+                                WHERE tf.del_yn = 'N'
+                                    AND tf.file_rel_obj_spt_cd = 'GUDAT'
+                                    AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)
+                GROUP BY tp.prvd_no, tg.gds_no, tgd.gds_data_no
+                ORDER BY tgd.mod_dtm DESC
+                        """, nativeQuery = true)
+    List<LatestInsightsDto> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
 
     @Query(value = """
             SELECT gd
@@ -176,20 +253,20 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             SELECT gd
             FROM GoodsData gd
             WHERE gd.isDeleted = false
-            AND gd.goodsDataNm = :goodsDataNm
-            AND (gd.goodsDataExpn IS NULL OR gd.goodsDataExpn = :goodsDataExpn)
-            AND (gd.goodsDataSummaryCntt IS NULL OR gd.goodsDataSummaryCntt = :goodsDataSummaryCntt)
+                AND gd.goodsDataNm = :goodsDataNm
+                AND (gd.goodsDataExpn IS NULL OR gd.goodsDataExpn = :goodsDataExpn)
+                AND (gd.goodsDataSummaryCntt IS NULL OR gd.goodsDataSummaryCntt = :goodsDataSummaryCntt)
             ORDER BY gd.modifyDt DESC
             """)
     List<GoodsData> findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(@Param("goodsDataNm") String goodsDataNm,
             @Param("goodsDataExpn") String goodsDataExpn, @Param("goodsDataSummaryCntt") String goodsDataSummaryCntt, Pageable pageable);
 
     @Query("""
-        SELECT gd.goods.goodsNo
-        FROM GoodsData gd
-        WHERE gd.goodsDataNo = :goodsDataNo
-        AND gd.isDeleted = false
-        """)
+            SELECT gd.goods.goodsNo
+            FROM GoodsData gd
+            WHERE gd.goodsDataNo = :goodsDataNo
+                AND gd.isDeleted = false
+            """)
     Optional<Integer> queryGoodsNoByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
 }

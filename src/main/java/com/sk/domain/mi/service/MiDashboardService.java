@@ -56,6 +56,7 @@ import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphDatasource;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
+import com.sk.domain.mi.dto.response.dashboard.LatestInsightsDto;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactor;
 import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorCategoryRes;
@@ -110,7 +111,6 @@ public class MiDashboardService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
-    // private final MiGoodsPermissionService miGoodsPermissionService;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final DashboardMapper dashboardMapper;
     private final FileService fileService;
@@ -209,7 +209,19 @@ public class MiDashboardService {
      */
     public List<LatestInsightsRes> getLatestInsights(int companyNo) {
 
-        return goodsDataRepository.findLatestInsights(companyNo, PageRequest.of(0, 5));
+        List<LatestInsightsDto> datas = goodsDataRepository.findLatestInsights(companyNo, PageRequest.of(0, 5));
+
+        return datas.stream()
+                .map(data -> new LatestInsightsRes(
+                        data.getProviderNo(),
+                        data.getProviderNm(),
+                        data.getGoodsNo(),
+                        data.getGoodsNm(),
+                        data.getGoodsDataNo(),
+                        data.getGoodsDataNm(),
+                        data.getModifyDt(),
+                        isDataViewable(companyNo, data.getGoodsNo())))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -1456,5 +1468,15 @@ public class MiDashboardService {
 
             return DashboardChartFactorGraphRes.of(summary, graphMetadata);
         }
+    }
+
+    boolean isDataViewable(int companyNo, int goodsNo) {
+
+        if (companyNo <= 0 || goodsNo <= 0) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
+        }
+
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
     }
 }

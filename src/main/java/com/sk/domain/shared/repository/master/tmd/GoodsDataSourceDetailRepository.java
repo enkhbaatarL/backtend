@@ -32,12 +32,12 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
     @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
     Optional<GoodsDataSourceDetail> findByGoodsDataSourceNoAndIsDeletedFalse(Integer goodsDataSourceNo);
 
-    @Query("""
-        SELECT gds.goodsData.goods.goodsNo
-        FROM GoodsDataSourceDetail gds
-        WHERE gds.goodsDataSourceNo = :goodsDataSourceNo
-        AND gds.isDeleted = false
-        """)
+    @Query(value = """
+                SELECT gds.goodsData.goods.goodsNo
+                FROM GoodsDataSourceDetail gds
+                WHERE gds.goodsDataSourceNo = :goodsDataSourceNo
+                    AND gds.isDeleted = false
+            """)
     Optional<Integer> queryGoodsNoByGoodsDataSourceNo(@Param("goodsDataSourceNo") Integer goodsDataSourceNo);
 
     @EntityGraph(attributePaths = {"goodsData", "goodsData.goods"})
@@ -47,8 +47,8 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             SELECT gdsd
             FROM GoodsDataSourceDetail gdsd
             WHERE gdsd.isDeleted = false
-            AND gdsd.goodsDataUseManagementCd = 'backend'
-            AND gdsd.goodsData = :goodsData
+                AND gdsd.goodsDataUseManagementCd = 'backend'
+                AND gdsd.goodsData = :goodsData
             """)
     List<GoodsDataSourceDetail> findByGoodsDataAndIsDeletedFalse(GoodsData goodsData);
 
@@ -57,33 +57,34 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
     @Query(value = """
             SELECT gdsd
             FROM GoodsDataSourceDetail gdsd
-            JOIN FETCH gdsd.goodsData gd
-            JOIN FETCH gd.goods g
+                JOIN FETCH gdsd.goodsData gd
+                JOIN FETCH gd.goods g
             WHERE gdsd.isDeleted = false
-            AND gdsd.goodsDataUseManagementCd = 'backend'
-            AND gd.isDeleted = false
-            AND g.isDeleted = false
-            AND gdsd.goodsDataSourceNo = :goodsDataSourceNo
-            AND gd.goodsDataNo = :goodsDataNo
-            AND g.goodsNo = :goodsNo
+                AND gdsd.goodsDataUseManagementCd = 'backend'
+                AND gd.isDeleted = false
+                AND g.isDeleted = false
+                AND gdsd.goodsDataSourceNo = :goodsDataSourceNo
+                AND gd.goodsDataNo = :goodsDataNo
+                AND g.goodsNo = :goodsNo
             """)
     Optional<GoodsDataSourceDetail> queryGoodsDataSourceWithGoodsTree(Integer goodsDataSourceNo, Integer goodsDataNo, Integer goodsNo);
 
     @Query(value = """
             SELECT DISTINCT gds
             FROM GoodsDataSourceDetail gds
-            JOIN FETCH gds.goodsData gd
-            JOIN FETCH gd.goods g
-            JOIN FETCH g.provider p
-            LEFT JOIN FETCH p.providerDataColumns
+                JOIN FETCH gds.goodsData gd
+                JOIN FETCH gd.goods g
+                JOIN FETCH g.provider p
+                LEFT JOIN FETCH p.providerDataColumns
             WHERE gds.isDeleted = false
-            AND gds.goodsDataUseManagementCd = 'backend'
-            AND gd.isDeleted = false
-            AND g.isDeleted = false
-            AND gds.goodsDataSourceNo = :goodsDataSourceNo
-            AND gd.goodsDataNo = :goodsDataNo
-            AND g.goodsNo = :goodsNo
+                AND gds.goodsDataUseManagementCd = 'backend'
+                AND gd.isDeleted = false
+                AND g.isDeleted = false
+                AND gds.goodsDataSourceNo = :goodsDataSourceNo
+                AND gd.goodsDataNo = :goodsDataNo
+                AND g.goodsNo = :goodsNo
             """)
-    Optional<GoodsDataSourceDetail> queryDetailsWithAllAssociations(@Param("goodsDataSourceNo")Integer goodsDataSourceNo, @Param("goodsDataNo")Integer goodsDataNo, @Param("goodsNo")Integer goodsNo);
+    Optional<GoodsDataSourceDetail> queryDetailsWithAllAssociations(@Param("goodsDataSourceNo") Integer goodsDataSourceNo,
+            @Param("goodsDataNo") Integer goodsDataNo, @Param("goodsNo") Integer goodsNo);
 
 }

@@ -103,7 +103,6 @@ public class MiMarketDataService {
     private final CustomerCompanyRepository customerCompanyRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
-    private final MiGoodsPermissionService miGoodsPermissionService;
     private final AuthorizationService authorizationService;
 
     private final StringRedisTemplate redisTemplate;
@@ -965,8 +964,6 @@ public class MiMarketDataService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaginationRes<DataCatalogRes> getDataCatalog(
             int companyNo,
-            int userNo,
-            Role role,
             int page,
             int size,
             String keyword) {
@@ -974,26 +971,26 @@ public class MiMarketDataService {
         Pageable pageable = PageRequest.of(page - 1, size);
 
         String select = """
-                tp.prvd_no           AS providerNo,
-                tg.gds_no            AS goodsNo,
-                tgd.gds_data_no      AS goodsDataNo,
-                tgd.gds_data_nm      AS goodsDataNm,
+                tp.prvd_no AS providerNo,
+                tg.gds_no AS goodsNo,
+                tgd.gds_data_no AS goodsDataNo,
+                tgd.gds_data_nm AS goodsDataNm,
                 tgsrc.gds_data_src_no AS goodsDataSrcNo,
                 tgsrc.gds_data_src_nm AS goodsDataSrcNm,
-                tgsrc.mod_dtm        AS modifyDt,
-                tgsrc.tgt_db_nm      AS targetDbNm,
-                tgsrc.tgt_tbl_nm     AS targetTableNm,
-                tgsrc.qry_cdtn_cntt  AS queryConditionCntt,
+                tgsrc.mod_dtm AS modifyDt,
+                tgsrc.tgt_db_nm AS targetDbNm,
+                tgsrc.tgt_tbl_nm AS targetTableNm,
+                tgsrc.qry_cdtn_cntt AS queryConditionCntt,
                 tgsrc.tbl_colm_list_nm AS tableColumnListNm
                 """;
 
         String where = """
                 tcp.cust_cpny_no = :companyNo
-                AND tcp.del_yn   = 'N' AND tcp.use_yn   = 'Y'
-                AND tcg.del_yn   = 'N' AND tcg.use_yn   = 'Y'
-                AND tg.del_yn   = 'N' AND tg.use_yn   = 'Y'
-                AND tp.del_yn   = 'N' AND tp.use_yn   = 'Y'
-                AND tgd.del_yn  = 'N'
+                AND tcp.del_yn = 'N' AND tcp.use_yn = 'Y'
+                AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                AND tgd.del_yn = 'N'
                 AND tgd.gds_data_mark_yn  = 'Y'
                 AND tgsrc.del_yn= 'N'
                 """;
@@ -1006,10 +1003,10 @@ public class MiMarketDataService {
                 SELECT %s
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
-                JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tcg.gds_no
-                JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
-                JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
-                JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tg.prvd_no
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN midb.tmd_gdsdatasrcd tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
                 WHERE %s
                 ORDER BY tgd.gds_data_nm ASC, tgsrc.gds_data_src_nm ASC
                 """.formatted(select, where);
@@ -1018,10 +1015,10 @@ public class MiMarketDataService {
                 SELECT COUNT(*) AS totalCount
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
-                JOIN midb.tmd_gdsm           tg    ON tg.gds_no         = tcg.gds_no
-                JOIN midb.tmd_prvdm          tp    ON tp.prvd_no        = tg.prvd_no
-                JOIN midb.tmd_gdsdatam       tgd   ON tgd.gds_no        = tg.gds_no
-                JOIN midb.tmd_gdsdatasrcd    tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tg.prvd_no
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
+                JOIN midb.tmd_gdsdatasrcd tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.gds_data_use_mnagt_cd = 'backend'
                 WHERE %s
                 """.formatted(where);
 
@@ -1056,7 +1053,7 @@ public class MiMarketDataService {
             String queryConditionCntt = (String) row[9];
             String tableColumnListNm = (String) row[10];
 
-            boolean isViewable = isDataViewable(companyNo, userNo, role, goodsNo);
+            boolean isViewable = isDataViewable(companyNo, goodsNo);
 
             Double lastValue = 0.0;
             LocalDateTime modDtm = modifyDt;
@@ -1089,26 +1086,15 @@ public class MiMarketDataService {
         return PaginationRes.toRes(PageableExecutionUtils.getPage(result, pageable, () -> total));
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    boolean isDataViewable(int companyNo, int userNo, Role role, int goodsNo) {
+    // @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    boolean isDataViewable(int companyNo, int goodsNo) {
 
-        if (companyNo <= 0 || userNo <= 0 || goodsNo <= 0 || role == null) {
+        if (companyNo <= 0 || goodsNo <= 0) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
         }
 
-        switch (role) {
-            case ADMIN -> {
-                PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
-                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
-            }
-
-            case USER -> {
-                PermissionRes permissionRes = miGoodsPermissionService.getUserGoodsPermissions(userNo);
-                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
-            }
-
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        }
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     private record LastValueDto(

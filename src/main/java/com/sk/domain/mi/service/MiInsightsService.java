@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,7 +17,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,13 +34,13 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
-import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -59,7 +59,7 @@ public class MiInsightsService {
     private final EntityManager entityManager;
     private final GoodsRepository goodsRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
-    private final MiGoodsPermissionService miGoodsPermissionService;
+    private final AuthorizationService authorizationService;
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -81,7 +81,7 @@ public class MiInsightsService {
      * @param companyNo
      * @return List<FocusedDataRes>
      */
-    public List<FocusedDataDto> getFocused(int companyNo, int userNo, Role role) {
+    public List<FocusedDataRes> getFocused(int companyNo) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(30);
 
         // 캐시에서 데이터 조회
@@ -98,11 +98,11 @@ public class MiInsightsService {
             }
         }
 
-        List<FocusedDataRes> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
+        List<FocusedDataDto> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
 
-        List<FocusedDataDto> result = new ArrayList<>();
-        List<FocusedDataDto> mutableList = dataList.stream()
-                .map(res -> new FocusedDataDto(
+        List<FocusedDataRes> result = new ArrayList<>();
+        List<FocusedDataRes> mutableList = dataList.stream()
+                .map(res -> new FocusedDataRes(
                         res.getProviderNo(), res.getProviderNm(),
                         res.getGoodsNo(), res.getGoodsNm(),
                         res.getGoodsDataNo(), res.getGoodsDataNm(),
@@ -124,17 +124,17 @@ public class MiInsightsService {
             String type = entry.getKey();
             int limit = entry.getValue();
 
-            Iterator<FocusedDataDto> it = mutableList.iterator();
+            Iterator<FocusedDataRes> it = mutableList.iterator();
             int count = 0;
 
             while (it.hasNext() && count < limit && result.size() < 8) {
-                FocusedDataDto data = it.next();
+                FocusedDataRes data = it.next();
                 if (data.getGoodsDataCategoryCd().contains(type)
                         && (data.getGoodsDataCategoryCd().contains("A_ENG")
                                 || (!data.getGoodsDataCategoryCd().contains("A_ENG") && !data.getGoodsDataCategoryCd().contains("A_KOR")
                                         && !data.getGoodsDataCategoryCd().contains("A_OTHERS")))) {
 
-                    boolean isViewable = isDataViewable(companyNo, userNo, role, data.getGoodsNo());
+                    boolean isViewable = isDataViewable(companyNo, data.getGoodsNo());
                     data.setIsViewable(isViewable);
                     data.setGoodsDataCategoryCd(type);
 
@@ -160,28 +160,6 @@ public class MiInsightsService {
         return result;
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    boolean isDataViewable(int companyNo, int userNo, Role role, int goodsNo) {
-
-        if (companyNo <= 0 || userNo <= 0 || goodsNo <= 0 || role == null) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
-        }
-
-        switch (role) {
-            case ADMIN -> {
-                PermissionRes permissionRes = miGoodsPermissionService.getAccessAdminGoodsPermissions();
-                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
-            }
-
-            case USER -> {
-                PermissionRes permissionRes = miGoodsPermissionService.getUserGoodsPermissions(userNo);
-                return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
-            }
-
-            default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
-        }
-    }
-
     /**
      * Insights 고급 필터 목록 조회
      *
@@ -200,7 +178,6 @@ public class MiInsightsService {
      * Insights 목록 조회
      *
      * @param companyNo 고객사 번호
-     * @param userNo    사용자 번호
      * @param page      페이지 번호
      * @param size      페이지 사이즈
      * @param keyword   검색어
@@ -211,21 +188,39 @@ public class MiInsightsService {
      */
     public PaginationRes<InsightsDataRes> getInsights(
             int companyNo,
-            int userNo,
             int page,
             int size,
             String keyword,
             InsightsSortType sort,
             InsightsPeriodType period,
-            String filters) {
+            String docFilters,
+            String provFilters,
+            String langFilters) {
 
         Pageable pageable = PageRequest.of(page - 1, size);
-        List<String> filterList = (filters != null) ? List.of(filters.split(",")) : new ArrayList<>();
-        filterList = filterList.stream()
+
+        List<String> docFilterList = (docFilters != null) ? List.of(docFilters.split(",")) : new ArrayList<>();
+        docFilterList = docFilterList.stream()
                 .map(String::trim)
                 .filter(f -> !f.isEmpty())
                 .collect(Collectors.toList());
-        int filterCount = filterList.size();
+
+        List<String> provFilterList = (provFilters != null) ? List.of(provFilters.split(",")) : new ArrayList<>();
+        provFilterList = provFilterList.stream()
+                .map(String::trim)
+                .filter(f -> !f.isEmpty())
+                .collect(Collectors.toList());
+
+        List<String> langFilterList = (langFilters != null) ? List.of(langFilters.split(",")) : new ArrayList<>();
+        langFilterList = langFilterList.stream()
+                .map(String::trim)
+                .filter(f -> !f.isEmpty())
+                .collect(Collectors.toList());
+
+        List<String> mergedList = new ArrayList<>();
+        mergedList.addAll(docFilterList);
+        mergedList.addAll(provFilterList);
+        mergedList.addAll(langFilterList);
 
         StringBuilder select = new StringBuilder()
                 .append(" tp.prvd_no AS providerNo,")
@@ -236,25 +231,12 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
                 .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
-                .append(" GROUP_CONCAT(DISTINCT tgdc.gds_data_ctgr_cd) AS goodsDataCategory,")
-                .append(" MAX(tf.mod_dtm) AS modifyDt,")
-                .append(" IFNULL(tamgm.gds_auth_mnagt_spt_cd = 'COMPANY' OR tamgm.usr_no = :userNo, false) AS viewable");
+                .append(" tgd.mod_dtm AS modifyDt");
 
         StringBuilder where = new StringBuilder()
-                .append(" tcp.cust_cpny_no = :companyNo")
-                .append(" AND tcp.del_yn = 'N'")
-                .append(" AND tcp.use_yn = 'Y'")
-                .append(" AND tcg.del_yn = 'N'")
-                .append(" AND tcg.use_yn = 'Y'")
-                .append(" AND tg.del_yn = 'N'")
-                .append(" AND tg.use_yn = 'Y'")
-                .append(" AND tp.del_yn = 'N'")
+                .append(" tp.del_yn = 'N'")
                 .append(" AND tp.use_yn = 'Y'")
-                .append(" AND tgd.del_yn = 'N'")
-                .append(" AND tgd.gds_data_mark_yn  = 'Y'")
-                .append(" AND tgdc.del_yn = 'N'")
-                .append(" AND tf.file_rel_obj_spt_cd = 'GUDAT'")
-                .append(" AND tf.del_yn = 'N'");
+                .append(" AND EXISTS (SELECT 1 FROM midb.tcm_filel tf WHERE tf.del_yn = 'N' AND tf.file_rel_obj_spt_cd = 'GUDAT' AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)");
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -264,28 +246,48 @@ public class MiInsightsService {
             }
         }
 
-        if (filterCount > 0) {
-            where.append(
-                    " AND EXISTS (SELECT 1 FROM midb.tmd_gdsdatactgrl tgdc2 WHERE tgdc2.gds_data_no = tgd.gds_data_no AND tgdc2.gds_data_ctgr_cd IN (:filterList) GROUP BY tgdc2.gds_data_no HAVING COUNT(DISTINCT tgdc2.gds_data_ctgr_cd) = :filterCount)");
+        if (mergedList != null && !mergedList.isEmpty()) {
+            StringBuilder exists = new StringBuilder()
+                    .append(" AND EXISTS (")
+                    .append("   SELECT 1")
+                    .append("   FROM midb.tmd_gdsdatactgrl tgdc")
+                    .append("   WHERE tgdc.gds_data_no = tgd.gds_data_no")
+                    .append("     AND tgdc.gds_data_ctgr_cd IN (:mergedList)")
+                    .append("   GROUP BY tgdc.gds_data_no")
+                    .append("   HAVING 1=1");
+
+            if (docFilterList != null && !docFilterList.isEmpty()) {
+                exists.append(" AND SUM(tgdc.gds_data_ctgr_cd IN (:docFilterList)) > 0");
+            }
+
+            if (provFilterList != null && !provFilterList.isEmpty()) {
+                exists.append(" AND SUM(tgdc.gds_data_ctgr_cd IN (:provFilterList)) > 0");
+            }
+
+            if (langFilterList != null && !langFilterList.isEmpty()) {
+                exists.append(" AND SUM(tgdc.gds_data_ctgr_cd IN (:langFilterList)) > 0");
+            }
+
+            exists.append(" ) ");
+            where.append(exists);
         }
 
-        String periodWhere = " AND (SELECT MAX(tf.mod_dtm) from midb.tcm_filel tf WHERE tf.file_rel_obj_dstg_no = tgdc.gds_data_no AND tf.file_rel_obj_spt_cd = 'GUDAT')";
         switch (period) {
-            case ONE_DAY -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
-            case ONE_WEEK -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
-            case ONE_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
-            case THREE_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
-            case SIX_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
-            case TWELVE_MONTH -> where.append(periodWhere + " >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
+            case ONE_DAY -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
+            case ONE_WEEK -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
+            case ONE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+            case THREE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
+            case SIX_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
+            case TWELVE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
             case ALL_DATES -> {
             } // no filter
         }
 
-        String groupBy = " GROUP BY tgd.gds_data_no ";
+        // String groupBy = " GROUP BY tp.prvd_no, tg.gds_no, tgd.gds_data_no ";
 
         String orderBy = switch (sort) {
-            case NEWEST -> " ORDER BY modifyDt DESC ";
-            case OLDEST -> " ORDER BY modifyDt ASC ";
+            case NEWEST -> " ORDER BY tgd.mod_dtm DESC ";
+            case OLDEST -> " ORDER BY tgd.mod_dtm ASC ";
             case MOST_RELEVANT -> " ";
         };
 
@@ -295,55 +297,50 @@ public class MiInsightsService {
         String contentSql = """
                 SELECT
                 """ + select + """
-                FROM midb.tam_custcpnyprvdmappl tcp
-                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
-                JOIN midb.tmd_prvdm tp on tp.prvd_no = tcp.prvd_no
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
-                JOIN midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgd.gds_data_no
-                LEFT JOIN (
-                            SELECT
-                                tamgm2.cust_cpny_no as cust_cpny_no,
-                                tamgm2.gds_no as gds_no,
-                                tamgm2.gds_auth_mnagt_spt_cd as gds_auth_mnagt_spt_cd,
-                                tamgm2.usr_no as usr_no
-                                FROM midb.tam_authmnagtgdsmappl tamgm2
-                            WHERE tamgm2.del_yn = 'N'
-                                AND tamgm2.gds_auth_cd = 'VIEW'
-                                AND tamgm2.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
-                                AND tamgm2.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')) tamgm
-                                ON tamgm.cust_cpny_no = tcg.cust_cpny_no
-                                    AND tamgm.gds_no = tcg.gds_no
-                                    AND tamgm.gds_auth_mnagt_spt_cd = tcg.gds_auth_mnagt_spt_cd
+                FROM midb.tmd_prvdm tp
+                JOIN midb.tmd_gdsm tg
+                        ON tg.prvd_no = tp.prvd_no
+                        AND tg.del_yn = 'N'
+                        AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd
+                        ON tgd.gds_no = tg.gds_no
+                        AND tgd.del_yn = 'N'
+                LEFT JOIN midb.tam_custcpnyprvdmappl tcp
+                		ON tcp.prvd_no = tp.prvd_no
+                		AND tcp.cust_cpny_no = :companyNo
+                		AND tcp.del_yn = 'N'
+                        AND tcp.use_yn = 'Y'
+                        AND tgd.gds_data_mark_yn  = 'Y'
+                LEFT JOIN midb.tam_custcpnygdsmappl tcg
+                        ON tcg.gds_no = tg.gds_no
+                        AND tcg.cust_cpny_no = :companyNo
+                        AND tcg.del_yn = 'N'
+                        AND tcg.use_yn = 'Y'
                 WHERE
                 """ + where + """
-                """ + groupBy + """
                 """ + orderBy;
 
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
-                FROM midb.tam_custcpnyprvdmappl tcp
-                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no
-                JOIN midb.tmd_prvdm tp on tp.prvd_no = tg.prvd_no
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tg.gds_no
-                JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no
-                JOIN midb.tcm_filel tf ON tf.file_rel_obj_dstg_no = tgd.gds_data_no
-                LEFT JOIN (
-                            SELECT
-                                tamgm2.cust_cpny_no as cust_cpny_no,
-                                tamgm2.gds_no as gds_no,
-                                tamgm2.gds_auth_mnagt_spt_cd as gds_auth_mnagt_spt_cd,
-                                tamgm2.usr_no as usr_no
-                                FROM midb.tam_authmnagtgdsmappl tamgm2
-                            WHERE tamgm2.del_yn = 'N'
-                                AND tamgm2.gds_auth_cd = 'VIEW'
-                                AND tamgm2.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
-                                AND tamgm2.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')) tamgm
-                                ON tamgm.cust_cpny_no = tcg.cust_cpny_no
-                                    AND tamgm.gds_no = tcg.gds_no
-                                    AND tamgm.gds_auth_mnagt_spt_cd = tcg.gds_auth_mnagt_spt_cd
+                FROM midb.tmd_prvdm tp
+                JOIN midb.tmd_gdsm tg
+                        ON tg.prvd_no = tp.prvd_no
+                        AND tg.del_yn = 'N'
+                        AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd
+                        ON tgd.gds_no = tg.gds_no
+                        AND tgd.del_yn = 'N'
+                LEFT JOIN midb.tam_custcpnyprvdmappl tcp
+                		ON tcp.prvd_no = tp.prvd_no
+                		AND tcp.cust_cpny_no = :companyNo
+                		AND tcp.del_yn = 'N'
+                        AND tcp.use_yn = 'Y'
+                        AND tgd.gds_data_mark_yn  = 'Y'
+                LEFT JOIN midb.tam_custcpnygdsmappl tcg
+                        ON tcg.gds_no = tg.gds_no
+                        AND tcg.cust_cpny_no = :companyNo
+                        AND tcg.del_yn = 'N'
+                        AND tcg.use_yn = 'Y'
                 WHERE
                 """
                 + where;
@@ -353,8 +350,6 @@ public class MiInsightsService {
 
         contentQuery.setParameter("companyNo", companyNo);
         countQuery.setParameter("companyNo", companyNo);
-
-        contentQuery.setParameter("userNo", userNo);
 
         if (keyword != null && !keyword.isBlank()) {
             if (sort.equals(InsightsSortType.MOST_RELEVANT)) {
@@ -366,11 +361,24 @@ public class MiInsightsService {
             }
         }
 
-        if (filterCount > 0) {
-            contentQuery.setParameter("filterList", filterList);
-            countQuery.setParameter("filterList", filterList);
-            contentQuery.setParameter("filterCount", filterCount);
-            countQuery.setParameter("filterCount", filterCount);
+        if (mergedList != null && !mergedList.isEmpty()) {
+            contentQuery.setParameter("mergedList", mergedList);
+            countQuery.setParameter("mergedList", mergedList);
+        }
+
+        if (docFilterList != null && !docFilterList.isEmpty()) {
+            contentQuery.setParameter("docFilterList", docFilterList);
+            countQuery.setParameter("docFilterList", docFilterList);
+        }
+
+        if (provFilterList != null && !provFilterList.isEmpty()) {
+            contentQuery.setParameter("provFilterList", provFilterList);
+            countQuery.setParameter("provFilterList", provFilterList);
+        }
+
+        if (langFilterList != null && !langFilterList.isEmpty()) {
+            contentQuery.setParameter("langFilterList", langFilterList);
+            countQuery.setParameter("langFilterList", langFilterList);
         }
 
         contentQuery.setFirstResult((page - 1) * size);
@@ -378,6 +386,7 @@ public class MiInsightsService {
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = contentQuery.getResultList();
+
         List<InsightsDataRes> content = rows.stream()
                 .map(row -> new InsightsDataRes(
                         (Integer) row[0], // providerNo
@@ -388,13 +397,31 @@ public class MiInsightsService {
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
                         (String) row[7], // goodsDataSummaryCntt
-                        (String) row[8], // goodsDataCategory
-                        ((Timestamp) row[9]).toLocalDateTime(), // modifyDt
-                        (Integer) row[10] == 1)) // viewable
+                        getGoodsDataCategory((Integer) row[4]), // goodsDataCategory
+                        ((Timestamp) row[8]).toLocalDateTime(), // modifyDt
+                        isDataViewable(companyNo, (Integer) row[2]))) // viewable
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
+    }
+
+    String getGoodsDataCategory(int goodsDataNo) {
+        return goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(goodsDataNo)
+                .stream()
+                .map(GoodsDataCategory::getGoodsDataCategoryCd)
+                .distinct()
+                .collect(Collectors.joining(","));
+    }
+
+    boolean isDataViewable(int companyNo, int goodsNo) {
+
+        if (companyNo <= 0 || goodsNo <= 0) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "Invalid parameters for data viewability check");
+        }
+
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        return permissionRes.getGoodsViewableMap(companyNo).getOrDefault(goodsNo, Boolean.FALSE);
     }
 
     /**
