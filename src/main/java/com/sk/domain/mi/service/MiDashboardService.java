@@ -464,7 +464,7 @@ public class MiDashboardService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, DashboardChart> chartMap = new HashMap<>();
 
-        Boolean isDownloadFunction = Boolean.FALSE; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
+        Boolean isDownloadFunction = Boolean.TRUE; // 다운로드 기능 여부(processChartData 함수를 호출하는 함수가 Download 권한을 체크하는지 View 권한을 체크하는지)
         List<DashboardChartData> chartDataResults = processChartData(
                 chartPredictSettingDetails,
                 permissionRes,
