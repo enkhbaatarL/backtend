@@ -29,12 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -330,12 +328,12 @@ public class MiDashboardHistoryService {
             return TableRes.Row.of(List.of(
                 h.date(),
                 // baseline
-                baseStat != null ? baseStat.price().toPlainString() : "-",
+                baseStat != null && baseStat.price() != null ? baseStat.price().toPlainString() : "-",
                 baseStat != null && baseStat.changeRate() != null ? baseStat.changeRate().toPlainString() : "-",
                 baseStat != null && baseStat.isMaximum() ? "Y" : "-",
                 baseStat != null && baseStat.isMinimum() ? "Y" : "-",
                 // counterpart
-                counterStat != null ? counterStat.price().toPlainString() : "-",
+                counterStat != null && counterStat.price() != null ? counterStat.price().toPlainString() : "-",
                 counterStat != null && counterStat.changeRate() != null ? counterStat.changeRate().toPlainString() : "-",
                 counterStat != null && counterStat.isMaximum() ? "Y" : "-",
                 counterStat != null && counterStat.isMinimum() ? "Y" : "-"
