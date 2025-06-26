@@ -13,9 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.mi.dto.response.dashboard.LatestInsightsDto;
-import com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes;
 import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
-import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 
 public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
@@ -88,30 +86,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     @EntityGraph(attributePaths = {"goods", "goods.provider"})
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
-    //
-    // @Query(value = """
-    // SELECT
-    // p.providerNo as providerNo,
-    // p.providerNm as providerNm,
-    // g.goodsNo as goodsNo,
-    // g.goodsNm as goodsNm,
-    // gd.goodsDataNo as goodsDataNo,
-    // gd.goodsDataNm as goodsDataNm,
-    // gd.modifyDt as modifyDt,
-    // IFNULL(FUNCTION('GROUP_CONCAT', gdc.goodsDataCategoryCd), '') as goodsDataCategoryCd
-    // FROM Provider p
-    // JOIN Goods g ON g.provider = p AND g.isDeleted = false AND g.isUsed = true
-    // JOIN GoodsData gd ON gd.goods = g AND gd.isDeleted = false AND gd.isGoodsDataMarked = true
-    // LEFT JOIN GoodsDataCategory gdc ON gdc.goodsData = gd AND gdc.isDeleted = false
-    // JOIN CustomerCompanyProviderMapping ccpm
-    // ON ccpm.provider = p AND ccpm.isDeleted = false AND ccpm.isUsed = true AND ccpm.customerCompany.customerCompanyNo = :customerCompanyNo
-    // JOIN CustomerCompanyGoodsMapping ccgm
-    // ON ccgm.goods = g AND ccgm.isDeleted = false AND ccgm.isUsed = true AND ccgm.customerCompany.customerCompanyNo = :customerCompanyNo
-    // WHERE p.isDeleted = false AND p.isUsed = true
-    // GROUP BY p.providerNo, p.providerNm, g.goodsNo, g.goodsNm, gd.goodsDataNo, gd.goodsDataNm, gd.modifyDt
-    // ORDER BY gd.modifyDt DESC
-    // """)
-
     @Query(value = """
             SELECT
                     tp.prvd_no AS providerNo,
@@ -168,31 +142,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 
-    // @Query(value = """
-    // SELECT new com.sk.domain.mi.dto.response.dashboard.LatestInsightsRes(
-    // p.providerNo,
-    // p.providerNm,
-    // g.goodsNo,
-    // g.goodsNm,
-    // gd.goodsDataNo,
-    // gd.goodsDataNm,
-    // gd.modifyDt
-    // )
-    // FROM Provider p
-    // JOIN Goods g ON g.provider = p AND g.isDeleted = false AND g.isUsed = true
-    // JOIN GoodsData gd ON gd.goods = g AND gd.isDeleted = false AND gd.isGoodsDataMarked = true
-    // LEFT JOIN CustomerCompanyProviderMapping ccpm
-    // ON ccpm.provider = p AND ccpm.isDeleted = false AND ccpm.isUsed = true AND ccpm.customerCompany.customerCompanyNo = :customerCompanyNo
-    // LEFT JOIN CustomerCompanyGoodsMapping ccgm
-    // ON ccgm.goods = g AND ccgm.isDeleted = false AND ccgm.isUsed = true AND ccgm.customerCompany.customerCompanyNo = :customerCompanyNo
-    // WHERE p.isDeleted = false AND p.isUsed = true
-    // AND EXISTS (SELECT 1
-    // FROM midb.tcm_filel tf
-    // WHERE tf.del_yn = 'N'
-    // AND tf.file_rel_obj_spt_cd = 'GUDAT'
-    // AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)
-    // ORDER BY gd.modifyDt DESC
-    // """)
     @Query(value = """
             SELECT
                     tp.prvd_no AS providerNo,
