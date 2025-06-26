@@ -91,7 +91,7 @@ public record MarketMetaData(
                 .build();
     }
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String interval, LocalDate lastUpdateDt) {
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String interval, LocalDate indexStartDt, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsNo(goodsData.getGoods().getGoodsNo())
@@ -102,6 +102,7 @@ public record MarketMetaData(
                 .currency(goodsDataSourceDetail.getGoodsDataSourceCurrencyUnitNm())
                 .currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
                 .interval(interval)
+                .indexStartDt(indexStartDt)
                 .lastUpdateDt(lastUpdateDt)
                 .build();
     }
