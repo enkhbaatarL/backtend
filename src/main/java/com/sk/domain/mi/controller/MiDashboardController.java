@@ -239,7 +239,9 @@ public class MiDashboardController {
 
 	@ApiOrder(11)
 	@Parameters({
+			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호"),
 			@Parameter(name = "predictDate", description = "예측 날짜", example = "20250511"),
+			@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202505"),
 			@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호", example = "63"),
 			@Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "WEATHER")
 	})
@@ -251,9 +253,10 @@ public class MiDashboardController {
 	public BaseResponse<DashboardChartFactorRes> getChartFactors(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "predictDate", required = true) String predictDate,
+			@RequestParam(value = "date", required = true) String date,
 			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
 			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm) {
-		return BaseResponseFactory.create(miDashboardService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, explanatoryLevelNm));
+		return BaseResponseFactory.create(miDashboardService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, date, explanatoryLevelNm));
 	}
 
 	@ApiOrder(12)

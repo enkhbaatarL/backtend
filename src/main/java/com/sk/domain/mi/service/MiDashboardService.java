@@ -147,7 +147,7 @@ public class MiDashboardService {
     public boolean getDataExists(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
     }
@@ -161,7 +161,7 @@ public class MiDashboardService {
     public DashboardInfoRes getDashboardInfo(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> new EntityNotFoundException("CustomerCompany not found"));
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         // 차트 설정 조회
         ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
@@ -862,9 +862,7 @@ public class MiDashboardService {
         String dbQueryConditionCntt = goodsDataSourceDetail.getQueryConditionCntt();
         String dbColumnList = goodsDataSourceDetail.getTableColumnListNm();
 
-
-        //TODO: 정규식 패턴 수정 필요 and가 몇개 있을지 모름
-
+        // TODO: 정규식 패턴 수정 필요 and가 몇개 있을지 모름
 
         // 정규 표현식 패턴을 이용해서 getTableColumnList 에서 칼럼, 데이터 추출
         String pattern = "([a-zA-Z_]+)\\s*=\\s*'([^']*)'\\s*and\\s*([a-zA-Z_]+)\\s*=\\s*'([^']*)'";
@@ -1332,7 +1330,7 @@ public class MiDashboardService {
      * @param explanatoryLevelNm 주요 요인 레벨명
      * @return DashboardChartFactorRes
      */
-    public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String explanatoryLevelNm) {
+    public DashboardChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate, String date, String explanatoryLevelNm) {
         // 사용자 정보 조회
         String currentDate = DateUtil.toYmd(LocalDate.now());
         customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
@@ -1345,11 +1343,11 @@ public class MiDashboardService {
 
         // 차트 주요 요인 분석 조회 (+)
         List<DashboardChartFactorMap> chartPlusFactorsMap = dashboardMapper.chartFactors(queryWhere, explanatoryLevelNm, predictDate,
-                CHART_EXPLANATORY_PLUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
+                date, CHART_EXPLANATORY_PLUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
         // 차트 주요 요인 분석 조회 (-)
         List<DashboardChartFactorMap> chartMinusFactorsMap = dashboardMapper.chartFactors(queryWhere, explanatoryLevelNm, predictDate,
-                CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
+                date, CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
         // Map -> Dto
         List<DashboardChartFactor> chartPlusFactors = chartPlusFactorsMap.stream()

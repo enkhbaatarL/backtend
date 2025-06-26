@@ -31,7 +31,7 @@ public interface DashboardMapper {
      * @param limit 제한 개수
      * @return List<DashboardChartFactorMap>
      */
-    List<DashboardChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm, String predictDate, String direction, int limit);
+    List<DashboardChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm, String predictDate, String date, String direction, int limit);
 
     /**
      * 차트 주요 요인 분석 설명력 조회(Drill Down #2)
