@@ -1,11 +1,5 @@
 package com.sk.domain.shared.controller;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
@@ -13,11 +7,15 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.SchedulerService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 스케쥴러용 API
@@ -65,7 +63,7 @@ public class SchedulerController {
 
     @ApiOrder(4)
     @Operation(summary = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드", description = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드 API 입니다.")
-    @PostMapping("/maket-data/calculate-spread")
+    @PostMapping("/market-data/calculate-spread")
     @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.ADMIN, Role.SYSTEM})
     @ApiResponse(responseCode = "200", description = "고객사에서 요청한 Market Data 계산 후 Spread 테이블에 업로드 성공")
     public BaseResponse<Boolean> processTifFuturesSpread() {
