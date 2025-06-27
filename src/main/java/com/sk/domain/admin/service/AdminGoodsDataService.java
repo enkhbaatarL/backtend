@@ -365,6 +365,7 @@ public class AdminGoodsDataService {
                         .countries(List.of(""))
                         .build();
 
+                goodsData.updateMetaDataUploadStatus(false);
                 publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
             } else {
                 return;
@@ -519,6 +520,7 @@ public class AdminGoodsDataService {
                         .countries(List.of(""))
                         .build();
 
+                savedGoodsData.updateMetaDataUploadStatus(false);
                 publisher.publishEvent(new AXUploadFileEvent(savedGoodsData.getGoodsDataNo(), axMetaFileDto, true));
 
                 savedGoodsData.updateGoodsDataDistinguishId(documentId);
@@ -751,6 +753,7 @@ public class AdminGoodsDataService {
                     .countries(List.of(""))
                     .build();
 
+            goodsData.updateMetaDataUploadStatus(false);
             publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
         }
     }
