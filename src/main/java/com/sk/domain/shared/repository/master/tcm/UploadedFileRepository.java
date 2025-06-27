@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tcm;
 import java.util.List;
 import java.util.Optional;
 
+import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -92,10 +93,10 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             FROM UploadedFile u
             WHERE u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
                 AND u.isDeleted = false
+                AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCd
                 AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
             """)
-    List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(
-            @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo);
+    List<UploadedFile> findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(@Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo, @Param("fileRelationshipObjectSeparateCd") String fileRelationshipObjectSeparateCd);
 
     @Query(value = """
             SELECT u

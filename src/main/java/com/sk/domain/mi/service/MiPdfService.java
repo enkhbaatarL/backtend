@@ -92,7 +92,7 @@ public class MiPdfService {
             BufferedImage addTextWatermark = PdfUtil.addTextWatermarkRGB(bufferedImage, waterMark);
             BufferedImage result = PdfUtil.resize(addTextWatermark, 0.75f);
 
-            return PdfUtil.imageToJpegByteArray(result, 0.8f);
+            return PdfUtil.imageToJpegByteArray(result, 1.0f);
         } catch (Exception e) {
             log.error("Failed to get the image page from the PDF file. fileNo: {}, page: {}", fileNo, page, e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
