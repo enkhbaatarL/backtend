@@ -68,7 +68,7 @@ public class PdfToImagesProcessor {
                 try {
 
                     int pageNo = pageIndex + 1;
-                    log.info("[PDF-TO-IMAGES] -> Rendering page: {}", pageNo);
+                    log.debug("[PDF-TO-IMAGES] -> Rendering page: {}", pageNo);
 
                     // 페이지를 이미지로 렌더링
                     BufferedImage image = renderer.renderImageWithDPI(pageIndex, dpiValue, ImageType.RGB);
@@ -79,7 +79,7 @@ public class PdfToImagesProcessor {
 
                     try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
                         objectStorageService.uploadFile(imageInputStream, bucket, imagePath, false, "image/jpeg", imageBytes.length);
-                        log.info("[PDF-TO-IMAGES] -> Uploaded page {} as '{}'", pageNo, imagePath);
+                        log.debug("[PDF-TO-IMAGES] -> Uploaded page {} as '{}'", pageNo, imagePath);
                     }
 
                 } catch (IOException e) {
