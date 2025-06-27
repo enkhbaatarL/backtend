@@ -9,5 +9,5 @@ import com.sk.domain.shared.client.dto.response.AuthTokenRes;
 public interface AuthTokenApi {
 
     @GetExchange("/collector/auth/token")
-    AuthTokenRes getMessage();
+    AuthTokenRes getToken();
 }

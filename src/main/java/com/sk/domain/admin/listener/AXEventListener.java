@@ -46,12 +46,12 @@ public class AXEventListener {
 
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo).orElse(null);
         if (goodsData == null) {
-            log.error("GoodsData not found: goodsDataNo= {}", goodsDataNo);
+            log.error("[AX Platform] GoodsData not found: goodsDataNo= {}", goodsDataNo);
             return;
         }
         AXMetaFileDto axMetaFileDto = event.getAxMetaFileDto();
         if (axMetaFileDto == null) {
-            log.error("AXMetaFileDto is null");
+            log.error("[AX Platform] AXMetaFileDto is null");
             return;
         }
 
@@ -68,15 +68,16 @@ public class AXEventListener {
             File file = new File(directoryPath + File.separator + uniqueFilename);
             MultipartFileUtil multipartFile = new MultipartFileUtil("files", file, null);
 
-            AuthTokenRes authTokenRes = authTokenApi.getMessage();
+            AuthTokenRes authTokenRes = authTokenApi.getToken();
             if (authTokenRes == null || authTokenRes.accessToken() == null) {
+                log.error("[AX Platform] getToken: " + authTokenRes);
                 return;
             }
 
             String accessToken = "Bearer ".concat(authTokenRes.accessToken());
 
             AXMetaUploadRes uploadRes = axPlatformApi.upload(accessToken, multipartFile);
-            log.info("AX Platform :: upload: " + uploadRes);
+            log.info("[AX Platform] upload: " + uploadRes);
 
             ModifiedFile uploadFile = new ModifiedFile(uploadRes.data().get(0).fileName(),
                     null,
@@ -92,7 +93,7 @@ public class AXEventListener {
                 String fileName = goodsData.getMetadUpldFileNm();
 
                 AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, datasourceId, fileName);
-                log.info("AX Platform :: lookup: " + lookUpRes);
+                log.info("[AX Platform] lookup: " + lookUpRes);
 
                 ModifiedFile deletedFile = new ModifiedFile(
                         fileName,
@@ -106,14 +107,15 @@ public class AXEventListener {
             }
 
             AXMetaRegisterRes axMetaRegisterRes = axPlatformApi.register(accessToken, datasourceId, registerReq);
-            log.info("AX Platform :: register: " + axMetaRegisterRes);
+            log.info("[AX Platform] register: " + axMetaRegisterRes);
 
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);
             goodsData.updateMetadUpldFileNm(uniqueFilename);
         } catch (IOException e) {
-            // 예외 처리 로직
-            log.error("AX Platform :: onUploadFileEvent: " + e.getMessage());
+            log.error("[AX Platform] IOException Error: {}", e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("[AX Platform] Exception Error: {}", e.getMessage(), e);
         }
     }
 }
