@@ -45,8 +45,8 @@ public class ResourceServerConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
             );
 
         return http.build();
@@ -70,8 +70,8 @@ public class ResourceServerConfig {
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//                .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
             );
 
         return http.build();
