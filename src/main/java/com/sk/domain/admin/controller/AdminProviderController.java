@@ -87,10 +87,9 @@ public class AdminProviderController {
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
     private static final List<String> ALLOWED_MIME_STRUCTURED = Arrays.asList("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel", "text/csv", "application/haansoftxlsx");
-  private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED =
-      Arrays.asList(
-          "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
-          "xltx", "pptx");
+    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList(
+            "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
+            "xltx", "pptx");
 
     /*********************************************************************************************************************
     *
@@ -544,7 +543,7 @@ public class AdminProviderController {
 
         // String mimeType = file.getContentType();
         // if (!ALLOWED_MIME_STRUCTURED.contains(mimeType)) {
-        //     throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
+        // throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
         // }
 
         return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
@@ -620,5 +619,18 @@ public class AdminProviderController {
         }
 
         return BaseResponseFactory.create(result);
+    }
+
+    @ApiOrder(99)
+    @Operation(summary = "비정형 Meta 파일 업로드", description = "비정형 Meta 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/axplatform/upload")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<String> uploadMetaFile(
+            @RequestParam(value = "goodsDataNo", required = true, defaultValue = "") Integer goodsDataNo) {
+
+        goodsDataService.uploadMetaFile(goodsDataNo);
+
+        return BaseResponseFactory.create("success");
     }
 }

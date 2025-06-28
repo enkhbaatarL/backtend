@@ -357,7 +357,8 @@ public class AdminGoodsDataService {
                         .documentId(documentId)
                         .documentReleaseDate(nowOffsetDateTime())
                         .headline(goodsData.getGoodsDataNm())
-                        .synopsis(goodsData.getGoodsDataExpn() + goodsData.getGoodsDataSummaryCntt())
+                        .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
+                                : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
                         .contributor(goodsData.getDataContributorNm())
                         .authors(List.of(""))
                         .documentFileName(fileNameList)
@@ -746,7 +747,8 @@ public class AdminGoodsDataService {
                     .documentId(documentId)
                     .documentReleaseDate(nowOffsetDateTime())
                     .headline(goodsData.getGoodsDataNm())
-                    .synopsis(goodsData.getGoodsDataExpn() + goodsData.getGoodsDataSummaryCntt())
+                    .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
+                            : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
                     .contributor(goodsData.getDataContributorNm())
                     .authors(List.of(""))
                     .documentFileName(fileNameList)
@@ -795,5 +797,40 @@ public class AdminGoodsDataService {
 
     public List<GoodsData> getGoodsData(String goodsDataNm) {
         return goodsDataRepository.findByGoodsDataNm(goodsDataNm);
+    }
+
+    public void uploadMetaFile(int goodsDataNo) {
+        log.info("uploadMetaFile: " + goodsDataNo);
+
+        GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo).orElseThrow(
+                () -> AppErrorException.of(
+                        Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
+
+        // A.X Platform 에 파일 업로드 연동
+        List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
+                .stream()
+                .map(file -> file.getOriginalFileNm())
+                .toList();
+
+        String documentId = UUID.randomUUID().toString();
+
+        AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
+                .gdsNo(goodsData.getGoods().getGoodsNo())
+                .documentId(documentId)
+                .documentReleaseDate(nowOffsetDateTime())
+                .headline(goodsData.getGoodsDataNm())
+                .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
+                        : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
+                .contributor(goodsData.getDataContributorNm())
+                .authors(List.of(""))
+                .documentFileName(fileNameList)
+                .language("")
+                .countries(List.of(""))
+                .build();
+
+        goodsData.updateMetaDataUploadStatus(false);
+        goodsData.updateGoodsDataDistinguishId(documentId);
+
+        publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
     }
 }
