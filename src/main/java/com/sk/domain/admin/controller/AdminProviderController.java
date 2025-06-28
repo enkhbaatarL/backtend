@@ -624,7 +624,7 @@ public class AdminProviderController {
     @ApiOrder(99)
     @Operation(summary = "비정형 Meta 파일 업로드", description = "비정형 Meta 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PatchMapping("/axplatform/upload")
+    @PostMapping("/axplatform/upload")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<String> uploadMetaFile(
             @RequestParam(value = "goodsDataNo", required = true, defaultValue = "") Integer goodsDataNo) {
