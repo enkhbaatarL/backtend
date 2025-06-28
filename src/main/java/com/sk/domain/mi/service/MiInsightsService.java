@@ -298,8 +298,8 @@ public class MiInsightsService {
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 WHERE
                 """ + where + """
                 """ + orderBy;
@@ -309,8 +309,8 @@ public class MiInsightsService {
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 WHERE
                 """
                 + where;
