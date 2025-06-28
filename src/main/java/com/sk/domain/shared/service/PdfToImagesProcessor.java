@@ -75,7 +75,7 @@ public class PdfToImagesProcessor {
                     String imageName = StringUtils.concat(StringUtil.formatPageNumber(pageNo), ".", Extension.JPEG.getCode());
                     String imagePath = StringUtils.concat(prefix, "/", imageName);
 
-                    byte[] imageBytes = PdfUtil.imageToJpegByteArray(image, 0.7f);
+                    byte[] imageBytes = PdfUtil.imageToJpegByteArray(image, 0.85f);
 
                     try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
                         objectStorageService.uploadFile(imageInputStream, bucket, imagePath, false, "image/jpeg", imageBytes.length);
