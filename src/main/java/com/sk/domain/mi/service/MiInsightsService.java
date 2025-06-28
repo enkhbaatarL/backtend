@@ -235,8 +235,7 @@ public class MiInsightsService {
                 .append(" tgd.mod_dtm AS modifyDt");
 
         StringBuilder where = new StringBuilder()
-                .append(" tp.del_yn = 'N'")
-                .append(" AND tp.use_yn = 'Y'")
+                .append(" tcp.del_yn = 'N' AND tcp.use_yn = 'Y' AND tcp.cust_cpny_no = :companyNo")
                 .append(" AND EXISTS (SELECT 1 FROM midb.tcm_filel tf WHERE tf.del_yn = 'N' AND tf.file_rel_obj_spt_cd = 'GUDAT' AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)");
 
         if (keyword != null && !keyword.isBlank()) {
@@ -296,50 +295,22 @@ public class MiInsightsService {
         String contentSql = """
                 SELECT
                 """ + select + """
-                FROM midb.tmd_prvdm tp
-                JOIN midb.tmd_gdsm tg
-                        ON tg.prvd_no = tp.prvd_no
-                        AND tg.del_yn = 'N'
-                        AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd
-                        ON tgd.gds_no = tg.gds_no
-                        AND tgd.del_yn = 'N'
-                LEFT JOIN midb.tam_custcpnyprvdmappl tcp
-                		ON tcp.prvd_no = tp.prvd_no
-                		AND tcp.cust_cpny_no = :companyNo
-                		AND tcp.del_yn = 'N'
-                        AND tcp.use_yn = 'Y'
-                        AND tgd.gds_data_mark_yn  = 'Y'
-                LEFT JOIN midb.tam_custcpnygdsmappl tcg
-                        ON tcg.gds_no = tg.gds_no
-                        AND tcg.cust_cpny_no = :companyNo
-                        AND tcg.del_yn = 'N'
-                        AND tcg.use_yn = 'Y'
+                FROM midb.tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 WHERE
                 """ + where + """
                 """ + orderBy;
 
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
-                FROM midb.tmd_prvdm tp
-                JOIN midb.tmd_gdsm tg
-                        ON tg.prvd_no = tp.prvd_no
-                        AND tg.del_yn = 'N'
-                        AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd
-                        ON tgd.gds_no = tg.gds_no
-                        AND tgd.del_yn = 'N'
-                LEFT JOIN midb.tam_custcpnyprvdmappl tcp
-                		ON tcp.prvd_no = tp.prvd_no
-                		AND tcp.cust_cpny_no = :companyNo
-                		AND tcp.del_yn = 'N'
-                        AND tcp.use_yn = 'Y'
-                        AND tgd.gds_data_mark_yn  = 'Y'
-                LEFT JOIN midb.tam_custcpnygdsmappl tcg
-                        ON tcg.gds_no = tg.gds_no
-                        AND tcg.cust_cpny_no = :companyNo
-                        AND tcg.del_yn = 'N'
-                        AND tcg.use_yn = 'Y'
+                FROM midb.tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 WHERE
                 """
                 + where;

@@ -98,37 +98,15 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                     tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,
                     tgd.mod_dtm AS modifyDt,
                     GROUP_CONCAT(tgdc.gds_data_ctgr_cd) as goodsDataCategoryCd
-                FROM
-                    midb.tmd_prvdm tp
-                JOIN
-                    midb.tmd_gdsm tg
-                        ON tg.prvd_no = tp.prvd_no
-                        AND tg.del_yn = 'N'
-                        AND tg.use_yn = 'Y'
-                JOIN
-                    midb.tmd_gdsdatam tgd
-                        ON tgd.gds_no = tg.gds_no
-                        AND tgd.del_yn = 'N'
-                JOIN
-                    midb.tmd_gdsdatactgrl tgdc
-                        ON tgdc.gds_data_no = tgd.gds_data_no
-                        AND tgdc.del_yn = 'N'
-                LEFT JOIN
-                    midb.tam_custcpnyprvdmappl tcp
-                        ON tcp.prvd_no = tp.prvd_no
-                        AND tcp.cust_cpny_no = :customerCompanyNo
-                        AND tcp.del_yn = 'N'
-                        AND tcp.use_yn = 'Y'
-                        AND tgd.gds_data_mark_yn  = 'Y'
-                LEFT JOIN
-                    midb.tam_custcpnygdsmappl tcg
-                        ON tcg.gds_no = tg.gds_no
-                        AND tcg.cust_cpny_no = :customerCompanyNo
-                        AND tcg.del_yn = 'N'
-                        AND tcg.use_yn = 'Y'
-                WHERE
-                    tp.del_yn = 'N'
-                    AND tp.use_yn = 'Y'
+                FROM midb.tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no AND tgdc.del_yn = 'N' AND tgdc.gds_data_mnagt_spt_cd = 'GDAT'
+                WHERE tcp.del_yn = 'N'
+                    AND tcp.use_yn = 'Y'
+                    AND tcp.cust_cpny_no = :customerCompanyNo
                     AND tgd.mod_dtm >= :threshold
                     AND EXISTS (SELECT 1
                                 FROM midb.tcm_filel tf
@@ -151,33 +129,15 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                     tgd.gds_data_no AS goodsDataNo,
                     tgd.gds_data_nm AS goodsDataNm,
                     tgd.mod_dtm AS modifyDt
-                FROM
-                    midb.tmd_prvdm tp
-                JOIN
-                    midb.tmd_gdsm tg
-                        ON tg.prvd_no = tp.prvd_no
-                        AND tg.del_yn = 'N'
-                        AND tg.use_yn = 'Y'
-                JOIN
-                    midb.tmd_gdsdatam tgd
-                        ON tgd.gds_no = tg.gds_no
-                        AND tgd.del_yn = 'N'
-                LEFT JOIN
-                    midb.tam_custcpnyprvdmappl tcp
-                        ON tcp.prvd_no = tp.prvd_no
-                        AND tcp.cust_cpny_no = :customerCompanyNo
-                        AND tcp.del_yn = 'N'
-                        AND tcp.use_yn = 'Y'
-                        AND tgd.gds_data_mark_yn  = 'Y'
-                LEFT JOIN
-                    midb.tam_custcpnygdsmappl tcg
-                        ON tcg.gds_no = tg.gds_no
-                        AND tcg.cust_cpny_no = :customerCompanyNo
-                        AND tcg.del_yn = 'N'
-                        AND tcg.use_yn = 'Y'
+                FROM midb.tam_custcpnyprvdmappl tcp
+                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 WHERE
-                    tp.del_yn = 'N'
-                    AND tp.use_yn = 'Y'
+                    tcp.del_yn = 'N'
+                    AND tcp.use_yn = 'Y'
+                    AND tcp.cust_cpny_no = :customerCompanyNo
                     AND EXISTS (SELECT 1
                                 FROM midb.tcm_filel tf
                                 WHERE tf.del_yn = 'N'

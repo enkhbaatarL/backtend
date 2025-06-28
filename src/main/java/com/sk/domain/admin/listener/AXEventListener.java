@@ -42,7 +42,6 @@ public class AXEventListener {
 
     @Async
     @EventListener
-    @Transactional
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUploadFileEvent(AXUploadFileEvent event) {
         Integer goodsDataNo = event.getGoodsDataNo();
@@ -120,6 +119,7 @@ public class AXEventListener {
             // 업로드 결과 저장
             goodsData.updateMetaDataUploadStatus(true);
             goodsData.updateMetadUpldFileNm(uniqueFilename);
+            goodsDataRepository.save(goodsData);
         } catch (IOException e) {
             log.error("[AX Platform] IOException Error: {}", e.getMessage(), e);
         } catch (Exception e) {
