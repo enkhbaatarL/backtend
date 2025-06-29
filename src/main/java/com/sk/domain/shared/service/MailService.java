@@ -224,7 +224,7 @@ public class MailService {
      * @return
      */
     public String setMailTitle(LocalDate data) {
-        return String.format("[MI Platform] %s월 %s일 신규 알람 발생", data.getMonthValue(), data.getDayOfMonth());
+        return String.format("[AI Market Insights] %s월 %s일 신규 알람 발생", data.getMonthValue(), data.getDayOfMonth());
     }
 
     /**
