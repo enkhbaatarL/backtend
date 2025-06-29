@@ -225,13 +225,16 @@ public class MiMarketDataService {
             List<Map<String, Object>> recentChangeRate = getRecentChangeRate(mainGoodsDataSource, dateColumnName, defaultDataColumnName);
             Double recentChangeRateValue = null;
             if (recentChangeRate.size() == 2) {
-                Map<String, Object> fromData = recentChangeRate.get(0);
-                Map<String, Object> toData = recentChangeRate.get(1);
+                // 최근 값
+                Map<String, Object> toData = recentChangeRate.get(0);
+                // 이전 값
+                Map<String, Object> fromData = recentChangeRate.get(1);
 
                 if (fromData.get(defaultDataColumnName) != null && toData.get(defaultDataColumnName) != null) {
-                    Double fromValue = Double.parseDouble(fromData.get(defaultDataColumnName).toString());
                     Double toValue = Double.parseDouble(toData.get(defaultDataColumnName).toString());
+                    Double fromValue = Double.parseDouble(fromData.get(defaultDataColumnName).toString());
 
+                    // 계산식 (최근 값 - 이전 값) / 이전 값 * 100
                     Double changeRate = (toValue - fromValue) / fromValue * 100;
                     BigDecimal bd = BigDecimal.valueOf(changeRate).setScale(2, RoundingMode.HALF_UP);
                     recentChangeRateValue = bd.doubleValue();
@@ -643,16 +646,23 @@ public class MiMarketDataService {
         }
 
         String fromQuery = String.format("""
-                (
-                    SELECT
-                        %s
-                        , DENSE_RANK() OVER (ORDER BY %s DESC) AS date_rank
-                        , ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s DESC, %s DESC) AS rn
-                    FROM %s
-                    WHERE del_yn = 'N'
+            (
+                SELECT
+                    %s
+                    , DENSE_RANK() OVER (ORDER BY %s DESC) AS date_rank
+                    , ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s DESC, %s DESC) AS rn
+                FROM %s
+                WHERE del_yn = 'N'
+            """, goodsDataSourceDetail.getTableColumnListNm(), dateColumnName, dateColumnName, dateColumnName, defaultDataColumnName,
+            goodsDataSourceDetail.getTargetTableNm());
+        if (goodsDataSourceDetail.getQueryConditionCntt() != null) {
+            fromQuery = fromQuery + String.format("""
+                      AND %s
+                """, goodsDataSourceDetail.getQueryConditionCntt());
+        }
+        fromQuery = fromQuery + """
                 ) AS table_alias
-                """, goodsDataSourceDetail.getTableColumnListNm(), dateColumnName, dateColumnName, dateColumnName, defaultDataColumnName,
-                goodsDataSourceDetail.getTargetTableNm());
+                """;
 
         String whereClause = String.format("""
                 date_rank <= 2 AND rn = 1
