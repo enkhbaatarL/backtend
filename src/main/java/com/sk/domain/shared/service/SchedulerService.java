@@ -190,8 +190,25 @@ public class SchedulerService {
                     }
 
                     // Object를 BigDecimal로 변환 (int 또는 decimal 처리)
-                    BigDecimal prevValue;
-                    BigDecimal currentValue;
+                    BigDecimal prevValue = null;
+                    BigDecimal currentValue = null;
+                    // currentData는 null이면 알림 발송 안함
+                    if (prevData == null) {
+                        continue;
+                    }
+
+                    // prevData는 null일 수 있음 (첫번째 row 데이터는 prevData가 null 또는 데이터상 null일 수 있음, null 이여도 로직상 문제 없음)
+                    if (prevData != null) {
+                        // prevData를 BigDecimal로 변환
+                        try {
+                            prevValue = new BigDecimal(prevData.toString());
+                        } catch (NumberFormatException e) {
+                            log.error("Failed to convert data to BigDecimal: prevData={}", prevData, e);
+                            continue;
+                        }
+                    }
+
+                    // currentData를 BigDecimal로 변환
                     try {
                         currentValue = new BigDecimal(currentData.toString());
                     } catch (NumberFormatException e) {
@@ -205,23 +222,56 @@ public class SchedulerService {
                     // 데이터, 임계치 설정 비교
                     switch (goodsCriticalValueSettingData.getNotificationCriticalValueSeparateCd()) {
                         case UPPER:
-                            // currentData가(절대값) criticalValueSettingVol(기준치)보다 상승
-                            isMatch = currentValue.compareTo(criticalValueSettingVol) >= 0;
-                            break;
-                        case LOWER:
-                            // currentData가(절대값) criticalValueSettingVol(기준치)보다 하락
-                            isMatch = currentValue.compareTo(criticalValueSettingVol) <= 0;
-                            break;
-                        case INCRATE:
-                            if (prevData == null) {
-                                log.warn("Skipping row due to null data: prevData={}", prevData);
-                                continue;
+                            /**
+                             * 절대값 비교 currentData가(절대값) criticalValueSettingVol(기준치)보다 상승
+                             * 바로 직전 데이터가 임계치룰 넘었을 경우에는 알림 발송 안함
+                             *
+                             * 알림 발송 조건
+                             * isPrevValueValue 값이 null이 아니면서 임계치 미만일 경우
+                             * isCurrentValueValue 값이 null이 아니면서 임계치 이상일 경우
+                             */
+                            boolean isUpperPrevValueValue = false;
+                            boolean isUpperCurrentValueValue = false;
+                            if(prevValue != null){
+                                // 바로 직전 데이터가 임계치 미만일 경우
+                                isUpperPrevValueValue = prevValue.compareTo(criticalValueSettingVol) < 0;
+                            }
+                            if(currentValue != null){
+                                // 현재 데이터가 임계치 이상일 경우
+                                isUpperCurrentValueValue = currentValue.compareTo(criticalValueSettingVol) >= 0;
                             }
 
-                            try {
-                                prevValue = new BigDecimal(prevData.toString());
-                            } catch (NumberFormatException e) {
-                                log.error("Failed to convert data to BigDecimal: prevData={}", prevData, e);
+                            isMatch = isUpperPrevValueValue && isUpperCurrentValueValue;
+                            break;
+                        case LOWER:
+                            /**
+                             * 절대값 비교 currentData가(절대값) criticalValueSettingVol(기준치)보다 하락
+                             * 바로 직전 데이터가 임계치룰 넘었을 경우에는 알림 발송 안함
+                             *
+                             * 알림 발송 조건
+                             * isPrevValueValue 값이 null이 아니면서 임계치 초과일 경우
+                             * isCurrentValueValue 값이 null이 아니면서 임계치 이하일 경우
+                             */
+                            boolean isLowerPrevValueValue = false;
+                            boolean isLowerCurrentValueValue = false;
+                            if(prevValue != null){
+                                // 바로 직전 데이터가 임계치 초과일 경우
+                                isLowerPrevValueValue = prevValue.compareTo(criticalValueSettingVol) > 0;
+                            }
+                            if(currentValue != null){
+                                // 현재 데이터가 임계치 이하일 경우
+                                isLowerCurrentValueValue = currentValue.compareTo(criticalValueSettingVol) <= 0;
+                            }
+
+                            isMatch = isLowerPrevValueValue && isLowerCurrentValueValue;
+                            break;
+                        case INCRATE:
+                            /**
+                             * 퍼센트 변화 비교 currentData가(절대값) prevData보다 criticalValueSettingVol% 상승
+                             * 바로 직전 데이터가 null일 경우 알림 발송 안함
+                             */
+                            if (prevValue == null) {
+                                log.warn("Skipping row due to null data: prevData={}", prevData);
                                 continue;
                             }
 
@@ -230,17 +280,15 @@ public class SchedulerService {
                             isMatch = percentIncrease.compareTo(criticalValueSettingVol) >= 0;
                             break;
                         case DECRATE:
-                            if (prevData == null) {
+                            /**
+                             * 퍼센트 변화 비교 currentData가(절대값) prevData보다 criticalValueSettingVol% 하락
+                             * 바로 직전 데이터가 null일 경우 알림 발송 안함
+                             */
+                            if (prevValue == null) {
                                 log.warn("Skipping row due to null data: prevData={}", prevData);
                                 continue;
                             }
 
-                            try {
-                                prevValue = new BigDecimal(prevData.toString());
-                            } catch (NumberFormatException e) {
-                                log.error("Failed to convert data to BigDecimal: prevData={}", prevData, e);
-                                continue;
-                            }
                             // currentData가 prevData보다 criticalValueSettingVol% 하락
                             BigDecimal percentDecrease = calculatePercentChange(currentValue, prevValue);
                             isMatch = percentDecrease.compareTo(criticalValueSettingVol.negate()) <= 0;
