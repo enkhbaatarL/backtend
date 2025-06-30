@@ -40,7 +40,7 @@ public class MailService {
     private final SpringTemplateEngine templateEngine;
     private final MailProperties mailProperties;
     private final EmailAccessLogRepository emailAccessLogRepository;
-    private final String NOTIFICATION_LOGO_PATH = "templates/src/marketintelligence.png";
+    private final String NOTIFICATION_LOGO_PATH = "templates/src/SkAiMarketIntelligence.svg";
     private final int MAX_RETRY_COUNT = 3; // 메일 발송 최대 재시도 횟수
     private final int RETRY_DELAY_MILLIS = 1000; // 메일 발송 재시도 대기 시간(ms)
 
