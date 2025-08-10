@@ -46,13 +46,15 @@ public record MarketMetaDataSummary(
 
         @Schema(description = "최근 일 변동률 (DOD)", example = "10.5") Double dodChangeRate,
 
-        @Schema(description = "최근 일 변동 수치 (DOD)", example = "10.5") Double dodChangeValue) {
+        @Schema(description = "최근 일 변동 수치 (DOD)", example = "10.5") Double dodChangeValue,
+        @Schema(description = "최근 변동 수치", example = "10.5") Double recentChangeValue,
+        @Schema(description = "최근 변동률", example = "10.5") Double recentChangeRate) {
 
     @Builder
     public MarketMetaDataSummary(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm,
             String goodsDataSourceNm, String currency, String currentUnitCd, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt,
             Double lastValue, Double momChangeRate, Double momChangeValue, Double wowChangeRate, Double wowChangeValue, Double dodChangeRate,
-            Double dodChangeValue) {
+            Double dodChangeValue, Double recentChangeValue, Double recentChangeRate) {
         this.chartMarkRank = chartMarkRank;
         this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
@@ -71,11 +73,30 @@ public record MarketMetaDataSummary(
         this.wowChangeValue = wowChangeValue;
         this.dodChangeRate = dodChangeRate;
         this.dodChangeValue = dodChangeValue;
+        this.recentChangeRate = recentChangeRate;
+        this.recentChangeValue = recentChangeValue;
     }
 
     public static MarketMetaDataSummary of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData,
             GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
+        Double recentChangeValue = null;
+        Double recentChangeRate = null;
+        if(calculatePeriodChangeRes != null){
+            if(calculatePeriodChangeRes.dodChangeRate() != null && calculatePeriodChangeRes.dodChangeValue() != null){
+                recentChangeValue = calculatePeriodChangeRes.dodChangeValue();
+                recentChangeRate = calculatePeriodChangeRes.dodChangeRate();
+            }else if(calculatePeriodChangeRes.wowChangeRate() != null && calculatePeriodChangeRes.wowChangeValue() != null){
+                recentChangeValue = calculatePeriodChangeRes.wowChangeValue();
+                recentChangeRate = calculatePeriodChangeRes.wowChangeRate();
+            }else if(calculatePeriodChangeRes.momChangeRate() != null && calculatePeriodChangeRes.momChangeValue() != null){
+                recentChangeValue = calculatePeriodChangeRes.momChangeValue();
+                recentChangeRate = calculatePeriodChangeRes.momChangeRate();
+            }else if(calculatePeriodChangeRes.yoyChangeRate() != null && calculatePeriodChangeRes.yoyChangeValue() != null){
+                recentChangeValue = calculatePeriodChangeRes.yoyChangeValue();
+                recentChangeRate = calculatePeriodChangeRes.yoyChangeRate();
+            }
+        }
         return MarketMetaDataSummary.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsNo(goodsData.getGoods().getGoodsNo())
@@ -95,6 +116,8 @@ public record MarketMetaDataSummary(
                 .wowChangeValue(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.wowChangeValue() : null)
                 .dodChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.dodChangeRate() : null)
                 .dodChangeValue(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.dodChangeValue() : null)
+                .recentChangeValue(recentChangeValue)
+                .recentChangeRate(recentChangeRate)
                 .build();
     }
 

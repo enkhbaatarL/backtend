@@ -59,14 +59,14 @@ public class RedisConfig {
 
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
             .commandTimeout(commandTimeout)
-            .useSsl()
+            //.useSsl()
             .build();
 
         return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
 
     @Bean
-    @Profile(value = "tech")
+    @Profile({"tech", "soloRedis"})
     public LettuceConnectionFactory lettuceConnectionFactoryTech(@Value("${spring.data.redis.host}") String host,
                                                                  @Value("${spring.data.redis.port}") int port,
                                                                  @Value("${spring.data.redis.password}") String password,
@@ -86,7 +86,7 @@ public class RedisConfig {
 
     // Redis Connection Factory 설정 (Sentinel 모드)
     @Bean
-    @Profile({"dev", "prod"})
+    @Profile({"(dev & !soloRedis)", "(prod & !soloRedis"})
     public LettuceConnectionFactory lettuceConnectionFactoryDev(@Value("${redis.service-name}") String serviceName,
                                                                 @Value("${redis.redis-password}") String redisPassword,
                                                                 @Value("${redis.sentinel-host-node}") String sentinelHostNode,

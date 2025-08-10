@@ -1,0 +1,33 @@
+spring:
+  config:
+    activate:
+      on-profile: dedicated
+  datasource:
+    tenants:
+      - company-cd: midb
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MASTER:pcc07377}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:mippcc07377!@}
+        hikari:
+          connection-timeout: 7s
+          maximum-pool-size: 10
+          idle-timeout: 10m
+          max-lifetime: 15m
+      - company-cd: ${SKT_MI_DB_DEDICATED_NAME:midb-skens}
+        jdbc-url: ${SKT_MI_DB_DEDICATED_URL:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MASTER}
+        password: ${SKT_MI_DB_PASSWORD_MASTER}
+        hikari:
+          connection-timeout: 7s
+          maximum-pool-size: 10
+          idle-timeout: 10m
+          max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
+
+server:
+  domain: ${SKT_MI_DB_DEDICATED_DOMAIN:http://localhost:8080}
+

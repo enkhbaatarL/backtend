@@ -2,6 +2,7 @@ package com.sk.common.aop;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -28,11 +29,12 @@ import lombok.RequiredArgsConstructor;
 @Aspect
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AccessIpCheckAspect {
-    
+
     private final CommonService commonService;
     private final UserRepository userRepository;
-    
+
     @Around("@annotation(com.sk.common.annotation.AccessIpCheck) || @within(com.sk.common.annotation.AccessIpCheck)")
     public Object accessIpCheck(ProceedingJoinPoint joinPoint) throws Throwable {
 
@@ -41,6 +43,12 @@ public class AccessIpCheckAspect {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            log.info("Authentication is Fail. Auth={}", authentication);
+            if(authentication != null){
+                log.info("Authentication is Fail. isAuthenticated={}", authentication.isAuthenticated());
+                log.info("Authentication is Fail. Principal={}", authentication.getPrincipal());
+            }
+
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "User is not authenticated");
         }
 

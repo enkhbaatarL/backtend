@@ -6,10 +6,10 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       company-cd: master
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: ${SKT_MI_DB_USERNAME_MASTER:minapp}
-      password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+      username: ${SKT_MI_DB_USERNAME_MASTER}
+      password: ${SKT_MI_DB_PASSWORD_MASTER}
       hikari:
         connection-timeout: 7s
         maximum-pool-size: 10
@@ -19,37 +19,11 @@ spring:
         validation-timeout: 3000
         minimum-idle: 5
     tenants:
-      - company-cd: SKCC
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:minapp}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 10
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 5
-      - company-cd: SKT
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:minapp}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 10
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 5
       - company-cd: midb
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:minapp}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:skccmipapp11@@}
+        username: ${SKT_MI_DB_USERNAME_MASTER}
+        password: ${SKT_MI_DB_PASSWORD_MASTER}
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 10
@@ -99,8 +73,8 @@ spring:
 
 redis:
   service-name: mymaster
-  redis-password: ${SKT_MI_REDIS_PASSWORD:wM2iWi7LmU}
-  sentinel-password: ${SKT_MI_REDIS_SENTINEL_PASSWORD:wM2iWi7LmU}
+  redis-password: ${SKT_MI_REDIS_PASSWORD}
+  sentinel-password: ${SKT_MI_REDIS_SENTINEL_PASSWORD}
   sentinel-host-node: redis.mi-redis
   sentinel-port: 26379
 
@@ -109,9 +83,9 @@ cache:
     time-to-live: 3600s
 
 jwt:
-  secret-key: ${SKT_MI_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
+  secret-key: ${SKT_MI_JWT_SECRET_KEY}
   saml2:
-    access-token-expiry: 15m
+    access-token-expiry: 3m
     refresh-token-expiry: 30m
   oauth2:
     access-token-expiry: 10h
@@ -124,13 +98,14 @@ logging:
     org.springframework.security: TRACE
     org.springframework.boot.autoconfigure.security: TRACE
     org.springframework.context: DEBUG
+    org.springframework.session: DEBUG
 
 api:
   model-agent:
     url: https://devadxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
-    read-timeout: 20s
-    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
+    read-timeout: 120s
+    api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-a001c3a2cb5dbb234bc1fa1d113f2d53}
     app-id: ${SKT_MI_MODEL_AGENT_APP_ID:e3064bc4-1871-4072-8f79-ed5271c50f81}
   auth-token:
     url: https://dev-mi.sk.com
@@ -140,14 +115,15 @@ api:
     url: https://devadxp.adotbiz.ai
     connection-timeout: 1s
     read-timeout: 20s
+    datasource-id: b6578dac-c777-403a-885c-c76c39d091c4
 
 mail:
   smtp:
     host: smtp.worksmobile.com
     port: 465
-    username: no-reply-manure@manure.by-works.com
-    password: WT6y1MpWNyqY
-    from: no-reply-manure@manure.by-works.com
+    username: ${SKT_MI_NO_REPLY_MAIL_ADDR}
+    password: ${SKT_MI_NO_REPLY_MAIL_PW}
+    from: ${SKT_MI_NO_REPLY_MAIL_ADDR}
     properties:
       transport-protocol: smtp
       auth: true
@@ -167,16 +143,25 @@ ncp:
   storage:
     end-point: https://zskc.object.ncpstorage.com
     region-name: PCS03
-    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR53zyqKIWpGz5cK}
-    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRT8RR3JuiCC5IStxaC9OaZhPzzy11}
+    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY}
+    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY}
     bucket-name: sk-mi-d-osb-03
     prefix: sk-mi-d-osb-ss-
 
 aes:
-  secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}
+  secret-key: ${SKT_MI_AES_SECRET_KEY}
 
 server:
   domain: https://dev-mi.sk.com
+  insight:
+    latest:
+      except-provider-no: 5000
+    focused:
+      threshold-day: 50
+  provider:
+    default:
+      languages:
+        5005: A_ENG
 
 features:
   pdf-viewer:

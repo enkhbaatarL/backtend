@@ -51,19 +51,26 @@ public class Provider extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
 
+    @Column(name = "ustrc_data_ownr_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("비정형데이터보유여부")
+    @ColumnDefault("'Y'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isUnstructuredDataOwned;
+
     @OneToMany(mappedBy = "provider", fetch = FetchType.LAZY)
     private List<ProviderDataColumn> providerDataColumns = new ArrayList<>();
 
     @Builder
     public Provider(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer providerNo, String providerNm, String providerId, String providerExpn,
-            Boolean isUsed) {
+            Boolean isUsed, Boolean isUnstructuredDataOwned) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.providerNo = providerNo;
         this.providerNm = providerNm;
         this.providerId = providerId;
         this.providerExpn = providerExpn;
         this.isUsed = isUsed;
+        this.isUnstructuredDataOwned = isUnstructuredDataOwned;
     }
 
     public static Provider of(String providerNm, String providerId, String providerExpn, Boolean isUsed) {

@@ -1,7 +1,9 @@
 package com.sk.domain.shared.client.dto.request;
 
 import lombok.Builder;
+import org.springframework.http.HttpHeaders;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,6 +37,16 @@ public record ModelAgentHeaders(
             Map.entry(H_CHAT_ID, chatId),
             Map.entry(H_TX_ID, transactionId)
         ).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    public HttpHeaders toHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(H_COMPANY_NO, String.valueOf(companyNo));
+        headers.add(H_USER_NO, String.valueOf(userNo));
+        headers.add(H_APP_ID, appId);
+        headers.add(H_CHAT_ID, chatId);
+        headers.add(H_TX_ID, transactionId);
+        return headers;
     }
 
     public static ModelAgentHeaders of(Integer companyNo, Integer userNo, String uuid, Integer qnaNo) {

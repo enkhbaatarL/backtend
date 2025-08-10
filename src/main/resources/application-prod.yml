@@ -6,46 +6,58 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       company-cd: master
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+      jdbc-url: ${SKT_MI_DB_URL_MASTER}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: ${SKT_MI_DB_USERNAME_MASTER:min}
-      password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+      username: ${SKT_MI_DB_USERNAME_MASTER}
+      password: ${SKT_MI_DB_PASSWORD_MASTER}
       hikari:
         connection-timeout: 7s
         maximum-pool-size: 10
         idle-timeout: 10m
         max-lifetime: 15m
+        connection-test-query: SELECT 1
+        validation-timeout: 3000
+        minimum-idle: 5
     tenants:
       - company-cd: SKCC
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        username: ${SKT_MI_DB_USERNAME_MASTER}
+        password: ${SKT_MI_DB_PASSWORD_MASTER}
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 10
           idle-timeout: 10m
           max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
       - company-cd: SKT
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        username: ${SKT_MI_DB_USERNAME_MASTER}
+        password: ${SKT_MI_DB_PASSWORD_MASTER}
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 10
           idle-timeout: 10m
           max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
       - company-cd: midb
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        username: ${SKT_MI_DB_USERNAME_MASTER}
+        password: ${SKT_MI_DB_PASSWORD_MASTER}
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 10
           idle-timeout: 10m
           max-lifetime: 15m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 5
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -61,14 +73,14 @@ spring:
       relyingparty:
         registration:
           mi:
-            entity-id: https://dev-mi.sk.com/saml/metadata
+            entity-id: https://mi.sk.com/saml/metadata
             acs:
-              location: https://dev-mi.sk.com/login/saml2/sso/mi
+              location: https://mi.sk.com/login/saml2/sso/mi
               binding: POST
             singlelogout:
-              url: https://dev-mi.sk.com/saml2/SingleLogout
+              url: https://mi.sk.com/saml2/SingleLogout
             assertingparty:
-              metadata-uri: classpath:saml/idp/devn.gdisso.sk.com.metadata.xml
+              metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
@@ -77,8 +89,8 @@ spring:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
-      login-callback-url: https://dev-mi.sk.com/callback
-      login-error-url: https://dev-mi.sk.com/error
+      login-callback-url: https://mi.sk.com/callback
+      login-error-url: https://mi.sk.com/error
 
 
   web:
@@ -87,8 +99,8 @@ spring:
 
 redis:
   service-name: mymaster
-  redis-password: ${SKT_MI_REDIS_PASSWORD:wM2iWi7LmU}
-  sentinel-password: ${SKT_MI_REDIS_SENTINEL_PASSWORD:wM2iWi7LmU}
+  redis-password: ${SKT_MI_REDIS_PASSWORD}
+  sentinel-password: ${SKT_MI_REDIS_SENTINEL_PASSWORD}
   sentinel-host-node: redis.mi-redis
   sentinel-port: 26379
 
@@ -97,7 +109,7 @@ cache:
     time-to-live: 3600s
 
 jwt:
-  secret-key: ${SKT_MI_JWT_SECRET_KEY:5a13e7a8276275ac76d7656dce0a4430f26d3c89d08174d7cd67968c0eb1beb5}
+  secret-key: ${SKT_MI_JWT_SECRET_KEY}
   saml2:
     access-token-expiry: 15m
     refresh-token-expiry: 30m
@@ -117,21 +129,26 @@ api:
   model-agent:
     url: https://adxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
-    read-timeout: 20s
+    read-timeout: 120s
     api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-688a6f372985fa406fd70ca29731c0d4}
     app-id: ${SKT_MI_MODEL_AGENT_APP_ID:5fde7dbd-a380-41f3-978a-05798509a4f5}
-  ax-platform:
-    url: https://aip.sktai.io
+  auth-token:
+    url: https://mi.sk.com
     connection-timeout: 1s
     read-timeout: 20s
+  ax-platform:
+    url: https://adxp.adotbiz.ai
+    connection-timeout: 1s
+    read-timeout: 20s
+    datasource-id: e0e0e60d-8251-4425-b588-4f0a5131f9ae
 
 mail:
   smtp:
     host: smtp.worksmobile.com
     port: 465
-    username: no-reply-manure@manure.by-works.com
-    password: WT6y1MpWNyqY
-    from: no-reply-manure@manure.by-works.com
+    username: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
+    password: ${SKT_MI_NO_REPLY_MAIL_PW:Godqhr0630}
+    from: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
     properties:
       transport-protocol: smtp
       auth: true
@@ -149,18 +166,25 @@ mybatis:
 
 ncp:
   storage:
-    end-point: https://kr.object.ncloudstorage.com
-    region-name: kr-standard
-    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY:ncp_iam_BPASKR5qxBUswjrS1Mks}
-    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKSKRPpwm84gZWAwUGczRerIhqiDWBJFM}
-    bucket-name: skt-mi-d-osb-01
-    prefix: skt-mi-d-osb-ss-
+    end-point: https://zskc.object.ncpstorage.com
+    region-name: PCS03
+    access-key: ${SKT_MI_NCP_STORAGE_ACCESS_KEY}
+    secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY}
+    bucket-name: sk-mi-p-osb-03
+    prefix: sk-mi-p-osb-ss-
 
 aes:
-  secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}
+  secret-key: ${SKT_MI_AES_SECRET_KEY}
 
 server:
-  domain: https://dev-mi.sk.com
+  domain: https://mi.sk.com
+  insight:
+    latest:
+      except-provider-no: 5000
+  provider:
+    default:
+      languages:
+        5005: A_ENG
 
 features:
   pdf-viewer:

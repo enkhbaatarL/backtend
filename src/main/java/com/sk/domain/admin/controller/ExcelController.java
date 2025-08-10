@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.hibernate.annotations.processing.Exclude;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Profile("!dedicated")
 @Tag(name = "00. Excel API", description = "Excel API 입니다.")
 @Slf4j
 @Hidden

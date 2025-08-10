@@ -74,6 +74,7 @@ public record DynamicDataDetailReq(
                 .tableName(tableName)
                 .columns(columns)
                 .whereClause(whereClause)
+                .orderByColumns(orderByColumns)
                 .limit(limit)
                 .build();
     }

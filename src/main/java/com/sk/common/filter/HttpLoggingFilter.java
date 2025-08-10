@@ -71,6 +71,18 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
                 DataSourceContextHolder.clearDataSourceKey();
             }
 
+        } else if (isStreamResponse(requestUri)){
+            CustomContentCachingRequestWrapper cachingRequestWrapper = new CustomContentCachingRequestWrapper(request);
+            initializeMDC(cachingRequestWrapper);
+            logRequest(request);
+
+            try {
+                filterChain.doFilter(cachingRequestWrapper, response);
+            } finally {
+                logResponse();
+                MDCUtil.clear();
+                DataSourceContextHolder.clearDataSourceKey();
+            }
         } else {
 
             CustomContentCachingRequestWrapper cachingRequestWrapper = new CustomContentCachingRequestWrapper(request);
@@ -200,10 +212,21 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             || requestUri.matches(".*\\.(xlsx|xls|csv|pdf|zip|tar|7z|exe|jpg|png|mp4|mp3)$");
     }
 
+    private boolean isStreamResponse(String requestUri) {
+        return requestUri.matches(".*/stream/?(\\\\?.*)?$");
+    }
+
 
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE + 1;
     }
 
+
+    public static void main(String[] arges){
+
+        String test = "http://localhost:8080/api/v1/mi/mari-agent/chat-rooms/8926f090-952f-4003-8165-caf1127db1f3/stream";
+        System.out.println(test.matches(".*/stream/?(\\\\?.*)?$"));
+
+    }
 }

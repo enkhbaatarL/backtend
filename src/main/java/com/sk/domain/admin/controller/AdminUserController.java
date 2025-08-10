@@ -2,6 +2,7 @@ package com.sk.domain.admin.controller;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -40,6 +41,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @AccessIpCheck
 @Tag(name = "02. 사용자 API", description = "사용자 API 입니다.")
 @Slf4j
@@ -107,7 +109,7 @@ public class AdminUserController {
             @RequestBody @Valid UserReq.Insert userReq) {
         return BaseResponseFactory.create(adminUserService.saveUserInfo(userReq));
     }
-	
+
     @ApiOrder(4)
     @Parameters({
             @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),

@@ -49,6 +49,7 @@ public interface GoodsDataSourceDetailRepository extends JpaRepository<GoodsData
             WHERE gdsd.isDeleted = false
                 AND gdsd.goodsDataUseManagementCd = 'backend'
                 AND gdsd.goodsData = :goodsData
+            ORDER BY gdsd.goodsDataSourceNm asc
             """)
     List<GoodsDataSourceDetail> findByGoodsDataAndIsDeletedFalse(GoodsData goodsData);
 

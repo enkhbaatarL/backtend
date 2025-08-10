@@ -1,1 +1,36 @@
+/* skpc
+pluginManagement {
+    repositories {
+        maven {
+            url "https://skpc-nexus.skpc.cloudzcp.net/repository/maven-sre-proxy/"
+        }
+        gradlePluginPortal() // fallback
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            url "https://skpc-nexus.skpc.cloudzcp.net/repository/maven-sre-proxy/"
+        }
+    }
+}
+//*/
+
+//* 외부망
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven {
+            url = uri("https://repository.jboss.org/nexus/content/groups/public/")
+        }
+    }
+}
+//*/
 rootProject.name = 'mi'

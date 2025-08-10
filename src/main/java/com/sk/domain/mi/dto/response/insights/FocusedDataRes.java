@@ -13,6 +13,7 @@ public class FocusedDataRes implements FocusedDataDto {
     private int goodsDataNo;
     private String goodsDataNm;
     private LocalDateTime modifyDt;
+    private String modifyDtStr;
     private String goodsDataCategoryCd;
     private boolean isViewable;
 
@@ -20,7 +21,7 @@ public class FocusedDataRes implements FocusedDataDto {
             int providerNo, String providerNm,
             int goodsNo, String goodsNm,
             int goodsDataNo, String goodsDataNm,
-            LocalDateTime modifyDt,
+            String modifyDtStr, LocalDateTime modifyDt,
             String goodsDataCategoryCd,
             boolean isViewable) {
         this.providerNo = providerNo;
@@ -29,6 +30,7 @@ public class FocusedDataRes implements FocusedDataDto {
         this.goodsNm = goodsNm;
         this.goodsDataNo = goodsDataNo;
         this.goodsDataNm = goodsDataNm;
+        this.modifyDtStr = modifyDtStr;
         this.modifyDt = modifyDt;
         this.goodsDataCategoryCd = goodsDataCategoryCd;
         this.isViewable = isViewable;

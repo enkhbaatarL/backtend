@@ -6,7 +6,7 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       company-cd: master
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://localhost:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: ${SKT_MI_DB_USERNAME_MASTER:min}
       password: ${SKT_MI_DB_PASSWORD_MASTER:min}
@@ -19,34 +19,8 @@ spring:
         validation-timeout: 3000
         minimum-idle: 5
     tenants:
-      - company-cd: SKCC
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 10
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 5
-      - company-cd: SKT
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 10
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 5
       - company-cd: midb
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://1.tcp.jp.ngrok.io:20789/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://localhost:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${SKT_MI_DB_USERNAME_MASTER:min}
         password: ${SKT_MI_DB_PASSWORD_MASTER:min}
@@ -66,9 +40,9 @@ spring:
 
   data:
     redis:
-      host: bold-trout-35521.upstash.io
+      host: localhost
       port: 6379
-      password: AYrBAAIjcDEzZmM2YTBkNWNmNzU0NTRjOTQzZmZhNGJiYjFkZjYxNnAxMA
+      password: no used
       command-timeout: 10s
 
   security:
@@ -127,7 +101,7 @@ api:
   model-agent:
     url: https://devadxp.adotbiz.ai/api/v1/agent_gateway
     connection-timeout: 1s
-    read-timeout: 20s
+    read-timeout: 120s
     api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-778bce5137c4f50d13dd38641671a34b}
     app-id: ${SKT_MI_MODEL_AGENT_APP_ID:e3064bc4-1871-4072-8f79-ed5271c50f81}
   auth-token:
@@ -176,6 +150,16 @@ aes:
 
 server:
   domain: http://localhost:8080
+  insight:
+    latest:
+      except-provider-no: 5000
+    focused:
+      threshold-day: 50
+  provider:
+    default:
+      languages:
+        5005: A_ENG
+
 
 features:
   pdf-viewer:

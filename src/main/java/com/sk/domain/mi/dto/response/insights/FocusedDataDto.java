@@ -17,6 +17,7 @@ public interface FocusedDataDto {
     String getGoodsDataNm();
 
     LocalDateTime getModifyDt();
+    String getModifyDtStr();
 
     String getGoodsDataCategoryCd();
 }

@@ -1,5 +1,6 @@
 package com.sk.domain.shared.controller;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -20,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @Tag(name = "02. Auth API", description = "Auth API 입니다.")
 @Slf4j
 @RestController

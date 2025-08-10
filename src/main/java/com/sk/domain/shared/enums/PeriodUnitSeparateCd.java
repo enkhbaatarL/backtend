@@ -1,6 +1,7 @@
 package com.sk.domain.shared.enums;
 
 import com.sk.domain.shared.enums.chart.Interval;
+import com.sk.domain.shared.enums.chart.Range;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -29,6 +30,15 @@ public enum PeriodUnitSeparateCd {
             case W -> Interval.ONE_WEEK;
             case M -> Interval.ONE_MONTH;
             case Y -> Interval.ONE_YEAR;
+        };
+    }
+
+    public Range rangeInterval() {
+        return switch (this) {
+            case D -> Range.SIX_MONTHS;
+            case W -> Range.ONE_YEAR;
+            case M -> Range.ONE_YEAR;
+            case Y -> Range.TWO_YEARS;
         };
     }
 

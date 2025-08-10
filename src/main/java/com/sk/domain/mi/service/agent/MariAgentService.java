@@ -1,8 +1,14 @@
 package com.sk.domain.mi.service.agent;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.interceptor.ApiAccessLogService;
+import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.MDCUtil;
 import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.ChatRoomReq;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
@@ -10,6 +16,7 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.service.ProhibitedWordService;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
@@ -26,14 +33,19 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+
+import static com.sk.common.enums.ResultCode.Error.BIZ_RULE_VIOLATION;
 
 @Slf4j
 @Service
@@ -43,6 +55,7 @@ public class MariAgentService {
 
     @Value("${features.validation.model-agent.write-length:-1}")
     private int writeLimit;
+    @Value("${api.model-agent.read-timeout:10s}") private Duration agentReadTimeout;
 
     @Value("${api.model-agent.app-id}")
     private String appId;
@@ -59,7 +72,9 @@ public class MariAgentService {
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
+    private final ApiAccessLogService apiAccessLogService;
 
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 주어진 분과 코드로 필터링된 주요 질의문 목록을 조회합니다.
@@ -172,6 +187,92 @@ public class MariAgentService {
     }
 
     /**
+     * 주어진 채팅룸 ID와 사용자가 입력한 질문을 기반으로 Q&A를 생성합니다. ( Stream )
+     *
+     * @param chatRoomId 채팅룸 ID
+     * @param talkReq    사용자가 입력한 질문 객체
+     * @param user       요청한 사용자 객체
+     * @return 생성된 Q&A 응답 객체
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public SseEmitter postChatRoomStream(UUID chatRoomId, QnaReq.Insert talkReq, User user) {
+
+        SseEmitter emitter = new SseEmitter(agentReadTimeout.toMillis());
+
+        ChatbotTalk talk = chatbotTalkService.findOrCreateTalk(chatRoomId, talkReq, user);
+
+        validateTalkOwnership(talk, user, chatRoomId.toString());
+
+        AnswerStatusCd validationStatus = validateQuestion(talkReq.question());
+
+        if (validationStatus != null) {
+            ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.ofFail(talkReq, talk, validationStatus));
+            emitter.completeWithError(ApiErrorException.of(BIZ_RULE_VIOLATION));
+        }
+
+        ChatbotTalkQna qna = chatbotTalkQnaRepository.save(ChatbotTalkQna.of(talkReq, talk));
+
+        // 히스토리 조회
+        List<ChatbotTalkQna> histories = chatbotTalkQnaRepository.findByChatbotTalk_ChatbotTalkUuidAndIsDeletedFalse(chatRoomId.toString())
+            .stream()
+            .sorted(Comparator.comparing(ChatbotTalkQna::getChatbotTalkQnaNo))
+            .toList();
+
+        Map<String, String> mdcContextMap = MDCUtil.copyAndGetContextMap();
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        try {
+            // 스트림 처리
+            mariAgentGatewayService.executeModelAgentStream(talkReq, qna, histories)
+                .subscribe(
+                    chunk -> {
+                        MDCUtil.restoreContextMap(mdcContextMap);
+                        SecurityContextHolder.setContext(securityContext);
+                        try {
+                            log.info("SSE 청크 전송: {}", chunk);
+                            QnaRes qnaRes = Optional.ofNullable(chunk)
+                            .map(answer -> QnaRes.of(qna, answer))
+                                .orElse(QnaRes.of(qna));
+                            emitter.send(SseEmitter.event()
+                                .data(BaseResponseFactory.create(qnaRes)));
+                        } catch (IOException e) {
+                            log.error("SSE 전송 중 오류", e);
+                            emitter.completeWithError(e);
+                        }
+                    },
+                    error -> {
+                        MDCUtil.restoreContextMap(mdcContextMap);
+                        SecurityContextHolder.setContext(securityContext);
+                        log.error("스트림 처리 중 오류", error);
+                        emitter.completeWithError(error);
+                        apiAccessLogService.writeApiAccessLog();
+                    },
+                    () -> {
+                        MDCUtil.restoreContextMap(mdcContextMap);
+                        SecurityContextHolder.setContext(securityContext);
+                        try {
+                            log.info("스트림 채팅 완료");
+                            emitter.send(SseEmitter.event()
+                                .name("complete")
+                                .data("대화가 완료되었습니다."));
+                            emitter.complete();
+                        } catch (Exception e) {
+                            log.error("스트림 완료 처리 중 오류", e);
+                            emitter.completeWithError(e);
+                        } finally {
+                            apiAccessLogService.writeApiAccessLog();
+                        }
+                    }
+                );
+
+        } catch (Exception e) {
+            log.error("스트림 채팅 초기화 중 오류", e);
+            emitter.completeWithError(e);
+        }
+
+        return emitter;
+    }
+
+    /**
      * 주어진 ID와 Q&A 번호를 사용하여 Q&A의 평가 정보를 업데이트합니다.
      *
      * @param chatRoomId       채팅룸 ID
@@ -262,7 +363,7 @@ public class MariAgentService {
      */
     private void validateTalkOwnership(ChatbotTalk talk, User currentUser, String requestedChatRoomId) {
         if (!Objects.equals(currentUser.getUserNo(), talk.getUser().getUserNo())) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "You can only control talks(chatRooms) you started. (chatRoomId: %s)".formatted(requestedChatRoomId));
+            throw AppErrorException.of(BIZ_RULE_VIOLATION, "You can only control talks(chatRooms) you started. (chatRoomId: %s)".formatted(requestedChatRoomId));
         }
     }
 
@@ -286,5 +387,4 @@ public class MariAgentService {
 
         return null;
     }
-
 }

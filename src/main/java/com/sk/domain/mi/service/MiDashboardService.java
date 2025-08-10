@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.sk.common.config.database.DataSourceContextHolder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -38,6 +39,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -135,6 +137,9 @@ public class MiDashboardService {
 
     private static final String EXCEL_SHEET_NAME = "dashboard_chart";
 
+    @Value("#{'${server.insight.latest.except-provider-no}'.split(',')}")
+    private List<Integer> exceptProviderNoList;
+
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -209,7 +214,7 @@ public class MiDashboardService {
      */
     public List<LatestInsightsRes> getLatestInsights(int companyNo) {
 
-        List<LatestInsightsDto> datas = goodsDataRepository.findLatestInsights(companyNo, PageRequest.of(0, 5));
+        List<LatestInsightsDto> datas = goodsDataRepository.findLatestInsights(companyNo, exceptProviderNoList, PageRequest.of(0, 5));
 
         return datas.stream()
                 .map(data -> new LatestInsightsRes(
@@ -329,6 +334,8 @@ public class MiDashboardService {
                     if (goodsDataSourceDetail == null || goodsDataSourceDetail.getQueryConditionCntt() == null) {
                         return Stream.empty();
                     }
+
+                    DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
 
                     String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
@@ -659,7 +666,13 @@ public class MiDashboardService {
 
                         // 예측 데이터인 경우
                         if (chartPredictSettingDetail.getIsChartLinePredictVal() && !rawData.isEmpty()) {
-                            lastUpdated = DateUtil.parseDate(rawData.get(rawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                            String baseYm = DateUtil.toYearMonth(baseDate);
+                            List<Map<String, Object>> baseYmRawData = rawData.stream()
+                                .filter(
+                                    r->((String)r.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)).substring(0, 6).equals(baseYm)
+                                )
+                                .toList();
+                            lastUpdated = DateUtil.parseDate(baseYmRawData.get(baseYmRawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                             dashboardDataSource = DashboardDataSource.of(goodsDataSource, chartPredictSettingDetail);
                         }
 
@@ -668,7 +681,7 @@ public class MiDashboardService {
 
                         // 월별 평균 계산
                         monthlyAverages = calculateMonthlyAverages(monthlyDates, rawData, dateColumnName, defaultDataColumnName,
-                                chartPredictSettingDetail.getIsChartLinePredictVal());
+                                chartPredictSettingDetail.getIsChartLinePredictVal(), lastUpdated);
 
                         // 캐시 저장
                         DashboardDataCache dashboardDataCache = DashboardDataCache.of(monthlyAverages, lastUpdated, dashboardDataSource);
@@ -740,7 +753,7 @@ public class MiDashboardService {
      * @return List<DashboardChartRawData>
      */
     public List<DashboardChartRawData> calculateMonthlyAverages(List<LocalDate> monthlyDates, List<Map<String, Object>> rawData,
-            String dateColumnName, String defaultDataColumnName, boolean isPredict) {
+            String dateColumnName, String defaultDataColumnName, boolean isPredict, LocalDate lastUpdated) {
         // 결과 리스트
         List<DashboardChartRawData> monthlyAverages = new ArrayList<>();
 
@@ -754,15 +767,21 @@ public class MiDashboardService {
             String yearMonth = DateUtil.toYyyyMm(DateUtil.parseDate(row.get(dateColumnName)));
             String predictDate = null;
 
-            // 예측 데이터인 경우에만 예측수행날짜가 있다
-            if (isPredict) {
-                predictDate = (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
-                monthlyPredictDates.put(yearMonth, predictDate);
-            }
-
             // 기본 데이터 칼럼 값
             Object val = row.get(defaultDataColumnName);
             Double valueData;
+
+            // 예측 데이터인 경우에만 예측수행날짜가 있다
+            if (isPredict) {
+                predictDate = (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+                // 예측 수행 날짜가 다르면 skip ( 제외 )
+                if(predictDate.equals(DateUtil.toYmd(lastUpdated))){
+                    monthlyPredictDates.put(yearMonth, predictDate);
+                }else{
+                    continue;
+                }
+                // monthlyPredictDates.put(yearMonth, predictDate);
+            }
 
             // 기본 데이터 칼럼 값 형식 변환 Object -> Double
             if (val == null) {
@@ -1330,7 +1349,7 @@ public class MiDashboardService {
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
 
         String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
-
+        DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
         return DashboardChartFactorCategoryRes.of(dashboardMapper.chartFactorCategory(queryWhere, predictDate, date));
     }
 
@@ -1351,6 +1370,7 @@ public class MiDashboardService {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
 
+        DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
         String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
         // 차트 주요 요인 분석 조회 (+)
@@ -1405,6 +1425,7 @@ public class MiDashboardService {
         GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository.findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "GoodsDataSourceDetail not found"));
 
+        DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
         String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
 
         // 설명력 조회
@@ -1454,7 +1475,7 @@ public class MiDashboardService {
 
             // 월별 평균 계산
             List<DashboardChartRawData> monthlyAverages = isPermitted ? calculateMonthlyAverages(monthlyDates, graphRawData, actualDateColumnName,
-                    actualDefaultDataColumnName, false) : null;
+                    actualDefaultDataColumnName, false, null) : null;
 
             DashboardChartFactorGraphMetadata graphMetadata = DashboardChartFactorGraphMetadata.of(
                     actualGoodsDataSourceDetail, chartPredictSetting);

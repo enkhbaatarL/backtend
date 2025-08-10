@@ -2,6 +2,7 @@ package com.sk.domain.shared.controller;
 
 import java.net.URI;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @Tag(name = "01. SAML API", description = "SAML API 입니다.")
 @Slf4j
 @RestController

@@ -1,5 +1,6 @@
 package com.sk.domain.mi.controller;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +40,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @Tag(name = "06. 알림 관리 API", description = "알림 관리 API 입니다.")
 @RestController
 @RequestMapping("/api/v1/mi/notification-management")

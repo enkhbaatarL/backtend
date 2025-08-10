@@ -11,10 +11,10 @@ spring:
         enabled: false
 
   session:
-    timeout: 30m
+    store-type: redis
     redis:
-      flush-mode: on-save        # 세션 저장 타이밍 설정 (on-save 또는 immediate)
-      namespace: spring:session  # Redis key prefix (파드 간 세션 충돌 방지에 유리)
+      flush-mode: on-save
+      namespace: spring:session
 
   jpa:
     hibernate:
@@ -46,6 +46,7 @@ server:
       protocol-header: x-forwarded-proto
       remote-ip-header: x-forwarded-for
   port: 8080
+#  address: 127.0.0.1
 
 springdoc:
   api-docs:
@@ -55,3 +56,6 @@ springdoc:
     tags-sorter: alpha
     persist-authorization: true
     doc-expansion: none
+
+security:
+  enabled: true

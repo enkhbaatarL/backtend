@@ -79,6 +79,7 @@ public class ObjectStorageService {
     }
 
     public S3ObjectInputStream getObjectContent(String bucketName, String fileName) {
+        log.info("Get Object Content : BucketName={}, filename={}", bucketName, fileName);
         S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
         return s3Object != null ? s3Object.getObjectContent() : null;
     }
@@ -86,7 +87,7 @@ public class ObjectStorageService {
     /**
     * 파일을 업로드 한다.
     *
-    * @param MultipartFile 단일 파일 업로드
+    * @param file 단일 파일 업로드
     * @param bucketName 버킷 이름
     * @param fileName 파일 Full Path
     * @param isPublic 공개 여부
@@ -182,6 +183,7 @@ public class ObjectStorageService {
     * @return byte[] 파일 데이타
     */
     public byte[] downloadFile(String bucketName, String fileName) throws IOException {
+        log.info("Download File : BucketName={}, filename={}", bucketName, fileName);
         S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
 
         S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
@@ -246,7 +248,7 @@ public class ObjectStorageService {
     *
     * @param bucketName 버킷 이름
     * @param fileName 파일 Full Path
-    * @return 
+    * @return
     */
     public String getPresignedUrl(String bucketName, String fileName) {
         // presigned URL 만료 시간 설정 (예: 1시간 후 만료)

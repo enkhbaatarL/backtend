@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 
+@Profile("!dedicated")
 @Tag(name = "03. Oauth2 API", description = "Oauth2 API 입니다.")
 @Slf4j
 @RestController

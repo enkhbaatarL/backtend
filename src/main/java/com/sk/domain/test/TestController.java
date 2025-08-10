@@ -3,6 +3,7 @@ package com.sk.domain.test;
 import java.io.IOException;
 import java.util.Map;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +41,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @Tag(name = "00. 테스트 샘플 API", description = "테스트 샘플 API 입니다.")
 @Slf4j
 @RestController

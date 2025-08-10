@@ -3,6 +3,7 @@ package com.sk.domain.admin.controller;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +55,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @AccessIpCheck
 @Tag(name = "04. 게시판 관리 API", description = "게시판 관리 API 입니다.")
 @Slf4j

@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +18,7 @@ import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-
+@Profile("!dedicated")
 @Tag(name = "00. Company API", description = "Company API 입니다.")
 @RestController
 @RequestMapping("/api/v1/mi/company-management")

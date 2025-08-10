@@ -29,6 +29,7 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
                 AND ccpm.customerCompany.customerCompanyNo = :companyNo
                 AND p.isUsed = true
                 AND p.isDeleted = false
+                AND p.isUnstructuredDataOwned = true
                 AND ccpm.isUsed = true
                 AND ccpm.isDeleted = false
             ORDER BY ccd.codeRnk

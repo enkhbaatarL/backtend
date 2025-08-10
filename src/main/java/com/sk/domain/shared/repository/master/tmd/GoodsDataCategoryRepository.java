@@ -75,6 +75,8 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
             """)
     List<UnstructuredDataRes> findUnstructuredDataByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
 
+
+
     @Query(value = """
             SELECT gdc
             FROM GoodsDataCategory gdc
@@ -121,4 +123,16 @@ public interface GoodsDataCategoryRepository extends JpaRepository<GoodsDataCate
                 AND gdc.goodsData.goodsDataNo = :goodsDataNo
             """)
     List<GoodsDataCategory> findGoodsDataCategoryByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
+
+    @Query(value = """
+            SELECT gdc
+            FROM GoodsDataCategory gdc
+            WHERE gdc.isDeleted = false
+                AND gdc.goodsData.goodsDataNo = :goodsDataNo
+                AND gdc.goodsDataCategoryCd = 'PUBDATE'
+            ORDER BY gdc.goodsDataKeywordNm DESC
+            """)
+    List<GoodsDataCategory> findPubDateByGoodsDataNo(@Param("goodsDataNo") Integer goodsDataNo);
+
+
 }

@@ -6,14 +6,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -59,7 +52,6 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.MarketDataChartSettingRepository;
@@ -112,8 +104,6 @@ public class MiMarketDataService {
     /**
      * 마켓 데이터 조회
      *
-     * @param customerCompanyNo 고객사 번호
-     * @param authentication 인증 정보
      * @return 마켓 데이터 목록
      */
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
@@ -253,10 +243,10 @@ public class MiMarketDataService {
             }
 
             // 월별 데이터로 변환
-            List<MarketDataChartRawData> monthlyData = convertToMonthlyData(rawData, dateColumnName, defaultDataColumnName,
+            List<MarketDataChartRawData> mainDashboardData = convertToDashBoardData(rawData, dateColumnName, defaultDataColumnName,
                     LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
-            MarketDataChart mainChart = MarketDataChart.of(monthlyData);
+            MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
 
             // 기획상 Rank 1,2순위만 계산
             CalculatePeriodChangeRes calculatePeriodChangeRes = null;
@@ -275,7 +265,10 @@ public class MiMarketDataService {
 
             // 비교군 데이터소스 조회
             List<MarketDataChart> compareCharts = new ArrayList<>();
-            if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
+
+            // 비교군 표시 안함
+            if (false) {
+            //if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
                 for (DataSourceGroupMapping dataSourceGroupMapping : dataSourceGroupMappings) {
                     GoodsDataSourceDetail compareGoodsDataSource = dataSourceGroupMapping.getCompareGoodsDataSourceDetail();
 
@@ -287,9 +280,37 @@ public class MiMarketDataService {
 
                     // 비교군 원시 데이터 조회
                     List<Map<String, Object>> compareRawData = getMarketDataRows(compareGoodsDataSource, compareDateColumnName, START_DATE, END_DATE);
-                    // 비교군 월별 데이터로 변환
-                    List<MarketDataChartRawData> compareChart = convertToMonthlyData(compareRawData, compareDateColumnName,
+                    // 비교군 데시보드형 데이터로 변환
+                    List<MarketDataChartRawData> compareChart = convertToDashBoardData(compareRawData, compareDateColumnName,
                             compareDefaultDataColumnName, LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
+
+                    if(!Objects.equals(mainGoodsDataSource.getGoodsData().getGoodsDataNo(), compareGoodsDataSource.getGoodsData().getGoodsDataNo())){
+                        // 다른 데이터 이면, 그래프의 상하위가 비슷하게 변경
+                        Double mainMax = mainDashboardData.stream().filter(r->r.value() != null)
+                            .max(Comparator.comparing(MarketDataChartRawData::value))
+                            .orElse(MarketDataChartRawData.of(null, null)).value();
+
+                        Double mainMin = mainDashboardData.stream().filter(r->r.value() != null)
+                            .min(Comparator.comparing(MarketDataChartRawData::value))
+                            .orElse(MarketDataChartRawData.of(null, null)).value();
+
+                        Double currentMax = compareChart.stream().filter(r->r.value() != null)
+                            .max(Comparator.comparing(MarketDataChartRawData::value))
+                            .orElse(MarketDataChartRawData.of(null, null)).value();
+
+                        Double currentMin = compareChart.stream().filter(r->r.value() != null)
+                            .min(Comparator.comparing(MarketDataChartRawData::value))
+                            .orElse(MarketDataChartRawData.of(null, null)).value();
+
+                        if(mainMax != null && mainMin != null && currentMax != null && currentMin != null){
+                            compareChart = compareChart.stream()
+                                .map(r->{
+                                    if(r.value() == null) return r;
+                                    return MarketDataChartRawData.of(r.date(),(r.value() - currentMin) * (mainMax-mainMin) / (currentMax-currentMin) + mainMin);
+                                })
+                                .toList();
+                        }
+                    }
                     compareCharts.add(MarketDataChart.of(compareChart));
                 }
             }
@@ -555,7 +576,6 @@ public class MiMarketDataService {
      * @param startDate             데이터 범위 시작일 (포함, yyyy-MM-dd 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate,
             LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null) {
@@ -578,7 +598,6 @@ public class MiMarketDataService {
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getIndexStartDateData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
 
         if (goodsDataSourceDetail == null || dateColumnName == null) {
@@ -608,7 +627,6 @@ public class MiMarketDataService {
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getLastUpdateDtData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
 
         if (goodsDataSourceDetail == null || dateColumnName == null) {
@@ -638,7 +656,6 @@ public class MiMarketDataService {
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getRecentChangeRate(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
             String defaultDataColumnName) {
         if (goodsDataSourceDetail == null || dateColumnName == null) {
@@ -685,13 +702,31 @@ public class MiMarketDataService {
      * @param startDate 월별 평균 계산 기준 날짜
      * @return 월별 평균 계산 및 DTO 생성
      */
-    private List<MarketDataChartRawData> convertToMonthlyData(List<Map<String, Object>> rawData,
-            String dateColumnName,
-            String defaultDataColumnName,
-            LocalDate startDate) {
+    private List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
+                                                                String dateColumnName,
+                                                                String defaultDataColumnName,
+                                                                LocalDate startDate) {
         if (rawData == null || rawData.isEmpty()) {
             return Collections.emptyList();
         }
+
+        int size = rawData.size();
+        int limit = 90;
+
+        return rawData.stream().skip(size > limit ? size - limit : 0)
+            .map(r->{
+                String date = DateUtil.toYmdHyphen(DateUtil.parseDate(r.get(dateColumnName)));
+                Object value = r.get(defaultDataColumnName);
+
+                return MarketDataChartRawData.builder()
+                    .date(date)
+                    .value(value == null ? null : Double.parseDouble(value.toString()))
+                    .build()
+                ;
+            })
+            .toList();
+
+        /*
 
         // startDate를 1년 전 다음 달 첫 번째 날로 조정 (예: 2024-06-01)
         LocalDate adjustedStartDate = startDate.withDayOfMonth(1);
@@ -763,6 +798,7 @@ public class MiMarketDataService {
             currentMonth = currentMonth.plusMonths(1);
         }
         return monthlyData;
+        */
     }
 
     /**
@@ -830,7 +866,9 @@ public class MiMarketDataService {
         }
 
         // 오늘
-        LocalDate today = LocalDate.now();
+        //LocalDate today = LocalDate.now();
+        Map<String,Object> lastDayEntity = rawData.get(rawData.size() -1);
+        LocalDate today = DateUtil.parseDate(lastDayEntity.get(dateColumnName));
         // 어제
         LocalDate yesterday = today.minusDays(1);
 
@@ -1098,7 +1136,6 @@ public class MiMarketDataService {
             LocalDateTime modDtm) {
     }
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     private LastValueDto getLastValue(String targetDbNm, String targetTableNm, String queryConditionCntt, String dateColumnName,
             String valueColumnName) {
 
@@ -1111,7 +1148,7 @@ public class MiMarketDataService {
         try {
             String sql = String.format("""
                     SELECT %s, mod_dtm
-                    FROM %s.%s
+                    FROM `%s`.%s
                     WHERE %s
                     ORDER BY %s DESC
                     LIMIT 1

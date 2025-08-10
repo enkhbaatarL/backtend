@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,21 +33,41 @@ public record HistoryDataRes(
 
         Map<String, BigDecimal> forecastMap = forecastResults.stream()
             .filter(r -> r != null && r.getPredictResultDate() != null && r.getPredictResultValue() != null)
-            .collect(Collectors.toMap(
+            .collect(Collectors.groupingBy(
                 r -> DateUtil.format(DateUtil.fromYmd(r.getPredictResultDate()), periodCd),
-                TargetPredictResultData::getPredictResultValue,
-                (v1, v2) -> v2, // 중복 키는 뒤에 온 값으로
-                TreeMap::new
+                Collectors.collectingAndThen(
+                    Collectors.toList(),
+                    r -> r.stream()
+                        .map(TargetPredictResultData::getPredictResultValue)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(new BigDecimal(r.size()), 4, RoundingMode.HALF_UP)
+                )
             ));
+//            .collect(Collectors.toMap(
+//                r -> DateUtil.format(DateUtil.fromYmd(r.getPredictResultDate()), periodCd),
+//                TargetPredictResultData::getPredictResultValue,
+//                (v1, v2) -> v2, // 중복 키는 뒤에 온 값으로
+//                TreeMap::new
+//            ));
 
         Map<String, BigDecimal> counterpartMap = counterPartResults.stream()
             .filter(r -> r != null && r.getDate() != null && r.getValue() != null)
-            .collect(Collectors.toMap(
+            .collect(Collectors.groupingBy(
                 r -> DateUtil.format(r.getDate().toLocalDate(), periodCd),
-                DoubleValueResultData::getValue,
-                (v1, v2) -> v2,
-                TreeMap::new
+                Collectors.collectingAndThen(
+                    Collectors.toList(),
+                    r -> r.stream()
+                        .map(DoubleValueResultData::getValue)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(new BigDecimal(r.size()), 4, RoundingMode.HALF_UP)
+                )
             ));
+//            .collect(Collectors.toMap(
+//                r -> DateUtil.format(r.getDate().toLocalDate(), periodCd),
+//                DoubleValueResultData::getValue,
+//                (v1, v2) -> v2,
+//                TreeMap::new
+//            ));
 
         BigDecimal maxForecast = forecastMap.values().stream().max(BigDecimal::compareTo).orElse(null);
         BigDecimal minForecast = forecastMap.values().stream().min(BigDecimal::compareTo).orElse(null);
@@ -62,16 +83,16 @@ public record HistoryDataRes(
         BigDecimal prevCounter  = null;
 
         // Monthly 예측값, 예측 시점 달 실제가 또는 선물가를 포함
-        if (PeriodUnitSeparateCd.M == periodCd) {
-            result.add(HistoryDataRes.builder()
-                .date(DateUtil.format(fulfillDate, periodCd))
-                .counterpart(PriceEntry.of(
-                    isFuture ? PriceType.FUTURE : PriceType.ACTUAL,
-                    PriceStat.ifPermittedOrNull(counterpartMap.get(DateUtil.format(fulfillDate, periodCd)), null, false, false, isCounterPartPermitted),
-                    isCounterPartPermitted
-                ))
-                .build());
-        }
+//        if (PeriodUnitSeparateCd.M == periodCd) {
+//            result.add(HistoryDataRes.builder()
+//                .date(DateUtil.format(fulfillDate, periodCd))
+//                .counterpart(PriceEntry.of(
+//                    isFuture ? PriceType.FUTURE : PriceType.ACTUAL,
+//                    PriceStat.ifPermittedOrNull(counterpartMap.get(DateUtil.format(fulfillDate, periodCd)), null, false, false, isCounterPartPermitted),
+//                    isCounterPartPermitted
+//                ))
+//                .build());
+//        }
 
         for (String date : dates) {
 

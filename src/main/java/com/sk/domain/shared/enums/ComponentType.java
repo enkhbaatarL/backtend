@@ -10,4 +10,5 @@ public enum ComponentType {
     OECD_CLI, // 실트론 RPA: OECD CLI
     TSMC, // 실트론 RPA: TSMC
     PMI_MANUFACTURE, // 실트론 RPA: PMI 제조업
+    GLOBAL_OIL, // 국제유가 크롤링
 }

@@ -3,6 +3,7 @@ package com.sk.domain.mi.service;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -63,28 +65,35 @@ public class MiInsightsService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
+    @Value("#{'${server.insight.latest.except-provider-no}'.split(',')}")
+    private List<Integer> exceptProviderNoList;
+
+    @Value("${server.insight.focused.threshold-day:7}")
+    private int focusedThresholdDay;
+
+
+
     /**
      * Focused 목록 조회
-     * 
+     *
      * 최신 등록된 데이터 조회
      * 조회결과 000개 있음
      * a. 000개중 Insight: 5개 출력
-     * b. 그외 아래 순서대로 최신순: 3개출력
+     * b. 그외 아래 순서대로 최신순: 3개출력 ( Asset 제외 )
      *  (A) Commodity Market Report
      *  (B) Company Report
      *  (C) Asset Report
      *  (D) Deal Insight
      *  (E) Inform
      * 8개 정렬은 최신 등록순
-     * 
+     *
      * @param companyNo
      * @return List<FocusedDataRes>
      */
     public List<FocusedDataRes> getFocused(int companyNo) {
-        LocalDateTime threshold = LocalDateTime.now().minusDays(30);
 
         // 캐시에서 데이터 조회
-        String cacheKey = "FocusedData::companyNo:" + companyNo + "::threshold:" + threshold;
+        String cacheKey = "FocusedData::companyNo:" + companyNo + "::threshold:" + focusedThresholdDay;
         String cachedData = redisTemplate.opsForValue().get(cacheKey);
         if (cachedData != null) {
             try {
@@ -97,7 +106,10 @@ public class MiInsightsService {
             }
         }
 
-        List<FocusedDataDto> dataList = goodsDataRepository.findFocusedData(companyNo, threshold);
+        /*
+         SQL 에 LNG와 Oil 검색 추가
+         */
+        List<FocusedDataDto> dataList = goodsDataRepository.findFocusedData(companyNo, focusedThresholdDay, exceptProviderNoList);
 
         List<FocusedDataRes> result = new ArrayList<>();
         List<FocusedDataRes> mutableList = dataList.stream()
@@ -105,7 +117,7 @@ public class MiInsightsService {
                         res.getProviderNo(), res.getProviderNm(),
                         res.getGoodsNo(), res.getGoodsNm(),
                         res.getGoodsDataNo(), res.getGoodsDataNm(),
-                        res.getModifyDt(), res.getGoodsDataCategoryCd(), false))
+                        res.getModifyDtStr(), convertToDateTime(res.getModifyDtStr()), res.getGoodsDataCategoryCd(), false))
                 .collect(Collectors.toList());
 
         Map<String, Integer> quotas = new LinkedHashMap<>();
@@ -114,6 +126,10 @@ public class MiInsightsService {
         for (GoodsDataCategoryRes documentType : documentTypes) {
             if (documentType.codeId().equals("A_INSIGHT")) {
                 quotas.put(documentType.codeId(), 5);
+            } else if(documentType.codeId().equals("A_CMMDT_MRKT_RPT")){
+                quotas.put(documentType.codeId(), 2);
+            } else if(documentType.codeId().equals("A_ASST_RPT")){
+                quotas.put(documentType.codeId(), 0);
             } else {
                 quotas.put(documentType.codeId(), 1);
             }
@@ -184,7 +200,9 @@ public class MiInsightsService {
      * @param keyword   검색어
      * @param sort     정렬 타입
      * @param period    기간 타입
-     * @param filter 고급 필터
+     * @param docFilters 고급 필터
+     * @param provFilters 고급 필터
+     * @param langFilters 고급 필터
      * @return PaginationRes<InsightsDataRes>
      */
     public PaginationRes<InsightsDataRes> getInsights(
@@ -232,7 +250,9 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_nm AS goodsDataNm,")
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
                 .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
-                .append(" tgd.mod_dtm AS modifyDt");
+                // .append(" tgd.mod_dtm AS modifyDt")
+                .append(" max(tgc.gds_data_keywd_nm) AS modifyDt")
+            ;
 
         StringBuilder where = new StringBuilder()
                 .append(" tcp.del_yn = 'N' AND tcp.use_yn = 'Y' AND tcp.cust_cpny_no = :companyNo")
@@ -273,21 +293,34 @@ public class MiInsightsService {
         }
 
         switch (period) {
+            /*
             case ONE_DAY -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
             case ONE_WEEK -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
             case ONE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
             case THREE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
             case SIX_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
             case TWELVE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
+            */
+            case ONE_DAY -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
+            case ONE_WEEK -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
+            case ONE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
+            case THREE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
+            case SIX_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
+            case TWELVE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
             case ALL_DATES -> {
             } // no filter
         }
 
+        // 오늘 날짜 포함 이전 날짜만 조회
+        where.append(" AND tgc.gds_data_keywd_nm <= DATE_FORMAT(CURDATE(), '%Y%m%d')");
+
         String orderBy = switch (sort) {
-            case NEWEST -> " ORDER BY tgd.mod_dtm DESC ";
-            case OLDEST -> " ORDER BY tgd.mod_dtm ASC ";
+            case NEWEST -> " ORDER BY modifyDt DESC ";
+            case OLDEST -> " ORDER BY modifyDt ASC ";
             case MOST_RELEVANT -> " ";
         };
+
+        String grouptBy = " GROUP BY tgd.gds_data_no";
 
         select.append(" ");
         where.append(" ");
@@ -300,9 +333,10 @@ public class MiInsightsService {
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatactgrl tgc ON tgc.gds_data_no = tgd.gds_data_no AND tgc.del_yn = 'N' AND tgc.gds_data_ctgr_cd = 'PUBDATE'
                 WHERE
                 """ + where + """
-                """ + orderBy;
+                """ + grouptBy + orderBy;
 
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
@@ -311,9 +345,10 @@ public class MiInsightsService {
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatactgrl tgc ON tgc.gds_data_no = tgd.gds_data_no AND tgc.del_yn = 'N' AND tgc.gds_data_ctgr_cd = 'PUBDATE'
                 WHERE
                 """
-                + where;
+                + where ;
 
         Query contentQuery = entityManager.createNativeQuery(contentSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
@@ -370,12 +405,16 @@ public class MiInsightsService {
                         (String) row[6], // goodsDataExpn
                         (String) row[7], // goodsDataSummaryCntt
                         getGoodsDataCategory((Integer) row[4]), // goodsDataCategory
-                        ((Timestamp) row[8]).toLocalDateTime(), // modifyDt
+                        convertToDateTime((String)row[8]), // modifyDt
                         permissionRes.getGoodsViewableMap(companyNo).getOrDefault((Integer) row[2], Boolean.FALSE))) // viewable
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
+    }
+
+    private static LocalDateTime convertToDateTime(String date){
+        return LocalDateTime.parse(date + " 00:00:00", DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss"));
     }
 
     String getGoodsDataCategory(int goodsDataNo) {
@@ -387,7 +426,7 @@ public class MiInsightsService {
     }
 
     /**
-     * 
+     *
      * debug용 더미 데이터 생성
      *
      */

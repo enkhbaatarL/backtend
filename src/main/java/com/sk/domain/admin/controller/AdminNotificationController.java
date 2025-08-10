@@ -1,5 +1,6 @@
 package com.sk.domain.admin.controller;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +25,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @AccessIpCheck
 @Tag(name = "05. 알림 API", description = "알림 API 입니다.")
 @Slf4j

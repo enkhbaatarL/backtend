@@ -1,16 +1,8 @@
 package com.sk.domain.admin.service.excel;
 
+import com.sk.domain.admin.service.excel.collector.*;
 import org.springframework.stereotype.Component;
 
-import com.sk.domain.admin.service.excel.collector.DefaultDataCollector;
-import com.sk.domain.admin.service.excel.collector.NaRigDataCollector;
-import com.sk.domain.admin.service.excel.collector.NinoSstDataCollector;
-import com.sk.domain.admin.service.excel.collector.OecdCliDataCollector;
-import com.sk.domain.admin.service.excel.collector.PivotDataCollector;
-import com.sk.domain.admin.service.excel.collector.PmiManufactureDataCollector;
-import com.sk.domain.admin.service.excel.collector.ShortTermEoDataCollector;
-import com.sk.domain.admin.service.excel.collector.TsmcDataCollector;
-import com.sk.domain.admin.service.excel.collector.Ww2RigSummaryDataCollector;
 import com.sk.domain.shared.enums.ComponentType;
 
 @Component
@@ -32,8 +24,12 @@ public class DataCollectorStrategyResolver {
             return new TsmcDataCollector();
         } else if (componentType == ComponentType.PMI_MANUFACTURE) {
             return new PmiManufactureDataCollector();
+        } else if (componentType == ComponentType.GLOBAL_OIL) {
+            return new GlobalCrudeOilDataCollector();
         } else {
             return new DefaultDataCollector();
         }
     }
+
+
 }

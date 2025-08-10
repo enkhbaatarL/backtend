@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!dedicated")
 @Tag(name = "04. Insights API", description = "Insights API 입니다.")
 @Slf4j
 @RestController
@@ -84,7 +86,7 @@ public class MiInsightsController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/insights-data")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
-    public BaseResponse<PaginationRes<InsightsDataRes>> getDataCatalog(
+    public BaseResponse<PaginationRes<InsightsDataRes>> getInsights(
             @PathVariable(value = "companyNo") Integer companyNo,
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,

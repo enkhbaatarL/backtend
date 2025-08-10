@@ -136,11 +136,10 @@ public class ChatbotTalkQna extends BaseEntity {
 
     }
 
-    public void updateCompleteResult(ModelAgentRes modelAgentRes, AnswerRes answerRes) {
+    public void updateCompleteResult(ModelAgentRes.Output output, AnswerRes answerRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
         this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
-        this.inputTokenCnt = Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
+        this.inputTokenCnt = Optional.ofNullable(output)
             .map(ModelAgentRes.Output::messages)
             .stream()
             .flatMap(List::stream)
@@ -148,8 +147,7 @@ public class ChatbotTalkQna extends BaseEntity {
             .filter(Objects::nonNull)
             .mapToInt(ModelAgentRes.Output.Message.Usage::promptTokens)
             .sum();
-        this.outputTokenCnt = Optional.ofNullable(modelAgentRes)
-            .map(ModelAgentRes::output)
+        this.outputTokenCnt = Optional.ofNullable(output)
             .map(ModelAgentRes.Output::messages)
             .stream()
             .flatMap(List::stream)

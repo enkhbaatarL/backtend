@@ -82,6 +82,7 @@ public class AuthService {
 				.path("/")
 				.secure(true)
 				.httpOnly(true)
+                .sameSite("None")
 				.build();
 
 		response.addHeader(HttpHeaders.SET_COOKIE, responseRefreshCookie.toString());

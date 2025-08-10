@@ -4,13 +4,10 @@ import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import com.sk.common.properties.ProviderDefaultProperties;
 import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;
 
@@ -39,7 +36,6 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.shared.client.dto.AXMetaFileDto;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
-import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -93,6 +89,7 @@ public class AdminGoodsDataService {
     private final PlatformTransactionManager masterTransactionManager;
     private final PlatformTransactionManager myBatisTransactionManager;
     private final ApplicationEventPublisher publisher;
+    private final ProviderDefaultProperties providerDefaultProperties;
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -297,7 +294,6 @@ public class AdminGoodsDataService {
      * @param providerNo 프로바이더 번호
      * @param dto 데이터 등록 요청 정보
      */
-    @Transactional
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         List<GoodsData> goodsDatas = goodsDataRepository.findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(
                 dto.goodsDataNm(),
@@ -393,9 +389,12 @@ public class AdminGoodsDataService {
                 goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
             }
 
+            // 언어 타입 카테고리 Default 추가
+            List<CategoryDataReq> langCategoryList = setDefaultLangCategoryList(providerNo, dto.langCategoryList());
+
             // 언어 타입 카테고리 등록
-            if (dto.langCategoryList() != null) {
-                List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
+            if (langCategoryList != null) {
+                List<GoodsDataCategory> goodsDataCategoryList = langCategoryList.stream()
                         .map(categoryCodeId -> GoodsDataCategory.of(goodsData, categoryCodeId.codeId(), "",
                                 GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                         .toList();
@@ -427,9 +426,11 @@ public class AdminGoodsDataService {
                 goodsDataCategoryRepository.saveAll(goodsDataCategoryList);
             }
 
+            // 언어 타입 카테고리 Default 추가
+            List<CategoryDataReq> langCategoryList = setDefaultLangCategoryList(providerNo, dto.langCategoryList());
             // 언어 타입 카테고리 등록
-            if (dto.langCategoryList() != null) {
-                List<GoodsDataCategory> goodsDataCategoryList = dto.langCategoryList().stream()
+            if (langCategoryList != null) {
+                List<GoodsDataCategory> goodsDataCategoryList = langCategoryList.stream()
                         .map(categoryCodeId -> GoodsDataCategory.of(savedGoodsData, categoryCodeId.codeId(), "",
                                 GoodsDataManagementSeparateCode.GDAT.getCode(), null))
                         .toList();
@@ -578,10 +579,27 @@ public class AdminGoodsDataService {
                         () -> AppErrorException.of(
                                 Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
-        internalUpdateGoodsData(goodsData, dto);
+        internalUpdateGoodsData(providerNo, goodsData, dto);
     }
 
-    private void internalUpdateGoodsData(GoodsData goodsData, GoodsDataUpdateReq dto) {
+    private List<CategoryDataReq> setDefaultLangCategoryList(int providerNo, List<CategoryDataReq> sourceLangCategoryData){
+        List<CategoryDataReq> langCategoryList = sourceLangCategoryData;
+        if(providerDefaultProperties.getLanguages() == null) return langCategoryList;
+        if(providerDefaultProperties.getLanguages().containsKey(providerNo)){
+            CategoryDataReq defaultLangCategoryData = new CategoryDataReq(providerDefaultProperties.getLanguages().get(providerNo));
+            if(langCategoryList == null){
+                langCategoryList = new ArrayList<>(1);
+                langCategoryList.add(defaultLangCategoryData);
+            }else{
+                if(!langCategoryList.contains(defaultLangCategoryData)){
+                    langCategoryList.add(defaultLangCategoryData);
+                }
+            }
+        }
+        return langCategoryList;
+    }
+
+    private void internalUpdateGoodsData(int providerNo, GoodsData goodsData, GoodsDataUpdateReq dto) {
         goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm());
 
         // 문서 타입 카테고리 수정
@@ -606,13 +624,16 @@ public class AdminGoodsDataService {
             }
         }
 
+        // 언어 타입 카테고리 Default 추가
+        List<CategoryDataReq> langCategoryList = setDefaultLangCategoryList(providerNo, dto.langCategoryList());
+
         // 언어 타입 카테고리 수정
-        if (dto.langCategoryList() != null) {
+        if (langCategoryList != null) {
             List<String> oldCategoryCodes = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo()).stream()
                     .map(category -> category.codeId())
                     .toList();
 
-            List<String> newCategoryCodes = dto.langCategoryList().stream().map(CategoryDataReq::codeId).toList();
+            List<String> newCategoryCodes = langCategoryList.stream().map(CategoryDataReq::codeId).toList();
 
             Set<String> codesToDelete = new HashSet<>(oldCategoryCodes);
             codesToDelete.removeAll(newCategoryCodes);

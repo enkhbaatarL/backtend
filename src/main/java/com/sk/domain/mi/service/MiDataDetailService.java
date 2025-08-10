@@ -21,10 +21,7 @@ import com.sk.domain.mi.service.chart.dto.RawDataQueryContext;
 import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
-import com.sk.domain.shared.entity.master.tmd.UnitConvert;
+import com.sk.domain.shared.entity.master.tmd.*;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
@@ -41,15 +38,18 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -104,6 +104,15 @@ public class MiDataDetailService {
         LocalDate recent = gdsNo.stream().findFirst()
             .map(chartGenerationService::getLatestDate)
             .orElse(null);
+
+        List<GoodsDataCategory> pubDateCategory = goodsDataCategoryRepository.findPubDateByGoodsDataNo(goodsDataNo);
+        LocalDate pubDate = pubDateCategory == null || pubDateCategory.isEmpty()
+            ? null : LocalDate.parse(pubDateCategory.get(0).getGoodsDataKeywordNm(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+        if(recent == null){
+            recent = pubDate;
+        }else if(pubDate != null){
+            recent = Stream.of(recent, pubDate).max(LocalDate::compareTo).get();
+        }
 
         return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority(), recent);
     }
@@ -471,13 +480,13 @@ public class MiDataDetailService {
         // Range 결정: 요청값 > 개인화 > 기본값
         Range finalizedRange = Optional.ofNullable(contextV1.requestedRange())
             .or(resolve::range)
-            .orElse(Range.ONE_YEAR);
+            .orElse(gds.getPeriodUnitSeparateCd().rangeInterval());
 
         // RangeBetween 결정: 요청값 > 개인화 > 기본값
         Pair<String, String> finalizedRangeBetween = Optional.ofNullable(contextV1.requestedRange())
             .map(r -> Range.toPair(r, contextV1.requestedStartDateStr(), contextV1.requestedEndDateStr()))
             .or(resolve::periodDates)
-            .orElse(DateUtil.getDateRange(Range.ONE_YEAR));
+            .orElse(DateUtil.getDateRange(gds.getPeriodUnitSeparateCd().rangeInterval()));
 
         // UnitCd 결정: 요청값 > 개인화 > 기본값
         UnitCd finalizedUnitCd = Optional.ofNullable(contextV1.requestedUnitCdStr())

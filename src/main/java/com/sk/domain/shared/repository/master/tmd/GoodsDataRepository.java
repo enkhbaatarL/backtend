@@ -96,27 +96,30 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                     tgd.gds_data_nm AS goodsDataNm,
                     tgd.gds_data_expn AS goodsDataExpn,
                     tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,
-                    tgd.mod_dtm AS modifyDt,
+                    max(tgc.gds_data_keywd_nm) AS modifyDtStr,
                     GROUP_CONCAT(tgdc.gds_data_ctgr_cd) as goodsDataCategoryCd
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
-                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y' AND tp.prvd_no not in :exceptProviderNoList
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no AND tgdc.del_yn = 'N' AND tgdc.gds_data_mnagt_spt_cd = 'GDAT'
+                JOIN midb.tmd_gdsdatactgrl as tgc ON tgc.gds_data_no = tgd.gds_data_no AND tgc.del_yn = 'N' AND tgc.gds_data_ctgr_cd = 'PUBDATE'
                 WHERE tcp.del_yn = 'N'
                     AND tcp.use_yn = 'Y'
                     AND tcp.cust_cpny_no = :customerCompanyNo
-                    AND tgd.mod_dtm >= :threshold
+                    AND tgc.gds_data_keywd_nm < now()
+                    AND tgc.gds_data_keywd_nm > DATE_SUB(now(), INTERVAL :threshold DAY)
+                    -- AND MATCH(tgd.gds_data_nm) AGAINST(lower('LNG Oil Gas Upstream') IN BOOLEAN MODE)
                     AND EXISTS (SELECT 1
                                 FROM midb.tcm_filel tf
                                 WHERE tf.del_yn = 'N'
                                     AND tf.file_rel_obj_spt_cd = 'GUDAT'
                                     AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)
                 GROUP BY tp.prvd_no, tg.gds_no, tgd.gds_data_no
-                ORDER BY tgd.mod_dtm DESC
+                ORDER BY tgc.gds_data_keywd_nm DESC
                         """, nativeQuery = true)
-    List<FocusedDataDto> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") LocalDateTime threshold);
+    List<FocusedDataDto> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") int threshold, @Param("exceptProviderNoList") List<Integer> exceptProviderNoList);
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 
@@ -131,9 +134,10 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                     tgd.mod_dtm AS modifyDt
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
-                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y' AND tp.prvd_no not in :exceptProviderNoList
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatactgrl tgc ON tgc.gds_data_no = tgd.gds_data_no AND tgc.del_yn = 'N' AND tgc.gds_data_ctgr_cd = 'PUBDATE'
                 WHERE
                     tcp.del_yn = 'N'
                     AND tcp.use_yn = 'Y'
@@ -143,10 +147,11 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                                 WHERE tf.del_yn = 'N'
                                     AND tf.file_rel_obj_spt_cd = 'GUDAT'
                                     AND tf.file_rel_obj_dstg_no = tgd.gds_data_no)
+                    AND tgc.gds_data_keywd_nm <= DATE_FORMAT(CURDATE(), '%Y%m%d')
                 GROUP BY tp.prvd_no, tg.gds_no, tgd.gds_data_no
                 ORDER BY tgd.mod_dtm DESC
                         """, nativeQuery = true)
-    List<LatestInsightsDto> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, Pageable pageable);
+    List<LatestInsightsDto> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, @Param("exceptProviderNoList") List<Integer> exceptProviderNoList, Pageable pageable);
 
     @Query(value = """
             SELECT gd

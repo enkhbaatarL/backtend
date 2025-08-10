@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.slf4j.spi.MDCAdapter;
 
+import java.util.Map;
+
 @Slf4j
 public class MDCUtil {
 
@@ -110,6 +112,14 @@ public class MDCUtil {
 
     public static MDCAdapter getAdapter() {
         return MDC_ADAPTER;
+    }
+
+    public static Map<String, String> copyAndGetContextMap(){
+        return MDC_ADAPTER.getCopyOfContextMap();
+    }
+
+    public static void restoreContextMap(Map<String, String> contextMap){
+        MDC_ADAPTER.setContextMap(contextMap);
     }
 
 }

@@ -40,4 +40,4 @@
 
 # Client 토큰 발급 테스트 예시
 
-curl -X POST "http://localhost:8080/api/v1/oauth2/token" -H "Content-Type: application/x-www-form-urlencoded" -u "mi-client:secret"  -d "grant_type=client_credentials"
+curl -X POST "http://localhost:8080/oauth2/token" -H "Content-Type: application/x-www-form-urlencoded" -u "mi-client:secret"  -d "grant_type=client_credentials"

@@ -25,12 +25,13 @@ hibernate {
     }
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        url "https://build.shibboleth.net/nexus/content/repositories/releases/"
-    }
-}
+//repositories {
+//    mavenCentral()
+//    maven {
+        //url "https://build.shibboleth.net/nexus/content/repositories/releases/"
+//        url "https://skpc-nexus.skpc.cloudzcp.net/repository/maven-sre-proxy/"
+//    }
+//}
 
 springBoot {
     buildInfo()
@@ -42,11 +43,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.session:spring-session-data-redis'
+
+    implementation 'org.springframework.boot:spring-boot-gradle-plugin:3.4.2'
 
     // saml
     constraints {

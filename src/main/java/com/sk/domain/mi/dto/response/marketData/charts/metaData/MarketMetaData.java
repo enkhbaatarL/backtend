@@ -6,6 +6,7 @@ import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.Cal
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.chart.ChartType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,11 +45,15 @@ public record MarketMetaData(
         @Schema(description = "최근 월 변동률 (MOM)", example = "10.5") Double momChangeRate,
 
         @Schema(description = "최근 주 변동률 (WOW)", example = "10.5") Double wowChangeRate,
-        
+        @Schema(description = "최근 일 변동률 (DOD)", example = "10.5") Double dodChangeRate,
         @Schema(description = "최근 변동률", example = "10.5") Double recentChangeRate) {
 
     @Builder
-    public MarketMetaData(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm, String goodsDataSourceNm, String currency, String currentUnitCd, ChartType visibleChartType, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt, Double lastValue, Double yoyChangeRate, Double momChangeRate, Double wowChangeRate, Double recentChangeRate) {
+    public MarketMetaData(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo,
+                          String goodsDataNm, String goodsDataSourceNm, String currency, String currentUnitCd,
+                          ChartType visibleChartType, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt,
+                          Double lastValue, Double yoyChangeRate, Double momChangeRate, Double wowChangeRate,
+                          Double dodChangeRate, Double recentChangeRate) {
         this.chartMarkRank = chartMarkRank;
         this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
@@ -65,11 +70,17 @@ public record MarketMetaData(
         this.yoyChangeRate = yoyChangeRate;
         this.momChangeRate = momChangeRate;
         this.wowChangeRate = wowChangeRate;
+        this.dodChangeRate = dodChangeRate;
         this.recentChangeRate = recentChangeRate;
     }
-            
+
     public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt, Double recentChangeRate) {
+
+        Double dodChangeRate = null;
+        if(goodsDataSourceDetail.getPeriodUnitSeparateCd() == null || goodsDataSourceDetail.getPeriodUnitSeparateCd() == PeriodUnitSeparateCd.D){
+            dodChangeRate = recentChangeRate;
+        }
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsNo(goodsData.getGoods().getGoodsNo())
@@ -87,6 +98,7 @@ public record MarketMetaData(
                 .yoyChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.yoyChangeRate() : null)
                 .momChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.momChangeRate() : null)
                 .wowChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.wowChangeRate() : null)
+                .dodChangeRate(dodChangeRate)
                 .recentChangeRate(recentChangeRate)
                 .build();
     }
