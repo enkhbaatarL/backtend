@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service;
 
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
@@ -102,7 +103,10 @@ public class MiDataDetailService {
 
         // 상품 데이터 소스가 존재하는 경우, 최신 1개의 최근 수정일을 조회한다.
         LocalDate recent = gdsNo.stream().findFirst()
-            .map(chartGenerationService::getLatestDate)
+            .map(gds->{
+                DataSourceContextHolder.setDataSourceKey(gds.getTargetDbNm());
+                return chartGenerationService.getLatestDate(gds);
+            })
             .orElse(null);
 
         List<GoodsDataCategory> pubDateCategory = goodsDataCategoryRepository.findPubDateByGoodsDataNo(goodsDataNo);
@@ -526,6 +530,7 @@ public class MiDataDetailService {
      */
     private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext contextV3) {
 
+        DataSourceContextHolder.setDataSourceKey(gds.getTargetDbNm());
         LocalDate latestDate = chartGenerationService.getLatestDate(gds);
 
         // [metadata] 생성
