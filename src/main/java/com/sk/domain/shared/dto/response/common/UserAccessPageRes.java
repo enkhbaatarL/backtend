@@ -47,6 +47,8 @@ public record UserAccessPageRes(
 
     @Schema(description = "고객회사 명")
     String companyNm,
+    @Schema(description = "고객회사 MI플랫폼 URL 정보")
+    String companyMipUrl,
 
     @Schema(description = "사용자 알림 설정 여부")
     Boolean isUserNotificationSetting,
@@ -56,7 +58,7 @@ public record UserAccessPageRes(
 ) {
 
     @Builder
-    public UserAccessPageRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm, Boolean isUserNotificationSetting, UserAccessPageType userAccessPageType) {
+    public UserAccessPageRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm, String companyMipUrl, Boolean isUserNotificationSetting, UserAccessPageType userAccessPageType) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
@@ -70,11 +72,12 @@ public record UserAccessPageRes(
         this.isIndividualInfoAgreement = isIndividualInfoAgreement;
         this.companyNo = companyNo;
         this.companyNm = companyNm;
+        this.companyMipUrl = companyMipUrl;
         this.isUserNotificationSetting = isUserNotificationSetting;
         this.userAccessPageType = userAccessPageType;
     }
 
-    public static UserAccessPageRes of(User entity, UserAccessPageType userAccessPageType) {
+    public static UserAccessPageRes of(User entity, UserAccessPageType userAccessPageType, String miDefaultDomain) {
         return UserAccessPageRes.builder()
             .userNo(entity.getUserNo())
             .userNm(entity.getUserNm())
@@ -89,6 +92,7 @@ public record UserAccessPageRes(
             .isIndividualInfoAgreement(entity.getIsIndividualInfoAgreement())
             .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
+            .companyMipUrl(entity.getCustomerCompany().getCustomerCompanyMipUrl() == null ? miDefaultDomain : entity.getCustomerCompany().getCustomerCompanyMipUrl())
             .isUserNotificationSetting(entity.getIsUserNotificationSetting())
             .userAccessPageType(userAccessPageType)
             .build();

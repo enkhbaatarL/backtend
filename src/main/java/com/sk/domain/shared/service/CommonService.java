@@ -2,6 +2,7 @@ package com.sk.domain.shared.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +26,14 @@ public class CommonService {
 
     private final AdminPermissionRepository adminPermissionRepository;
     private final UserRepository userRepository;
+    @Value("${server.domain}")
+    private String miDefaultDomain;
 
     private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
 
     /**
      * 사용자 정보를 조회합니다.
-     * 
+     *
      * @param user
      * @return
      */
@@ -54,12 +57,12 @@ public class CommonService {
         UserAccessPageType userAccessPageType = (miUserCheck && adminUserCheck) ? UserAccessPageType.BOTH
                 : (miUserCheck) ? UserAccessPageType.MI : (adminUserCheck) ? UserAccessPageType.ADMIN : UserAccessPageType.NONE;
 
-        return UserAccessPageRes.of(user, userAccessPageType);
+        return UserAccessPageRes.of(user, userAccessPageType, miDefaultDomain);
     }
 
     /**
      * 관리자 또는 운영자의 경우 허용된 IP에서만 접근 가능
-     * 
+     *
      * @param user
      * @param request
      * @return
@@ -76,7 +79,7 @@ public class CommonService {
 
     /**
      * 관리자 또는 운영자의 경우 허용된 IP에서만 접근 가능
-     * 
+     *
      * @param user
      * @param request
      * @return
@@ -93,7 +96,7 @@ public class CommonService {
 
     /**
      * 관리자 또는 운영자의 경우 허용된 IP에서만 접근 가능
-     * 
+     *
      * @param user
      * @param request
      * @return
@@ -118,7 +121,7 @@ public class CommonService {
 
     /**
     * 클라이언트 IP 주소를 추출하는 메서드
-    * 
+    *
     * @param request
     * @return 클라이언트 IP 주소
     */
