@@ -24,7 +24,7 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
     Optional<String> findLatestUpdatedDt(@Param("companyNo") Integer companyNo);
 
     @Query(value = """
-            SELECT DISTINCT new com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes(tcar.id.correlationCalculationCycleCd, tcd.codeNm)
+            SELECT DISTINCT new com.sk.domain.mi.dto.response.signalMap.SignalMapPeriodRes(tcar.id.correlationCalculationCycleCd, tcd.codeNm, tcd.codeRnk)
             FROM CorrelationAnalysisResult tcar
             LEFT JOIN CommonCodeDetail tcd ON tcd.id.codeId = tcar.id.correlationCalculationCycleCd
             WHERE tcar.id.marketIndexAnalysisTargetCd = (SELECT a.marketIndexAnalysisTargetCd
