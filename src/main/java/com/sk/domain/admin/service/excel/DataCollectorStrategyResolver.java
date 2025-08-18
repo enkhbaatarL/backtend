@@ -26,6 +26,8 @@ public class DataCollectorStrategyResolver {
             return new PmiManufactureDataCollector();
         } else if (componentType == ComponentType.GLOBAL_OIL) {
             return new GlobalCrudeOilDataCollector();
+        } else if (componentType == ComponentType.GIE_EU) {
+            return new GieEuDataCollector();
         } else {
             return new DefaultDataCollector();
         }

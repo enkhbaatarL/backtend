@@ -30,6 +30,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ApiAccessLog extends BaseEntity {
 
+    private static final int ERROR_STR_SIZE = 16300;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "api_accs_sn", nullable = false)
@@ -83,12 +85,18 @@ public class ApiAccessLog extends BaseEntity {
     }
 
     public static ApiAccessLog of(String uri, String httpMethodNm, String body, String errorMessageCntt, String accessIpAddress, Role role, String subject) {
+
+        String errorMessageCnttString = errorMessageCntt;
+        if(errorMessageCnttString != null && errorMessageCnttString.length() > ERROR_STR_SIZE){
+            errorMessageCnttString = errorMessageCnttString.substring(0, ERROR_STR_SIZE);
+        }
+
         return ApiAccessLog.builder()
             .apiEndpointUrl(uri)
             .httpMethodNm(httpMethodNm)
             .userLoginId(subject)
             .requestDataCntt(body)
-            .errorMessageCntt(errorMessageCntt)
+            .errorMessageCntt(errorMessageCnttString)
             .accessIpAddress(accessIpAddress)
             .userRoleCd(role.getCode())
             .build();
