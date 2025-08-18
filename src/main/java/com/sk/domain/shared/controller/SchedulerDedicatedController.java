@@ -57,4 +57,13 @@ public class SchedulerDedicatedController {
         return BaseResponseFactory.create(schedulerService.processTifFuturesSpread());
     }
 
+    @ApiOrder(5)
+    @Operation(summary = "GIE 데이터의 과거 정보 계산", description = "GIE 데이터의 과거 정보 계산")
+    @PostMapping("/market-data/calculate-gie-eu")
+    @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.ADMIN, Role.SYSTEM})
+    @ApiResponse(responseCode = "200", description = "GIE 데이터의 과거 정보 계산후 업로드 성공")
+    public BaseResponse<Boolean> processTifGiePast() {
+        return BaseResponseFactory.create(schedulerService.processTifGiePast());
+    }
+
 }

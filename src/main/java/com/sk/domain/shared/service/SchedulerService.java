@@ -3,12 +3,14 @@ package com.sk.domain.shared.service;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.admin.service.excel.collector.GieEuDataCollector;
 import com.sk.domain.shared.dto.request.file.PdgImageReq;
 import com.sk.domain.shared.dto.response.rpa.CrackSpreadDataRes;
 import com.sk.domain.shared.entity.compositeKey.tmd.UserHistoryId;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
+import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.User;
@@ -18,13 +20,20 @@ import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
+import com.sk.domain.shared.repository.master.tif.GieEuRepository;
 import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.template.query.MybatisQueryTemplate;
+import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.sl.draw.geom.GuideIf.Op;
+import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +69,7 @@ public class SchedulerService {
     private final FuturesSpreadRepository futuresSpreadRepository;
     private final UserHistoryRepository userHistoryRepository;
     private final PdfToImagesProcessor pdfToImagesProcessor;
+    private final GieEuRepository gieEuRepository;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_DAYS = 1;
@@ -74,6 +84,13 @@ public class SchedulerService {
     private static final int CL_WEIGHT = 3; // CRACK SPREAD 계산 시 CL 가중치
     private static final int BARREL_CONVERSION_FACTOR = 42; // 배럴 변환 계수
     private static final int BATCH_SIZE = 10000;
+    private static final String GIE_EU_CODE_CURRENT = "CURRENT";
+    private static final String GIE_EU_CODE_1Y_AGO = "1Y_AGO";
+    private static final String GIE_EU_CODE_2Y_AGO = "2Y_AGO";
+    private static final String GIE_EU_CODE_3Y_AGO = "3Y_AGO";
+    private static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
+    private static final String GIE_EU_CODE_PAST_5Y_MIN = "PAST_5Y_MIN";
+    private static final String GIE_EU_CODE_PAST_5Y_MAX = "PAST_5Y_MAX";
 
     /**
      * GDI 탈퇴 유저 soft delete 처리
@@ -549,6 +566,112 @@ public class SchedulerService {
 
         // 배치 저장
         saveInBatches(spreadsToSave);
+    }
+
+    @Transactional
+    public Boolean processTifGiePast(){
+
+        final LocalDateTime DB_FIRST_DATE = LocalDateTime.parse("2011-01-01 00:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(Arrays.asList(
+            GIE_EU_CODE_1Y_AGO, GIE_EU_CODE_2Y_AGO, GIE_EU_CODE_3Y_AGO, GIE_EU_CODE_PAST_5Y_AVG, GIE_EU_CODE_PAST_5Y_MIN, GIE_EU_CODE_PAST_5Y_MAX
+        ));
+
+        LocalDateTime firstDate = lastGieEuOptional.map(gieEu -> gieEu.getDate().plusDays(1)).orElse(DB_FIRST_DATE);
+
+        Map<Integer, Object[]> past5yMap = new HashMap<>();
+
+        Page<GieEu> gieEuPage;
+        int pageNumber = 0;
+        final int PAGE_SIZE = 1000;
+        do{
+            gieEuPage = gieEuRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, GIE_EU_CODE_CURRENT,
+                PageRequest.of(pageNumber, PAGE_SIZE));
+            pageNumber++;
+            for(GieEu gieEu : gieEuPage.getContent()){
+                /// 1Y AGO
+                Optional<GieEu> gieEu1yAgo = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(1));
+                  gieEu1yAgo.ifPresent(eu -> updateGieEu(
+                      GieEu.of(
+                          GIE_EU_CODE_1Y_AGO,
+                          gieEu.getDate(),
+                          eu.getGasInStorage(),
+                          eu.getGasInStorageMt())));
+
+                Optional<GieEu> gieEu2yAgo = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(2));
+                gieEu2yAgo.ifPresent(eu -> updateGieEu(
+                    GieEu.of(
+                        GIE_EU_CODE_2Y_AGO,
+                        gieEu.getDate(),
+                        eu.getGasInStorage(),
+                        eu.getGasInStorageMt())));
+
+                Optional<GieEu> gieEu3yAgo = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(3));
+                gieEu3yAgo.ifPresent(eu -> updateGieEu(
+                    GieEu.of(
+                        GIE_EU_CODE_3Y_AGO,
+                        gieEu.getDate(),
+                        eu.getGasInStorage(),
+                        eu.getGasInStorageMt())));
+
+                past5yMap = getGieEuMaxMinAvg(past5yMap, gieEu.getDate().getYear());
+                Object[] values = past5yMap.get(gieEu.getDate().getYear());
+                if(values[0] != null){
+                    updateGieEu(
+                        GieEu.of(
+                            GIE_EU_CODE_PAST_5Y_MAX,
+                            gieEu.getDate(),
+                            (BigDecimal) values[0],
+                            ((BigDecimal) values[0]).multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                }
+                if(values[1] != null){
+                    updateGieEu(
+                        GieEu.of(
+                            GIE_EU_CODE_PAST_5Y_MIN,
+                            gieEu.getDate(),
+                            (BigDecimal) values[1],
+                            ((BigDecimal) values[1]).multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                }
+                if(values[2] != null){
+                    updateGieEu(
+                        GieEu.of(
+                            GIE_EU_CODE_PAST_5Y_AVG,
+                            gieEu.getDate(),
+                            (BigDecimal) values[2],
+                            ((BigDecimal) values[2]).multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                }
+            }
+
+        }while (!gieEuPage.isLast());
+
+        return Boolean.TRUE;
+    }
+
+    private void updateGieEu(GieEu gieEu){
+        Optional<GieEu> gieEuOptional = gieEuRepository.findByCodeAndDate(gieEu.getCode(), gieEu.getDate());
+        if(gieEuOptional.isPresent()){
+            GieEu existGieEu = gieEuOptional.get();
+            existGieEu.setGasInStorage(gieEu.getGasInStorage());
+            existGieEu.setGasInStorageMt(gieEu.getGasInStorageMt());
+            gieEuRepository.save(existGieEu);
+        }else{
+            gieEuRepository.save(gieEu);
+        }
+    }
+
+    private Map<Integer, Object[]> getGieEuMaxMinAvg(Map<Integer, Object[]> past5yMap, int currentYear){
+        if(past5yMap.containsKey(currentYear)){
+            return past5yMap;
+        }
+        LocalDateTime start = LocalDateTime.of(currentYear-5, 1, 1, 0, 0);
+        LocalDateTime end = LocalDateTime.of(currentYear, 1, 1, 0, 0);
+        Object[] result = (Object[])gieEuRepository.findYearlyStats(start, end);
+        if(result == null){
+            past5yMap.put(currentYear, Arrays.asList(null, null, null).toArray());
+        }else{
+            past5yMap.put(currentYear, result);
+        }
+        return past5yMap;
     }
 
     /**

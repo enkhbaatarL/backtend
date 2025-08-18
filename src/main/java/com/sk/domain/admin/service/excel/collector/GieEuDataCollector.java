@@ -24,11 +24,9 @@ import org.apache.poi.ss.usermodel.Sheet;
 @Slf4j
 public class GieEuDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
-    private static final int HEADER_COLUMN_DATE_INDEX = 1; // 헤더 Date 열
-    private static final int HEADER_COLUMN_STATUS_INDEX = 0; // 헤더 Status 열
     private static final int HEADER_COLUMN_GAS_IN_STORAGE = 2;
     private static final String CODE = "CURRENT";
-    private static final BigDecimal MT_SCALE_RATIO = BigDecimal.valueOf(0.074d);
+    public static final BigDecimal MT_SCALE_RATIO = BigDecimal.valueOf(0.074d);
 
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
