@@ -93,10 +93,17 @@ jwt:
 logging:
   config: classpath:logback-local.xml
   level:
-    org.springframework.security.saml: TRACE
-    org.springframework.security: TRACE
-    org.springframework.boot.autoconfigure.security: TRACE
-    org.springframework.context: DEBUG
+    com.sk: DEBUG
+    org.springframework.security.saml: INFO
+    org.springframework.security: INFO
+    org.springframework.boot.autoconfigure.security: INFO
+    org.springframework.context: INFO
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: false
+
 api:
   model-agent:
     url: https://devadxp.adotbiz.ai/api/v1/agent_gateway

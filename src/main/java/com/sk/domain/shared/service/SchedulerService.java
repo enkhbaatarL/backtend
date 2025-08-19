@@ -28,6 +28,7 @@ import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.template.query.MybatisQueryTemplate;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.sl.draw.geom.GuideIf.Op;
 import org.springframework.data.domain.ExampleMatcher;
@@ -584,6 +585,7 @@ public class SchedulerService {
         Page<GieEu> gieEuPage;
         int pageNumber = 0;
         final int PAGE_SIZE = 1000;
+        boolean isFirst = true;
         do{
             gieEuPage = gieEuRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, GIE_EU_CODE_CURRENT,
                 PageRequest.of(pageNumber, PAGE_SIZE));
@@ -616,32 +618,35 @@ public class SchedulerService {
 
                 past5yMap = getGieEuMaxMinAvg(past5yMap, gieEu.getDate().getYear());
                 Object[] values = past5yMap.get(gieEu.getDate().getYear());
-                if(values[0] != null){
+                BigDecimal valueMax = getBigDecimal(values[0]);
+                if(valueMax != null){
                     updateGieEu(
                         GieEu.of(
                             GIE_EU_CODE_PAST_5Y_MAX,
                             gieEu.getDate(),
-                            (BigDecimal) values[0],
-                            ((BigDecimal) values[0]).multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                            valueMax,
+                            valueMax.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
                 }
-                if(values[1] != null){
+                BigDecimal valueMin = getBigDecimal(values[1]);
+                if(valueMin != null){
                     updateGieEu(
                         GieEu.of(
                             GIE_EU_CODE_PAST_5Y_MIN,
                             gieEu.getDate(),
-                            (BigDecimal) values[1],
-                            ((BigDecimal) values[1]).multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                            valueMin,
+                            valueMin.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
                 }
-                if(values[2] != null){
+                BigDecimal valueAvg = getBigDecimal(values[2]);
+                if(valueAvg != null){
                     updateGieEu(
                         GieEu.of(
                             GIE_EU_CODE_PAST_5Y_AVG,
                             gieEu.getDate(),
-                            (BigDecimal) values[2],
-                            ((BigDecimal) values[2]).multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                            valueAvg,
+                            valueAvg.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
                 }
             }
-
+            log.info("[GIE EU] check and update. Number={}, Total={}", gieEuPage.getNumber(), gieEuPage.getTotalElements());
         }while (!gieEuPage.isLast());
 
         return Boolean.TRUE;
@@ -656,6 +661,17 @@ public class SchedulerService {
             gieEuRepository.save(existGieEu);
         }else{
             gieEuRepository.save(gieEu);
+        }
+    }
+
+    private BigDecimal getBigDecimal(Object value){
+        if(value == null) return null;
+        if(value instanceof BigDecimal){
+            return (BigDecimal) value;
+        }else if(value instanceof Double valueD){
+            return BigDecimal.valueOf(valueD);
+        }else{
+            return null;
         }
     }
 
