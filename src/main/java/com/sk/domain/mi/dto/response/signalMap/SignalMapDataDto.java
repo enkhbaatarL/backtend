@@ -7,13 +7,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record SignalMapDataDto(
         @Schema(description = "Instrument명", example = "")
         String instrumentNm,
-        
-        @Schema(description = "상관관계계산값", example = "") 
-        BigDecimal correlationCalculationVal
+
+        @Schema(description = "상관관계계산값", example = "")
+        BigDecimal correlationCalculationVal,
+
+        @Schema(description = "Group, Category 와 동일", example = "")
+        String categoryName
 ) {
-    public SignalMapDataDto(String instrumentNm, BigDecimal correlationCalculationVal) {
+    public SignalMapDataDto(String instrumentNm, BigDecimal correlationCalculationVal, String categoryName) {
         this.instrumentNm = instrumentNm;
         this.correlationCalculationVal = correlationCalculationVal;
+        this.categoryName = categoryName;
     }
 }
 // @formatter:on

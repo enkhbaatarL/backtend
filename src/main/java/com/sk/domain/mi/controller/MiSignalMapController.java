@@ -1,5 +1,6 @@
 package com.sk.domain.mi.controller;
 
+import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryAndTopDto;
 import java.util.List;
 
 import org.springframework.context.annotation.Profile;
@@ -85,8 +86,8 @@ public class MiSignalMapController {
 
         String latestUpdatedDt = miSignalMapService.getLatestUpdatedDt(cNo);
 
-        List<ScreenCategoryDto> datas = miSignalMapService.getSignalMap(cNo, period, filter);
+        ScreenCategoryAndTopDto screenCategoryAndTopDto = miSignalMapService.getSignalMap(cNo, period, filter);
 
-        return BaseResponseFactory.create(new SignalMapDataRes(title, latestUpdatedDt, datas));
+        return BaseResponseFactory.create(new SignalMapDataRes(title, latestUpdatedDt, screenCategoryAndTopDto.topImpactVariables(), screenCategoryAndTopDto.list()));
     }
 }

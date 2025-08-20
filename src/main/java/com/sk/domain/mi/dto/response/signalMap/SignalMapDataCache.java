@@ -6,15 +6,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Builder;
 
 public record SignalMapDataCache(
-        List<ScreenCategoryDto> data) {
+    ScreenCategoryAndTopDto data) {
 
     @Builder
     @JsonCreator
-    public SignalMapDataCache(List<ScreenCategoryDto> data) {
+    public SignalMapDataCache(ScreenCategoryAndTopDto data) {
         this.data = data;
     }
 
-    public static SignalMapDataCache of(List<ScreenCategoryDto> data) {
+    public static SignalMapDataCache of(ScreenCategoryAndTopDto data) {
         return SignalMapDataCache.builder()
                 .data(data)
                 .build();

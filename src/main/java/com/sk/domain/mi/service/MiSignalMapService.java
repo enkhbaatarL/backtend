@@ -1,7 +1,9 @@
 package com.sk.domain.mi.service;
 
+import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryAndTopDto;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,13 +74,13 @@ public class MiSignalMapService {
 
     /**
      * 지정된 companyNo와 period(주기)에 맞춰 tmm_corranlyrsltd 데이터를 집계하여 SignalMapDataRes 형태로 조회합니다.
-     * 
+     *
      * @param companyNo 고객사 번호
      * @param period    주기 코드(예: "3M", "6M", "9M", "1Y", "TOT")
-     * @param filters   
+     * @param filters
      * @return List<ScreenCategoryDto>
      */
-    public List<ScreenCategoryDto> getSignalMap(int companyNo, String period, String filter) {
+    public ScreenCategoryAndTopDto getSignalMap(int companyNo, String period, String filter) {
 
         // 캐시에서 데이터 조회
         String cacheKey = "signalMapData::companyNo:" + companyNo + "::period:" + period + "::filter:" + filter;
@@ -114,7 +116,7 @@ public class MiSignalMapService {
                         List<SignalMapDataDto> itemDtoList = projList.stream()
                                 .map(proj -> new SignalMapDataDto(
                                         proj.getInstmNm(),
-                                        proj.getCorrCalcVal()))
+                                        proj.getCorrCalcVal(), null))
                                 .collect(Collectors.toList());
 
                         // 20개 초과 시 잘라냄
@@ -129,14 +131,44 @@ public class MiSignalMapService {
             result.add(new ScreenCategoryDto(screenCategoryName, screenDetailCategoryDtoList));
         }
 
+        // Top 계산
+        List<SignalMapDataDto> tempTopImpactVariables = new ArrayList<>();
+
+        result.forEach(
+            r -> {
+              r.items()
+                  .forEach(
+                      group -> {
+                        tempTopImpactVariables.addAll(
+                            group.items().stream()
+                                .map(
+                                    item ->
+                                        new SignalMapDataDto(
+                                            item.instrumentNm(),
+                                            item.correlationCalculationVal(),
+                                            group.categoryName()))
+                                .toList());
+                      });
+            });
+
+        List<SignalMapDataDto> topImpactVariables = tempTopImpactVariables.stream()
+            .sorted(Comparator.comparing(
+                    (SignalMapDataDto dto) -> dto.correlationCalculationVal().abs()
+                ).reversed()
+            )
+            .limit(20)
+            .toList();
+
+        ScreenCategoryAndTopDto screenCategoryAndTopDto = new ScreenCategoryAndTopDto(topImpactVariables, result);
+
         // 캐시에 저장
         try {
-            String json = objectMapper.writeValueAsString(SignalMapDataCache.of(result));
+            String json = objectMapper.writeValueAsString(SignalMapDataCache.of(screenCategoryAndTopDto));
             redisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(DATA_CACHE_TTL));
         } catch (Exception e) {
             log.error("Error processing signal map data", e);
         }
 
-        return result;
+        return screenCategoryAndTopDto;
     }
 }
