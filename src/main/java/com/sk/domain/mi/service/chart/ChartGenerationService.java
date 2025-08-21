@@ -55,7 +55,7 @@ public class ChartGenerationService {
      * @param isMainChart 메인 차트 여부
      * @return 처리된 차트 데이터
      */
-    public Chart generateChartData(GoodsDataSourceDetail gds, ChartSettingsContext contextV3, boolean isVisible, boolean isMainChart) {
+    public Chart generateChartData(GoodsDataSourceDetail gds, ChartSettingsContext contextV3, boolean isVisible, boolean isMainChart, Boolean isYAxisSeparated) {
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
@@ -77,7 +77,7 @@ public class ChartGenerationService {
         // 원시 데이터 : [단위 변환]
         List<Map<String, Object>> convertedData = chartUnitConversionService.convert(isCandleChartPossible, aggregatedData, targetColumns, volumeColumnNm, contextV3.finalizedUnitConvert(), isMainChart);
 
-        return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible);
+        return ChartBundleFactory.combineCharts(gds, isCandleChartPossible, convertedData, targetColumns, columnExpressions, isVisible, isYAxisSeparated);
     }
 
     /**
@@ -141,7 +141,7 @@ public class ChartGenerationService {
             .map(comparison -> {
                 List<Integer> finalizedCompIds = settingsContext.finalizedCompIds();
                 boolean isVisible = finalizedCompIds.contains(comparison.getId().getCompareGoodsDataSourceNo());
-                return generateChartData(comparison.getCompareGoodsDataSourceDetail(), settingsContext, isVisible, Boolean.FALSE);
+                return generateChartData(comparison.getCompareGoodsDataSourceDetail(), settingsContext, isVisible, Boolean.FALSE, comparison.getIsYAxisSeparated());
             })
             .toList();
     }

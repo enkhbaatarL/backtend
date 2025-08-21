@@ -47,11 +47,14 @@ public record ChartMetadata(
     Set<String> changeableUnitCd,
 
     @Schema(description = "데이터소스 최신 업데이트 일자", example = "20250505")
-    String latestDate
+    String latestDate,
+
+    @Schema(description = "Y축 분리 유무", example = "true")
+    Boolean isYAxisSeparated
 
 ) {
 
-    public static ChartMetadata of(GoodsDataSourceDetail gds, ChartSettingsContext contextV3, String latestDate) {
+    public static ChartMetadata of(GoodsDataSourceDetail gds, ChartSettingsContext contextV3, String latestDate, Boolean isYAxisSeparated) {
         return ChartMetadata.builder()
             .currency(gds.getGoodsDataSourceCurrencyUnitNm())
             .currentUnitCd(contextV3.finalizedUnitCd().toString())
@@ -62,6 +65,7 @@ public record ChartMetadata(
             .initialChartType(contextV3.finalizedChartType())
             .changeableUnitCd(contextV3.finalizedAllowedUnitCds().stream().map(UnitCd::toString).collect(Collectors.toSet()))
             .latestDate(latestDate)
+            .isYAxisSeparated(isYAxisSeparated)
             .build();
     }
 

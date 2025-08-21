@@ -533,17 +533,25 @@ public class MiDataDetailService {
         DataSourceContextHolder.setDataSourceKey(gds.getTargetDbNm());
         LocalDate latestDate = chartGenerationService.getLatestDate(gds);
 
-        // [metadata] 생성
-        ChartMetadata metadata = ChartMetadata.of(gds, contextV3, DateUtil.toYmd(latestDate));
-
         // [mainChart] 생성
-        Chart mainChart = chartGenerationService.generateChartData(gds, contextV3, Boolean.TRUE, Boolean.TRUE);
+        Chart mainChart = chartGenerationService.generateChartData(gds, contextV3, Boolean.TRUE, Boolean.TRUE, null);
 
         // [indicators] 생성
         List<Indicator> indicators = technicalIndicatorService.generateIndicators(mainChart, contextV3.finalizedIndicators());
 
         // [comparisonCharts] 생성
         List<Chart> comparisonCharts = chartGenerationService.generateComparisonCharts(gds, contextV3);
+
+        boolean isYAxisSeparated = false;
+        for(Chart compare: comparisonCharts){
+            if(compare.isYAxisSeparated()){
+                isYAxisSeparated = true;
+                break;
+            }
+        }
+
+        // [metadata] 생성
+        ChartMetadata metadata = ChartMetadata.of(gds, contextV3, DateUtil.toYmd(latestDate), isYAxisSeparated);
 
         return ChartBundleFactory.create(metadata, mainChart, indicators, comparisonCharts);
     }

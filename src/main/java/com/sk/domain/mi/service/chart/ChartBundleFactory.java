@@ -50,7 +50,8 @@ public final class ChartBundleFactory {
      * @param isVisible     차트 표시 여부
      * @return 생성된 차트 객체
      */
-    public static Chart combineCharts(GoodsDataSourceDetail gds, boolean isCandle, List<Map<String, Object>> convertedData, List<String> targetColumns, Map<String, String> labels, boolean isVisible) {
+    public static Chart combineCharts(GoodsDataSourceDetail gds, boolean isCandle, List<Map<String, Object>> convertedData,
+        List<String> targetColumns, Map<String, String> labels, boolean isVisible, Boolean isYAxisSeparated) {
         ChartType chartType = isCandle ? ChartType.CANDLE : ChartType.LINE;
 
         String xAxis = targetColumns.get(IDX_DATE).trim();
@@ -59,7 +60,8 @@ public final class ChartBundleFactory {
         List<String> timestamps = buildTimestamps(xAxis, convertedData);
         List<Series> series = buildSeries(yAxisList, chartType, convertedData, labels, gds.getTradeVolumeColumnNm(), isVisible);
 
-        return Chart.of(gds, new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()).toString(), chartType, timestamps, series);
+        return Chart.of(gds, new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm()).toString(),
+            chartType, timestamps, series, isYAxisSeparated);
     }
 
     /**

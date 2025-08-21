@@ -17,11 +17,13 @@ public record Chart(
     String unitCd,
     ChartType chartType,
     List<String> timestamps,
-    List<Series> series
+    List<Series> series,
+    Boolean isYAxisSeparated
 
 ) {
 
-    public static Chart of(GoodsDataSourceDetail gds, String unitCd, ChartType chartType, List<String> timestamps, List<Series> series) {
+    public static Chart of(GoodsDataSourceDetail gds, String unitCd, ChartType chartType, List<String> timestamps,
+        List<Series> series, Boolean isYAxisSeparated) {
 
         Integer gdsNo = gds.getGoodsDataSourceNo();
         String goodsDataSourceName = gds.getGoodsDataSourceNm();
@@ -39,6 +41,7 @@ public record Chart(
             .chartType(chartType)
             .timestamps(timestamps)
             .series(series)
+            .isYAxisSeparated(isYAxisSeparated)
             .build();
     }
 
