@@ -9,6 +9,8 @@ spring:
     redis:
       repositories:
         enabled: false
+  jackson:
+    default-property-inclusion: non_null
 
   session:
     store-type: redis
