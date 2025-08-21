@@ -36,10 +36,17 @@ public class MarketDataChartSetting extends BaseEntity {
     @JoinColumn(name = "cust_cpny_no", referencedColumnName = "cust_cpny_no", nullable = false)
     @Comment("고객회사번호")
     private CustomerCompany customerCompany;
-    
+
     @Column(name = "chrt_mark_rnk", nullable = false)
     @Comment("차트표시순위")
     private Short chartMarkRank;
+
+    @Column(name = "cmprs_cd1", nullable = false)
+    @Comment("수치비교코드1")
+    private String compareCode1;
+    @Column(name = "cmprs_cd2", nullable = false)
+    @Comment("수치비교코드2")
+    private String compareCode2;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", nullable = false)

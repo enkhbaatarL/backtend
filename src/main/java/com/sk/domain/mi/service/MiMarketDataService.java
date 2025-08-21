@@ -78,7 +78,7 @@ public class MiMarketDataService {
 
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
-    private static final int MARKET_DATA_START_DATE_YEAR = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N년 전)
+    private static final int MAIN_MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_START_DATE_MONTH = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
@@ -107,7 +107,7 @@ public class MiMarketDataService {
      * @return 마켓 데이터 목록
      */
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
-        LocalDate START_DATE = LocalDate.now().minusYears(MARKET_DATA_START_DATE_YEAR);
+        LocalDate START_DATE = LocalDate.now().minusMonths(MAIN_MARKET_DATA_START_DATE_MONTH);
         LocalDate END_DATE = LocalDate.now();
 
         // 고객사 조회
@@ -143,7 +143,8 @@ public class MiMarketDataService {
                         // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                         MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
                                 MARKET_DATA_INTERVAL, miMarketDataCache.marketMetaData().indexStartDt(),
-                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt(), null);
+                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt(), null,
+                                miMarketDataCache.marketMetaData().max(), miMarketDataCache.marketMetaData().min());
 
                         return MiMarketDataRes.of(isPermitted, marketMetaData);
                     }
@@ -252,11 +253,13 @@ public class MiMarketDataService {
             CalculatePeriodChangeRes calculatePeriodChangeRes = null;
             if (marketDataChartSetting.getChartMarkRank() != null && marketDataChartSetting.getChartMarkRank() <= 2) {
                 // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
-                Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
-                        CalculatePeriodChangeType.YOY);
                 // 기간 변화 유형별 계산
                 calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-                        calculatePeriodChangeTypes);
+                    Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
+                        CalculatePeriodChangeType.YOY));
+            }else{
+                calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+                    Set.of(CalculatePeriodChangeType.WOW));
             }
 
             // 비교군 데이터소스 조회
@@ -315,10 +318,16 @@ public class MiMarketDataService {
                 }
             }
 
+            // max, min
+            MarketDataChartRawData min = Collections.min(mainDashboardData, Comparator.comparingDouble(
+                MarketDataChartRawData::value));
+            MarketDataChartRawData max = Collections.max(mainDashboardData, Comparator.comparingDouble(
+                MarketDataChartRawData::value));
+
             // 마켓데이터 메타데이터 생성
             MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, calculatePeriodChangeRes,
                     MARKET_DATA_INTERVAL, indexStartDate,
-                    lastValue, lastUpdateDt, recentChangeRateValue);
+                    lastValue, lastUpdateDt, recentChangeRateValue, max, min);
 
             // 캐시 저장
             MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
@@ -329,7 +338,7 @@ public class MiMarketDataService {
                 // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                 MarketMetaData marketMetaDataNoPermitted = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
                         MARKET_DATA_INTERVAL, indexStartDate,
-                        lastValue, lastUpdateDt, null);
+                        lastValue, lastUpdateDt, null, null, null);
 
                 return MiMarketDataRes.of(isPermitted, marketMetaDataNoPermitted);
             }
@@ -694,13 +703,13 @@ public class MiMarketDataService {
     }
 
     /**
-     * 월별 평균 계산 및 DTO 생성
+     * DTO 생성
      *
      * @param rawData 원시 데이터
      * @param dateColumnName 날짜 컬럼명
      * @param defaultDataColumnName 기본 데이터 컬럼명
      * @param startDate 월별 평균 계산 기준 날짜
-     * @return 월별 평균 계산 및 DTO 생성
+     * @return DTO 생성
      */
     private List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
                                                                 String dateColumnName,
@@ -711,7 +720,7 @@ public class MiMarketDataService {
         }
 
         int size = rawData.size();
-        int limit = 90;
+        int limit = 60;
 
         return rawData.stream().skip(size > limit ? size - limit : 0)
             .map(r->{
