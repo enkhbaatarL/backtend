@@ -1,9 +1,11 @@
 package com.sk.domain.mi.dto.response.signalMap;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 // @formatter:off
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record SignalMapDataDto(
         @Schema(description = "Instrument명", example = "")
         String instrumentNm,
