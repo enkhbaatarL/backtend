@@ -1,5 +1,10 @@
 package com.sk.domain.shared.entity.master.tcm;
 
+import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -18,11 +23,13 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Transient;
 
 @Getter
 @Entity
 @Table(name = "tcm_mrktdatachrtsetl")
 @Comment("TCM_시장데이터차트설정내역")
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MarketDataChartSetting extends BaseEntity {
 
@@ -52,5 +59,32 @@ public class MarketDataChartSetting extends BaseEntity {
     @JoinColumn(name = "gds_data_src_no", referencedColumnName = "gds_data_src_no", nullable = false)
     @Comment("상품데이터소스번호")
     private GoodsDataSourceDetail goodsDataSourceDetail;
+
+    @Transient
+    public Set<CalculatePeriodChangeType> toCalculatePeriodChangeTypes(){
+        // 순서 중요
+        HashSet<CalculatePeriodChangeType> result = new LinkedHashSet<>(2);
+        if(compareCode1 != null && !compareCode1.isBlank()){
+            try{
+                result.add(CalculatePeriodChangeType.valueOf(compareCode1));
+            }catch (IllegalArgumentException ignored){
+                log.debug("{} is not CalculatePeriodChangeType. MarketDataSettingNo={}", compareCode1, marketDataSettingNo);
+            }
+        }
+        if(compareCode2 != null && !compareCode2.isBlank()){
+            try{
+                result.add(CalculatePeriodChangeType.valueOf(compareCode2));
+            }catch (IllegalArgumentException ignored){
+                log.debug("{} is not CalculatePeriodChangeType. MarketDataSettingNo={}", compareCode2, marketDataSettingNo);
+            }
+        }
+        if(result.size() < 2){
+            result.add(CalculatePeriodChangeType.DOD);
+        }
+        if(result.size() < 2){
+            result.add(CalculatePeriodChangeType.WOW);
+        }
+        return result;
+    }
 
 }

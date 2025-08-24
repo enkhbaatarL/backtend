@@ -9,7 +9,9 @@ import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardInfoRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartDateRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.DashboardChartRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.service.MiDashboardService;
+import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +19,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -35,8 +38,10 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class MiDashboardDedicatedController {
 	private final MiDashboardService miDashboardService;
+    private final MiMarketDataService miMarketDataService;
 
-	@ApiOrder(2)
+
+    @ApiOrder(2)
 	@Parameters({
 			@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
 	})
@@ -49,6 +54,18 @@ public class MiDashboardDedicatedController {
 			@PathVariable("companyNo") Integer companyNo) {
 		return BaseResponseFactory.create(miDashboardService.getDashboardInfo(companyNo));
 	}
+
+
+    @ApiOrder(3)
+    @Operation(summary = "DashBoard 화면에서 쓰이는 Market Data 목록 조회", description = "DashBoard 화면에서 쓰이는 Market Data 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/market-datas")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<List<MiMarketDataSummaryRes>> getMarketDataSummary(
+        @PathVariable("companyNo") Integer companyNo) {
+        return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo));
+    }
 
 	@ApiOrder(5)
 	@Parameters({

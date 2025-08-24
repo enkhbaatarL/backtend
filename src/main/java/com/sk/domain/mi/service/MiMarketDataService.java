@@ -1,5 +1,7 @@
 package com.sk.domain.mi.service;
 
+import com.sk.domain.mi.service.period.PeriodCalculator;
+import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
@@ -39,7 +41,6 @@ import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryCache;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataSummaryRes;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRange;
-import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawData;
@@ -79,7 +80,7 @@ public class MiMarketDataService {
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
     private static final int MAIN_MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
-    private static final int MARKET_DATA_START_DATE_MONTH = 2; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
+    private static final int MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
     private static final String MARKET_DATA_INTERVAL = "1M"; // 월별 평균 계산을 위한 기간
@@ -100,6 +101,17 @@ public class MiMarketDataService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final EntityManager em;
+
+    private final Map<String, PeriodCalculator> periodCalculators;
+    private Map<CalculatePeriodChangeType, PeriodCalculator> periodCalculatorMap;
+
+    @PostConstruct
+    public void init(){
+        periodCalculatorMap = new HashMap<>();
+        for(PeriodCalculator periodCalculator : periodCalculators.values()){
+            periodCalculatorMap.put(periodCalculator.getCalculatePeriodChangeType(), periodCalculator);
+        }
+    }
 
     /**
      * 마켓 데이터 조회
@@ -249,18 +261,8 @@ public class MiMarketDataService {
 
             MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
 
-            // 기획상 Rank 1,2순위만 계산
-            CalculatePeriodChangeRes calculatePeriodChangeRes = null;
-            if (marketDataChartSetting.getChartMarkRank() != null && marketDataChartSetting.getChartMarkRank() <= 2) {
-                // 계산 하고자 하는 기간 변화 유형(YOY, MOM, WOW)
-                // 기간 변화 유형별 계산
-                calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-                    Set.of(CalculatePeriodChangeType.MOM, CalculatePeriodChangeType.WOW,
-                        CalculatePeriodChangeType.YOY));
-            }else{
-                calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-                    Set.of(CalculatePeriodChangeType.WOW));
-            }
+            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+                marketDataChartSetting.toCalculatePeriodChangeTypes());
 
             // 비교군 데이터소스 조회
             List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
@@ -325,7 +327,7 @@ public class MiMarketDataService {
                 MarketDataChartRawData::value));
 
             // 마켓데이터 메타데이터 생성
-            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, calculatePeriodChangeRes,
+            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, calculatePeriodChangeMap,
                     MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt, recentChangeRateValue, max, min);
 
@@ -483,14 +485,18 @@ public class MiMarketDataService {
             }
 
             // DOD, MOM, WOW 계산
-            Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.DOD, CalculatePeriodChangeType.MOM,
-                    CalculatePeriodChangeType.WOW);
-            CalculatePeriodChangeRes calculatePeriodChangeRes = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-                    calculatePeriodChangeTypes);
+//            Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.DOD, CalculatePeriodChangeType.MOM,
+//                    CalculatePeriodChangeType.WOW);
+//            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+//                    calculatePeriodChangeTypes);
+
+                Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+                    marketDataChartSetting.toCalculatePeriodChangeTypes());
+
 
             // 마켓데이터 메타데이터 생성
             MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource,
-                    calculatePeriodChangeRes,
+                    calculatePeriodChangeMap,
                     MARKET_DATA_INTERVAL, indexStartDate,
                     lastValue, lastUpdateDt);
 
@@ -865,149 +871,23 @@ public class MiMarketDataService {
      * @param calculatePeriodChangeTypes 기간 변화 유형
      * @return 기간 변화 수치, 변화율 계산 결과
      */
-    private CalculatePeriodChangeRes calculatePeriodChange(
+    private Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChange(
             List<Map<String, Object>> rawData,
             String dateColumnName,
             String defaultDataColumnName,
             Set<CalculatePeriodChangeType> calculatePeriodChangeTypes) {
-        if (rawData == null || rawData.isEmpty() || calculatePeriodChangeTypes == null || calculatePeriodChangeTypes.isEmpty()) {
-            return CalculatePeriodChangeRes.ofEmpty();
+
+        // 순서 중요
+        Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> result = new LinkedHashMap<>();
+        for(CalculatePeriodChangeType calculatePeriodChangeType : calculatePeriodChangeTypes){
+            PeriodCalculator periodCalculator = periodCalculatorMap.get(calculatePeriodChangeType);
+            CalculatePeriodChangeValue calculatePeriodChangeValue = periodCalculator.calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName);
+            if(calculatePeriodChangeValue == null) continue;
+            result.put(calculatePeriodChangeType, calculatePeriodChangeValue);
         }
-
-        // 오늘
-        //LocalDate today = LocalDate.now();
-        Map<String,Object> lastDayEntity = rawData.get(rawData.size() -1);
-        LocalDate today = DateUtil.parseDate(lastDayEntity.get(dateColumnName));
-        // 어제
-        LocalDate yesterday = today.minusDays(1);
-
-        // 이번 주
-        LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() % 7); // 일요일
-        LocalDate thisWeekEnd = today;
-        // 지난 주
-        LocalDate lastWeekStart = thisWeekStart.minusWeeks(1);
-        LocalDate lastWeekEnd = thisWeekStart.minusDays(1);
-
-        // 이번 달
-        LocalDate thisMonthStart = today.withDayOfMonth(1);
-        LocalDate thisMonthEnd = thisMonthStart.withDayOfMonth(thisMonthStart.lengthOfMonth());
-        // 지난 달
-        LocalDate lastMonthStart = thisMonthStart.minusMonths(1);
-        LocalDate lastMonthEnd = lastMonthStart.withDayOfMonth(lastMonthStart.lengthOfMonth());
-
-        // 이번 연도
-        LocalDate thisYearStart = today.withMonth(1).withDayOfMonth(1);
-        LocalDate thisYearEnd = thisYearStart.withMonth(12).withDayOfMonth(31);
-        // 지난 연도
-        LocalDate lastYearStart = thisYearStart.minusYears(1);
-        LocalDate lastYearEnd = lastYearStart.withMonth(12).withDayOfMonth(31);
-
-        // 기간별 날짜 범위 정의
-        Map<CalculatePeriodChangeType, CalculatePeriodChangeRange> calculatePeriodChangeRanges = Map.of(
-                CalculatePeriodChangeType.DOD, new CalculatePeriodChangeRange(
-                        today, today, yesterday, yesterday),
-
-                CalculatePeriodChangeType.WOW, new CalculatePeriodChangeRange(
-                        thisWeekStart, thisWeekEnd, lastWeekStart, lastWeekEnd),
-
-                CalculatePeriodChangeType.MOM, new CalculatePeriodChangeRange(
-                        thisMonthStart, thisMonthEnd, lastMonthStart, lastMonthEnd),
-
-                CalculatePeriodChangeType.YOY, new CalculatePeriodChangeRange(
-                        thisYearStart, thisYearEnd, lastYearStart, lastYearEnd));
-
-        // 계산 결과 저장
-        Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeValues = calculatePeriodChangeTypes.stream()
-                .filter(calculatePeriodChangeRanges::containsKey)
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        type -> {
-                            CalculatePeriodChangeRange range = calculatePeriodChangeRanges.get(type);
-                            return calculatePeriodChangeValue(
-                                    rawData, dateColumnName, defaultDataColumnName,
-                                    range.currentStart(),
-                                    range.currentEnd(),
-                                    range.previousStart(),
-                                    range.previousEnd());
-                        }));
-
-        return CalculatePeriodChangeRes.of(calculatePeriodChangeValues.get(CalculatePeriodChangeType.DOD),
-                calculatePeriodChangeValues.get(CalculatePeriodChangeType.WOW),
-                calculatePeriodChangeValues.get(CalculatePeriodChangeType.MOM),
-                calculatePeriodChangeValues.get(CalculatePeriodChangeType.YOY));
+        return result;
     }
 
-    /**
-     * 기간 변화 수치, 변화율 계산
-     *
-     * @param rawData 원시 데이터
-     * @param dateColumnName 날짜 컬럼명
-     * @param defaultDataColumnName 기본 데이터 컬럼명
-     * @param currentStartDate 현재 기간 시작일
-     * @param currentEndDate 현재 기간 종료일
-     * @param previousStartDate 이전 기간 시작일
-     * @param previousEndDate 이전 기간 종료일
-     * @return 변화 수치, 변화율
-     */
-    private CalculatePeriodChangeValue calculatePeriodChangeValue(
-            List<Map<String, Object>> rawData,
-            String dateColumnName,
-            String defaultDataColumnName,
-            LocalDate currentStartDate,
-            LocalDate currentEndDate,
-            LocalDate previousStartDate,
-            LocalDate previousEndDate) {
-        double currentSum = 0.0;
-        int currentCount = 0;
-        double previousSum = 0.0;
-        int previousCount = 0;
-
-        for (Map<String, Object> row : rawData) {
-            Object value = row.get(defaultDataColumnName);
-            if (value == null) {
-                continue;
-            }
-
-            double val;
-            try {
-                val = Double.parseDouble(value.toString());
-            } catch (NumberFormatException e) {
-                log.warn("Invalid number format: {}, skipping", value, e);
-                continue;
-            }
-
-            LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
-
-            if (!date.isBefore(currentStartDate) && !date.isAfter(currentEndDate)) {
-                currentSum += val;
-                currentCount++;
-            } else if (!date.isBefore(previousStartDate) && !date.isAfter(previousEndDate)) {
-                previousSum += val;
-                previousCount++;
-            }
-
-        }
-
-        // 데이터가 없으면 null 반환
-        if (currentCount == 0 || previousCount == 0) {
-            return CalculatePeriodChangeValue.ofEmpty();
-        }
-
-        double currentAvg = currentSum / currentCount;
-        double previousAvg = previousSum / previousCount;
-
-        // 변화율 계산: ((현재 평균 - 이전 평균) / 이전 평균) * 100
-        double changeRateRaw = ((currentAvg - previousAvg) / previousAvg) * 100;
-        BigDecimal changeRateBd = BigDecimal.valueOf(changeRateRaw).setScale(2, RoundingMode.HALF_UP); // formatting
-        double changeRate = changeRateBd.doubleValue();
-
-        // 변화 수치 계산: 현재 평균 - 이전 평균
-        double changeValueRaw = currentAvg - previousAvg;
-        BigDecimal changeValueBd = BigDecimal.valueOf(changeValueRaw).setScale(2, RoundingMode.HALF_UP); // formatting
-        double changeValue = changeValueBd.doubleValue();
-
-        return CalculatePeriodChangeValue.of(changeRate, changeValue);
-    }
 
     /**
      * Market Data - Data Catalog 목록 조회

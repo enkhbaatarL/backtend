@@ -6,8 +6,13 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum CalculatePeriodChangeType { // 기간 변화 계산 타입
-    DOD,
-    MOM,
-    WOW,
-    YOY
+    DOD("DoD"),
+    MOM("MoM"),
+    WOW("WoW"),
+    YOY("YoY");
+
+    private String periodName;
+    CalculatePeriodChangeType(String periodName){
+        this.periodName = periodName;
+    }
 }

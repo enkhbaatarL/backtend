@@ -50,7 +50,6 @@ import lombok.extern.slf4j.Slf4j;
 public class MiDashboardController {
 	private final AuthorizationService authorizationService;
 	private final MiDashboardService miDashboardService;
-	private final MiMarketDataService miMarketDataService;
 
 	@ApiOrder(1)
 	@Parameters({
@@ -68,18 +67,6 @@ public class MiDashboardController {
 		int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
 		return BaseResponseFactory.create(miDashboardService.getDataExists(cNo));
-	}
-
-
-	@ApiOrder(3)
-	@Operation(summary = "DashBoard 화면에서 쓰이는 Market Data 목록 조회", description = "DashBoard 화면에서 쓰이는 Market Data 목록을 조회합니다.")
-	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-	@GetMapping("/companies/{companyNo}/market-datas")
-	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-	public BaseResponse<List<MiMarketDataSummaryRes>> getMarketDataSummary(
-			@PathVariable("companyNo") Integer companyNo) {
-		return BaseResponseFactory.create(miMarketDataService.getMarketDataSummary(companyNo));
 	}
 
 	@ApiOrder(4)

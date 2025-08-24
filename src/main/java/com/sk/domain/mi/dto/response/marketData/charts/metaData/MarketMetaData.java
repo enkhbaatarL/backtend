@@ -1,9 +1,10 @@
 package com.sk.domain.mi.dto.response.marketData.charts.metaData;
 
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawData;
+import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import java.time.LocalDate;
 
-import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -13,6 +14,7 @@ import com.sk.domain.shared.enums.chart.ChartType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 
 public record MarketMetaData(
@@ -84,7 +86,7 @@ public record MarketMetaData(
         this.changeRates = changeRates;
     }
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
+    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt, Double recentChangeRate, MarketDataChartRawData max, MarketDataChartRawData min) {
 
         Double dodChangeRate = null;
@@ -92,22 +94,14 @@ public record MarketMetaData(
             dodChangeRate = recentChangeRate;
         }
         // temp
-        List<ChangeRate> changeRates = new ArrayList<>();
-        if(dodChangeRate != null){
-            changeRates.add(new ChangeRate("DoD", dodChangeRate));
+        final List<ChangeRate> tempChangeRates = new ArrayList<>();
+        if(dodChangeRate != null && !calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD)){
+            calculatePeriodChangeMap.put(CalculatePeriodChangeType.DOD, CalculatePeriodChangeValue.of(dodChangeRate, null));
         }
-        if(calculatePeriodChangeRes != null){
-            if(calculatePeriodChangeRes.wowChangeRate() != null){
-                changeRates.add(new ChangeRate("WoW", calculatePeriodChangeRes.wowChangeRate()));
-            }
-            if(calculatePeriodChangeRes.momChangeRate() != null){
-                changeRates.add(new ChangeRate("MoM", calculatePeriodChangeRes.momChangeRate()));
-            }
-            if(calculatePeriodChangeRes.yoyChangeRate() != null){
-                changeRates.add(new ChangeRate("YoY", calculatePeriodChangeRes.yoyChangeRate()));
-            }
-        }
-        changeRates = changeRates.stream().limit(2).toList();
+        calculatePeriodChangeMap.forEach((key,value)->{
+            tempChangeRates.add(new ChangeRate(key.getPeriodName(), value.changeRate()));
+        });
+        List<ChangeRate> changeRates = tempChangeRates.stream().limit(2).toList();
 
         return MarketMetaData.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
@@ -123,10 +117,18 @@ public record MarketMetaData(
                 .lastUpdateDt(lastUpdateDt)
                 .indexStartDt(indexStartDt)
                 .lastValue(lastValue)
-                .yoyChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.yoyChangeRate() : null)
-                .momChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.momChangeRate() : null)
-                .wowChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.wowChangeRate() : null)
-                .dodChangeRate(dodChangeRate)
+                .yoyChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.YOY) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.YOY).changeRate() : null)
+                .momChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.MOM) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.MOM).changeRate() : null)
+                .wowChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.WOW) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.WOW).changeRate() : null)
+                .dodChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.DOD).changeRate() : null)
                 .recentChangeRate(recentChangeRate)
                 .changeRates(changeRates)
                 .min(min)

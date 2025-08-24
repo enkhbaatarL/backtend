@@ -1,13 +1,15 @@
 package com.sk.domain.mi.dto.response.marketData.charts.metaData;
 
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
+import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import java.time.LocalDate;
 
-import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeRes;
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Map;
 import lombok.Builder;
 
 public record MarketMetaDataSummary(
@@ -78,24 +80,22 @@ public record MarketMetaDataSummary(
     }
 
     public static MarketMetaDataSummary of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData,
-            GoodsDataSourceDetail goodsDataSourceDetail, CalculatePeriodChangeRes calculatePeriodChangeRes, String interval,
+            GoodsDataSourceDetail goodsDataSourceDetail, Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
         Double recentChangeValue = null;
         Double recentChangeRate = null;
-        if(calculatePeriodChangeRes != null){
-            if(calculatePeriodChangeRes.dodChangeRate() != null && calculatePeriodChangeRes.dodChangeValue() != null){
-                recentChangeValue = calculatePeriodChangeRes.dodChangeValue();
-                recentChangeRate = calculatePeriodChangeRes.dodChangeRate();
-            }else if(calculatePeriodChangeRes.wowChangeRate() != null && calculatePeriodChangeRes.wowChangeValue() != null){
-                recentChangeValue = calculatePeriodChangeRes.wowChangeValue();
-                recentChangeRate = calculatePeriodChangeRes.wowChangeRate();
-            }else if(calculatePeriodChangeRes.momChangeRate() != null && calculatePeriodChangeRes.momChangeValue() != null){
-                recentChangeValue = calculatePeriodChangeRes.momChangeValue();
-                recentChangeRate = calculatePeriodChangeRes.momChangeRate();
-            }else if(calculatePeriodChangeRes.yoyChangeRate() != null && calculatePeriodChangeRes.yoyChangeValue() != null){
-                recentChangeValue = calculatePeriodChangeRes.yoyChangeValue();
-                recentChangeRate = calculatePeriodChangeRes.yoyChangeRate();
-            }
+        if(calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD)){
+            recentChangeValue = calculatePeriodChangeMap.get(CalculatePeriodChangeType.DOD).changeValue();
+            recentChangeRate = calculatePeriodChangeMap.get(CalculatePeriodChangeType.DOD).changeRate();
+        }else if(calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.WOW)){
+            recentChangeValue = calculatePeriodChangeMap.get(CalculatePeriodChangeType.WOW).changeValue();
+            recentChangeRate = calculatePeriodChangeMap.get(CalculatePeriodChangeType.WOW).changeRate();
+        } else if (calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.MOM)) {
+          recentChangeValue = calculatePeriodChangeMap.get(CalculatePeriodChangeType.MOM).changeValue();
+          recentChangeRate = calculatePeriodChangeMap.get(CalculatePeriodChangeType.MOM).changeRate();
+        }else if(calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.YOY)){
+            recentChangeValue = calculatePeriodChangeMap.get(CalculatePeriodChangeType.YOY).changeValue();
+            recentChangeRate = calculatePeriodChangeMap.get(CalculatePeriodChangeType.YOY).changeRate();
         }
         return MarketMetaDataSummary.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
@@ -110,12 +110,24 @@ public record MarketMetaDataSummary(
                 .lastUpdateDt(lastUpdateDt)
                 .indexStartDt(indexStartDt)
                 .lastValue(lastValue)
-                .momChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.momChangeRate() : null)
-                .momChangeValue(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.momChangeValue() : null)
-                .wowChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.wowChangeRate() : null)
-                .wowChangeValue(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.wowChangeValue() : null)
-                .dodChangeRate(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.dodChangeRate() : null)
-                .dodChangeValue(calculatePeriodChangeRes != null ? calculatePeriodChangeRes.dodChangeValue() : null)
+                .momChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.MOM) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.MOM).changeRate() : null)
+                .momChangeValue(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.MOM) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.MOM).changeValue() : null)
+                .wowChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.WOW) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.WOW).changeRate() : null)
+                .wowChangeValue(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.WOW) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.WOW).changeValue() : null)
+                .dodChangeRate(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.DOD).changeRate() : null)
+                .dodChangeValue(
+                    calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD) ?
+                        calculatePeriodChangeMap.get(CalculatePeriodChangeType.DOD).changeValue() : null)
                 .recentChangeValue(recentChangeValue)
                 .recentChangeRate(recentChangeRate)
                 .build();
