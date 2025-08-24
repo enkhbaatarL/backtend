@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tlm;
 
+import com.sk.domain.mi.dto.response.marketData.RecentViewedInf;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.compositeKey.tlm.GoodsDataInquiryUserId;
 import com.sk.domain.shared.entity.master.tlm.GoodsDataInquiryUser;
@@ -12,59 +13,66 @@ import java.util.List;
 
 public interface GoodsDataInquiryUserRepository extends JpaRepository<GoodsDataInquiryUser, GoodsDataInquiryUserId> {
 
-    @Query(value = """
-                SELECT new com.sk.domain.mi.dto.response.marketData.RecentViewedRes(
-                    p.providerNo,
-                    p.providerNm,
-                    g.goodsNo,
-                    gd.goodsDataNo,
-                    gd.goodsDataNm,
-                    gd.goodsDataExpn,
-                    MAX(gdiu.id.inquiryDtm)
+  /**
+   * 최근 값만 조회가능. Paging 기능 없음. count 가 없음.
+   *
+   * @param companyNo
+   * @param userNo
+   * @param userLoginId
+   * @param pageable
+   * @return
+   */
+  @Query(
+      value =
+          """
+                WITH ranked AS (
+                  SELECT gds_data_no, MAX(inqr_dtm) AS max_inqr
+                  FROM tlm_gdsdatainqrusrl
+                  WHERE usr_logn_id = :userLoginId
+                  GROUP BY gds_data_no
+                  ORDER BY max_inqr DESC
+                  LIMIT 100   -- 안전 버퍼(권한/데이터소스 EXISTS로 걸러질 것을 감안)
                 )
-                FROM GoodsDataInquiryUser gdiu
-                JOIN gdiu.id.goodsData gd
-                JOIN gd.goods g
-                JOIN g.provider p
-                WHERE
-                    gdiu.id.userLoginId = :userLoginId
-                    AND EXISTS (
-                            SELECT 1
-                            FROM CustomerCompanyProviderMapping ccpm
-                                JOIN ccpm.customerCompany cc
-                                JOIN CustomerCompanyGoodsMapping ccgm ON ccgm.customerCompany = cc
-                                JOIN AuthManageGoodsMapping amgm ON amgm.customerCompanyGoodsMapping.customerCompany = cc
-                            WHERE
-                                ccpm.isDeleted = false
-                                AND ccpm.isUsed = true
-                                AND ccgm.isDeleted = false
-                                AND ccgm.isUsed = true
-                                AND amgm.isDeleted = false
-                                AND ccgm.id.goodsAuthManagementSeparateCd = amgm.customerCompanyGoodsMapping.id.goodsAuthManagementSeparateCd
-                                AND ccgm.goods.goodsNo = g.goodsNo
-                                AND cc.customerCompanyNo = :companyNo
-                                AND amgm.useBeginDate <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-                                AND amgm.useEndDate >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
-                                AND amgm.goodsAuthCd = 'VIEW'
-                                AND (ccgm.id.goodsAuthManagementSeparateCd = 'COMPANY' OR amgm.user.userNo = :userNo)
-                    )
-                    AND EXISTS (
-                            SELECT 1
-                            FROM GoodsDataSourceDetail gdsd
-                            WHERE gdsd.goodsData = gd
-                                AND gdsd.isDeleted = false
-                                AND gdsd.goodsDataUseManagementCd = 'backend'
-                    )
-                GROUP BY
-                    p.providerNo,
-                    p.providerNm,
-                    g.goodsNo,
-                    gd.goodsDataNo,
-                    gd.goodsDataNm,
-                    gd.goodsDataExpn
-                ORDER BY
-                    MAX(gdiu.id.inquiryDtm) DESC
-            """)
-    List<RecentViewedRes> findRecentViewdByUserLoginId(@Param("companyNo") int companyNo, @Param("userNo") int userNo,
-            @Param("userLoginId") String userLoginId, Pageable pageable);
+                SELECT
+                    p.prvd_no, p.prvd_nm,
+                    g.gds_no,
+                    gd.gds_data_no, gd.gds_data_nm, gd.gds_data_expn,
+                    r.max_inqr
+                FROM ranked r
+                JOIN tmd_gdsdatam gd ON gd.gds_data_no = r.gds_data_no
+                JOIN tmd_gdsm g      ON g.gds_no      = gd.gds_no
+                JOIN tmd_prvdm p     ON p.prvd_no     = g.prvd_no
+                WHERE EXISTS (
+                  SELECT 1
+                  FROM tam_custcpnyprvdmappl ccpm
+                  JOIN tmd_custcpnym cc     ON cc.cust_cpny_no = ccpm.cust_cpny_no
+                  JOIN tam_custcpnygdsmappl c1 ON c1.cust_cpny_no = cc.cust_cpny_no
+                  JOIN tam_custcpnygdsmappl c2 ON c2.cust_cpny_no = cc.cust_cpny_no
+                                              AND c2.gds_auth_mnagt_spt_cd = c1.gds_auth_mnagt_spt_cd
+                                              AND c2.gds_no = g.gds_no
+                  JOIN tam_authmnagtgdsmappl a  ON a.cust_cpny_no = c2.cust_cpny_no
+                                              AND a.gds_no = c2.gds_no
+                                              AND a.gds_auth_mnagt_spt_cd = c2.gds_auth_mnagt_spt_cd
+                  WHERE ccpm.cust_cpny_no = :companyNo
+                    AND ccpm.use_yn = 'Y' AND ccpm.del_yn = 'N'
+                    AND c1.use_yn = 'Y'  AND c1.del_yn = 'N'
+                    AND a.gds_auth_cd = 'VIEW' AND a.del_yn = 'N'
+                    AND a.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
+                    AND a.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')
+                    AND (c1.gds_auth_mnagt_spt_cd='COMPANY' OR a.usr_no=:userNo)
+                )
+                AND EXISTS (
+                  SELECT 1
+                  FROM tmd_gdsdatasrcd d
+                  WHERE d.gds_data_no = gd.gds_data_no
+                    AND d.del_yn = 'N'
+                    AND d.gds_data_use_mnagt_cd = 'backend'
+                )
+                ORDER BY r.max_inqr DESC
+            """, nativeQuery = true)
+  List<RecentViewedInf> findRecentViewdByUserLoginId(
+      @Param("companyNo") int companyNo,
+      @Param("userNo") int userNo,
+      @Param("userLoginId") String userLoginId,
+      Pageable pageable);
 }

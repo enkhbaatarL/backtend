@@ -29,7 +29,11 @@ public class MiGoodsDataInquiryUserService {
     }
 
     public List<RecentViewedRes> getGoodsDataInquiryUser(int companyNo, int userNo, String userLoginId, Pageable pageable) {
-        return goodsDataInquiryUserRepository.findRecentViewdByUserLoginId(companyNo, userNo, userLoginId, pageable);
+        return goodsDataInquiryUserRepository
+            .findRecentViewdByUserLoginId(companyNo, userNo, userLoginId, pageable)
+            .stream()
+            .map(RecentViewedRes::of)
+            .toList();
     }
 
 }
