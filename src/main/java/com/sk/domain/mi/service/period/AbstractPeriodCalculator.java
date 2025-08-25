@@ -60,13 +60,17 @@ public abstract class AbstractPeriodCalculator implements PeriodCalculator{
         double currentAvg = currentSum / currentCount;
         double previousAvg = previousSum / previousCount;
 
+        return calculateChangeRate(currentAvg, previousAvg);
+    }
+
+    protected CalculatePeriodChangeValue calculateChangeRate(double currentValue, double previousValue){
         // 변화율 계산: ((현재 평균 - 이전 평균) / 이전 평균) * 100
-        double changeRateRaw = ((currentAvg - previousAvg) / previousAvg) * 100;
+        double changeRateRaw = ((currentValue - previousValue) / previousValue) * 100;
         BigDecimal changeRateBd = BigDecimal.valueOf(changeRateRaw).setScale(2, RoundingMode.HALF_UP); // formatting
         double changeRate = changeRateBd.doubleValue();
 
         // 변화 수치 계산: 현재 평균 - 이전 평균
-        double changeValueRaw = currentAvg - previousAvg;
+        double changeValueRaw = currentValue - previousValue;
         BigDecimal changeValueBd = BigDecimal.valueOf(changeValueRaw).setScale(2, RoundingMode.HALF_UP); // formatting
         double changeValue = changeValueBd.doubleValue();
 

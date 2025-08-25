@@ -261,7 +261,7 @@ public class MiMarketDataService {
 
             MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
 
-            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
+            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(mainGoodsDataSource, rawData, dateColumnName, defaultDataColumnName,
                 marketDataChartSetting.toCalculatePeriodChangeTypes());
 
             // 비교군 데이터소스 조회
@@ -490,8 +490,8 @@ public class MiMarketDataService {
 //            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
 //                    calculatePeriodChangeTypes);
 
-                Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-                    marketDataChartSetting.toCalculatePeriodChangeTypes());
+            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(mainGoodsDataSource, rawData, dateColumnName, defaultDataColumnName,
+                marketDataChartSetting.toCalculatePeriodChangeTypes());
 
 
             // 마켓데이터 메타데이터 생성
@@ -872,6 +872,7 @@ public class MiMarketDataService {
      * @return 기간 변화 수치, 변화율 계산 결과
      */
     private Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChange(
+            GoodsDataSourceDetail mainGoodsDataSource,
             List<Map<String, Object>> rawData,
             String dateColumnName,
             String defaultDataColumnName,
@@ -881,7 +882,7 @@ public class MiMarketDataService {
         Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> result = new LinkedHashMap<>();
         for(CalculatePeriodChangeType calculatePeriodChangeType : calculatePeriodChangeTypes){
             PeriodCalculator periodCalculator = periodCalculatorMap.get(calculatePeriodChangeType);
-            CalculatePeriodChangeValue calculatePeriodChangeValue = periodCalculator.calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName);
+            CalculatePeriodChangeValue calculatePeriodChangeValue = periodCalculator.calculatePeriodChange(mainGoodsDataSource, rawData, dateColumnName, defaultDataColumnName);
             if(calculatePeriodChangeValue == null) continue;
             result.put(calculatePeriodChangeType, calculatePeriodChangeValue);
         }

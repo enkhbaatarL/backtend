@@ -2,6 +2,7 @@ package com.sk.domain.mi.service.period;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +18,8 @@ public class MoMPeriodCalculator extends AbstractPeriodCalculator{
     }
 
     @Override
-    public CalculatePeriodChangeValue calculatePeriodChange(List<Map<String, Object>> rawData,
+    public CalculatePeriodChangeValue calculatePeriodChange(
+        GoodsDataSourceDetail mainGoodsDataSource, List<Map<String, Object>> rawData,
         String dateColumnName, String defaultDataColumnName) {
 
         if (rawData == null || rawData.isEmpty()) {
