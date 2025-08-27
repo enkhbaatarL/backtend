@@ -134,235 +134,338 @@ public class MiMarketDataService {
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
-        return marketDataChartSettings.parallelStream().map(marketDataChartSetting -> {
-            GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
-            GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
-            Goods mainGoods = mainGoodsData.getGoods();
+    return marketDataChartSettings.parallelStream()
+        .map(
+            marketDataChartSetting -> {
+              GoodsDataSourceDetail mainGoodsDataSource =
+                  marketDataChartSetting.getGoodsDataSourceDetail();
+              GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
+              Goods mainGoods = mainGoodsData.getGoods();
 
-            // 권한 조회
-            Boolean isPermitted = permissionRes.getGoodsViewableMap(companyNo).getOrDefault(mainGoods.getGoodsNo(), false);
+              // 권한 조회
+              Boolean isPermitted =
+                  permissionRes
+                      .getGoodsViewableMap(companyNo)
+                      .getOrDefault(mainGoods.getGoodsNo(), false);
 
-            String cacheKey = getMarketDataCacheKey(marketDataChartSetting.getMarketDataSettingNo());
+              String cacheKey =
+                  getMarketDataCacheKey(marketDataChartSetting.getMarketDataSettingNo());
 
-            // 캐시 조회
-            String cachedData = redisTemplate.opsForValue().get(cacheKey);
-            if (cachedData != null) {
+              // 캐시 조회
+              String cachedData = redisTemplate.opsForValue().get(cacheKey);
+              if (cachedData != null) {
                 try {
-                    MiMarketDataCache miMarketDataCache = objectMapper.readValue(cachedData, MiMarketDataCache.class);
+                  MiMarketDataCache miMarketDataCache =
+                      objectMapper.readValue(cachedData, MiMarketDataCache.class);
 
-                    // 권한이 없는 경우 메타데이터까지만 제공
-                    if (!isPermitted) {
-                        // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
-                        MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
-                                MARKET_DATA_INTERVAL, miMarketDataCache.marketMetaData().indexStartDt(),
-                                miMarketDataCache.marketMetaData().lastValue(), miMarketDataCache.marketMetaData().lastUpdateDt(), null,
-                                miMarketDataCache.marketMetaData().max(), miMarketDataCache.marketMetaData().min());
+                  // 권한이 없는 경우 메타데이터까지만 제공
+                  if (!isPermitted) {
+                    // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
+                    MarketMetaData marketMetaData =
+                        MarketMetaData.of(
+                            marketDataChartSetting,
+                            mainGoodsData,
+                            mainGoodsDataSource,
+                            new HashMap<>(),
+                            MARKET_DATA_INTERVAL,
+                            miMarketDataCache.marketMetaData().indexStartDt(),
+                            miMarketDataCache.marketMetaData().lastValue(),
+                            miMarketDataCache.marketMetaData().lastUpdateDt(),
+                            null,
+                            miMarketDataCache.marketMetaData().max(),
+                            miMarketDataCache.marketMetaData().min());
 
-                        return MiMarketDataRes.of(isPermitted, marketMetaData);
-                    }
+                    return MiMarketDataRes.of(isPermitted, marketMetaData);
+                  }
 
-                    // 권한이 있는 경우 모든 데이터 제공
-                    return MiMarketDataRes.of(isPermitted, miMarketDataCache.marketMetaData(),
-                            miMarketDataCache.mainChart(), miMarketDataCache.compareCharts());
+                  // 권한이 있는 경우 모든 데이터 제공
+                  return MiMarketDataRes.of(
+                      isPermitted,
+                      miMarketDataCache.marketMetaData(),
+                      miMarketDataCache.mainChart(),
+                      miMarketDataCache.compareCharts());
                 } catch (Exception e) {
-                    // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
-                    redisTemplate.delete(cacheKey);
-                    log.error("마켓데이터 캐시 조회 실패 : {}", e.getMessage());
+                  // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
+                  redisTemplate.delete(cacheKey);
+                  log.error("마켓데이터 캐시 조회 실패 : {}", e.getMessage());
                 }
-            }
+              }
 
-            // 칼럼 목록 조회
-            String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
-                    .map(String::trim)
-                    .toArray(String[]::new);
-            // 날짜 칼럼
-            String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
-            // 기본 데이터 칼럼
-            String defaultDataColumnName = tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+              // 칼럼 목록 조회
+              String[] tableColumnListNm =
+                  Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
+                      .map(String::trim)
+                      .toArray(String[]::new);
+              // 날짜 칼럼
+              String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
+              // 기본 데이터 칼럼
+              String defaultDataColumnName =
+                  tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
-            // 원시 데이터 조회
-            List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+              // 원시 데이터 조회
+              List<Map<String, Object>> rawData =
+                  getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
-            // Index Start date 데이터 조회
-            LocalDate indexStartDate = null;
-            List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
-            if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
+              // Index Start date 데이터 조회
+              LocalDate indexStartDate = null;
+              List<Map<String, Object>> indexStartDateData =
+                  getIndexStartDateData(mainGoodsDataSource, dateColumnName);
+              if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
                 Map<String, Object> indexStartDateDataMap = indexStartDateData.get(0);
                 if (indexStartDateDataMap != null) {
-                    Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
-                    if (indexStartDateDataValue != null) {
-                        String rawDate = indexStartDateDataValue.toString();
-                        indexStartDate = DateUtil.parseDate(rawDate);
-                    }
+                  Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
+                  if (indexStartDateDataValue != null) {
+                    String rawDate = indexStartDateDataValue.toString();
+                    indexStartDate = DateUtil.parseDate(rawDate);
+                  }
                 }
-            }
+              }
 
-            // 마지막 업데이트 날짜 값
-            LocalDate lastUpdateDt = null;
-            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
-            if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
+              // 마지막 업데이트 날짜 값
+              LocalDate lastUpdateDt = null;
+              List<Map<String, Object>> lastUpdateDtData =
+                  getLastUpdateDtData(
+                      mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+              if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
                 Map<String, Object> lastUpdateDtDataMap = lastUpdateDtData.get(0);
                 if (lastUpdateDtDataMap != null) {
-                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
-                    if (lastUpdateDtDataValue != null) {
-                        String rawDate = lastUpdateDtDataValue.toString();
-                        lastUpdateDt = DateUtil.parseDate(rawDate);
-                    }
+                  Object lastUpdateDtDataValue =
+                      lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+                  if (lastUpdateDtDataValue != null) {
+                    String rawDate = lastUpdateDtDataValue.toString();
+                    lastUpdateDt = DateUtil.parseDate(rawDate);
+                  }
                 }
-            }
+              }
 
-            // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
-            if (rawData.isEmpty()) {
-                MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, MARKET_DATA_INTERVAL,
-                        indexStartDate, lastUpdateDt);
+              // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
+              if (rawData.isEmpty()) {
+                MarketMetaData marketMetaData =
+                    MarketMetaData.of(
+                        marketDataChartSetting,
+                        mainGoodsData,
+                        mainGoodsDataSource,
+                        MARKET_DATA_INTERVAL,
+                        indexStartDate,
+                        lastUpdateDt);
                 MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
                 List<MarketDataChart> compareCharts = Collections.emptyList();
 
-                MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+                MiMarketDataCache miMarketDataCache =
+                    MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
                 saveToMarketDataCache(cacheKey, miMarketDataCache);
 
                 return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
-            }
+              }
 
-            // 가장 최근 Raw 전날 Data 대비 가장 최근 Raw Data 계산 (증감률, 둘다 null이 아니라는 가정), 증감률 계산
-            List<Map<String, Object>> recentChangeRate = getRecentChangeRate(mainGoodsDataSource, dateColumnName, defaultDataColumnName);
-            Double recentChangeRateValue = null;
-            if (recentChangeRate.size() == 2) {
+              // 가장 최근 Raw 전날 Data 대비 가장 최근 Raw Data 계산 (증감률, 둘다 null이 아니라는 가정), 증감률 계산
+              List<Map<String, Object>> recentChangeRate =
+                  getRecentChangeRate(mainGoodsDataSource, dateColumnName, defaultDataColumnName);
+              Double recentChangeRateValue = null;
+              if (recentChangeRate.size() == 2) {
                 // 최근 값
                 Map<String, Object> toData = recentChangeRate.get(0);
                 // 이전 값
                 Map<String, Object> fromData = recentChangeRate.get(1);
 
-                if (fromData.get(defaultDataColumnName) != null && toData.get(defaultDataColumnName) != null) {
-                    Double toValue = Double.parseDouble(toData.get(defaultDataColumnName).toString());
-                    Double fromValue = Double.parseDouble(fromData.get(defaultDataColumnName).toString());
+                if (fromData.get(defaultDataColumnName) != null
+                    && toData.get(defaultDataColumnName) != null) {
+                  Double toValue = Double.parseDouble(toData.get(defaultDataColumnName).toString());
+                  Double fromValue =
+                      Double.parseDouble(fromData.get(defaultDataColumnName).toString());
 
-                    // 계산식 (최근 값 - 이전 값) / 이전 값 * 100
-                    Double changeRate = (toValue - fromValue) / fromValue * 100;
-                    BigDecimal bd = BigDecimal.valueOf(changeRate).setScale(2, RoundingMode.HALF_UP);
-                    recentChangeRateValue = bd.doubleValue();
+                  // 계산식 (최근 값 - 이전 값) / 이전 값 * 100
+                  Double changeRate = (toValue - fromValue) / fromValue * 100;
+                  BigDecimal bd = BigDecimal.valueOf(changeRate).setScale(2, RoundingMode.HALF_UP);
+                  recentChangeRateValue = bd.doubleValue();
                 }
-            }
+              }
 
-            // 마지막 데이터 값
-            Double lastValue = null;
-            for (int i = 1; i <= rawData.size(); i++) {
+              // 마지막 데이터 값
+              Double lastValue = null;
+              for (int i = 1; i <= rawData.size(); i++) {
                 if (rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
-                    lastValue = Double.parseDouble(rawData.get(rawData.size() - i).get(defaultDataColumnName).toString());
-                    BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
-                    lastValue = bd.doubleValue();
-                    break;
+                  lastValue =
+                      Double.parseDouble(
+                          rawData.get(rawData.size() - i).get(defaultDataColumnName).toString());
+                  BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
+                  lastValue = bd.doubleValue();
+                  break;
                 }
-            }
+              }
 
-            // 월별 데이터로 변환
-            List<MarketDataChartRawData> mainDashboardData = convertToDashBoardData(rawData, dateColumnName, defaultDataColumnName,
-                    LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
+              // 월별 데이터로 변환
+              List<MarketDataChartRawData> mainDashboardData =
+                  convertToDashBoardData(
+                      rawData,
+                      dateColumnName,
+                      defaultDataColumnName,
+                      LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
-            MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
+              MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
 
-            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(mainGoodsDataSource, rawData, dateColumnName, defaultDataColumnName,
-                marketDataChartSetting.toCalculatePeriodChangeTypes());
+              Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap =
+                  calculatePeriodChange(
+                      mainGoodsDataSource,
+                      rawData,
+                      dateColumnName,
+                      defaultDataColumnName,
+                      marketDataChartSetting.toCalculatePeriodChangeTypes());
 
-            // 비교군 데이터소스 조회
-            List<DataSourceGroupMapping> dataSourceGroupMappings = dataSourceGroupMappingRepository
-                    .findByMainGoodsDataSourceDetailAndIsDeletedFalse(mainGoodsDataSource);
+              // 비교군 데이터소스 조회
+              List<DataSourceGroupMapping> dataSourceGroupMappings =
+                  dataSourceGroupMappingRepository.findByMainGoodsDataSourceDetailAndIsDeletedFalse(
+                      mainGoodsDataSource);
 
-            // 비교군 데이터소스 조회
-            List<MarketDataChart> compareCharts = new ArrayList<>();
+              // 비교군 데이터소스 조회
+              List<MarketDataChart> compareCharts = new ArrayList<>();
 
-            // 비교군 표시 안함
-            if (false) {
-            //if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
+              // 비교군 표시 안함
+              if (false) {
+                // if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
                 for (DataSourceGroupMapping dataSourceGroupMapping : dataSourceGroupMappings) {
-                    GoodsDataSourceDetail compareGoodsDataSource = dataSourceGroupMapping.getCompareGoodsDataSourceDetail();
+                  GoodsDataSourceDetail compareGoodsDataSource =
+                      dataSourceGroupMapping.getCompareGoodsDataSourceDetail();
 
-                    String[] compareTableColumnListNm = compareGoodsDataSource.getTableColumnListNm().split(",");
-                    // 날짜 칼럼
-                    String compareDateColumnName = compareTableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
-                    // 기본 데이터 칼럼
-                    String compareDefaultDataColumnName = compareTableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+                  String[] compareTableColumnListNm =
+                      compareGoodsDataSource.getTableColumnListNm().split(",");
+                  // 날짜 칼럼
+                  String compareDateColumnName =
+                      compareTableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
+                  // 기본 데이터 칼럼
+                  String compareDefaultDataColumnName =
+                      compareTableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
-                    // 비교군 원시 데이터 조회
-                    List<Map<String, Object>> compareRawData = getMarketDataRows(compareGoodsDataSource, compareDateColumnName, START_DATE, END_DATE);
-                    // 비교군 데시보드형 데이터로 변환
-                    List<MarketDataChartRawData> compareChart = convertToDashBoardData(compareRawData, compareDateColumnName,
-                            compareDefaultDataColumnName, LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
+                  // 비교군 원시 데이터 조회
+                  List<Map<String, Object>> compareRawData =
+                      getMarketDataRows(
+                          compareGoodsDataSource, compareDateColumnName, START_DATE, END_DATE);
+                  // 비교군 데시보드형 데이터로 변환
+                  List<MarketDataChartRawData> compareChart =
+                      convertToDashBoardData(
+                          compareRawData,
+                          compareDateColumnName,
+                          compareDefaultDataColumnName,
+                          LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
-                    if(!Objects.equals(mainGoodsDataSource.getGoodsData().getGoodsDataNo(), compareGoodsDataSource.getGoodsData().getGoodsDataNo())){
-                        // 다른 데이터 이면, 그래프의 상하위가 비슷하게 변경
-                        Double mainMax = mainDashboardData.stream().filter(r->r.value() != null)
+                  if (!Objects.equals(
+                      mainGoodsDataSource.getGoodsData().getGoodsDataNo(),
+                      compareGoodsDataSource.getGoodsData().getGoodsDataNo())) {
+                    // 다른 데이터 이면, 그래프의 상하위가 비슷하게 변경
+                    Double mainMax =
+                        mainDashboardData.stream()
+                            .filter(r -> r.value() != null)
                             .max(Comparator.comparing(MarketDataChartRawData::value))
-                            .orElse(MarketDataChartRawData.of(null, null)).value();
+                            .orElse(MarketDataChartRawData.of(null, null))
+                            .value();
 
-                        Double mainMin = mainDashboardData.stream().filter(r->r.value() != null)
+                    Double mainMin =
+                        mainDashboardData.stream()
+                            .filter(r -> r.value() != null)
                             .min(Comparator.comparing(MarketDataChartRawData::value))
-                            .orElse(MarketDataChartRawData.of(null, null)).value();
+                            .orElse(MarketDataChartRawData.of(null, null))
+                            .value();
 
-                        Double currentMax = compareChart.stream().filter(r->r.value() != null)
+                    Double currentMax =
+                        compareChart.stream()
+                            .filter(r -> r.value() != null)
                             .max(Comparator.comparing(MarketDataChartRawData::value))
-                            .orElse(MarketDataChartRawData.of(null, null)).value();
+                            .orElse(MarketDataChartRawData.of(null, null))
+                            .value();
 
-                        Double currentMin = compareChart.stream().filter(r->r.value() != null)
+                    Double currentMin =
+                        compareChart.stream()
+                            .filter(r -> r.value() != null)
                             .min(Comparator.comparing(MarketDataChartRawData::value))
-                            .orElse(MarketDataChartRawData.of(null, null)).value();
+                            .orElse(MarketDataChartRawData.of(null, null))
+                            .value();
 
-                        if(mainMax != null && mainMin != null && currentMax != null && currentMin != null){
-                            compareChart = compareChart.stream()
-                                .map(r->{
-                                    if(r.value() == null) return r;
-                                    return MarketDataChartRawData.of(r.date(),(r.value() - currentMin) * (mainMax-mainMin) / (currentMax-currentMin) + mainMin);
-                                })
-                                .toList();
-                        }
+                    if (mainMax != null
+                        && mainMin != null
+                        && currentMax != null
+                        && currentMin != null) {
+                      compareChart =
+                          compareChart.stream()
+                              .map(
+                                  r -> {
+                                    if (r.value() == null) return r;
+                                    return MarketDataChartRawData.of(
+                                        r.date(),
+                                        (r.value() - currentMin)
+                                                * (mainMax - mainMin)
+                                                / (currentMax - currentMin)
+                                            + mainMin);
+                                  })
+                              .toList();
                     }
-                    compareCharts.add(MarketDataChart.of(compareChart));
+                  }
+                  compareCharts.add(MarketDataChart.of(compareChart));
                 }
-            }
+              }
 
-            // max, min
-            MarketDataChartRawData min = Collections.min(mainDashboardData, Comparator.comparingDouble(
-                MarketDataChartRawData::value));
-            MarketDataChartRawData max = Collections.max(mainDashboardData, Comparator.comparingDouble(
-                MarketDataChartRawData::value));
+              // max, min
+              MarketDataChartRawData min =
+                  Collections.min(
+                      mainDashboardData, Comparator.comparingDouble(MarketDataChartRawData::value));
+              MarketDataChartRawData max =
+                  Collections.max(
+                      mainDashboardData, Comparator.comparingDouble(MarketDataChartRawData::value));
 
-            // 마켓데이터 메타데이터 생성
-            MarketMetaData marketMetaData = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, calculatePeriodChangeMap,
-                    MARKET_DATA_INTERVAL, indexStartDate,
-                    lastValue, lastUpdateDt, recentChangeRateValue, max, min);
+              // 마켓데이터 메타데이터 생성
+              MarketMetaData marketMetaData =
+                  MarketMetaData.of(
+                      marketDataChartSetting,
+                      mainGoodsData,
+                      mainGoodsDataSource,
+                      calculatePeriodChangeMap,
+                      MARKET_DATA_INTERVAL,
+                      indexStartDate,
+                      lastValue,
+                      lastUpdateDt,
+                      recentChangeRateValue,
+                      max,
+                      min);
 
-            // 캐시 저장
-            MiMarketDataCache miMarketDataCache = MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
-            saveToMarketDataCache(cacheKey, miMarketDataCache);
+              // 캐시 저장
+              MiMarketDataCache miMarketDataCache =
+                  MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+              saveToMarketDataCache(cacheKey, miMarketDataCache);
 
-            // 권한이 없는 경우 메타데이터까지만 제공
-            if (!isPermitted) {
+              // 권한이 없는 경우 메타데이터까지만 제공
+              if (!isPermitted) {
                 // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
-                MarketMetaData marketMetaDataNoPermitted = MarketMetaData.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource, null,
-                        MARKET_DATA_INTERVAL, indexStartDate,
-                        lastValue, lastUpdateDt, null, null, null);
+                MarketMetaData marketMetaDataNoPermitted =
+                    MarketMetaData.of(
+                        marketDataChartSetting,
+                        mainGoodsData,
+                        mainGoodsDataSource,
+                        new HashMap<>(),
+                        MARKET_DATA_INTERVAL,
+                        indexStartDate,
+                        lastValue,
+                        lastUpdateDt,
+                        null,
+                        null,
+                        null);
 
                 return MiMarketDataRes.of(isPermitted, marketMetaDataNoPermitted);
-            }
+              }
 
-            return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
+              return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
+            }) // 차트 정렬
+        .filter(Objects::nonNull)
+        .sorted(
+            (a, b) -> {
+              Short rankA = a.marketMetaData().chartMarkRank();
+              Short rankB = b.marketMetaData().chartMarkRank();
 
-        }) // 차트 정렬
-                .filter(Objects::nonNull)
-                .sorted((a, b) -> {
-                    Short rankA = a.marketMetaData().chartMarkRank();
-                    Short rankB = b.marketMetaData().chartMarkRank();
+              if (rankA == null && rankB == null) return 0;
+              if (rankA == null) return 1;
+              if (rankB == null) return -1;
 
-                    if (rankA == null && rankB == null)
-                        return 0;
-                    if (rankA == null)
-                        return 1;
-                    if (rankB == null)
-                        return -1;
-
-                    return rankA.compareTo(rankB);
-                })
-                .collect(Collectors.toList());
+              return rankA.compareTo(rankB);
+            })
+        .collect(Collectors.toList());
     }
 
     /**
