@@ -34,52 +34,52 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
             """)
     List<SignalMapPeriodRes> findPeriosdByCompanyNo(@Param("companyNo") Integer companyNo);
 
-    @Query(value = """
-            SELECT
-                IFNULL(IA.instm_scrn_ctgr_nm, '')               AS instmScrnCtgrNm,
-                IFNULL(IA.instm_scrn_dtl_ctgr_nm, '')           AS instmScrnDtlCtgrNm,
-                IA.corr_calc_cyc_cd                 AS corrCalcCycCd,
-                IA.anly_fulf_dt                     AS anlyFulfDt,
-                IA.instm_nm                         AS instmNm,
-                IA.prdc_inpt_mnmnc_cd              AS prdc_inpt_mnmnc_cd,
-                SUM(IA.corr_calc_val)               AS corrCalcVal
-            FROM (
-                SELECT a.anly_fulf_dt
-                     , a.prdc_rslt_dt
-                     , a.corr_calc_cyc_cd
-                     , a.corr_calc_val
-                     , a.prdc_inpt_mnmnc_cd
-                     , a.instm_nm
-                     , c.instm_scrn_ctgr_nm
-                     , c.instm_scrn_dtl_ctgr_nm
-                     , c.instm_data_spt_cd
-                FROM midb.tmm_corranlyrsltd a
-                   , midb.tmm_mrktidxdatam b
-                   , midb.tmm_mrktidxdatad c
-                WHERE a.mrkt_idx_anly_tgt_cd = (select tc.mrkt_idx_anly_tgt_cd from midb.tmd_custcpnym tc where tc.cust_cpny_no = :companyNo)
-                    AND a.mrkt_idx_anly_tgt_cd = c.mrkt_idx_anly_tgt_cd
-                    AND a.anly_fulf_dt = (select max(tc.anly_fulf_dt) from midb.tmm_corranlyrsltd tc where tc.mrkt_idx_anly_tgt_cd = a.mrkt_idx_anly_tgt_cd)
-                    AND (:filter IS NULL OR a.mnmnc_cd = :filter)
-                    AND b.mrkt_idx_data_no = c.mrkt_idx_data_no
-                    AND a.del_yn = b.del_yn
-                    AND a.del_yn = c.del_yn
-                    AND a.del_yn = 'N'
-                    AND c.data_mdl_use_yn = 'Y'
-                    AND (b.ric_cd = a.prdc_inpt_mnmnc_cd OR b.mnmnc_cd = a.prdc_inpt_mnmnc_cd)
-            ) IA
-            WHERE IA.corr_calc_cyc_cd = :period
-            GROUP BY
-                IA.instm_scrn_ctgr_nm,
-                IA.instm_scrn_dtl_ctgr_nm,
-                IA.corr_calc_cyc_cd,
-                IA.prdc_inpt_mnmnc_cd
-            ORDER BY
-                IA.instm_scrn_ctgr_nm ASC,
-                IA.instm_scrn_dtl_ctgr_nm ASC,
-                ABS(corrCalcVal) DESC
-            """, nativeQuery = true)
-    List<SignalMapProjection> findSignalMapData(
-            @Param("companyNo") int companyNo,
-            @Param("period") String period,
-            @Param("filter") String filter);
+  @Query(
+      value =
+          """
+            WITH params AS (
+                 SELECT tc.mrkt_idx_anly_tgt_cd AS tgt
+                 FROM midb.tmd_custcpnym tc
+                 WHERE tc.cust_cpny_no = :companyNo
+             ),
+             latest AS (
+                 SELECT a.anly_fulf_dt
+                 FROM midb.tmm_corranlyrsltd as a
+                 JOIN params p ON p.tgt = a.mrkt_idx_anly_tgt_cd
+                 WHERE a.del_yn = 'N'
+                 ORDER BY a.anly_fulf_dt DESC
+                 LIMIT 1
+             ),
+             bx AS (SELECT mrkt_idx_data_no, ric_cd AS code
+                    FROM midb.tmm_mrktidxdatam
+                    WHERE del_yn = 'N'
+                    UNION ALL
+                    SELECT mrkt_idx_data_no, mnmnc_cd AS code
+                    FROM midb.tmm_mrktidxdatam
+                    WHERE del_yn = 'N')
+             SELECT
+                IFNULL(c.instm_scrn_ctgr_nm, '')     AS instmScrnCtgrNm,
+                IFNULL(c.instm_scrn_dtl_ctgr_nm, '') AS instmScrnDtlCtgrNm,
+                a.corr_calc_cyc_cd                   AS corrCalcCycCd,
+                a.anly_fulf_dt                       AS anlyFulfDt,
+                a.instm_nm                           AS instmNm,
+                a.prdc_inpt_mnmnc_cd                 AS prdc_inpt_mnmnc_cd,
+                SUM(a.corr_calc_val)                 AS corrCalcVal
+             FROM midb.tmm_corranlyrsltd as a
+                 JOIN params p ON a.mrkt_idx_anly_tgt_cd = p.tgt
+                 JOIN latest l ON a.anly_fulf_dt = l.anly_fulf_dt
+                 JOIN bx bx ON bx.code = a.prdc_inpt_mnmnc_cd
+                 JOIN midb.tmm_mrktidxdatad c ON c.mrkt_idx_data_no = bx.mrkt_idx_data_no AND c.mrkt_idx_anly_tgt_cd = p.tgt AND c.data_mdl_use_yn = 'Y'
+             WHERE a.del_yn = 'N'
+                 AND c.del_yn = 'N'
+                 AND a.corr_calc_cyc_cd = :period
+                 AND a.mnmnc_cd = :filter
+             GROUP BY c.instm_scrn_ctgr_nm, c.instm_scrn_dtl_ctgr_nm, a.corr_calc_cyc_cd, a.prdc_inpt_mnmnc_cd
+             ORDER BY c.instm_scrn_ctgr_nm ASC, c.instm_scrn_dtl_ctgr_nm ASC, ABS(SUM(a.corr_calc_val)) DESC
+            """,
+      nativeQuery = true)
+  List<SignalMapProjection> findSignalMapData(
+      @Param("companyNo") int companyNo,
+      @Param("period") String period,
+      @Param("filter") String filter);
 }
