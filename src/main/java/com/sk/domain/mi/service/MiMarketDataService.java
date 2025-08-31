@@ -490,148 +490,193 @@ public class MiMarketDataService {
         List<MarketDataChartSetting> marketDataChartSettings = marketDataChartSettingRepository
                 .findByCustomerCompanyAndIsDeletedFalseOrderByChartMarkRankAsc(customerCompany);
 
-        return marketDataChartSettings.parallelStream().map(marketDataChartSetting -> {
-            GoodsDataSourceDetail mainGoodsDataSource = marketDataChartSetting.getGoodsDataSourceDetail();
-            GoodsData mainGoodsData = marketDataChartSetting.getGoodsDataSourceDetail().getGoodsData();
-            Goods mainGoods = mainGoodsData.getGoods();
+    return marketDataChartSettings.parallelStream()
+        .map(
+            marketDataChartSetting -> {
+              GoodsDataSourceDetail mainGoodsDataSource =
+                  marketDataChartSetting.getGoodsDataSourceDetail();
+              GoodsData mainGoodsData =
+                  marketDataChartSetting.getGoodsDataSourceDetail().getGoodsData();
+              Goods mainGoods = mainGoodsData.getGoods();
 
-            // 권한 조회
-            Boolean isPermitted = permissionRes.getGoodsViewableMap(customerCompanyNo).getOrDefault(mainGoods.getGoodsNo(), false);
+              // 권한 조회
+              Boolean isPermitted =
+                  permissionRes
+                      .getGoodsViewableMap(customerCompanyNo)
+                      .getOrDefault(mainGoods.getGoodsNo(), false);
 
-            String cacheKey = getMarketDataSummaryCacheKey(marketDataChartSetting.getMarketDataSettingNo());
+              String cacheKey =
+                  getMarketDataSummaryCacheKey(marketDataChartSetting.getMarketDataSettingNo());
 
-            // 캐시 조회
-            String cachedData = redisTemplate.opsForValue().get(cacheKey);
-            if (cachedData != null) {
+              // 캐시 조회
+              String cachedData = redisTemplate.opsForValue().get(cacheKey);
+              if (cachedData != null) {
                 try {
-                    MiMarketDataSummaryCache miMarketDataSummaryCache = objectMapper.readValue(cachedData, MiMarketDataSummaryCache.class);
+                  MiMarketDataSummaryCache miMarketDataSummaryCache =
+                      objectMapper.readValue(cachedData, MiMarketDataSummaryCache.class);
 
-                    // 권한이 없는 경우 메타데이터까지만 제공
-                    if (!isPermitted) {
-                        // 마켓데이터 메타데이터 생성
-                        MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData,
-                                mainGoodsDataSource,
-                                null, MARKET_DATA_INTERVAL, miMarketDataSummaryCache.marketMetaDataSummary().indexStartDt(),
-                                miMarketDataSummaryCache.marketMetaDataSummary().lastValue(),
-                                miMarketDataSummaryCache.marketMetaDataSummary().lastUpdateDt());
+                  // 권한이 없는 경우 메타데이터까지만 제공
+                  if (!isPermitted) {
+                    // 마켓데이터 메타데이터 생성
+                    MarketMetaDataSummary marketMetaDataSummary =
+                        MarketMetaDataSummary.of(
+                            marketDataChartSetting,
+                            mainGoodsData,
+                            mainGoodsDataSource,
+                            new HashMap<>(),
+                            MARKET_DATA_INTERVAL,
+                            miMarketDataSummaryCache.marketMetaDataSummary().indexStartDt(),
+                            miMarketDataSummaryCache.marketMetaDataSummary().lastValue(),
+                            miMarketDataSummaryCache.marketMetaDataSummary().lastUpdateDt());
 
-                        return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
-                    }
+                    return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
+                  }
 
-                    return MiMarketDataSummaryRes.of(isPermitted, miMarketDataSummaryCache.marketMetaDataSummary());
+                  return MiMarketDataSummaryRes.of(
+                      isPermitted, miMarketDataSummaryCache.marketMetaDataSummary());
                 } catch (Exception e) {
-                    // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
-                    redisTemplate.delete(cacheKey);
-                    log.error("마켓데이터 요약 캐시 조회 실패 : {}", e.getMessage());
+                  // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
+                  redisTemplate.delete(cacheKey);
+                  log.error("마켓데이터 요약 캐시 조회 실패 : {}", e.getMessage());
                 }
-            }
+              }
 
-            // 칼럼 목록 조회
-            String[] tableColumnListNm = Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
-                    .map(String::trim)
-                    .toArray(String[]::new);
-            // 날짜 칼럼
-            String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
-            // 기본 데이터 칼럼
-            String defaultDataColumnName = tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+              // 칼럼 목록 조회
+              String[] tableColumnListNm =
+                  Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
+                      .map(String::trim)
+                      .toArray(String[]::new);
+              // 날짜 칼럼
+              String dateColumnName = tableColumnListNm[MARKET_DATA_DATE_COLUMN_INDEX];
+              // 기본 데이터 칼럼
+              String defaultDataColumnName =
+                  tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
-            // 원시 데이터 조회
-            List<Map<String, Object>> rawData = getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+              // 원시 데이터 조회
+              List<Map<String, Object>> rawData =
+                  getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
-            // Index Start date 데이터 조회
-            LocalDate indexStartDate = null;
-            List<Map<String, Object>> indexStartDateData = getIndexStartDateData(mainGoodsDataSource, dateColumnName);
-            if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
+              // Index Start date 데이터 조회
+              LocalDate indexStartDate = null;
+              List<Map<String, Object>> indexStartDateData =
+                  getIndexStartDateData(mainGoodsDataSource, dateColumnName);
+              if (indexStartDateData != null && !indexStartDateData.isEmpty()) {
                 Map<String, Object> indexStartDateDataMap = indexStartDateData.get(0);
                 if (indexStartDateDataMap != null) {
-                    Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
-                    if (indexStartDateDataValue != null) {
-                        String rawDate = indexStartDateDataValue.toString();
-                        indexStartDate = DateUtil.parseDate(rawDate);
-                    }
+                  Object indexStartDateDataValue = indexStartDateDataMap.get(dateColumnName);
+                  if (indexStartDateDataValue != null) {
+                    String rawDate = indexStartDateDataValue.toString();
+                    indexStartDate = DateUtil.parseDate(rawDate);
+                  }
                 }
-            }
+              }
 
-            // 마지막 업데이트 날짜 값
-            LocalDate lastUpdateDt = null;
-            List<Map<String, Object>> lastUpdateDtData = getLastUpdateDtData(mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
-            if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
+              // 마지막 업데이트 날짜 값
+              LocalDate lastUpdateDt = null;
+              List<Map<String, Object>> lastUpdateDtData =
+                  getLastUpdateDtData(
+                      mainGoodsDataSource, MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+              if (lastUpdateDtData != null && !lastUpdateDtData.isEmpty()) {
                 Map<String, Object> lastUpdateDtDataMap = lastUpdateDtData.get(0);
                 if (lastUpdateDtDataMap != null) {
-                    Object lastUpdateDtDataValue = lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
-                    if (lastUpdateDtDataValue != null) {
-                        String rawDate = lastUpdateDtDataValue.toString();
-                        lastUpdateDt = DateUtil.parseDate(rawDate);
-                    }
+                  Object lastUpdateDtDataValue =
+                      lastUpdateDtDataMap.get(MARKET_DATA_LAST_UPDATE_DATE_COLUMN_NAME);
+                  if (lastUpdateDtDataValue != null) {
+                    String rawDate = lastUpdateDtDataValue.toString();
+                    lastUpdateDt = DateUtil.parseDate(rawDate);
+                  }
                 }
-            }
+              }
 
-            // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
-            if (rawData.isEmpty()) {
-                MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting);
+              // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
+              if (rawData.isEmpty()) {
+                MarketMetaDataSummary marketMetaDataSummary =
+                    MarketMetaDataSummary.of(marketDataChartSetting);
 
-                MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
+                MiMarketDataSummaryCache miMarketDataSummaryCache =
+                    MiMarketDataSummaryCache.of(marketMetaDataSummary);
                 saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
 
                 return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
-            }
+              }
 
-            // 마지막 데이터 값
-            Double lastValue = null;
-            for (int i = 1; i <= rawData.size(); i++) {
+              // 마지막 데이터 값
+              Double lastValue = null;
+              for (int i = 1; i <= rawData.size(); i++) {
                 if (rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
-                    lastValue = Double.parseDouble(rawData.get(rawData.size() - i).get(defaultDataColumnName).toString());
-                    BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
-                    lastValue = bd.doubleValue();
-                    break;
+                  lastValue =
+                      Double.parseDouble(
+                          rawData.get(rawData.size() - i).get(defaultDataColumnName).toString());
+                  BigDecimal bd = BigDecimal.valueOf(lastValue).setScale(2, RoundingMode.HALF_UP);
+                  lastValue = bd.doubleValue();
+                  break;
                 }
-            }
+              }
 
-            // DOD, MOM, WOW 계산
-//            Set<CalculatePeriodChangeType> calculatePeriodChangeTypes = Set.of(CalculatePeriodChangeType.DOD, CalculatePeriodChangeType.MOM,
-//                    CalculatePeriodChangeType.WOW);
-//            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName, defaultDataColumnName,
-//                    calculatePeriodChangeTypes);
+              // DOD, MOM, WOW 계산
+              //            Set<CalculatePeriodChangeType> calculatePeriodChangeTypes =
+              // Set.of(CalculatePeriodChangeType.DOD, CalculatePeriodChangeType.MOM,
+              //                    CalculatePeriodChangeType.WOW);
+              //            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue>
+              // calculatePeriodChangeMap = calculatePeriodChange(rawData, dateColumnName,
+              // defaultDataColumnName,
+              //                    calculatePeriodChangeTypes);
 
-            Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap = calculatePeriodChange(mainGoodsDataSource, rawData, dateColumnName, defaultDataColumnName,
-                marketDataChartSetting.toCalculatePeriodChangeTypes());
+              Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap =
+                  calculatePeriodChange(
+                      mainGoodsDataSource,
+                      rawData,
+                      dateColumnName,
+                      defaultDataColumnName,
+                      marketDataChartSetting.toCalculatePeriodChangeTypes());
 
+              // 마켓데이터 메타데이터 생성
+              MarketMetaDataSummary marketMetaDataSummary =
+                  MarketMetaDataSummary.of(
+                      marketDataChartSetting,
+                      mainGoodsData,
+                      mainGoodsDataSource,
+                      calculatePeriodChangeMap,
+                      MARKET_DATA_INTERVAL,
+                      indexStartDate,
+                      lastValue,
+                      lastUpdateDt);
 
-            // 마켓데이터 메타데이터 생성
-            MarketMetaDataSummary marketMetaDataSummary = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData, mainGoodsDataSource,
-                    calculatePeriodChangeMap,
-                    MARKET_DATA_INTERVAL, indexStartDate,
-                    lastValue, lastUpdateDt);
+              MiMarketDataSummaryCache miMarketDataSummaryCache =
+                  MiMarketDataSummaryCache.of(marketMetaDataSummary);
+              saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
 
-            MiMarketDataSummaryCache miMarketDataSummaryCache = MiMarketDataSummaryCache.of(marketMetaDataSummary);
-            saveToMarketDataSummaryCache(cacheKey, miMarketDataSummaryCache);
-
-            // 권한이 없는 경우 메타데이터까지만 제공
-            if (!isPermitted) {
+              // 권한이 없는 경우 메타데이터까지만 제공
+              if (!isPermitted) {
                 // 마켓데이터 메타데이터 생성
-                MarketMetaDataSummary marketMetaDataSummaryNoPermitted = MarketMetaDataSummary.of(marketDataChartSetting, mainGoodsData,
+                MarketMetaDataSummary marketMetaDataSummaryNoPermitted =
+                    MarketMetaDataSummary.of(
+                        marketDataChartSetting,
+                        mainGoodsData,
                         mainGoodsDataSource,
-                        null, MARKET_DATA_INTERVAL, indexStartDate, lastValue, lastUpdateDt);
+                        new HashMap<>(),
+                        MARKET_DATA_INTERVAL,
+                        indexStartDate,
+                        lastValue,
+                        lastUpdateDt);
 
                 return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummaryNoPermitted);
-            }
+              }
 
-            return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
-        })
-                .filter(Objects::nonNull)
-                .sorted((a, b) -> {
-                    Short rankA = a.marketMetaDataSummary().chartMarkRank();
-                    Short rankB = b.marketMetaDataSummary().chartMarkRank();
+              return MiMarketDataSummaryRes.of(isPermitted, marketMetaDataSummary);
+            })
+        .filter(Objects::nonNull)
+        .sorted(
+            (a, b) -> {
+              Short rankA = a.marketMetaDataSummary().chartMarkRank();
+              Short rankB = b.marketMetaDataSummary().chartMarkRank();
 
-                    if (rankA == null && rankB == null)
-                        return 0;
-                    if (rankA == null)
-                        return 1;
-                    if (rankB == null)
-                        return -1;
-                    return rankA.compareTo(rankB);
-                })
-                .collect(Collectors.toList());
+              if (rankA == null && rankB == null) return 0;
+              if (rankA == null) return 1;
+              if (rankB == null) return -1;
+              return rankA.compareTo(rankB);
+            })
+        .collect(Collectors.toList());
     }
 
     /**
