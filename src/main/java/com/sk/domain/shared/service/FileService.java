@@ -1,5 +1,6 @@
 package com.sk.domain.shared.service;
 
+import com.amazonaws.util.IOUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -120,7 +121,7 @@ public class FileService {
     /**
      * 정형파일을 업로드 한다.
      * 정형파일 업로드시 OAuth2.0 인증의 경우 버킷 디렉토리가 정형 디렉토리로 바로 설정된다.
-     * 
+     *
      * @param companyCd 회사코드
      * @param role 역할
      * @param file 단일 파일 업로드
@@ -140,7 +141,7 @@ public class FileService {
 
     /**
      * 파일을 업로드 한다.
-     * 
+     *
      * @param companyCd 회사코드
      * @param role 역할
      * @param file 단일 파일 업로드
@@ -226,7 +227,7 @@ public class FileService {
     * 1개 이상 파일을 다운로드 한다.
     *
     * @param fileNoList 파일번호목록
-    * @return byte[] 
+    * @return byte[]
     */
     public byte[] downloadFiles(List<FileDownloadReq> list) {
         List<Long> fileNoList = list.stream()
@@ -279,17 +280,31 @@ public class FileService {
     }
 
     /**
-    * 1개 이상 파일을 다운로드 한다.
+    * 1개 이상 파일을 다운로드 한다.*
+    * 2개 이상일 경우, 주어진 file 이름으로 zip 압축을 하고,
+    * 1개일 경우 주어진 URL 의 단일 파일로 다운로드 한다.
     *
     * @param filePathList 파일번호목록
-    * @return byte[] 
+    * @return byte[]
     */
-    public byte[] directDownloadFiles(List<String> urlList) {
+    public FileDownloadRes directDownloadFiles(List<String> urlList, String zipFileName) {
+        try{
+            if(urlList.size() == 1){
+                String bucketName = getBucketName(urlList.get(0));
+                String filePath = getFilePath(urlList.get(0));
+                S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath);
+                byte[] fileData = IOUtils.toByteArray(s3is);
+                String fileName = getFileName(urlList.get(0));
+                return FileDownloadRes.of(0L, fileName, (long)fileData.length, fileData);
+            }
+        }catch (IOException e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+        }
+
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
 
             Set<String> addedNames = new HashSet<>();
-
             for (String url : urlList) {
                 String bucketName = getBucketName(url);
                 String filePath = getFilePath(url);
@@ -321,7 +336,8 @@ public class FileService {
             }
             zos.finish();
 
-            return baos.toByteArray();
+            byte[] fileData = baos.toByteArray();
+            return FileDownloadRes.of(0L, zipFileName, (long)fileData.length, fileData);
         } catch (IOException e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
         }
@@ -331,7 +347,7 @@ public class FileService {
     * 파일을 삭제 한다.
     *
     * @param fileNo 파일번호
-    * @return 
+    * @return
     */
     @Transactional
     public void deleteFile(Long fileNo) {
@@ -355,7 +371,7 @@ public class FileService {
     *
     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
-    * @return 
+    * @return
     */
     @Transactional
     public void deleteFiles(Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCode) {

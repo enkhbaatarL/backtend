@@ -1,5 +1,6 @@
 package com.sk.domain.mi.controller;
 
+import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -121,16 +122,15 @@ public class MiDashboardController {
 
 		String FILE_PREFIX = "dashboard_summary";
 		String encodedFileName = URLEncoder.encode(
-				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
-				StandardCharsets.UTF_8.toString());
-		byte[] fileData = miDashboardService.getDashboardSummaryFileDownload(companyNo, date, predictDate);
+				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"), StandardCharsets.UTF_8);
+        FileDownloadRes fileDownloadRes = miDashboardService.getDashboardSummaryFileDownload(companyNo, date, predictDate, encodedFileName);
 
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-		httpHeaders.setContentLength(fileData.length);
-		httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+		httpHeaders.setContentLength(fileDownloadRes.fileSize());
+		httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + fileDownloadRes.fileNm());
 
-		return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
+		return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
 	}
 
 	@ApiOrder(10)

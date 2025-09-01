@@ -171,16 +171,17 @@ public class FileController {
     public ResponseEntity<byte[]> directDownloadFiles(
             @RequestParam(value = "prefix", required = true) String prefix,
             @RequestBody @Valid List<String> body) throws UnsupportedEncodingException {
-        byte[] fileData = fileService.directDownloadFiles(body);
+
         String encodedFileName = URLEncoder.encode(prefix.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
-                StandardCharsets.UTF_8.toString()).replace("+", "%20");
+            StandardCharsets.UTF_8).replace("+", "%20");
+
+        FileDownloadRes fileDataRes = fileService.directDownloadFiles(body, encodedFileName);
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        httpHeaders.setContentLength(fileData.length);
+        httpHeaders.setContentLength(fileDataRes.fileSize());
         httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
-
-        return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(fileDataRes.fileData(), httpHeaders, HttpStatus.OK);
     }
 
     @ApiOrder(99)

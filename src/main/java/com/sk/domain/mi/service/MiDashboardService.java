@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service;
 
+import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -269,7 +270,7 @@ public class MiDashboardService {
      * @param date      날짜
      * @return byte[]z
      */
-    public byte[] getDashboardSummaryFileDownload(int companyNo, String date, String predictDate) {
+    public FileDownloadRes getDashboardSummaryFileDownload(int companyNo, String date, String predictDate, String zipFileName) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
@@ -309,7 +310,7 @@ public class MiDashboardService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "다운로드 가능한 파일이 없습니다.");
         }
 
-        return fileService.directDownloadFiles(filePaths);
+        return fileService.directDownloadFiles(filePaths, zipFileName);
     }
 
     /**
