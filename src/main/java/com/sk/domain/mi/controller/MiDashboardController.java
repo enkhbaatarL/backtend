@@ -125,6 +125,7 @@ public class MiDashboardController {
 				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"), StandardCharsets.UTF_8);
         FileDownloadRes fileDownloadRes = miDashboardService.getDashboardSummaryFileDownload(companyNo, date, predictDate, encodedFileName);
 
+        log.debug("Dashboard Summary Download File Info. FileName={}, FileSize={}", fileDownloadRes.fileNm(), fileDownloadRes.fileSize());
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 		httpHeaders.setContentLength(fileDownloadRes.fileSize());

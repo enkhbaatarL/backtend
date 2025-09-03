@@ -19,32 +19,6 @@ spring:
         validation-timeout: 3000
         minimum-idle: 5
     tenants:
-      - company-cd: SKCC
-        jdbc-url: ${SKT_MI_DB_URL_MASTER}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER}
-        password: ${SKT_MI_DB_PASSWORD_MASTER}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 10
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 5
-      - company-cd: SKT
-        jdbc-url: ${SKT_MI_DB_URL_MASTER}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER}
-        password: ${SKT_MI_DB_PASSWORD_MASTER}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 10
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 5
       - company-cd: midb
         jdbc-url: ${SKT_MI_DB_URL_MASTER}
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -120,10 +94,11 @@ jwt:
 logging:
   config: classpath:logback-prod.xml
   level:
-    org.springframework.security.saml: TRACE
-    org.springframework.security: TRACE
-    org.springframework.boot.autoconfigure.security: TRACE
-    org.springframework.context: DEBUG
+    com.sk: INFO
+    org.springframework.security.saml: INFO
+    org.springframework.security: INFO
+    org.springframework.boot.autoconfigure.security: INFO
+    org.springframework.context: INFO
 
 api:
   model-agent:
