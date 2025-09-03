@@ -184,11 +184,16 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         if (uri.equalsIgnoreCase("/whoami"))
             return;
 
-        log.info("res uri={}, body={}, totalTime={}",
-            uri,
-            new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
-            System.currentTimeMillis() - startTime);
-
+        if(response.getContentType() != null && response.getContentType().contains("octet-stream")){
+            log.info("res uri={}, totalTime={}, body skip(octet-stream)",
+                uri,
+                System.currentTimeMillis() - startTime);
+        }else{
+            log.info("res uri={}, body={}, totalTime={}",
+                uri,
+                new String(response.getContentAsByteArray(), StandardCharsets.UTF_8),
+                System.currentTimeMillis() - startTime);
+        }
     }
 
     /**

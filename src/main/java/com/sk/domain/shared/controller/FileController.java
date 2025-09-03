@@ -180,7 +180,7 @@ public class FileController {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         httpHeaders.setContentLength(fileDataRes.fileSize());
-        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + fileDataRes.fileNm());
         return new ResponseEntity<>(fileDataRes.fileData(), httpHeaders, HttpStatus.OK);
     }
 

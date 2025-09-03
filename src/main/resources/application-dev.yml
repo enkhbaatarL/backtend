@@ -94,11 +94,12 @@ jwt:
 logging:
   config: classpath:logback-dev.xml
   level:
-    org.springframework.security.saml: TRACE
-    org.springframework.security: TRACE
-    org.springframework.boot.autoconfigure.security: TRACE
-    org.springframework.context: DEBUG
-    org.springframework.session: DEBUG
+    com.sk: DEBUG
+    org.springframework.security.saml: INFO
+    org.springframework.security: INFO
+    org.springframework.boot.autoconfigure.security: INFO
+    org.springframework.context: INFO
+    org.springframework.session: INFO
 
 api:
   model-agent:
@@ -173,3 +174,8 @@ features:
   scheduling:
     prohibited-word:
       refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: false
