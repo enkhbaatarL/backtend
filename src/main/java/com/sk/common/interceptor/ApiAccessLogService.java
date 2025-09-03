@@ -6,8 +6,6 @@ import com.sk.domain.shared.entity.master.tlm.ApiAccessLog;
 import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tlm.ApiAccessLogRepository;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
