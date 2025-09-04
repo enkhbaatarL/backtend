@@ -47,18 +47,22 @@ public record UserAccessPageRes(
 
     @Schema(description = "고객회사 명")
     String companyNm,
+
     @Schema(description = "고객회사 MI플랫폼 URL 정보")
     String companyMipUrl,
 
     @Schema(description = "사용자 알림 설정 여부")
     Boolean isUserNotificationSetting,
 
+    @Schema(description = "외부로그인 여부 (비밀번호가 null이 아니면 Y)", example = "true")
+    Boolean isExternalLogin,
+
     @Schema(description = "페이지 접근 퍼미션 타입", example = "MI or ADMIN or BOTH")
     UserAccessPageType userAccessPageType
 ) {
 
     @Builder
-    public UserAccessPageRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm, String companyMipUrl, Boolean isUserNotificationSetting, UserAccessPageType userAccessPageType) {
+    public UserAccessPageRes(Integer userNo, String userNm, String userLoginId, UserRoleCd userRoleCd, String userRoleNm, String positionNm, String jobGradeNm, String onDutyNm, String departmentNm, Boolean isOtherServiceAccessPossible, Boolean isIndividualInfoAgreement, Integer companyNo, String companyNm, String companyMipUrl, Boolean isUserNotificationSetting, Boolean isExternalLogin, UserAccessPageType userAccessPageType) {
         this.userNo = userNo;
         this.userNm = userNm;
         this.userLoginId = userLoginId;
@@ -74,6 +78,7 @@ public record UserAccessPageRes(
         this.companyNm = companyNm;
         this.companyMipUrl = companyMipUrl;
         this.isUserNotificationSetting = isUserNotificationSetting;
+        this.isExternalLogin = isExternalLogin;
         this.userAccessPageType = userAccessPageType;
     }
 
@@ -94,6 +99,7 @@ public record UserAccessPageRes(
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
             .companyMipUrl(entity.getCustomerCompany().getCustomerCompanyMipUrl() == null ? miDefaultDomain : entity.getCustomerCompany().getCustomerCompanyMipUrl())
             .isUserNotificationSetting(entity.getIsUserNotificationSetting())
+            .isExternalLogin(entity.getPassword() != null)
             .userAccessPageType(userAccessPageType)
             .build();
     }

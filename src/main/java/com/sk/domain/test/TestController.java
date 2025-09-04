@@ -192,6 +192,32 @@ public class TestController {
         return testService.sendEmail(testReq);
     }
 
+    // BCrypt 해시 생성 테스트
+    @Operation(summary = "BCrypt 해시 생성 테스트", description = "평문 비밀번호를 BCrypt 해시로 변환합니다.")
+    @ApiResponse(responseCode = "200", description = "BCrypt 해시 생성 성공")
+    @PostMapping("/bcrypt/generate-hash")
+    public BaseResponse<String> generateBcryptHash(@RequestParam("password") String password) {
+        return BaseResponseFactory.create(testService.generateBcryptHash(password));
+    }
+
+    // BCrypt 해시 검증 테스트
+    @Operation(summary = "BCrypt 해시 검증 테스트", description = "평문 비밀번호와 BCrypt 해시를 비교하여 검증합니다.")
+    @ApiResponse(responseCode = "200", description = "BCrypt 해시 검증 성공")
+    @PostMapping("/bcrypt/verify-password")
+    public BaseResponse<Boolean> verifyBcryptPassword(
+            @RequestParam("password") String password,
+            @RequestParam("hashedPassword") String hashedPassword) {
+        return BaseResponseFactory.create(testService.verifyBcryptPassword(password, hashedPassword));
+    }
+
+    // 비밀번호 강도 검증 테스트
+    @Operation(summary = "비밀번호 강도 검증 테스트", description = "비밀번호 강도를 검증합니다.")
+    @ApiResponse(responseCode = "200", description = "비밀번호 강도 검증 성공")
+    @PostMapping("/bcrypt/validate-password-strength")
+    public BaseResponse<Boolean> validatePasswordStrength(@RequestParam("password") String password) {
+        return BaseResponseFactory.create(testService.validatePasswordStrength(password));
+    }
+
     // // 레디스 캐시 삭제
     // @Operation(summary = "레디스 캐시 삭제", description = "레디스 캐시를 삭제합니다.")
     // @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")

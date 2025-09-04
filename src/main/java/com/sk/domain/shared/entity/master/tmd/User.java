@@ -49,6 +49,10 @@ public class User extends BaseEntity {
     @Comment("사용자로그인ID")
     private String userLoginId;
 
+    @Column(name = "password", length = 200)
+    @Comment("패스워드")
+    private String password;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "usr_role_cd", length = 10)
     @Comment("사용자역할코드")
@@ -147,6 +151,7 @@ public class User extends BaseEntity {
         this.softDelete(); // 삭제 시 삭제 여부 확인
         this.userNm = ""; // 삭제 시 사용자명 삭제
         this.userLoginId = null; // 삭제 시 사용자 로그인 ID 삭제
+        this.password = null; // 삭제 시 패스워드 삭제
         this.positionNm = null; // 삭제 시 직위명 삭제
         this.jobGradeNm = null; // 삭제 시 직급명 삭제
         this.onDutyNm = null; // 삭제 시 직책명 삭제

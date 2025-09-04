@@ -1,5 +1,6 @@
 package com.sk.domain.test;
 
+import com.sk.common.utils.BcryptHashUtil;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -54,6 +55,7 @@ public class TestService {
     private final MailService mailService;
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final BcryptHashUtil bcryptHashUtil;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -185,6 +187,52 @@ public class TestService {
         return true;
     }
 
+
+    /**
+     * BCrypt 해시 생성
+     *
+     * @param password 평문 비밀번호
+     * @return BCrypt 해시된 비밀번호
+     */
+    public String generateBcryptHash(String password) {
+        try {
+            return bcryptHashUtil.generateBcryptHash(password);
+        } catch (Exception e) {
+            log.error("BCrypt 해시 생성 실패: {}", e.getMessage());
+            throw AppErrorException.of(ResultCode.Error.SYS_UNKNOWN, "BCrypt 해시 생성에 실패했습니다.");
+        }
+    }
+
+    /**
+     * BCrypt 해시 검증
+     *
+     * @param password 평문 비밀번호
+     * @param hashedPassword BCrypt 해시된 비밀번호
+     * @return 검증 결과
+     */
+    public Boolean verifyBcryptPassword(String password, String hashedPassword) {
+        try {
+            return bcryptHashUtil.verifyBcryptPassword(password, hashedPassword);
+        } catch (Exception e) {
+            log.error("BCrypt 해시 검증 실패: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 비밀번호 강도 검증
+     *
+     * @param password 검증할 비밀번호
+     * @return 검증 결과
+     */
+    public Boolean validatePasswordStrength(String password) {
+        try {
+            return bcryptHashUtil.validatePasswordStrength(password);
+        } catch (Exception e) {
+            log.error("비밀번호 강도 검증 실패: {}", e.getMessage());
+            return false;
+        }
+    }
     // public Boolean deleteRedisCache(TestReq.deleteRedisCache testReq) {
     //     // redisTemplate.delete(testReq.key());
     //     return true;
