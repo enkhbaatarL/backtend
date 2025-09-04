@@ -20,7 +20,7 @@ public enum AuthComponent {
             return AuthComponent.OAUTH2_SERVER;
         } else if (uri.startsWith("/api/v1/saml2")) {
             return AuthComponent.SAML_SERVICE_PROVIDER;
-        } else if (uri.startsWith("/api/v1/external")) {  // External 로그인 경로 추가
+        } else if (uri.startsWith("/api/v1/external")) {
             return AuthComponent.EXTERNAL_LOGIN;
         } else if (uri.startsWith("/api/")) {
             return AuthComponent.OAUTH2_RESOURCE;

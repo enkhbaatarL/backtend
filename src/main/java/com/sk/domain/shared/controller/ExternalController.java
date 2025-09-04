@@ -5,9 +5,12 @@ import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.dto.response.external.ExternalLoginRes;
 import com.sk.domain.shared.service.AuthService;
 import com.sk.domain.shared.service.ExternalService;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import jakarta.validation.Valid;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,10 +49,13 @@ public class ExternalController {
         return BaseResponseFactory.create(externalService.externalLogin(loginReq, response));
     }
 
+    @Parameters({
+            @Parameter(name = "sessionId", description = "외부 로그인 세션 ID", required = true)
+    })
     @ApiOrder(2)
-    @Operation(summary = "외부 로그인 콜백 API", description = "SAML 및 외부 로그인의 공통 콜백 API입니다.")
-    @PostMapping("/callback")
-    @ApiResponse(responseCode = "200", description = "로그인 콜백 성공")
+    @Operation(summary = "외부 로그인 콜백", description = "외부 로그인 콜백을 진행합니다.")
+    @ApiResponse(responseCode = "200", description = "외부 로그인 콜백 성공")
+    @GetMapping("/callback")
     public BaseResponse<GenerateTokenRes> loginCallback(
             @RequestParam(value = "sessionId", required = true) String sessionId,
             HttpServletResponse response) {
