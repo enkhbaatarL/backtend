@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service;
 
+import com.sk.domain.mi.service.custom.CustomRegistry;
 import com.sk.domain.mi.service.period.PeriodCalculator;
 import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
@@ -97,6 +98,7 @@ public class MiMarketDataService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
     private final AuthorizationService authorizationService;
+    private final CustomRegistry customRegistry;
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -466,6 +468,10 @@ public class MiMarketDataService {
               return rankA.compareTo(rankB);
             })
         .collect(Collectors.toList());
+    }
+
+    public Object getMarketDataCustom(String customId){
+        return customRegistry.getCustomChartMaker(customId).getDashboardChart();
     }
 
     /**
