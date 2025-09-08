@@ -20,9 +20,10 @@ public interface GieEuRepository extends JpaRepository<GieEu, Long>, CustomFutur
     @Query("""
         SELECT MAX(e.gasInStorage), MIN(e.gasInStorage), AVG(e.gasInStorage)
         FROM GieEu e
-        WHERE e.date >= :start AND e.date < :end
+        WHERE e.code = :code
+            and e.date in :dateList
     """)
-    Object findYearlyStats(@Param("start") LocalDateTime start,
-        @Param("end") LocalDateTime end);
+    Object findYearlyStats(@Param("code") String code,
+        @Param("dateList") List<LocalDateTime> dateList);
 
 }

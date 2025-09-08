@@ -580,8 +580,6 @@ public class SchedulerService {
 
         LocalDateTime firstDate = lastGieEuOptional.map(gieEu -> gieEu.getDate().plusDays(1)).orElse(DB_FIRST_DATE);
 
-        Map<Integer, Object[]> past5yMap = new HashMap<>();
-
         Page<GieEu> gieEuPage;
         int pageNumber = 0;
         final int PAGE_SIZE = 1000;
@@ -616,8 +614,7 @@ public class SchedulerService {
                         eu.getGasInStorage(),
                         eu.getGasInStorageMt())));
 
-                past5yMap = getGieEuMaxMinAvg(past5yMap, gieEu.getDate().getYear());
-                Object[] values = past5yMap.get(gieEu.getDate().getYear());
+                Object[] values = getGieEuMaxMinAvg(DB_FIRST_DATE.getYear(), gieEu);
                 BigDecimal valueMax = getBigDecimal(values[0]);
                 if(valueMax != null){
                     updateGieEu(
@@ -675,19 +672,19 @@ public class SchedulerService {
         }
     }
 
-    private Map<Integer, Object[]> getGieEuMaxMinAvg(Map<Integer, Object[]> past5yMap, int currentYear){
-        if(past5yMap.containsKey(currentYear)){
-            return past5yMap;
+    private Object[] getGieEuMaxMinAvg(int beginYear, GieEu gieEu){
+        if(gieEu == null || gieEu.getDate() == null){
+            return new Object[]{null, null, null};
         }
-        LocalDateTime start = LocalDateTime.of(currentYear-5, 1, 1, 0, 0);
-        LocalDateTime end = LocalDateTime.of(currentYear, 1, 1, 0, 0);
-        Object[] result = (Object[])gieEuRepository.findYearlyStats(start, end);
-        if(result == null){
-            past5yMap.put(currentYear, Arrays.asList(null, null, null).toArray());
-        }else{
-            past5yMap.put(currentYear, result);
+        if(beginYear > gieEu.getDate().getYear() - 5){
+            return new Object[]{null, null, null};
         }
-        return past5yMap;
+
+        List<LocalDateTime> past5yDateList = new ArrayList<>(5);
+        for(int year = 1 ; year <= 5 ; year++){
+            past5yDateList.add(gieEu.getDate().minusYears(year));
+        }
+        return (Object[])gieEuRepository.findYearlyStats(GIE_EU_CODE_CURRENT, past5yDateList);
     }
 
     /**
