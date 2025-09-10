@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -41,8 +40,11 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     private final ObjectMapper objectMapper;
 
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+
+    // TODO 이것 대신, 별도의 서비스 생성해서 써야 함.
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
 
+    // TODO 한곳으로 몰아야 됨
     private static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
     private static final String GIE_EU_CODE_PAST_5Y_MIN = "PAST_5Y_MIN";
     private static final String GIE_EU_CODE_PAST_5Y_MAX = "PAST_5Y_MAX";
