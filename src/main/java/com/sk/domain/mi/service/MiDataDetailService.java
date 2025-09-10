@@ -269,7 +269,7 @@ public class MiDataDetailService {
      * @param unitCd    단위 변환 코드 (상세유형명#변환후단위명) (요청 값)
      * @return ChartSettingsContext (1차 검증된 차트 설정 컨텍스트)
      */
-    public ChartSettingsContext hardValidateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
+    private ChartSettingsContext hardValidateChartParameters(GoodsDataSourceDetail gds, Interval interval, Range range, LocalDate startDate, LocalDate endDate, String unitCd) {
 
         // 'Range' 검증
         if (range == Range.CUSTOM) {
@@ -355,7 +355,7 @@ public class MiDataDetailService {
      * @param contextV2 개인화 및 기본값이 적용된 파라미터 설정 컨텍스트 객체(v2)
      * @return ChartSettingsContext (2차 검증된 차트 설정 컨텍스트)
      */
-    public ChartSettingsContext softValidateChartParametersAndAdjust(GoodsDataSourceDetail gds, ChartSettingsContext contextV2) {
+    private ChartSettingsContext softValidateChartParametersAndAdjust(GoodsDataSourceDetail gds, ChartSettingsContext contextV2) {
 
         Interval initialInterval = contextV2.finalizedInterval();
         Range initialRange = contextV2.finalizedRange();

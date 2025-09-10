@@ -1,46 +1,60 @@
 package com.sk.domain.mi.service.custom.chart;
 
-import com.sk.common.config.database.DataSourceContextHolder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.ValidationResult;
-import com.sk.common.utils.ChartSliceUtil;
-import com.sk.common.utils.DateUtil;
-import com.sk.domain.mi.dto.response.charts.Chart;
-import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
-import com.sk.domain.mi.dto.response.charts.ChartMetadata;
-import com.sk.domain.mi.dto.response.charts.Indicator;
-import com.sk.domain.mi.service.MiDataDetailService;
-import com.sk.domain.mi.service.chart.ChartBundleFactory;
-import com.sk.domain.mi.service.chart.ChartGenerationService;
-import com.sk.domain.mi.service.chart.PersonalizationService;
-import com.sk.domain.mi.service.chart.TechnicalIndicatorService;
-import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
-import com.sk.domain.mi.service.chart.dto.UnitCd;
+import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
+import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
+import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
+import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawData;
+import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
+import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
+import com.sk.domain.shared.entity.master.tmd.Goods;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.chart.ChartType;
-import com.sk.domain.shared.enums.chart.Interval;
-import com.sk.domain.shared.enums.chart.Range;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class GieEuChartMaker implements CustomChartMaker<ChartBundleRes>{
+@Slf4j
+public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
     private final GoodsDataSourceValidator validatedGoodsDataSource;
-    private final MiDataDetailService miDataDetailService;
-    private final ChartGenerationService chartGenerationService;
-    private final TechnicalIndicatorService technicalIndicatorService;
+    private final AuthorizationService authorizationService;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+
+    private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final MybatisDynamicQueryService mybatisDynamicQueryService;
+
+    private static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
+    private static final String GIE_EU_CODE_PAST_5Y_MIN = "PAST_5Y_MIN";
+    private static final String GIE_EU_CODE_PAST_5Y_MAX = "PAST_5Y_MAX";
+
 
     @Value("${custom.gie-eu.goods-data-source-no}")
     private Integer goodsDataSourceNo;
+    @Value("${custom.gie-eu.card-index:7}")
+    private Short cardIndex;
 
+    private static final String CUSTOM_ID = "gie-eu";
+    private static final String CUSTOM_DATA_CACHE_KEY = "data_source:"+CUSTOM_ID+":%d";
 
     @Override
     public String getCustomId() {
@@ -48,71 +62,182 @@ public class GieEuChartMaker implements CustomChartMaker<ChartBundleRes>{
     }
 
     @Override
-    public ChartBundleRes getDashboardChart() {
+    public MiMarketDataRes getDashboardChart(Integer companyNo) {
 
-        // TODO 사용자의 데이터 접근 권한이 있는지 체크 후 처리 해야 함.
+        LocalDate START_DATE = LocalDate.now().minusMonths(MiMarketDataService.MAIN_MARKET_DATA_START_DATE_MONTH);
+        LocalDate END_DATE = LocalDate.now();
 
         ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
-        GoodsDataSourceDetail goodsDataSourceDetail = validationResult.data();
+        GoodsDataSourceDetail mainGoodsDataSource = validationResult.data();
+        GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
+        Goods mainGoods = mainGoodsData.getGoods();
 
-        // 요청 파라미터 1차 유효성 hard 검증 -> 검증 실패 시, 예외 처리
-        ChartSettingsContext settingsContextV1 = miDataDetailService.hardValidateChartParameters(goodsDataSourceDetail, null, null, null, null, null);
-        ChartSettingsContext settingsContextV2 = setDefault(goodsDataSourceDetail, settingsContextV1);
-        ChartSettingsContext settingsContextV3 = miDataDetailService.softValidateChartParametersAndAdjust(goodsDataSourceDetail, settingsContextV2);
+        // 권한 조회
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        Boolean isPermitted =
+            permissionRes
+                .getGoodsViewableMap(companyNo)
+                .getOrDefault(mainGoods.getGoodsNo(), false);
 
-        // 차트 데이터 생성
-        ChartBundleRes bundle = generateChartBundle(goodsDataSourceDetail, settingsContextV3);
+        String cacheKey = String.format(CUSTOM_DATA_CACHE_KEY, goodsDataSourceNo);
+        // 캐시 조회
+        String cachedData = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedData != null) {
+            try {
+                MiMarketDataCache miMarketDataCache =
+                    objectMapper.readValue(cachedData, MiMarketDataCache.class);
 
-        // 차트 데이터 슬라이싱 및 반환
-        return ChartSliceUtil.sliceBundle(bundle, DateUtil.parseDate(settingsContextV3.finalizedRangeBetween().getLeft()), settingsContextV3.finalizedInterval());
+                // 권한이 없는 경우 메타데이터까지만 제공
+                if (!isPermitted) {
+                    // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
+                    MarketMetaData marketMetaData =
+                        MarketMetaData.of(
+                            cardIndex,
+                            mainGoodsData,
+                            mainGoodsDataSource,
+                            null,
+                            miMarketDataCache.marketMetaData().indexStartDt(),
+                            miMarketDataCache.marketMetaData().lastUpdateDt());
 
+                    return MiMarketDataRes.of(isPermitted, marketMetaData);
+                }
+
+                // 권한이 있는 경우 모든 데이터 제공
+                return MiMarketDataRes.of(
+                    isPermitted,
+                    miMarketDataCache.marketMetaData(),
+                    miMarketDataCache.mainChart(),
+                    miMarketDataCache.compareCharts());
+            } catch (Exception e) {
+                // 캐시 데이터가 유효하지 않은 경우 캐시 삭제
+                redisTemplate.delete(cacheKey);
+                log.error("마켓데이터 캐시 조회 실패 : {}", e.getMessage());
+            }
+        }
+
+        String[] tableColumnListNm =
+            Arrays.stream(mainGoodsDataSource.getTableColumnListNm().split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
+        // 날짜 칼럼
+        String dateColumnName = tableColumnListNm[MiMarketDataService.MARKET_DATA_DATE_COLUMN_INDEX];
+        // 기본 데이터 칼럼
+        String defaultDataColumnName =
+            tableColumnListNm[MiMarketDataService.MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+
+        // 원시 데이터 조회
+        List<Map<String, Object>> rawData =
+            MiMarketDataService.getMarketDataRows(mybatisDynamicQueryService, mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+
+        // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
+        if (rawData.isEmpty()) {
+            MarketMetaData marketMetaData =
+                MarketMetaData.of(
+                    cardIndex,
+                    mainGoodsData,
+                    mainGoodsDataSource,
+                    null,
+                    null,
+                    null);
+            MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
+            List<MarketDataChart> compareCharts = Collections.emptyList();
+
+            MiMarketDataCache miMarketDataCache =
+                MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+            saveToMarketDataCache(cacheKey, miMarketDataCache);
+
+            return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
+        }
+
+        // 월별 데이터로 변환
+        List<MarketDataChartRawData> mainDashboardData =
+            MiMarketDataService.convertToDashBoardData(
+                rawData,
+                dateColumnName,
+                defaultDataColumnName,
+                LocalDate.now().minusMonths(MiMarketDataService.MARKET_DATA_MONTHLY_START_DATE_MONTH));
+
+        MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
+
+        // 비교군 데이터소스 조회
+        List<MarketDataChart> compareCharts = new ArrayList<>();
+
+
+        List<GoodsDataSourceDetail> goodsDataSourceDetails = goodsDataSourceDetailRepository.findByGoodsDataAndIsDeletedFalse(mainGoodsData);
+        for(GoodsDataSourceDetail goodsDataSourceDetail : goodsDataSourceDetails){
+            String code;
+            if(goodsDataSourceDetail.getQueryConditionCntt().contains(GIE_EU_CODE_PAST_5Y_AVG)){
+                code = GIE_EU_CODE_PAST_5Y_AVG;
+            }else if(goodsDataSourceDetail.getQueryConditionCntt().contains(GIE_EU_CODE_PAST_5Y_MAX)){
+                code = GIE_EU_CODE_PAST_5Y_MAX;
+            }else if(goodsDataSourceDetail.getQueryConditionCntt().contains(GIE_EU_CODE_PAST_5Y_MIN)){
+                code = GIE_EU_CODE_PAST_5Y_MIN;
+            }else{
+                continue;
+            }
+
+            List<Map<String, Object>> codeRawData =
+                MiMarketDataService.getMarketDataRows(mybatisDynamicQueryService, goodsDataSourceDetail, dateColumnName, START_DATE, END_DATE);
+
+            List<MarketDataChartRawData> codeData =
+                MiMarketDataService.convertToDashBoardData(
+                    codeRawData,
+                    dateColumnName,
+                    defaultDataColumnName,
+                    LocalDate.now().minusMonths(MiMarketDataService.MARKET_DATA_MONTHLY_START_DATE_MONTH));
+
+            compareCharts.add(MarketDataChart.of(codeData, code));
+        }
+
+        // 마켓데이터 메타데이터 생성
+        MarketMetaData marketMetaData =
+            MarketMetaData.of(
+                cardIndex,
+                mainGoodsData,
+                mainGoodsDataSource,
+                Collections.emptyMap(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        // 캐시 저장
+        MiMarketDataCache miMarketDataCache =
+            MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+        saveToMarketDataCache(cacheKey, miMarketDataCache);
+
+        // 권한이 없는 경우 메타데이터까지만 제공
+        if (!isPermitted) {
+            // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
+            MarketMetaData marketMetaDataNoPermitted =
+                MarketMetaData.of(
+                    cardIndex,
+                    mainGoodsData,
+                    mainGoodsDataSource,
+                    Collections.emptyMap(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+
+            return MiMarketDataRes.of(isPermitted, marketMetaDataNoPermitted);
+        }
+
+        return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
     }
 
-    private ChartSettingsContext setDefault(GoodsDataSourceDetail gds, ChartSettingsContext contextV1) {
-
-        Interval finalizedInterval = gds.getPeriodUnitSeparateCd().minInterval();
-        Range finalizedRange = gds.getPeriodUnitSeparateCd().rangeInterval();
-
-        // RangeBetween 결정: 요청값 > 개인화 > 기본값
-        Pair<String, String> finalizedRangeBetween = DateUtil.getDateRange(gds.getPeriodUnitSeparateCd().rangeInterval());
-
-        // UnitCd 결정: 요청값 > 개인화 > 기본값
-        UnitCd finalizedUnitCd = new UnitCd(gds.getConvertTargetDetailTypeNm(), gds.getGoodsDataSourceUnitNm());
-
-        // ChartType 결정: 개인화 > 기본값
-        ChartType finalizedChartType = ChartType.LINE;
-
-        // Indicators 결정: 개인화
-        List<String> finalizedIndicators = Collections.emptyList();
-
-        // ComparisonChartIds 결정: 개인화
-        List<Integer> finalizedCompIds = Collections.emptyList();
-
-        // settingsContextV1 -> settingsContextV2
-        return contextV1
-            .withFinalizedInterval(finalizedInterval)
-            .withFinalizedRange(finalizedRange)
-            .withFinalizedRangeBetween(finalizedRangeBetween)
-            .withFinalizedUnitCd(finalizedUnitCd)
-            .withFinalizedChartType(finalizedChartType)
-            .withFinalizedIndicators(finalizedIndicators)
-            .withFinalizedCompIds(finalizedCompIds);
-    }
-
-    private ChartBundleRes generateChartBundle(GoodsDataSourceDetail gds, ChartSettingsContext contextV3) {
-
-        DataSourceContextHolder.setDataSourceKey(gds.getTargetDbNm());
-        LocalDate latestDate = chartGenerationService.getLatestDate(gds);
-
-        // [mainChart] 생성
-        Chart mainChart = chartGenerationService.generateChartData(gds, contextV3, Boolean.TRUE, Boolean.TRUE, Boolean.FALSE);
-
-        // [indicators] 생성
-        List<Indicator> indicators = technicalIndicatorService.generateIndicators(mainChart, contextV3.finalizedIndicators());
-
-        // [metadata] 생성
-        ChartMetadata metadata = ChartMetadata.of(gds, contextV3, DateUtil.toYmd(latestDate), Boolean.FALSE);
-
-        return ChartBundleFactory.create(metadata, mainChart, indicators, Collections.emptyList());
+    private void saveToMarketDataCache(String key, MiMarketDataCache cache) {
+        try {
+            String json = objectMapper.writeValueAsString(cache);
+            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(MiMarketDataService.MARKET_DATA_CACHE_TTL));
+        } catch (Exception e) {
+            log.error("Failed to serialize and save cache for key: {}", key, e);
+        }
     }
 }

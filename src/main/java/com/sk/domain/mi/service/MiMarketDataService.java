@@ -74,15 +74,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MiMarketDataService {
 
-    private static final int MARKET_DATA_CACHE_TTL = 1; // 마켓데이터 캐시 유효 기간 (1초)
+    public static final int MARKET_DATA_CACHE_TTL = 1; // 마켓데이터 캐시 유효 기간 (1초)
     // TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
     // private static final int MARKET_DATA_CACHE_TTL = 3600; // 마켓데이터 캐시 유효 기간 (1시간)
 
-    private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
-    private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
-    private static final int MAIN_MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
+    public static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
+    public static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
+    public static final int MAIN_MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     private static final int MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
-    private static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
+    public static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
     private static final String MARKET_DATA_INTERVAL = "1M"; // 월별 평균 계산을 위한 기간
 
@@ -165,7 +165,7 @@ public class MiMarketDataService {
                     // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                     MarketMetaData marketMetaData =
                         MarketMetaData.of(
-                            marketDataChartSetting,
+                            marketDataChartSetting.getChartMarkRank(),
                             mainGoodsData,
                             mainGoodsDataSource,
                             new HashMap<>(),
@@ -206,7 +206,7 @@ public class MiMarketDataService {
 
               // 원시 데이터 조회
               List<Map<String, Object>> rawData =
-                  getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+                  getMarketDataRows(mybatisDynamicQueryService, mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
               // Index Start date 데이터 조회
               LocalDate indexStartDate = null;
@@ -244,7 +244,7 @@ public class MiMarketDataService {
               if (rawData.isEmpty()) {
                 MarketMetaData marketMetaData =
                     MarketMetaData.of(
-                        marketDataChartSetting,
+                        marketDataChartSetting.getChartMarkRank(),
                         mainGoodsData,
                         mainGoodsDataSource,
                         MARKET_DATA_INTERVAL,
@@ -341,7 +341,7 @@ public class MiMarketDataService {
                   // 비교군 원시 데이터 조회
                   List<Map<String, Object>> compareRawData =
                       getMarketDataRows(
-                          compareGoodsDataSource, compareDateColumnName, START_DATE, END_DATE);
+                          mybatisDynamicQueryService, compareGoodsDataSource, compareDateColumnName, START_DATE, END_DATE);
                   // 비교군 데시보드형 데이터로 변환
                   List<MarketDataChartRawData> compareChart =
                       convertToDashBoardData(
@@ -416,7 +416,7 @@ public class MiMarketDataService {
               // 마켓데이터 메타데이터 생성
               MarketMetaData marketMetaData =
                   MarketMetaData.of(
-                      marketDataChartSetting,
+                      marketDataChartSetting.getChartMarkRank(),
                       mainGoodsData,
                       mainGoodsDataSource,
                       calculatePeriodChangeMap,
@@ -438,7 +438,7 @@ public class MiMarketDataService {
                 // 마켓데이터 메타데이터 생성 (기간 변화 유형 제외)
                 MarketMetaData marketMetaDataNoPermitted =
                     MarketMetaData.of(
-                        marketDataChartSetting,
+                        marketDataChartSetting.getChartMarkRank(),
                         mainGoodsData,
                         mainGoodsDataSource,
                         new HashMap<>(),
@@ -470,8 +470,8 @@ public class MiMarketDataService {
         .collect(Collectors.toList());
     }
 
-    public Object getMarketDataCustom(String customId){
-        return customRegistry.getCustomChartMaker(customId).getDashboardChart();
+    public Object getMarketDataCustom(Integer companyNo, String customId){
+        return customRegistry.getCustomChartMaker(customId).getDashboardChart(companyNo);
     }
 
     /**
@@ -560,7 +560,7 @@ public class MiMarketDataService {
 
               // 원시 데이터 조회
               List<Map<String, Object>> rawData =
-                  getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+                  getMarketDataRows(mybatisDynamicQueryService, mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
               // Index Start date 데이터 조회
               LocalDate indexStartDate = null;
@@ -745,7 +745,7 @@ public class MiMarketDataService {
      * @param startDate             데이터 범위 시작일 (포함, yyyy-MM-dd 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
-    private List<Map<String, Object>> getMarketDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate,
+    public static List<Map<String, Object>> getMarketDataRows(MybatisDynamicQueryService mybatisDynamicQueryService, GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate,
             LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null) {
             return Collections.emptyList();
@@ -871,7 +871,7 @@ public class MiMarketDataService {
      * @param startDate 월별 평균 계산 기준 날짜
      * @return DTO 생성
      */
-    private List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
+    public static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
                                                                 String dateColumnName,
                                                                 String defaultDataColumnName,
                                                                 LocalDate startDate) {
@@ -894,80 +894,6 @@ public class MiMarketDataService {
                 ;
             })
             .toList();
-
-        /*
-
-        // startDate를 1년 전 다음 달 첫 번째 날로 조정 (예: 2024-06-01)
-        LocalDate adjustedStartDate = startDate.withDayOfMonth(1);
-        // endDate를 이번 달 첫 날로 설정 (예: 2025-05-01)
-        LocalDate endDate = LocalDate.now().withDayOfMonth(1);
-        // 오늘의 일자 (예: 13)
-        int todayDayOfMonth = LocalDate.now().getDayOfMonth();
-
-        // 월별로 데이터 그룹화
-        Map<String, List<Map<String, Object>>> monthlyGroupedData = new TreeMap<>();
-        for (Map<String, Object> row : rawData) {
-            LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
-
-            // e.g. 2024-06-01 ~ 2025-05-31 범위 내 데이터만 처리
-            if (date.isBefore(adjustedStartDate) || date.isAfter(endDate.withDayOfMonth(endDate.lengthOfMonth()))) {
-                continue;
-            }
-
-            String yearMonth = DateUtil.toYearMonth(date); // YYYYMM (예: 202406)
-
-            monthlyGroupedData.computeIfAbsent(yearMonth, k -> new ArrayList<>()).add(row);
-        }
-
-        // 월별 평균 계산 및 DTO 생성
-        List<MarketDataChartRawData> monthlyData = new ArrayList<>();
-        LocalDate currentMonth = adjustedStartDate;
-        while (!currentMonth.isAfter(endDate)) {
-            String yearMonth = DateUtil.toYearMonth(currentMonth); // 예: "202406"
-            List<Map<String, Object>> monthData = monthlyGroupedData.getOrDefault(yearMonth, Collections.emptyList());
-
-            // 대표 날짜 선택
-            String representativeDate;
-            if (monthData.isEmpty()) {
-                // 데이터 없는 경우: 오늘의 일자 또는 월의 마지막 날
-                int dayOfMonth = Math.min(todayDayOfMonth, currentMonth.lengthOfMonth());
-                representativeDate = DateUtil.toYmdHyphen(currentMonth.withDayOfMonth(dayOfMonth));
-            } else {
-                // 데이터 있는 경우: 기존 로직
-                representativeDate = selectRepresentativeDate(monthData, dateColumnName, yearMonth, todayDayOfMonth);
-            }
-
-            // 평균 계산
-            Double value = null;
-            if (!monthData.isEmpty()) {
-                double sum = 0.0;
-                int count = 0;
-                for (Map<String, Object> row : monthData) {
-                    Object val = row.get(defaultDataColumnName);
-                    if (val != null) {
-                        try {
-                            sum += Double.parseDouble(val.toString());
-                            count++;
-                        } catch (NumberFormatException e) {
-                            log.warn("Invalid number format: {}, skipping value", val, e);
-                        }
-                    }
-                }
-                if (count > 0) {
-                    BigDecimal bd = BigDecimal.valueOf(sum / count).setScale(2, RoundingMode.HALF_UP);
-                    value = bd.doubleValue();
-                }
-            }
-
-            monthlyData.add(MarketDataChartRawData.builder()
-                    .date(representativeDate)
-                    .value(value)
-                    .build());
-
-            currentMonth = currentMonth.plusMonths(1);
-        }
-        return monthlyData;
-        */
     }
 
     /**
@@ -1025,7 +951,7 @@ public class MiMarketDataService {
      * @param calculatePeriodChangeTypes 기간 변화 유형
      * @return 기간 변화 수치, 변화율 계산 결과
      */
-    private Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChange(
+    public Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChange(
             GoodsDataSourceDetail mainGoodsDataSource,
             List<Map<String, Object>> rawData,
             String dateColumnName,
