@@ -1,9 +1,9 @@
 package com.sk.common.utils;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Date;
-
-import javax.crypto.SecretKey;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +23,6 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -33,26 +32,45 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JwtUtil {
 
-    @Value("${server.domain}")
-    private String miDefaultDomain;
-
-    private SecretKey secretKey;
     private final RefreshTokenService refreshTokenService;
     private final JwtProperties jwtProperties;
+    @Value("${server.domain}")
+    private String miDefaultDomain;
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
 
     // 비밀 키 초기화
     @PostConstruct
     public void init() {
-        secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
+        try {
+            loadKeysFromProperties();
+        } catch (Exception e) {
+            throw new RuntimeException("JWT 키 초기화 실패", e);
+        }
     }
 
-    // 공통 토큰 빌더 생성 메서드
+    private void loadKeysFromProperties() throws Exception {
+        byte[] privateKeyBytes = java.util.Base64.getDecoder()
+            .decode(jwtProperties.getPrivateKey().replace("\\n", ""));
+        byte[] publicKeyBytes = java.util.Base64.getDecoder()
+            .decode(jwtProperties.getPublicKey().replace("\\n", ""));
+
+        java.security.spec.PKCS8EncodedKeySpec privateKeySpec =
+            new java.security.spec.PKCS8EncodedKeySpec(privateKeyBytes);
+        java.security.spec.X509EncodedKeySpec publicKeySpec =
+            new java.security.spec.X509EncodedKeySpec(publicKeyBytes);
+
+        java.security.KeyFactory keyFactory = java.security.KeyFactory.getInstance("RSA");
+        this.privateKey = keyFactory.generatePrivate(privateKeySpec);
+        this.publicKey = keyFactory.generatePublic(publicKeySpec);
+    }
+
     private JwtBuilder createTokenBuilder(String subject) {
         return Jwts.builder()
             .header().type("JWT").and()
             .subject(subject)
             .issuedAt(new Date())
-            .signWith(secretKey, Jwts.SIG.HS256); // 명시적으로 HS256 지정
+            .signWith(privateKey, Jwts.SIG.RS256);
     }
 
     // 액세스 토큰 생성 (By SAML2 인증 방식)
@@ -101,7 +119,7 @@ public class JwtUtil {
 
         try {
             return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -119,7 +137,7 @@ public class JwtUtil {
     public Claims extractClaimsIgnoreExpiration(String token) {
         try {
             return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token) // 만료된 경우에도 Claims 반환
                 .getPayload();

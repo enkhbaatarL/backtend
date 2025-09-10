@@ -11,9 +11,11 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
 
-    private String secretKey;
     private Saml2 saml2;
     private Oauth2 oauth2;
+
+    private String privateKey;
+    private String publicKey;
 
     @Getter
     @Setter
