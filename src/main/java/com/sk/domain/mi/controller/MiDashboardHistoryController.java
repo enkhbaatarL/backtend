@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 
 @Profile("!dedicated")
-@Tag(name = "01-2. Dashboard(History) API", description = "대시보드 히스토리 API 입니다.")
+@Tag(name = "01-2. AI Forecast (구 Dashboard) History API", description = "대시보드 히스토리 API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/dashboard")
