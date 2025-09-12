@@ -158,16 +158,16 @@ public class MiNewsletterService {
 
         // 뉴스레터 기본 정보
         Object[][] newsletterData = {
-            {"NL001", "Oil Price Trends", "글로벌 유가 동향과 에너지 시장 분석을 제공하는 주간 뉴스레터", "WEEKLY", "152", "https://example.com/images/oil-trends.jpg", true, true},
+            {"NL001", "Oil Price Trends", "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석", "DAILY", "152", "https://example.com/images/oil-trends.jpg", true, true},
             {"NL002", "Tech Innovation Report", "최신 기술 혁신과 스타트업 동향을 다루는 격주 뉴스레터", "WEEKLY", "087", "https://example.com/images/tech-innovation.jpg", false, true},
-            {"NL003", "Economic Outlook", "국내외 경제 전망과 주요 지표 분석 월간 뉴스레터", "ON-DEMAND", "034", "https://example.com/images/economic-outlook.jpg", true, true},
-            {"NL004", "Global Market Flash", "주요 글로벌 시장 이슈를 빠르게 전달하는 일간 뉴스레터", "DAILY", "2891", "https://example.com/images/market-flash.jpg", true, true},
-            {"NL005", "Industry Focus", "산업별 심층 분석과 트렌드를 제공하는 주간 뉴스레터", "WEEKLY", "198", "https://example.com/images/industry-focus.jpg", false, true},
-            {"NL006", "Investment Strategy Brief", "투자 전략과 포트폴리오 분석을 제공하는 격주 뉴스레터", "WEEKLY", "076", "https://example.com/images/investment-brief.jpg", true, true},
-            {"NL007", "ESG Insights", "ESG 투자와 지속가능경영 트렌드를 다루는 월간 뉴스레터", "ON-DEMAND", "023", "https://example.com/images/esg-insights.jpg", true, false},
-            {"NL008", "Crypto Weekly", "암호화폐 시장 동향과 블록체인 기술 분석 주간 뉴스레터", "WEEKLY", "143", "https://example.com/images/crypto-weekly.jpg", false, true},
-            {"NL009", "Real Estate Monitor", "부동산 시장 분석과 투자 기회를 제공하는 월간 뉴스레터", "ON-DEMAND", "045", "https://example.com/images/real-estate.jpg", true, true},
-            {"NL010", "Healthcare Trends", "헬스케어 산업 동향과 의료 기술 혁신을 다루는 격주 뉴스레터", "WEEKLY", "092", "https://example.com/images/healthcare.jpg", false, true}
+            {"NL003", "Economic Outlook", "국내외 경제 전망과 주요 지표 분석 월간 뉴스레터", "ON-DEMAND", "034", "https://example.com/images/economic-outlook.jpg", false, false},
+            {"NL004", "Global Market Flash", "주요 글로벌 시장 이슈를 빠르게 전달하는 일간 뉴스레터", "DAILY", "2891", "https://example.com/images/market-flash.jpg", false, false},
+            {"NL005", "Industry Focus", "산업별 심층 분석과 트렌드를 제공하는 주간 뉴스레터", "WEEKLY", "198", "https://example.com/images/industry-focus.jpg", false, false},
+            {"NL006", "Investment Strategy Brief", "투자 전략과 포트폴리오 분석을 제공하는 격주 뉴스레터", "WEEKLY", "076", "https://example.com/images/investment-brief.jpg", false, false},
+            {"NL007", "ESG Insights", "ESG 투자와 지속가능경영 트렌드를 다루는 월간 뉴스레터", "ON-DEMAND", "023", "https://example.com/images/esg-insights.jpg", false, false},
+            {"NL008", "Crypto Weekly", "암호화폐 시장 동향과 블록체인 기술 분석 주간 뉴스레터", "WEEKLY", "143", "https://example.com/images/crypto-weekly.jpg", false, false},
+            {"NL009", "Real Estate Monitor", "부동산 시장 분석과 투자 기회를 제공하는 월간 뉴스레터", "ON-DEMAND", "045", "https://example.com/images/real-estate.jpg", false, false},
+            {"NL010", "Healthcare Trends", "헬스케어 산업 동향과 의료 기술 혁신을 다루는 격주 뉴스레터", "WEEKLY", "092", "https://example.com/images/healthcare.jpg", false, false}
         };
 
         for (Object[] data : newsletterData) {

@@ -12,7 +12,7 @@ public record NewsletterFeaturedListRes(
         @Schema(description = "뉴스레터 이름", example = "Oil Price Trends")
         String name,
 
-        @Schema(description = "뉴스레터 설명", example = "글로벌 유가 동향과 에너지 시장 분석을 제공하는 주간 뉴스레터")
+        @Schema(description = "뉴스레터 설명", example = "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석")
         String description,
 
         @Schema(description = "구독여부", example = "true")
