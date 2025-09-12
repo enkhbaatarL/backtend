@@ -1,7 +1,11 @@
 package com.sk.domain.mi.service;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,5 +188,45 @@ public class MiNewsletterService {
         }
 
         return latestNewsletters;
+    }
+
+    /**
+     * 뉴스레터 상세 조회 (Mock 데이터)
+     */
+    public NewsletterDetailRes getNewsletterDetail(String newsletterId, String issueNo) {
+        log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
+
+        // Mock 데이터 생성 및 반환
+        return generateMockNewsletterDetail(newsletterId, issueNo);
+    }
+
+    /**
+     * Mock 뉴스레터 상세 데이터 생성
+     */
+    /**
+     * Mock 뉴스레터 상세 데이터 생성
+     */
+    private NewsletterDetailRes generateMockNewsletterDetail(String newsletterId, String issueNo) {
+        // Mock 발행목록 생성
+        List<NewsletterDetailRes.IssuedItem> issuedList = List.of(
+            new NewsletterDetailRes.IssuedItem(LocalDate.of(2025, 1, 15), "102"),
+            new NewsletterDetailRes.IssuedItem(LocalDate.of(2025, 1, 14), "101"),
+            new NewsletterDetailRes.IssuedItem(LocalDate.of(2025, 1, 13), "100"),
+            new NewsletterDetailRes.IssuedItem(LocalDate.of(2025, 1, 12), "099"),
+            new NewsletterDetailRes.IssuedItem(LocalDate.of(2025, 1, 11), "098")
+        );
+
+        // 무조건 하나의 고정된 Mock 데이터 반환
+        return new NewsletterDetailRes(
+            newsletterId,
+            "DAILY",
+            "Oil Price Trends",
+            "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석",
+            true,
+            issueNo,
+            "https://example.com/images/newsletter1.jpg",
+            true,
+            issuedList
+        );
     }
 }
