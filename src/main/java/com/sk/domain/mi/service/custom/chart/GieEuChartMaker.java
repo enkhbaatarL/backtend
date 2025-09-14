@@ -2,7 +2,6 @@ package com.sk.domain.mi.service.custom.chart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.ValidationResult;
-import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
@@ -10,7 +9,9 @@ import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawData;
 import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
 import com.sk.domain.mi.service.MiMarketDataService;
+import com.sk.domain.mi.service.MiMarketDynamicQueryService;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
+import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -38,17 +39,9 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     private final AuthorizationService authorizationService;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final MiMarketDynamicQueryService miMarketDynamicQueryService;
 
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
-
-    // TODO 이것 대신, 별도의 서비스 생성해서 써야 함.
-    private final MybatisDynamicQueryService mybatisDynamicQueryService;
-
-    // TODO 한곳으로 몰아야 됨
-    private static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
-    private static final String GIE_EU_CODE_PAST_5Y_MIN = "PAST_5Y_MIN";
-    private static final String GIE_EU_CODE_PAST_5Y_MAX = "PAST_5Y_MAX";
-
 
     @Value("${custom.gie-eu.goods-data-source-no}")
     private Integer goodsDataSourceNo;
@@ -129,7 +122,7 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
         // 원시 데이터 조회
         List<Map<String, Object>> rawData =
-            MiMarketDataService.getMarketDataRows(mybatisDynamicQueryService, mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+            miMarketDynamicQueryService.getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
         // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
         if (rawData.isEmpty()) {
@@ -153,7 +146,7 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
         // 월별 데이터로 변환
         List<MarketDataChartRawData> mainDashboardData =
-            MiMarketDataService.convertToDashBoardData(
+            MiMarketDynamicQueryService.convertToDashBoardData(
                 rawData,
                 dateColumnName,
                 defaultDataColumnName,
@@ -168,21 +161,21 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         List<GoodsDataSourceDetail> goodsDataSourceDetails = goodsDataSourceDetailRepository.findByGoodsDataAndIsDeletedFalse(mainGoodsData);
         for(GoodsDataSourceDetail goodsDataSourceDetail : goodsDataSourceDetails){
             String code;
-            if(goodsDataSourceDetail.getQueryConditionCntt().contains(GIE_EU_CODE_PAST_5Y_AVG)){
-                code = GIE_EU_CODE_PAST_5Y_AVG;
-            }else if(goodsDataSourceDetail.getQueryConditionCntt().contains(GIE_EU_CODE_PAST_5Y_MAX)){
-                code = GIE_EU_CODE_PAST_5Y_MAX;
-            }else if(goodsDataSourceDetail.getQueryConditionCntt().contains(GIE_EU_CODE_PAST_5Y_MIN)){
-                code = GIE_EU_CODE_PAST_5Y_MIN;
+            if(goodsDataSourceDetail.getQueryConditionCntt().contains(GieEu.GIE_EU_CODE_PAST_5Y_AVG)){
+                code = GieEu.GIE_EU_CODE_PAST_5Y_AVG;
+            }else if(goodsDataSourceDetail.getQueryConditionCntt().contains(GieEu.GIE_EU_CODE_PAST_5Y_MAX)){
+                code = GieEu.GIE_EU_CODE_PAST_5Y_MAX;
+            }else if(goodsDataSourceDetail.getQueryConditionCntt().contains(GieEu.GIE_EU_CODE_PAST_5Y_MIN)){
+                code = GieEu.GIE_EU_CODE_PAST_5Y_MIN;
             }else{
                 continue;
             }
 
             List<Map<String, Object>> codeRawData =
-                MiMarketDataService.getMarketDataRows(mybatisDynamicQueryService, goodsDataSourceDetail, dateColumnName, START_DATE, END_DATE);
+                miMarketDynamicQueryService.getMarketDataRows(goodsDataSourceDetail, dateColumnName, START_DATE, END_DATE);
 
             List<MarketDataChartRawData> codeData =
-                MiMarketDataService.convertToDashBoardData(
+                MiMarketDynamicQueryService.convertToDashBoardData(
                     codeRawData,
                     dateColumnName,
                     defaultDataColumnName,

@@ -30,6 +30,16 @@ import org.hibernate.annotations.Comment;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GieEu extends BaseEntity {
 
+    public static final String GIE_EU_TABLE_NAME = "tif_gier_eu";
+    public static final String GIE_EU_CODE_CURRENT = "CURRENT";
+    public static final String GIE_EU_CODE_1Y_AGO = "1Y_AGO";
+    public static final String GIE_EU_CODE_2Y_AGO = "2Y_AGO";
+    public static final String GIE_EU_CODE_3Y_AGO = "3Y_AGO";
+    public static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
+    public static final String GIE_EU_CODE_PAST_5Y_MIN = "PAST_5Y_MIN";
+    public static final String GIE_EU_CODE_PAST_5Y_MAX = "PAST_5Y_MAX";
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "data_reg_sn", nullable = false)

@@ -85,13 +85,6 @@ public class SchedulerService {
     private static final int CL_WEIGHT = 3; // CRACK SPREAD 계산 시 CL 가중치
     private static final int BARREL_CONVERSION_FACTOR = 42; // 배럴 변환 계수
     private static final int BATCH_SIZE = 10000;
-    private static final String GIE_EU_CODE_CURRENT = "CURRENT";
-    private static final String GIE_EU_CODE_1Y_AGO = "1Y_AGO";
-    private static final String GIE_EU_CODE_2Y_AGO = "2Y_AGO";
-    private static final String GIE_EU_CODE_3Y_AGO = "3Y_AGO";
-    private static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
-    private static final String GIE_EU_CODE_PAST_5Y_MIN = "PAST_5Y_MIN";
-    private static final String GIE_EU_CODE_PAST_5Y_MAX = "PAST_5Y_MAX";
 
     /**
      * GDI 탈퇴 유저 soft delete 처리
@@ -575,7 +568,7 @@ public class SchedulerService {
         final LocalDateTime DB_FIRST_DATE = LocalDateTime.parse("2011-01-01 00:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(Arrays.asList(
-            GIE_EU_CODE_1Y_AGO, GIE_EU_CODE_2Y_AGO, GIE_EU_CODE_3Y_AGO, GIE_EU_CODE_PAST_5Y_AVG, GIE_EU_CODE_PAST_5Y_MIN, GIE_EU_CODE_PAST_5Y_MAX
+            GieEu.GIE_EU_CODE_1Y_AGO, GieEu.GIE_EU_CODE_2Y_AGO, GieEu.GIE_EU_CODE_3Y_AGO, GieEu.GIE_EU_CODE_PAST_5Y_AVG, GieEu.GIE_EU_CODE_PAST_5Y_MIN, GieEu.GIE_EU_CODE_PAST_5Y_MAX
         ));
 
         LocalDateTime firstDate = lastGieEuOptional.map(gieEu -> gieEu.getDate().plusDays(1)).orElse(DB_FIRST_DATE);
@@ -585,31 +578,31 @@ public class SchedulerService {
         final int PAGE_SIZE = 1000;
         boolean isFirst = true;
         do{
-            gieEuPage = gieEuRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, GIE_EU_CODE_CURRENT,
+            gieEuPage = gieEuRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, GieEu.GIE_EU_CODE_CURRENT,
                 PageRequest.of(pageNumber, PAGE_SIZE));
             pageNumber++;
             for(GieEu gieEu : gieEuPage.getContent()){
                 /// 1Y AGO
-                Optional<GieEu> gieEu1yAgo = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(1));
+                Optional<GieEu> gieEu1yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(1));
                   gieEu1yAgo.ifPresent(eu -> updateGieEu(
                       GieEu.of(
-                          GIE_EU_CODE_1Y_AGO,
+                          GieEu.GIE_EU_CODE_1Y_AGO,
                           gieEu.getDate(),
                           eu.getGasInStorage(),
                           eu.getGasInStorageMt())));
 
-                Optional<GieEu> gieEu2yAgo = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(2));
+                Optional<GieEu> gieEu2yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(2));
                 gieEu2yAgo.ifPresent(eu -> updateGieEu(
                     GieEu.of(
-                        GIE_EU_CODE_2Y_AGO,
+                        GieEu.GIE_EU_CODE_2Y_AGO,
                         gieEu.getDate(),
                         eu.getGasInStorage(),
                         eu.getGasInStorageMt())));
 
-                Optional<GieEu> gieEu3yAgo = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(3));
+                Optional<GieEu> gieEu3yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(3));
                 gieEu3yAgo.ifPresent(eu -> updateGieEu(
                     GieEu.of(
-                        GIE_EU_CODE_3Y_AGO,
+                        GieEu.GIE_EU_CODE_3Y_AGO,
                         gieEu.getDate(),
                         eu.getGasInStorage(),
                         eu.getGasInStorageMt())));
@@ -619,7 +612,7 @@ public class SchedulerService {
                 if(valueMax != null){
                     updateGieEu(
                         GieEu.of(
-                            GIE_EU_CODE_PAST_5Y_MAX,
+                            GieEu.GIE_EU_CODE_PAST_5Y_MAX,
                             gieEu.getDate(),
                             valueMax,
                             valueMax.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
@@ -628,7 +621,7 @@ public class SchedulerService {
                 if(valueMin != null){
                     updateGieEu(
                         GieEu.of(
-                            GIE_EU_CODE_PAST_5Y_MIN,
+                            GieEu.GIE_EU_CODE_PAST_5Y_MIN,
                             gieEu.getDate(),
                             valueMin,
                             valueMin.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
@@ -637,7 +630,7 @@ public class SchedulerService {
                 if(valueAvg != null){
                     updateGieEu(
                         GieEu.of(
-                            GIE_EU_CODE_PAST_5Y_AVG,
+                            GieEu.GIE_EU_CODE_PAST_5Y_AVG,
                             gieEu.getDate(),
                             valueAvg,
                             valueAvg.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
@@ -684,7 +677,7 @@ public class SchedulerService {
         for(int year = 1 ; year <= 5 ; year++){
             past5yDateList.add(gieEu.getDate().minusYears(year));
         }
-        return (Object[])gieEuRepository.findYearlyStats(GIE_EU_CODE_CURRENT, past5yDateList);
+        return (Object[])gieEuRepository.findYearlyStats(GieEu.GIE_EU_CODE_CURRENT, past5yDateList);
     }
 
     /**
