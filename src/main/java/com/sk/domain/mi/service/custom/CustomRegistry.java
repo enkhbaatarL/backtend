@@ -7,7 +7,10 @@ import com.sk.domain.mi.service.period.PeriodCalculator;
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,12 +19,15 @@ public class CustomRegistry {
 
     private final Map<String, CustomChartMaker<?>> customChartMakerMap;
     private Map<String, CustomChartMaker<?>> customChartMakerMapByCustomId;
+    private Map<Integer, CustomChartMaker<?>> customChartMakerMapByGoodsDataSourceId;
 
     @PostConstruct
     public void init(){
         customChartMakerMapByCustomId = new HashMap<>();
+        customChartMakerMapByGoodsDataSourceId = new HashMap<>();
         for(CustomChartMaker<?> customChartMaker : customChartMakerMap.values()){
             customChartMakerMapByCustomId.put(customChartMaker.getCustomId(), customChartMaker);
+            customChartMakerMapByGoodsDataSourceId.put(customChartMaker.getGoodsDataSourceId(), customChartMaker);
         }
     }
 
@@ -32,6 +38,12 @@ public class CustomRegistry {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "customId is not exist.");
         }
         return customChartMaker;
+    }
+
+    public Optional<CustomChartMaker<?>> getCustomChartMaker(Integer goodsDataSourceId){
+
+        CustomChartMaker<?> customChartMaker = customChartMakerMapByGoodsDataSourceId.get(goodsDataSourceId);
+        return Optional.ofNullable(customChartMaker);
     }
 
 }

@@ -2,7 +2,9 @@ package com.sk.domain.mi.service.custom.chart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.ValidationResult;
+import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
@@ -15,8 +17,10 @@ import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.chart.IndicatorType;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -55,6 +59,12 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     public String getCustomId() {
         return "gie-eu";
     }
+
+    @Override
+    public Integer getGoodsDataSourceId() {
+        return goodsDataSourceNo;
+    }
+
 
     @Override
     public MiMarketDataRes getDashboardChart(Integer companyNo) {
@@ -227,6 +237,18 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
     }
 
+
+    @Override
+    public Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series,
+        List<String> finalizedIndicators) {
+
+//        List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, TechnicalIndicatorService.PERIOD_MEDIUM);
+//
+//        List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, finalizedIndicators);
+
+        return Indicator.of(IndicatorType.BOLLINGER_BANDS, timestamps, Collections.emptyList());
+    }
+
     private void saveToMarketDataCache(String key, MiMarketDataCache cache) {
         try {
             String json = objectMapper.writeValueAsString(cache);
@@ -234,5 +256,9 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         } catch (Exception e) {
             log.error("Failed to serialize and save cache for key: {}", key, e);
         }
+    }
+
+    private List<BollingerBandResult> getMinMaxAvg5Years(List<String> timestamps){
+        return Collections.emptyList();
     }
 }
