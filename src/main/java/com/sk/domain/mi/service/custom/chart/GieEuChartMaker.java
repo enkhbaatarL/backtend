@@ -2,9 +2,11 @@ package com.sk.domain.mi.service.custom.chart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.ValidationResult;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.charts.Indicator;
+import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
@@ -12,22 +14,27 @@ import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawD
 import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.mi.service.MiMarketDynamicQueryService;
+import com.sk.domain.mi.service.chart.ChartBundleFactory;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
 import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.IndicatorType;
+import com.sk.domain.shared.enums.chart.RenderAs;
+import com.sk.domain.shared.repository.master.tif.GieEuRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,6 +53,7 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     private final MiMarketDynamicQueryService miMarketDynamicQueryService;
 
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
+    private final GieEuRepository gieEuRepository;
 
     @Value("${custom.gie-eu.goods-data-source-no}")
     private Integer goodsDataSourceNo;
@@ -241,12 +249,8 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     @Override
     public Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series,
         List<String> finalizedIndicators) {
-
-//        List<BollingerBandResult> results = unitConversionService.convertTimeSeriesToBollingerBands(series, TechnicalIndicatorService.PERIOD_MEDIUM);
-//
-//        List<Series> bollingerBandsIndicator = ChartBundleFactory.createBollingerBandsIndicator(results, finalizedIndicators);
-
-        return Indicator.of(IndicatorType.BOLLINGER_BANDS, timestamps, Collections.emptyList());
+        List<Series> bollingerBandsIndicator = createBollingerBandsIndicator(getMinMaxAvg5Years(timestamps), finalizedIndicators);
+        return Indicator.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
     }
 
     private void saveToMarketDataCache(String key, MiMarketDataCache cache) {
@@ -259,6 +263,38 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     }
 
     private List<BollingerBandResult> getMinMaxAvg5Years(List<String> timestamps){
-        return Collections.emptyList();
+        LocalDateTime start = DateUtil.fromYmd(timestamps.get(0)).atTime(0,0,0);
+        LocalDateTime end = DateUtil.fromYmd(timestamps.get(timestamps.size()-1)).atTime(0,0,0);
+
+        Map<String, BigDecimal> upper = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_MAX, start, end)
+            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getGasInStorageMt));
+        Map<String, BigDecimal> mid = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_AVG, start, end)
+            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getGasInStorageMt));
+        Map<String, BigDecimal> lower = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_MIN, start, end)
+            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getGasInStorageMt));
+
+        return timestamps.stream().map(t->BollingerBandResult.of(mid.get(t), upper.get(t), lower.get(t))).toList();
+    }
+
+    public static List<Series> createBollingerBandsIndicator(List<BollingerBandResult> results, List<String> finalizedIndicators) {
+
+        Map<String, List<BigDecimal>> series = Map.of(
+            "max", results.stream().map(BollingerBandResult::upper).toList(),
+            "avg", results.stream().map(BollingerBandResult::middle).toList(),
+            "min", results.stream().map(BollingerBandResult::lower).toList()
+        );
+
+        RenderAs renderAs = RenderAs.Y5;
+
+        List<Series> seriesList = new ArrayList<>();
+
+        series.forEach((key, value) -> {
+            String renderingId = renderAs.getRenderingId(key);
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), key);
+            // 마지막 설정을 읽어 오기 위해서는 BB 로 표시 해야함.
+            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB")));
+        });
+
+        return seriesList;
     }
 }

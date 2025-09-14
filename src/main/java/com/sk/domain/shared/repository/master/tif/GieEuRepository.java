@@ -26,4 +26,6 @@ public interface GieEuRepository extends JpaRepository<GieEu, Long>, CustomFutur
     Object findYearlyStats(@Param("code") String code,
         @Param("dateList") List<LocalDateTime> dateList);
 
+    List<GieEu> findAllByCodeAndDateBetween(String code, LocalDateTime start, LocalDateTime end);
+
 }
