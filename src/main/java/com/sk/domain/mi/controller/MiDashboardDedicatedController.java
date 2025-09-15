@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-@Tag(name = "01-1. Dashboard API", description = "Dashboard API 입니다.")
+@Tag(name = "01-1. AI Forecast (구 Dashboard) API", description = "AI Forecast (구 Dashboard) API 입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/dashboard")

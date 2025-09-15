@@ -39,10 +39,6 @@ spring:
       ddl-auto: validate
 
   security:
-    oauth2:
-      resourceserver:
-        jwt:
-          secret-key: ${jwt.secret-key}
     saml2:
       relyingparty:
         registration:
@@ -83,7 +79,8 @@ cache:
     time-to-live: 3600s
 
 jwt:
-  secret-key: ${SKT_MI_JWT_SECRET_KEY}
+  private-key: ${SKT_MI_JWT_PRIVATE_KEY}
+  public-key: ${SKT_MI_JWT_PUBLIC_KEY}
   saml2:
     access-token-expiry: 3m
     refresh-token-expiry: 30m
