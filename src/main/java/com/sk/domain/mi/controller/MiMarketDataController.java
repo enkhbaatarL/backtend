@@ -58,4 +58,14 @@ public class MiMarketDataController {
         return BaseResponseFactory
                 .create(miMarketDataService.getRecentViewed(cNo, userNo));
     }
+
+    @ApiOrder(4)
+    @Operation(summary = "custom 마켓 데이터 조회 API", description = "마켓 데이터를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "마켓 데이터 조회 성공")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    @GetMapping("/companies/{companyNo}/custom/{customId}")
+    public BaseResponse<?> getMarketDataCustom(@PathVariable("companyNo") Integer companyNo, @PathVariable("customId") String customId) {
+        return BaseResponseFactory.create(miMarketDataService.getMarketDataCustom(companyNo, customId));
+    }
 }

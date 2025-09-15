@@ -21,8 +21,6 @@ import org.springframework.stereotype.Service;
 public class FiveYearAvgPeriodCalculator extends AbstractPeriodCalculator{
 
     private final GieEuRepository gieEuRepository;
-    private static final String GIE_EU_CODE_PAST_5Y_AVG = "PAST_5Y_AVG";
-    private static final String GIE_EU_TABLE_NAME = "tif_gier_eu";
 
     @Override
     public CalculatePeriodChangeType getCalculatePeriodChangeType() {
@@ -38,15 +36,15 @@ public class FiveYearAvgPeriodCalculator extends AbstractPeriodCalculator{
             return null;
         }
 
-        if(!GIE_EU_TABLE_NAME.equals(mainGoodsDataSource.getTargetTableNm())){
-            log.warn("{} is for {} only", this.getCalculatePeriodChangeType(), GIE_EU_TABLE_NAME);
+        if(!GieEu.GIE_EU_TABLE_NAME.equals(mainGoodsDataSource.getTargetTableNm())){
+            log.warn("{} is for {} only", this.getCalculatePeriodChangeType(), GieEu.GIE_EU_TABLE_NAME);
             return null;
         }
 
         Map<String,Object> lastDayEntity = rawData.get(rawData.size() -1);
         LocalDate today = DateUtil.parseDate(lastDayEntity.get(dateColumnName));
 
-        Optional<GieEu> past5yAvg = gieEuRepository.findByCodeAndDate(GIE_EU_CODE_PAST_5Y_AVG, today.atStartOfDay());
+        Optional<GieEu> past5yAvg = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_PAST_5Y_AVG, today.atStartOfDay());
         if(past5yAvg.isEmpty()) return null;
 
         Object lastValue = lastDayEntity.get(defaultDataColumnName);

@@ -86,7 +86,7 @@ public record MarketMetaData(
         this.changeRates = changeRates;
     }
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap, String interval,
+    public static MarketMetaData of(Short chartMarkRank, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap, String interval,
             LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt, Double recentChangeRate, MarketDataChartRawData max, MarketDataChartRawData min) {
 
         Double dodChangeRate = null;
@@ -104,7 +104,7 @@ public record MarketMetaData(
         List<ChangeRate> changeRates = tempChangeRates.stream().limit(2).toList();
 
         return MarketMetaData.builder()
-                .chartMarkRank(marketDataChartSetting.getChartMarkRank())
+                .chartMarkRank(chartMarkRank)
                 .goodsNo(goodsData.getGoods().getGoodsNo())
                 .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
@@ -136,19 +136,19 @@ public record MarketMetaData(
                 .build();
     }
 
-    public static MarketMetaData of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String interval, LocalDate indexStartDt, LocalDate lastUpdateDt) {
+    public static MarketMetaData of(Short chartMarkRank, GoodsData goodsData, GoodsDataSourceDetail goodsDataSourceDetail, String interval, LocalDate indexStartDt, LocalDate lastUpdateDt) {
         return MarketMetaData.builder()
-                .chartMarkRank(marketDataChartSetting.getChartMarkRank())
-                .goodsNo(goodsData.getGoods().getGoodsNo())
-                .goodsDataNo(goodsData.getGoodsDataNo())
-                .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
-                .goodsDataNm(goodsData.getGoodsDataNm())
-                .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
-                .currency(goodsDataSourceDetail.getGoodsDataSourceCurrencyUnitNm())
-                .currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
-                .interval(interval)
-                .indexStartDt(indexStartDt)
-                .lastUpdateDt(lastUpdateDt)
-                .build();
+            .chartMarkRank(chartMarkRank)
+            .goodsNo(goodsData.getGoods().getGoodsNo())
+            .goodsDataNo(goodsData.getGoodsDataNo())
+            .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
+            .goodsDataNm(goodsData.getGoodsDataNm())
+            .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
+            .currency(goodsDataSourceDetail.getGoodsDataSourceCurrencyUnitNm())
+            .currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
+            .interval(interval)
+            .indexStartDt(indexStartDt)
+            .lastUpdateDt(lastUpdateDt)
+            .build();
     }
 }

@@ -7,9 +7,12 @@ import com.sk.domain.mi.conversion.dto.BollingerBandResult;
 import com.sk.domain.mi.dto.response.charts.Chart;
 import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.charts.Series;
+import com.sk.domain.mi.service.custom.CustomRegistry;
+import com.sk.domain.mi.service.custom.chart.CustomChartMaker;
 import com.sk.domain.shared.enums.chart.IndicatorType;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.chart.ChartSettingConditionCd;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,11 +31,12 @@ public class TechnicalIndicatorService {
 
     // Period constants
     private static final int PERIOD_SHORT = 5;
-    private static final int PERIOD_MEDIUM = 20;
+    public static final int PERIOD_MEDIUM = 20;
     private static final int PERIOD_LONG = 60;
     private static final int PERIOD_EXTRA_LONG = 120;
 
     private final UnitConversionService unitConversionService;
+    private final CustomRegistry customRegistry;
 
 
     /**
@@ -58,7 +62,13 @@ public class TechnicalIndicatorService {
         }
 
         Indicator maData = createMovingAverageData(timestamps, mainSeries, finalizedIndicators);
-        Indicator bbData = createBollingerBandData(timestamps, mainSeries, finalizedIndicators);
+        Indicator bbData;
+        Optional<CustomChartMaker<?>> customChartMaker = customRegistry.getCustomChartMaker(chart.goodsDataSourceNo());
+        if(customChartMaker.isPresent()){
+            bbData = customChartMaker.get().createBollingerBandData(timestamps, mainSeries, finalizedIndicators);
+        }else{
+            bbData = createBollingerBandData(timestamps, mainSeries, finalizedIndicators);
+        }
 
         return List.of(maData, bbData);
     }
