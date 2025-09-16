@@ -951,7 +951,7 @@ public class MiMarketDataService {
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N' AND tgd.gds_data_mark_yn = 'Y'
                 JOIN midb.tmd_gdsdatasrcd tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.del_yn = 'N' AND tgsrc.gds_data_use_mnagt_cd = 'backend'
                 WHERE %s
                 ORDER BY tgd.gds_data_nm ASC, tgsrc.gds_data_src_nm ASC
@@ -964,7 +964,7 @@ public class MiMarketDataService {
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N' AND tgd.gds_data_mark_yn = 'Y'
                 JOIN midb.tmd_gdsdatasrcd tgsrc ON tgsrc.gds_data_no = tgd.gds_data_no AND tgsrc.del_yn = 'N' AND tgsrc.gds_data_use_mnagt_cd = 'backend'
                 WHERE %s
                 """
