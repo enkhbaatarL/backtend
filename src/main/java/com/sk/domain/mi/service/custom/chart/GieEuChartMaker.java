@@ -63,6 +63,20 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     private static final String CUSTOM_ID = "gie-eu";
     private static final String CUSTOM_DATA_CACHE_KEY = "data_source:"+CUSTOM_ID+":%d";
 
+    private enum SeriesLabel {
+        upper("max"),
+        middle("avg"),
+        lower("min");
+
+        final String display;
+        SeriesLabel(String display){
+            this.display = display;
+        }
+        String getDisplay(){
+            return display;
+        }
+    }
+
     @Override
     public String getCustomId() {
         return "gie-eu";
@@ -278,21 +292,23 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
     public static List<Series> createBollingerBandsIndicator(List<BollingerBandResult> results, List<String> finalizedIndicators) {
 
-        Map<String, List<BigDecimal>> series = Map.of(
-            "max", results.stream().map(BollingerBandResult::upper).toList(),
-            "avg", results.stream().map(BollingerBandResult::middle).toList(),
-            "min", results.stream().map(BollingerBandResult::lower).toList()
+        Map<SeriesLabel, List<BigDecimal>> series = Map.of(
+            SeriesLabel.upper, results.stream().map(BollingerBandResult::upper).toList(),
+            SeriesLabel.middle, results.stream().map(BollingerBandResult::middle).toList(),
+            SeriesLabel.lower, results.stream().map(BollingerBandResult::lower).toList()
         );
 
         RenderAs renderAs = RenderAs.Y5;
 
         List<Series> seriesList = new ArrayList<>();
 
-        series.forEach((key, value) -> {
-            String renderingId = renderAs.getRenderingId(key);
-            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), key);
+        series.forEach((seriesLabel, value) -> {
+            String renderingId = renderAs.getRenderingId(seriesLabel.name());
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), seriesLabel.getDisplay());
+            Boolean isLineChartDashStyle = null;
+            if(seriesLabel == SeriesLabel.middle) isLineChartDashStyle = Boolean.TRUE;
             // 마지막 설정을 읽어 오기 위해서는 BB 로 표시 해야함.
-            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB")));
+            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB"), isLineChartDashStyle));
         });
 
         return seriesList;

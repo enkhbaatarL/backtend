@@ -19,7 +19,7 @@ public enum RenderAs {
     MA("ma_%s", null, false, "이동평균선"),
     BB("bb_%s", null, false, "볼린저밴드"),
     VOLUME("volume", null, false, "거래량"),
-    Y5("5y_%s", null, false, "과거5년"),;
+    Y5("bb_%s", null, false, "과거5년"),;
 
     private final String id;
     private final Integer index;

@@ -63,7 +63,7 @@ public class ChartSliceUtil {
             .map(s -> Series.of(
                 s.seriesId(), s.label(), s.renderAs(),
                 sliceValues(s.values(), cut),
-                s.isVisible()))
+                s.isVisible(), s.isLineChartDashStyle()))
             .collect(Collectors.toList());
     }
 
