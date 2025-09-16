@@ -88,16 +88,16 @@ public record NewsletterDetailRes(
             @Schema(description = "뉴스 제목", example = "유럽 주요 경제 지표 발표")
             String title,
 
-            @Schema(description = "뉴스 요약", example = "건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)")
-            String summary,
+            @Schema(description = "뉴스 내용", example = "건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)")
+            List<String> content,
 
             @Schema(description = "타임스탬프 (Unix timestamp in milliseconds)", example = "1641859200000")
             Long timestamp,
 
-            @Schema(description = "발행일자", example = "2025-09-14")
+            @Schema(description = "발행일자", example = "2025-09-10")
             String publishedDate,
 
-            @Schema(description = "발행시간", example = "14:30")
+            @Schema(description = "발행시간", example = "10:00")
             String publishedTime,
 
             @Schema(description = "뉴스 소스", example = "Bloomberg")
@@ -114,7 +114,7 @@ public record NewsletterDetailRes(
             @Schema(description = "참고 자료 설명", example = "미국 에너지정보청(EIA)의 주간 석유 재고 및 생산량 통계")
             String description,
 
-            @Schema(description = "참고 자료 유형", example = "REPORT")
+            @Schema(description = "참고 자료 유형", example = "CHART")
             String type,
 
             @Schema(description = "데이터 항목 목록")

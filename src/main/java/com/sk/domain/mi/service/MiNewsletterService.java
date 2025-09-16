@@ -4,6 +4,8 @@ import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsFlowChart;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsItem;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
@@ -253,12 +255,41 @@ public class MiNewsletterService {
             chartData
         );
 
+      RelatedNews relatedNews = new RelatedNews(
+          "뉴욕시간 전일 20:00부터 당일 17:00까지",
+          List.of(
+              new NewsItem("ns001", "유럽 주요 경제 지표 발표",
+                  List.of("건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)",
+                      "EC 소비자 설문조사, 전체 응답자, 소비자 신뢰 지수 전년 발표 It A0.8 감소한 스15.5 (10:00)"),
+                  Long.parseLong("1757466000"), "2025-09-10", "10:00", "Bloomberg", false),
+              new NewsItem("ns002", "미국·EU, 공식 공동성명 통해 자동차•의약품 관세 협상 타결",
+                  List.of("미국과 EU가 구두 합의한 무역협정 세부 내용 발표",
+                      "미국은 EU 회원국산 차량에 대해 27.5% 관세 유지, 대부분 상품엔 15% 관세 적용",
+                      "EU, 미국산 산업•농산품 관세 인하 조건 제시",
+                      "의약품은 15% 관세 적용 제외, 반도체•목재 등도 유럽 면제"
+                      ),
+                  Long.parseLong("1757470200"), "2025-09-10", "11:10", "Reuters", true),
+              new NewsItem("ns003", "인도-러시아 외무장관 회담, 무역 확대 합의 부각",
+                  List.of("원유 수입 관련 최대 50% 추가 관세 불과, 러시아 원유 공급 의지 강조",
+                      "인도•러시아 에너지 협력 확대"),
+                  Long.parseLong("1757473500"), "2025-09-10", "12:05", "Financial Times|", true),
+              new NewsItem("ns004", "미국 주요 경제 지표 발표",
+                  List.of("신규 실업수당 청구건수 전주 Ht +11K건, 총 235K건 (08:30)",
+                      "신규 실업수당 청구건수 4주 이동평균 +4.5K건, 총 226.25K건 (08:30)",
+                      "지속 실업수당 청구건수 전주 Ht +0.02K건, 총 1.972M건 (08:30)",
+                      "필라델피아 연방준비은행 제조업 지수: A 16.2p (08:30)",
+                      "신규 주문, 고용지수, 지불가격지수 등 다양한 지표 발표"),
+                  Long.parseLong("1757477700"), "2025-09-10", "13:15", "Reuters", false)
+          )
+      );
+
+
         IssueDetail issueDetail = new IssueDetail(
             "미-EU 우크라 안보 협상 및 이란 원유 제재 강화로 유가 강보합",
             "2025년 9월 12일",
             "지정학적 긴장이 고조되면서 유가는 변동성을 이어갔습니다. 미국과 EU 간의 관세 갈등, 미국의 대이란 추가 제재, 인도와 러시아의 에너지 협력 논의가 맞물리며 공급 불안 우려가 부각되었습니다. 동시에 미국 EIA의 주간 원유 재고 감소 발표는 유가 상승 압력을 강화했습니다. WTI는 주식시장 심리와 동조하는 흐름을 보이며 위험자산 전반의 변화를 반영했습니다. 전반적으로 글로벌 불확실성이 이어지는 가운데 단기적으로 유가의 상승 압력이 지속될 것으로 전망됩니다.",
             newsFlowChart,
-            null,
+            relatedNews,
             null
         );
 
