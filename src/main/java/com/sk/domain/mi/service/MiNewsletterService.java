@@ -3,8 +3,8 @@ package com.sk.domain.mi.service;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsEventItem;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsFlowChart;
-import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsItem;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
@@ -258,22 +258,22 @@ public class MiNewsletterService {
       RelatedNews relatedNews = new RelatedNews(
           "뉴욕시간 전일 20:00부터 당일 17:00까지",
           List.of(
-              new NewsItem("ns001", "유럽 주요 경제 지표 발표",
+              new NewsEventItem("ns001", "유럽 주요 경제 지표 발표",
                   List.of("건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)",
                       "EC 소비자 설문조사, 전체 응답자, 소비자 신뢰 지수 전년 발표 It A0.8 감소한 스15.5 (10:00)"),
                   Long.parseLong("1757466000"), "2025-09-10", "10:00", "Bloomberg", false),
-              new NewsItem("ns002", "미국·EU, 공식 공동성명 통해 자동차•의약품 관세 협상 타결",
+              new NewsEventItem("ns002", "미국·EU, 공식 공동성명 통해 자동차•의약품 관세 협상 타결",
                   List.of("미국과 EU가 구두 합의한 무역협정 세부 내용 발표",
                       "미국은 EU 회원국산 차량에 대해 27.5% 관세 유지, 대부분 상품엔 15% 관세 적용",
                       "EU, 미국산 산업•농산품 관세 인하 조건 제시",
                       "의약품은 15% 관세 적용 제외, 반도체•목재 등도 유럽 면제"
                       ),
                   Long.parseLong("1757470200"), "2025-09-10", "11:10", "Reuters", true),
-              new NewsItem("ns003", "인도-러시아 외무장관 회담, 무역 확대 합의 부각",
+              new NewsEventItem("ns003", "인도-러시아 외무장관 회담, 무역 확대 합의 부각",
                   List.of("원유 수입 관련 최대 50% 추가 관세 불과, 러시아 원유 공급 의지 강조",
                       "인도•러시아 에너지 협력 확대"),
                   Long.parseLong("1757473500"), "2025-09-10", "12:05", "Financial Times|", true),
-              new NewsItem("ns004", "미국 주요 경제 지표 발표",
+              new NewsEventItem("ns004", "미국 주요 경제 지표 발표",
                   List.of("신규 실업수당 청구건수 전주 Ht +11K건, 총 235K건 (08:30)",
                       "신규 실업수당 청구건수 4주 이동평균 +4.5K건, 총 226.25K건 (08:30)",
                       "지속 실업수당 청구건수 전주 Ht +0.02K건, 총 1.972M건 (08:30)",

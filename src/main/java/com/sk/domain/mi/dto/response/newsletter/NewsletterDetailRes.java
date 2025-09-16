@@ -65,7 +65,7 @@ public record NewsletterDetailRes(
             String aggregationTime,
 
             @Schema(description = "뉴스 목록")
-            List<NewsItem> newsList) {
+            List<NewsEventItem> newsEventItems) {
     }
 
     // 새로운 ChartData 구조
@@ -81,24 +81,24 @@ public record NewsletterDetailRes(
         }
     }
 
-    public record NewsItem(
-            @Schema(description = "뉴스 ID", example = "NEWS_001")
+    public record NewsEventItem(
+            @Schema(description = "뉴스 이벤트 ID", example = "NEWS_001")
             String newsId,
 
-            @Schema(description = "뉴스 제목", example = "유럽 주요 경제 지표 발표")
+            @Schema(description = "뉴스 이벤트 제목", example = "유럽 주요 경제 지표 발표")
             String title,
 
-            @Schema(description = "뉴스 내용", example = "건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)")
+            @Schema(description = "뉴스 이벤트 내용", example = "건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)")
             List<String> content,
 
             @Schema(description = "타임스탬프 (Unix timestamp in milliseconds)", example = "1641859200000")
             Long timestamp,
 
-            @Schema(description = "발행일자", example = "2025-09-10")
-            String publishedDate,
+            @Schema(description = "발생일자", example = "2025-09-10")
+            String createdDate,
 
-            @Schema(description = "발행시간", example = "10:00")
-            String publishedTime,
+            @Schema(description = "발생시간", example = "10:00")
+            String createTime,
 
             @Schema(description = "뉴스 소스", example = "Bloomberg")
             String source,
