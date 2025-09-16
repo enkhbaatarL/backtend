@@ -176,3 +176,8 @@ decorator:
   datasource:
     p6spy:
       enable-logging: false
+
+custom:
+  gie-eu:
+    goods-data-source-no: 5632
+    card-index: 6
