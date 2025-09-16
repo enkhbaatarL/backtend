@@ -95,7 +95,10 @@ public class MiDataDetailDedicatedController {
         @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
         @RequestParam(value = "unitCd", required = false) String unitCd
     ) {
-        return BaseResponseFactory.create(miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd));
+
+        ChartBundleRes chartBundleRes = miDataDetailService.getGoodsDataSourceCharts(goodsNo, goodsDataNo, goodsDataSourceNo, interval, range, startDate, endDate, unitCd);
+
+        return BaseResponseFactory.create(chartBundleRes);
     }
 
     @ApiOrder(7)
