@@ -20,8 +20,8 @@ public record NewsletterDetailRes(
         @Schema(description = "구독 여부", example = "true")
         Boolean subscribed,
 
-        @Schema(description = "이미지 URL", example = "https://example.com/images/newsletter1.jpg")
-        String image,
+        @Schema(description = "Base64 인코딩된 이미지 데이터", example = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==")
+        String imageBase64,
 
         @Schema(description = "활성화 여부", example = "true")
         Boolean enabled,
@@ -108,13 +108,13 @@ public record NewsletterDetailRes(
     }
 
     public record Reference(
-            @Schema(description = "참고 자료 제목", example = "EIA 주간 석유 재고 보고서")
+            @Schema(description = "참고 제목", example = "WTI 및 달러 인덱스 5분 차트")
             String title,
 
-            @Schema(description = "참고 자료 설명", example = "미국 에너지정보청(EIA)의 주간 석유 재고 및 생산량 통계")
+            @Schema(description = "참고 설명", example = "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44")
             String description,
 
-            @Schema(description = "참고 자료 유형", example = "CHART")
+            @Schema(description = "참고 자료 유형", example = "")
             String type,
 
             @Schema(description = "데이터 항목 목록")

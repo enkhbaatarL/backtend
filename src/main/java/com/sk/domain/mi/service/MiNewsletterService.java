@@ -12,6 +12,7 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -174,18 +176,18 @@ public class MiNewsletterService {
     private List<NewsletterFeaturedListRes> generateMockLatestNewsletters() {
         List<NewsletterFeaturedListRes> latestNewsletters = new ArrayList<>();
 
-        // 뉴스레터 기본 정보
+        // 뉴스레터 기본 정보 - imageBase64는 더미 이미지로 설정
         Object[][] newsletterData = {
-            {"NL001", "Oil Price Trends", "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석", "DAILY", "152", "https://example.com/images/oil-trends.jpg", true, true},
-            {"NL002", "Tech Innovation Report", "최신 기술 혁신과 스타트업 동향을 다루는 격주 뉴스레터", "WEEKLY", "087", "https://example.com/images/tech-innovation.jpg", false, true},
-            {"NL003", "Economic Outlook", "국내외 경제 전망과 주요 지표 분석 월간 뉴스레터", "WEEKLY", "034", "https://example.com/images/economic-outlook.jpg", false, false},
-            {"NL004", "Global Market Flash", "주요 글로벌 시장 이슈를 빠르게 전달하는 일간 뉴스레터", "DAILY", "2891", "https://example.com/images/market-flash.jpg", false, false},
-            {"NL005", "Industry Focus", "산업별 심층 분석과 트렌드를 제공하는 주간 뉴스레터", "WEEKLY", "198", "https://example.com/images/industry-focus.jpg", false, false},
-            {"NL006", "Investment Strategy Brief", "투자 전략과 포트폴리오 분석을 제공하는 격주 뉴스레터", "WEEKLY", "076", "https://example.com/images/investment-brief.jpg", false, false},
-            {"NL007", "ESG Insights", "ESG 투자와 지속가능경영 트렌드를 다루는 월간 뉴스레터", "MONTHLY", "023", "https://example.com/images/esg-insights.jpg", false, false},
-            {"NL008", "Crypto Weekly", "암호화폐 시장 동향과 블록체인 기술 분석 주간 뉴스레터", "WEEKLY", "143", "https://example.com/images/crypto-weekly.jpg", false, false},
-            {"NL009", "Real Estate Monitor", "부동산 시장 분석과 투자 기회를 제공하는 월간 뉴스레터", "QUARTERLY", "045", "https://example.com/images/real-estate.jpg", false, false},
-            {"NL010", "Healthcare Trends", "헬스케어 산업 동향과 의료 기술 혁신을 다루는 격주 뉴스레터", "WEEKLY", "092", "https://example.com/images/healthcare.jpg", false, false}
+            {"NL001", "Oil Price Trends", "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석", "DAILY", "152", generateDummyBase64Image(), true, true},
+            {"NL002", "Tech Innovation Report", "최신 기술 혁신과 스타트업 동향을 다루는 격주 뉴스레터", "WEEKLY", "087", null, false, true},
+            {"NL003", "Economic Outlook", "국내외 경제 전망과 주요 지표 분석 월간 뉴스레터", "WEEKLY", "034", null, false, false},
+            {"NL004", "Global Market Flash", "주요 글로벌 시장 이슈를 빠르게 전달하는 일간 뉴스레터", "DAILY", "2891", null, false, false},
+            {"NL005", "Industry Focus", "산업별 심층 분석과 트렌드를 제공하는 주간 뉴스레터", "WEEKLY", "198", null, false, false},
+            {"NL006", "Investment Strategy Brief", "투자 전략과 포트폴리오 분석을 제공하는 격주 뉴스레터", "WEEKLY", "076", null, false, false},
+            {"NL007", "ESG Insights", "ESG 투자와 지속가능경영 트렌드를 다루는 월간 뉴스레터", "MONTHLY", "023", null, false, false},
+            {"NL008", "Crypto Weekly", "암호화폐 시장 동향과 블록체인 기술 분석 주간 뉴스레터", "WEEKLY", "143", null, false, false},
+            {"NL009", "Real Estate Monitor", "부동산 시장 분석과 투자 기회를 제공하는 월간 뉴스레터", "QUARTERLY", "045", null, false, false},
+            {"NL010", "Healthcare Trends", "헬스케어 산업 동향과 의료 기술 혁신을 다루는 격주 뉴스레터", "WEEKLY", "092", null, false, false}
         };
 
         for (Object[] data : newsletterData) {
@@ -202,6 +204,35 @@ public class MiNewsletterService {
         }
 
         return latestNewsletters;
+    }
+
+    /**
+     * 더미 Base64 이미지 생성
+     * 실제로는 이미지 파일을 읽어서 Base64로 인코딩하거나,
+     * DB에서 Base64 인코딩된 이미지 데이터를 조회해야 합니다.
+     */
+    private String generateDummyBase64Image() {
+      String imageBase64 = encodeImageToBase64("static/images/oil_trend_cover_img.png", "image/png");
+        // 1x1 픽셀 투명 PNG 이미지의 Base64 인코딩
+        return imageBase64;
+    }
+
+    /**
+     * 실제 이미지 파일을 Base64로 인코딩하는 유틸리티 메서드
+     * 실제 구현 시 사용할 수 있습니다.
+     */
+    private String encodeImageToBase64(String imagePath, String mimeType) {
+        try {
+            ClassPathResource resource = new ClassPathResource(imagePath);
+            try (InputStream inputStream = resource.getInputStream()) {
+                byte[] imageBytes = inputStream.readAllBytes();
+                String base64 = Base64.getEncoder().encodeToString(imageBytes);
+                return "data:" + mimeType + ";base64," + base64;
+            }
+        } catch (IOException e) {
+            log.error("이미지 파일을 Base64로 인코딩하는 중 오류 발생: {}", imagePath, e);
+            return generateDummyBase64Image(); // 오류 시 더미 이미지 반환
+        }
     }
 
     /**
@@ -283,6 +314,12 @@ public class MiNewsletterService {
           )
       );
 
+      List<NewsletterDetailRes.Reference> references = new ArrayList<>();
+
+      references.add(new NewsletterDetailRes.Reference("WTI 및 달러 인덱스 5분 차트", "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44", "", null));
+      references.add(new NewsletterDetailRes.Reference("유가추이", "내용", "", null));
+      references.add(new NewsletterDetailRes.Reference("미국 10년물 국채금리 및 미 10년-2년물 국채금리 스프레드 추이", "미국 10년물 국채금리: 청색, 좌측, %\n미국 10년-2년물 국채금리 스프레드: 회색, 우측, %", "", null));
+
 
         IssueDetail issueDetail = new IssueDetail(
             "미-EU 우크라 안보 협상 및 이란 원유 제재 강화로 유가 강보합",
@@ -290,7 +327,7 @@ public class MiNewsletterService {
             "지정학적 긴장이 고조되면서 유가는 변동성을 이어갔습니다. 미국과 EU 간의 관세 갈등, 미국의 대이란 추가 제재, 인도와 러시아의 에너지 협력 논의가 맞물리며 공급 불안 우려가 부각되었습니다. 동시에 미국 EIA의 주간 원유 재고 감소 발표는 유가 상승 압력을 강화했습니다. WTI는 주식시장 심리와 동조하는 흐름을 보이며 위험자산 전반의 변화를 반영했습니다. 전반적으로 글로벌 불확실성이 이어지는 가운데 단기적으로 유가의 상승 압력이 지속될 것으로 전망됩니다.",
             newsFlowChart,
             relatedNews,
-            null
+            references
         );
 
         // 무조건 하나의 고정된 Mock 데이터 반환
@@ -300,7 +337,7 @@ public class MiNewsletterService {
             "Oil Price Trends",
             "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석",
             true,
-            "https://example.com/images/newsletter1.jpg",
+            generateDummyBase64Image(),
             true,
             issueDetail
         );

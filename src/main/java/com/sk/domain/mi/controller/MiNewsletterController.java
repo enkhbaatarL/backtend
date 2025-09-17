@@ -28,8 +28,6 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-
 @Profile("!dedicated")
 @Tag(name = "13. Newsletter API", description = "뉴스레터 API입니다.")
 @Slf4j
