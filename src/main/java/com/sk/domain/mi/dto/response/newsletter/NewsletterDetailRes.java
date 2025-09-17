@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.newsletter;
 
+import com.sk.common.model.TableRes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.sk.domain.mi.dto.response.charts.Series;
 import java.util.List;
@@ -68,12 +69,11 @@ public record NewsletterDetailRes(
             List<NewsEventItem> newsEventItems) {
     }
 
-    // 새로운 ChartData 구조
     public record ChartData(
             @Schema(description = "타임스탬프 배열 (Unix timestamp in milliseconds)")
             List<String> timestamps,
 
-            @Schema(description = "시리즈 데이터 배열 (high, low, open, close, volume)")
+            @Schema(description = "시리즈 데이터 배열 (high, low, open, close, volume)", example = "[]")
             List<Series> series) {
 
         public static ChartData of(List<String> timestamps, List<Series> series) {
@@ -108,18 +108,29 @@ public record NewsletterDetailRes(
     }
 
     public record Reference(
-            @Schema(description = "참고 제목", example = "WTI 및 달러 인덱스 5분 차트")
-            String title,
+        @Schema(description = "참고 제목", example = "WTI 및 달러 인덱스 5분 차트")
+        String title,
 
-            @Schema(description = "참고 설명", example = "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44")
-            String description,
+        @Schema(description = "참고 설명", example = "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44")
+        String description,
 
-            @Schema(description = "참고 자료 유형", example = "")
-            String type,
+        @Schema(description = "참고 자료 유형", example = "TABLE", allowableValues = {"TABLE", "CHART"})
+        String type,
 
-            @Schema(description = "데이터 항목 목록")
-            List<DataItem> dataItems) {
+        @Schema(description = "테이블 데이터 (type이 TABLE일 때만 사용)")
+        TableRes tableData,
+
+        @Schema(description = "차트 데이터 (type이 CHART일 때만 사용)")
+        ChartData chartData) {
+
+    public static Reference ofTable(String title, String description, TableRes tableData) {
+        return new Reference(title, description, "TABLE", tableData, null);
     }
+
+    public static Reference ofChart(String title, String description, ChartData chartData) {
+        return new Reference(title, description, "CHART", null, chartData);
+    }
+}
 
     public record DataItem(
             @Schema(description = "항목명", example = "원유 재고량")

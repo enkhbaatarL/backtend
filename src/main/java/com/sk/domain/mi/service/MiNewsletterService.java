@@ -1,5 +1,11 @@
 package com.sk.domain.mi.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.model.TableRes;
+import com.sk.common.utils.ChartSliceUtil;
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
@@ -9,6 +15,10 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
+import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.chart.Interval;
+import com.sk.domain.shared.enums.chart.Range;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +34,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
@@ -42,6 +53,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class MiNewsletterService {
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 뉴스레터 목록 조회 (Mock 데이터)
@@ -272,6 +285,50 @@ public class MiNewsletterService {
         return generateMockNewsletterDetail(newsletterId, issueNo);
     }
 
+    private TableRes readTableDataFromJson(String jsonPath) {
+        try {
+            ClassPathResource resource = new ClassPathResource(jsonPath);
+            try (InputStream inputStream = resource.getInputStream()) {
+                // JSON을 Map으로 파싱
+                TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {};
+                Map<String, Object> jsonData = objectMapper.readValue(inputStream, typeRef);
+
+                // header 파싱 (JSON의 "header" 키 사용)
+                List<TableRes.Column> headers = new ArrayList<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, String>> headersList = (List<Map<String, String>>) jsonData.get("header");
+                if (headersList != null) {
+                    for (Map<String, String> headerMap : headersList) {
+                        String field = headerMap.get("field");
+                        String name = headerMap.get("name");
+                        headers.add(TableRes.Column.of(field, name));
+                    }
+                }
+
+                // detail 파싱 (JSON의 "detail" 키 사용)
+                List<TableRes.Row> rows = new ArrayList<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> detailList = (List<Map<String, Object>>) jsonData.get("detail");
+                if (detailList != null) {
+                    for (Map<String, Object> detailMap : detailList) {
+                        @SuppressWarnings("unchecked")
+                        List<String> cells = (List<String>) detailMap.get("cells");
+                        if (cells != null) {
+                            rows.add(TableRes.Row.of(cells));
+                        }
+                    }
+                }
+
+                return TableRes.of("mock1", headers, rows);
+
+            }
+        } catch (IOException e) {
+            log.error("JSON 파일을 TableRes로 변환하는 중 오류 발생: {}", jsonPath, e);
+            // 오류 시 빈 테이블 반환
+            return TableRes.of(Collections.emptyList(), Collections.emptyList());
+        }
+    }
+
     /**
      * Mock 뉴스레터 상세 데이터 생성
      */
@@ -314,11 +371,15 @@ public class MiNewsletterService {
           )
       );
 
+
+
       List<NewsletterDetailRes.Reference> references = new ArrayList<>();
 
-      references.add(new NewsletterDetailRes.Reference("WTI 및 달러 인덱스 5분 차트", "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44", "", null));
-      references.add(new NewsletterDetailRes.Reference("유가추이", "내용", "", null));
-      references.add(new NewsletterDetailRes.Reference("미국 10년물 국채금리 및 미 10년-2년물 국채금리 스프레드 추이", "미국 10년물 국채금리: 청색, 좌측, %\n미국 10년-2년물 국채금리 스프레드: 회색, 우측, %", "", null));
+
+      TableRes tableData = readTableDataFromJson("static/json/table.json");
+      references.add(new NewsletterDetailRes.Reference("WTI 및 달러 인덱스 5분 차트", "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44", "CHART", null, null));
+      references.add(new NewsletterDetailRes.Reference("유가추이", "내용", "TABLE", tableData, null));
+      references.add(new NewsletterDetailRes.Reference("미국 10년물 국채금리 및 미 10년-2년물 국채금리 스프레드 추이", "미국 10년물 국채금리: 청색, 좌측, %\n미국 10년-2년물 국채금리 스프레드: 회색, 우측, %", "CHART", null, null));
 
 
         IssueDetail issueDetail = new IssueDetail(
@@ -380,7 +441,7 @@ public class MiNewsletterService {
                             String volumeStr = columns.length > 6 ? columns[6].trim() : "0";
 
                             // timestamp를 String으로 저장 (밀리초 변환)
-                            Long timestamp = parseTimestamp(timestampStr);
+                            String timestamp = parseTimestamp(timestampStr);
                             BigDecimal high = parseBigDecimal(highStr);
                             BigDecimal low = parseBigDecimal(lowStr);
                             BigDecimal open = parseBigDecimal(openStr);
@@ -390,7 +451,7 @@ public class MiNewsletterService {
                             if (timestamp != null && high != null && low != null &&
                                 open != null && close != null) {
 
-                                timestamps.add(timestamp.toString());
+                                timestamps.add(timestamp);
                                 highValues.add(high);
                                 lowValues.add(low);
                                 openValues.add(open);
@@ -426,44 +487,44 @@ public class MiNewsletterService {
         return new NewsletterDetailRes.ChartData(timestamps, seriesList);
     }
 
-    /**
-     * 타임스탬프 문자열을 Long으로 변환
-     */
-    private Long parseTimestamp(String timestampStr) {
+    private String parseTimestamp(String timestampStr) {
+    try {
+        // "2025-09-10 00:00:00" 형태의 날짜 문자열을 파싱
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.parse(timestampStr.trim(), formatter);
+        Long timestamp = dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+        return timestamp.toString();
+
+    } catch (Exception e) {
+        log.warn("타임스탬프 파싱 실패: {}", timestampStr, e);
+
+        // 다른 형식도 시도해보기
         try {
-            // "2025-09-10 00:00:00" 형태의 날짜 문자열을 파싱
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime dateTime = LocalDateTime.parse(timestampStr.trim(), formatter);
-            return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+            // 다양한 날짜 형식 지원
+            DateTimeFormatter[] formatters = {
+                DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+                DateTimeFormatter.ofPattern("MM/dd/yyyy")
+            };
 
-        } catch (Exception e) {
-            log.warn("타임스탬프 파싱 실패: {}", timestampStr, e);
-
-            // 다른 형식도 시도해보기
-            try {
-                // 다양한 날짜 형식 지원
-                DateTimeFormatter[] formatters = {
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-                    DateTimeFormatter.ofPattern("yyyy/MM/dd"),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
-                    DateTimeFormatter.ofPattern("MM/dd/yyyy")
-                };
-
-                for (DateTimeFormatter fmt : formatters) {
-                    try {
-                        LocalDate date = LocalDate.parse(timestampStr.trim(), fmt);
-                        return date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
-                    } catch (Exception ignored) {
-                        // 다음 formatter 시도
-                    }
+            for (DateTimeFormatter fmt : formatters) {
+                try {
+                    LocalDate date = LocalDate.parse(timestampStr.trim(), fmt);
+                    Long timestamp = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+                    return timestamp.toString();
+                } catch (Exception ignored) {
+                    // 다음 formatter 시도
                 }
-            } catch (Exception ignored) {
-                // 모든 형식 실패
             }
+        } catch (Exception ignored) {
+            // 모든 형식 실패
         }
-
-        return null;
     }
+
+    return null;
+}
+
 
     /**
      * 문자열을 BigDecimal로 안전하게 변환
