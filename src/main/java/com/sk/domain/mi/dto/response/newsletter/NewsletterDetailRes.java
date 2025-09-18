@@ -1,8 +1,8 @@
 package com.sk.domain.mi.dto.response.newsletter;
 
 import com.sk.common.model.TableRes;
-import io.swagger.v3.oas.annotations.media.Schema;
 import com.sk.domain.mi.dto.response.charts.Series;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 public record NewsletterDetailRes(
@@ -104,7 +104,11 @@ public record NewsletterDetailRes(
             String source,
 
             @Schema(description = "차트 표시 여부", example = "true")
-            Boolean showInChart) {
+            Boolean showInChart,
+
+            @Schema(description = "방향", example = "UP")
+            String trend
+            ) {
     }
 
     public record Reference(

@@ -58,4 +58,9 @@ public interface NewsletterPublishHistoryRepository extends
         @Param("newsletterMaster") NewsletterMaster newsletterMaster,
         @Param("publishStatusCode") PublishStatusCode publishStatusCode
     );
+
+    Optional<NewsletterPublishHistory> findByNewsletterMasterAndIssueNo(
+        @Param("newsletterMaster") NewsletterMaster newsletterMaster,
+        @Param("issueNo") Integer issueNo
+    );
 }
