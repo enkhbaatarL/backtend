@@ -2,10 +2,8 @@ package com.sk.domain.mi.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.model.PaginationRes;
 import com.sk.common.model.TableRes;
-import com.sk.common.utils.ChartSliceUtil;
-import com.sk.common.utils.DateUtil;
-import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
@@ -15,11 +13,12 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
-import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
-import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
-import com.sk.domain.shared.enums.chart.Interval;
-import com.sk.domain.shared.enums.chart.Range;
+import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
+import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.enums.chart.RenderAs;
+import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
+import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,55 +34,82 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.IntStream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import com.sk.common.model.PaginationRes;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class MiNewsletterService {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * 뉴스레터 목록 조회 (Mock 데이터)
-     */
-    public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size,
-                                                              String keyword) {
+    private final NewsletterMasterRepository newsletterMasterRepository;
+    private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
 
+    public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
 
-        // Mock 데이터 생성
-        List<NewsletterListRes> allNewsletters = generateMockNewsletters();
+        try {
+            // Pageable 객체 생성 (발행일시 역순 정렬)
+            Pageable pageable = PageRequest.of(page - 1, size,
+                Sort.by(Sort.Direction.DESC, "publishDateTime"));
 
-        // 필터링 적용
-        List<NewsletterListRes> filteredNewsletters = allNewsletters.stream()
-            .filter(newsletter -> applyKeywordFilter(newsletter, keyword))
-            .toList();
+            // 키워드가 있는 경우와 없는 경우로 분기
+            Page<NewsletterPublishHistory> historyPage;
 
-        // 페이징 처리
-        Pageable pageable = PageRequest.of(page - 1, size);
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), filteredNewsletters.size());
+            if (StringUtils.isBlank(keyword)) {
+                // 키워드 없음: 발행완료 상태만 조회 (FETCH JOIN으로 NewsletterMaster도 함께 조회)
+                historyPage = newsletterPublishHistoryRepository
+                    .findByPublishStatusCodeAndIsDeletedFalseWithMaster(PublishStatusCode.PUBLISHED,
+                        pageable);
+            } else {
+                // 키워드 있음: 뉴스레터명 또는 제목에 키워드 포함된 것만 조회
+                historyPage = newsletterPublishHistoryRepository
+                    .findByPublishStatusCodeAndIsDeletedFalseAndKeywordWithMaster(
+                        PublishStatusCode.PUBLISHED, keyword, pageable);
+            }
 
-        List<NewsletterListRes> pageContent = start >= filteredNewsletters.size()
-            ? new ArrayList<>()
-            : filteredNewsletters.subList(start, end);
+            // NewsletterListRes로 변환
+            Page<NewsletterListRes> newsletterPage = historyPage.map(
+                this::convertToNewsletterListRes);
 
-        Page<NewsletterListRes> newsletterPage = new PageImpl<>(pageContent, pageable, filteredNewsletters.size());
+            return PaginationRes.toRes(newsletterPage);
 
-        return PaginationRes.toRes(newsletterPage);
+        } catch (Exception e) {
+            log.error("뉴스레터 목록 조회 중 오류 발생: {}", e.getMessage(), e);
+
+            // 오류 발생 시 빈 결과 반환
+            Pageable pageable = PageRequest.of(page - 1, size);
+            Page<NewsletterListRes> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
+            return PaginationRes.toRes(emptyPage);
+        }
+    }
+
+    /**
+     * NewsletterPublishHistory를 NewsletterListRes로 변환
+     */
+    private NewsletterListRes convertToNewsletterListRes(NewsletterPublishHistory publishHistory) {
+        NewsletterMaster master = publishHistory.getNewsletterMaster();
+
+        return new NewsletterListRes(
+            master.getNewsletterMasterId().toString(),                    // newsletterId
+            publishHistory.getPublishDateTime(),                          // date
+            publishHistory.getIssueNo().toString(),                       // issueNo
+            master.getMasterName(),                                       // name
+            publishHistory.getNewsletterTitle(),                          // title
+            publishHistory.getPublishStatusCode().name()                  // status
+        );
     }
 
     /**
@@ -101,11 +127,14 @@ public class MiNewsletterService {
         String[] statuses = {"PUBLISHING", "CHECK", "BLANK"};
 
         String[][] titlesByName = {
-            {"Market Volatility Analysis", "Quarterly Performance Review", "Emerging Market Trends"},
-            {"AI Technology Breakthrough", "Semiconductor Industry Update", "Cloud Computing Growth"},
+            {"Market Volatility Analysis", "Quarterly Performance Review",
+                "Emerging Market Trends"},
+            {"AI Technology Breakthrough", "Semiconductor Industry Update",
+                "Cloud Computing Growth"},
             {"Interest Rate Impact", "Inflation Outlook 2025", "GDP Growth Projections"},
             {"International Trade Update", "Currency Market Analysis", "Commodity Price Trends"},
-            {"Healthcare Sector Review", "Energy Transition Report", "Manufacturing Industry Insights"},
+            {"Healthcare Sector Review", "Energy Transition Report",
+                "Manufacturing Industry Insights"},
             {"Portfolio Optimization Tips", "Risk Management Strategies", "ESG Investment Trends"}
         };
 
@@ -138,7 +167,7 @@ public class MiNewsletterService {
         }
         String lowerKeyword = keyword.toLowerCase();
         return newsletter.title().toLowerCase().contains(lowerKeyword) ||
-               newsletter.name().toLowerCase().contains(lowerKeyword);
+            newsletter.name().toLowerCase().contains(lowerKeyword);
     }
 
     /**
@@ -166,8 +195,7 @@ public class MiNewsletterService {
      */
     public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(int page, int size) {
 
-        // Mock 데이터 생성
-        List<NewsletterFeaturedListRes> featuredList = generateMockLatestNewsletters();
+        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters();
 
         // 페이징 처리
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -178,9 +206,52 @@ public class MiNewsletterService {
             ? new ArrayList<>()
             : featuredList.subList(start, end);
 
-        Page<NewsletterFeaturedListRes> newsletterPage = new PageImpl<>(pageContent, pageable, featuredList.size());
+        Page<NewsletterFeaturedListRes> newsletterPage = new PageImpl<>(pageContent, pageable,
+            featuredList.size());
 
         return PaginationRes.toRes(newsletterPage);
+    }
+
+    private List<NewsletterFeaturedListRes> getFeaturedNewsletters() {
+        List<NewsletterFeaturedListRes> latestNewsletters = new ArrayList<>();
+
+        try {
+            List<NewsletterMaster> newsletterMasters = newsletterMasterRepository.findAll();
+
+            for (NewsletterMaster master : newsletterMasters) {
+                Optional<NewsletterPublishHistory> latestPublished =
+                    newsletterPublishHistoryRepository.findLatestPublishedByNewsletterMasterId(
+                        master.getNewsletterMasterId(),
+                        PublishStatusCode.PUBLISHED
+                    );
+
+                NewsletterFeaturedListRes featuredRes = createFeaturedListRes(master,
+                    latestPublished.orElse(null));
+                latestNewsletters.add(featuredRes);
+            }
+
+        } catch (Exception e) {
+            log.error("실제 뉴스레터 데이터 조회 중 오류 발생: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+
+        return latestNewsletters;
+    }
+
+    private NewsletterFeaturedListRes createFeaturedListRes(NewsletterMaster master,
+        NewsletterPublishHistory latestHistory) {
+        return new NewsletterFeaturedListRes(
+            master.getNewsletterMasterId().toString(),                    // newsletterId
+            master.getPeriodType().name(),                                // frequency
+            master.getMasterName(),                                       // name
+            master.getExplanation(),                                      // description
+            false,
+            // subscribed (기본값, 필요시 구독 여부 조회 로직 추가)
+            latestHistory != null ? latestHistory.getIssueNo().toString() : "0",  // issueNo
+            master.getImageUrl(),                                         // image
+            true
+            // enabled (기본값, 필요시 활성화 여부 로직 추가)
+        );
     }
 
     /**
@@ -191,16 +262,26 @@ public class MiNewsletterService {
 
         // 뉴스레터 기본 정보 - imageBase64는 더미 이미지로 설정
         Object[][] newsletterData = {
-            {"NL001", "Oil Price Trends", "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석", "DAILY", "152", generateDummyBase64Image(), true, true},
-            {"NL002", "Tech Innovation Report", "최신 기술 혁신과 스타트업 동향을 다루는 격주 뉴스레터", "WEEKLY", "087", null, false, true},
-            {"NL003", "Economic Outlook", "국내외 경제 전망과 주요 지표 분석 월간 뉴스레터", "WEEKLY", "034", null, false, false},
-            {"NL004", "Global Market Flash", "주요 글로벌 시장 이슈를 빠르게 전달하는 일간 뉴스레터", "DAILY", "2891", null, false, false},
-            {"NL005", "Industry Focus", "산업별 심층 분석과 트렌드를 제공하는 주간 뉴스레터", "WEEKLY", "198", null, false, false},
-            {"NL006", "Investment Strategy Brief", "투자 전략과 포트폴리오 분석을 제공하는 격주 뉴스레터", "WEEKLY", "076", null, false, false},
-            {"NL007", "ESG Insights", "ESG 투자와 지속가능경영 트렌드를 다루는 월간 뉴스레터", "MONTHLY", "023", null, false, false},
-            {"NL008", "Crypto Weekly", "암호화폐 시장 동향과 블록체인 기술 분석 주간 뉴스레터", "WEEKLY", "143", null, false, false},
-            {"NL009", "Real Estate Monitor", "부동산 시장 분석과 투자 기회를 제공하는 월간 뉴스레터", "QUARTERLY", "045", null, false, false},
-            {"NL010", "Healthcare Trends", "헬스케어 산업 동향과 의료 기술 혁신을 다루는 격주 뉴스레터", "WEEKLY", "092", null, false, false}
+            {"NL001", "Oil Price Trends", "유가와 관련한 산업 동향에 대해 분석하고 주요 뉴스의 Flow 및 Brent Crude 추이를 분석",
+                "DAILY", "152", generateDummyBase64Image(), true, true},
+            {"NL002", "Tech Innovation Report", "최신 기술 혁신과 스타트업 동향을 다루는 격주 뉴스레터", "WEEKLY", "087",
+                null, false, true},
+            {"NL003", "Economic Outlook", "국내외 경제 전망과 주요 지표 분석 월간 뉴스레터", "WEEKLY", "034", null,
+                false, false},
+            {"NL004", "Global Market Flash", "주요 글로벌 시장 이슈를 빠르게 전달하는 일간 뉴스레터", "DAILY", "2891",
+                null, false, false},
+            {"NL005", "Industry Focus", "산업별 심층 분석과 트렌드를 제공하는 주간 뉴스레터", "WEEKLY", "198", null,
+                false, false},
+            {"NL006", "Investment Strategy Brief", "투자 전략과 포트폴리오 분석을 제공하는 격주 뉴스레터", "WEEKLY", "076",
+                null, false, false},
+            {"NL007", "ESG Insights", "ESG 투자와 지속가능경영 트렌드를 다루는 월간 뉴스레터", "MONTHLY", "023", null,
+                false, false},
+            {"NL008", "Crypto Weekly", "암호화폐 시장 동향과 블록체인 기술 분석 주간 뉴스레터", "WEEKLY", "143", null,
+                false, false},
+            {"NL009", "Real Estate Monitor", "부동산 시장 분석과 투자 기회를 제공하는 월간 뉴스레터", "QUARTERLY", "045",
+                null, false, false},
+            {"NL010", "Healthcare Trends", "헬스케어 산업 동향과 의료 기술 혁신을 다루는 격주 뉴스레터", "WEEKLY", "092",
+                null, false, false}
         };
 
         for (Object[] data : newsletterData) {
@@ -220,19 +301,17 @@ public class MiNewsletterService {
     }
 
     /**
-     * 더미 Base64 이미지 생성
-     * 실제로는 이미지 파일을 읽어서 Base64로 인코딩하거나,
-     * DB에서 Base64 인코딩된 이미지 데이터를 조회해야 합니다.
+     * 더미 Base64 이미지 생성 실제로는 이미지 파일을 읽어서 Base64로 인코딩하거나, DB에서 Base64 인코딩된 이미지 데이터를 조회해야 합니다.
      */
     private String generateDummyBase64Image() {
-      String imageBase64 = encodeImageToBase64("static/images/oil_trend_cover_img.png", "image/png");
+        String imageBase64 = encodeImageToBase64("static/images/oil_trend_cover_img.png",
+            "image/png");
         // 1x1 픽셀 투명 PNG 이미지의 Base64 인코딩
         return imageBase64;
     }
 
     /**
-     * 실제 이미지 파일을 Base64로 인코딩하는 유틸리티 메서드
-     * 실제 구현 시 사용할 수 있습니다.
+     * 실제 이미지 파일을 Base64로 인코딩하는 유틸리티 메서드 실제 구현 시 사용할 수 있습니다.
      */
     private String encodeImageToBase64(String imagePath, String mimeType) {
         try {
@@ -244,7 +323,7 @@ public class MiNewsletterService {
             }
         } catch (IOException e) {
             log.error("이미지 파일을 Base64로 인코딩하는 중 오류 발생: {}", imagePath, e);
-            return generateDummyBase64Image(); // 오류 시 더미 이미지 반환
+            return generateDummyBase64Image();
         }
     }
 
@@ -252,13 +331,13 @@ public class MiNewsletterService {
      * Mock 발행목록 생성
      */
     private List<NewsletterIssueListRes.IssuedItem> generateMockIssuedList(String newsletterId) {
-      return List.of(
-          new NewsletterIssueListRes.IssuedItem("25-09-12", "102"),
-          new NewsletterIssueListRes.IssuedItem("25-09-11", "101"),
-          new NewsletterIssueListRes.IssuedItem("25-09-10", "100"),
-          new NewsletterIssueListRes.IssuedItem("25-09-09", "099"),
-          new NewsletterIssueListRes.IssuedItem("25-09-08", "098")
-      );
+        return List.of(
+            new NewsletterIssueListRes.IssuedItem("25-09-12", "102"),
+            new NewsletterIssueListRes.IssuedItem("25-09-11", "101"),
+            new NewsletterIssueListRes.IssuedItem("25-09-10", "100"),
+            new NewsletterIssueListRes.IssuedItem("25-09-09", "099"),
+            new NewsletterIssueListRes.IssuedItem("25-09-08", "098")
+        );
     }
 
     /**
@@ -290,13 +369,15 @@ public class MiNewsletterService {
             ClassPathResource resource = new ClassPathResource(jsonPath);
             try (InputStream inputStream = resource.getInputStream()) {
                 // JSON을 Map으로 파싱
-                TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {};
+                TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
+                };
                 Map<String, Object> jsonData = objectMapper.readValue(inputStream, typeRef);
 
                 // header 파싱 (JSON의 "header" 키 사용)
                 List<TableRes.Column> headers = new ArrayList<>();
                 @SuppressWarnings("unchecked")
-                List<Map<String, String>> headersList = (List<Map<String, String>>) jsonData.get("header");
+                List<Map<String, String>> headersList = (List<Map<String, String>>) jsonData.get(
+                    "header");
                 if (headersList != null) {
                     for (Map<String, String> headerMap : headersList) {
                         String field = headerMap.get("field");
@@ -308,7 +389,8 @@ public class MiNewsletterService {
                 // detail 파싱 (JSON의 "detail" 키 사용)
                 List<TableRes.Row> rows = new ArrayList<>();
                 @SuppressWarnings("unchecked")
-                List<Map<String, Object>> detailList = (List<Map<String, Object>>) jsonData.get("detail");
+                List<Map<String, Object>> detailList = (List<Map<String, Object>>) jsonData.get(
+                    "detail");
                 if (detailList != null) {
                     for (Map<String, Object> detailMap : detailList) {
                         @SuppressWarnings("unchecked")
@@ -343,44 +425,42 @@ public class MiNewsletterService {
             chartData
         );
 
-      RelatedNews relatedNews = new RelatedNews(
-          "뉴욕시간 전일 20:00부터 당일 17:00까지",
-          List.of(
-              new NewsEventItem("ns001", "유럽 주요 경제 지표 발표",
-                  List.of("건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)",
-                      "EC 소비자 설문조사, 전체 응답자, 소비자 신뢰 지수 전년 발표 It A0.8 감소한 스15.5 (10:00)"),
-                  Long.parseLong("1757466000"), "2025-09-10", "10:00", "Bloomberg", false),
-              new NewsEventItem("ns002", "미국·EU, 공식 공동성명 통해 자동차•의약품 관세 협상 타결",
-                  List.of("미국과 EU가 구두 합의한 무역협정 세부 내용 발표",
-                      "미국은 EU 회원국산 차량에 대해 27.5% 관세 유지, 대부분 상품엔 15% 관세 적용",
-                      "EU, 미국산 산업•농산품 관세 인하 조건 제시",
-                      "의약품은 15% 관세 적용 제외, 반도체•목재 등도 유럽 면제"
-                      ),
-                  Long.parseLong("1757470200"), "2025-09-10", "11:10", "Reuters", true),
-              new NewsEventItem("ns003", "인도-러시아 외무장관 회담, 무역 확대 합의 부각",
-                  List.of("원유 수입 관련 최대 50% 추가 관세 불과, 러시아 원유 공급 의지 강조",
-                      "인도•러시아 에너지 협력 확대"),
-                  Long.parseLong("1757473500"), "2025-09-10", "12:05", "Financial Times|", true),
-              new NewsEventItem("ns004", "미국 주요 경제 지표 발표",
-                  List.of("신규 실업수당 청구건수 전주 Ht +11K건, 총 235K건 (08:30)",
-                      "신규 실업수당 청구건수 4주 이동평균 +4.5K건, 총 226.25K건 (08:30)",
-                      "지속 실업수당 청구건수 전주 Ht +0.02K건, 총 1.972M건 (08:30)",
-                      "필라델피아 연방준비은행 제조업 지수: A 16.2p (08:30)",
-                      "신규 주문, 고용지수, 지불가격지수 등 다양한 지표 발표"),
-                  Long.parseLong("1757477700"), "2025-09-10", "13:15", "Reuters", false)
-          )
-      );
+        RelatedNews relatedNews = new RelatedNews(
+            "뉴욕시간 전일 20:00부터 당일 17:00까지",
+            List.of(
+                new NewsEventItem("ns001", "유럽 주요 경제 지표 발표",
+                    List.of("건설 생산, 총계(EA19), 전월 대비 변동, 물량 전월 IC +0.92% 증가한 스0.76% (05:00)",
+                        "EC 소비자 설문조사, 전체 응답자, 소비자 신뢰 지수 전년 발표 It A0.8 감소한 스15.5 (10:00)"),
+                    Long.parseLong("1757466000"), "2025-09-10", "10:00", "Bloomberg", false),
+                new NewsEventItem("ns002", "미국·EU, 공식 공동성명 통해 자동차•의약품 관세 협상 타결",
+                    List.of("미국과 EU가 구두 합의한 무역협정 세부 내용 발표",
+                        "미국은 EU 회원국산 차량에 대해 27.5% 관세 유지, 대부분 상품엔 15% 관세 적용",
+                        "EU, 미국산 산업•농산품 관세 인하 조건 제시",
+                        "의약품은 15% 관세 적용 제외, 반도체•목재 등도 유럽 면제"
+                    ),
+                    Long.parseLong("1757470200"), "2025-09-10", "11:10", "Reuters", true),
+                new NewsEventItem("ns003", "인도-러시아 외무장관 회담, 무역 확대 합의 부각",
+                    List.of("원유 수입 관련 최대 50% 추가 관세 불과, 러시아 원유 공급 의지 강조",
+                        "인도•러시아 에너지 협력 확대"),
+                    Long.parseLong("1757473500"), "2025-09-10", "12:05", "Financial Times|", true),
+                new NewsEventItem("ns004", "미국 주요 경제 지표 발표",
+                    List.of("신규 실업수당 청구건수 전주 Ht +11K건, 총 235K건 (08:30)",
+                        "신규 실업수당 청구건수 4주 이동평균 +4.5K건, 총 226.25K건 (08:30)",
+                        "지속 실업수당 청구건수 전주 Ht +0.02K건, 총 1.972M건 (08:30)",
+                        "필라델피아 연방준비은행 제조업 지수: A 16.2p (08:30)",
+                        "신규 주문, 고용지수, 지불가격지수 등 다양한 지표 발표"),
+                    Long.parseLong("1757477700"), "2025-09-10", "13:15", "Reuters", false)
+            )
+        );
 
+        List<NewsletterDetailRes.Reference> references = new ArrayList<>();
 
-
-      List<NewsletterDetailRes.Reference> references = new ArrayList<>();
-
-
-      TableRes tableData = readTableDataFromJson("static/json/table.json");
-      references.add(new NewsletterDetailRes.Reference("WTI 및 달러 인덱스 5분 차트", "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44", "CHART", null, null));
-      references.add(new NewsletterDetailRes.Reference("유가추이", "내용", "TABLE", tableData, null));
-      references.add(new NewsletterDetailRes.Reference("미국 10년물 국채금리 및 미 10년-2년물 국채금리 스프레드 추이", "미국 10년물 국채금리: 청색, 좌측, %\n미국 10년-2년물 국채금리 스프레드: 회색, 우측, %", "CHART", null, null));
-
+        TableRes tableData = readTableDataFromJson("static/json/table.json");
+        references.add(new NewsletterDetailRes.Reference("WTI 및 달러 인덱스 5분 차트",
+            "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44", "CHART", null, null));
+        references.add(new NewsletterDetailRes.Reference("유가추이", "내용", "TABLE", tableData, null));
+        references.add(new NewsletterDetailRes.Reference("미국 10년물 국채금리 및 미 10년-2년물 국채금리 스프레드 추이",
+            "미국 10년물 국채금리: 청색, 좌측, %\n미국 10년-2년물 국채금리 스프레드: 회색, 우측, %", "CHART", null, null));
 
         IssueDetail issueDetail = new IssueDetail(
             "미-EU 우크라 안보 협상 및 이란 원유 제재 강화로 유가 강보합",
@@ -416,9 +496,11 @@ public class MiNewsletterService {
         List<BigDecimal> volumeValues = new ArrayList<>();
 
         try {
-            ClassPathResource resource = new ClassPathResource("newsletter/brent_price_20250911.csv");
+            ClassPathResource resource = new ClassPathResource(
+                "newsletter/brent_price_20250911.csv");
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
+            try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(resource.getInputStream()))) {
                 String line;
                 boolean isFirstLine = true;
 
@@ -488,42 +570,43 @@ public class MiNewsletterService {
     }
 
     private String parseTimestamp(String timestampStr) {
-    try {
-        // "2025-09-10 00:00:00" 형태의 날짜 문자열을 파싱
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime dateTime = LocalDateTime.parse(timestampStr.trim(), formatter);
-        Long timestamp = dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
-        return timestamp.toString();
-
-    } catch (Exception e) {
-        log.warn("타임스탬프 파싱 실패: {}", timestampStr, e);
-
-        // 다른 형식도 시도해보기
         try {
-            // 다양한 날짜 형식 지원
-            DateTimeFormatter[] formatters = {
-                DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-                DateTimeFormatter.ofPattern("yyyy/MM/dd"),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
-                DateTimeFormatter.ofPattern("MM/dd/yyyy")
-            };
+            // "2025-09-10 00:00:00" 형태의 날짜 문자열을 파싱
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime dateTime = LocalDateTime.parse(timestampStr.trim(), formatter);
+            Long timestamp = dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+            return timestamp.toString();
 
-            for (DateTimeFormatter fmt : formatters) {
-                try {
-                    LocalDate date = LocalDate.parse(timestampStr.trim(), fmt);
-                    Long timestamp = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
-                    return timestamp.toString();
-                } catch (Exception ignored) {
-                    // 다음 formatter 시도
+        } catch (Exception e) {
+            log.warn("타임스탬프 파싱 실패: {}", timestampStr, e);
+
+            // 다른 형식도 시도해보기
+            try {
+                // 다양한 날짜 형식 지원
+                DateTimeFormatter[] formatters = {
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                    DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+                    DateTimeFormatter.ofPattern("MM/dd/yyyy")
+                };
+
+                for (DateTimeFormatter fmt : formatters) {
+                    try {
+                        LocalDate date = LocalDate.parse(timestampStr.trim(), fmt);
+                        Long timestamp = date.atStartOfDay(ZoneOffset.UTC).toInstant()
+                            .toEpochMilli();
+                        return timestamp.toString();
+                    } catch (Exception ignored) {
+                        // 다음 formatter 시도
+                    }
                 }
+            } catch (Exception ignored) {
+                // 모든 형식 실패
             }
-        } catch (Exception ignored) {
-            // 모든 형식 실패
         }
-    }
 
-    return null;
-}
+        return null;
+    }
 
 
     /**
