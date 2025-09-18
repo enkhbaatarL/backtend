@@ -11,6 +11,7 @@ import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
 import com.sk.domain.shared.entity.master.tif.GieEu;
+import com.sk.domain.shared.entity.master.tif.InterestRate;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.User;
@@ -21,12 +22,14 @@ import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
 import com.sk.domain.shared.repository.master.tif.GieEuRepository;
+import com.sk.domain.shared.repository.master.tif.InterestRateRepository;
 import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.template.query.MybatisQueryTemplate;
 import java.time.format.DateTimeFormatter;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +74,7 @@ public class SchedulerService {
     private final UserHistoryRepository userHistoryRepository;
     private final PdfToImagesProcessor pdfToImagesProcessor;
     private final GieEuRepository gieEuRepository;
+    private final InterestRateRepository interestRateRepository;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_DAYS = 1;
@@ -383,7 +387,7 @@ public class SchedulerService {
 
         crackSpreadCalculate();
         brentTimeSpreadCalculate();
-
+        calculateStateGov10Y2YSpread();
         return Boolean.TRUE;
     }
 
@@ -719,5 +723,43 @@ public class SchedulerService {
             return null;
         }
         return a - b;
+    }
+
+    private void calculateStateGov10Y2YSpread(){
+        final LocalDateTime DB_FIRST_DATE = LocalDateTime.parse("2008-01-01 00:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        Optional<InterestRate> lastInterestRateOptional = interestRateRepository.findFirstByCodeInOrderByDateDesc(
+            List.of(
+                InterestRate.GOV10Y2Y_SPREAD
+            ));
+
+        LocalDateTime firstDate = lastInterestRateOptional.map(interestRate -> interestRate.getDate().plusDays(1)).orElse(DB_FIRST_DATE);
+
+        Page<InterestRate> interestRate10YPage;
+        int pageNumber = 0;
+        final int PAGE_SIZE = 1000;
+        do{
+            interestRate10YPage = interestRateRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, InterestRate.GOV10Y,
+                PageRequest.of(pageNumber, PAGE_SIZE));
+            pageNumber++;
+            List<InterestRate> interestRate2YList = interestRateRepository.findAllByCodeAndDateBetween(
+                InterestRate.GOV2Y, interestRate10YPage.getContent().get(0).getDate(),
+                interestRate10YPage.getContent().get(interestRate10YPage.getContent().size()-1).getDate());
+            Map<LocalDateTime, InterestRate> interestRate2YMap = interestRate2YList.stream().collect(
+                Collectors.toMap(InterestRate::getDate, Function.identity()));
+
+            List<InterestRate> interestRateSpread = new ArrayList<>();
+            for(InterestRate interestRate10Y : interestRate10YPage.getContent()){
+                InterestRate interestRate2Y = interestRate2YMap.get(interestRate10Y.getDate());
+                if(interestRate2Y == null) continue;
+                if(interestRate10Y.getRy() == null) continue;
+                if(interestRate2Y.getRy() == null) continue;
+                interestRateSpread.add(
+                    InterestRate.of(InterestRate.GOV10Y2Y_SPREAD, interestRate10Y.getDate(), interestRate10Y.getRy().subtract(interestRate2Y.getRy()), null)
+                );
+            }
+            interestRateRepository.saveAll(interestRateSpread);
+            log.info("[State Gov 10Y, 2Y] check and update. Number={}, Total={}", interestRate10YPage.getNumber(), interestRate10YPage.getTotalElements());
+        }while (!interestRate10YPage.isLast());
     }
 }
