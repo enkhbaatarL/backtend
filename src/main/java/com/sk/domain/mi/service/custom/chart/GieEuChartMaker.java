@@ -305,10 +305,8 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         series.forEach((seriesLabel, value) -> {
             String renderingId = renderAs.getRenderingId(seriesLabel.name());
             String label = String.format("%s(%s)", renderAs.getDisplayDescription(), seriesLabel.getDisplay());
-            Boolean isLineChartDashStyle = null;
-            if(seriesLabel == SeriesLabel.middle) isLineChartDashStyle = Boolean.TRUE;
             // 마지막 설정을 읽어 오기 위해서는 BB 로 표시 해야함.
-            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB"), isLineChartDashStyle));
+            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB")));
         });
 
         return seriesList;

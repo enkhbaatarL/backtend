@@ -13,8 +13,7 @@ public record Series(
     String label,
     RenderAs renderAs,
     List<BigDecimal> values,
-    boolean isVisible,
-    Boolean isLineChartDashStyle
+    boolean isVisible
 ) {
     private static SeriesBuilder builderOf(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible) {
         return Series.builder()
@@ -26,12 +25,6 @@ public record Series(
     }
     public static Series of(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible) {
         return builderOf(seriesId, label, renderAs, values, isVisible).build();
-    }
-
-    public static Series of(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible, Boolean isLineChartDashStyle) {
-        return builderOf(seriesId, label, renderAs, values, isVisible)
-            .isLineChartDashStyle(isLineChartDashStyle)
-            .build();
     }
 
 }
