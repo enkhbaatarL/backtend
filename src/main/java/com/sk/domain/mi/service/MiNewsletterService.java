@@ -65,22 +65,18 @@ public class MiNewsletterService {
             Pageable pageable = PageRequest.of(page - 1, size,
                 Sort.by(Sort.Direction.DESC, "publishDateTime"));
 
-            // 키워드가 있는 경우와 없는 경우로 분기
             Page<NewsletterPublishHistory> historyPage;
 
             if (StringUtils.isBlank(keyword)) {
-                // 키워드 없음: 발행완료 상태만 조회 (FETCH JOIN으로 NewsletterMaster도 함께 조회)
                 historyPage = newsletterPublishHistoryRepository
                     .findByPublishStatusCodeAndIsDeletedFalseWithMaster(PublishStatusCode.PUBLISHED,
                         pageable);
             } else {
-                // 키워드 있음: 뉴스레터명 또는 제목에 키워드 포함된 것만 조회
                 historyPage = newsletterPublishHistoryRepository
                     .findByPublishStatusCodeAndIsDeletedFalseAndKeywordWithMaster(
                         PublishStatusCode.PUBLISHED, keyword, pageable);
             }
 
-            // NewsletterListRes로 변환
             Page<NewsletterListRes> newsletterPage = historyPage.map(
                 this::convertToNewsletterListRes);
 
@@ -89,7 +85,6 @@ public class MiNewsletterService {
         } catch (Exception e) {
             log.error("뉴스레터 목록 조회 중 오류 발생: {}", e.getMessage(), e);
 
-            // 오류 발생 시 빈 결과 반환
             Pageable pageable = PageRequest.of(page - 1, size);
             Page<NewsletterListRes> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
             return PaginationRes.toRes(emptyPage);
@@ -231,7 +226,7 @@ public class MiNewsletterService {
             }
 
         } catch (Exception e) {
-            log.error("실제 뉴스레터 데이터 조회 중 오류 발생: {}", e.getMessage(), e);
+            log.error("뉴스레터 데이터 조회 중 오류 발생: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
 
@@ -246,11 +241,11 @@ public class MiNewsletterService {
             master.getMasterName(),                                       // name
             master.getExplanation(),                                      // description
             false,
-            // subscribed (기본값, 필요시 구독 여부 조회 로직 추가)
             latestHistory != null ? latestHistory.getIssueNo().toString() : "0",  // issueNo
-            master.getImageUrl(),                                         // image
+            encodeImageToBase64(master.getImageUrl(),
+                "image/png"),                                         // image
             true
-            // enabled (기본값, 필요시 활성화 여부 로직 추가)
+
         );
     }
 
@@ -341,18 +336,40 @@ public class MiNewsletterService {
     }
 
     /**
-     * 뉴스레터 발행 리스트 조회 (Mock 데이터)
+     * 뉴스레터 발행 리스트 조회
      */
     public NewsletterIssueListRes getNewsletterIssueList(String newsletterId) {
-        log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
+    log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
 
-        List<NewsletterIssueListRes.IssuedItem> issuedList = generateMockIssuedList(newsletterId);
+    try {
+        Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository.findByNewsletterMasterIdAndIsDeletedFalse(Integer.parseInt(newsletterId));
 
-        return new NewsletterIssueListRes(
-            newsletterId,
-            issuedList
-        );
+        if (newsletterMaster.isEmpty()) {
+            log.warn("뉴스레터를 찾을 수 없습니다. - newsletterId: {}", newsletterId);
+            return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
+        }
+
+        List<NewsletterPublishHistory> publishedHistories = newsletterPublishHistoryRepository
+            .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+                newsletterMaster.get(),
+                PublishStatusCode.PUBLISHED
+            );
+
+        List<NewsletterIssueListRes.IssuedItem> issuedList = publishedHistories.stream()
+            .map(history -> new NewsletterIssueListRes.IssuedItem(
+                history.getPublishDateTime().format(DateTimeFormatter.ofPattern("yy-MM-dd")),
+                String.format("%03d", history.getIssueNo())
+            ))
+            .toList();
+
+        return new NewsletterIssueListRes(newsletterId, issuedList);
+
+    } catch (Exception e) {
+        log.error("뉴스레터 발행 리스트 조회 중 오류 발생 - newsletterId: {}", newsletterId, e);
+        return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
     }
+}
+
 
     /**
      * 뉴스레터 상세 조회 (Mock 데이터)

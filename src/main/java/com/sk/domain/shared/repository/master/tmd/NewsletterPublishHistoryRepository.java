@@ -1,7 +1,9 @@
 package com.sk.domain.shared.repository.master.tmd;
 
+import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,7 +37,6 @@ public interface NewsletterPublishHistoryRepository extends
         Pageable pageable
     );
 
-    // 키워드 검색 조회 - FETCH JOIN 사용
     @Query("SELECT nph FROM NewsletterPublishHistory nph " +
         "JOIN FETCH nph.newsletterMaster nm " +
         "WHERE nph.publishStatusCode = :status AND nph.isDeleted = false " +
@@ -46,5 +47,15 @@ public interface NewsletterPublishHistoryRepository extends
         @Param("status") PublishStatusCode status,
         @Param("keyword") String keyword,
         Pageable pageable
+    );
+
+    @Query("SELECT nph FROM NewsletterPublishHistory nph " +
+           "WHERE nph.newsletterMaster = :newsletterMaster " +
+           "AND nph.publishStatusCode = :publishStatusCode " +
+           "AND nph.isDeleted = false " +
+           "ORDER BY nph.issueNo DESC")
+    List<NewsletterPublishHistory> findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+        @Param("newsletterMaster") NewsletterMaster newsletterMaster,
+        @Param("publishStatusCode") PublishStatusCode publishStatusCode
     );
 }
