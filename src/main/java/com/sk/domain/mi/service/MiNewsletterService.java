@@ -29,10 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,18 +63,6 @@ public class MiNewsletterService {
     private final NewsletterEventRepository newsletterEventRepository;
     private final NewsletterChartRepository newsletterChartRepository;
     private final PreferenceTableRepository preferenceTableRepository;
-
-    public static long convertToUTCTimestamp(String dateStr, String timeStr) {
-        // LocalDate와 LocalTime으로 파싱
-        LocalDate date = LocalDate.parse(dateStr);
-        LocalTime time = LocalTime.parse(timeStr);
-
-        // LocalDateTime으로 결합
-        LocalDateTime dateTime = LocalDateTime.of(date, time);
-
-        // UTC 타임스탬프로 변환 (밀리초)
-        return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
-    }
 
     public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -413,7 +397,7 @@ public class MiNewsletterService {
 
         try {
             for (NewsletterChart chart : flowCharts) {
-                Long timestamp = chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
+                Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
                 BigDecimal high = chart.getHigh1();           // 고가
                 BigDecimal low = chart.getLow1();             // 저가
                 BigDecimal open = chart.getOpenPrice();       // 시가
