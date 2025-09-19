@@ -7,9 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
@@ -36,10 +34,6 @@ public class NewsletterTemplate extends BaseEntity {
     @Comment("템플릿타입코드")
     private String elementType;
 
-    @Column(name = "elmnt_dtl_type", nullable = false, length = 50)
-    @Comment("템플릿상세타입")
-    private String elementDetailType;
-
     @Column(name = "elmnt_ord", nullable = false, columnDefinition = "int")
     @ColumnDefault("1")
     @Comment("템플릿타입코드가 여러개일때 순번 정의")
@@ -48,47 +42,4 @@ public class NewsletterTemplate extends BaseEntity {
     @Column(name = "elmnt_val", nullable = false, length = 200)
     @Comment("해당템플릿의 값")
     private String elementValue;
-
-    @Builder
-    public NewsletterTemplate(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer dataRegistrationSn, Integer newsletterTemplateId, String elementType,
-            String elementDetailType, Integer elementOrder, String elementValue) {
-        super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
-        this.dataRegistrationSn = dataRegistrationSn;
-        this.newsletterTemplateId = newsletterTemplateId;
-        this.elementType = elementType;
-        this.elementDetailType = elementDetailType;
-        this.elementOrder = elementOrder;
-        this.elementValue = elementValue;
-    }
-
-    public static NewsletterTemplate of(Integer newsletterTemplateId, String elementType, String elementDetailType,
-            Integer elementOrder, String elementValue) {
-        return NewsletterTemplate.builder()
-                .newsletterTemplateId(newsletterTemplateId)
-                .elementType(elementType)
-                .elementDetailType(elementDetailType)
-                .elementOrder(elementOrder)
-                .elementValue(elementValue)
-                .build();
-    }
-
-    public void update(String elementType, String elementDetailType, Integer elementOrder, String elementValue) {
-        if (elementType != null) {
-            this.elementType = elementType;
-        }
-        if (elementDetailType != null) {
-            this.elementDetailType = elementDetailType;
-        }
-        if (elementOrder != null) {
-            this.elementOrder = elementOrder;
-        }
-        if (elementValue != null) {
-            this.elementValue = elementValue;
-        }
-    }
-
-    public void softDelete() {
-        super.softDelete();
-    }
 }

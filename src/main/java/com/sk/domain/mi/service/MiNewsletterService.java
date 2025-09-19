@@ -1,9 +1,7 @@
 package com.sk.domain.mi.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.model.TableRes;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
@@ -31,16 +29,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,6 +67,18 @@ public class MiNewsletterService {
     private final NewsletterEventRepository newsletterEventRepository;
     private final NewsletterChartRepository newsletterChartRepository;
     private final PreferenceTableRepository preferenceTableRepository;
+
+    public static long convertToUTCTimestamp(String dateStr, String timeStr) {
+        // LocalDate와 LocalTime으로 파싱
+        LocalDate date = LocalDate.parse(dateStr);
+        LocalTime time = LocalTime.parse(timeStr);
+
+        // LocalDateTime으로 결합
+        LocalDateTime dateTime = LocalDateTime.of(date, time);
+
+        // UTC 타임스탬프로 변환 (밀리초)
+        return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
 
     public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -114,52 +128,6 @@ public class MiNewsletterService {
             publishHistory.getNewsletterTitle(),                          // title
             publishHistory.getPublishStatusCode().name()                  // status
         );
-    }
-
-    /**
-     * Mock 뉴스레터 데이터 생성
-     */
-    private List<NewsletterListRes> generateMockNewsletters() {
-        List<NewsletterListRes> newsletters = new ArrayList<>();
-
-        // 다양한 상태와 내용으로 Mock 데이터 생성
-        String[] names = {
-            "Oil Price Trends", "Tech Trend Report", "Economic Outlook",
-            "Global Market Analysis", "Industry Focus", "Investment Strategy Brief"
-        };
-
-        String[] statuses = {"PUBLISHING", "CHECK", "BLANK"};
-
-        String[][] titlesByName = {
-            {"Market Volatility Analysis", "Quarterly Performance Review",
-                "Emerging Market Trends"},
-            {"AI Technology Breakthrough", "Semiconductor Industry Update",
-                "Cloud Computing Growth"},
-            {"Interest Rate Impact", "Inflation Outlook 2025", "GDP Growth Projections"},
-            {"International Trade Update", "Currency Market Analysis", "Commodity Price Trends"},
-            {"Healthcare Sector Review", "Energy Transition Report",
-                "Manufacturing Industry Insights"},
-            {"Portfolio Optimization Tips", "Risk Management Strategies", "ESG Investment Trends"}
-        };
-
-        IntStream.range(1, 51).forEach(i -> {
-            int nameIndex = (i - 1) % names.length;
-            String name = names[nameIndex];
-            String status = statuses[i % 3];
-            String[] titles = titlesByName[nameIndex];
-            String title = titles[(i - 1) % titles.length];
-
-            newsletters.add(new NewsletterListRes(
-                String.format("NL2025%03d", i),
-                LocalDateTime.now().minusDays(i).withHour(9).withMinute(0).withSecond(0),
-                String.format("%03d", i),
-                name,
-                title + String.format(" - Issue %d", i),
-                status
-            ));
-        });
-
-        return newsletters;
     }
 
     /**
@@ -258,7 +226,6 @@ public class MiNewsletterService {
         );
     }
 
-
     /**
      * 더미 Base64 이미지 생성 실제로는 이미지 파일을 읽어서 Base64로 인코딩하거나, DB에서 Base64 인코딩된 이미지 데이터를 조회해야 합니다.
      */
@@ -287,53 +254,40 @@ public class MiNewsletterService {
     }
 
     /**
-     * Mock 발행목록 생성
-     */
-    private List<NewsletterIssueListRes.IssuedItem> generateMockIssuedList(String newsletterId) {
-        return List.of(
-            new NewsletterIssueListRes.IssuedItem("25-09-12", "102"),
-            new NewsletterIssueListRes.IssuedItem("25-09-11", "101"),
-            new NewsletterIssueListRes.IssuedItem("25-09-10", "100"),
-            new NewsletterIssueListRes.IssuedItem("25-09-09", "099"),
-            new NewsletterIssueListRes.IssuedItem("25-09-08", "098")
-        );
-    }
-
-    /**
      * 뉴스레터 발행 리스트 조회
      */
     public NewsletterIssueListRes getNewsletterIssueList(String newsletterId) {
-    log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
+        log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
 
-    try {
-        Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository.findByNewsletterMasterIdAndIsDeletedFalse(Integer.parseInt(newsletterId));
+        try {
+            Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository.findByNewsletterMasterIdAndIsDeletedFalse(
+                Integer.parseInt(newsletterId));
 
-        if (newsletterMaster.isEmpty()) {
-            log.warn("뉴스레터를 찾을 수 없습니다. - newsletterId: {}", newsletterId);
+            if (newsletterMaster.isEmpty()) {
+                log.warn("뉴스레터를 찾을 수 없습니다. - newsletterId: {}", newsletterId);
+                return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
+            }
+
+            List<NewsletterPublishHistory> publishedHistories = newsletterPublishHistoryRepository
+                .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+                    newsletterMaster.get(),
+                    PublishStatusCode.PUBLISHED
+                );
+
+            List<NewsletterIssueListRes.IssuedItem> issuedList = publishedHistories.stream()
+                .map(history -> new NewsletterIssueListRes.IssuedItem(
+                    history.getPublishDateTime().format(DateTimeFormatter.ofPattern("yy-MM-dd")),
+                    history.getIssueNo().toString())
+                )
+                .toList();
+
+            return new NewsletterIssueListRes(newsletterId, issuedList);
+
+        } catch (Exception e) {
+            log.error("뉴스레터 발행 리스트 조회 중 오류 발생 - newsletterId: {}", newsletterId, e);
             return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
         }
-
-        List<NewsletterPublishHistory> publishedHistories = newsletterPublishHistoryRepository
-            .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
-                newsletterMaster.get(),
-                PublishStatusCode.PUBLISHED
-            );
-
-        List<NewsletterIssueListRes.IssuedItem> issuedList = publishedHistories.stream()
-            .map(history -> new NewsletterIssueListRes.IssuedItem(
-                history.getPublishDateTime().format(DateTimeFormatter.ofPattern("yy-MM-dd")),
-                history.getIssueNo().toString())
-            )
-            .toList();
-
-        return new NewsletterIssueListRes(newsletterId, issuedList);
-
-    } catch (Exception e) {
-        log.error("뉴스레터 발행 리스트 조회 중 오류 발생 - newsletterId: {}", newsletterId, e);
-        return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
     }
-}
-
 
     /**
      * 뉴스레터 상세 조회
@@ -357,7 +311,24 @@ public class MiNewsletterService {
             List<NewsletterTemplate> templates = newsletterTemplateRepository.findByNewsletterTemplateId(
                 nph.getNewsletterTemplateId());
 
-            List<NewsletterChart> flowChart = newsletterChartRepository.findByNewsletterPublishHistoryAndCode(nph, "LCOc1");
+            Map<Integer, Map<String, String>> templatesByOrder = templates.stream()
+            .collect(Collectors.groupingBy(
+                NewsletterTemplate::getElementOrder,
+                Collectors.toMap(
+                    NewsletterTemplate::getElementType,
+                    NewsletterTemplate::getElementValue,
+                    (existing, replacement) -> existing
+                )
+            ));
+
+            Map<String, String> mainChartTemplate = templatesByOrder.getOrDefault(1,
+                new HashMap<>());
+            String newsFlowChartTitle = mainChartTemplate.getOrDefault("MAIN_CHRT_NM",
+                "MAIN_CHRT_NM is empty");
+            String newsFlowChartCode = mainChartTemplate.getOrDefault("MAIN_CHRT_CODE", "");
+
+            List<NewsletterChart> flowChart = newsletterChartRepository.findByNewsletterPublishHistoryAndCode(
+                nph, newsFlowChartCode);
 
             List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistory(
                 nph);
@@ -365,7 +336,7 @@ public class MiNewsletterService {
             NewsletterDetailRes.ChartData chartData = convertNewsletterChartsToChartData(flowChart);
 
             NewsFlowChart newsFlowChart = new NewsFlowChart(
-                "주요 뉴스 Flow 및 Brent 유가 추이",
+                newsFlowChartTitle,
                 "뉴욕시간 전일 20:00부터 당일 17:00까지",
                 chartData
             );
@@ -373,6 +344,7 @@ public class MiNewsletterService {
             PreferenceTable preferenceTable = preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(
                 nph, "OIL_PRC_TRND").get();
 
+            // 2. 관련 뉴스
             List<NewsEventItem> newsEventItems = events.stream()
                 .map(event -> new NewsEventItem(
                     event.getNewsletterEventId().toString(),  // newsId
@@ -401,7 +373,7 @@ public class MiNewsletterService {
                 null
             );
 
-            NewsletterDetailRes nldr = new NewsletterDetailRes(
+            return new NewsletterDetailRes(
                 nm.getNewsletterMasterId().toString(),
                 nm.getPeriodType().getCode(),
                 nm.getMasterName(),
@@ -410,8 +382,6 @@ public class MiNewsletterService {
                 encodeImageToBase64(nm.getImageUrl(), "image/png"),
                 true,
                 issueDetail);
-
-            return nldr;
 
         } catch (Exception e) {
             log.error("뉴스레터 데이터 조회 중 오류 발생: {}", e.getMessage(), e);
@@ -429,68 +399,6 @@ public class MiNewsletterService {
 
     }
 
-    private TableRes readTableDataFromJson(String jsonPath) {
-        try {
-            ClassPathResource resource = new ClassPathResource(jsonPath);
-            try (InputStream inputStream = resource.getInputStream()) {
-                // JSON을 Map으로 파싱
-                TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
-                };
-                Map<String, Object> jsonData = objectMapper.readValue(inputStream, typeRef);
-
-                // header 파싱 (JSON의 "header" 키 사용)
-                List<TableRes.Column> headers = new ArrayList<>();
-                @SuppressWarnings("unchecked")
-                List<Map<String, String>> headersList = (List<Map<String, String>>) jsonData.get(
-                    "header");
-                if (headersList != null) {
-                    for (Map<String, String> headerMap : headersList) {
-                        String field = headerMap.get("field");
-                        String name = headerMap.get("name");
-                        headers.add(TableRes.Column.of(field, name));
-                    }
-                }
-
-                // detail 파싱 (JSON의 "detail" 키 사용)
-                List<TableRes.Row> rows = new ArrayList<>();
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> detailList = (List<Map<String, Object>>) jsonData.get(
-                    "detail");
-                if (detailList != null) {
-                    for (Map<String, Object> detailMap : detailList) {
-                        @SuppressWarnings("unchecked")
-                        List<String> cells = (List<String>) detailMap.get("cells");
-                        if (cells != null) {
-                            rows.add(TableRes.Row.of(cells));
-                        }
-                    }
-                }
-
-                return TableRes.of("mock1", headers, rows);
-
-            }
-        } catch (IOException e) {
-            log.error("JSON 파일을 TableRes로 변환하는 중 오류 발생: {}", jsonPath, e);
-            // 오류 시 빈 테이블 반환
-            return TableRes.of(Collections.emptyList(), Collections.emptyList());
-        }
-    }
-
-    /**
-     * 문자열을 BigDecimal로 안전하게 변환
-     */
-    private BigDecimal parseBigDecimal(String str) {
-        try {
-            if (StringUtils.isBlank(str) || "null".equalsIgnoreCase(str)) {
-                return null;
-            }
-            return new BigDecimal(str);
-        } catch (NumberFormatException e) {
-            log.warn("BigDecimal 파싱 실패: {}", str, e);
-            return null;
-        }
-    }
-
     /**
      * NewsletterChart 리스트를 ChartData로 변환
      */
@@ -505,15 +413,12 @@ public class MiNewsletterService {
 
         try {
             for (NewsletterChart chart : flowCharts) {
-                // NewsletterChart 엔티티의 필드명은 추정이므로, 실제 필드명에 맞게 수정해야 합니다
-                // 일반적으로 차트 데이터는 다음과 같은 필드를 가질 것으로 예상됩니다
-                Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime(); // 또는 getDateTime(), getCreateTime() 등
+                Long timestamp = chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
                 BigDecimal high = chart.getHigh1();           // 고가
                 BigDecimal low = chart.getLow1();             // 저가
-                BigDecimal open = chart.getOpenPrice();           // 시가
-                BigDecimal close = chart.getTradePrice1();         // 종가
-                BigDecimal volume = chart.getNumMoves();       // 거래량
-
+                BigDecimal open = chart.getOpenPrice();       // 시가
+                BigDecimal close = chart.getTradePrice1();    // 종가
+                BigDecimal volume = chart.getNumMoves();      // 거래량
 
                 if (timestamp != null && high != null && low != null &&
                     open != null && close != null) {

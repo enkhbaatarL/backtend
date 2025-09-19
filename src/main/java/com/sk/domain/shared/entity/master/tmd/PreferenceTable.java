@@ -22,7 +22,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 @Entity
 @Comment("참고테이블데이터")
-@Table(name = "tmd_pref_tbl",
+@Table(name = "tmd_nws_ltr_pref_tbl",
        uniqueConstraints = @UniqueConstraint(name = "tmd_pref_tbl_ux01",
                                            columnNames = {"nws_ltr_pub_id", "pref_tbl_cd"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
