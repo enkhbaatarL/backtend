@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface NewsletterEventRepository extends
     JpaRepository<NewsletterEvent, Integer> {
 
-    List<NewsletterEvent> findByNewsletterPublishHistory(
+    List<NewsletterEvent> findByNewsletterPublishHistoryOrderByEventCreateTime(
         NewsletterPublishHistory newsletterPublishHistory);
 }

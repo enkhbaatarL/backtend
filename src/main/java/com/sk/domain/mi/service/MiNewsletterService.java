@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -314,14 +317,16 @@ public class MiNewsletterService {
             List<NewsletterChart> flowChart = newsletterChartRepository.findByNewsletterPublishHistoryAndCode(
                 nph, newsFlowChartCode);
 
-            List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistory(
+            List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(
                 nph);
 
             NewsletterDetailRes.ChartData chartData = convertNewsletterChartsToChartData(flowChart);
 
+            String aggregationTime = generateAggregationTime(chartData.timestamps());
+
             NewsFlowChart newsFlowChart = new NewsFlowChart(
                 newsFlowChartTitle,
-                "뉴욕시간 전일 20:00부터 당일 17:00까지",
+                aggregationTime,
                 chartData
             );
 
@@ -344,7 +349,7 @@ public class MiNewsletterService {
                 .toList();
 
             RelatedNews relatedNews = new RelatedNews(
-                "뉴욕시간 전일 20:00부터 당일 17:00까지",
+                aggregationTime,
                 newsEventItems
             );
 
@@ -397,7 +402,7 @@ public class MiNewsletterService {
 
         try {
             for (NewsletterChart chart : flowCharts) {
-                Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
+                Long timestamp = chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
                 BigDecimal high = chart.getHigh1();           // 고가
                 BigDecimal low = chart.getLow1();             // 저가
                 BigDecimal open = chart.getOpenPrice();       // 시가
@@ -434,4 +439,34 @@ public class MiNewsletterService {
 
         return new NewsletterDetailRes.ChartData(timestamps, seriesList);
     }
+
+    private String generateAggregationTime(List<String> timestamps) {
+    if (timestamps == null || timestamps.isEmpty()) {
+        return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 기본값
+    }
+
+    try {
+        // 첫 번째와 마지막 타임스탬프
+        String firstTimestamp = timestamps.get(0);
+        String lastTimestamp = timestamps.get(timestamps.size() - 1);
+
+        // Unix timestamp (밀리초)를 뉴욕 시간으로 변환
+        ZoneId newYorkZone = ZoneId.of("America/New_York");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        String startTime = Instant.ofEpochMilli(Long.parseLong(firstTimestamp))
+                .atZone(newYorkZone)
+                .format(timeFormatter);
+
+        String endTime = Instant.ofEpochMilli(Long.parseLong(lastTimestamp))
+                .atZone(newYorkZone)
+                .format(timeFormatter);
+
+        return String.format("뉴욕시간 전일 %s부터 당일 %s까지", startTime, endTime);
+
+    } catch (Exception e) {
+        log.error("타임스탬프 변환 중 오류 발생", e);
+        return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 오류 시 기본값
+    }
+}
 }
