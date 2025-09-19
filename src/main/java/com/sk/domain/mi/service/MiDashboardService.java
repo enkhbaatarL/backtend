@@ -512,9 +512,25 @@ public class MiDashboardService {
                 .orElse(null);
 
         // DashboardChartDataTableType 결정
-        DashboardChartDataTableType dataTableType = chartPredictSettingDetails.stream()
-                .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-                .count() >= 2 ? DashboardChartDataTableType.FORECAST_DUAL_LAYER : DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetailPredictList = chartPredictSettingDetails.stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal).toList();
+        DashboardChartDataTableType dataTableType = DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
+        if(chartPredictSettingDetailPredictList.size() >= 2){
+            Integer associateDataSource = null;
+            for(ChartPredictSettingDetail predict : chartPredictSettingDetailPredictList){
+                if(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(predict.getGoodsDataSourceDetail().getGoodsDataSourceNo())){
+                    continue;
+                }
+                if(associateDataSource == null){
+                    associateDataSource = predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
+                    continue;
+                }
+                if(!associateDataSource.equals(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo())){
+                    dataTableType = DashboardChartDataTableType.FORECAST_DUAL_LAYER;
+                }
+            }
+        }
 
         // DashboardMetadata 생성
         DashboardMetadata dashboardMetadata = DashboardMetadata.of(
@@ -550,9 +566,13 @@ public class MiDashboardService {
                                 DashboardChart::chartLineType,
                                 Comparator.nullsLast(
                                         Comparator.comparing(ChartPredictLineType::getCode, Comparator.nullsLast(Comparator.naturalOrder()))))
+                        .thenComparing(c->c.actualChartLines().goodsDataSourceNo() == null
+                                ,
+                                Comparator.nullsLast(Comparator.comparing(b->!b)))
                         .thenComparing(
                                 DashboardChart::chartLineDescription,
-                                Comparator.nullsLast(Comparator.naturalOrder())))
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                )
                 .toList();
 
         // dashboardDataSources 수집
@@ -693,6 +713,7 @@ public class MiDashboardService {
                             goodsDataSource.getGoodsDataSourceNo(), monthlyAverages, chartPredictSettingDetail.getPredictChartDetailExpn());
 
                     // DashboardChart 생성
+
                     Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(); // chartMap
                                                                                                                                        // sort해서
                                                                                                                                        // actual 데이터
