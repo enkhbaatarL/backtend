@@ -338,7 +338,7 @@ public class MiNewsletterService {
                 .map(event -> new NewsEventItem(
                     event.getNewsletterEventId().toString(),  // newsId
                     event.getEventTitle(),                     // title
-                    List.of(event.getEventContent()),         // content (단일 문자열을 리스트로 변환)
+                    Arrays.asList(event.getEventContent().split("\n")),
                     Timestamp.valueOf(event.getEventCreateTime()).getTime(),
                     event.getEventCreateTime().format(f2), // createdDate
                     event.getEventMarkTime(),                 // createTime
