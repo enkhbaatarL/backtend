@@ -65,7 +65,11 @@ public class MiDashboardHistoryService {
             .collect(Collectors.partitioningBy(ChartPredictSettingDetail::getIsChartLinePredictVal));
 
         // 예측가
-        List<ChartPredictSettingDetail> forecasts = partitioned.get(Boolean.TRUE);
+        // TODO 수정 필요
+        List<ChartPredictSettingDetail> forecasts = partitioned.get(Boolean.TRUE)
+            .stream().filter(d->{
+                return !d.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(d.getGoodsDataSourceDetail().getGoodsDataSourceNo());
+            }).toList();
 
         // 실제가 또는 선물가
         List<ChartPredictSettingDetail> actualOrFutures = partitioned.get(Boolean.FALSE);
@@ -211,7 +215,13 @@ public class MiDashboardHistoryService {
     /**
      * counterpart 와 동일한 그룹의 forecast 선택
      */
-    private ChartPredictSettingDetail selectForecast(List<ChartPredictSettingDetail> forecasts, ChartPredictSettingDetail counterpart) {
+    private ChartPredictSettingDetail selectForecast(List<ChartPredictSettingDetail> srcForecasts, ChartPredictSettingDetail counterpart) {
+
+        // TODO 다시 고칠것
+        List<ChartPredictSettingDetail> forecasts = srcForecasts
+            .stream().filter(d->{
+                return !d.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(d.getGoodsDataSourceDetail().getGoodsDataSourceNo());
+            }).toList();
 
         if (forecasts.size() == 1) return forecasts.get(0);
 
