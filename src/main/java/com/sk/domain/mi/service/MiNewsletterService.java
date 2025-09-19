@@ -7,6 +7,7 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsEventItem;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsFlowChart;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.Reference;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
@@ -16,7 +17,6 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
-import com.sk.domain.shared.entity.master.tmd.PreferenceTable;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tif.NewsletterChartRepository;
@@ -295,7 +295,7 @@ public class MiNewsletterService {
                     Integer.parseInt(issueNo)
                 ).get();
 
-            List<NewsletterTemplate> templates = newsletterTemplateRepository.findByNewsletterTemplateId(
+            List<NewsletterTemplate> templates = newsletterTemplateRepository.findByNewsletterTemplateIdOrderByElementOrder(
                 nph.getNewsletterTemplateId());
 
             Map<Integer, Map<String, String>> templatesByOrder = templates.stream()
@@ -330,8 +330,47 @@ public class MiNewsletterService {
                 chartData
             );
 
-            PreferenceTable preferenceTable = preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(
-                nph, "OIL_PRC_TRND").get();
+            List<Map<String, String>> referenceList = templatesByOrder.entrySet().stream()
+                .filter(entry -> entry.getKey() >= 2)
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toList();
+
+            List<Reference> references = referenceList.stream()
+                .map(referenceMap -> {
+                    // NM으로 끝나는 elementType의 elementValue를 title로
+                    String title = referenceMap.entrySet().stream()
+                        .filter(entry -> entry.getKey().endsWith("NM"))
+                        .findFirst()
+                        .map(Map.Entry::getValue)
+                        .orElse("");
+
+                    // DECR로 끝나는 elementType의 elementValue를 description으로
+                    String description = referenceMap.entrySet().stream()
+                        .filter(entry -> entry.getKey().endsWith("DECR"))
+                        .findFirst()
+                        .map(Map.Entry::getValue)
+                        .orElse("");
+
+                    // RERNC_TABLE_NM이면 TABLE, 아니면 CHART
+                    String type = referenceMap.containsKey("RERNC_TABLE_NM") ? "TABLE" : "CHART";
+
+                    // 타입이 TABLE 이면 elementType이 RDRNC_TABLE_CD 인 elementValue 를 찾아서
+
+                    // 아래의 "OIL_PRC_TRND" 대신에 넣고 실행하여 preferenceTable을 tableData 에 담는다
+//                    PreferenceTable preferenceTable = preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(
+//                nph, "OIL_PRC_TRND").get();
+
+                    // 타입이 CHART 면 elementType이 DEDI_CHRT_CD 인 경우와 CLTN_CHRT_CD 경우 나누어 조회함
+                    // 무엇을 조회할지는 추후 다시 정의할예정
+
+
+                    return new Reference(title, description, type, null, null);
+                })
+                .toList();
+
+
+
 
             // 2. 관련 뉴스
             List<NewsEventItem> newsEventItems = events.stream()
@@ -359,7 +398,7 @@ public class MiNewsletterService {
                 nph.getAiSummary(),
                 newsFlowChart,
                 relatedNews,
-                null
+                references
             );
 
             return new NewsletterDetailRes(
