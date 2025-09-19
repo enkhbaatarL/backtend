@@ -6,7 +6,7 @@ public record NewsletterFeaturedListRes(
         @Schema(description = "뉴스레터 고유 ID", example = "NL001")
         String newsletterId,
 
-        @Schema(description = "발행주기", example = "WEEKLY", allowableValues = {"DAILY", "WEEKLY", "ON-DEMAND"})
+        @Schema(description = "발행주기", example = "WEEKLY", allowableValues = {"DAILY", "WEEKLY", "MONTHLY", "QUARTERLY"})
         String frequency,
 
         @Schema(description = "뉴스레터 이름", example = "Oil Price Trends")
@@ -21,8 +21,8 @@ public record NewsletterFeaturedListRes(
         @Schema(description = "가장 최근 발행번호", example = "102")
         String issueNo,
 
-        @Schema(description = "뉴스레터 이미지 URL", example = "https://example.com/images/newsletter1.jpg")
-        String image,
+        @Schema(description = "Base64 인코딩된 이미지 데이터", example = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==")
+        String imageBase64,
 
         @Schema(description = "활성화여부", example = "true")
         Boolean enabled) {

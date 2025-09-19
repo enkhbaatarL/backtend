@@ -20,6 +20,6 @@ public record NewsletterListRes(
         @Schema(description = "뉴스레터 제목", example = "Tech Stock Rally Continues - Weekly Market Analysis")
         String title,
 
-        @Schema(description = "발행상태", example = "PUBLISHED", allowableValues = {"PUBLISHING", "CHECK", "BLANK"})
+        @Schema(description = "발행상태", example = "CHECK", allowableValues = {"PUBLISHING", "CHECK", "BLANK"})
         String status) {
 }

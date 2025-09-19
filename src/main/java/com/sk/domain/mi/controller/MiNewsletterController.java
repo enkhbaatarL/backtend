@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.shared.enums.PermissionCondition;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,7 +51,7 @@ public class MiNewsletterController {
 			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<PaginationRes<NewsletterListRes>> getNewsletterList(
             @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size,
+            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
 
         return BaseResponseFactory.create(
@@ -75,6 +76,20 @@ public class MiNewsletterController {
     }
 
     @ApiOrder(3)
+    @Operation(summary = "뉴스레터 발행 리스트 조회", description = "특정 뉴스레터의 발행 리스트를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/{newsletterId}/issues")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+            Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<NewsletterIssueListRes> getNewsletterIssueList(
+            @PathVariable("newsletterId") String newsletterId) {
+
+        return BaseResponseFactory.create(
+            miNewsletterService.getNewsletterIssueList(newsletterId)
+        );
+    }
+
+    @ApiOrder(4)
     @Operation(summary = "뉴스레터 상세 조회", description = "특정 뉴스레터의 특정 발행호 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{newsletterId}/{issueNo}")
