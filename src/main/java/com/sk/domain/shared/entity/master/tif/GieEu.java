@@ -58,28 +58,36 @@ public class GieEu extends BaseEntity {
     @Comment("저장가스총량")
     @Setter
     private BigDecimal gasInStorage;
+
     @Column(name = "gas_in_storage_mt", precision = 15, scale = 4)
     @Comment("저장가스총량-백만톤")
     @Setter
     private BigDecimal gasInStorageMt;
 
+    @Column(name = "full", precision = 15, scale = 4)
+    @Comment("적재율")
+    @Setter
+    private BigDecimal full;
+
 
     @Builder
     public GieEu(Integer dataRegistrationSn, String code, LocalDateTime date, BigDecimal gasInStorage,
-        BigDecimal gasInStorageMt) {
+        BigDecimal gasInStorageMt, BigDecimal full) {
         this.dataRegistrationSn = dataRegistrationSn;
         this.code = code;
         this.date = date;
         this.gasInStorage = gasInStorage;
         this.gasInStorageMt = gasInStorageMt;
+        this.full = full;
     }
 
-    public static GieEu of(String code, LocalDateTime date, BigDecimal gasInStorage, BigDecimal gasInStorageMt) {
+    public static GieEu of(String code, LocalDateTime date, BigDecimal gasInStorage, BigDecimal gasInStorageMt, BigDecimal full) {
         return GieEu.builder()
             .code(code)
             .date(date)
             .gasInStorage(gasInStorage)
             .gasInStorageMt(gasInStorageMt)
+            .full(full)
             .build();
     }
 }

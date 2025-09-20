@@ -593,7 +593,8 @@ public class SchedulerService {
                           GieEu.GIE_EU_CODE_1Y_AGO,
                           gieEu.getDate(),
                           eu.getGasInStorage(),
-                          eu.getGasInStorageMt())));
+                          eu.getGasInStorageMt(),
+                          eu.getFull())));
 
                 Optional<GieEu> gieEu2yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(2));
                 gieEu2yAgo.ifPresent(eu -> updateGieEu(
@@ -601,7 +602,8 @@ public class SchedulerService {
                         GieEu.GIE_EU_CODE_2Y_AGO,
                         gieEu.getDate(),
                         eu.getGasInStorage(),
-                        eu.getGasInStorageMt())));
+                        eu.getGasInStorageMt(),
+                        eu.getFull())));
 
                 Optional<GieEu> gieEu3yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(3));
                 gieEu3yAgo.ifPresent(eu -> updateGieEu(
@@ -609,35 +611,42 @@ public class SchedulerService {
                         GieEu.GIE_EU_CODE_3Y_AGO,
                         gieEu.getDate(),
                         eu.getGasInStorage(),
-                        eu.getGasInStorageMt())));
+                        eu.getGasInStorageMt(),
+                        eu.getFull())));
 
                 Object[] values = getGieEuMaxMinAvg(DB_FIRST_DATE.getYear(), gieEu);
                 BigDecimal valueMax = getBigDecimal(values[0]);
+                BigDecimal fullMax = getBigDecimal(values[3]);
                 if(valueMax != null){
                     updateGieEu(
                         GieEu.of(
                             GieEu.GIE_EU_CODE_PAST_5Y_MAX,
                             gieEu.getDate(),
                             valueMax,
-                            valueMax.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                            valueMax.multiply(GieEuDataCollector.MT_SCALE_RATIO),
+                            fullMax));
                 }
                 BigDecimal valueMin = getBigDecimal(values[1]);
+                BigDecimal fullMin = getBigDecimal(values[4]);
                 if(valueMin != null){
                     updateGieEu(
                         GieEu.of(
                             GieEu.GIE_EU_CODE_PAST_5Y_MIN,
                             gieEu.getDate(),
                             valueMin,
-                            valueMin.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                            valueMin.multiply(GieEuDataCollector.MT_SCALE_RATIO),
+                            fullMin));
                 }
                 BigDecimal valueAvg = getBigDecimal(values[2]);
+                BigDecimal fullAvg = getBigDecimal(values[5]);
                 if(valueAvg != null){
                     updateGieEu(
                         GieEu.of(
                             GieEu.GIE_EU_CODE_PAST_5Y_AVG,
                             gieEu.getDate(),
                             valueAvg,
-                            valueAvg.multiply(GieEuDataCollector.MT_SCALE_RATIO)));
+                            valueAvg.multiply(GieEuDataCollector.MT_SCALE_RATIO),
+                            fullAvg));
                 }
             }
             log.info("[GIE EU] check and update. Number={}, Total={}", gieEuPage.getNumber(), gieEuPage.getTotalElements());
@@ -652,6 +661,7 @@ public class SchedulerService {
             GieEu existGieEu = gieEuOptional.get();
             existGieEu.setGasInStorage(gieEu.getGasInStorage());
             existGieEu.setGasInStorageMt(gieEu.getGasInStorageMt());
+            existGieEu.setFull(gieEu.getFull());
             gieEuRepository.save(existGieEu);
         }else{
             gieEuRepository.save(gieEu);
@@ -671,10 +681,10 @@ public class SchedulerService {
 
     private Object[] getGieEuMaxMinAvg(int beginYear, GieEu gieEu){
         if(gieEu == null || gieEu.getDate() == null){
-            return new Object[]{null, null, null};
+            return new Object[]{null, null, null, null, null, null};
         }
         if(beginYear > gieEu.getDate().getYear() - 5){
-            return new Object[]{null, null, null};
+            return new Object[]{null, null, null, null, null, null};
         }
 
         List<LocalDateTime> past5yDateList = new ArrayList<>(5);

@@ -281,11 +281,11 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         LocalDateTime end = DateUtil.fromYmd(timestamps.get(timestamps.size()-1)).atTime(0,0,0);
 
         Map<String, BigDecimal> upper = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_MAX, start, end)
-            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getGasInStorageMt));
+            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getFull));
         Map<String, BigDecimal> mid = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_AVG, start, end)
-            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getGasInStorageMt));
+            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getFull));
         Map<String, BigDecimal> lower = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_MIN, start, end)
-            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getGasInStorageMt));
+            .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getFull));
 
         return timestamps.stream().map(t->BollingerBandResult.of(mid.get(t), upper.get(t), lower.get(t))).toList();
     }

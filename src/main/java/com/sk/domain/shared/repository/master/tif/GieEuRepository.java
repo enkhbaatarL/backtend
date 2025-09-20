@@ -18,7 +18,7 @@ public interface GieEuRepository extends JpaRepository<GieEu, Long>, CustomFutur
     Optional<GieEu> findByCodeAndDate(String code, LocalDateTime date);
 
     @Query("""
-        SELECT MAX(e.gasInStorage), MIN(e.gasInStorage), AVG(e.gasInStorage)
+        SELECT MAX(e.gasInStorage), MIN(e.gasInStorage), AVG(e.gasInStorage), MAX(e.full), MIN(e.full), AVG(e.full)
         FROM GieEu e
         WHERE e.code = :code
             and e.date in :dateList
