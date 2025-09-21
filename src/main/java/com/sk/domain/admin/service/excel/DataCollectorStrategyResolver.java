@@ -28,6 +28,14 @@ public class DataCollectorStrategyResolver {
             return new GlobalCrudeOilDataCollector();
         } else if (componentType == ComponentType.GIE_EU) {
             return new GieEuDataCollector();
+        } else if(componentType == ComponentType.KPLER_US_EXPORT){
+            return new KplerUsExportDataCollector();
+        } else if(componentType == ComponentType.KPLER_WORLD_IMPORT){
+            return new KplerWorldImportDataCollector();
+        } else if(componentType == ComponentType.SKENS_DATA_A){
+            return new SkEnsTypeADataCollector();
+        } else if(componentType == ComponentType.SKENS_DATA_B){
+            return new SkEnsTypeBDataCollector();
         } else {
             return new DefaultDataCollector();
         }
