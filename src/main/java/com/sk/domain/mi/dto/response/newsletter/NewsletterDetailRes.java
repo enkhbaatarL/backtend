@@ -4,6 +4,7 @@ import com.sk.common.model.TableRes;
 import com.sk.domain.mi.dto.response.charts.Series;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
+import lombok.Getter;
 
 public record NewsletterDetailRes(
         @Schema(description = "뉴스레터 ID", example = "NL001")
@@ -118,6 +119,7 @@ public record NewsletterDetailRes(
         @Schema(description = "참고 설명", example = "WTI: 청색, 좌측\n달러인덱스: 회색, 우측\n상관관계: 20:00- 17:00+0.44")
         String description,
 
+        @Getter
         @Schema(description = "참고 자료 유형", example = "TABLE", allowableValues = {"TABLE", "CHART"})
         String type,
 
