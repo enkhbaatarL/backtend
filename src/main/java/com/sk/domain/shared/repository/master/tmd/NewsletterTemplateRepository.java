@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NewsletterTemplateRepository extends
     JpaRepository<NewsletterTemplate, Integer> {
-    List<NewsletterTemplate> findByNewsletterTemplateId(Integer newsletterTemplateId);
+    List<NewsletterTemplate> findByNewsletterTemplateIdOrderByElementOrder(Integer newsletterTemplateId);
 }

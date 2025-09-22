@@ -1,12 +1,16 @@
 package com.sk.domain.mi.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.model.TableRes;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsEventItem;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsFlowChart;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.Reference;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
@@ -247,8 +251,10 @@ public class MiNewsletterService {
         log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
 
         try {
-            Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository.findByNewsletterMasterIdAndIsDeletedFalse(
-                Integer.parseInt(newsletterId));
+            Integer parsedNewsletterId = parseInteger(newsletterId, "newsletterId");
+
+            Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository
+                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId);
 
             if (newsletterMaster.isEmpty()) {
                 log.warn("뉴스레터를 찾을 수 없습니다. - newsletterId: {}", newsletterId);
@@ -270,15 +276,15 @@ public class MiNewsletterService {
 
             return new NewsletterIssueListRes(newsletterId, issuedList);
 
+        } catch (NumberFormatException e) {
+            log.error("잘못된 newsletterId 형식 - newsletterId: {}", newsletterId, e);
+            return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
         } catch (Exception e) {
             log.error("뉴스레터 발행 리스트 조회 중 오류 발생 - newsletterId: {}", newsletterId, e);
             return new NewsletterIssueListRes(newsletterId, Collections.emptyList());
         }
     }
 
-    /**
-     * 뉴스레터 상세 조회
-     */
     public NewsletterDetailRes getNewsletterDetail(String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
@@ -286,27 +292,35 @@ public class MiNewsletterService {
         DateTimeFormatter f2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         try {
-            NewsletterMaster nm = newsletterMasterRepository.findByNewsletterMasterIdAndIsDeletedFalse(
-                Integer.parseInt(newsletterId)).get();
+            // 1. 입력 파라미터 검증 및 변환
+            Integer parsedNewsletterId = parseInteger(newsletterId, "newsletterId");
+            Integer parsedIssueNo = parseInteger(issueNo, "issueNo");
 
-            NewsletterPublishHistory nph =
-                newsletterPublishHistoryRepository.findByNewsletterMasterAndIssueNo(
-                    nm,
-                    Integer.parseInt(issueNo)
-                ).get();
+            // 2. 뉴스레터 마스터 조회
+            NewsletterMaster nm = newsletterMasterRepository
+                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId)
+                .orElseThrow(
+                    () -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
 
-            List<NewsletterTemplate> templates = newsletterTemplateRepository.findByNewsletterTemplateId(
-                nph.getNewsletterTemplateId());
+            // 3. 발행 히스토리 조회
+            NewsletterPublishHistory nph = newsletterPublishHistoryRepository
+                .findByNewsletterMasterAndIssueNo(nm, parsedIssueNo)
+                .orElseThrow(() -> new IllegalArgumentException(
+                    String.format("Publish history not found - newsletterId: %s, issueNo: %s",
+                        newsletterId, issueNo)));
+
+            List<NewsletterTemplate> templates = newsletterTemplateRepository
+                .findByNewsletterTemplateIdOrderByElementOrder(nph.getNewsletterTemplateId());
 
             Map<Integer, Map<String, String>> templatesByOrder = templates.stream()
-            .collect(Collectors.groupingBy(
-                NewsletterTemplate::getElementOrder,
-                Collectors.toMap(
-                    NewsletterTemplate::getElementType,
-                    NewsletterTemplate::getElementValue,
-                    (existing, replacement) -> existing
-                )
-            ));
+                .collect(Collectors.groupingBy(
+                    NewsletterTemplate::getElementOrder,
+                    Collectors.toMap(
+                        NewsletterTemplate::getElementType,
+                        NewsletterTemplate::getElementValue,
+                        (existing, replacement) -> existing
+                    )
+                ));
 
             Map<String, String> mainChartTemplate = templatesByOrder.getOrDefault(1,
                 new HashMap<>());
@@ -314,14 +328,13 @@ public class MiNewsletterService {
                 "MAIN_CHRT_NM is empty");
             String newsFlowChartCode = mainChartTemplate.getOrDefault("MAIN_CHRT_CODE", "");
 
-            List<NewsletterChart> flowChart = newsletterChartRepository.findByNewsletterPublishHistoryAndCode(
-                nph, newsFlowChartCode);
+            List<NewsletterChart> flowChart = newsletterChartRepository
+                .findByNewsletterPublishHistoryAndCode(nph, newsFlowChartCode);
 
-            List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(
-                nph);
+            List<NewsletterEvent> events = newsletterEventRepository
+                .findByNewsletterPublishHistoryOrderByEventCreateTime(nph);
 
             NewsletterDetailRes.ChartData chartData = convertNewsletterChartsToChartData(flowChart);
-
             String aggregationTime = generateAggregationTime(chartData.timestamps());
 
             NewsFlowChart newsFlowChart = new NewsFlowChart(
@@ -330,8 +343,31 @@ public class MiNewsletterService {
                 chartData
             );
 
-            PreferenceTable preferenceTable = preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(
-                nph, "OIL_PRC_TRND").get();
+            List<Map<String, String>> referenceList = templatesByOrder.entrySet().stream()
+                .filter(entry -> entry.getKey() >= 2)
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toList();
+
+            List<Reference> references = referenceList.stream()
+                .map(referenceMap -> {
+                    // 어떤 타입의 reference인지 먼저 판별
+                    if (referenceMap.containsKey("RERNC_TABLE_NM")) {
+                        // TABLE 타입 처리
+                        return createTableReference(referenceMap, nph);
+                    } else if (referenceMap.containsKey("DEDI_CHRT_NM")) {
+                        // DEDI 차트 타입 처리
+                        return createDediChartReference(referenceMap, nph);
+                    } else if (referenceMap.containsKey("CLTN_CHRT_NM")) {
+                        // CLTN 차트 타입 처리
+                        return createCltnChartReference(referenceMap, nph);
+                    } else {
+                        log.warn("Unknown reference type: {}", referenceMap.keySet());
+                        return new Reference("", "", "UNKNOWN", null, null);
+                    }
+                })
+                .filter(reference -> !"UNKNOWN".equals(reference.type())) // 알 수 없는 타입 제외
+                .toList();
 
             // 2. 관련 뉴스
             List<NewsEventItem> newsEventItems = events.stream()
@@ -359,7 +395,7 @@ public class MiNewsletterService {
                 nph.getAiSummary(),
                 newsFlowChart,
                 relatedNews,
-                null
+                references
             );
 
             return new NewsletterDetailRes(
@@ -372,21 +408,49 @@ public class MiNewsletterService {
                 true,
                 issueDetail);
 
+        } catch (NumberFormatException e) {
+            log.error("잘못된 숫자 형식 - newsletterId: {}, issueNo: {}", newsletterId, issueNo, e);
+            return createEmptyNewsletterDetailRes(newsletterId);
+        } catch (IllegalArgumentException e) {
+            log.warn("데이터를 찾을 수 없음: {}", e.getMessage());
+            return createEmptyNewsletterDetailRes(newsletterId);
         } catch (Exception e) {
-            log.error("뉴스레터 데이터 조회 중 오류 발생: {}", e.getMessage(), e);
-            return new NewsletterDetailRes(newsletterId,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            );
+            log.error("뉴스레터 데이터 조회 중 예상치 못한 오류 발생: {}", e.getMessage(), e);
+            return createEmptyNewsletterDetailRes(newsletterId);
+        }
+    }
+
+    /**
+     * 문자열을 Integer로 안전하게 변환
+     */
+    private Integer parseInteger(String value, String fieldName) {
+        if (StringUtils.isBlank(value)) {
+            throw new IllegalArgumentException(fieldName + "이(가) 비어있습니다.");
         }
 
-
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException(String.format("잘못된 %s 형식: %s", fieldName, value));
+        }
     }
+
+    /**
+     * 빈 NewsletterDetailRes 응답 생성
+     */
+    private NewsletterDetailRes createEmptyNewsletterDetailRes(String newsletterId) {
+        return new NewsletterDetailRes(
+            newsletterId,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+    }
+
 
     /**
      * NewsletterChart 리스트를 ChartData로 변환
@@ -402,7 +466,7 @@ public class MiNewsletterService {
 
         try {
             for (NewsletterChart chart : flowCharts) {
-                Long timestamp = chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
+                Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
                 BigDecimal high = chart.getHigh1();           // 고가
                 BigDecimal low = chart.getLow1();             // 저가
                 BigDecimal open = chart.getOpenPrice();       // 시가
@@ -441,32 +505,212 @@ public class MiNewsletterService {
     }
 
     private String generateAggregationTime(List<String> timestamps) {
-    if (timestamps == null || timestamps.isEmpty()) {
-        return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 기본값
-    }
+        if (timestamps == null || timestamps.isEmpty()) {
+            return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 기본값
+        }
 
-    try {
-        // 첫 번째와 마지막 타임스탬프
-        String firstTimestamp = timestamps.get(0);
-        String lastTimestamp = timestamps.get(timestamps.size() - 1);
+        try {
+            // 첫 번째와 마지막 타임스탬프
+            String firstTimestamp = timestamps.get(0);
+            String lastTimestamp = timestamps.get(timestamps.size() - 1);
 
-        // Unix timestamp (밀리초)를 뉴욕 시간으로 변환
-        ZoneId newYorkZone = ZoneId.of("America/New_York");
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            // Unix timestamp (밀리초)를 뉴욕 시간으로 변환
+            ZoneId newYorkZone = ZoneId.of("America/New_York");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        String startTime = Instant.ofEpochMilli(Long.parseLong(firstTimestamp))
+            String startTime = Instant.ofEpochMilli(Long.parseLong(firstTimestamp))
                 .atZone(newYorkZone)
                 .format(timeFormatter);
 
-        String endTime = Instant.ofEpochMilli(Long.parseLong(lastTimestamp))
+            String endTime = Instant.ofEpochMilli(Long.parseLong(lastTimestamp))
                 .atZone(newYorkZone)
                 .format(timeFormatter);
 
-        return String.format("뉴욕시간 전일 %s부터 당일 %s까지", startTime, endTime);
+            return String.format("뉴욕시간 전일 %s부터 당일 %s까지", startTime, endTime);
 
-    } catch (Exception e) {
-        log.error("타임스탬프 변환 중 오류 발생", e);
-        return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 오류 시 기본값
+        } catch (Exception e) {
+            log.error("타임스탬프 변환 중 오류 발생", e);
+            return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 오류 시 기본값
+        }
     }
-}
+
+    private TableRes readTableDataFromJsonString(String jsonString) {
+        try {
+            // JSON 문자열을 Map으로 파싱
+            TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
+            };
+            Map<String, Object> jsonData = objectMapper.readValue(jsonString, typeRef);
+
+            // header 파싱 (JSON의 "header" 키 사용)
+            List<TableRes.Column> headers = new ArrayList<>();
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> headersList = (List<Map<String, String>>) jsonData.get(
+                "header");
+            if (headersList != null) {
+                for (Map<String, String> headerMap : headersList) {
+                    String field = headerMap.get("field");
+                    String name = headerMap.get("name");
+                    headers.add(TableRes.Column.of(field, name));
+                }
+            }
+
+            // detail 파싱 (JSON의 "detail" 키 사용)
+            List<TableRes.Row> rows = new ArrayList<>();
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> detailList = (List<Map<String, Object>>) jsonData.get(
+                "detail");
+            if (detailList != null) {
+                for (Map<String, Object> detailMap : detailList) {
+                    @SuppressWarnings("unchecked")
+                    List<String> cells = (List<String>) detailMap.get("cells");
+                    if (cells != null) {
+                        rows.add(TableRes.Row.of(cells));
+                    }
+                }
+            }
+
+            return TableRes.of("mock1", headers, rows);
+
+        } catch (JsonProcessingException e) {
+            log.error("JSON 문자열을 TableRes로 변환하는 중 오류 발생", e);
+            // 오류 시 빈 테이블 반환
+            return TableRes.of(Collections.emptyList(), Collections.emptyList());
+        }
+    }
+
+    private NewsletterDetailRes.ChartData convertTwoChartsToChartData(
+        List<NewsletterChart> flowCharts1,
+        List<NewsletterChart> flowCharts2,
+        String series1Name,
+        String series2Name) {
+
+        List<String> timestamps = new ArrayList<>();
+        List<BigDecimal> closeValues1 = new ArrayList<>();
+        List<BigDecimal> closeValues2 = new ArrayList<>();
+
+        try {
+            // flowCharts1에서 timestamp와 close 값 추출
+            for (NewsletterChart chart : flowCharts1) {
+                Long timestamp = chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
+                BigDecimal close = chart.getTradePrice1();    // 종가
+
+                if (timestamp != null && close != null) {
+                    timestamps.add(timestamp.toString());
+                    closeValues1.add(close);
+                }
+            }
+
+            // flowCharts2에서 close 값만 추출 (timestamp는 같다고 가정)
+            for (NewsletterChart chart : flowCharts2) {
+                BigDecimal close = chart.getTradePrice1();    // 종가
+                if (close != null) {
+                    closeValues2.add(close);
+                }
+            }
+
+            // 두 리스트의 크기가 다르면 작은 쪽에 맞춤
+            int minSize = Math.min(closeValues1.size(), closeValues2.size());
+            if (timestamps.size() > minSize) {
+                timestamps = timestamps.subList(0, minSize);
+                closeValues1 = closeValues1.subList(0, minSize);
+                closeValues2 = closeValues2.subList(0, minSize);
+            }
+
+        } catch (Exception e) {
+            log.error("두 NewsletterChart 데이터 변환 중 오류 발생", e);
+            return new NewsletterDetailRes.ChartData(
+                Collections.emptyList(),
+                Collections.emptyList()
+            );
+        }
+
+        // Series 2개만 생성
+        List<Series> seriesList = Arrays.asList(
+            Series.of("close1", series1Name, RenderAs.CLOSE, closeValues1, true),
+            Series.of("close2", series2Name, RenderAs.CLOSE, closeValues2, true)
+        );
+
+        return new NewsletterDetailRes.ChartData(timestamps, seriesList);
+    }
+
+    private Reference createTableReference(Map<String, String> referenceMap,
+        NewsletterPublishHistory nph) {
+        String title = referenceMap.get("RERNC_TABLE_NM");
+        String dataCode = referenceMap.get("RERNC_TABLE_CD");
+
+        try {
+            Optional<PreferenceTable> preferenceTableOpt =
+                preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(nph,
+                    dataCode);
+
+            if (preferenceTableOpt.isPresent()) {
+                TableRes tableData = readTableDataFromJsonString(
+                    preferenceTableOpt.get().getJsonValue());
+                return Reference.ofTable(title, "", tableData);
+            } else {
+                log.warn("PreferenceTable not found for code: {}", dataCode);
+                return Reference.ofTable(title, "데이터를 찾을 수 없습니다", null);
+            }
+        } catch (Exception e) {
+            log.error("PreferenceTable 조회 중 오류 발생 - code: {}", dataCode, e);
+            return Reference.ofTable(title, "데이터 조회 중 오류 발생", null);
+        }
+    }
+
+    private Reference createDediChartReference(Map<String, String> referenceMap,
+        NewsletterPublishHistory nph) {
+        String title = referenceMap.get("DEDI_CHRT_NM");
+        String description = referenceMap.get("DEDI_CHRT_DECR");
+        String dataCode = referenceMap.get("DEDI_CHRT_CD");
+
+        try {
+            NewsletterDetailRes.ChartData chartData = getDediChartData(nph, dataCode);
+            return Reference.ofChart(title, description, chartData);
+        } catch (Exception e) {
+            log.error("DEDI 차트 데이터 조회 중 오류 발생 - code: {}", dataCode, e);
+            return Reference.ofChart(title, description, null);
+        }
+    }
+
+    private Reference createCltnChartReference(Map<String, String> referenceMap,
+        NewsletterPublishHistory nph) {
+        String title = referenceMap.get("CLTN_CHRT_NM");
+        String description = referenceMap.get("CLTN_CHRT_DECR");
+        String dataCode = referenceMap.get("CLTN_CHRT_CD");
+
+        try {
+            // 기존 로직을 그대로 사용하거나 dataCode에 따라 다르게 처리
+            if ("CLc1".equals(dataCode)) {
+                List<NewsletterChart> c1 = newsletterChartRepository
+                    .findByNewsletterPublishHistoryAndCode(nph, "CLc1");
+                List<NewsletterChart> c2 = newsletterChartRepository
+                    .findByNewsletterPublishHistoryAndCode(nph, ".DXY");
+
+                NewsletterDetailRes.ChartData chartData = convertTwoChartsToChartData(c1, c2, "WTI",
+                    "DI");
+                return Reference.ofChart(title, description, chartData);
+            } else {
+                // 다른 CLTN 차트 코드에 대한 처리
+                NewsletterDetailRes.ChartData chartData = getCltnChartData(nph, dataCode);
+                return Reference.ofChart(title, description, chartData);
+            }
+        } catch (Exception e) {
+            log.error("CLTN 차트 데이터 조회 중 오류 발생 - code: {}", dataCode, e);
+            return Reference.ofChart(title, description, null);
+        }
+    }
+
+    // DEDI 차트 데이터 조회 메서드 (추후 구현)
+    private NewsletterDetailRes.ChartData getDediChartData(NewsletterPublishHistory nph,
+        String dataCode) {
+        // TODO: DEDI 차트 데이터 조회 로직 구현
+        return null;
+    }
+
+    // CLTN 차트 데이터 조회 메서드 (추후 구현)
+    private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
+        String dataCode) {
+        // TODO: CLTN 차트 데이터 조회 로직 구현
+        return null;
+    }
 }
