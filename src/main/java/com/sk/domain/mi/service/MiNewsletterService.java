@@ -375,7 +375,7 @@ public class MiNewsletterService {
                     event.getNewsletterEventId().toString(),  // newsId
                     event.getEventTitle(),                     // title
                     Arrays.asList(event.getEventContent().split("\n")),
-                    Timestamp.valueOf(event.getEventCreateTime()).getTime(),
+                    event.getEventCreateTime().toInstant(ZoneOffset.UTC).toEpochMilli(),
                     event.getEventCreateTime().format(f2), // createdDate
                     event.getEventMarkTime(),                 // createTime
                     event.getEventProvider(),                 // source
