@@ -1,19 +1,20 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
 /**
@@ -52,9 +53,11 @@ public class NewsletterTemplateDedicatedChart {
     @Comment("수정일시")
     private LocalDateTime modifyDateTime;
 
-    @Column(name = "del_yn", nullable = false, columnDefinition = "char(1)")
+    @Column(name = "del_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("삭제여부")
-    private String deleteYn = "N";
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private boolean isDeleted = false;
 
     @Column(name = "dedi_chrt_type", nullable = false, length = 50)
     @Comment("전용차트 유형")
@@ -84,39 +87,4 @@ public class NewsletterTemplateDedicatedChart {
         return new NewsletterTemplateDedicatedChart(dedicatedChartType, code, color);
     }
 
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createDateTime = now;
-        this.modifyDateTime = now;
-        if (this.deleteYn == null) {
-            this.deleteYn = "N";
-        }
-        if (this.createUserLoginId == null) {
-            this.createUserLoginId = "SYSTEM";
-        }
-        if (this.modifyUserLoginId == null) {
-            this.modifyUserLoginId = "SYSTEM";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.modifyDateTime = LocalDateTime.now();
-    }
-
-    /**
-     * 삭제 여부 확인
-     */
-    public boolean isDeleted() {
-        return "Y".equals(this.deleteYn);
-    }
-
-    /**
-     * 논리적 삭제 처리
-     */
-    public void delete() {
-        this.deleteYn = "Y";
-        this.modifyDateTime = LocalDateTime.now();
-    }
 }

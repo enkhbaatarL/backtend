@@ -5,6 +5,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.model.TableRes;
+import com.sk.common.utils.CombineUtil;
+import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
+import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.IssueDetail;
@@ -16,18 +19,22 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
 import com.sk.domain.shared.entity.master.tif.NewsletterChart;
+import com.sk.domain.shared.entity.master.tmd.NewsletterCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
+import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
 import com.sk.domain.shared.entity.master.tmd.PreferenceTable;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tif.NewsletterChartRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterCollectionChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateCollectionChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateRepository;
 import com.sk.domain.shared.repository.master.tmd.PreferenceTableRepository;
@@ -36,6 +43,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -48,8 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +83,9 @@ public class MiNewsletterService {
     private final NewsletterChartRepository newsletterChartRepository;
     private final PreferenceTableRepository preferenceTableRepository;
     private final NewsletterTemplateDedicatedChartRepository newsletterTemplateDedicatedChartRepository;
+    private final NewsletterTemplateCollectionChartRepository newsletterTemplateCollectionChartRepository;
+    private final MybatisDynamicQueryService mybatisDynamicQueryService;
+    private final NewsletterCollectionChartRepository newsletterCollectionChartRepository;
 
     public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -357,15 +367,11 @@ public class MiNewsletterService {
 
             List<Reference> references = referenceList.stream()
                 .map(referenceMap -> {
-                    // 어떤 타입의 reference인지 먼저 판별
                     if (referenceMap.containsKey("RERNC_TABLE_NM")) {
-                        // TABLE 타입 처리
                         return createTableReference(referenceMap, nph);
                     } else if (referenceMap.containsKey("DEDI_CHRT_NM")) {
-                        // DEDI 차트 타입 처리
                         return createDediChartReference(referenceMap, nph);
                     } else if (referenceMap.containsKey("CLTN_CHRT_NM")) {
-                        // CLTN 차트 타입 처리
                         return createCltnChartReference(referenceMap, nph);
                     } else {
                         log.warn("Unknown reference type: {}", referenceMap.keySet());
@@ -536,18 +542,17 @@ public class MiNewsletterService {
 
         } catch (Exception e) {
             log.error("타임스탬프 변환 중 오류 발생", e);
-            return "뉴욕시간 전일 20:00부터 당일 17:00까지"; // 오류 시 기본값
+            return "뉴욕시간 전일 20:00부터 당일 17:00까지";
         }
     }
 
     private TableRes readTableDataFromJsonString(String jsonString) {
         try {
-            // JSON 문자열을 Map으로 파싱
+
             TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
             };
             Map<String, Object> jsonData = objectMapper.readValue(jsonString, typeRef);
 
-            // header 파싱 (JSON의 "header" 키 사용)
             List<TableRes.Column> headers = new ArrayList<>();
             @SuppressWarnings("unchecked")
             List<Map<String, String>> headersList = (List<Map<String, String>>) jsonData.get(
@@ -560,7 +565,6 @@ public class MiNewsletterService {
                 }
             }
 
-            // detail 파싱 (JSON의 "detail" 키 사용)
             List<TableRes.Row> rows = new ArrayList<>();
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> detailList = (List<Map<String, Object>>) jsonData.get(
@@ -575,68 +579,12 @@ public class MiNewsletterService {
                 }
             }
 
-            return TableRes.of("mock1", headers, rows);
+            return TableRes.of("", headers, rows);
 
         } catch (JsonProcessingException e) {
             log.error("JSON 문자열을 TableRes로 변환하는 중 오류 발생", e);
-            // 오류 시 빈 테이블 반환
             return TableRes.of(Collections.emptyList(), Collections.emptyList());
         }
-    }
-
-    private NewsletterDetailRes.ChartData convertTwoChartsToChartData(
-        List<NewsletterChart> flowCharts1,
-        List<NewsletterChart> flowCharts2,
-        String series1Name,
-        String series2Name) {
-
-        List<String> timestamps = new ArrayList<>();
-        List<BigDecimal> closeValues1 = new ArrayList<>();
-        List<BigDecimal> closeValues2 = new ArrayList<>();
-
-        try {
-            // flowCharts1에서 timestamp와 close 값 추출
-            for (NewsletterChart chart : flowCharts1) {
-                Long timestamp = chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
-                BigDecimal close = chart.getTradePrice1();    // 종가
-
-                if (timestamp != null && close != null) {
-                    timestamps.add(timestamp.toString());
-                    closeValues1.add(close);
-                }
-            }
-
-            // flowCharts2에서 close 값만 추출 (timestamp는 같다고 가정)
-            for (NewsletterChart chart : flowCharts2) {
-                BigDecimal close = chart.getTradePrice1();    // 종가
-                if (close != null) {
-                    closeValues2.add(close);
-                }
-            }
-
-            // 두 리스트의 크기가 다르면 작은 쪽에 맞춤
-            int minSize = Math.min(closeValues1.size(), closeValues2.size());
-            if (timestamps.size() > minSize) {
-                timestamps = timestamps.subList(0, minSize);
-                closeValues1 = closeValues1.subList(0, minSize);
-                closeValues2 = closeValues2.subList(0, minSize);
-            }
-
-        } catch (Exception e) {
-            log.error("두 NewsletterChart 데이터 변환 중 오류 발생", e);
-            return new NewsletterDetailRes.ChartData(
-                Collections.emptyList(),
-                Collections.emptyList()
-            );
-        }
-
-        // Series 2개만 생성
-        List<Series> seriesList = Arrays.asList(
-            Series.of("close1", series1Name, RenderAs.CLOSE, closeValues1, true),
-            Series.of("close2", series2Name, RenderAs.CLOSE, closeValues2, true)
-        );
-
-        return new NewsletterDetailRes.ChartData(timestamps, seriesList);
     }
 
     private Reference createTableReference(Map<String, String> referenceMap,
@@ -685,21 +633,14 @@ public class MiNewsletterService {
         String dataCode = referenceMap.get("CLTN_CHRT_CD");
 
         try {
-            // 기존 로직을 그대로 사용하거나 dataCode에 따라 다르게 처리
-            if ("CLc1".equals(dataCode)) {
-                List<NewsletterChart> c1 = newsletterChartRepository
-                    .findByNewsletterPublishHistoryAndCode(nph, "CLc1");
-                List<NewsletterChart> c2 = newsletterChartRepository
-                    .findByNewsletterPublishHistoryAndCode(nph, ".DXY");
+            NewsletterCollectionChart newsletterCollectionChart = newsletterCollectionChartRepository.findByNewsletterPublishHistoryAndCollectionChartTypeAndIsDeletedFalse(
+                    nph, dataCode)
+                .orElseThrow(
+                    () -> new IllegalArgumentException("NewsletterCollectionChart not found"));
 
-                NewsletterDetailRes.ChartData chartData = convertTwoChartsToChartData(c1, c2, "WTI",
-                    "DI");
-                return Reference.ofChart(title, description, chartData);
-            } else {
-                // 다른 CLTN 차트 코드에 대한 처리
-                NewsletterDetailRes.ChartData chartData = getCltnChartData(nph, dataCode);
-                return Reference.ofChart(title, description, chartData);
-            }
+            NewsletterDetailRes.ChartData chartData = getCltnChartData(nph, dataCode,
+                newsletterCollectionChart);
+            return Reference.ofChart(title, description, chartData);
         } catch (Exception e) {
             log.error("CLTN 차트 데이터 조회 중 오류 발생 - code: {}", dataCode, e);
             return Reference.ofChart(title, description, null);
@@ -709,102 +650,142 @@ public class MiNewsletterService {
     private NewsletterDetailRes.ChartData getDediChartData(NewsletterPublishHistory nph,
         String dataCode) {
         List<NewsletterTemplateDedicatedChart> dedicatedChartsConfig =
-            newsletterTemplateDedicatedChartRepository.findByDedicatedChartTypeAndDeleteYn(dataCode,
-                "N");
+        newsletterTemplateDedicatedChartRepository.findByDedicatedChartTypeAndIsDeleted(
+            dataCode,
+            false);
 
-        if (dedicatedChartsConfig.isEmpty()) {
-            log.warn("No dedicated chart config found for dataCode: {}", dataCode);
-            return null;
-        }
-
-        Set<String> timestampSet = new TreeSet<>();
+        // 1. 모든 데이터를 timestamp 기준으로 수집
+        Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
         List<Series> allSeries = new ArrayList<>();
 
-                for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
-            try {
-                List<NewsletterChart> chartData = newsletterChartRepository
-                    .findByNewsletterPublishHistoryAndCode(nph, config.getCode());
+        for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
+            List<NewsletterChart> chartData = newsletterChartRepository
+                .findByNewsletterPublishHistoryAndCode(nph, config.getCode());
 
-                if (chartData.isEmpty()) {
-                    log.warn("No chart data found for code: {}", config.getCode());
-                    continue;
-                }
+            // timestamp별로 데이터 정리
+            for (NewsletterChart chart : chartData) {
+                String timestamp = extractTimestampFromChart(chart);
+                BigDecimal value = extractValueFromChart(chart);
 
-
-                Series series = convertNewsletterChartToSeries(
-                    chartData,
-                    config.getCode(),
-                    config.getColor()
-                );
-
-                if (series != null) {
-                    allSeries.add(series);
-
-
-                    chartData.forEach(chart -> {
-                        String timestamp = extractTimestampFromChart(chart);
-                        if (timestamp != null) {
-                            timestampSet.add(timestamp);
-                        }
-                    });
-                }
-
-            } catch (Exception e) {
-                log.error("Error processing chart config - code: {}", config.getCode(), e);
+                timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
+                    .put(config.getCode(), value);
             }
         }
 
-        if (allSeries.isEmpty()) {
-            log.warn("No valid series data found for dataCode: {}", dataCode);
-            return null;
-        }
+        // 2. 정렬된 timestamp로 Series 생성
+        List<String> timestamps = new ArrayList<>(timeSeriesData.keySet());
 
-        List<String> timestamps = new ArrayList<>(timestampSet);
+        for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
+            List<BigDecimal> values = timestamps.stream()
+                .map(ts -> timeSeriesData.get(ts).get(config.getCode()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+            if (!values.isEmpty()) {
+                Series series = Series.of(config.getCode(), config.getCode(), RenderAs.CLOSE,
+                    values, true);
+                allSeries.add(series);
+            }
+        }
 
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
-    }
-
-
-    private Series convertNewsletterChartToSeries(
-        List<NewsletterChart> chartData,
-        String label,
-        String color) {
-
-        if (chartData == null || chartData.isEmpty()) {
-            return null;
-        }
-
-        List<BigDecimal> values = chartData.stream()
-            .map(this::extractValueFromChart)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-
-        if (values.isEmpty()) {
-            return null;
-        }
-
-        return Series.of(
-            color,             // seriesId
-            label,             // label
-            RenderAs.CLOSE,     //
-            values,            // values
-            true               // isVisible
-        );
     }
 
     private String extractTimestampFromChart(NewsletterChart chart) {
         return String.valueOf(chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli());
     }
 
-    // NewsletterChart에서 value 추출 (실제 구조에 맞게 구현 필요)
     private BigDecimal extractValueFromChart(NewsletterChart chart) {
         return chart.getTradePrice1();
     }
 
 
     private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
-        String dataCode) {
-        // TODO: CLTN 차트 데이터 조회 로직 구현
+    String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
+
+    List<NewsletterTemplateCollectionChart> cltnChartConfigs =
+        newsletterTemplateCollectionChartRepository.findByCollectionChartTypeAndIsDeleted(
+            dataCode, false);
+
+    if (cltnChartConfigs.isEmpty()) {
+        log.warn("No collection chart config found for dataCode: {}", dataCode);
         return null;
     }
+
+    // 1. 모든 데이터를 timestamp 기준으로 수집
+    Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
+    List<Series> allSeries = new ArrayList<>();
+    DateTimeFormatter F_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
+        try {
+            String additionalWhereClause = CombineUtil.createBetweenClause("date",
+                newsletterCollectionChart.getStartDate().format(F_TS),
+                newsletterCollectionChart.getEndDate().format(F_TS));
+
+            DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
+                .targetDataSource(config.getTargetDatabaseName())     // tgt_db_nm
+                .tableName(config.getTargetTableName())               // tgt_tbl_nm
+                .columns(config.getTableColumnName())                 // tbl_colm_nm
+                .whereClause(config.getQueryConditionContent())       // qry_cdtn_cntt
+                .additionalWhereClause(additionalWhereClause)
+                .build();
+
+            // 동적 쿼리 실행
+            List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(
+                dynamicDataReq);
+
+            if (dataQuery.isEmpty()) {
+                log.warn("No chart data found for collection chart type: {}",
+                    config.getCollectionChartType());
+                continue;
+            }
+
+            // timestamp별로 데이터 정리
+            for (Map<String, Object> data : dataQuery) {
+                LocalDateTime dateTime = (LocalDateTime) data.get("date");
+                BigDecimal value = (BigDecimal) data.get("ry");
+
+                if (dateTime != null && value != null) {
+                    String timestamp = String.valueOf(
+                        Timestamp.valueOf(dateTime).getTime());
+
+                    timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
+                        .put(config.getColor(), value);
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Error processing chart config - color: {}", config.getColor(), e);
+        }
+    }
+
+    if (timeSeriesData.isEmpty()) {
+        log.warn("No valid time series data found for dataCode: {}", dataCode);
+        return null;
+    }
+
+    // 2. 정렬된 timestamp로 Series 생성
+    List<String> timestamps = new ArrayList<>(timeSeriesData.keySet());
+
+    for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
+        List<BigDecimal> values = timestamps.stream()
+            .map(ts -> timeSeriesData.get(ts).get(config.getColor()))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        if (!values.isEmpty()) {
+            Series series = Series.of(
+                config.getColor(),  // seriesId
+                config.getColor(),  // label
+                RenderAs.CLOSE,
+                values,
+                true
+            );
+            allSeries.add(series);
+        }
+    }
+
+    return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
+}
 }

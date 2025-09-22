@@ -9,5 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface NewsletterTemplateDedicatedChartRepository extends JpaRepository<NewsletterTemplateDedicatedChart, Integer> {
 
-    List<NewsletterTemplateDedicatedChart> findByDedicatedChartTypeAndDeleteYn(String dedicatedChartType, String deleteYn);
+    List<NewsletterTemplateDedicatedChart> findByDedicatedChartTypeAndIsDeleted(String dedicatedChartType, boolean isDeleted);
 }
