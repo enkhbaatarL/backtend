@@ -20,6 +20,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
+import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
 import com.sk.domain.shared.entity.master.tmd.PreferenceTable;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
@@ -27,6 +28,7 @@ import com.sk.domain.shared.repository.master.tif.NewsletterChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateRepository;
 import com.sk.domain.shared.repository.master.tmd.PreferenceTableRepository;
 import java.io.IOException;
@@ -44,7 +46,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +75,7 @@ public class MiNewsletterService {
     private final NewsletterEventRepository newsletterEventRepository;
     private final NewsletterChartRepository newsletterChartRepository;
     private final PreferenceTableRepository preferenceTableRepository;
+    private final NewsletterTemplateDedicatedChartRepository newsletterTemplateDedicatedChartRepository;
 
     public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -376,7 +382,7 @@ public class MiNewsletterService {
                     event.getEventTitle(),                     // title
                     Arrays.asList(event.getEventContent().split("\n")),
                     event.getEventCreateTime().toInstant(ZoneOffset.UTC).toEpochMilli(),
-                    event.getEventCreateTime().format(f2), // createdDate
+                    event.getEventCreateTime().minusHours(4).format(f2), // createdDate
                     event.getEventMarkTime(),                 // createTime
                     event.getEventProvider(),                 // source
                     "Y".equals(event.getTurningPointMarkYn()),
@@ -700,14 +706,102 @@ public class MiNewsletterService {
         }
     }
 
-    // DEDI 차트 데이터 조회 메서드 (추후 구현)
     private NewsletterDetailRes.ChartData getDediChartData(NewsletterPublishHistory nph,
         String dataCode) {
-        // TODO: DEDI 차트 데이터 조회 로직 구현
-        return null;
+        List<NewsletterTemplateDedicatedChart> dedicatedChartsConfig =
+            newsletterTemplateDedicatedChartRepository.findByDedicatedChartTypeAndDeleteYn(dataCode,
+                "N");
+
+        if (dedicatedChartsConfig.isEmpty()) {
+            log.warn("No dedicated chart config found for dataCode: {}", dataCode);
+            return null;
+        }
+
+        Set<String> timestampSet = new TreeSet<>();
+        List<Series> allSeries = new ArrayList<>();
+
+                for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
+            try {
+                List<NewsletterChart> chartData = newsletterChartRepository
+                    .findByNewsletterPublishHistoryAndCode(nph, config.getCode());
+
+                if (chartData.isEmpty()) {
+                    log.warn("No chart data found for code: {}", config.getCode());
+                    continue;
+                }
+
+
+                Series series = convertNewsletterChartToSeries(
+                    chartData,
+                    config.getCode(),
+                    config.getColor()
+                );
+
+                if (series != null) {
+                    allSeries.add(series);
+
+
+                    chartData.forEach(chart -> {
+                        String timestamp = extractTimestampFromChart(chart);
+                        if (timestamp != null) {
+                            timestampSet.add(timestamp);
+                        }
+                    });
+                }
+
+            } catch (Exception e) {
+                log.error("Error processing chart config - code: {}", config.getCode(), e);
+            }
+        }
+
+        if (allSeries.isEmpty()) {
+            log.warn("No valid series data found for dataCode: {}", dataCode);
+            return null;
+        }
+
+        List<String> timestamps = new ArrayList<>(timestampSet);
+
+        return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
     }
 
-    // CLTN 차트 데이터 조회 메서드 (추후 구현)
+
+    private Series convertNewsletterChartToSeries(
+        List<NewsletterChart> chartData,
+        String label,
+        String color) {
+
+        if (chartData == null || chartData.isEmpty()) {
+            return null;
+        }
+
+        List<BigDecimal> values = chartData.stream()
+            .map(this::extractValueFromChart)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        if (values.isEmpty()) {
+            return null;
+        }
+
+        return Series.of(
+            color,             // seriesId
+            label,             // label
+            RenderAs.CLOSE,     //
+            values,            // values
+            true               // isVisible
+        );
+    }
+
+    private String extractTimestampFromChart(NewsletterChart chart) {
+        return String.valueOf(chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli());
+    }
+
+    // NewsletterChart에서 value 추출 (실제 구조에 맞게 구현 필요)
+    private BigDecimal extractValueFromChart(NewsletterChart chart) {
+        return chart.getTradePrice1();
+    }
+
+
     private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
         String dataCode) {
         // TODO: CLTN 차트 데이터 조회 로직 구현

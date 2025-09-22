@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmd;
 
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -8,5 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface NewsletterTemplateDedicatedChartRepository extends JpaRepository<NewsletterTemplateDedicatedChart, Integer> {
 
-
+    List<NewsletterTemplateDedicatedChart> findByDedicatedChartTypeAndDeleteYn(String dedicatedChartType, String deleteYn);
 }
