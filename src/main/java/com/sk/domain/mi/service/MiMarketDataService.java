@@ -317,7 +317,7 @@ public class MiMarketDataService {
               List<MarketDataChart> compareCharts = new ArrayList<>();
 
               // 비교군 표시 안함
-              if (false) {
+              if (true) {
                 // if (dataSourceGroupMappings != null && !dataSourceGroupMappings.isEmpty()) {
                 for (DataSourceGroupMapping dataSourceGroupMapping : dataSourceGroupMappings) {
                   GoodsDataSourceDetail compareGoodsDataSource =
