@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service;
 
 import com.sk.domain.mi.service.custom.CustomRegistry;
+import com.sk.domain.mi.service.custom.chart.CustomChartMaker;
 import com.sk.domain.mi.service.period.PeriodCalculator;
 import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
@@ -114,6 +115,7 @@ public class MiMarketDataService {
      *
      * @return 마켓 데이터 목록
      */
+    @Transactional
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
         LocalDate START_DATE = LocalDate.now().minusMonths(MAIN_MARKET_DATA_START_DATE_MONTH);
         LocalDate END_DATE = LocalDate.now();
@@ -137,6 +139,11 @@ public class MiMarketDataService {
                   marketDataChartSetting.getGoodsDataSourceDetail();
               GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
               Goods mainGoods = mainGoodsData.getGoods();
+
+//              Optional<CustomChartMaker<?>> customChartMaker = customRegistry.getCustomChartMaker(mainGoodsDataSource.getGoodsDataSourceNo());
+//              if(customChartMaker.isPresent()){
+//                  return (MiMarketDataRes)customChartMaker.get().getDashboardChart(companyNo);
+//              }
 
               // 권한 조회
               Boolean isPermitted =
