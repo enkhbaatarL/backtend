@@ -200,7 +200,8 @@ public class MiMarketDataService {
 
               // 원시 데이터 조회
               List<Map<String, Object>> rawData =
-                  miMarketDynamicQueryService.getMarketDataRows(mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+                  miMarketDynamicQueryService.getMarketDataRows(
+                      mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
 
               // Index Start date 데이터 조회
               LocalDate indexStartDate = null;
@@ -244,7 +245,9 @@ public class MiMarketDataService {
                         MARKET_DATA_INTERVAL,
                         indexStartDate,
                         lastUpdateDt);
-                MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
+                MarketDataChart mainChart =
+                    MarketDataChart.of(
+                        Collections.emptyList(), mainGoodsDataSource.getGoodsDataSourceNm());
                 List<MarketDataChart> compareCharts = Collections.emptyList();
 
                 MiMarketDataCache miMarketDataCache =
@@ -298,7 +301,8 @@ public class MiMarketDataService {
                       defaultDataColumnName,
                       LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
-              MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
+              MarketDataChart mainChart =
+                  MarketDataChart.of(mainDashboardData, mainGoodsDataSource.getGoodsDataSourceNm());
 
               Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap =
                   calculatePeriodChange(
@@ -391,12 +395,12 @@ public class MiMarketDataService {
                                                 * (mainMax - mainMin)
                                                 / (currentMax - currentMin)
                                             + mainMin,
-                                        r.real());
+                                        r.value());
                                   })
                               .toList();
                     }
                   }
-                  compareCharts.add(MarketDataChart.of(compareChart));
+                  compareCharts.add(MarketDataChart.of(compareChart, compareGoodsDataSource.getGoodsDataSourceNm()));
                 }
               }
 
