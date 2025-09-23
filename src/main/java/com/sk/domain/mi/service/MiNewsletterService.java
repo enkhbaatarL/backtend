@@ -43,9 +43,11 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -401,10 +403,14 @@ public class MiNewsletterService {
                 newsEventItems
             );
 
+            String[] marketTimes = calculateMarketTimes(nph.getPublishDateTime());
+
             IssueDetail issueDetail = new IssueDetail(
                 nph.getNewsletterTitle(),
                 nph.getPublishDateTime().format(formatter),
                 nph.getAiSummary(),
+                marketTimes[0], // marketOpenTime
+                marketTimes[1], // marketCloseTime
                 newsFlowChart,
                 relatedNews,
                 references
@@ -650,9 +656,9 @@ public class MiNewsletterService {
     private NewsletterDetailRes.ChartData getDediChartData(NewsletterPublishHistory nph,
         String dataCode) {
         List<NewsletterTemplateDedicatedChart> dedicatedChartsConfig =
-        newsletterTemplateDedicatedChartRepository.findByDedicatedChartTypeAndIsDeleted(
-            dataCode,
-            false);
+            newsletterTemplateDedicatedChartRepository.findByDedicatedChartTypeAndIsDeleted(
+                dataCode,
+                false);
 
         // 1. 모든 데이터를 timestamp 기준으로 수집
         Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
@@ -682,8 +688,8 @@ public class MiNewsletterService {
                 .collect(Collectors.toList());
 
             if (!values.isEmpty()) {
-                Series series = Series.of(config.getCode(), config.getCode(), RenderAs.CLOSE,
-                    values, true);
+                Series series = Series.ofWithColor(config.getColor(), config.getColor(), RenderAs.CLOSE,
+                    values, true, config.getColor());
                 allSeries.add(series);
             }
         }
@@ -701,91 +707,138 @@ public class MiNewsletterService {
 
 
     private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
-    String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
+        String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
 
-    List<NewsletterTemplateCollectionChart> cltnChartConfigs =
-        newsletterTemplateCollectionChartRepository.findByCollectionChartTypeAndIsDeleted(
-            dataCode, false);
+        List<NewsletterTemplateCollectionChart> cltnChartConfigs =
+            newsletterTemplateCollectionChartRepository.findByCollectionChartTypeAndIsDeleted(
+                dataCode, false);
 
-    if (cltnChartConfigs.isEmpty()) {
-        log.warn("No collection chart config found for dataCode: {}", dataCode);
-        return null;
+        if (cltnChartConfigs.isEmpty()) {
+            log.warn("No collection chart config found for dataCode: {}", dataCode);
+            return null;
+        }
+
+        // 1. 모든 데이터를 timestamp 기준으로 수집
+        Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
+        List<Series> allSeries = new ArrayList<>();
+        DateTimeFormatter F_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
+            try {
+                String additionalWhereClause = CombineUtil.createBetweenClause("date",
+                    newsletterCollectionChart.getStartDate().format(F_TS),
+                    newsletterCollectionChart.getEndDate().format(F_TS));
+
+                DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
+                    .targetDataSource(config.getTargetDatabaseName())     // tgt_db_nm
+                    .tableName(config.getTargetTableName())               // tgt_tbl_nm
+                    .columns(config.getTableColumnName())                 // tbl_colm_nm
+                    .whereClause(config.getQueryConditionContent())       // qry_cdtn_cntt
+                    .additionalWhereClause(additionalWhereClause)
+                    .build();
+
+                // 동적 쿼리 실행
+                List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(
+                    dynamicDataReq);
+
+                if (dataQuery.isEmpty()) {
+                    log.warn("No chart data found for collection chart type: {}",
+                        config.getCollectionChartType());
+                    continue;
+                }
+
+                // timestamp별로 데이터 정리
+                for (Map<String, Object> data : dataQuery) {
+                    LocalDateTime dateTime = (LocalDateTime) data.get("date");
+                    BigDecimal value = (BigDecimal) data.get("ry");
+
+                    if (dateTime != null && value != null) {
+                        String timestamp = String.valueOf(
+                            Timestamp.valueOf(dateTime).getTime());
+
+                        timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
+                            .put(config.getColor(), value);
+                    }
+                }
+
+            } catch (Exception e) {
+                log.error("Error processing chart config - color: {}", config.getColor(), e);
+            }
+        }
+
+        if (timeSeriesData.isEmpty()) {
+            log.warn("No valid time series data found for dataCode: {}", dataCode);
+            return null;
+        }
+
+        // 2. 정렬된 timestamp로 Series 생성
+        List<String> timestamps = new ArrayList<>(timeSeriesData.keySet());
+
+        for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
+            List<BigDecimal> values = timestamps.stream()
+                .map(ts -> timeSeriesData.get(ts).get(config.getColor()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+            if (!values.isEmpty()) {
+                Series series = Series.ofWithColor(
+                    config.getColor(),  // seriesId
+                    config.getColor(),  // label
+                    RenderAs.CLOSE,
+                    values,
+                    true,
+                    config.getColor()
+                );
+                allSeries.add(series);
+            }
+        }
+
+        return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
     }
 
-    // 1. 모든 데이터를 timestamp 기준으로 수집
-    Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
-    List<Series> allSeries = new ArrayList<>();
-    DateTimeFormatter F_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
+    private String[] calculateMarketTimes(LocalDateTime publishDateTime) {
         try {
-            String additionalWhereClause = CombineUtil.createBetweenClause("date",
-                newsletterCollectionChart.getStartDate().format(F_TS),
-                newsletterCollectionChart.getEndDate().format(F_TS));
+            ZoneId newYorkZone = ZoneId.of("America/New_York");
 
-            DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
-                .targetDataSource(config.getTargetDatabaseName())     // tgt_db_nm
-                .tableName(config.getTargetTableName())               // tgt_tbl_nm
-                .columns(config.getTableColumnName())                 // tbl_colm_nm
-                .whereClause(config.getQueryConditionContent())       // qry_cdtn_cntt
-                .additionalWhereClause(additionalWhereClause)
-                .build();
+            LocalDate yesterday = publishDateTime.toLocalDate();
+            int dayOfWeek = yesterday.getDayOfWeek().getValue();
 
-            // 동적 쿼리 실행
-            List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(
-                dynamicDataReq);
-
-            if (dataQuery.isEmpty()) {
-                log.warn("No chart data found for collection chart type: {}",
-                    config.getCollectionChartType());
-                continue;
+            if (dayOfWeek == 1) { // 월요일이면 3일 전 (금요일)
+                yesterday = yesterday.minusDays(3);
+            } else if (dayOfWeek == 7) { // 일요일이면 2일 전 (금요일)
+                yesterday = yesterday.minusDays(2);
+            } else {
+                yesterday = yesterday.minusDays(1);
             }
 
-            // timestamp별로 데이터 정리
-            for (Map<String, Object> data : dataQuery) {
-                LocalDateTime dateTime = (LocalDateTime) data.get("date");
-                BigDecimal value = (BigDecimal) data.get("ry");
+            // yesterday를 뉴욕 시간대로 변환하여 DST 확인
+            ZonedDateTime yesterdayInNY = yesterday.atStartOfDay(newYorkZone);
+            boolean isDST = newYorkZone.getRules().isDaylightSavings(yesterdayInNY.toInstant());
 
-                if (dateTime != null && value != null) {
-                    String timestamp = String.valueOf(
-                        Timestamp.valueOf(dateTime).getTime());
+            // 개장 시간: DST이면 9:30, 아니면 10:30
+            ZonedDateTime startTime = yesterdayInNY
+                .withHour(isDST ? 9 : 10)
+                .withMinute(30)
+                .withSecond(0)
+                .withNano(0);
 
-                    timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
-                        .put(config.getColor(), value);
-                }
-            }
+            // 폐장 시간: DST이면 16:00, 아니면 17:00
+            ZonedDateTime endTime = yesterdayInNY
+                .withHour(isDST ? 16 : 17)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+            // Unix timestamp (milliseconds)로 변환
+            return new String[]{
+                String.valueOf(startTime.toInstant().toEpochMilli()),
+                String.valueOf(endTime.toInstant().toEpochMilli())
+            };
 
         } catch (Exception e) {
-            log.error("Error processing chart config - color: {}", config.getColor(), e);
+            log.error("주식 시장 시간 계산 중 오류 발생", e);
+            // 기본값 반환 (EST 기준)
+            return new String[]{"1704110200000", "1704133200000"};
         }
     }
-
-    if (timeSeriesData.isEmpty()) {
-        log.warn("No valid time series data found for dataCode: {}", dataCode);
-        return null;
-    }
-
-    // 2. 정렬된 timestamp로 Series 생성
-    List<String> timestamps = new ArrayList<>(timeSeriesData.keySet());
-
-    for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
-        List<BigDecimal> values = timestamps.stream()
-            .map(ts -> timeSeriesData.get(ts).get(config.getColor()))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-
-        if (!values.isEmpty()) {
-            Series series = Series.of(
-                config.getColor(),  // seriesId
-                config.getColor(),  // label
-                RenderAs.CLOSE,
-                values,
-                true
-            );
-            allSeries.add(series);
-        }
-    }
-
-    return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
-}
 }
