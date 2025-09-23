@@ -390,7 +390,8 @@ public class MiMarketDataService {
                                         (r.value() - currentMin)
                                                 * (mainMax - mainMin)
                                                 / (currentMax - currentMin)
-                                            + mainMin);
+                                            + mainMin,
+                                        r.real());
                                   })
                               .toList();
                     }
