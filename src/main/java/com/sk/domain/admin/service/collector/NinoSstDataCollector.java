@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -14,16 +15,23 @@ import org.apache.poi.ss.usermodel.Sheet;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class NinoSstDataCollector implements DataCollectorStrategy {
     private static final List<String> NINO_REGIONS = Arrays.asList("NINO1+2", "NINO3", "NINO4", "NINO3.4"); // NINO 지역 목록
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
 
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.CPC_NINO_SST;
+    }
+
     /**
      * 엑셀 파일 파싱
      * NINO SST 데이터를 수집
-     * 
+     *
      * @param data 엑셀 파일 데이터
      * @param actualColumns 실제 컬럼 목록
      * @param criteriaDt 조건 일자
@@ -49,12 +57,12 @@ public class NinoSstDataCollector implements DataCollectorStrategy {
                 String yr = String.valueOf((int) yrCell.getNumericCellValue());
                 String mon = String.valueOf((int) monCell.getNumericCellValue());
                 for (int i = 0; i < NINO_REGIONS.size(); i++) {
-                    
+
                     Cell sstCell = row.getCell(2 + i * 2);
                     Cell anomCell = row.getCell(3 + i * 2);
                     if (sstCell == null || anomCell == null)
                         continue;
-                    
+
                     double sstValue = sstCell.getNumericCellValue();
                     String anomValue = String.valueOf(anomCell.getNumericCellValue());
                     String sstIdx = String.valueOf((int) (sstValue * 100));

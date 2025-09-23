@@ -131,4 +131,25 @@ public class AdminProviderDedicatedController {
 
         return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, false, fileHash));
     }
+
+    @ApiOrder(93)
+    @Operation(summary = "정형 데이타 Json 업로드", description = "정형 Json 데이터를 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/goods-datas/upload-json/structured-data", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<GoodsDataJsonUploadRes> uploadStructuredDataFile(
+        @RequestBody StructuredDataJsonReq structuredDataJsonReq){
+
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(
+                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+        String companyCd = customerCompany.getCustomerCompanyCd();
+
+        if (structuredDataJsonReq == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
+        return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
+    }
 }

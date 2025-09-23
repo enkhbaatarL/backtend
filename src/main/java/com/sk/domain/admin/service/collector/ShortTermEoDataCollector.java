@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -18,7 +19,9 @@ import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class ShortTermEoDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더행 인덱스 (0-based index)
@@ -28,6 +31,11 @@ public class ShortTermEoDataCollector implements DataCollectorStrategy {
     private static final int YEAR_COLUMN_INDEX = 0; // A열 (0-based index)
     private static final int MONTH_COLUMN_INDEX = 1; // B열 (0-based index)
 
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.SHORT_TERM_EO;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
@@ -59,7 +67,7 @@ public class ShortTermEoDataCollector implements DataCollectorStrategy {
                 // 날짜 타입 변환
                 String yearStr = yearCell.getStringCellValue().trim();
                 String monthStr = monthCell.getStringCellValue().trim();
-                
+
                 // 데이터 파싱
                 for (int i = VALUE_COLUMN_INDEX; i < row.getLastCellNum() && i < periodCodes.size() + VALUE_COLUMN_INDEX; i++) {
                     Cell valueCell = row.getCell(i);

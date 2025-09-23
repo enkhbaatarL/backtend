@@ -1,10 +1,11 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
 import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
+import com.sk.domain.shared.enums.ComponentType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -22,9 +23,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.springframework.stereotype.Service;
 
 import static com.sk.common.enums.ResultCode.Error.REQ_INVALID_FORMAT;
-
+@Service
 @Slf4j
 public class GlobalCrudeOilDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 6; // 헤더 행 인덱스
@@ -32,6 +34,10 @@ public class GlobalCrudeOilDataCollector implements DataCollectorStrategy {
     private static final int DEFAULT_DATA_START_ROW_INDEX = 7; // 데이터 시작 행 인덱스
     private static final DateTimeFormatter KOREAN_FORMATTER = DateTimeFormatter.ofPattern("yy년MM월dd일");
 
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.GLOBAL_OIL;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
