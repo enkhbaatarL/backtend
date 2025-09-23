@@ -574,83 +574,78 @@ public class SchedulerService {
         Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(Arrays.asList(
             GieEu.GIE_EU_CODE_1Y_AGO, GieEu.GIE_EU_CODE_2Y_AGO, GieEu.GIE_EU_CODE_3Y_AGO, GieEu.GIE_EU_CODE_PAST_5Y_AVG, GieEu.GIE_EU_CODE_PAST_5Y_MIN, GieEu.GIE_EU_CODE_PAST_5Y_MAX
         ));
-
+        int count = 1;
         LocalDateTime firstDate = lastGieEuOptional.map(gieEu -> gieEu.getDate().plusDays(1)).orElse(DB_FIRST_DATE);
+        LocalDateTime opTime = LocalDateTime.of(LocalDate.now().getYear(), 12, 31, 0, 0, 0);
+        while( !opTime.isBefore(firstDate)){
+            final LocalDateTime current = opTime;
+            Optional<GieEu> gieEu1yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, current.minusYears(1));
+            gieEu1yAgo.ifPresent(eu -> updateGieEu(
+                GieEu.of(
+                    GieEu.GIE_EU_CODE_1Y_AGO,
+                    current,
+                    eu.getGasInStorage(),
+                    eu.getGasInStorageMt(),
+                    eu.getFull())));
 
-        Page<GieEu> gieEuPage;
-        int pageNumber = 0;
-        final int PAGE_SIZE = 1000;
-        boolean isFirst = true;
-        do{
-            gieEuPage = gieEuRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, GieEu.GIE_EU_CODE_CURRENT,
-                PageRequest.of(pageNumber, PAGE_SIZE));
-            pageNumber++;
-            for(GieEu gieEu : gieEuPage.getContent()){
-                /// 1Y AGO
-                Optional<GieEu> gieEu1yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(1));
-                  gieEu1yAgo.ifPresent(eu -> updateGieEu(
-                      GieEu.of(
-                          GieEu.GIE_EU_CODE_1Y_AGO,
-                          gieEu.getDate(),
-                          eu.getGasInStorage(),
-                          eu.getGasInStorageMt(),
-                          eu.getFull())));
+            Optional<GieEu> gieEu2yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, current.minusYears(2));
+            gieEu2yAgo.ifPresent(eu -> updateGieEu(
+                GieEu.of(
+                    GieEu.GIE_EU_CODE_2Y_AGO,
+                    current,
+                    eu.getGasInStorage(),
+                    eu.getGasInStorageMt(),
+                    eu.getFull())));
 
-                Optional<GieEu> gieEu2yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(2));
-                gieEu2yAgo.ifPresent(eu -> updateGieEu(
+            Optional<GieEu> gieEu3yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, current.minusYears(3));
+            gieEu3yAgo.ifPresent(eu -> updateGieEu(
+                GieEu.of(
+                    GieEu.GIE_EU_CODE_3Y_AGO,
+                    current,
+                    eu.getGasInStorage(),
+                    eu.getGasInStorageMt(),
+                    eu.getFull())));
+
+            Object[] values = getGieEuMaxMinAvg(DB_FIRST_DATE.getYear(), current);
+            BigDecimal valueMax = getBigDecimal(values[0]);
+            BigDecimal fullMax = getBigDecimal(values[3]);
+            if(valueMax != null){
+                updateGieEu(
                     GieEu.of(
-                        GieEu.GIE_EU_CODE_2Y_AGO,
-                        gieEu.getDate(),
-                        eu.getGasInStorage(),
-                        eu.getGasInStorageMt(),
-                        eu.getFull())));
-
-                Optional<GieEu> gieEu3yAgo = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_CURRENT, gieEu.getDate().minusYears(3));
-                gieEu3yAgo.ifPresent(eu -> updateGieEu(
-                    GieEu.of(
-                        GieEu.GIE_EU_CODE_3Y_AGO,
-                        gieEu.getDate(),
-                        eu.getGasInStorage(),
-                        eu.getGasInStorageMt(),
-                        eu.getFull())));
-
-                Object[] values = getGieEuMaxMinAvg(DB_FIRST_DATE.getYear(), gieEu);
-                BigDecimal valueMax = getBigDecimal(values[0]);
-                BigDecimal fullMax = getBigDecimal(values[3]);
-                if(valueMax != null){
-                    updateGieEu(
-                        GieEu.of(
-                            GieEu.GIE_EU_CODE_PAST_5Y_MAX,
-                            gieEu.getDate(),
-                            valueMax,
-                            valueMax.multiply(GieEuDataCollector.MT_SCALE_RATIO),
-                            fullMax));
-                }
-                BigDecimal valueMin = getBigDecimal(values[1]);
-                BigDecimal fullMin = getBigDecimal(values[4]);
-                if(valueMin != null){
-                    updateGieEu(
-                        GieEu.of(
-                            GieEu.GIE_EU_CODE_PAST_5Y_MIN,
-                            gieEu.getDate(),
-                            valueMin,
-                            valueMin.multiply(GieEuDataCollector.MT_SCALE_RATIO),
-                            fullMin));
-                }
-                BigDecimal valueAvg = getBigDecimal(values[2]);
-                BigDecimal fullAvg = getBigDecimal(values[5]);
-                if(valueAvg != null){
-                    updateGieEu(
-                        GieEu.of(
-                            GieEu.GIE_EU_CODE_PAST_5Y_AVG,
-                            gieEu.getDate(),
-                            valueAvg,
-                            valueAvg.multiply(GieEuDataCollector.MT_SCALE_RATIO),
-                            fullAvg));
-                }
+                        GieEu.GIE_EU_CODE_PAST_5Y_MAX,
+                        current,
+                        valueMax,
+                        valueMax.multiply(GieEuDataCollector.MT_SCALE_RATIO),
+                        fullMax));
             }
-            log.info("[GIE EU] check and update. Number={}, Total={}", gieEuPage.getNumber(), gieEuPage.getTotalElements());
-        }while (!gieEuPage.isLast());
+            BigDecimal valueMin = getBigDecimal(values[1]);
+            BigDecimal fullMin = getBigDecimal(values[4]);
+            if(valueMin != null){
+                updateGieEu(
+                    GieEu.of(
+                        GieEu.GIE_EU_CODE_PAST_5Y_MIN,
+                        current,
+                        valueMin,
+                        valueMin.multiply(GieEuDataCollector.MT_SCALE_RATIO),
+                        fullMin));
+            }
+            BigDecimal valueAvg = getBigDecimal(values[2]);
+            BigDecimal fullAvg = getBigDecimal(values[5]);
+            if(valueAvg != null){
+                updateGieEu(
+                    GieEu.of(
+                        GieEu.GIE_EU_CODE_PAST_5Y_AVG,
+                        current,
+                        valueAvg,
+                        valueAvg.multiply(GieEuDataCollector.MT_SCALE_RATIO),
+                        fullAvg));
+            }
+            count++;
+            opTime =  opTime.minusDays(1);
+            if(count % 1000 == 0){
+                log.info("[GIE EU] check and update. Number={}", count);
+            }
+        }
 
         return Boolean.TRUE;
     }
@@ -679,17 +674,14 @@ public class SchedulerService {
         }
     }
 
-    private Object[] getGieEuMaxMinAvg(int beginYear, GieEu gieEu){
-        if(gieEu == null || gieEu.getDate() == null){
-            return new Object[]{null, null, null, null, null, null};
-        }
-        if(beginYear > gieEu.getDate().getYear() - 5){
+    private Object[] getGieEuMaxMinAvg(int beginYear, LocalDateTime current){
+        if(beginYear > current.getYear() - 5){
             return new Object[]{null, null, null, null, null, null};
         }
 
         List<LocalDateTime> past5yDateList = new ArrayList<>(5);
         for(int year = 1 ; year <= 5 ; year++){
-            past5yDateList.add(gieEu.getDate().minusYears(year));
+            past5yDateList.add(current.minusYears(year));
         }
         return (Object[])gieEuRepository.findYearlyStats(GieEu.GIE_EU_CODE_CURRENT, past5yDateList);
     }
