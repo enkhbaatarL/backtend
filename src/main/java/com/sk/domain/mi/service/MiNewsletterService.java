@@ -306,7 +306,7 @@ public class MiNewsletterService {
     public NewsletterDetailRes getNewsletterDetail(String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
+        DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
         DateTimeFormatter f2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         try {
@@ -407,13 +407,14 @@ public class MiNewsletterService {
 
             IssueDetail issueDetail = new IssueDetail(
                 nph.getNewsletterTitle(),
-                nph.getPublishDateTime().format(formatter),
+                nph.getPublishDateTime().format(f1),
                 nph.getAiSummary(),
                 marketTimes[0], // marketOpenTime
                 marketTimes[1], // marketCloseTime
                 newsFlowChart,
                 relatedNews,
-                references
+                references,
+                nph.getEmailSubject()
             );
 
             return new NewsletterDetailRes(

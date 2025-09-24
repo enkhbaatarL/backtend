@@ -54,7 +54,10 @@ public record NewsletterDetailRes(
             RelatedNews relatedNews,
 
             @Schema(description = "참고")
-            List<Reference> references) {
+            List<Reference> references,
+
+            @Schema(description = "이메일 제목", example = "[9/19(금) Oil Price Trends] 미-EU 우크라 안보 협상 및 이란 원유 제재 강화로 유가 강보합 $67.49/B (+1.1, +1.66%)")
+            String emailSubject) {
     }
 
     public record NewsFlowChart(
