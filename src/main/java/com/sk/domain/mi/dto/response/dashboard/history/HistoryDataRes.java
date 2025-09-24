@@ -24,7 +24,10 @@ public record HistoryDataRes(
     @Schema(description = "예측 데이터")
     PriceEntry baseline,
     @Schema(description = "실제 또는 선물 데이터")
-    PriceEntry counterpart
+    PriceEntry counterpart,
+    @Schema(description = "설명력 파일 존재 유무")
+    Boolean download
+
 ) {
 
     public static List<HistoryDataRes> ofList(ChartPredictSetting setting, List<TargetPredictResultData> forecastResults, List<DoubleValueResultData> counterPartResults, Boolean isFuture, Boolean isCounterPartPermitted, LocalDate fulfillDate) {
@@ -126,6 +129,7 @@ public record HistoryDataRes(
                 .date(date)
                 .baseline(baseline)
                 .counterpart(counterpart)
+                    .download(true)
                 .build());
         }
         return result;
