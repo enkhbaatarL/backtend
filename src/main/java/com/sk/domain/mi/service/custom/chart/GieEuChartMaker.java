@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -87,9 +88,16 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         return goodsDataSourceNo;
     }
 
+    @Override
+    @Transactional
+    public MiMarketDataRes getDashboardChart(Integer companyNo) {
+        // 권한 조회
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        return this.getDashboardChart(companyNo, permissionRes);
+    }
 
     @Override
-    public MiMarketDataRes getDashboardChart(Integer companyNo) {
+    public MiMarketDataRes getDashboardChart(Integer companyNo, PermissionRes permissionRes) {
 
         final LocalDate START_DATE = LocalDate.of(LocalDate.now().getYear(), 1, 1);
         final LocalDate END_DATE = LocalDate.of(LocalDate.now().getYear(), 12, 31);
@@ -99,8 +107,6 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
         Goods mainGoods = mainGoodsData.getGoods();
 
-        // 권한 조회
-        PermissionRes permissionRes = authorizationService.getPermissions();
         Boolean isPermitted =
             permissionRes
                 .getGoodsViewableMap(companyNo)

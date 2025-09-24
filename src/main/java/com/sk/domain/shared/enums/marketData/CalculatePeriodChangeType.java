@@ -10,7 +10,8 @@ public enum CalculatePeriodChangeType { // 기간 변화 계산 타입
     MOM("MoM"),
     WOW("WoW"),
     YOY("YoY"),
-    FYA("5YA");
+    FYA("5YA"),
+    NONE("");
 
     private String periodName;
     CalculatePeriodChangeType(String periodName){

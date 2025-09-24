@@ -140,10 +140,10 @@ public class MiMarketDataService {
               GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
               Goods mainGoods = mainGoodsData.getGoods();
 
-//              Optional<CustomChartMaker<?>> customChartMaker = customRegistry.getCustomChartMaker(mainGoodsDataSource.getGoodsDataSourceNo());
-//              if(customChartMaker.isPresent()){
-//                  return (MiMarketDataRes)customChartMaker.get().getDashboardChart(companyNo);
-//              }
+              Optional<CustomChartMaker<?>> customChartMaker = customRegistry.getCustomChartMaker(mainGoodsDataSource.getGoodsDataSourceNo());
+              if(customChartMaker.isPresent()){
+                  return (MiMarketDataRes)customChartMaker.get().getDashboardChart(companyNo, permissionRes);
+              }
 
               // 권한 조회
               Boolean isPermitted =

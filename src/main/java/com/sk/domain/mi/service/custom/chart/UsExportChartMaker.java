@@ -13,40 +13,43 @@ import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.charts.Series;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
+import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChart;
 import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawData;
 import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.mi.service.MiMarketDynamicQueryService;
 import com.sk.domain.mi.service.chart.ChartBundleFactory;
+import com.sk.domain.mi.service.period.PeriodCalculator;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
-import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.chart.IndicatorType;
-import com.sk.domain.shared.enums.chart.RenderAs;
-import com.sk.domain.shared.repository.master.tif.GieEuRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
+import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-//@Service
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
@@ -61,15 +64,16 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
     @Value("${custom.us-export.goods-data-source-no:5644}")
     private Integer goodsDataSourceNo;
-    @Value("${custom.us-export.card-index:7}")
+    @Value("${custom.us-export.card-index:8}")
     private Short cardIndex;
 
     private static final String CUSTOM_ID = "us-export";
     private static final String CUSTOM_DATA_CACHE_KEY = "data_source:"+CUSTOM_ID+":%d";
+    private static final int MARKET_DATA_START_DATE_MONTH = 13;
 
     @Override
     public String getCustomId() {
-        return "gie-eu";
+        return CUSTOM_ID;
     }
 
     @Override
@@ -77,12 +81,20 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         return goodsDataSourceNo;
     }
 
-
     @Override
     @Transactional
     public MiMarketDataRes getDashboardChart(Integer companyNo) {
+        // 권한 조회
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        return this.getDashboardChart(companyNo, permissionRes);
+    }
 
-        LocalDate pastDate = LocalDate.now().minusMonths(MAIN_MARKET_DATA_START_DATE_MONTH);
+
+    @Override
+    @Transactional
+    public MiMarketDataRes getDashboardChart(Integer companyNo, PermissionRes permissionRes) {
+
+        LocalDate pastDate = LocalDate.now().minusMonths(MARKET_DATA_START_DATE_MONTH);
         LocalDate START_DATE = LocalDate.of(pastDate.getYear(), pastDate.getMonthValue(), 1);
         LocalDate END_DATE = LocalDate.now();
 
@@ -91,8 +103,6 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
         Goods mainGoods = mainGoodsData.getGoods();
 
-        // 권한 조회
-        PermissionRes permissionRes = authorizationService.getPermissions();
         Boolean isPermitted =
             permissionRes
                 .getGoodsViewableMap(companyNo)
@@ -180,13 +190,16 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         // 비교군 데이터소스 조회
         List<MarketDataChart> compareCharts = new ArrayList<>();
 
+        Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap =
+            calculatePeriodChange(mainGoodsDataSource, rawData, dateColumnName, defaultDataColumnName, mainDashboardData.get(mainDashboardData.size()-1));
+
         // 마켓데이터 메타데이터 생성
         MarketMetaData marketMetaData =
             MarketMetaData.of(
                 cardIndex,
                 mainGoodsData,
                 mainGoodsDataSource,
-                Collections.emptyMap(),
+                calculatePeriodChangeMap,
                 null,
                 null,
                 null,
@@ -251,30 +264,89 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         }
 
         List<MarketDataChartRawData> result = new ArrayList<>();
-        double monthValue = 0d;
+        BigDecimal monthValue = BigDecimal.ZERO;
         LocalDate day = null;
         for(Map<String,Object> data : rawData){
             day = DateUtil.parseDate(data.get(dateColumnName));
             Object valueObj = data.get(defaultDataColumnName);
             if(valueObj != null){
-                double value = Double.parseDouble(data.get(defaultDataColumnName).toString());
-                monthValue += value;
+                BigDecimal value = new BigDecimal(data.get(defaultDataColumnName).toString());
+                monthValue = monthValue.add(value);
             }
             if(day.getMonthValue() < day.plusDays(1).getMonthValue()){
                 result.add(MarketDataChartRawData.builder()
                     .date(DateUtil.toYmdHyphen(LocalDate.of(day.getYear(), day.getMonthValue(), 1)))
-                    .value(monthValue)
+                    .value(monthValue.setScale(2, RoundingMode.HALF_UP).doubleValue())
                     .build());
-                monthValue = 0d;
+                monthValue = BigDecimal.ZERO;
                 day = null;
             }
         }
         if(day != null){
             result.add(MarketDataChartRawData.builder()
                 .date(DateUtil.toYmdHyphen(LocalDate.of(day.getYear(), day.getMonthValue(), 1)))
-                .value(monthValue)
+                .value(monthValue.setScale(2, RoundingMode.HALF_UP).doubleValue())
                 .build());
         }
+        return result;
+    }
+
+    public Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChange(
+        GoodsDataSourceDetail mainGoodsDataSource,
+        List<Map<String, Object>> rawData,
+        String dateColumnName,
+        String defaultDataColumnName,
+        MarketDataChartRawData lastChartRawData) {
+
+        // 순서 중요
+        Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> result = new LinkedHashMap<>();
+
+        // 마지막 데이터
+        Map<String, Object> lastData = rawData.get(rawData.size() -1);
+        LocalDate thisEndDay = DateUtil.fromIsoToLocalDate(lastData.get(dateColumnName).toString());
+        LocalDate thisStartDay = LocalDate.of(thisEndDay.getYear(), thisEndDay.getMonthValue(), 1);
+        BigDecimal lastValue = BigDecimal.valueOf(lastChartRawData.value());
+        if(lastValue.equals(BigDecimal.ZERO)) return result;
+
+        // MOM
+        BigDecimal mom = BigDecimal.ZERO;
+        for(int i = rawData.size() - 1 ; i >= 0 ; i--){
+            Map<String, Object> data = rawData.get(i);
+            LocalDate date = DateUtil.fromIsoToLocalDate(data.get(dateColumnName).toString());
+            if(date.getYear() == thisEndDay.getYear()
+                && date.getMonthValue() == thisEndDay.getMonthValue()-1
+                && date.getDayOfMonth() >= thisStartDay.getDayOfMonth()
+                && date.getDayOfMonth() <= thisEndDay.getDayOfMonth()){
+                if(data.get(defaultDataColumnName) != null){
+                    mom = mom.add(new BigDecimal(data.get(defaultDataColumnName).toString()));
+                }
+            }
+        }
+
+        // YOY
+        BigDecimal yoy = BigDecimal.ZERO;
+        for(int i = rawData.size() - 1 ; i >= 0 ; i--){
+            Map<String, Object> data = rawData.get(i);
+            LocalDate date = DateUtil.fromIsoToLocalDate(data.get(dateColumnName).toString());
+            if(date.getYear() == thisEndDay.getYear() -1
+                && date.getMonthValue() == thisEndDay.getMonthValue()
+                && date.getDayOfMonth() >= thisStartDay.getDayOfMonth()
+                && date.getDayOfMonth() <= thisEndDay.getDayOfMonth()){
+                if(data.get(defaultDataColumnName) != null){
+                    yoy = yoy.add(new BigDecimal(data.get(defaultDataColumnName).toString()));
+                }
+            }
+        }
+
+        result.put(CalculatePeriodChangeType.MOM, CalculatePeriodChangeValue.of(
+            BigDecimal.valueOf(100).subtract(mom.multiply(BigDecimal.valueOf(100)).divide(lastValue,2, RoundingMode.HALF_UP)).doubleValue(),
+            lastValue.subtract(mom).doubleValue()
+            ));
+        result.put(CalculatePeriodChangeType.YOY, CalculatePeriodChangeValue.of(
+            BigDecimal.valueOf(100).subtract((yoy.multiply(BigDecimal.valueOf(100)).divide(lastValue,2, RoundingMode.HALF_UP))).doubleValue(),
+            lastValue.subtract(yoy).doubleValue()
+        ));
+
         return result;
     }
 }
