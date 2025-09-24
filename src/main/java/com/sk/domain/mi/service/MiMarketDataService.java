@@ -355,9 +355,7 @@ public class MiMarketDataService {
                           compareDefaultDataColumnName,
                           LocalDate.now().minusMonths(MARKET_DATA_MONTHLY_START_DATE_MONTH));
 
-                  if (!Objects.equals(
-                      mainGoodsDataSource.getGoodsData().getGoodsDataNo(),
-                      compareGoodsDataSource.getGoodsData().getGoodsDataNo())) {
+                  if (dataSourceGroupMapping.getIsYAxisSeparated()) {
                     // 다른 데이터 이면, 그래프의 상하위가 비슷하게 변경
                     Double mainMax =
                         mainDashboardData.stream()

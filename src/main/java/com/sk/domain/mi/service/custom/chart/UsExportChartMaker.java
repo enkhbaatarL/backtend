@@ -61,7 +61,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
     @Value("${custom.us-export.goods-data-source-no:5644}")
     private Integer goodsDataSourceNo;
-    @Value("${custom.us-export.card-index:8}")
+    @Value("${custom.us-export.card-index:7}")
     private Short cardIndex;
 
     private static final String CUSTOM_ID = "us-export";
