@@ -67,7 +67,7 @@ public class NewsletterPublishHistory extends BaseEntity {
     @Comment("AI요약")
     private String aiSummary;
 
-    @Column(name = "email_subject", length = 100)
+    @Column(name = "eml_titl", length = 100)
     @Comment("이메일 제목")
     private String emailSubject;
 }
