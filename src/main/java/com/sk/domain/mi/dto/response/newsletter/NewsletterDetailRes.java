@@ -41,6 +41,12 @@ public record NewsletterDetailRes(
             @Schema(description = "발행본 요약", example = "지정학적 긴장이 고조되면서 유가는 변동성을 이어갔습니다...")
             String summary,
 
+            @Schema(description = "주식 시장 개장 시간", example = "1641859200000")
+            String marketOpenTime,
+
+            @Schema(description = "주식 시장 폐장 시간", example = "1641859200000")
+            String marketCloseTime,
+
             @Schema(description = "주요 뉴스 흐름 차트")
             NewsFlowChart newsFlowChart,
 
