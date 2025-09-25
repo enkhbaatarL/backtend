@@ -278,7 +278,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
             day = DateUtil.parseDate(data.get(dateColumnName));
             if(lastDay != null && lastDay.getMonthValue() != day.getMonthValue()){
                 result.add(MarketDataChartRawData.builder()
-                    .date(DateUtil.toYmdHyphen(LocalDate.of(lastDay.getYear(), lastDay.getMonthValue(), 1)))
+                    .date(DateUtil.toYmdHyphen(LocalDate.of(lastDay.getYear(), lastDay.getMonthValue(), lastDay.getDayOfMonth())))
                     .value(monthValue.setScale(2, RoundingMode.HALF_UP).doubleValue())
                     .build());
                 monthValue = BigDecimal.ZERO;
@@ -293,7 +293,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         }
         if(day != null){
             result.add(MarketDataChartRawData.builder()
-                .date(DateUtil.toYmdHyphen(LocalDate.of(day.getYear(), day.getMonthValue(), 1)))
+                .date(DateUtil.toYmdHyphen(LocalDate.of(day.getYear(), day.getMonthValue(), day.getDayOfMonth())))
                 .value(monthValue.setScale(2, RoundingMode.HALF_UP).doubleValue())
                 .build());
         }
