@@ -42,7 +42,7 @@ public class NewsletterChart extends BaseEntity {
     private String code;
 
     @Column(name = "timestamp", nullable = false)
-    @Comment("Timestamp ( UTC ) 타임존 추가")
+    @Comment("Timestamp")
     private LocalDateTime timestamp;
 
     @Column(name = "high_1", precision = 15, scale = 4)

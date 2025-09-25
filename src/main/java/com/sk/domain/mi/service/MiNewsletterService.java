@@ -671,8 +671,9 @@ public class MiNewsletterService {
 
             // timestamp별로 데이터 정리
             for (NewsletterChart chart : chartData) {
-                String timestamp = extractTimestampFromChart(chart);
-                BigDecimal value = extractValueFromChart(chart);
+                String timestamp = String.valueOf(
+                            Timestamp.valueOf(chart.getTimestamp()).getTime());
+                BigDecimal value = chart.getTradePrice1();
 
                 timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
                     .put(config.getCode(), value);
@@ -689,23 +690,21 @@ public class MiNewsletterService {
                 .collect(Collectors.toList());
 
             if (!values.isEmpty()) {
-                Series series = Series.ofWithColor(config.getColor(), config.getColor(), RenderAs.CLOSE,
-                    values, true, config.getColor());
+                Series series = Series.ofWithChartOption(
+                    config.getColor(),
+                    config.getColor(),
+                    RenderAs.CLOSE,
+                    values,
+                    true,
+                    config.getColor(),
+                    config.getDtick(),
+                    config.getRange());
                 allSeries.add(series);
             }
         }
 
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
     }
-
-    private String extractTimestampFromChart(NewsletterChart chart) {
-        return String.valueOf(chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli());
-    }
-
-    private BigDecimal extractValueFromChart(NewsletterChart chart) {
-        return chart.getTradePrice1();
-    }
-
 
     private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
         String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
@@ -782,13 +781,15 @@ public class MiNewsletterService {
                 .collect(Collectors.toList());
 
             if (!values.isEmpty()) {
-                Series series = Series.ofWithColor(
+                Series series = Series.ofWithChartOption(
                     config.getColor(),  // seriesId
                     config.getColor(),  // label
                     RenderAs.CLOSE,
                     values,
                     true,
-                    config.getColor()
+                    config.getColor(),
+                    config.getDtick(),
+                    config.getRange()
                 );
                 allSeries.add(series);
             }

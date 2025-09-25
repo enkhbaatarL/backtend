@@ -83,35 +83,12 @@ public class NewsletterTemplateCollectionChart {
     @Comment("색상")
     private String color;
 
+    @Column(name = "dtick", length = 10)
+    @Comment("차트에서 사용할 DTICK 값")
+    private String dtick;
 
-    /**
-     * 생성자
-     */
-    public NewsletterTemplateCollectionChart(String collectionChartType, String targetDatabaseName,
-                                           String targetTableName, String queryConditionContent,
-                                           String tableColumnName, String color) {
-        this.collectionChartType = collectionChartType;
-        this.targetDatabaseName = targetDatabaseName;
-        this.targetTableName = targetTableName;
-        this.queryConditionContent = queryConditionContent;
-        this.tableColumnName = tableColumnName;
-        this.color = color;
-    }
+    @Column(name = "range", length = 20)
+    @Comment("차트에서 사용할 Range 값. 배열형식 그대로 사용")
+    private String range;
 
-    /**
-     * 정적 팩토리 메서드 - 필수 필드만
-     */
-    public static NewsletterTemplateCollectionChart of(String collectionChartType, String targetDatabaseName, String targetTableName) {
-        return new NewsletterTemplateCollectionChart(collectionChartType, targetDatabaseName, targetTableName, null, null, null);
-    }
-
-    /**
-     * 정적 팩토리 메서드 - 모든 필드
-     */
-    public static NewsletterTemplateCollectionChart of(String collectionChartType, String targetDatabaseName,
-                                                     String targetTableName, String queryConditionContent,
-                                                     String tableColumnName, String color) {
-        return new NewsletterTemplateCollectionChart(collectionChartType, targetDatabaseName, targetTableName,
-                                                   queryConditionContent, tableColumnName, color);
-    }
 }
