@@ -321,7 +321,8 @@ public class MiDashboardService {
      * @param predictDate 예측 날짜
      * @return List<DashboardSummary>
      */
-    private List<DashboardSummary> getDashboardSummaries(List<ChartPredictSettingDetail> chartPredictSettingDetails, String date,
+    @Transactional
+    public List<DashboardSummary> getDashboardSummaries(List<ChartPredictSettingDetail> chartPredictSettingDetails, String date,
             String predictDate) {
         String baseDate = date != null ? date : DateUtil.toYmd(LocalDate.now());
 

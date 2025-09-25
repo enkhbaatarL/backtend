@@ -14,6 +14,7 @@ import com.sk.domain.mi.dto.response.dashboard.history.HistoryDataRes;
 import com.sk.domain.mi.dto.response.dashboard.history.HistoryMetadataRes;
 import com.sk.domain.mi.dto.response.dashboard.history.PriceEntry;
 import com.sk.domain.mi.dto.response.dashboard.history.PriceStat;
+import com.sk.domain.mi.dto.response.dashboard.summary.DashboardSummary;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -46,6 +47,7 @@ public class MiDashboardHistoryService {
     private final ChartPredictSettingRepository settingRepo;
     private final ChartPredictSettingDetailRepository settingDetailRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
+    private final MiDashboardService miDashboardService;
 
     /**
      * 예측가 히스토리 메타데이터 조회
@@ -207,12 +209,41 @@ public class MiDashboardHistoryService {
         if (forecasts.isEmpty()) {
             return HistoryDataRes.ofEmpty();
         }
+
+        List<HistoryDataRes> result = null;
+
+        final List<ChartPredictSettingDetail> settingDetailForCheckDownload;
         //TODO 변경 필요
         if(setting.getCustomerCompany().getCustomerCompanyNo().equals(2013)){
-            return buildHistoryData(forecasts.get(0), forecasts.get(1), counterpart, fulfillDate);
+            result = buildHistoryData(forecasts.get(0), forecasts.get(1), counterpart, fulfillDate);
+            settingDetailForCheckDownload = forecasts;
+        }else{
+            ChartPredictSettingDetail forecast = selectForecast(forecasts, counterpart);
+            result = buildHistoryData(forecast, null, counterpart, fulfillDate);
+            settingDetailForCheckDownload = List.of(forecast);
         }
-        ChartPredictSettingDetail forecast = selectForecast(forecasts, counterpart);
-        return buildHistoryData(forecast, null, counterpart, fulfillDate);
+
+        return result.stream().map(r->{
+            if(r.baseline() == null && r.baseline2() == null){
+                return r;
+            }
+            List<DashboardSummary> dashboardSummaries = miDashboardService.getDashboardSummaries(settingDetailForCheckDownload, DateUtil.toYmd(fulfillDate), r.date()+"01");
+            boolean download = false;
+            for(DashboardSummary dashboardSummary : dashboardSummaries){
+                if(org.springframework.util.StringUtils.hasText(dashboardSummary.explanatoryFilePath())){
+                    download = true;
+                    break;
+                }
+            }
+            return HistoryDataRes.builder()
+                .date(r.date())
+                .baseline(r.baseline())
+                .baseline2(r.baseline2())
+                .counterpart(r.counterpart())
+                .download(download)
+                .build();
+        }).toList();
+
     }
 
     /**
