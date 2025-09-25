@@ -671,8 +671,9 @@ public class MiNewsletterService {
 
             // timestamp별로 데이터 정리
             for (NewsletterChart chart : chartData) {
-                String timestamp = extractTimestampFromChart(chart);
-                BigDecimal value = extractValueFromChart(chart);
+                String timestamp = String.valueOf(
+                            Timestamp.valueOf(chart.getTimestamp()).getTime());
+                BigDecimal value = chart.getTradePrice1();
 
                 timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
                     .put(config.getCode(), value);
@@ -697,15 +698,6 @@ public class MiNewsletterService {
 
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
     }
-
-    private String extractTimestampFromChart(NewsletterChart chart) {
-        return String.valueOf(chart.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli());
-    }
-
-    private BigDecimal extractValueFromChart(NewsletterChart chart) {
-        return chart.getTradePrice1();
-    }
-
 
     private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
         String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
