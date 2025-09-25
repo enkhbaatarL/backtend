@@ -71,20 +71,12 @@ public class NewsletterTemplateDedicatedChart {
     @Comment("색상")
     private String color;
 
-    /**
-     * 생성자
-     */
-    public NewsletterTemplateDedicatedChart(String dedicatedChartType, String code, String color) {
-        this.dedicatedChartType = dedicatedChartType;
-        this.code = code;
-        this.color = color;
-    }
+    @Column(name = "dtick", length = 10)
+    @Comment("차트에서 사용할 DTICK 값")
+    private String dtick;
 
-    /**
-     * 정적 팩토리 메서드
-     */
-    public static NewsletterTemplateDedicatedChart of(String dedicatedChartType, String code, String color) {
-        return new NewsletterTemplateDedicatedChart(dedicatedChartType, code, color);
-    }
+    @Column(name = "range", length = 20)
+    @Comment("차트에서 사용할 Range 값. 배열형식 그대로 사용")
+    private String range;
 
 }

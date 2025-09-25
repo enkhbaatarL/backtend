@@ -690,8 +690,15 @@ public class MiNewsletterService {
                 .collect(Collectors.toList());
 
             if (!values.isEmpty()) {
-                Series series = Series.ofWithColor(config.getColor(), config.getColor(), RenderAs.CLOSE,
-                    values, true, config.getColor());
+                Series series = Series.ofWithChartOption(
+                    config.getColor(),
+                    config.getColor(),
+                    RenderAs.CLOSE,
+                    values,
+                    true,
+                    config.getColor(),
+                    config.getDtick(),
+                    config.getRange());
                 allSeries.add(series);
             }
         }
@@ -774,13 +781,15 @@ public class MiNewsletterService {
                 .collect(Collectors.toList());
 
             if (!values.isEmpty()) {
-                Series series = Series.ofWithColor(
+                Series series = Series.ofWithChartOption(
                     config.getColor(),  // seriesId
                     config.getColor(),  // label
                     RenderAs.CLOSE,
                     values,
                     true,
-                    config.getColor()
+                    config.getColor(),
+                    config.getDtick(),
+                    config.getRange()
                 );
                 allSeries.add(series);
             }
