@@ -815,16 +815,17 @@ public class AdminGoodsDataService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public GoodsDataFileUploadRes uploadStructuredDataJson(String companyCd, Role role, StructuredDataJsonReq structuredDataJsonReq){
 
-        ComponentInfo componentInfo = componentInfoRepository
-            .findByComponentTypeIdAndIsDeletedFalse(structuredDataJsonReq.metadata().componentTypeId())
-            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
-                String.format("Component information could not be found. componentTypeId: %s",
-                    structuredDataJsonReq.metadata().componentTypeId())));
-
-        excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt(), structuredDataFileReq.category());
-
-        return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
-            fileUploadRes.fileSize(), fileUploadRes.fileUrl());
+//        ComponentInfo componentInfo = componentInfoRepository
+//            .findByComponentTypeIdAndIsDeletedFalse(structuredDataJsonReq.metadata().componentTypeId())
+//            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND,
+//                String.format("Component information could not be found. componentTypeId: %s",
+//                    structuredDataJsonReq.metadata().componentTypeId())));
+//
+//        excelService.uploadStructuredData(file, componentInfo, structuredDataFileReq.criteriaDt(), structuredDataFileReq.category());
+//
+//        return GoodsDataFileUploadRes.of(fileUploadRes.fileNo(), structuredDataFileReq.componentTypeId(), fileUploadRes.fileNm(),
+//            fileUploadRes.fileSize(), fileUploadRes.fileUrl());
+        return null;
     }
 
     private String nowOffsetDateTime() {

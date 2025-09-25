@@ -62,8 +62,11 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
     private final UnitConversionService unitConversionService;
 
-    @Value("${custom.us-export.goods-data-source-no:5644}")
+    @Value("${custom.us-export.goods-data-source-no:5645}")
     private Integer goodsDataSourceNo;
+    @Value("${custom.us-export.market-dashboard:5644}")
+    private Integer marketDashboardDataSourceNo;
+
     @Value("${custom.us-export.card-index:8}")
     private Short cardIndex;
 
@@ -98,8 +101,12 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         LocalDate START_DATE = LocalDate.of(pastDate.getYear(), pastDate.getMonthValue(), 1);
         LocalDate END_DATE = LocalDate.now();
 
-        ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
+        ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(marketDashboardDataSourceNo);
         GoodsDataSourceDetail mainGoodsDataSource = validationResult.data();
+
+        ValidationResult<GoodsDataSourceDetail> validationResultMtd = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
+        GoodsDataSourceDetail mainGoodsDataSourceMtd = validationResultMtd.data();
+
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
         Goods mainGoods = mainGoodsData.getGoods();
 
@@ -123,7 +130,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
                         MarketMetaData.of(
                             cardIndex,
                             mainGoodsData,
-                            mainGoodsDataSource,
+                            mainGoodsDataSourceMtd,
                             null,
                             miMarketDataCache.marketMetaData().indexStartDt(),
                             miMarketDataCache.marketMetaData().lastUpdateDt());
@@ -164,7 +171,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
                 MarketMetaData.of(
                     cardIndex,
                     mainGoodsData,
-                    mainGoodsDataSource,
+                    mainGoodsDataSourceMtd,
                     null,
                     null,
                     null);
@@ -198,7 +205,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
             MarketMetaData.of(
                 cardIndex,
                 mainGoodsData,
-                mainGoodsDataSource,
+                mainGoodsDataSourceMtd,
                 calculatePeriodChangeMap,
                 null,
                 null,
@@ -220,7 +227,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
                 MarketMetaData.of(
                     cardIndex,
                     mainGoodsData,
-                    mainGoodsDataSource,
+                    mainGoodsDataSourceMtd,
                     Collections.emptyMap(),
                     null,
                     null,

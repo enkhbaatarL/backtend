@@ -150,6 +150,7 @@ public class AdminProviderDedicatedController {
         if (structuredDataJsonReq == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
         }
-        return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
+        //return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
+        return null;
     }
 }

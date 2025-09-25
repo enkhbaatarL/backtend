@@ -25,7 +25,7 @@ public class JsonService {
 
     @Transactional
     public boolean uploadStructuredData(ComponentInfo componentInfo, String criteriaDt, String category) throws IOException {
-        try {
+        /*try {
             importService.validateComponentInfo(componentInfo);
             List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
                 .map(String::trim)
@@ -41,7 +41,8 @@ public class JsonService {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
         } finally {
             DataSourceContextHolder.clearDataSourceKey();
-        }
+        }*/
+        return false;
     }
 
 
