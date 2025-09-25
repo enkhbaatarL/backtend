@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -19,7 +20,9 @@ import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class NaRigDataCollector implements DataCollectorStrategy {
 
@@ -28,6 +31,11 @@ public class NaRigDataCollector implements DataCollectorStrategy {
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final int MONTH_COLUMN_INDEX = 9; // 월 열 인덱스
     private static final int DATE_COLUMN_INDEX = 10; // 날짜 열 인덱스
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.NA_RIG_WEEKLY;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {

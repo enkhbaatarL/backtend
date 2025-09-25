@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -16,7 +17,9 @@ import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class TsmcDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 6; // 7행 (0-based index)
@@ -26,6 +29,11 @@ public class TsmcDataCollector implements DataCollectorStrategy {
     private static final int DATA_START_ROW_INDEX = 7; // 8행 (0-based index)
     private static final int DATE_COLUMN_INDEX = 0; // A열 (0-based index)
 
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.TSMC;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
@@ -41,7 +49,7 @@ public class TsmcDataCollector implements DataCollectorStrategy {
 
             int lastRowNum = -1; // 이전 행 번호 추적
 
-            
+
             int currentRowNumTemp = sheet.getLastRowNum();
             log.debug("Current row num: {}", currentRowNumTemp);
 
@@ -53,7 +61,7 @@ public class TsmcDataCollector implements DataCollectorStrategy {
                 if (row.getRowNum() < DATA_START_ROW_INDEX) {
                     continue;
                 }
-                
+
                 // 행 번호가 연속적이지 않으면 비어 있는 행이 있다고 간주
                 if (lastRowNum != -1 && currentRowNum > lastRowNum + 1) {
                     log.debug("Detected empty row(s) between row {} and row {}, stopping processing", lastRowNum, currentRowNum);
@@ -71,7 +79,7 @@ public class TsmcDataCollector implements DataCollectorStrategy {
 
                 // 날짜 타입 변환
                 String year = dateCell.getStringCellValue().trim();
-                
+
                 // 데이터 파싱
                 for (int i = VALUE_COLUMN_INDEX; i < row.getLastCellNum() && i < dateHeaders.size() + VALUE_COLUMN_INDEX; i++) {
                     Cell valueCell = row.getCell(i);

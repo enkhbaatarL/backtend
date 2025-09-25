@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,7 +18,9 @@ import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class OecdCliDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 6; // 7행, extractExcelHeader 에서 비어있는 6행은 count를 안함
@@ -26,6 +29,11 @@ public class OecdCliDataCollector implements DataCollectorStrategy {
     private static final int DATA_START_ROW_INDEX = 8; // 9행 (0-based index)
     private static final int DATE_COLUMN_INDEX = 1; // B열 (0-based index)
     private static final int MAX_MEMBER_NAME_LENGTH = 50; // oecd_mem_nm 최대 길이
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.OECD_CLI;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {

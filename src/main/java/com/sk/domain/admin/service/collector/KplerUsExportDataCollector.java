@@ -1,10 +1,11 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
 import static com.sk.common.enums.ResultCode.Error.REQ_INVALID_FORMAT;
 
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
+import com.sk.domain.shared.enums.ComponentType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -17,17 +18,25 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
-public class SkEnsTypeADataCollector implements DataCollectorStrategy {
+public class KplerUsExportDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
+    private static final String CODE = "USA_Export";
+
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("M/d/yyyy");
-    private static final List<String> dateColumns = List.of("trade_date","strip","expiration_date");
 
     // ,code,gas_in_storage_mt
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.KPLER_US_EXPORT;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
@@ -40,11 +49,6 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
             periodCodes = periodCodes.size() > 1 ? periodCodes : createDefaultHeaders(periodCodes.size());
             log.debug("Excel period codes: {}", periodCodes);
 
-            List<Integer> dateIndex = new ArrayList<>();
-            for( int i = 0; i<actualColumns.size(); i++){
-                if(dateColumns.contains(actualColumns.get(i))) dateIndex.add(i);
-            }
-
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 // 데이터 시작 행 인덱스 조건
@@ -52,9 +56,9 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
                     continue;
 
                 Object[] rowData = ExcelParsedUtil.parseExcelRow(row, actualColumns, null);
-                rowData = transformAtIndices(rowData, dateIndex);
+
                 if (rowData.length > 0) {
-                  result.add(removeAtIndex(rowData,6));
+                    result.add(addObject(rowData, CODE));
                 }
             }
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
@@ -64,42 +68,15 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
         return result;
     }
 
-    private static LocalDate parseDate(String input){
-        return LocalDate.parse(input, DATE_FORMATTER);
-    }
-
-    public static Object[] removeAtIndex(Object[] array, int index) {
-        if (array == null || index < 0 || index >= array.length) {
-            throw new IllegalArgumentException("Invalid index");
-        }
-        Object[] result = new Object[array.length - 1];
-        // 앞쪽 복사
-        System.arraycopy(array, 0, result, 0, index);
-        // 뒤쪽 복사
-        System.arraycopy(array, index + 1, result, index, array.length - index - 1);
-        return result;
-    }
-
-    public static Object[] transformAtIndices(Object[] array, List<Integer> indices) {
-        if (array == null) throw new IllegalArgumentException("array is null");
-        for (Integer index : indices) {
-          if (index < 0 || index >= array.length) {
-            throw new IllegalArgumentException("Invalid index: " + index);
-          }
-        }
-
-        // 원본 배열 복사
-        Object[] result = Arrays.copyOf(array, array.length);
-        for (int idx : indices) {
-            result[idx] = parseDate((String)result[idx]);
-        }
-
-        return result;
+    public static Object[] addObject(Object[] original, Object newObj1) {
+        Object[] newArray = Arrays.copyOf(original, original.length + 1);
+        newArray[newArray.length-1] = newObj1;
+        return newArray;
     }
 
     private List<String> createDefaultHeaders(int size) {
         return IntStream.range(0, Math.max(1, size))
-                .mapToObj(i -> "P" + i) // 짧은 코드 (P0, P1, ...)
-                .collect(Collectors.toList());
+            .mapToObj(i -> "P" + i) // 짧은 코드 (P0, P1, ...)
+            .collect(Collectors.toList());
     }
 }

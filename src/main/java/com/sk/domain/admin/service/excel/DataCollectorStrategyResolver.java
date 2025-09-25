@@ -1,45 +1,33 @@
 package com.sk.domain.admin.service.excel;
 
-import com.sk.domain.admin.service.excel.collector.*;
-import org.springframework.stereotype.Component;
-
 import com.sk.domain.shared.enums.ComponentType;
+import jakarta.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
+@Slf4j
+@RequiredArgsConstructor
 public class DataCollectorStrategyResolver {
-    public DataCollectorStrategy resolve(ComponentType componentType) {
-        if (componentType == ComponentType.PIVOT) {
-            return new PivotDataCollector();
-        } else if (componentType == ComponentType.CPC_NINO_SST) {
-            return new NinoSstDataCollector();
-        } else if (componentType == ComponentType.NA_RIG_WEEKLY) {
-            return new NaRigDataCollector();
-        } else if (componentType == ComponentType.WW_RIG_SUMMARY) {
-            return new Ww2RigSummaryDataCollector();
-        } else if (componentType == ComponentType.SHORT_TERM_EO) {
-            return new ShortTermEoDataCollector();
-        } else if (componentType == ComponentType.OECD_CLI) {
-            return new OecdCliDataCollector();
-        } else if (componentType == ComponentType.TSMC) {
-            return new TsmcDataCollector();
-        } else if (componentType == ComponentType.PMI_MANUFACTURE) {
-            return new PmiManufactureDataCollector();
-        } else if (componentType == ComponentType.GLOBAL_OIL) {
-            return new GlobalCrudeOilDataCollector();
-        } else if (componentType == ComponentType.GIE_EU) {
-            return new GieEuDataCollector();
-        } else if(componentType == ComponentType.KPLER_US_EXPORT){
-            return new KplerUsExportDataCollector();
-        } else if(componentType == ComponentType.KPLER_WORLD_IMPORT){
-            return new KplerWorldImportDataCollector();
-        } else if(componentType == ComponentType.SKENS_DATA_A){
-            return new SkEnsTypeADataCollector();
-        } else if(componentType == ComponentType.SKENS_DATA_B){
-            return new SkEnsTypeBDataCollector();
-        } else {
-            return new DefaultDataCollector();
+
+    private final Map<String, DataCollectorStrategy> dataCollectorStrategies;
+    private Map<ComponentType, DataCollectorStrategy> dataCollectorStrategyMap;
+
+    @PostConstruct
+    public void init(){
+        dataCollectorStrategyMap = new HashMap<>();
+        for(DataCollectorStrategy dataCollectorStrategy : dataCollectorStrategies.values()){
+            dataCollectorStrategyMap.put(dataCollectorStrategy.getComponentType(), dataCollectorStrategy);
         }
     }
-
-
+    public DataCollectorStrategy resolve(ComponentType componentType) {
+        DataCollectorStrategy dataCollectorStrategy = dataCollectorStrategyMap.get(componentType);
+        if(dataCollectorStrategy == null){
+            dataCollectorStrategyMap.get(ComponentType.DEFAULT);
+        }
+        return dataCollectorStrategy;
+    }
 }

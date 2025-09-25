@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,13 +18,20 @@ import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class PivotDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
     private static final int HEADER_COLUMN_INDEX = 1; // 헤더 열 인덱스
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final int MAX_PERIOD_CODE_LENGTH = 10; // oni_anly_perd_spt_cd 최대 길이
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.PIVOT;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
