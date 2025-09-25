@@ -4,4 +4,5 @@ import java.util.List;
 
 public interface DataCollectorStrategy {
     List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category);
+    void postAction();
 }

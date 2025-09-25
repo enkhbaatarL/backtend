@@ -13,4 +13,6 @@ import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 public interface FileTypeStrategy {
     List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt, String category)
             throws IOException;
+
+    void postAction();
 }

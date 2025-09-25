@@ -266,21 +266,23 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         List<MarketDataChartRawData> result = new ArrayList<>();
         BigDecimal monthValue = BigDecimal.ZERO;
         LocalDate day = null;
+        LocalDate lastDay = null;
         for(Map<String,Object> data : rawData){
             day = DateUtil.parseDate(data.get(dateColumnName));
-            Object valueObj = data.get(defaultDataColumnName);
-            if(valueObj != null){
-                BigDecimal value = new BigDecimal(data.get(defaultDataColumnName).toString());
-                monthValue = monthValue.add(value);
-            }
-            if(day.getMonthValue() < day.plusDays(1).getMonthValue()){
+            if(lastDay != null && lastDay.getMonthValue() != day.getMonthValue()){
                 result.add(MarketDataChartRawData.builder()
-                    .date(DateUtil.toYmdHyphen(LocalDate.of(day.getYear(), day.getMonthValue(), 1)))
+                    .date(DateUtil.toYmdHyphen(LocalDate.of(lastDay.getYear(), lastDay.getMonthValue(), 1)))
                     .value(monthValue.setScale(2, RoundingMode.HALF_UP).doubleValue())
                     .build());
                 monthValue = BigDecimal.ZERO;
                 day = null;
             }
+            Object valueObj = data.get(defaultDataColumnName);
+            if(valueObj != null){
+                BigDecimal value = new BigDecimal(data.get(defaultDataColumnName).toString());
+                monthValue = monthValue.add(value);
+            }
+            lastDay = day;
         }
         if(day != null){
             result.add(MarketDataChartRawData.builder()

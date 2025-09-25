@@ -178,7 +178,11 @@ public class ExcelService {
             FileTypeStrategy strategy = fileTypeStrategyResolver.resolve(ExcelParsedUtil.validateFile(file));
             List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt, category);
 
-            return saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
+            boolean result = saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
+            if(result){
+
+            }
+            return result;
         } catch (Exception e) {
             log.error("Upload failed: {}", e.getMessage(), e);
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
