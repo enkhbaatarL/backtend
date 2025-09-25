@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.charts;
 
 import com.sk.domain.shared.enums.chart.RenderAs;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
 
@@ -13,9 +14,13 @@ public record Series(
     RenderAs renderAs,
     List<BigDecimal> values,
     boolean isVisible,
-    String color
+    String color,
+    BigDecimal dtick,
+    List<BigDecimal> range
 ) {
-    private static SeriesBuilder builderOf(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible) {
+
+    private static SeriesBuilder builderOf(String seriesId, String label, RenderAs renderAs,
+        List<BigDecimal> values, boolean isVisible) {
         return Series.builder()
             .seriesId(seriesId)
             .label(label)
@@ -23,11 +28,14 @@ public record Series(
             .values(values)
             .isVisible(isVisible);
     }
-    public static Series of(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible) {
+
+    public static Series of(String seriesId, String label, RenderAs renderAs,
+        List<BigDecimal> values, boolean isVisible) {
         return builderOf(seriesId, label, renderAs, values, isVisible).build();
     }
 
-    public static Series ofWithColor(String seriesId, String label, RenderAs renderAs, List<BigDecimal> values, boolean isVisible, String color) {
+    public static Series ofWithChartOption(String seriesId, String label, RenderAs renderAs,
+        List<BigDecimal> values, boolean isVisible, String color, String dtick, String rangeStr) {
         return Series.builder()
             .seriesId(seriesId)
             .label(label)
@@ -35,7 +43,40 @@ public record Series(
             .values(values)
             .isVisible(isVisible)
             .color(color)
+            .dtick(new BigDecimal(dtick))
+            .range(parseRangeString(rangeStr))
             .build();
     }
 
+    public static List<BigDecimal> parseRangeString(String rangeStr) {
+        if (rangeStr == null || rangeStr.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<BigDecimal> result = new ArrayList<>();
+
+        String cleanStr = rangeStr.trim()
+            .replaceAll("^\\[", "")
+            .replaceAll("\\]$", "")
+            .trim();
+
+        if (cleanStr.isEmpty()) {
+            return result;
+        }
+
+        String[] parts = cleanStr.split(",");
+
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    result.add(new BigDecimal(trimmed));
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid number format in range: " + trimmed,
+                        e);
+                }
+            }
+        }
+        return result;
+    }
 }
