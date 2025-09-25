@@ -88,7 +88,7 @@ public class MiDashboardHistoryService {
             GoodsDataSourceDetail gds = forecast.getGoodsDataSourceDetail();
             List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
 
-            List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
+            List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).sorted(Comparator.reverseOrder()).toList();
 
             List<ChartPredictSettingDetail> actual = actualOrFutures.stream()
                 .filter(awf -> !awf.getIsFuture())
@@ -110,7 +110,7 @@ public class MiDashboardHistoryService {
                 GoodsDataSourceDetail gds = f.getGoodsDataSourceDetail();
                 List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
 
-                List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
+                List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).sorted(Comparator.reverseOrder()).toList();
                 List<ChartPredictSettingDetail> grouped = settingDetailMap.getOrDefault(f.getChartPredictSettingDetailNo(), Collections.emptyList());
 
                 List<ChartPredictSettingDetail> actual = grouped.stream()

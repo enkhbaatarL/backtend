@@ -142,9 +142,10 @@ public record HistoryDataRes(
             // baseline = FORECAST
             PriceEntry baseline1 = null;
             PriceEntry baseline2 = null;
+            BigDecimal cPrice = counterpartMap.get(date);
             BigDecimal fPrice1 = forecastMap1.get(date);
             if (fPrice1 != null) {
-                BigDecimal fChange = (prevForecast1 != null && prevForecast1.signum() != 0) ? MathUtil.safeChangeRate(fPrice1, prevForecast1) : null;
+                BigDecimal fChange = (cPrice != null && prevForecast1 != null && cPrice.signum() != 0) ? MathUtil.safeChangeRate(fPrice1, cPrice) : null;
                 baseline1 = PriceEntry.of(
                     PriceType.FORECAST,
                     PriceStat.of(fPrice1, fChange, fPrice1.equals(maxForecast1), fPrice1.equals(minForecast1)),
@@ -156,7 +157,7 @@ public record HistoryDataRes(
             if(forecastMap2 != null){
                 BigDecimal fPrice2 = forecastMap2.get(date);
                 if (fPrice2 != null) {
-                    BigDecimal fChange = (prevForecast2 != null && prevForecast2.signum() != 0) ? MathUtil.safeChangeRate(fPrice2, prevForecast2) : null;
+                    BigDecimal fChange = (cPrice != null && prevForecast2 != null && cPrice.signum() != 0) ? MathUtil.safeChangeRate(fPrice2, cPrice) : null;
                     baseline2 = PriceEntry.of(
                         PriceType.FORECAST,
                         PriceStat.of(fPrice2, fChange, fPrice2.equals(maxForecast2), fPrice2.equals(minForecast2)),
@@ -170,7 +171,6 @@ public record HistoryDataRes(
 
             // counterpart = ACTUAL or FUTURE
             PriceEntry counterpart = null;
-            BigDecimal cPrice = counterpartMap.get(date);
             if (cPrice != null) {
                 BigDecimal cChange = (prevCounter != null && prevCounter.signum() != 0) ? MathUtil.safeChangeRate(cPrice, prevCounter) : null;
                 counterpart = PriceEntry.of(
@@ -189,6 +189,8 @@ public record HistoryDataRes(
                 .download(true)
                 .build());
         }
+
+        result.sort(Comparator.comparing(HistoryDataRes::date).reversed());
         return result;
     }
 
