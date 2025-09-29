@@ -1,10 +1,13 @@
 package com.sk.domain.admin.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.FileTypeStrategy;
+import com.sk.domain.admin.service.json.DataCollectorJsonStrategy;
+import com.sk.domain.admin.service.json.DataCollectorJsonStrategyResolver;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,18 +25,19 @@ import org.springframework.web.multipart.MultipartFile;
 public class JsonService {
 
     private final ImportService importService;
+    private final DataCollectorJsonStrategyResolver dataCollectorJsonStrategyResolver;
 
     @Transactional
-    public boolean uploadStructuredData(ComponentInfo componentInfo, String criteriaDt, String category) throws IOException {
-        /*try {
+    public Boolean uploadStructuredData(ComponentInfo componentInfo, String criteriaDt, String category, JsonNode jsonNode){
+        try {
             importService.validateComponentInfo(componentInfo);
             List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
                 .map(String::trim)
                 .filter(name -> !name.isEmpty())
                 .collect(Collectors.toList());
 
-            FileTypeStrategy strategy = fileTypeStrategyResolver.resolve(ExcelParsedUtil.validateFile(file));
-            List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt, category);
+            DataCollectorJsonStrategy dataCollectorJsonStrategy = dataCollectorJsonStrategyResolver.resolve(componentInfo.getDataStructureConvertNm());
+            List<Object[]> values = dataCollectorJsonStrategy.processJsonData(jsonNode,null, null, null );
 
             return importService.saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
         } catch (Exception e) {
@@ -41,8 +45,7 @@ public class JsonService {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
         } finally {
             DataSourceContextHolder.clearDataSourceKey();
-        }*/
-        return false;
+        }
     }
 
 

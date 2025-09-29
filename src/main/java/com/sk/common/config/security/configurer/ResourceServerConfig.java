@@ -41,7 +41,10 @@ public class ResourceServerConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
-            .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**", "/api/v1/external/**", "/api/v1/common/health-check")
+            .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**", "/api/v1/external/**",
+                "/api/v1/common/health-check",
+                "/api/v1/admin/provider-management/goods-datas/upload-temp/structured-data/**" // TODO 인증 넣어야 함.
+            )
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .sessionManagement(session -> session

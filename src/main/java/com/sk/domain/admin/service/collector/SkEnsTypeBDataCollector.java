@@ -2,9 +2,15 @@ package com.sk.domain.admin.service.collector;
 
 import static com.sk.common.enums.ResultCode.Error.REQ_INVALID_FORMAT;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.ExcelParsedUtil;
+import com.sk.domain.admin.service.collector.dto.SkEnsData;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
+import com.sk.domain.admin.service.json.DataCollectorJsonStrategy;
 import com.sk.domain.shared.enums.ComponentType;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -18,15 +24,19 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.opensaml.xmlsec.signature.P;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class SkEnsTypeBDataCollector implements DataCollectorStrategy {
+public class SkEnsTypeBDataCollector implements DataCollectorStrategy, DataCollectorJsonStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
     private static final int HEADER_COLUMN_DATA_INDEX = 1; // 헤더 열 인덱스
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     @Override
     public ComponentType getComponentType() {
@@ -96,5 +106,23 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy {
         return IntStream.range(0, Math.max(1, size))
                 .mapToObj(i -> "P" + i) // 짧은 코드 (P0, P1, ...)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Object[]> processJsonData(JsonNode data, List<String> actualColumns, String criteriaDt, String category) {
+        List<Object[]> result = new ArrayList<>();
+        if(data instanceof ArrayNode arrayNode){
+            arrayNode.forEach(n->{
+              try {
+                SkEnsData.Code codeData = objectMapper.treeToValue(n, SkEnsData.Code.class);
+                for(SkEnsData.Data rawData : codeData.data()){
+                    result.add(new Object[]{parseDate(rawData.date()), codeData.code(), Double.parseDouble(rawData.value())});
+                }
+              } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+              }
+            });
+        }
+        return result;
     }
 }
