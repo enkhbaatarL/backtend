@@ -672,7 +672,7 @@ public class MiNewsletterService {
             // timestamp별로 데이터 정리
             for (NewsletterChart chart : chartData) {
                 String timestamp = String.valueOf(
-                            Timestamp.valueOf(chart.getTimestamp()).getTime());
+                    Timestamp.valueOf(chart.getTimestamp()).getTime());
                 BigDecimal value = chart.getTradePrice1();
 
                 timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
@@ -689,6 +689,15 @@ public class MiNewsletterService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
+            BigDecimal max = values.stream()
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+            BigDecimal min = values.stream()
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+            String range = calculateRange(max, min, config.getColor());
+
             if (!values.isEmpty()) {
                 Series series = Series.ofWithChartOption(
                     config.getColor(),
@@ -698,12 +707,34 @@ public class MiNewsletterService {
                     true,
                     config.getColor(),
                     config.getDtick(),
-                    config.getRange());
+                    range);
                 allSeries.add(series);
             }
         }
 
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
+    }
+
+    private String calculateRange(BigDecimal max, BigDecimal min, String color) {
+        BigDecimal difference = max.subtract(min);
+        BigDecimal compare = BigDecimal.valueOf(color.equals("blue") ? 4 : 2);
+        double range = color.equals("blue") ? 1 : 0.5;
+
+        BigDecimal adjustedMax = BigDecimal.valueOf(Math.ceil(max.doubleValue()));
+        BigDecimal adjustedMin = BigDecimal.valueOf(Math.floor(min.doubleValue()));
+
+        BigDecimal resultMax;
+        BigDecimal resultMin;
+
+        if (difference.compareTo(compare) < 0) {
+            resultMax = adjustedMax.add(BigDecimal.valueOf(range));
+            resultMin = adjustedMin.subtract(BigDecimal.valueOf(range));
+        } else {
+            resultMax = adjustedMax;
+            resultMin = adjustedMin;
+        }
+
+        return String.format("[%s, %s]", resultMax, resultMin);
     }
 
     private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
