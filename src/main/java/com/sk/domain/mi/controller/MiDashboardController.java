@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -125,11 +126,15 @@ public class MiDashboardController {
 				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"), StandardCharsets.UTF_8);
         FileDownloadRes fileDownloadRes = miDashboardService.getDashboardSummaryFileDownload(companyNo, date, predictDate, encodedFileName);
 
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(fileDownloadRes.fileNm(), StandardCharsets.UTF_8)
+                    .build();
+
         log.debug("Dashboard Summary Download File Info. FileName={}, FileSize={}", fileDownloadRes.fileNm(), fileDownloadRes.fileSize());
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 		httpHeaders.setContentLength(fileDownloadRes.fileSize());
-		httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + fileDownloadRes.fileNm());
+		httpHeaders.add(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString());
 
 		return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
 	}

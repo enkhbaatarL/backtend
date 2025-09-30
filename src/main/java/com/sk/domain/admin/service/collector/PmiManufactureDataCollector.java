@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,13 +17,20 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class PmiManufactureDataCollector implements DataCollectorStrategy {
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final int DATE_COLUMN_INDEX = 0; // 날짜 열 인덱스
     private static final int TIME_COLUMN_INDEX = 1; // 시간 열 인덱스
     private static final Pattern INPUT_PATTERN = Pattern.compile("^(\\w{3}\\s\\d{2},\\s\\d{4})\\s\\((\\w{3})\\)$");
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.PMI_MANUFACTURE;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
@@ -59,7 +67,7 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
 
     /**
      * CSV 레코드 파싱
-     * 
+     *
      * @param record
      * @param columnNames
      * @param criteriaDt
@@ -113,7 +121,7 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
 
     /**
      * 월 파싱(PMI 제조업 데이터 파싱 시 사용)
-     * 
+     *
      * @param monthStr
      * @return
      */
@@ -125,7 +133,7 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
 
     /**
      * 시간 파싱(PMI 제조업 데이터 파싱 시 사용)
-     * 
+     *
      * @param timeInput
      * @return
      */

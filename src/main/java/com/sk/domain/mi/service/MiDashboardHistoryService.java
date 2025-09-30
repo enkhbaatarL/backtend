@@ -14,6 +14,7 @@ import com.sk.domain.mi.dto.response.dashboard.history.HistoryDataRes;
 import com.sk.domain.mi.dto.response.dashboard.history.HistoryMetadataRes;
 import com.sk.domain.mi.dto.response.dashboard.history.PriceEntry;
 import com.sk.domain.mi.dto.response.dashboard.history.PriceStat;
+import com.sk.domain.mi.dto.response.dashboard.summary.DashboardSummary;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -46,6 +47,7 @@ public class MiDashboardHistoryService {
     private final ChartPredictSettingRepository settingRepo;
     private final ChartPredictSettingDetailRepository settingDetailRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
+    private final MiDashboardService miDashboardService;
 
     /**
      * 예측가 히스토리 메타데이터 조회
@@ -88,7 +90,7 @@ public class MiDashboardHistoryService {
             GoodsDataSourceDetail gds = forecast.getGoodsDataSourceDetail();
             List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
 
-            List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
+            List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).sorted(Comparator.reverseOrder()).toList();
 
             List<ChartPredictSettingDetail> actual = actualOrFutures.stream()
                 .filter(awf -> !awf.getIsFuture())
@@ -110,7 +112,7 @@ public class MiDashboardHistoryService {
                 GoodsDataSourceDetail gds = f.getGoodsDataSourceDetail();
                 List<TargetPredictResultData> targetPredictResultData = getPredictResultGroupedData(gds);
 
-                List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).toList();
+                List<String> fulfillDates = targetPredictResultData.stream().map(TargetPredictResultData::getPredictFulfillDate).sorted(Comparator.reverseOrder()).toList();
                 List<ChartPredictSettingDetail> grouped = settingDetailMap.getOrDefault(f.getChartPredictSettingDetailNo(), Collections.emptyList());
 
                 List<ChartPredictSettingDetail> actual = grouped.stream()
@@ -208,20 +210,46 @@ public class MiDashboardHistoryService {
             return HistoryDataRes.ofEmpty();
         }
 
-        ChartPredictSettingDetail forecast = selectForecast(forecasts, counterpart);
-        return buildHistoryData(forecast, counterpart, fulfillDate);
+        List<HistoryDataRes> result = null;
+
+        final List<ChartPredictSettingDetail> settingDetailForCheckDownload;
+        //TODO 변경 필요
+        if(setting.getCustomerCompany().getCustomerCompanyNo().equals(2013)){
+            result = buildHistoryData(forecasts.get(0), forecasts.get(1), counterpart, fulfillDate);
+            settingDetailForCheckDownload = forecasts;
+        }else{
+            ChartPredictSettingDetail forecast = selectForecast(forecasts, counterpart);
+            result = buildHistoryData(forecast, null, counterpart, fulfillDate);
+            settingDetailForCheckDownload = List.of(forecast);
+        }
+
+        return result.stream().map(r->{
+            if(r.baseline() == null && r.baseline2() == null){
+                return r;
+            }
+            List<DashboardSummary> dashboardSummaries = miDashboardService.getDashboardSummaries(settingDetailForCheckDownload, DateUtil.toYmd(fulfillDate), r.date()+"01");
+            boolean download = false;
+            for(DashboardSummary dashboardSummary : dashboardSummaries){
+                if(org.springframework.util.StringUtils.hasText(dashboardSummary.explanatoryFilePath())){
+                    download = true;
+                    break;
+                }
+            }
+            return HistoryDataRes.builder()
+                .date(r.date())
+                .baseline(r.baseline())
+                .baseline2(r.baseline2())
+                .counterpart(r.counterpart())
+                .download(download)
+                .build();
+        }).toList();
+
     }
 
     /**
      * counterpart 와 동일한 그룹의 forecast 선택
      */
-    private ChartPredictSettingDetail selectForecast(List<ChartPredictSettingDetail> srcForecasts, ChartPredictSettingDetail counterpart) {
-
-        // TODO 다시 고칠것
-        List<ChartPredictSettingDetail> forecasts = srcForecasts
-            .stream().filter(d->{
-                return !d.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(d.getGoodsDataSourceDetail().getGoodsDataSourceNo());
-            }).toList();
+    private ChartPredictSettingDetail selectForecast(List<ChartPredictSettingDetail> forecasts, ChartPredictSettingDetail counterpart) {
 
         if (forecasts.size() == 1) return forecasts.get(0);
 
@@ -234,21 +262,37 @@ public class MiDashboardHistoryService {
     /**
      * HistoryDataRes 리스트 빌더
      */
-    private List<HistoryDataRes> buildHistoryData(ChartPredictSettingDetail forecast, ChartPredictSettingDetail counterpart, LocalDate fulfillDate) {
+    private List<HistoryDataRes> buildHistoryData(ChartPredictSettingDetail forecast1, ChartPredictSettingDetail forecast2, ChartPredictSettingDetail counterpart, LocalDate fulfillDate) {
 
-        List<TargetPredictResultData> forecastResults = getPredictResultData(forecast.getGoodsDataSourceDetail(), fulfillDate);
+        List<TargetPredictResultData> forecastResults1 = getPredictResultData(forecast1.getGoodsDataSourceDetail(), fulfillDate);
 
         // 1. 예측 결과 날짜 추출
-        List<LocalDate> dates = forecastResults.stream()
+        List<LocalDate> dates1 = forecastResults1.stream()
             .map(TargetPredictResultData::getPredictResultDate)
             .filter(StringUtils::isNotEmpty)
             .map(DateUtil::fromYmd)
             .toList();
 
         // 2. 최소/최대 날짜 추출
-        LocalDate minDate = dates.stream().min(LocalDate::compareTo).orElse(LocalDate.now());
+        LocalDate minDate = dates1.stream().min(LocalDate::compareTo).orElse(LocalDate.now());
+        LocalDate maxDate = dates1.stream().max(LocalDate::compareTo).orElse(LocalDate.now());
+
+        List<TargetPredictResultData> forecastResults2 = null;
+        if(forecast2 != null){
+            forecastResults2 = getPredictResultData(forecast2.getGoodsDataSourceDetail(), fulfillDate);
+            // 1. 예측 결과 날짜 추출
+            List<LocalDate> dates2 = forecastResults2.stream()
+                .map(TargetPredictResultData::getPredictResultDate)
+                .filter(StringUtils::isNotEmpty)
+                .map(DateUtil::fromYmd)
+                .toList();
+            LocalDate minDate2 = dates2.stream().min(LocalDate::compareTo).orElse(LocalDate.now());
+            LocalDate maxDate2 = dates2.stream().max(LocalDate::compareTo).orElse(LocalDate.now());
+            minDate = Collections.min(Arrays.asList(minDate, minDate2));
+            maxDate = Collections.max(Arrays.asList(maxDate, maxDate2));
+        }
+
         LocalDate baseDate = minDate.isBefore(fulfillDate) ? minDate : fulfillDate.with(TemporalAdjusters.firstDayOfMonth());
-        LocalDate maxDate = dates.stream().max(LocalDate::compareTo).orElse(LocalDate.now());
 
         // 3. 해당 달의 1일/말일로 변환 (실제가/선물가)
         String start = DateUtil.toYmd(baseDate);
@@ -259,7 +303,7 @@ public class MiDashboardHistoryService {
         int goodsNo = counterpart.getGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo();
         boolean permitted = authorizationService.hasGoodsViewPermission(goodsNo);
 
-        return HistoryDataRes.ofList(forecast.getChartPredictSetting(), forecastResults, counterpartResults, counterpart.getIsFuture(), permitted, fulfillDate);
+        return HistoryDataRes.ofList(forecast1.getChartPredictSetting(), forecastResults1, forecastResults2, counterpartResults, counterpart.getIsFuture(), permitted, fulfillDate);
     }
 
     /**

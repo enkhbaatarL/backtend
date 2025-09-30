@@ -78,12 +78,12 @@ public class MarketDataChartSetting extends BaseEntity {
                 log.debug("{} is not CalculatePeriodChangeType. MarketDataSettingNo={}", compareCode2, marketDataSettingNo);
             }
         }
-        if(result.size() < 2){
-            result.add(CalculatePeriodChangeType.DOD);
-        }
-        if(result.size() < 2){
-            result.add(CalculatePeriodChangeType.WOW);
-        }
+//        if(result.size() < 2){
+//            result.add(CalculatePeriodChangeType.DOD);
+//        }
+//        if(result.size() < 2){
+//            result.add(CalculatePeriodChangeType.WOW);
+//        }
         return result;
     }
 

@@ -1,10 +1,11 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
 import static com.sk.common.enums.ResultCode.Error.REQ_INVALID_FORMAT;
 
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
+import com.sk.domain.shared.enums.ComponentType;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -17,13 +18,33 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
-public class SkEnsTypeBDataCollector implements DataCollectorStrategy {
+public class KplerWorldImportDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
     private static final int HEADER_COLUMN_DATA_INDEX = 1; // 헤더 열 인덱스
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1; // 데이터 시작 행 인덱스
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private enum CODE{
+        Asia("Asia_Import"),
+        Europe("Europe_Import"),
+        Americas("SouthAmeria_Import"),
+        Total("AS_EU_SA_Import");
+
+        String tbCode;
+        CODE(String tbCode){
+            this.tbCode = tbCode;
+        }
+    }
+
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.KPLER_WORLD_IMPORT;
+    }
 
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
@@ -46,6 +67,7 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy {
                     continue;
                 // 데이터 파싱
                 LocalDate date = parseDate(dateCell.getStringCellValue());
+                Double total = 0.00d;
                 for (int i = HEADER_COLUMN_DATA_INDEX; i < row.getLastCellNum() && i - HEADER_COLUMN_DATA_INDEX < periodCodes.size(); i++) {
                     Cell valueCell = row.getCell(i);
                     if (valueCell == null)
@@ -59,7 +81,9 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy {
                         }
                     }
                     result.add(new Object[] {date, getCode(periodCodes.get(i - HEADER_COLUMN_DATA_INDEX)), value});
+                    if(value != null) total += value;
                 }
+                result.add(new Object[] {date, getCode(CODE.Total.name()), total == 0 ? null : total});
             }
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
             throw AppErrorException.of(REQ_INVALID_FORMAT, "이 데이터는 CSV 를 지원하지 않습니다.");
@@ -68,16 +92,12 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy {
     }
 
     private String getCode(String input){
-        return input;
-        /*
-
         try{
             return CODE.valueOf(input).tbCode;
         } catch (IllegalArgumentException e){
             log.warn("No Defined Code. {}", input);
             return input;
         }
-         */
     }
 
     private static LocalDate parseDate(String input){

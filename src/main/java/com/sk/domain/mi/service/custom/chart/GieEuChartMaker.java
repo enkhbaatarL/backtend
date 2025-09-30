@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -87,20 +88,25 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         return goodsDataSourceNo;
     }
 
+    @Override
+    @Transactional
+    public MiMarketDataRes getDashboardChart(Integer companyNo) {
+        // 권한 조회
+        PermissionRes permissionRes = authorizationService.getPermissions();
+        return this.getDashboardChart(companyNo, permissionRes);
+    }
 
     @Override
-    public MiMarketDataRes getDashboardChart(Integer companyNo) {
+    public MiMarketDataRes getDashboardChart(Integer companyNo, PermissionRes permissionRes) {
 
-        LocalDate START_DATE = LocalDate.now().minusMonths(MiMarketDataService.MAIN_MARKET_DATA_START_DATE_MONTH);
-        LocalDate END_DATE = LocalDate.now();
+        final LocalDate START_DATE = LocalDate.of(LocalDate.now().getYear(), 1, 1);
+        final LocalDate END_DATE = LocalDate.of(LocalDate.now().getYear(), 12, 31);
 
         ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
         GoodsDataSourceDetail mainGoodsDataSource = validationResult.data();
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
         Goods mainGoods = mainGoodsData.getGoods();
 
-        // 권한 조회
-        PermissionRes permissionRes = authorizationService.getPermissions();
         Boolean isPermitted =
             permissionRes
                 .getGoodsViewableMap(companyNo)
@@ -178,11 +184,11 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
         // 월별 데이터로 변환
         List<MarketDataChartRawData> mainDashboardData =
-            MiMarketDynamicQueryService.convertToDashBoardData(
+            convertToDashBoardData(
                 rawData,
                 dateColumnName,
                 defaultDataColumnName,
-                LocalDate.now().minusMonths(MiMarketDataService.MARKET_DATA_MONTHLY_START_DATE_MONTH));
+                START_DATE, END_DATE);
 
         MarketDataChart mainChart = MarketDataChart.of(mainDashboardData);
 
@@ -207,11 +213,10 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
                 miMarketDynamicQueryService.getMarketDataRows(goodsDataSourceDetail, dateColumnName, START_DATE, END_DATE);
 
             List<MarketDataChartRawData> codeData =
-                MiMarketDynamicQueryService.convertToDashBoardData(
+                convertToDashBoardData(
                     codeRawData,
                     dateColumnName,
-                    defaultDataColumnName,
-                    LocalDate.now().minusMonths(MiMarketDataService.MARKET_DATA_MONTHLY_START_DATE_MONTH));
+                    defaultDataColumnName, START_DATE, END_DATE);
 
             compareCharts.add(MarketDataChart.of(codeData, code));
         }
@@ -310,5 +315,30 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         });
 
         return seriesList;
+    }
+
+    private static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
+        String dateColumnName,
+        String defaultDataColumnName,
+        LocalDate start, LocalDate end) {
+        if (rawData == null || rawData.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return rawData.stream()
+            .map(r->{
+                String date = DateUtil.toYmdHyphen(DateUtil.parseDate(r.get(dateColumnName)));
+                Object value = r.get(defaultDataColumnName);
+
+                return MarketDataChartRawData.builder()
+                    .date(date)
+                    .value(value == null ? null : Double.parseDouble(value.toString()))
+                    .build()
+                    ;
+            }).filter(data->{
+                LocalDate date = DateUtil.fromYmdHyphen(data.date());
+                return date.isAfter(start.minusDays(1)) && date.isBefore(end.plusDays(1));
+            })
+            .toList();
     }
 }

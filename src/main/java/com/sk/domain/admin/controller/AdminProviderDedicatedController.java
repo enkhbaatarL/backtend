@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@AccessIpCheck
+
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
 @Slf4j
 @RestController
@@ -60,6 +60,7 @@ public class AdminProviderDedicatedController {
             "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
             "xltx", "pptx");
 
+    @AccessIpCheck()
     @ApiOrder(91)
     @Operation(summary = "정형 데이타 파일 업로드", description = "정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -99,6 +100,7 @@ public class AdminProviderDedicatedController {
         return BaseResponseFactory.create(goodsDataService.uploadStructuredDataFile(companyCd, role, file, false, structuredDataFileReq));
     }
 
+    @AccessIpCheck()
     @ApiOrder(92)
     @Operation(summary = "비정형 데이타 파일 업로드", description = "비정형 데이타 파일을 업로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -130,5 +132,31 @@ public class AdminProviderDedicatedController {
         }
 
         return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, false, fileHash));
+    }
+
+    @ApiOrder(93)
+    @Operation(summary = "정형 데이타 Json 업로드", description = "정형 Json 데이터를 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping(value = "/goods-datas/upload-temp/structured-data", consumes = MediaType.APPLICATION_JSON_VALUE)
+    //@RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<GoodsDataJsonUploadRes> uploadStructuredDataFile(
+        @RequestBody StructuredDataJsonReq structuredDataJsonReq){
+
+        /** TODO 인증추가 필요
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+         */
+        int companyNo = 2013;
+        Role role = Role.OPERATOR;
+
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(
+                () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
+        String companyCd = customerCompany.getCustomerCompanyCd();
+
+        if (structuredDataJsonReq == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
+        return BaseResponseFactory.create(goodsDataService.uploadStructuredDataJson(companyCd, role, structuredDataJsonReq));
     }
 }

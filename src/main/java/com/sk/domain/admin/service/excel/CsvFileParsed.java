@@ -32,7 +32,7 @@ public class CsvFileParsed implements FileTypeStrategy {
      *
      * 테이블 칼럼 리스트(그래프를 그리기 위한 칼럼, tableColumnListNm)와, 엑셀 칼럼 리스트(excelColumnListNm) 명이 다를 수 있음
      * 칼럼명은 서로 1:1 대응 된다는 가정으로 작업하며 테이블 칼럼 리스트(tableColumnListNm) 순서와 엑셀 칼럼 리스트(excelColumnListNm) 순서가 같아야 함
-     * 
+     *
      * @param file 엑셀 파일
      * @param componentInfo 컴포넌트 정보
      * @param headerRowIndex 헤더 행 인덱스 (기본값 0)
@@ -79,4 +79,10 @@ public class CsvFileParsed implements FileTypeStrategy {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "Failed to process CSV file: " + e.getMessage());
         }
     }
+
+    @Override
+    public void postAction(ComponentInfo componentInfo) {
+        dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm()).postAction();
+    }
+
 }

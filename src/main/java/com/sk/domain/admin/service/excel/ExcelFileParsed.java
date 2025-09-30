@@ -27,7 +27,7 @@ public class ExcelFileParsed implements FileTypeStrategy {
      * 엑셀의 시트는 한개만 사용
      *
      * 테이블 칼럼 리스트(그래프를 그리기 위한 칼럼, tableColumnListNm)와, 엑셀 칼럼 리스트(excelColumnListNm) 명이 다를 수 있음
-     * 
+     *
      * @param file 엑셀 파일
      * @param componentInfo 컴포넌트 정보
      * @param headerRowIndex 헤더 행 인덱스 (기본값 0)
@@ -49,5 +49,10 @@ public class ExcelFileParsed implements FileTypeStrategy {
             workbook.close();
             throw e;
         }
+    }
+
+    @Override
+    public void postAction(ComponentInfo componentInfo) {
+        dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm()).postAction();
     }
 }

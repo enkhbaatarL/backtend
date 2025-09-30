@@ -1,5 +1,6 @@
-package com.sk.domain.admin.service.excel.collector;
+package com.sk.domain.admin.service.collector;
 
+import com.sk.domain.shared.enums.ComponentType;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,12 +17,19 @@ import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
 public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
     private static final int HEADER_ROW_INDEX = 0; // 헤더 행 인덱스
     private static final int DEFAULT_DATA_START_ROW_INDEX = 2; // 데이터 시작 행 인덱스
-    
+
+    @Override
+    public ComponentType getComponentType() {
+        return ComponentType.WW_RIG_SUMMARY;
+    }
+
     @Override
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
         if (criteriaDt == null) {
@@ -32,7 +40,7 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;
             Iterator<Row> rowIterator = sheet.iterator();
-            
+
             // 헤더 파싱
             List<String> periodCodes = ExcelParsedUtil.extractExcelHeader(sheet, HEADER_ROW_INDEX);
             // 빈 문자열 제거
@@ -63,7 +71,7 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
                         result.add(rowData);
                     }
                 }
-            }            
+            }
         } else if (data instanceof CSVParser) { // CSV 파일 파싱
             // CSVParser csvParser = (CSVParser) data;
             // for (CSVRecord record : csvParser) {

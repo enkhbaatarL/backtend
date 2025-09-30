@@ -8,6 +8,8 @@ import lombok.Builder;
 public record PriceEntry(
     @Schema(description = "예측가 or 실제가 or 선물가", example = "FORECAST", allowableValues = {"FORECAST", "ACTUAL", "FUTURE"})
     PriceType type,
+    @Schema(description = "라벨 뒤 추가 문자가 와야 할 경우")
+    String suffix,
     @Schema(description = "가격 정보")
     PriceStat stat,
     @Schema(description = "권한 여부", example = "true")
@@ -18,6 +20,14 @@ public record PriceEntry(
         return PriceEntry.builder()
             .type(type)
             .stat(stat)
+            .isPermitted(isPermitted)
+            .build();
+    }
+    public static PriceEntry of(PriceType type, PriceStat stat, Boolean isPermitted, String suffix) {
+        return PriceEntry.builder()
+            .type(type)
+            .stat(stat)
+            .suffix(suffix)
             .isPermitted(isPermitted)
             .build();
     }

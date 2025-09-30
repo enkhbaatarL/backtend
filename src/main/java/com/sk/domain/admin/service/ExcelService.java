@@ -39,8 +39,8 @@ public class ExcelService {
     private static final int DEFAULT_HEADER_ROW_INDEX = 0;
     private static final int DEFAULT_DATA_START_ROW_INDEX = 1;
 
-    private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final FileTypeStrategyResolver fileTypeStrategyResolver;
+    private final ImportService importService;
 
     // todo: 시트 2개 이상에서 데이타 담아서 내려주고 읽어오기
     /**
@@ -154,7 +154,7 @@ public class ExcelService {
     @Transactional
     public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt, String category) throws IOException {
         try {
-            validateComponentInfo(componentInfo);
+            importService.validateComponentInfo(componentInfo);
             List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
                     .map(String::trim)
                     .filter(name -> !name.isEmpty())
@@ -178,43 +178,16 @@ public class ExcelService {
             FileTypeStrategy strategy = fileTypeStrategyResolver.resolve(ExcelParsedUtil.validateFile(file));
             List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt, category);
 
-            return saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
+            boolean result = importService.saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
+            if(result){
+                strategy.postAction(componentInfo);
+            }
+            return result;
         } catch (Exception e) {
             log.error("Upload failed: {}", e.getMessage(), e);
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, e.getMessage());
         } finally {
             DataSourceContextHolder.clearDataSourceKey();
         }
-    }
-
-    /**
-     * 컴포넌트 정보 검증
-     * @param componentInfo
-     */
-    private void validateComponentInfo(ComponentInfo componentInfo) {
-        if (componentInfo.getTargetDbNm() == null || componentInfo.getTargetDbNm().isBlank()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Target database name is null or blank");
-        }
-        if (componentInfo.getExcelTableColumnListNm() == null || componentInfo.getExcelTableColumnListNm().isBlank()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Column name is null or blank");
-        }
-    }
-
-    /**
-     * 배치 데이터 저장
-     * @param targetDataSource
-     * @param columns
-     * @param values
-     * @param tableName
-     * @return
-     */
-    private boolean saveBatchData(String targetDataSource, List<String> columns, List<Object[]> values, String tableName) {
-        int batchSize = 500;
-        int totalRows = values.size();
-        for (int i = 0; i < totalRows; i += batchSize) {
-            List<Object[]> batchData = values.subList(i, Math.min(i + batchSize, totalRows));
-            mybatisDynamicQueryService.saveAllDynamicData(DynamicDataSaveAll.of(targetDataSource, tableName, columns, batchData));
-        }
-        return true;
     }
 }

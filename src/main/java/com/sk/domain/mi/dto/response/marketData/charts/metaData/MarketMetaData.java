@@ -95,9 +95,9 @@ public record MarketMetaData(
         }
         // temp
         final List<ChangeRate> tempChangeRates = new ArrayList<>();
-        if(dodChangeRate != null && !calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD)){
-            calculatePeriodChangeMap.put(CalculatePeriodChangeType.DOD, CalculatePeriodChangeValue.of(dodChangeRate, null));
-        }
+//        if(dodChangeRate != null && !calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD)){
+//            calculatePeriodChangeMap.put(CalculatePeriodChangeType.DOD, CalculatePeriodChangeValue.of(dodChangeRate, null));
+//        }
         calculatePeriodChangeMap.forEach((key,value)->{
             tempChangeRates.add(new ChangeRate(key.getPeriodName(), value.changeRate()));
         });
