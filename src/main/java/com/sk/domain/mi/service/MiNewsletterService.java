@@ -470,7 +470,6 @@ public class MiNewsletterService {
         );
     }
 
-
     /**
      * NewsletterChart 리스트를 ChartData로 변환
      */
@@ -484,23 +483,52 @@ public class MiNewsletterService {
         List<BigDecimal> volumeValues = new ArrayList<>();
 
         try {
+            if (flowCharts.isEmpty()) {
+                return new NewsletterDetailRes.ChartData(
+                    Collections.emptyList(),
+                    Collections.emptyList()
+                );
+            }
+
+            Map<Long, NewsletterChart> chartMap = new TreeMap<>();
             for (NewsletterChart chart : flowCharts) {
                 Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
-                BigDecimal high = chart.getHigh1();           // 고가
-                BigDecimal low = chart.getLow1();             // 저가
-                BigDecimal open = chart.getOpenPrice();       // 시가
-                BigDecimal close = chart.getTradePrice1();    // 종가
-                BigDecimal volume = chart.getNumMoves();      // 거래량
+                chartMap.put(timestamp, chart);
+            }
 
-                if (timestamp != null && high != null && low != null &&
-                    open != null && close != null) {
+            // 첫 번째와 마지막 timestamp 확인
+            Long firstTimestamp = chartMap.keySet().iterator().next();
+            Long lastTimestamp = ((TreeMap<Long, NewsletterChart>) chartMap).lastKey();
 
-                    timestamps.add(timestamp.toString());
+            // 5분 간격으로 모든 timestamp 생성 (5분 = 300,000 밀리초)
+            long interval = 5 * 60 * 1000L;
+
+            for (long currentTimestamp = firstTimestamp;
+                currentTimestamp <= lastTimestamp;
+                currentTimestamp += interval) {
+
+                timestamps.add(String.valueOf(currentTimestamp));
+
+                NewsletterChart chart = chartMap.get(currentTimestamp);
+
+                if (chart != null) {
+                    BigDecimal high = chart.getHigh1();
+                    BigDecimal low = chart.getLow1();
+                    BigDecimal open = chart.getOpenPrice();
+                    BigDecimal close = chart.getTradePrice1();
+                    BigDecimal volume = chart.getNumMoves();
+
                     highValues.add(high);
                     lowValues.add(low);
                     openValues.add(open);
                     closeValues.add(close);
                     volumeValues.add(volume != null ? volume : BigDecimal.ZERO);
+                } else {
+                    highValues.add(null);
+                    lowValues.add(null);
+                    openValues.add(null);
+                    closeValues.add(null);
+                    volumeValues.add(null);
                 }
             }
         } catch (Exception e) {
