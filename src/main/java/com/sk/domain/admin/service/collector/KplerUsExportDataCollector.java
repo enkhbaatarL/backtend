@@ -86,7 +86,7 @@ public class KplerUsExportDataCollector implements DataCollectorStrategy {
 
     @Override
     @Transactional
-    public void postAction() {
+    public void postAction(List<Object[]> values) {
         KplerCargo kplerCargo = kplerCargoRepository.findFirstByCodeOrderByDateDesc(CODE.USA_Export.name());
 
         BigDecimal total = kplerCargoRepository.findAllByCodeAndDateBetween(
