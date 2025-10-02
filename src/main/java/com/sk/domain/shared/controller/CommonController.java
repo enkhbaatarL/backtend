@@ -1,32 +1,33 @@
 package com.sk.domain.shared.controller;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Map;
-import java.util.Optional;
-
-import org.springframework.boot.info.BuildProperties;
-import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
+import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.CommonService;
-
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.info.BuildProperties;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
 @Tag(name = "04. Common API", description = "공통 API 입니다.")
@@ -70,5 +71,15 @@ public class CommonController {
     @GetMapping("/admin-access-check")
     public BaseResponse<Boolean> adminAccessCheck(@UserResolve User user, HttpServletRequest request) {
         return BaseResponseFactory.create(commonService.adminAccessCheck(user, request));
+    }
+
+    @ApiOrder(4)
+    @Operation(summary = "공통코드상세 목록 조회 API", description = "코드그룹ID로 해당하는 공통코드상세 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @Parameter(name = "codeGroupId", description = "코드그룹ID", required = true, example = "nws_mrkt_ctgr_cd")
+    @GetMapping("/codes/{codeGroupId}")
+    public BaseResponse<List<CommonCodeDetailRes>> getCommonCodeDetails(
+            @PathVariable("codeGroupId") String codeGroupId) {
+        return BaseResponseFactory.create(commonService.getCommonCodeDetails(codeGroupId));
     }
 }

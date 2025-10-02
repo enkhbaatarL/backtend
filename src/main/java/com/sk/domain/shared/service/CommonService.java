@@ -1,23 +1,24 @@
 package com.sk.domain.shared.service;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
+import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserAccessPageType;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
-
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,10 +27,11 @@ public class CommonService {
 
     private final AdminPermissionRepository adminPermissionRepository;
     private final UserRepository userRepository;
+    private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
+    private final CommonCodeRepository commonCodeRepository;
+    private final CommonCodeDetailRepository commonCodeDetailRepository;
     @Value("${server.domain}")
     private String miDefaultDomain;
-
-    private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
 
     /**
      * 사용자 정보를 조회합니다.
@@ -147,5 +149,23 @@ public class CommonService {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    /**
+     * 코드그룹ID로 공통코드상세 목록 조회
+     *
+     * @param codeGroupId 코드그룹ID
+     * @return 공통코드상세 목록
+     */
+    public List<CommonCodeDetailRes> getCommonCodeDetails(String codeGroupId) {
+        List<CommonCodeDetail> details = commonCodeDetailRepository.findValidCommonCodeDetails(codeGroupId);
+
+        return details.stream()
+                .map(detail -> new CommonCodeDetailRes(
+                        detail.getId().getCodeId(),
+                        detail.getCodeNm(),
+                        detail.getCodeExpn()
+                ))
+                .toList();
     }
 }

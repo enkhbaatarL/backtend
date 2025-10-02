@@ -1,13 +1,12 @@
 package com.sk.domain.shared.repository.master.tcm;
 
+import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.shared.entity.compositeKey.tcm.CommonCodeDetailId;
+import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
-import com.sk.domain.shared.entity.compositeKey.tcm.CommonCodeDetailId;
-import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 
 public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDetail, CommonCodeDetailId> {
 
@@ -98,4 +97,25 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
                 AND ccd.highCodeId = :highCodeId
             """)
     Integer findMaxCodeRnkByHighCodeId(@Param("highCodeGroupId") String highCodeGroupId, @Param("highCodeId") String highCodeId);
+
+    /**
+     * 코드그룹ID로 유효한 공통코드상세 목록 조회
+     * - 삭제되지 않고 (isDeleted = false)
+     * - 사용중이며 (isUsed = true)
+     * - 현재 날짜가 사용기간 내에 있는 데이터
+     *
+     * @param codeGroupId 코드그룹ID
+     * @return 공통코드상세 Entity 목록 (코드순위 정렬)
+     */
+    @Query(value = """
+            SELECT ccd
+            FROM CommonCodeDetail ccd
+            WHERE ccd.isDeleted = false
+                AND ccd.isUsed = true
+                AND ccd.useBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND ccd.useEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND ccd.id.codeGroupId = :codeGroupId
+            ORDER BY ccd.codeRnk
+            """)
+    List<CommonCodeDetail> findValidCommonCodeDetails(@Param("codeGroupId") String codeGroupId);
 }
