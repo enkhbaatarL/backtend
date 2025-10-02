@@ -50,6 +50,34 @@ public class MiDataDetailDedicatedController {
 
     private final MiDataDetailService miDataDetailService;
 
+    @ApiOrder(1)
+    @Parameters({
+        @Parameter(name = "goodsNo", description = "상품 번호"),
+        @Parameter(name = "goodsDataNo", description = "상품 데이터 번호")
+    })
+    @Operation(
+        summary = "상품 데이터 조회 API",
+        description = """
+            상품 데이터를 조회합니다. <br><br>
+            `isViewable`: 상품에 대한 보기 권한 여부를 의미합니다. <br>
+            `isDownloadable`: 상품에 대한 다운로드 권한 여부를 의미합니다. <br><br>
+            해당 API 호출 시, 상품데이터 조회 내역이 내부적으로 적재되어 관리됩니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/goods/{goodsNo}/goods-data/{goodsDataNo}")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsNestedParam = "goodsDataNo", requireViewPermission = true
+    )
+    public BaseResponse<GoodsDataRes> getGoodsData(
+        @PathVariable(value = "goodsNo") Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") Integer goodsDataNo
+    ) {
+        return BaseResponseFactory.create(miDataDetailService.getGoodsData(goodsNo, goodsDataNo));
+    }
+
     @ApiOrder(6)
     @Parameters({
         @Parameter(name = "goodsNo", description = "상품 번호"),
