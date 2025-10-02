@@ -866,30 +866,22 @@ public class MiNewsletterService {
         try {
             ZoneId newYorkZone = ZoneId.of("America/New_York");
 
-            LocalDate yesterday = publishDateTime.toLocalDate();
-            int dayOfWeek = yesterday.getDayOfWeek().getValue();
+            LocalDate today = publishDateTime.toLocalDate();
+            int dayOfWeek = today.getDayOfWeek().getValue();
 
-            if (dayOfWeek == 1) { // 월요일이면 3일 전 (금요일)
-                yesterday = yesterday.minusDays(3);
-            } else if (dayOfWeek == 7) { // 일요일이면 2일 전 (금요일)
-                yesterday = yesterday.minusDays(2);
-            } else {
-                yesterday = yesterday.minusDays(1);
-            }
-
-            // yesterday를 뉴욕 시간대로 변환하여 DST 확인
-            ZonedDateTime yesterdayInNY = yesterday.atStartOfDay(newYorkZone);
-            boolean isDST = newYorkZone.getRules().isDaylightSavings(yesterdayInNY.toInstant());
+            // today를 뉴욕 시간대로 변환하여 DST 확인
+            ZonedDateTime todayInNY = today.atStartOfDay(newYorkZone);
+            boolean isDST = newYorkZone.getRules().isDaylightSavings(todayInNY.toInstant());
 
             // 개장 시간: DST이면 9:30, 아니면 10:30
-            ZonedDateTime startTime = yesterdayInNY
+            ZonedDateTime startTime = todayInNY
                 .withHour(isDST ? 9 : 10)
                 .withMinute(30)
                 .withSecond(0)
                 .withNano(0);
 
             // 폐장 시간: DST이면 16:00, 아니면 17:00
-            ZonedDateTime endTime = yesterdayInNY
+            ZonedDateTime endTime = todayInNY
                 .withHour(isDST ? 16 : 17)
                 .withMinute(0)
                 .withSecond(0)
@@ -897,7 +889,7 @@ public class MiNewsletterService {
 
             // 그래프 x축 범위 계산
             // 전일 20시
-            ZonedDateTime chartStartTime = yesterdayInNY
+            ZonedDateTime chartStartTime = todayInNY
                 .minusDays(1)
                 .withHour(20)
                 .withMinute(0)
@@ -905,7 +897,7 @@ public class MiNewsletterService {
                 .withNano(0);
 
             // 당일 18시
-            ZonedDateTime chartEndTime = yesterdayInNY
+            ZonedDateTime chartEndTime = todayInNY
                 .withHour(17)
                 .withMinute(0)
                 .withSecond(0)
