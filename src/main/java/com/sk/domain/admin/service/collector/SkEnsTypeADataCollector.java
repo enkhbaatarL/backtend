@@ -193,7 +193,7 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
 
         log.debug("Data Update : {}", result.size());
 
-        importService.saveBatchData("midb", List.of("code", "date", "value"), result, "tif_skens_type_b");
+        importService.saveBatchData("midb-skens", List.of("code", "date", "value"), result, "tif_skens_type_b");
         log.debug("SK ENS Post Action End.");
     };
 }
