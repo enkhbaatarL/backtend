@@ -76,8 +76,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MiNewsletterService {
 
+    private static final String MIME_TYPE = "image/png";
     private final ObjectMapper objectMapper = new ObjectMapper();
-
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
     private final NewsletterTemplateRepository newsletterTemplateRepository;
@@ -229,7 +229,7 @@ public class MiNewsletterService {
             false,
             latestHistory != null ? latestHistory.getIssueNo().toString() : "0",  // issueNo
             encodeImageToBase64(master.getImageUrl(),
-                "image/png"),                                         // image
+                MIME_TYPE),                                         // image
             true
 
         );
@@ -239,10 +239,7 @@ public class MiNewsletterService {
      * 더미 Base64 이미지 생성 실제로는 이미지 파일을 읽어서 Base64로 인코딩하거나, DB에서 Base64 인코딩된 이미지 데이터를 조회해야 합니다.
      */
     private String generateDummyBase64Image() {
-        String imageBase64 = encodeImageToBase64("static/images/oil_trend_cover_img.png",
-            "image/png");
-        // 1x1 픽셀 투명 PNG 이미지의 Base64 인코딩
-        return imageBase64;
+        return encodeImageToBase64("static/images/oil_trend_cover_img.png", MIME_TYPE);
     }
 
     /**
@@ -352,7 +349,11 @@ public class MiNewsletterService {
             List<NewsletterEvent> events = newsletterEventRepository
                 .findByNewsletterPublishHistoryOrderByEventCreateTime(nph);
 
-            NewsletterDetailRes.ChartData chartData = convertNewsletterChartsToChartData(flowChart);
+            String[] marketTimes = calculateMarketTimes(nph.getPublishDateTime());
+
+            NewsletterDetailRes.ChartData chartData = convertNewsletterChartsToChartData(flowChart,
+                marketTimes);
+
             String aggregationTime = generateAggregationTime(chartData.timestamps());
 
             NewsFlowChart newsFlowChart = new NewsFlowChart(
@@ -403,8 +404,6 @@ public class MiNewsletterService {
                 newsEventItems
             );
 
-            String[] marketTimes = calculateMarketTimes(nph.getPublishDateTime());
-
             IssueDetail issueDetail = new IssueDetail(
                 nph.getNewsletterTitle(),
                 nph.getPublishDateTime().format(f1),
@@ -423,7 +422,7 @@ public class MiNewsletterService {
                 nm.getMasterName(),
                 nm.getExplanation(),
                 false,
-                encodeImageToBase64(nm.getImageUrl(), "image/png"),
+                encodeImageToBase64(nm.getImageUrl(), MIME_TYPE),
                 true,
                 issueDetail);
 
@@ -470,12 +469,11 @@ public class MiNewsletterService {
         );
     }
 
-
     /**
      * NewsletterChart 리스트를 ChartData로 변환
      */
     private NewsletterDetailRes.ChartData convertNewsletterChartsToChartData(
-        List<NewsletterChart> flowCharts) {
+        List<NewsletterChart> flowCharts, String[] marketTimes) {
         List<String> timestamps = new ArrayList<>();
         List<BigDecimal> highValues = new ArrayList<>();
         List<BigDecimal> lowValues = new ArrayList<>();
@@ -484,23 +482,58 @@ public class MiNewsletterService {
         List<BigDecimal> volumeValues = new ArrayList<>();
 
         try {
+            if (flowCharts.isEmpty()) {
+                return new NewsletterDetailRes.ChartData(
+                    Collections.emptyList(),
+                    Collections.emptyList()
+                );
+            }
+
+            Map<Long, NewsletterChart> chartMap = new TreeMap<>();
             for (NewsletterChart chart : flowCharts) {
                 Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
-                BigDecimal high = chart.getHigh1();           // 고가
-                BigDecimal low = chart.getLow1();             // 저가
-                BigDecimal open = chart.getOpenPrice();       // 시가
-                BigDecimal close = chart.getTradePrice1();    // 종가
-                BigDecimal volume = chart.getNumMoves();      // 거래량
+                chartMap.put(timestamp, chart);
+            }
 
-                if (timestamp != null && high != null && low != null &&
-                    open != null && close != null) {
+            Long firstTimestamp = chartMap.keySet().iterator().next();
+            Long lastTimestamp = ((TreeMap<Long, NewsletterChart>) chartMap).lastKey();
 
-                    timestamps.add(timestamp.toString());
+            Long startTimestamp = Long.parseLong(marketTimes[2]);
+            Long endTimestamp = Long.parseLong(marketTimes[3]);
+
+            // 실제 데이터와 설정된 범위를 비교하여 더 넓은 범위 사용
+            Long actualStartTimestamp = Math.min(firstTimestamp, startTimestamp);
+            Long actualEndTimestamp = Math.max(lastTimestamp, endTimestamp);
+
+            // 5분 간격으로 모든 timestamp 생성 (5분 = 300,000 밀리초)
+            long interval = 5 * 60 * 1000L;
+
+            for (long currentTimestamp = actualStartTimestamp;
+                currentTimestamp <= actualEndTimestamp;
+                currentTimestamp += interval) {
+
+                timestamps.add(String.valueOf(currentTimestamp));
+
+                NewsletterChart chart = chartMap.get(currentTimestamp);
+
+                if (chart != null) {
+                    BigDecimal high = chart.getHigh1();
+                    BigDecimal low = chart.getLow1();
+                    BigDecimal open = chart.getOpenPrice();
+                    BigDecimal close = chart.getTradePrice1();
+                    BigDecimal volume = chart.getNumMoves();
+
                     highValues.add(high);
                     lowValues.add(low);
                     openValues.add(open);
                     closeValues.add(close);
                     volumeValues.add(volume != null ? volume : BigDecimal.ZERO);
+                } else {
+                    highValues.add(null);
+                    lowValues.add(null);
+                    openValues.add(null);
+                    closeValues.add(null);
+                    volumeValues.add(null);
                 }
             }
         } catch (Exception e) {
@@ -645,7 +678,7 @@ public class MiNewsletterService {
                 .orElseThrow(
                     () -> new IllegalArgumentException("NewsletterCollectionChart not found"));
 
-            NewsletterDetailRes.ChartData chartData = getCltnChartData(nph, dataCode,
+            NewsletterDetailRes.ChartData chartData = getCltnChartData(dataCode,
                 newsletterCollectionChart);
             return Reference.ofChart(title, description, chartData);
         } catch (Exception e) {
@@ -672,7 +705,7 @@ public class MiNewsletterService {
             // timestamp별로 데이터 정리
             for (NewsletterChart chart : chartData) {
                 String timestamp = String.valueOf(
-                            Timestamp.valueOf(chart.getTimestamp()).getTime());
+                    Timestamp.valueOf(chart.getTimestamp()).getTime());
                 BigDecimal value = chart.getTradePrice1();
 
                 timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
@@ -687,7 +720,16 @@ public class MiNewsletterService {
             List<BigDecimal> values = timestamps.stream()
                 .map(ts -> timeSeriesData.get(ts).get(config.getCode()))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
+
+            BigDecimal max = values.stream()
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+            BigDecimal min = values.stream()
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+            String range = calculateRange(max, min, config.getColor());
 
             if (!values.isEmpty()) {
                 Series series = Series.ofWithChartOption(
@@ -698,7 +740,7 @@ public class MiNewsletterService {
                     true,
                     config.getColor(),
                     config.getDtick(),
-                    config.getRange());
+                    range);
                 allSeries.add(series);
             }
         }
@@ -706,7 +748,29 @@ public class MiNewsletterService {
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
     }
 
-    private NewsletterDetailRes.ChartData getCltnChartData(NewsletterPublishHistory nph,
+    private String calculateRange(BigDecimal max, BigDecimal min, String color) {
+        BigDecimal difference = max.subtract(min);
+        BigDecimal compare = BigDecimal.valueOf(color.equals("blue") ? 4 : 2);
+        double range = color.equals("blue") ? 1 : 0.5;
+
+        BigDecimal adjustedMax = BigDecimal.valueOf(Math.ceil(max.doubleValue()));
+        BigDecimal adjustedMin = BigDecimal.valueOf(Math.floor(min.doubleValue()));
+
+        BigDecimal resultMax;
+        BigDecimal resultMin;
+
+        if (difference.compareTo(compare) < 0) {
+            resultMax = adjustedMax.add(BigDecimal.valueOf(range));
+            resultMin = adjustedMin.subtract(BigDecimal.valueOf(range));
+        } else {
+            resultMax = adjustedMax;
+            resultMin = adjustedMin;
+        }
+
+        return String.format("[%s, %s]", resultMax, resultMin);
+    }
+
+    private NewsletterDetailRes.ChartData getCltnChartData(
         String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
 
         List<NewsletterTemplateCollectionChart> cltnChartConfigs =
@@ -721,13 +785,13 @@ public class MiNewsletterService {
         // 1. 모든 데이터를 timestamp 기준으로 수집
         Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
         List<Series> allSeries = new ArrayList<>();
-        DateTimeFormatter F_TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter f3 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
             try {
                 String additionalWhereClause = CombineUtil.createBetweenClause("date",
-                    newsletterCollectionChart.getStartDate().format(F_TS),
-                    newsletterCollectionChart.getEndDate().format(F_TS));
+                    newsletterCollectionChart.getStartDate().format(f3),
+                    newsletterCollectionChart.getEndDate().format(f3));
 
                 DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
                     .targetDataSource(config.getTargetDatabaseName())     // tgt_db_nm
@@ -778,7 +842,7 @@ public class MiNewsletterService {
             List<BigDecimal> values = timestamps.stream()
                 .map(ts -> timeSeriesData.get(ts).get(config.getColor()))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
             if (!values.isEmpty()) {
                 Series series = Series.ofWithChartOption(
@@ -802,45 +866,55 @@ public class MiNewsletterService {
         try {
             ZoneId newYorkZone = ZoneId.of("America/New_York");
 
-            LocalDate yesterday = publishDateTime.toLocalDate();
-            int dayOfWeek = yesterday.getDayOfWeek().getValue();
+            LocalDate today = publishDateTime.toLocalDate();
+            int dayOfWeek = today.getDayOfWeek().getValue();
 
-            if (dayOfWeek == 1) { // 월요일이면 3일 전 (금요일)
-                yesterday = yesterday.minusDays(3);
-            } else if (dayOfWeek == 7) { // 일요일이면 2일 전 (금요일)
-                yesterday = yesterday.minusDays(2);
-            } else {
-                yesterday = yesterday.minusDays(1);
-            }
-
-            // yesterday를 뉴욕 시간대로 변환하여 DST 확인
-            ZonedDateTime yesterdayInNY = yesterday.atStartOfDay(newYorkZone);
-            boolean isDST = newYorkZone.getRules().isDaylightSavings(yesterdayInNY.toInstant());
+            // today를 뉴욕 시간대로 변환하여 DST 확인
+            ZonedDateTime todayInNY = today.atStartOfDay(newYorkZone);
+            boolean isDST = newYorkZone.getRules().isDaylightSavings(todayInNY.toInstant());
 
             // 개장 시간: DST이면 9:30, 아니면 10:30
-            ZonedDateTime startTime = yesterdayInNY
+            ZonedDateTime startTime = todayInNY
                 .withHour(isDST ? 9 : 10)
                 .withMinute(30)
                 .withSecond(0)
                 .withNano(0);
 
             // 폐장 시간: DST이면 16:00, 아니면 17:00
-            ZonedDateTime endTime = yesterdayInNY
+            ZonedDateTime endTime = todayInNY
                 .withHour(isDST ? 16 : 17)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+            // 그래프 x축 범위 계산
+            // 전일 20시
+            ZonedDateTime chartStartTime = todayInNY
+                .minusDays(1)
+                .withHour(20)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+            // 당일 18시
+            ZonedDateTime chartEndTime = todayInNY
+                .withHour(17)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
 
             // Unix timestamp (milliseconds)로 변환
             return new String[]{
-                String.valueOf(startTime.toInstant().toEpochMilli()),
-                String.valueOf(endTime.toInstant().toEpochMilli())
+                String.valueOf(startTime.toInstant().toEpochMilli()),      // 개장 시간
+                String.valueOf(endTime.toInstant().toEpochMilli()),        // 폐장 시간
+                String.valueOf(chartStartTime.toInstant().toEpochMilli()), // 그래프 시작 (전일 20시)
+                String.valueOf(chartEndTime.toInstant().toEpochMilli())    // 그래프 종료 (당일 18시)
             };
 
         } catch (Exception e) {
             log.error("주식 시장 시간 계산 중 오류 발생", e);
             // 기본값 반환 (EST 기준)
-            return new String[]{"1704110200000", "1704133200000"};
+            return new String[]{"1704110200000", "1704133200000", "1704110200000", "1704133200000"};
         }
     }
 }
