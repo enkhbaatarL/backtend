@@ -152,7 +152,16 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
                 LocalDate date = (LocalDate)v[0];
                 LocalDate strip = (LocalDate)v[3];
                 String contract = (String)v[4];
-                BigDecimal settlement = (BigDecimal)v[6];
+                BigDecimal settlement = null;
+                if(v[6] instanceof BigDecimal value){
+                    settlement = value;
+                }else if(v[6] instanceof Integer value){
+                    settlement = BigDecimal.valueOf(value);
+                }else if(v[6] instanceof Double value){
+                    settlement = BigDecimal.valueOf(value);
+                }else if(v[6] instanceof String value){
+                    settlement = new BigDecimal(value);
+                }
                 return new SkEnsDataAType(date, strip, contract, settlement);
             }
         ).forEach(d->{
