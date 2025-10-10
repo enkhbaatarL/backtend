@@ -1,8 +1,10 @@
 package com.sk.domain.shared.entity.master.tmd;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import lombok.ToString;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
@@ -34,6 +36,7 @@ import lombok.NoArgsConstructor;
 @Comment("TMD_상품임계치설정")
 @Table(name = "tmd_gdscrtvlsetl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString
 public class GoodsCriticalValueSetting extends BaseEntity {
 
     @Id
@@ -69,6 +72,10 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @Comment("예측데이터여부")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isPredictData;
+
+    @Column(name = "last_noti_dtm")
+    @Comment("마지막알림발생기준날짜")
+    private LocalDateTime lastNotificationDate;
 
     @Builder
     public GoodsCriticalValueSetting(
@@ -120,5 +127,10 @@ public class GoodsCriticalValueSetting extends BaseEntity {
         if (ObjectUtils.isNotEmpty(dto.criticalValueSettingVol())) {
             this.criticalValueSettingVol = dto.criticalValueSettingVol();
         }
+    }
+
+    public void updateLastNotificationDate(LocalDate date){
+        if(date == null) return;
+        this.lastNotificationDate = date.atStartOfDay();
     }
 }

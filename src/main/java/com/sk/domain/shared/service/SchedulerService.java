@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
@@ -312,8 +313,16 @@ public class SchedulerService {
 
                     // 조건에 맞는 데이터 추가
                     if (isMatch) {
-                        // 이메일 발송
-                        mailService.sendNotificationMail(goodsCriticalValueSettingData, DateUtil.parseDate(createdTimeData));
+                        LocalDate criticalValueDate = DateUtil.parseDate(createdTimeData);
+                        if(goodsCriticalValueSettingData.getLastNotificationDate() != null
+                            && !goodsCriticalValueSettingData.getLastNotificationDate().toLocalDate().isBefore(criticalValueDate)){
+                            log.info("Past Notification is skipped. CreatedTime={}, {}", createdTimeData, goodsCriticalValueSettingData);
+                        }else{
+                            // 이메일 발송
+                            mailService.sendNotificationMail(goodsCriticalValueSettingData, criticalValueDate);
+                            goodsCriticalValueSettingData.updateLastNotificationDate(criticalValueDate);
+                            goodsCriticalValueSettingRepository.save(goodsCriticalValueSettingData);
+                        }
                     }
                 }
             }
