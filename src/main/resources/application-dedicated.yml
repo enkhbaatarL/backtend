@@ -32,5 +32,5 @@ server:
   domain: ${SKT_MI_DB_DEDICATED_DOMAIN:http://localhost:8080}
 
 dedicated:
-  company-no: 2020
+  company-no: 2013
 
