@@ -36,7 +36,6 @@ import lombok.NoArgsConstructor;
 @Comment("TMD_상품임계치설정")
 @Table(name = "tmd_gdscrtvlsetl")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@ToString
 public class GoodsCriticalValueSetting extends BaseEntity {
 
     @Id
@@ -132,5 +131,19 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     public void updateLastNotificationDate(LocalDate date){
         if(date == null) return;
         this.lastNotificationDate = date.atStartOfDay();
+    }
+
+    @Override
+    public String toString() {
+        return "GoodsCriticalValueSetting{" +
+            "userGoodsNotificationSettingNo=" + userGoodsNotificationSettingNo +
+            ", user=" + getUser().getUserNo() +
+            ", goodsDataSourceDetail=" + getGoodsDataSourceDetail().getGoodsDataSourceNo() +
+            ", notificationCriticalValueSeparateCd=" + notificationCriticalValueSeparateCd +
+            ", criticalValueSettingVol=" + criticalValueSettingVol +
+            ", criticalValueSettingUnitNm='" + criticalValueSettingUnitNm + '\'' +
+            ", isPredictData=" + isPredictData +
+            ", lastNotificationDate=" + lastNotificationDate +
+            '}';
     }
 }

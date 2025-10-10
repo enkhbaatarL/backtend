@@ -119,6 +119,7 @@ api:
     datasource-id: b6578dac-c777-403a-885c-c76c39d091c4
 
 mail:
+  except-company-no: 2020
   smtp:
     host: smtp.worksmobile.com
     port: 465
