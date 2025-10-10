@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -108,6 +110,7 @@ public class MybatisDynamicQueryService {
      * @param dynamicDataReq
      * @return
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<Map<String, Object>> getDynamicRawQuery(DynamicDataDetailReq dynamicDataDetailReq) {
         // 데이터 소스 설정
         DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.targetDataSource());

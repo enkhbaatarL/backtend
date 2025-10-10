@@ -180,5 +180,9 @@ decorator:
 
 custom:
   gie-eu:
-    goods-data-source-no: 5632
+    goods-data-source-no: 4209
     card-index: 6
+  us-export:
+    goods-data-source-no: 4231
+    card-index: 8
+    market-dashboard: 4217
