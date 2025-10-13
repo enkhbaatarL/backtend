@@ -223,14 +223,14 @@ public class MiNewsletterService {
         NewsletterPublishHistory latestHistory) {
         return new NewsletterFeaturedListRes(
             master.getNewsletterMasterId().toString(),                    // newsletterId
-            master.getPeriodType().name(),                                // frequency
+            master.getPeriodType().getCode(),                                // frequency
             master.getMasterName(),                                       // name
             master.getExplanation(),                                      // description
             false,
             latestHistory != null ? latestHistory.getIssueNo().toString() : "0",  // issueNo
             encodeImageToBase64(master.getImageUrl(),
                 MIME_TYPE),                                         // image
-            true
+            master.isActive()
 
         );
     }

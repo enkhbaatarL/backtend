@@ -6,7 +6,7 @@ public record NewsletterFeaturedListRes(
         @Schema(description = "뉴스레터 고유 ID", example = "NL001")
         String newsletterId,
 
-        @Schema(description = "발행주기", example = "WEEKLY", allowableValues = {"DAILY", "WEEKLY", "MONTHLY", "QUARTERLY"})
+        @Schema(description = "발행주기", example = "WEEKLY", allowableValues = {"DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "ON-DEMAND"})
         String frequency,
 
         @Schema(description = "뉴스레터 이름", example = "Oil Price Trends")

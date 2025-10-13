@@ -64,9 +64,10 @@ public class NewsletterMaster extends BaseEntity {
     private List<NewsletterPublishHistory> publishHistories = new ArrayList<>();
 
     @Builder
-    public NewsletterMaster(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer newsletterMasterId, PeriodType periodType, String explanation,
-            String imageUrl, Integer newsletterTemplateId, String masterName) {
+    public NewsletterMaster(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
+        String modifyUserId,
+        Boolean isDeleted, Integer newsletterMasterId, PeriodType periodType, String explanation,
+        String imageUrl, Integer newsletterTemplateId, String masterName) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.newsletterMasterId = newsletterMasterId;
         this.periodType = periodType;
@@ -77,17 +78,18 @@ public class NewsletterMaster extends BaseEntity {
     }
 
     public static NewsletterMaster of(PeriodType periodType, String explanation, String imageUrl,
-            Integer newsletterTemplateId, String masterName) {
+        Integer newsletterTemplateId, String masterName) {
         return NewsletterMaster.builder()
-                .periodType(periodType)
-                .explanation(explanation)
-                .imageUrl(imageUrl)
-                .newsletterTemplateId(newsletterTemplateId)
-                .masterName(masterName)
-                .build();
+            .periodType(periodType)
+            .explanation(explanation)
+            .imageUrl(imageUrl)
+            .newsletterTemplateId(newsletterTemplateId)
+            .masterName(masterName)
+            .build();
     }
 
-    public void update(PeriodType periodType, String explanation, String imageUrl, String masterName) {
+    public void update(PeriodType periodType, String explanation, String imageUrl,
+        String masterName) {
         if (ObjectUtils.isNotEmpty(periodType)) {
             this.periodType = periodType;
         }
@@ -105,7 +107,7 @@ public class NewsletterMaster extends BaseEntity {
         }
     }
 
-    public void softDelete() {
-        super.softDelete();
+    public boolean isActive() {
+        return !this.getIsDeleted();
     }
 }
