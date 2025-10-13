@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -92,33 +93,11 @@ public class DummyResponseAspect {
     }
 
     private String determineJsonFileName(String path, Method method) {
-        // URL 경로 기반으로 파일명 결정
-        if (path.contains("/notice/filter")) {
-            return "notice-filter";
-        } else if (path.matches(".*/notices/\\d+")) {
-            return "notice-detail";
-        } else if (path.contains("/notices/popup")) {
-            return "notice-popup";
-        } else if (path.contains("/notice")) {
-            return "notice-list";
-        } else if (path.contains("/faq/filter")) {
-            return "faq-filter";
-        } else if (path.contains("/faq")) {
-            return "faq-list";
-        } else if (path.matches(".*/dashboard/companies/\\d+/market-datas")) {
-            return "dashboard-market-datas";
-        } else if (path.matches(".*/dashboard/companies/\\d+/data/exists")) {
-            return "dashboard-exists";
-        } else if (path.contains("/newsletter/featured")) {
-            return "newsletter-featured";
-        } else if (path.matches(".*/newsletter/\\d+/\\d+$")) {
-            return "newsletter-detail";
-        } else if (path.matches(".*/newsletter/?$")) {
-            return "newsletter-list";
-        }
-
-        // 매칭되는 패턴이 없으면 null 반환
-        return null;
+        return Arrays.stream(PathPattern.values())
+            .filter(pattern -> pattern.matches(path))
+            .map(PathPattern::getFileName)
+            .findFirst()
+            .orElse(null);
     }
 
     private Object loadFromJson(String fileName, Class<?> returnType, Method method)
@@ -175,12 +154,20 @@ public class DummyResponseAspect {
 
                         return BaseResponseFactory.create(paginationData);
                     }
+
+                    // 다른 ParameterizedType (예: List<T>, Set<T> 등) 처리
+                    JavaType javaType = objectMapper.getTypeFactory()
+                        .constructType(dataParamType);
+                    Object data = objectMapper.readValue(resource.getInputStream(), javaType);
+                    return BaseResponseFactory.create(data);
                 }
 
-                // 일반 데이터 타입
-                Class<?> dataClass = (Class<?>) dataType;
-                Object data = objectMapper.readValue(resource.getInputStream(), dataClass);
-                return BaseResponseFactory.create(data);
+                // 일반 데이터 타입 (Class)
+                if (dataType instanceof Class) {
+                    Class<?> dataClass = (Class<?>) dataType;
+                    Object data = objectMapper.readValue(resource.getInputStream(), dataClass);
+                    return BaseResponseFactory.create(data);
+                }
             }
         }
 
@@ -213,5 +200,52 @@ public class DummyResponseAspect {
             return Collections.emptyList();
         }
         return null;
+    }
+
+    private enum PathPattern {
+        // Notice 관련
+        NOTICE_FILTER("/notice/filter", "notice-filter"),
+        NOTICE_DETAIL(".*/notices/\\d+", "notice-detail", true),
+        NOTICE_POPUP("/notices/popup", "notice-popup"),
+        NOTICE_LIST("/notice", "notice-list"),
+
+        // FAQ 관련
+        FAQ_FILTER("/faq/filter", "faq-filter"),
+        FAQ_LIST("/faq", "faq-list"),
+
+        // Dashboard 관련
+        DASHBOARD_MARKET_DATAS(".*/dashboard/companies/\\d+/market-datas", "dashboard-market-datas",
+            true),
+        DASHBOARD_EXISTS(".*/dashboard/companies/\\d+/data/exists", "dashboard-exists", true),
+
+        // Signal Map 관련
+        SIGNAL_MAP_PERIODS(".*/signal-map/companies/\\d+/periods", "signal-map-periods", true),
+
+        // Newsletter 관련
+        NEWSLETTER_FEATURED("/newsletter/featured", "newsletter-featured"),
+        NEWSLETTER_DETAIL(".*/newsletter/\\d+/\\d+$", "newsletter-detail", true),
+        NEWSLETTER_LIST(".*/newsletter/?$", "newsletter-list", true);
+
+        private final String pattern;
+        private final String fileName;
+        private final boolean isRegex;
+
+        PathPattern(String pattern, String fileName) {
+            this(pattern, fileName, false);
+        }
+
+        PathPattern(String pattern, String fileName, boolean isRegex) {
+            this.pattern = pattern;
+            this.fileName = fileName;
+            this.isRegex = isRegex;
+        }
+
+        public boolean matches(String path) {
+            return isRegex ? path.matches(pattern) : path.contains(pattern);
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
     }
 }
