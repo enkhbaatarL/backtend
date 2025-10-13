@@ -119,12 +119,13 @@ api:
     datasource-id: b6578dac-c777-403a-885c-c76c39d091c4
 
 mail:
+  except-company-no: 2020
   smtp:
     host: smtp.worksmobile.com
     port: 465
-    username: no-reply-manure@manure.by-works.com
-    password: WT6y1MpWNyqY
-    from: no-reply-manure@manure.by-works.com
+    username: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
+    password: ${SKT_MI_NO_REPLY_MAIL_PW:Godqhr0630}
+    from: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
     properties:
       transport-protocol: smtp
       auth: true

@@ -409,13 +409,15 @@ public class MiMarketDataService {
                 }
               }
 
+              List<MarketDataChartRawData> compareList = mainDashboardData.stream().filter(d->d.value() != null).toList();
+
               // max, min
               MarketDataChartRawData min =
                   Collections.min(
-                      mainDashboardData, Comparator.comparingDouble(MarketDataChartRawData::value));
+                      compareList, Comparator.comparingDouble(MarketDataChartRawData::value));
               MarketDataChartRawData max =
                   Collections.max(
-                      mainDashboardData, Comparator.comparingDouble(MarketDataChartRawData::value));
+                      compareList, Comparator.comparingDouble(MarketDataChartRawData::value));
 
               // 마켓데이터 메타데이터 생성
               MarketMetaData marketMetaData =

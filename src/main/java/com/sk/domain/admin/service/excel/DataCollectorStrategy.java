@@ -7,5 +7,5 @@ public interface DataCollectorStrategy {
 
     ComponentType getComponentType();
     List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category);
-    default void postAction(){};
+    default void postAction(List<Object[]> values){};
 }

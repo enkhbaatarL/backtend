@@ -115,6 +115,7 @@ api:
     datasource-id: e0e0e60d-8251-4425-b588-4f0a5131f9ae
 
 mail:
+  except-company-no: 2013
   smtp:
     host: smtp.worksmobile.com
     port: 465

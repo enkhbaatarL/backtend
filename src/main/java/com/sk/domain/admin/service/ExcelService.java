@@ -180,7 +180,7 @@ public class ExcelService {
 
             boolean result = importService.saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
             if(result){
-                strategy.postAction(componentInfo);
+                strategy.postAction(componentInfo, values);
             }
             return result;
         } catch (Exception e) {

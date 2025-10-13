@@ -1,8 +1,10 @@
 package com.sk.domain.shared.entity.master.tmd;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import lombok.ToString;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
 
@@ -70,6 +72,10 @@ public class GoodsCriticalValueSetting extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isPredictData;
 
+    @Column(name = "last_noti_dtm")
+    @Comment("마지막알림발생기준날짜")
+    private LocalDateTime lastNotificationDate;
+
     @Builder
     public GoodsCriticalValueSetting(
             LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
@@ -120,5 +126,24 @@ public class GoodsCriticalValueSetting extends BaseEntity {
         if (ObjectUtils.isNotEmpty(dto.criticalValueSettingVol())) {
             this.criticalValueSettingVol = dto.criticalValueSettingVol();
         }
+    }
+
+    public void updateLastNotificationDate(LocalDate date){
+        if(date == null) return;
+        this.lastNotificationDate = date.atStartOfDay();
+    }
+
+    @Override
+    public String toString() {
+        return "GoodsCriticalValueSetting{" +
+            "userGoodsNotificationSettingNo=" + userGoodsNotificationSettingNo +
+            ", user=" + getUser().getUserNo() +
+            ", goodsDataSourceDetail=" + getGoodsDataSourceDetail().getGoodsDataSourceNo() +
+            ", notificationCriticalValueSeparateCd=" + notificationCriticalValueSeparateCd +
+            ", criticalValueSettingVol=" + criticalValueSettingVol +
+            ", criticalValueSettingUnitNm='" + criticalValueSettingUnitNm + '\'' +
+            ", isPredictData=" + isPredictData +
+            ", lastNotificationDate=" + lastNotificationDate +
+            '}';
     }
 }

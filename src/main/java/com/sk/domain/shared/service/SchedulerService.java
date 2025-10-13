@@ -27,14 +27,21 @@ import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.config.SchedulerConfig;
 import com.sk.domain.shared.template.query.MybatisQueryTemplate;
+import jakarta.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cglib.core.Local;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -71,6 +78,7 @@ public class SchedulerService {
     private final PdfToImagesProcessor pdfToImagesProcessor;
     private final GieEuRepository gieEuRepository;
     private final InterestRateRepository interestRateRepository;
+    private final SchedulerConfig schedulerConfig;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
     private final int ALARM_BATCH_DAYS = 1;
@@ -85,6 +93,7 @@ public class SchedulerService {
     private static final int CL_WEIGHT = 3; // CRACK SPREAD 계산 시 CL 가중치
     private static final int BARREL_CONVERSION_FACTOR = 42; // 배럴 변환 계수
     private static final int BATCH_SIZE = 10000;
+
 
     /**
      * GDI 탈퇴 유저 soft delete 처리
@@ -134,6 +143,20 @@ public class SchedulerService {
          * 임계치 설정별 데이터 리스트 조회
          */
         for (GoodsCriticalValueSetting goodsCriticalValueSettingData : goodsCriticalValueSettings) {
+            // 공통 서버에서는 제외 리스트 확인 ( dedi 서비스에서는 처리 안함 )
+            if(schedulerConfig.getExceptCompanyNoList() != null
+                && schedulerConfig.getExceptCompanyNoList().contains(goodsCriticalValueSettingData.getUser().getCustomerCompany().getCustomerCompanyNo())){
+                continue;
+            }
+
+            // dedi 일 경우 해당 회사만 호출
+            if(schedulerConfig.getExceptCompanyNoList() == null // Common 이 아님. Common 이면, 반드시 값이 있음.
+                && (
+                    schedulerConfig.getDedicatedCompanyNoList() == null
+                        || !schedulerConfig.getDedicatedCompanyNoList().contains(goodsCriticalValueSettingData.getUser().getCustomerCompany().getCustomerCompanyNo())
+                )){
+                continue;
+            }
             // 알림 설정이 되어있는 경우에만 알림 발송
             if (goodsCriticalValueSettingData.getUser().getIsUserNotificationSetting()) {
                 String targetDatabaseNm = goodsCriticalValueSettingData.getGoodsDataSourceDetail().getTargetDbNm();
@@ -312,8 +335,16 @@ public class SchedulerService {
 
                     // 조건에 맞는 데이터 추가
                     if (isMatch) {
-                        // 이메일 발송
-                        mailService.sendNotificationMail(goodsCriticalValueSettingData, DateUtil.parseDate(createdTimeData));
+                        LocalDate criticalValueDate = DateUtil.parseDate(createdTimeData);
+                        if(goodsCriticalValueSettingData.getLastNotificationDate() != null
+                            && !goodsCriticalValueSettingData.getLastNotificationDate().toLocalDate().isBefore(criticalValueDate)){
+                            log.info("Past Notification is skipped. CreatedTime={}, {}", createdTimeData, goodsCriticalValueSettingData);
+                        }else{
+                            // 이메일 발송
+                            mailService.sendNotificationMail(goodsCriticalValueSettingData, criticalValueDate);
+                            goodsCriticalValueSettingData.updateLastNotificationDate(criticalValueDate);
+                            goodsCriticalValueSettingRepository.save(goodsCriticalValueSettingData);
+                        }
                     }
                 }
             }
@@ -760,4 +791,5 @@ public class SchedulerService {
             log.info("[State Gov 10Y, 2Y] check and update. Number={}, Total={}", interestRate10YPage.getNumber(), interestRate10YPage.getTotalElements());
         }while (!interestRate10YPage.isLast());
     }
+
 }

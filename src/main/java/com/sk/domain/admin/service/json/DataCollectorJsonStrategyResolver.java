@@ -27,7 +27,7 @@ public class DataCollectorJsonStrategyResolver {
     public DataCollectorJsonStrategy resolve(ComponentType componentType) {
         DataCollectorJsonStrategy dataCollectorStrategy = dataCollectorStrategyMap.get(componentType);
         if(dataCollectorStrategy == null){
-            dataCollectorStrategyMap.get(ComponentType.DEFAULT);
+            dataCollectorStrategyMap.get(ComponentType.GENERAL);
         }
         return dataCollectorStrategy;
     }

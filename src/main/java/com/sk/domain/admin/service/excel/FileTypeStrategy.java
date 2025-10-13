@@ -14,5 +14,5 @@ public interface FileTypeStrategy {
     List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt, String category)
             throws IOException;
 
-    void postAction(ComponentInfo componentInfo);
+    void postAction(ComponentInfo componentInfo, List<Object[]> values);
 }

@@ -24,7 +24,7 @@ public class DefaultDataCollector implements DataCollectorStrategy {
 
     @Override
     public ComponentType getComponentType() {
-        return ComponentType.DEFAULT;
+        return ComponentType.GENERAL;
     }
 
     @Override

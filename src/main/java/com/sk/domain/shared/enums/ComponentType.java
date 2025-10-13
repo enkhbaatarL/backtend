@@ -1,7 +1,6 @@
 package com.sk.domain.shared.enums;
 
 public enum ComponentType {
-    DEFAULT,
     GENERAL, // 일반
     PIVOT, // 피벗 형태(일반)
     CPC_NINO_SST, // 크롤링: CPC

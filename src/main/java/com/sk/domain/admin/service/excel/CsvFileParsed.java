@@ -81,8 +81,8 @@ public class CsvFileParsed implements FileTypeStrategy {
     }
 
     @Override
-    public void postAction(ComponentInfo componentInfo) {
-        dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm()).postAction();
+    public void postAction(ComponentInfo componentInfo, List<Object[]> values) {
+        dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm()).postAction(values);
     }
 
 }
