@@ -76,7 +76,8 @@ public class DummyResponseAspect {
 
             // 매칭되는 URL 패턴이 없으면 원래 API 호출
             if (jsonFileName == null) {
-                log.debug("No matching dummy data pattern for: {}, proceeding with actual API", requestPath);
+                log.debug("No matching dummy data pattern for: {}, proceeding with actual API",
+                    requestPath);
                 return joinPoint.proceed();
             }
 
@@ -110,9 +111,9 @@ public class DummyResponseAspect {
             return "dashboard-exists";
         } else if (path.contains("/newsletter/featured")) {
             return "newsletter-featured";
-        } else if (path.matches(".*/newsletter/[^/]+/[^/]+")) {
+        } else if (path.matches(".*/newsletter/\\d+/\\d+$")) {
             return "newsletter-detail";
-        } else if (path.contains("/newsletter")) {
+        } else if (path.matches(".*/newsletter/?$")) {
             return "newsletter-list";
         }
 
