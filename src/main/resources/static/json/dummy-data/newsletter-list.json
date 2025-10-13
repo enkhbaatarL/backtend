@@ -1,0 +1,85 @@
+{
+  "totalPages": 1,
+  "totalElements": 9,
+  "currentPage": 1,
+  "numberOfElements": 9,
+  "size": 20,
+  "isFirst": true,
+  "isLast": true,
+  "hasPrevious": false,
+  "hasNext": false,
+  "detail": [
+    {
+      "newsletterId": "1",
+      "date": "2025-09-26T00:00:00",
+      "issueNo": "9",
+      "name": "Oil Price Trends",
+      "title": "イラク・ロシアの原油供給拡大と米印貿易交渉、原油価格下落圧力が継続",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-25T00:00:00",
+      "issueNo": "8",
+      "name": "Oil Price Trends",
+      "title": "ロシア・ウクライナの緊張と原油輸出制限、国際原油価格上昇圧力が継続",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-24T00:00:00",
+      "issueNo": "7",
+      "name": "Oil PriceTTrends",
+      "title": "ロシア・イランのエネルギー協力と黒海港湾の停止、原油価格上昇圧力が拡大",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-23T00:00:00",
+      "issueNo": "6",
+      "name": "Oil Price Trends",
+      "title": "米国のベネズエラ原油輸出急減と在庫減少で原油価格が上昇",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-22T00:00:00",
+      "issueNo": "5",
+      "name": "Oil Price Trends",
+      "title": "国連総会の中東産油国多国間会談および地政学的不確実性で原油価格が堅調に推移",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-19T00:00:00",
+      "issueNo": "4",
+      "name": "Oil Price Trends",
+      "title": "EUのロシアエネルギー輸入停止および世界的な不確実性の中、原油価格下落圧力が拡大",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-18T00:00:00",
+      "issueNo": "3",
+      "name": "Oil Price Trends",
+      "title": "米英首脳会談・EUの対ロシア制裁拡大の中、地政学的リスクで原油価格が堅調に推移",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-17T00:00:00",
+      "issueNo": "2",
+      "name": "Oil Price Trends",
+      "title": "FRBの利下げと米国の原油純輸入の最低水準、イラン協議の不確実性の中、原油価格下落圧力が拡大",
+      "status": "PUBLISHED"
+    },
+    {
+      "newsletterId": "1",
+      "date": "2025-09-16T00:00:00",
+      "issueNo": "1",
+      "name": "Oil Price Trends",
+      "title": "ウクライナ・ロシアの製油施設攻撃およびイスラエルの攻勢で原油価格が1%上昇",
+      "status": "PUBLISHED"
+    }
+  ]
+}

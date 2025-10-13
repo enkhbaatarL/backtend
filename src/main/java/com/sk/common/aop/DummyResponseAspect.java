@@ -44,12 +44,10 @@ public class DummyResponseAspect {
     @Around("execution(* com.sk.domain.mi.controller..*(..))")
     public Object handleDummyResponse(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        // Accept-Language가 ja로 시작하는지 확인
         boolean isJapanese = isJapaneseLanguage();
 
         // 일본어이고, dummy 모드가 활성화된 경우
         if (isJapanese && dummyResponseEnabled) {
-            // dummy 데이터 처리
             return createDummyData(joinPoint);
         }
 
@@ -66,7 +64,7 @@ public class DummyResponseAspect {
         return acceptLanguage.startsWith("ja");
     }
 
-    private Object createDummyData(ProceedingJoinPoint joinPoint) {
+    private Object createDummyData(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();
             Method method = signature.getMethod();
@@ -75,6 +73,12 @@ public class DummyResponseAspect {
             // HTTP 요청 경로로 JSON 파일명 결정
             String requestPath = request.getRequestURI();
             String jsonFileName = determineJsonFileName(requestPath, method);
+
+            // 매칭되는 URL 패턴이 없으면 원래 API 호출
+            if (jsonFileName == null) {
+                log.debug("No matching dummy data pattern for: {}, proceeding with actual API", requestPath);
+                return joinPoint.proceed();
+            }
 
             log.debug("Loading dummy data from: {}/{}.json", dummyDataPath, jsonFileName);
 
@@ -100,15 +104,20 @@ public class DummyResponseAspect {
             return "faq-filter";
         } else if (path.contains("/faq")) {
             return "faq-list";
+        } else if (path.matches(".*/dashboard/companies/\\d+/market-datas")) {
+            return "dashboard-market-datas";
+        } else if (path.matches(".*/dashboard/companies/\\d+/data/exists")) {
+            return "dashboard-exists";
+        } else if (path.contains("/newsletter/featured")) {
+            return "newsletter-featured";
+        } else if (path.matches(".*/newsletter/[^/]+/[^/]+")) {
+            return "newsletter-detail";
+        } else if (path.contains("/newsletter")) {
+            return "newsletter-list";
         }
 
-        // 메서드 이름 기반 fallback
-        String methodName = method.getName();
-        if (methodName.startsWith("get")) {
-            return methodName.substring(3).toLowerCase();
-        }
-
-        return "default";
+        // 매칭되는 패턴이 없으면 null 반환
+        return null;
     }
 
     private Object loadFromJson(String fileName, Class<?> returnType, Method method)
