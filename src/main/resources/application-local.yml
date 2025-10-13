@@ -181,3 +181,8 @@ custom:
   gie-eu:
     goods-data-source-no: 5632
     card-index: 6
+
+dummy:
+  enabled: true
+  data:
+    path: static/json/dummy-data

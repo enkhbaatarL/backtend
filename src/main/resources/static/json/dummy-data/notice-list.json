@@ -1,0 +1,93 @@
+{
+    "totalPages": 1,
+    "totalElements": 10,
+    "currentPage": 1,
+    "numberOfElements": 10,
+    "size": 20,
+    "isFirst": true,
+    "isLast": true,
+    "hasPrevious": false,
+    "hasNext": false,
+    "detail": [
+      {
+        "bulletinNo": 58,
+        "isTopFixed": true,
+        "bulletinCategorySeparateCode": "CATEGORY1",
+        "bulletinTitleName": "システム固定 2次",
+        "createDt": "2025-06-09T22:11:49",
+        "isRead": true
+      },
+      {
+        "bulletinNo": 57,
+        "isTopFixed": true,
+        "bulletinCategorySeparateCode": "CATEGORY1",
+        "bulletinTitleName": "システム固定のお知らせテスト",
+        "createDt": "2025-06-09T22:09:46",
+        "isRead": true
+      },
+      {
+        "bulletinNo": 28,
+        "isTopFixed": true,
+        "bulletinCategorySeparateCode": "CATEGORY1",
+        "bulletinTitleName": "投稿のタイトル",
+        "createDt": "2025-04-14T14:17:59",
+        "isRead": false
+      },
+      {
+        "bulletinNo": 22,
+        "isTopFixed": true,
+        "bulletinCategorySeparateCode": "CATEGORY1",
+        "bulletinTitleName": "お知らせのタイトル 5",
+        "createDt": "2025-04-14T14:07:05",
+        "isRead": false
+      },
+      {
+        "bulletinNo": 18,
+        "isTopFixed": true,
+        "bulletinCategorySeparateCode": "CATEGORY1",
+        "bulletinTitleName": "お知らせのタイトル 1",
+        "createDt": "2025-04-14T13:57:24",
+        "isRead": false
+      },
+      {
+        "bulletinNo": 65,
+        "isTopFixed": false,
+        "bulletinCategorySeparateCode": "CATEGORY3",
+        "bulletinTitleName": "改行テストです。",
+        "createDt": "2025-06-18T09:18:49",
+        "isRead": true
+      },
+      {
+        "bulletinNo": 64,
+        "isTopFixed": false,
+        "bulletinCategorySeparateCode": "CATEGORY2",
+        "bulletinTitleName": "画像テスト",
+        "createDt": "2025-06-18T09:17:45",
+        "isRead": false
+      },
+      {
+        "bulletinNo": 61,
+        "isTopFixed": false,
+        "bulletinCategorySeparateCode": "CATEGORY2",
+        "bulletinTitleName": "お知らせページネーションテスト 2",
+        "createDt": "2025-06-09T22:15:03",
+        "isRead": true
+      },
+      {
+        "bulletinNo": 60,
+        "isTopFixed": false,
+        "bulletinCategorySeparateCode": "CATEGORY1",
+        "bulletinTitleName": "お知らせページネーションテスト",
+        "createDt": "2025-06-09T22:14:44",
+        "isRead": false
+      },
+      {
+        "bulletinNo": 25,
+        "isTopFixed": false,
+        "bulletinCategorySeparateCode": "CATEGORY2",
+        "bulletinTitleName": "お知らせのタイトル 8",
+        "createDt": "2025-04-14T14:13:22",
+        "isRead": false
+      }
+    ]
+  }

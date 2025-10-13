@@ -1,0 +1,16 @@
+{
+  "category": [
+    {
+        "key": "CATEGORY1",
+        "value": "利用案内"
+      },
+      {
+        "key": "CATEGORY2",
+        "value": "権限とアクセス"
+      },
+      {
+        "key": "CATEGORY3",
+        "value": "その他"
+      }
+  ]
+}

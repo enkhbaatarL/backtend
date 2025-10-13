@@ -1,0 +1,35 @@
+{
+  "content": [
+    {
+      "bulletinNo": 101,
+      "bulletinTitleNm": "비밀번호를 잊어버렸어요. 어떻게 재설정하나요?",
+      "bulletinCntt": "<p>비밀번호 재설정은 다음과 같이 진행하실 수 있습니다.</p><ol><li>로그인 페이지에서 '비밀번호 찾기' 클릭</li><li>가입 시 등록한 이메일 주소 입력</li><li>이메일로 전송된 인증 링크 클릭</li><li>새로운 비밀번호 설정</li></ol><p>추가 문의사항이 있으시면 고객센터(1588-1234)로 연락 주세요.</p>"
+    },
+    {
+      "bulletinNo": 102,
+      "bulletinTitleNm": "결제 후 환불은 어떻게 받나요?",
+      "bulletinCntt": "<p>환불 절차는 다음과 같습니다.</p><ol><li>마이페이지 > 구매내역 접속</li><li>환불 요청할 상품 선택</li><li>환불 사유 작성 및 신청</li><li>영업일 기준 3-5일 내 환불 처리</li></ol><p>결제 수단에 따라 환불 기간이 상이할 수 있습니다.</p>"
+    },
+    {
+      "bulletinNo": 103,
+      "bulletinTitleNm": "모바일 앱이 자꾸 종료됩니다.",
+      "bulletinCntt": "<p>앱이 비정상 종료되는 경우 다음을 확인해주세요.</p><ul><li>앱 버전이 최신인지 확인 (현재 최신 버전: 2.0.5)</li><li>휴대폰 저장공간 여유 확인 (최소 500MB 필요)</li><li>앱 캐시 삭제 후 재실행</li><li>필요시 앱 재설치</li></ul><p>문제가 지속되면 기기 정보와 함께 고객센터로 문의해주세요.</p>"
+    },
+    {
+      "bulletinNo": 104,
+      "bulletinTitleNm": "회원 탈퇴는 어떻게 하나요?",
+      "bulletinCntt": "<p>회원 탈퇴는 마이페이지 > 설정 > 회원탈퇴에서 가능합니다.</p><p><strong>주의사항:</strong></p><ul><li>탈퇴 시 모든 데이터가 삭제되며 복구 불가능</li><li>미사용 포인트 및 쿠폰 소멸</li><li>진행 중인 거래가 있는 경우 탈퇴 불가</li></ul>"
+    },
+    {
+      "bulletinNo": 105,
+      "bulletinTitleNm": "포인트 적립 기준이 어떻게 되나요?",
+      "bulletinCntt": "<p>포인트는 다음과 같이 적립됩니다.</p><ul><li>구매 금액의 1% 기본 적립</li><li>프리미엄 회원: 3% 추가 적립</li><li>이벤트 기간: 최대 10% 적립</li></ul><p>포인트는 결제 완료 시점에 즉시 적립되며, 1년간 유효합니다.</p>"
+    }
+  ],
+  "totalElements": 45,
+  "totalPages": 9,
+  "currentPage": 1,
+  "pageSize": 20,
+  "hasNext": true,
+  "hasPrevious": false
+}

@@ -1,0 +1,68 @@
+{
+  "category": [
+    {
+      "key": "CATEGORY1",
+      "value": "システム"
+    },
+    {
+      "key": "CATEGORY2",
+      "value": "データ"
+    },
+    {
+      "key": "CATEGORY3",
+      "value": "一般"
+    },
+    {
+      "key": "CATEGORY4",
+      "value": "その他"
+    }
+  ],
+  "status": [
+    {
+      "key": "ACTIVE",
+      "value": "掲載中"
+    },
+    {
+      "key": "INACTIVE",
+      "value": "非掲載"
+    }
+  ],
+  "target": [
+    {
+      "key": "2015",
+      "value": "SK Hynix"
+    },
+    {
+      "key": "2017",
+      "value": "SK Inc. C&C"
+    },
+    {
+      "key": "2019",
+      "value": "SK Innovation"
+    },
+    {
+      "key": "2013",
+      "value": "SK Innovation E&S"
+    },
+    {
+      "key": "2008",
+      "value": "SK Siltron"
+    },
+    {
+      "key": "2020",
+      "value": "SK energy"
+    },
+    {
+      "key": "2014",
+      "value": "SK gas"
+    },
+    {
+      "key": "2018",
+      "value": "SK on"
+    },
+    {
+      "key": "2016",
+      "value": "SK telecom"
+    }
+  ]
+}
