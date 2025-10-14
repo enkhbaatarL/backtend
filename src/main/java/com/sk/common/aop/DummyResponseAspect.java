@@ -225,7 +225,10 @@ public class DummyResponseAspect {
         // Newsletter 관련
         NEWSLETTER_FEATURED("/newsletter/featured", "newsletter-featured"),
         NEWSLETTER_DETAIL(".*/newsletter/\\d+/\\d+$", "newsletter-detail", true),
-        NEWSLETTER_LIST(".*/newsletter/?$", "newsletter-list", true);
+        NEWSLETTER_LIST(".*/newsletter/?$", "newsletter-list", true),
+
+        // Mari Agent 관련
+        MAJOR_QUESTIONS("/mari-agent/major-questions", "major-questions");
 
         private final String pattern;
         private final String fileName;
