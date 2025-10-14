@@ -217,6 +217,7 @@ public class DummyResponseAspect {
         DASHBOARD_MARKET_DATAS(".*/dashboard/companies/\\d+/market-datas", "dashboard-market-datas",
             true),
         DASHBOARD_EXISTS(".*/dashboard/companies/\\d+/data/exists", "dashboard-exists", true),
+        DASHBOARD_SUMMARY(".*/dashboard/companies/\\d+/summary", "dashboard-summary", true),
 
         // Signal Map 관련
         SIGNAL_MAP_PERIODS(".*/signal-map/companies/\\d+/periods", "signal-map-periods", true),
