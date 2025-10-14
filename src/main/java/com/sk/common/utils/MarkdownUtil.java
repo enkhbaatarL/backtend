@@ -1,27 +1,38 @@
 package com.sk.common.utils;
 
 import com.sk.common.model.TableRes;
-import org.commonmark.ext.gfm.tables.*;
-import org.commonmark.node.*;
-import org.commonmark.parser.Parser;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.commonmark.ext.gfm.tables.TableBlock;
+import org.commonmark.ext.gfm.tables.TableBody;
+import org.commonmark.ext.gfm.tables.TableHead;
+import org.commonmark.ext.gfm.tables.TableRow;
+import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.node.AbstractVisitor;
+import org.commonmark.node.CustomBlock;
+import org.commonmark.node.HtmlBlock;
+import org.commonmark.node.HtmlInline;
+import org.commonmark.node.Node;
+import org.commonmark.node.Paragraph;
+import org.commonmark.node.Text;
+import org.commonmark.parser.Parser;
 
 public final class MarkdownUtil {
 
     /**
      * 정확히 tableId HTML 주석 한 줄을 매칭.
      */
-    private static final Pattern TABLE_ID_COMMENT_LINE = Pattern.compile("^\\s*<!--\\s*tableId:\\{?[0-9a-fA-F\\-]{36}}?\\s*-->\\s*$");
+    private static final Pattern TABLE_ID_COMMENT_LINE = Pattern.compile(
+        "^\\s*<!--\\s*tableId:\\{?[0-9a-fA-F\\-]{36}}?\\s*-->\\s*$");
 
     /**
      * 주석 내부에서 UUID만 추출하기 위한 패턴. (대소문자 무시)
      */
-    private static final Pattern TABLE_ID_UUID_EXTRACT = Pattern.compile("tableId:\\{?([0-9a-fA-F\\-]{36})}?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TABLE_ID_UUID_EXTRACT = Pattern.compile(
+        "tableId:\\{?([0-9a-fA-F\\-]{36})}?", Pattern.CASE_INSENSITIVE);
 
     /**
      * 파이프(|)가 2개 이상 들어간 헤더 후보 행.
@@ -34,37 +45,38 @@ public final class MarkdownUtil {
     private static final Pattern DELIM_ROW = Pattern.compile("^\\s*\\|?\\s*:?-{3,}.*\\|.*");
 
     /**
-     * 모든 테이블 위에 <!-- tableId:{UUID} --> 주석을 보장한다.
-     * 이미 존재한다면 유지하고, 없으면 새로 삽입한다.
+     * 모든 테이블 위에 <!-- tableId:{UUID} --> 주석을 보장한다. 이미 존재한다면 유지하고, 없으면 새로 삽입한다.
      *
      * @param markdown 원본 Markdown 문자열
      * @return tableId 주석이 보강된 새 Markdown 문자열
      */
     public static String insertTableIds(final String markdown) {
-        List<String> lines = new ArrayList<>(List.of(markdown.split("\\R", -1))); // 줄 정보 유지
+        List<String> lines = new ArrayList<>(List.of(markdown.split("\\R", -1)));
         StringBuilder out = new StringBuilder();
 
         for (int i = 0; i < lines.size(); i++) {
             final String line = lines.get(i);
 
-            // 1) 이미 tableId 주석 → 그대로 복사
             if (TABLE_ID_COMMENT_LINE.matcher(line).matches()) {
                 out.append(line).append('\n');
                 continue;
             }
 
-            // 2) 테이블 시작인지 검사 (헤더 + 구분선)
             if (PIPE_ROW.matcher(line).matches() && isDelimiterRow(lines, i + 1)) {
                 int prevIdx = previousNonEmpty(lines, i);
-                boolean hasId = prevIdx >= 0 && TABLE_ID_COMMENT_LINE.matcher(lines.get(prevIdx)).matches();
+                boolean hasId =
+                    prevIdx >= 0 && TABLE_ID_COMMENT_LINE.matcher(lines.get(prevIdx)).matches();
                 if (!hasId) {
                     out.append("<!-- tableId:{").append(UUID.randomUUID()).append("} -->\n");
                 }
             }
 
-            // 3) 원본 행 복사
-            out.append(line).append('\n');
+            out.append(line);
+            if (i < lines.size() - 1) {  // 마지막 라인이 아닐 때만 \n 추가
+                out.append('\n');
+            }
         }
+
         return out.toString();
     }
 
@@ -78,8 +90,8 @@ public final class MarkdownUtil {
      */
     public static List<TableRes> parseTablesWithIds(final String markdown) {
         Parser parser = Parser.builder()
-                .extensions(List.of(TablesExtension.create()))
-                .build();
+            .extensions(List.of(TablesExtension.create()))
+            .build();
 
         Node document = parser.parse(markdown);
         TableCollector collector = new TableCollector();
@@ -90,13 +102,17 @@ public final class MarkdownUtil {
 
     private static boolean isDelimiterRow(List<String> lines, int startIdx) {
         int j = startIdx;
-        while (j < lines.size() && lines.get(j).trim().isEmpty()) j++; // blank skip
+        while (j < lines.size() && lines.get(j).trim().isEmpty()) {
+            j++; // blank skip
+        }
         return j < lines.size() && DELIM_ROW.matcher(lines.get(j)).matches();
     }
 
     private static int previousNonEmpty(List<String> lines, int idx) {
         int p = idx - 1;
-        while (p >= 0 && lines.get(p).trim().isEmpty()) p--;
+        while (p >= 0 && lines.get(p).trim().isEmpty()) {
+            p--;
+        }
         return p;
     }
 
@@ -104,6 +120,7 @@ public final class MarkdownUtil {
      * 문서 트리를 순회하며 테이블과 그 앞의 tableId 주석을 매핑한다.
      */
     private static class TableCollector extends AbstractVisitor {
+
         private final List<TableRes> tables = new ArrayList<>();
         private String pendingId;
 
@@ -136,9 +153,13 @@ public final class MarkdownUtil {
 
         /* ---- helpers ---- */
         private void extractId(String text) {
-            if (text == null || pendingId != null) return;
+            if (text == null || pendingId != null) {
+                return;
+            }
             Matcher m = TABLE_ID_UUID_EXTRACT.matcher(text);
-            if (m.find()) pendingId = m.group(1);
+            if (m.find()) {
+                pendingId = m.group(1);
+            }
         }
 
         private TableRes buildTable(TableBlock tb, String id) {
@@ -149,7 +170,8 @@ public final class MarkdownUtil {
             if (head != null) {
                 TableRow hdr = (TableRow) head.getFirstChild();
                 int colIdx = 1;
-                for (Node cell = hdr.getFirstChild(); cell != null; cell = cell.getNext(), colIdx++) {
+                for (Node cell = hdr.getFirstChild(); cell != null;
+                    cell = cell.getNext(), colIdx++) {
                     String txt = literalOf(cell);
                     String field = "col_" + colIdx;
                     headers.add(TableRes.Column.of(field, txt));
@@ -158,7 +180,8 @@ public final class MarkdownUtil {
 
             TableBody body = (TableBody) (head != null ? head.getNext() : null);
             if (body != null) {
-                for (Node rowNode = body.getFirstChild(); rowNode != null; rowNode = rowNode.getNext()) {
+                for (Node rowNode = body.getFirstChild(); rowNode != null;
+                    rowNode = rowNode.getNext()) {
                     TableRow row = (TableRow) rowNode;
                     List<String> cells = new ArrayList<>();
                     for (Node cell = row.getFirstChild(); cell != null; cell = cell.getNext()) {
