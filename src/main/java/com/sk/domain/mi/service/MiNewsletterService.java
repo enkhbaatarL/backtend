@@ -544,12 +544,25 @@ public class MiNewsletterService {
             );
         }
 
+        BigDecimal max = closeValues.stream()
+            .filter(Objects::nonNull)
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+
+        BigDecimal min = closeValues.stream()
+            .filter(Objects::nonNull)
+            .min(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+
+        String range = calculateRange(max, min, "blue");
+
         // Series 생성
         List<Series> seriesList = Arrays.asList(
             Series.of("high", "High", RenderAs.HIGH, highValues, true),
             Series.of("low", "Low", RenderAs.LOW, lowValues, true),
             Series.of("open", "Open", RenderAs.OPEN, openValues, true),
-            Series.of("close", "Close", RenderAs.CLOSE, closeValues, true),
+            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, "1",
+                range),
             Series.of("volume", "Volume", RenderAs.VOLUME, volumeValues, true)
         );
 
