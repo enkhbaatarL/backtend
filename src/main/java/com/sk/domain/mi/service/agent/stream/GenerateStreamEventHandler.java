@@ -8,19 +8,14 @@ import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
-import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
-import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
-import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j

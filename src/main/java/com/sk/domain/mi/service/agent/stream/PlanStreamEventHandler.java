@@ -9,24 +9,21 @@ import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class PlanStreamEventHandler implements StreamEventHandler{
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    private final MariAgentResParser mariAgentResParser;
-
     private static final Map<String, String> EXPLAIN_MAP;
+
     static {
         EXPLAIN_MAP = new HashMap<>();
         EXPLAIN_MAP.put("general_request", "일반 질의의 답을 찾고 있습니다.");
@@ -38,6 +35,7 @@ public class PlanStreamEventHandler implements StreamEventHandler{
         EXPLAIN_MAP.put("event_impact", "이벤트의 영향을 분석하기 위해 데이터를 찾고 있습니다.");
     }
 
+    private final MariAgentResParser mariAgentResParser;
 
     @Override
     public String getEventDataType() {
@@ -51,14 +49,7 @@ public class PlanStreamEventHandler implements StreamEventHandler{
         ModelAgentStreamBody modelAgentStreamBody = OBJECT_MAPPER.treeToValue(jsonNode, ModelAgentStreamBody.class);
         List<Related> relatedList = mariAgentResParser.prepareAnswerDataResources(modelAgentStreamBody);
 
-        String text = "질의의 답을 찾기 위해 데이터를 찾고 있습니다.";
-
-        if (modelAgentStreamBody.analysisType() != null){
-            String explain = EXPLAIN_MAP.get(modelAgentStreamBody.analysisType());
-            if(explain != null){
-                text = explain;
-            }
-        }
+        String text = modelAgentStreamBody.analysisType();
         return AnswerRes.of(text, modelAgentStreamBody, relatedList);
     }
 }

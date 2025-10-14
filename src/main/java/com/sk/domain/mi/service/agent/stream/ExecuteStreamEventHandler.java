@@ -9,14 +9,11 @@ import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -38,7 +35,7 @@ public class ExecuteStreamEventHandler implements StreamEventHandler{
         ModelAgentStreamBody modelAgentStreamBody = OBJECT_MAPPER.treeToValue(jsonNode, ModelAgentStreamBody.class);
         List<Related> relatedList = mariAgentResParser.prepareAnswerDataResources(modelAgentStreamBody);
 
-        String text = "검색된 정보를 바탕으로 답변을 생성하고 있습니다.";
+        String text = "execute";
         return AnswerRes.of(text, modelAgentStreamBody, relatedList);
     }
 }
