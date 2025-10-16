@@ -162,25 +162,6 @@ public interface GoodsDataInquiryUserRepository extends
             JOIN tmd_gdsm g ON g.gds_no = gd.gds_no
             WHERE EXISTS (
               SELECT 1
-              FROM tam_custcpnyprvdmappl ccpm
-              JOIN tmd_custcpnym cc ON cc.cust_cpny_no = ccpm.cust_cpny_no
-              JOIN tam_custcpnygdsmappl c1 ON c1.cust_cpny_no = cc.cust_cpny_no
-              JOIN tam_custcpnygdsmappl c2 ON c2.cust_cpny_no = cc.cust_cpny_no
-                AND c2.gds_auth_mnagt_spt_cd = c1.gds_auth_mnagt_spt_cd
-                AND c2.gds_no = g.gds_no
-              JOIN tam_authmnagtgdsmappl a ON a.cust_cpny_no = c2.cust_cpny_no
-                AND a.gds_no = c2.gds_no
-                AND a.gds_auth_mnagt_spt_cd = c2.gds_auth_mnagt_spt_cd
-              WHERE ccpm.cust_cpny_no = :companyNo
-                AND ccpm.use_yn = 'Y' AND ccpm.del_yn = 'N'
-                AND c1.use_yn = 'Y' AND c1.del_yn = 'N'
-                AND a.gds_auth_cd = 'VIEW' AND a.del_yn = 'N'
-                AND a.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
-                AND a.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')
-                AND (c1.gds_auth_mnagt_spt_cd='COMPANY' OR a.usr_no=:userNo)
-            )
-            AND EXISTS (
-              SELECT 1
               FROM tmd_gdsdatasrcd d
               WHERE d.gds_data_no = gd.gds_data_no
                 AND d.del_yn = 'N'
@@ -213,25 +194,6 @@ public interface GoodsDataInquiryUserRepository extends
             JOIN tmd_gdsdatam gd ON gd.gds_data_no = r.gds_data_no
             JOIN tmd_gdsm g ON g.gds_no = gd.gds_no
             WHERE EXISTS (
-              SELECT 1
-              FROM tam_custcpnyprvdmappl ccpm
-              JOIN tmd_custcpnym cc ON cc.cust_cpny_no = ccpm.cust_cpny_no
-              JOIN tam_custcpnygdsmappl c1 ON c1.cust_cpny_no = cc.cust_cpny_no
-              JOIN tam_custcpnygdsmappl c2 ON c2.cust_cpny_no = cc.cust_cpny_no
-                AND c2.gds_auth_mnagt_spt_cd = c1.gds_auth_mnagt_spt_cd
-                AND c2.gds_no = g.gds_no
-              JOIN tam_authmnagtgdsmappl a ON a.cust_cpny_no = c2.cust_cpny_no
-                AND a.gds_no = c2.gds_no
-                AND a.gds_auth_mnagt_spt_cd = c2.gds_auth_mnagt_spt_cd
-              WHERE ccpm.cust_cpny_no = :companyNo
-                AND ccpm.use_yn = 'Y' AND ccpm.del_yn = 'N'
-                AND c1.use_yn = 'Y' AND c1.del_yn = 'N'
-                AND a.gds_auth_cd = 'VIEW' AND a.del_yn = 'N'
-                AND a.use_bgn_dt <= DATE_FORMAT(CURDATE(), '%Y%m%d')
-                AND a.use_end_dt >= DATE_FORMAT(CURDATE(), '%Y%m%d')
-                AND (c1.gds_auth_mnagt_spt_cd='COMPANY' OR a.usr_no=:userNo)
-            )
-            AND EXISTS (
               SELECT 1
               FROM tcm_filel f
               WHERE f.file_rel_obj_dstg_no = gd.gds_data_no
