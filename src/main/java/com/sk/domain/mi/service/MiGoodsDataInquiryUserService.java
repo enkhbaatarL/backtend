@@ -41,7 +41,19 @@ public class MiGoodsDataInquiryUserService {
             companyNo, userNo, userLoginId);
     }
 
-        inquiryUsers.forEach(GoodsDataInquiryUser::softDelete);
+
+    public List<RecentViewedRes> getInsightsDataInquiryUser(int companyNo, int userNo,
+        String userLoginId, Pageable pageable) {
+        return goodsDataInquiryUserRepository
+            .findRecentViewedInsightsByUserLoginId(companyNo, userNo, userLoginId, pageable)
+            .stream()
+            .map(RecentViewedRes::of)
+            .toList();
     }
 
+    @Transactional
+    public void clearInsightsDataInquiryUser(int companyNo, int userNo, String userLoginId) {
+        goodsDataInquiryUserRepository.softDeleteRecentViewedInsightsByUserLoginId(
+            companyNo, userNo, userLoginId);
+    }
 }

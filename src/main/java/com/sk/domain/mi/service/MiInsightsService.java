@@ -1,25 +1,5 @@
 package com.sk.domain.mi.service;
 
-import java.sql.Timestamp;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.support.PageableExecutionUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
@@ -31,9 +11,11 @@ import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
+import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
@@ -41,12 +23,29 @@ import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -65,13 +64,18 @@ public class MiInsightsService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
+    private final MiGoodsDataInquiryUserService miGoodsDataInquiryUserService;
+    private final UserRepository userRepository;
+
     @Value("#{'${server.insight.latest.except-provider-no}'.split(',')}")
     private List<Integer> exceptProviderNoList;
 
     @Value("${server.insight.focused.threshold-day:7}")
     private int focusedThresholdDay;
 
-
+    private static LocalDateTime convertToDateTime(String date){
+        return LocalDateTime.parse(date + " 00:00:00", DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss"));
+    }
 
     /**
      * Focused 목록 조회
@@ -413,10 +417,6 @@ public class MiInsightsService {
         return PaginationRes.toRes(PageableExecutionUtils.getPage(content, pageable, () -> total));
     }
 
-    private static LocalDateTime convertToDateTime(String date){
-        return LocalDateTime.parse(date + " 00:00:00", DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss"));
-    }
-
     String getGoodsDataCategory(int goodsDataNo) {
         return goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(goodsDataNo)
                 .stream()
@@ -474,5 +474,24 @@ public class MiInsightsService {
             goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
                     GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
         }
+    }
+
+    public List<RecentViewedRes> getRecentViewedInsights(
+            int companyNo, int userNo) {
+        User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "사용자 정보를 찾을 수 없습니다."));
+
+        return miGoodsDataInquiryUserService.getInsightsDataInquiryUser(
+            companyNo, userNo, user.getUserLoginId(), PageRequest.of(0, 5));
+    }
+
+    @Transactional
+    public void clearRecentViewedInsights(int companyNo, int userNo) {
+        User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "사용자 정보를 찾을 수 없습니다."));
+
+        miGoodsDataInquiryUserService.clearInsightsDataInquiryUser(companyNo, userNo, user.getUserLoginId());
     }
 }
