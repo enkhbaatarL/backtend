@@ -1186,12 +1186,12 @@ public class MiMarketDataService {
      * @param userNo    사용자 번호
      */
     @Transactional
-    public void clearRecentViewed(int userNo) {
+    public void clearRecentViewed(int companyNo, int userNo) {
         User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "사용자 정보를 찾을 수 없습니다."));
 
-        miGoodsDataInquiryUserService.clearGoodsDataInquiryUser(user.getUserLoginId());
+        miGoodsDataInquiryUserService.clearGoodsDataInquiryUser(companyNo, userNo, user.getUserLoginId());
     }
 
     private record LastValueDto(

@@ -35,15 +35,11 @@ public class MiGoodsDataInquiryUserService {
             .toList();
     }
 
-    /**
-     * 사용자의 상품 데이터 조회 이력 전체 삭제 (논리 삭제)
-     *
-     * @param userLoginId 사용자 로그인 ID
-     */
     @Transactional
-    public void clearGoodsDataInquiryUser(String userLoginId) {
-        List<GoodsDataInquiryUser> inquiryUsers =
-            goodsDataInquiryUserRepository.findByIdUserLoginIdAndIsDeletedFalse(userLoginId);
+    public void clearGoodsDataInquiryUser(int companyNo, int userNo, String userLoginId) {
+        goodsDataInquiryUserRepository.softDeleteRecentViewedByUserLoginId(
+            companyNo, userNo, userLoginId);
+    }
 
         inquiryUsers.forEach(GoodsDataInquiryUser::softDelete);
     }

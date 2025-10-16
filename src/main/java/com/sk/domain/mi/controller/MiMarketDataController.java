@@ -61,8 +61,10 @@ public class MiMarketDataController {
         @PathVariable("companyNo") Integer companyNo) {
 
         int userNo = authorizationService.getUserNo();
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
 
-        miMarketDataService.clearRecentViewed(userNo);
+        miMarketDataService.clearRecentViewed(cNo, userNo);
         return BaseResponseFactory.create(Success.OK);
     }
 }
