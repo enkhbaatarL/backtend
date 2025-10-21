@@ -124,7 +124,7 @@ public class MiMarketNewsController {
 
     @ApiOrder(4)
     @Parameter(name = "crtrDt", description = "기준 일자 (yyyyMMdd 형식)", required = true, example = "20250729")
-    @Parameter(name = "nwsMrktCtgrCd", description = "뉴스 시장 카테고리 코드", required = true, example = "STOCK")
+    @Parameter(name = "nwsMrktCtgrCd", description = "뉴스 시장 카테고리 코드", required = true, example = "CROIL")
     @Operation(
         summary = "마켓 리캡 조회 (날짜/카테고리)",
         description = "기준일자와 카테고리 코드로 마켓 리캡을 조회합니다."
