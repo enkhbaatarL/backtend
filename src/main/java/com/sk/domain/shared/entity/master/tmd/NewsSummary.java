@@ -52,11 +52,11 @@ public class NewsSummary extends BaseEntity {
     @Comment("Refinitiv 뉴스 데이터")
     private RefinitivNewsData refinitivNewsData;
 
-    @Column(name = "brf_smry", length = 50)
+    @Column(name = "brf_smry", length = 200)
     @Comment("간략요약")
     private String briefSummary;
 
-    @Column(name = "smry", length = 200)
+    @Column(name = "smry", length = 500)
     @Comment("요약")
     private String summary;
 
@@ -64,7 +64,7 @@ public class NewsSummary extends BaseEntity {
     @Comment("프로바이더")
     private String provider;
 
-    @Column(name = "source", length = 50)
+    @Column(name = "source", length = 100)
     @Comment("소스")
     private String source;
 
@@ -93,20 +93,5 @@ public class NewsSummary extends BaseEntity {
         this.source = source;
         this.originalLink = originalLink;
         this.keyword = keyword;
-    }
-
-    public static NewsSummary of(Integer dataRegistrationSn, LocalDateTime firstCreated,
-        String briefSummary, String summary, String provider, String source,
-        String originalLink, String keyword) {
-        return NewsSummary.builder()
-            .dataRegistrationSn(dataRegistrationSn)
-            .firstCreated(firstCreated)
-            .briefSummary(briefSummary)
-            .summary(summary)
-            .provider(provider)
-            .source(source)
-            .originalLink(originalLink)
-            .keyword(keyword)
-            .build();
     }
 }
