@@ -5,17 +5,27 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
+import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
+import com.sk.domain.shared.entity.master.tmd.MarketRecap;
+import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpointItem;
+import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItem;
+import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItemRelationship;
 import com.sk.domain.shared.entity.master.tmd.NewsSignificance;
 import com.sk.domain.shared.entity.master.tmd.NewsSummary;
 import com.sk.domain.shared.entity.master.tmd.SignificantNews;
 import com.sk.domain.shared.enums.news.SortType;
+import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointItemRepository;
+import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemRelationshipRepository;
+import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemRepository;
+import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +45,10 @@ public class MiMarketNewsService {
 
     private final NewsSummaryRepository newsSummaryRepository;
     private final NewsSignificanceRepository newsSignificanceRepository;
+    private final MarketRecapRepository marketRecapRepository;
+    private final MarketRecapHighlightItemRepository marketRecapHighlightItemRepository;
+    private final MarketRecapCheckpointItemRepository marketRecapCheckpointItemRepository;
+    private final MarketRecapHighlightItemRelationshipRepository marketRecapHighlightItemRelationshipRepository;
 
     public PaginationRes<MarketNewsListRes> getMarketNewsList(
             int page,
@@ -98,6 +112,28 @@ public class MiMarketNewsService {
         });
 
         return PaginationRes.toRes(newsfeedPage);
+    }
+
+    /**
+     * 날짜와 카테고리로 MarketRecap 조회
+     */
+    public MarketRecapRes getMarketRecapByCriteriaDateAndCategory(String crtrDt, String nwsMrktCtgrCd) {
+        MarketRecap marketRecap = marketRecapRepository.findByCrtrDtAndNwsMrktCtgrCd(crtrDt, nwsMrktCtgrCd)
+                .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
+                        "마켓 리캡을 찾을 수 없습니다. crtrDt: " + crtrDt + ", nwsMrktCtgrCd: " + nwsMrktCtgrCd));
+
+        return toMarketRecapRes(marketRecap);
+    }
+
+    /**
+     * ID로 MarketRecap 조회
+     */
+    public MarketRecapRes getMarketRecapById(Long mrktRcapId) {
+        MarketRecap marketRecap = marketRecapRepository.findById(mrktRcapId)
+                .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
+                        "마켓 리캡을 찾을 수 없습니다. mrktRcapId: " + mrktRcapId));
+
+        return toMarketRecapRes(marketRecap);
     }
 
     /**
@@ -239,6 +275,73 @@ public class MiMarketNewsService {
                 newsSummary != null ? newsSummary.getProvider() : null,
                 significantNews != null ? significantNews.getImpctScre() : null,
                 significantNews != null ? significantNews.getDrctnlt() : null
+        );
+    }
+
+    /**
+     * MarketRecap -> MarketRecapRes 변환
+     */
+    private MarketRecapRes toMarketRecapRes(MarketRecap marketRecap) {
+        // 하이라이트 아이템 조회
+        List<MarketRecapHighlightItem> highlightItems =
+                marketRecapHighlightItemRepository.findByMarketRecap(marketRecap);
+
+        // 체크포인트 아이템 조회
+        List<MarketRecapCheckpointItem> checkpointItems =
+                marketRecapCheckpointItemRepository.findByMarketRecap(marketRecap);
+
+        // 하이라이트 아이템 DTO 변환
+        List<MarketRecapRes.HighlightItemRes> highlightItemResList = highlightItems.stream()
+                .map(highlightItem -> {
+                    // 관련 뉴스 조회
+                    List<MarketRecapHighlightItemRelationship> relationships =
+                            marketRecapHighlightItemRelationshipRepository
+                                    .findByMarketRecapHighlightItem(highlightItem);
+
+                    List<MarketRecapRes.RelatedNewsRes> relatedNewsList = relationships.stream()
+                            .map(rel -> {
+                                NewsSummary newsSummary = rel.getNewsSummary();
+                                return new MarketRecapRes.RelatedNewsRes(
+                                        newsSummary.getNewsSummaryId(),
+                                        newsSummary.getRefinitivNewsData() != null
+                                                ? newsSummary.getRefinitivNewsData().getTitle() : null,
+                                        newsSummary.getProvider()
+                                );
+                            })
+                            .toList();
+
+                    return new MarketRecapRes.HighlightItemRes(
+                            highlightItem.getMrktRcapHlItmId(),
+                            highlightItem.getTitl(),
+                            highlightItem.getCntt(),
+                            highlightItem.getMntm(),
+                            relatedNewsList
+                    );
+                })
+                .toList();
+
+        // 체크포인트 아이템 DTO 변환
+        List<MarketRecapRes.CheckpointItemRes> checkpointItemResList = checkpointItems.stream()
+                .map(checkpointItem -> new MarketRecapRes.CheckpointItemRes(
+                        checkpointItem.getMrktRcapCkptItmId(),
+                        checkpointItem.getTitl(),
+                        checkpointItem.getCntt()
+                ))
+                .toList();
+
+        return new MarketRecapRes(
+                marketRecap.getMrktRcapId(),
+                marketRecap.getCrtrDt(),
+                marketRecap.getNwsMrktCtgrCd(),
+                marketRecap.getUpwSgnlNwsCnt(),
+                marketRecap.getNtrlSgnlNwsCnt(),
+                marketRecap.getDwnSgnlNwsCnt(),
+                marketRecap.getHiTitl(),
+                marketRecap.getHiCntt(),
+                marketRecap.getCkptTitl(),
+                marketRecap.getCkptCntt(),
+                highlightItemResList,
+                checkpointItemResList
         );
     }
 }

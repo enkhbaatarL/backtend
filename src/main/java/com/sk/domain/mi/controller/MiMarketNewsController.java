@@ -7,6 +7,7 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
+import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -118,6 +119,48 @@ public class MiMarketNewsController {
 
         return BaseResponseFactory.create(
             miMarketNewsService.getNewsfeedList(page, size, SortType.NEWEST, LocalDateTime.parse("2025-07-29 07:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), LocalDateTime.parse("2025-09-15 07:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), category)
+        );
+    }
+
+    @ApiOrder(4)
+    @Parameter(name = "crtrDt", description = "기준 일자 (yyyyMMdd 형식)", required = true, example = "20250729")
+    @Parameter(name = "nwsMrktCtgrCd", description = "뉴스 시장 카테고리 코드", required = true, example = "STOCK")
+    @Operation(
+        summary = "마켓 리캡 조회 (날짜/카테고리)",
+        description = "기준일자와 카테고리 코드로 마켓 리캡을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/recap")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<MarketRecapRes> getMarketRecap(
+        @RequestParam(value = "crtrDt") String crtrDt,
+        @RequestParam(value = "nwsMrktCtgrCd") String nwsMrktCtgrCd) {
+
+        log.debug("마켓 리캡 조회 요청 - crtrDt: {}, nwsMrktCtgrCd: {}", crtrDt, nwsMrktCtgrCd);
+
+        return BaseResponseFactory.create(
+            miMarketNewsService.getMarketRecapByCriteriaDateAndCategory(crtrDt, nwsMrktCtgrCd)
+        );
+    }
+
+    @ApiOrder(5)
+    @Parameter(name = "mrktRcapId", description = "마켓 리캡 ID", required = true)
+    @Operation(
+        summary = "마켓 리캡 상세 조회",
+        description = "마켓 리캡 ID로 상세 정보를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/recap/{mrktRcapId}")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<MarketRecapRes> getMarketRecapById(
+        @PathVariable("mrktRcapId") Long mrktRcapId) {
+
+        log.debug("마켓 리캡 상세 조회 요청 - mrktRcapId: {}", mrktRcapId);
+
+        return BaseResponseFactory.create(
+            miMarketNewsService.getMarketRecapById(mrktRcapId)
         );
     }
 }

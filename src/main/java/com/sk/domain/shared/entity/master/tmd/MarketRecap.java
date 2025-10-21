@@ -64,7 +64,7 @@ public class MarketRecap extends BaseEntity {
     @Comment("하이라이트 제목")
     private String hiTitl;
 
-    @Column(name = "hi_cntt", length = 500)
+    @Column(name = "hi_cntt", columnDefinition = "TEXT")
     @Comment("하이라이트 내용")
     private String hiCntt;
 
@@ -72,7 +72,7 @@ public class MarketRecap extends BaseEntity {
     @Comment("체크 포인트 제목")
     private String ckptTitl;
 
-    @Column(name = "ckpt_cntt", length = 500)
+    @Column(name = "ckpt_cntt", columnDefinition = "TEXT")
     @Comment("체크 포인트 내용")
     private String ckptCntt;
 
