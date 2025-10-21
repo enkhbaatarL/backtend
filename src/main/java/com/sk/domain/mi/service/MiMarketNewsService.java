@@ -101,61 +101,6 @@ public class MiMarketNewsService {
     }
 
     /**
-     * 뉴스피드 검색 조건 Specification 생성
-     */
-    private Specification<NewsSignificance> createNewsfeedSpecification(
-            LocalDateTime startDateTime,
-            LocalDateTime endDateTime,
-            String category) {
-
-        return (root, query, cb) -> {
-            Specification<NewsSignificance> spec = Specification.where(null);
-
-            // firstCreated 기간 필터 (시작일시)
-            if (startDateTime != null) {
-                spec = spec.and((r, q, criteriaBuilder) ->
-                        criteriaBuilder.greaterThanOrEqualTo(
-                                r.get("firstCreated"),
-                                startDateTime
-                        )
-                );
-            }
-
-            // firstCreated 기간 필터 (종료일시)
-            if (endDateTime != null) {
-                spec = spec.and((r, q, criteriaBuilder) ->
-                        criteriaBuilder.lessThanOrEqualTo(
-                                r.get("firstCreated"),
-                                endDateTime
-                        )
-                );
-            }
-
-            spec = spec.and((r, q, criteriaBuilder) -> {
-                Subquery<Long> subquery = q.subquery(Long.class);
-                Root<SignificantNews> significantNews = subquery.from(SignificantNews.class);
-                subquery.select(significantNews.get("sgtNwsId"));
-                subquery.where(
-                        criteriaBuilder.equal(
-                                significantNews.get("nwsSigId"),
-                                r.get("nwsSigId")
-                        )
-                );
-                return criteriaBuilder.exists(subquery);
-            });
-
-            // 카테고리 필터
-            if (StringUtils.hasText(category)) {
-                spec = spec.and((r, q, criteriaBuilder) ->
-                        criteriaBuilder.equal(r.get("nwsMrktCtgrCd"), category)
-                );
-            }
-
-            return spec.toPredicate(root, query, cb);
-        };
-    }
-
-    /**
      * 검색 조건 Specification 생성
      */
     private Specification<NewsSummary> createSpecification(
