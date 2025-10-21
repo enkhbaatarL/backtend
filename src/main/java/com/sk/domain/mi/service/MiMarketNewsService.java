@@ -79,17 +79,23 @@ public class MiMarketNewsService {
                 : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(direction, "refinitivNewsData.id.firstCreated", "refinitivNewsData.id.dataRegistrationSn"));
+                Sort.by(direction, "ns.firstCreated", "ns.dataRegistrationSn"));
 
-        // 검색 조건 생성
-        Specification<NewsSignificance> spec = createNewsfeedSpecification(
-                startDateTime, endDateTime, category);
-
-        // 데이터 조회
-        Page<NewsSignificance> newsPage = newsSignificanceRepository.findAll(spec, pageable);
+        Page<Object[]> resultPage = newsSignificanceRepository.findNewsfeedWithFetchJoin(
+                startDateTime,
+                endDateTime,
+                category,
+                pageable
+        );
 
         // DTO 변환
-        Page<NewsfeedListRes> newsfeedPage = newsPage.map(this::toNewsfeedListRes);
+        Page<NewsfeedListRes> newsfeedPage = resultPage.map(result -> {
+            NewsSignificance newsSignificance = (NewsSignificance) result[0];
+            SignificantNews significantNews = (SignificantNews) result[1];
+            NewsSummary newsSummary = (NewsSummary) result[2];
+
+            return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+        });
 
         return PaginationRes.toRes(newsfeedPage);
     }
@@ -226,7 +232,6 @@ public class MiMarketNewsService {
                 });
             }
 
-
             return spec.toPredicate(root, query, cb);
         };
     }
@@ -269,15 +274,26 @@ public class MiMarketNewsService {
     }
 
     /**
-     * NewsSignificance -> NewsfeedListRes 변환
+     * NewsSignificance, NewsSummary, SignificantNews -> NewsfeedListRes 변환
      */
-    private NewsfeedListRes toNewsfeedListRes(NewsSignificance newsSignificance) {
+    private NewsfeedListRes toNewsfeedListRes(
+            NewsSignificance newsSignificance,
+            NewsSummary newsSummary,
+            SignificantNews significantNews) {
+
         return new NewsfeedListRes(
                 newsSignificance.getNwsSigId(),
-                newsSignificance.getDataRegistrationSn(),
+                newsSignificance.getDataRegistrationSn().intValue(),
                 newsSignificance.getFirstCreated(),
                 newsSignificance.getNwsMrktCtgrCd(),
-                newsSignificance.getSig()
+                newsSummary != null ? newsSummary.getNewsSummaryId() : null,
+                newsSummary != null ? newsSummary.getBriefSummary() : null,
+                newsSummary != null ? newsSummary.getSummary() : null,
+                newsSummary != null && newsSummary.getRefinitivNewsData() != null
+                        ? newsSummary.getRefinitivNewsData().getTitle() : null,
+                newsSummary != null ? newsSummary.getProvider() : null,
+                significantNews != null ? significantNews.getImpctScre() : null,
+                significantNews != null ? significantNews.getDrctnlt() : null
         );
     }
 }
