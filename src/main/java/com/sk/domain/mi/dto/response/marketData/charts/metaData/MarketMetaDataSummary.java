@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.marketData.charts.metaData;
 
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
+import jakarta.persistence.Column;
 import java.time.LocalDate;
 
 import com.sk.domain.shared.entity.master.tcm.MarketDataChartSetting;
@@ -11,12 +12,14 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 import lombok.Builder;
+import org.hibernate.annotations.Comment;
 
 public record MarketMetaDataSummary(
 
         @Schema(description = "차트 표시 순위", example = "1") Short chartMarkRank,
 
         @Schema(description = "상품번호", example = "1") Integer goodsNo,
+        @Schema(description = "데이터출처", example = "1") String providerName,
 
         @Schema(description = "상품데이터번호", example = "1") Integer goodsDataNo,
 
@@ -25,7 +28,7 @@ public record MarketMetaDataSummary(
         @Schema(description = "상품데이터명", example = "Brent") String goodsDataNm,
 
         @Schema(description = "상품데이터소스명", example = "Brent") String goodsDataSourceNm,
-
+        @Schema(description = "상품데이터소스설명", example = "Brent Oil 설명") String goodsDataSourceExpn,
         @Schema(description = "화폐", example = "$") String currency,
 
         @Schema(description = "현재 값 단위", example = "MMBtu") String currentUnitCd,
@@ -37,6 +40,7 @@ public record MarketMetaDataSummary(
         @Schema(description = "인덱스 시작일시", example = "2021-01-01") LocalDate indexStartDt,
 
         @Schema(description = "수치", example = "95.5") Double lastValue,
+        @Schema(description = "과거수치", example = "95.5") Double previousValue,
 
         @Schema(description = "최근 월 변동률 (MOM)", example = "10.5") Double momChangeRate,
 
@@ -53,22 +57,25 @@ public record MarketMetaDataSummary(
         @Schema(description = "최근 변동률", example = "10.5") Double recentChangeRate) {
 
     @Builder
-    public MarketMetaDataSummary(Short chartMarkRank, Integer goodsNo, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm,
-            String goodsDataSourceNm, String currency, String currentUnitCd, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt,
-            Double lastValue, Double momChangeRate, Double momChangeValue, Double wowChangeRate, Double wowChangeValue, Double dodChangeRate,
+    public MarketMetaDataSummary(Short chartMarkRank, Integer goodsNo, String providerName, Integer goodsDataNo, Integer goodsDataSourceNo, String goodsDataNm,
+            String goodsDataSourceNm, String goodsDataSourceExpn, String currency, String currentUnitCd, String interval, LocalDate lastUpdateDt, LocalDate indexStartDt,
+            Double lastValue, Double previousValue, Double momChangeRate, Double momChangeValue, Double wowChangeRate, Double wowChangeValue, Double dodChangeRate,
             Double dodChangeValue, Double recentChangeValue, Double recentChangeRate) {
         this.chartMarkRank = chartMarkRank;
+        this.providerName = providerName;
         this.goodsNo = goodsNo;
         this.goodsDataNo = goodsDataNo;
         this.goodsDataSourceNo = goodsDataSourceNo;
         this.goodsDataNm = goodsDataNm;
         this.goodsDataSourceNm = goodsDataSourceNm;
+        this.goodsDataSourceExpn = goodsDataSourceExpn;
         this.currency = currency;
         this.currentUnitCd = currentUnitCd;
         this.interval = interval;
         this.lastUpdateDt = lastUpdateDt;
         this.indexStartDt = indexStartDt;
         this.lastValue = lastValue;
+        this.previousValue = previousValue;
         this.momChangeRate = momChangeRate;
         this.momChangeValue = momChangeValue;
         this.wowChangeRate = wowChangeRate;
@@ -81,7 +88,7 @@ public record MarketMetaDataSummary(
 
     public static MarketMetaDataSummary of(MarketDataChartSetting marketDataChartSetting, GoodsData goodsData,
             GoodsDataSourceDetail goodsDataSourceDetail, Map<CalculatePeriodChangeType, CalculatePeriodChangeValue> calculatePeriodChangeMap, String interval,
-            LocalDate indexStartDt, Double lastValue, LocalDate lastUpdateDt) {
+            LocalDate indexStartDt, Double lastValue, Double previousValue, LocalDate lastUpdateDt) {
         Double recentChangeValue = null;
         Double recentChangeRate = null;
         if(calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.DOD)){
@@ -100,15 +107,18 @@ public record MarketMetaDataSummary(
         return MarketMetaDataSummary.builder()
                 .chartMarkRank(marketDataChartSetting.getChartMarkRank())
                 .goodsNo(goodsData.getGoods().getGoodsNo())
+                .providerName(goodsData.getGoods().getProvider().getProviderNm())
                 .goodsDataNo(goodsData.getGoodsDataNo())
                 .goodsDataSourceNo(goodsDataSourceDetail.getGoodsDataSourceNo())
                 .goodsDataNm(goodsData.getGoodsDataNm())
                 .goodsDataSourceNm(goodsDataSourceDetail.getGoodsDataSourceNm())
+                .goodsDataSourceExpn(goodsDataSourceDetail.getGoodsDataSourceExpn())
                 .currency(goodsDataSourceDetail.getGoodsDataSourceCurrencyUnitNm())
                 .currentUnitCd(goodsDataSourceDetail.getGoodsDataSourceUnitNm())
                 .interval(interval)
                 .lastUpdateDt(lastUpdateDt)
                 .indexStartDt(indexStartDt)
+                .previousValue(previousValue)
                 .lastValue(lastValue)
                 .momChangeRate(
                     calculatePeriodChangeMap.containsKey(CalculatePeriodChangeType.MOM) ?

@@ -6,7 +6,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -97,6 +100,16 @@ public class ExcelParsedUtil {
      */
     public static List<String> extractExcelHeader(Sheet sheet, int headerRowIndex) {
         List<String> headers = new ArrayList<>();
+
+        for (Cell cell : getHeaderRow(sheet, headerRowIndex)) {
+            String value = cell.getStringCellValue() != null ? cell.getStringCellValue().trim() : null;
+            headers.add(value);
+        }
+        return headers;
+    }
+
+    private static Row getHeaderRow(Sheet sheet, int headerRowIndex){
+        List<String> headers = new ArrayList<>();
         Iterator<Row> rowIterator = sheet.iterator();
         // 헤더 행까지 이동
         Row headerRow = null;
@@ -111,9 +124,19 @@ public class ExcelParsedUtil {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Header row not found at index " + headerRowIndex);
         }
 
-        for (Cell cell : headerRow) {
-            String value = cell.getStringCellValue() != null ? cell.getStringCellValue().trim() : null;
-            headers.add(value);
+        return headerRow;
+    }
+
+    public static List<LocalDate> extractExcelDateHeader(Sheet sheet, int headerRowIndex) {
+        List<LocalDate> headers = new ArrayList<>();
+
+        for (Cell cell : getHeaderRow(sheet, headerRowIndex)) {
+            Date value = cell.getDateCellValue() != null ? cell.getDateCellValue() : null;
+            if(value == null){
+                headers.add(null);
+                continue;
+            }
+            headers.add(value.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         }
         return headers;
     }

@@ -42,14 +42,12 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
             Iterator<Row> rowIterator = sheet.iterator();
 
             // 헤더 파싱
-            List<String> periodCodes = ExcelParsedUtil.extractExcelHeader(sheet, HEADER_ROW_INDEX);
+            List<LocalDate> periodCodes = ExcelParsedUtil.extractExcelDateHeader(sheet, HEADER_ROW_INDEX);
             // 빈 문자열 제거
             // periodCodes.removeIf(code -> code == null || code.isEmpty());
-            String dateStr = periodCodes.stream().findFirst().orElse(null);
+            LocalDate date = periodCodes.stream().findFirst().orElse(null);
             String yearMonth = null;
-            if (dateStr != null && !dateStr.isEmpty()) {
-                dateStr = dateStr.trim() + "-" + LocalDate.now().getYear();
-                LocalDate date = DateUtil.fromDdMmmYyyy(dateStr);
+            if (date != null) {
                 yearMonth = DateUtil.toYearMonth(date);
             }
 
