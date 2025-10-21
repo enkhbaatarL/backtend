@@ -580,6 +580,8 @@ public class MiMarketDataService {
                                         miMarketDataSummaryCache.marketMetaDataSummary()
                                             .lastValue(),
                                         miMarketDataSummaryCache.marketMetaDataSummary()
+                                            .previousValue(),
+                                        miMarketDataSummaryCache.marketMetaDataSummary()
                                             .lastUpdateDt());
 
                                 return MiMarketDataSummaryRes.of(isPermitted,
@@ -658,15 +660,12 @@ public class MiMarketDataService {
 
                     // 마지막 데이터 값
                     Double lastValue = null;
+                    Double previousValue = null;
                     for (int i = 1; i <= rawData.size(); i++) {
-                        if (rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
-                            lastValue =
-                                Double.parseDouble(
-                                    rawData.get(rawData.size() - i).get(defaultDataColumnName)
-                                        .toString());
-                            BigDecimal bd = BigDecimal.valueOf(lastValue)
-                                .setScale(2, RoundingMode.HALF_UP);
-                            lastValue = bd.doubleValue();
+                        if (lastValue == null && rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
+                            lastValue = getValueFromRawData(rawData, rawData.size() - i, defaultDataColumnName);
+                        }else if(lastValue != null && rawData.get(rawData.size() - i).get(defaultDataColumnName) != null){
+                            previousValue = getValueFromRawData(rawData, rawData.size() - i, defaultDataColumnName);
                             break;
                         }
                     }
@@ -698,6 +697,7 @@ public class MiMarketDataService {
                             MARKET_DATA_INTERVAL,
                             indexStartDate,
                             lastValue,
+                            previousValue,
                             lastUpdateDt);
 
                     MiMarketDataSummaryCache miMarketDataSummaryCache =
@@ -716,6 +716,7 @@ public class MiMarketDataService {
                                 MARKET_DATA_INTERVAL,
                                 indexStartDate,
                                 lastValue,
+                                previousValue,
                                 lastUpdateDt);
 
                         return MiMarketDataSummaryRes.of(isPermitted,
@@ -1192,6 +1193,16 @@ public class MiMarketDataService {
                 "사용자 정보를 찾을 수 없습니다."));
 
         miGoodsDataInquiryUserService.clearGoodsDataInquiryUser(companyNo, userNo, user.getUserLoginId());
+    }
+
+    private static Double getValueFromRawData(List<Map<String, Object>> rawData, int index, String defaultDataColumnName){
+        double result =
+            Double.parseDouble(
+                rawData.get(index).get(defaultDataColumnName)
+                    .toString());
+        BigDecimal bd = BigDecimal.valueOf(result)
+            .setScale(2, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     private record LastValueDto(
