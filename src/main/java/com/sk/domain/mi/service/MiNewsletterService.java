@@ -732,13 +732,14 @@ public class MiNewsletterService {
         for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
             List<BigDecimal> values = timestamps.stream()
                 .map(ts -> timeSeriesData.get(ts).get(config.getCode()))
-                .filter(Objects::nonNull)
                 .toList();
 
             BigDecimal max = values.stream()
+                .filter(Objects::nonNull)
                 .max(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
             BigDecimal min = values.stream()
+                .filter(Objects::nonNull)
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
 
@@ -880,7 +881,6 @@ public class MiNewsletterService {
             ZoneId newYorkZone = ZoneId.of("America/New_York");
 
             LocalDate today = publishDateTime.toLocalDate();
-            int dayOfWeek = today.getDayOfWeek().getValue();
 
             // today를 뉴욕 시간대로 변환하여 DST 확인
             ZonedDateTime todayInNY = today.atStartOfDay(newYorkZone);
