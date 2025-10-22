@@ -25,6 +25,7 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -269,7 +270,7 @@ public class MiMarketNewsService {
                 newsSignificance.getNwsMrktCtgrCd(),
                 newsSummary != null ? newsSummary.getNewsSummaryId() : null,
                 newsSummary != null ? newsSummary.getBriefSummary() : null,
-                newsSummary != null ? newsSummary.getSummary() : null,
+                newsSummary != null ? Arrays.asList(newsSummary.getSummary().split("\n")) : null,
                 newsSummary != null && newsSummary.getRefinitivNewsData() != null
                         ? newsSummary.getRefinitivNewsData().getTitle() : null,
                 newsSummary != null ? newsSummary.getProvider() : null,
