@@ -1,5 +1,6 @@
 package com.sk.common.handler;
 
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.CustomAuthenticationException;
@@ -413,6 +414,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(SystemErrorException.class)
     private ResponseEntity<Object> handleSystemError(SystemErrorException ex) {
         return createAndLogResponse("System Error", ex, INTERNAL_SERVER_ERROR, ex.getErrorCode(), ex.getAdditionalMessage());
+    }
+
+    @ExceptionHandler(AmazonS3Exception.class)
+    private ResponseEntity<Object> handleAmazonS3Exception(AmazonS3Exception ex) {
+        return createAndLogResponse("Object Storage Access Error", ex, INTERNAL_SERVER_ERROR, ResultCode.Error.S3_ACCESS_ERROR, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

@@ -398,6 +398,7 @@ public class MiDashboardService {
         PermissionRes permissionRes = authorizationService.getPermissions();
 
         return chartPredictSettingDetails.stream()
+                .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getGoodsDataSourceDetail().getIsPredictData())
                 .allMatch(chartPredictSettingDetail -> {
                     GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
                             .findByGoodsDataSourceNoAndIsDeletedFalse(chartPredictSettingDetail.getGoodsDataSourceDetail().getGoodsDataSourceNo())
@@ -513,25 +514,7 @@ public class MiDashboardService {
                 .orElse(null);
 
         // DashboardChartDataTableType 결정
-
-        List<ChartPredictSettingDetail> chartPredictSettingDetailPredictList = chartPredictSettingDetails.stream()
-            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal).toList();
-        DashboardChartDataTableType dataTableType = DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
-        if(chartPredictSettingDetailPredictList.size() >= 2){
-            Integer associateDataSource = null;
-            for(ChartPredictSettingDetail predict : chartPredictSettingDetailPredictList){
-                if(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(predict.getGoodsDataSourceDetail().getGoodsDataSourceNo())){
-                    continue;
-                }
-                if(associateDataSource == null){
-                    associateDataSource = predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
-                    continue;
-                }
-                if(!associateDataSource.equals(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo())){
-                    dataTableType = DashboardChartDataTableType.FORECAST_DUAL_LAYER;
-                }
-            }
-        }
+        DashboardChartDataTableType dataTableType = calculateDashboardChartDataTableType(chartPredictSettingDetails);
 
         // DashboardMetadata 생성
         DashboardMetadata dashboardMetadata = DashboardMetadata.of(
@@ -589,9 +572,31 @@ public class MiDashboardService {
                 .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
                 .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
                 .map(DashboardChartLine::isPermitted) // isDownloadable 값 추출
-                .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
+                .anyMatch(permission -> permission != null && permission); // 하나라도 true인지 확인
 
         return DashboardChartRes.of(dashboardMetadata, finalCharts, dashboardDataSources, finalIsFileDownload);
+    }
+
+    private DashboardChartDataTableType calculateDashboardChartDataTableType(List<ChartPredictSettingDetail> chartPredictSettingDetails){
+        DashboardChartDataTableType dataTableType = DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
+        List<ChartPredictSettingDetail> chartPredictSettingDetailPredictList = chartPredictSettingDetails.stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal).toList();
+        if(chartPredictSettingDetailPredictList.size() >= 2){
+            Integer associateDataSource = null;
+            for(ChartPredictSettingDetail predict : chartPredictSettingDetailPredictList){
+                if(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo().equals(predict.getGoodsDataSourceDetail().getGoodsDataSourceNo())){
+                    continue;
+                }
+                if(associateDataSource == null){
+                    associateDataSource = predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
+                    continue;
+                }
+                if(!associateDataSource.equals(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo())){
+                    dataTableType = DashboardChartDataTableType.FORECAST_DUAL_LAYER;
+                }
+            }
+        }
+        return dataTableType;
     }
 
     /**
@@ -1089,9 +1094,9 @@ public class MiDashboardService {
                 .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines())) // actual과 forecast 추출
                 .filter(Objects::nonNull) // DashboardChartLine이 null인 경우 필터링
                 .map(DashboardChartLine::isPermitted) // isDownloadable 값 추출
-                .allMatch(permission -> permission != null && permission); // 모두 true인지 확인
+                .anyMatch(permission -> permission != null && permission); // 하나라도 true인지 확인
 
-        // 데이터 중 하나라도 권한이 없으면 다운로드 불가능, 모든 권한이 있으면 데이터 다운 가능
+        // 데이터 중 모두 권한이 없으면 다운로드 불가능, 하나라도 권한이 있으면 데이터 다운 가능
         if (!finalIsFileDownload) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "다운로드 가능한 데이터가 없습니다.");
         }
@@ -1132,9 +1137,7 @@ public class MiDashboardService {
                 .toList();
 
         // DashboardChartDataTableType 결정
-        DashboardChartDataTableType dataTableType = chartPredictSettingDetails.stream()
-                .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-                .count() >= 2 ? DashboardChartDataTableType.FORECAST_DUAL_LAYER : DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
+        DashboardChartDataTableType dataTableType = calculateDashboardChartDataTableType(chartPredictSettingDetails);
 
         // 날짜 범위 설정
         LocalDate endDate = baseDate.plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt())
@@ -1200,40 +1203,45 @@ public class MiDashboardService {
             }
 
             if (dataTableType == DashboardChartDataTableType.FORECAST_SINGLE_LAYER) {
-                int EXCEL_DESCRIPTION_ROW_INDEX = 0; // Futures 설명 행 인덱스
-                int EXCEL_FORECAST_DATA_ROW_INDEX = 1; // Forecast 행 인덱스
-                int EXCEL_ACTUAL_DATA_ROW_INDEX = 2; // Actual 행 인덱스
-                int EXCEL_FUTURES_DATA_ROW_INDEX = 3; // Futures 행 인덱스
+                int EXCEL_DESCRIPTION_COLUMN_INDEX = 0; // Futures 설명 열 인덱스
+                int rowIndex = 1;
                 int EXCEL_COLUMN_WIDTH = 15 * 256; // 엑셀 열 너비
 
-                DashboardChart mainChart = finalCharts.stream()
-                        .filter(chart -> chart.chartLineType() != null)
-                        .findFirst()
-                        .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 데이터가 없습니다."));
 
-                DashboardChartLine forecastChartLine = mainChart.forecastChartLines();
-                List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData();
+                List<DashboardChartLine> forecastChartLineList = finalCharts.stream()
+                    .filter(chart -> chart.chartLineType() != null)
+                    .map(DashboardChart::forecastChartLines)
+                    .filter(dashboardChartLine -> dashboardChartLine.goodsDataSourceNo() != null)
+                    .sorted(Comparator.comparing(DashboardChartLine::dataExplanation))
+                    .toList();
 
-                DashboardChartLine actualChartLine = mainChart.actualChartLines();
-                List<DashboardChartRawData> actualRawData = actualChartLine.rawData();
-
-                // 두번째 행: Forecast
-                Row forecastRow = sheet.createRow(EXCEL_FORECAST_DATA_ROW_INDEX);
-                forecastRow.createCell(EXCEL_DESCRIPTION_ROW_INDEX).setCellValue(FORECAST_KEY);
-                if (forecastRawData != null) {
-                    for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
-                        Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
-                        if (forecastValue != null) {
-                            forecastRow.createCell(i).setCellValue(forecastValue);
-                        } else {
-                            forecastRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                for(DashboardChartLine forecastChartLine : forecastChartLineList){
+                    List<DashboardChartRawData> forecastRawData = forecastChartLine.rawData();
+                    Row forecastRow = sheet.createRow(rowIndex);
+                    forecastRow.createCell(EXCEL_DESCRIPTION_COLUMN_INDEX)
+                        .setCellValue(forecastChartLine.dataExplanation() == null ? FORECAST_KEY : forecastChartLine.dataExplanation());
+                    if (forecastRawData != null) {
+                        for (int i = headerStartIndex; i < forecastRawData.size() + headerStartIndex; i++) {
+                            Double forecastValue = forecastRawData.get(i - headerStartIndex).value();
+                            if (forecastValue != null) {
+                                forecastRow.createCell(i).setCellValue(forecastValue);
+                            } else {
+                                forecastRow.createCell(i).setCellValue(NOT_EXIST_VALUE);
+                            }
                         }
                     }
+                    rowIndex++;
                 }
 
                 // 세번째 행: Actual
-                Row actualRow = sheet.createRow(EXCEL_ACTUAL_DATA_ROW_INDEX);
-                actualRow.createCell(EXCEL_DESCRIPTION_ROW_INDEX).setCellValue(ACTUAL_KEY);
+                DashboardChart mainChart = finalCharts.stream()
+                    .filter(chart -> chart.chartLineType() != null)
+                    .findFirst()
+                    .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "차트 데이터가 없습니다."));
+                DashboardChartLine actualChartLine = mainChart.actualChartLines();
+                List<DashboardChartRawData> actualRawData = actualChartLine.rawData();
+                Row actualRow = sheet.createRow(rowIndex);
+                actualRow.createCell(EXCEL_DESCRIPTION_COLUMN_INDEX).setCellValue(ACTUAL_KEY);
                 if (actualRawData != null) {
                     for (int i = headerStartIndex; i < actualRawData.size() + headerStartIndex; i++) {
                         Double actualValue = actualRawData.get(i - headerStartIndex).value();
@@ -1244,21 +1252,23 @@ public class MiDashboardService {
                         }
                     }
                 }
+                rowIndex++;
 
                 // 네번째 행부터: Futures
                 List<DashboardChart> futuresCharts = finalCharts.stream()
                         .filter(chart -> {
-                            return chart.actualChartLines().dataType().equals(ChartPredictDataType.FUTURE);
+                            return ChartPredictDataType.FUTURE.equals(chart.actualChartLines().dataType());
                         })
                         .toList();
 
-                for (int i = EXCEL_FUTURES_DATA_ROW_INDEX; i < futuresCharts.size() + EXCEL_FUTURES_DATA_ROW_INDEX; i++) {
-                    Row futuresRow = sheet.createRow(i);
-                    futuresRow.createCell(EXCEL_DESCRIPTION_ROW_INDEX)
-                            .setCellValue(futuresCharts.get(i - EXCEL_FUTURES_DATA_ROW_INDEX).chartLineDescription());
-
-                    DashboardChartLine futuresChartLine = futuresCharts.get(i - EXCEL_FUTURES_DATA_ROW_INDEX).actualChartLines();
+                for (int i = rowIndex; i < futuresCharts.size() + rowIndex; i++) {
+                    DashboardChartLine futuresChartLine = futuresCharts.get(i - rowIndex).actualChartLines();
                     List<DashboardChartRawData> futuresRawData = futuresChartLine.rawData();
+                    if(futuresRawData == null) continue;
+
+                    Row futuresRow = sheet.createRow(i);
+                    futuresRow.createCell(EXCEL_DESCRIPTION_COLUMN_INDEX)
+                            .setCellValue(futuresCharts.get(i - rowIndex).chartLineDescription());
 
                     for (int j = headerStartIndex; j < futuresRawData.size() + headerStartIndex; j++) {
                         Double futuresValue = futuresRawData.get(j - headerStartIndex).value();

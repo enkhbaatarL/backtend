@@ -78,6 +78,9 @@ public class ResultCode {
         FILE_ACCESS_DENIED("FILE-004", "Failed to download the file. Access is denied."),
         FILE_ALREADY_EXIST("FILE-005", "The file already exists."),
 
+        // STRG: Object Storage 관련 오류
+        S3_ACCESS_ERROR("STRG-001", "Storage Access Failed."),
+
         // SEC: 보안 및 암복호화 관련 오류
         SEC_ENCRYPTION_FAILED("SEC-001", "Failed to encrypt data using AES."),
         SEC_DECRYPTION_FAILED("SEC-002", "Failed to decrypt data using AES."),
