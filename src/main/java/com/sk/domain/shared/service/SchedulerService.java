@@ -415,6 +415,7 @@ public class SchedulerService {
         crackSpreadCalculate();
         brentTimeSpreadCalculate();
         calculateStateGov10Y2YSpread();
+        processTifGiePast();
         return Boolean.TRUE;
     }
 
@@ -771,6 +772,10 @@ public class SchedulerService {
             interestRate10YPage = interestRateRepository.findByDateGreaterThanEqualAndCodeOrderByDateAsc(firstDate, InterestRate.GOV10Y,
                 PageRequest.of(pageNumber, PAGE_SIZE));
             pageNumber++;
+            if(interestRate10YPage.isLast()){
+                log.info("[State Gov 10Y, 2Y] New Data is nothing.");
+                break;
+            }
             List<InterestRate> interestRate2YList = interestRateRepository.findAllByCodeAndDateBetween(
                 InterestRate.GOV2Y, interestRate10YPage.getContent().get(0).getDate(),
                 interestRate10YPage.getContent().get(interestRate10YPage.getContent().size()-1).getDate());
