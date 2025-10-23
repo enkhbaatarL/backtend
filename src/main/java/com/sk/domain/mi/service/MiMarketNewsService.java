@@ -33,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,11 +88,24 @@ public class MiMarketNewsService {
             String category) {
 
         // 정렬 방향 설정
-        Sort.Direction direction = (sort == SortType.OLDEST)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
+        Sort sortBy = Sort.by(Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
 
-        Sort sortBy = Sort.by(direction, "ns.firstCreated", "ns.dataRegistrationSn");
+        switch (sort) {
+            case OLDEST:
+                sortBy = Sort.by(Direction.ASC, "ns.firstCreated", "ns.dataRegistrationSn");
+                break;
+            case NEWEST:
+                sortBy = Sort.by(Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+                break;
+            case HIGHEST:
+                sortBy = Sort.by(Direction.DESC, "sn.impctScre");
+                break;
+            case LOWEST:
+                sortBy = Sort.by(Direction.ASC, "sn.impctScre");
+                break;
+            default:
+        }
+
 
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
                 startDateTime, endDateTime, category, sortBy);
