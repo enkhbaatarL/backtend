@@ -415,6 +415,7 @@ public class SchedulerService {
         crackSpreadCalculate();
         brentTimeSpreadCalculate();
         calculateStateGov10Y2YSpread();
+        processTifGiePast();
         return Boolean.TRUE;
     }
 
