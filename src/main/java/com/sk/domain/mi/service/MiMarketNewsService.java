@@ -80,39 +80,31 @@ public class MiMarketNewsService {
         return PaginationRes.toRes(newsListPage);
     }
 
-    public PaginationRes<NewsfeedListRes> getNewsfeedList(
-            int page,
-            int size,
+    public List<NewsfeedListRes> getNewsfeedList(
             SortType sort,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime,
             String category) {
 
-        // 페이지 설정 및 정렬
+        // 정렬 방향 설정
         Sort.Direction direction = (sort == SortType.OLDEST)
                 ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
 
-        Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(direction, "ns.firstCreated", "ns.dataRegistrationSn"));
+        Sort sortBy = Sort.by(direction, "ns.firstCreated", "ns.dataRegistrationSn");
 
-        Page<Object[]> resultPage = newsSignificanceRepository.findNewsfeedWithFetchJoin(
-                startDateTime,
-                endDateTime,
-                category,
-                pageable
-        );
+        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
+                startDateTime, endDateTime, category, sortBy);
 
-        // DTO 변환
-        Page<NewsfeedListRes> newsfeedPage = resultPage.map(result -> {
-            NewsSignificance newsSignificance = (NewsSignificance) result[0];
-            SignificantNews significantNews = (SignificantNews) result[1];
-            NewsSummary newsSummary = (NewsSummary) result[2];
+        return results.stream()
+                .map(result -> {
+                    NewsSignificance newsSignificance = (NewsSignificance) result[0];
+                    SignificantNews significantNews = (SignificantNews) result[1];
+                    NewsSummary newsSummary = (NewsSummary) result[2];
 
-            return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
-        });
-
-        return PaginationRes.toRes(newsfeedPage);
+                    return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+                })
+                .toList();
     }
 
     /**
@@ -190,7 +182,6 @@ public class MiMarketNewsService {
             // category 필터
             if (StringUtils.hasText(category)) {
                 spec = spec.and((r, q, criteriaBuilder) -> {
-                    // EXISTS 서브쿼리로 NewsSignificance와 조인
                     Subquery<Long> subquery = q.subquery(Long.class);
                     Root<NewsSignificance> newsSignificance = subquery.from(NewsSignificance.class);
                     subquery.select(newsSignificance.get("nwsSigId"));

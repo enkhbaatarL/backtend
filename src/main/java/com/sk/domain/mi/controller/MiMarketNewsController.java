@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.enums.ResultCode.Success;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -22,6 +23,7 @@ import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -98,9 +100,8 @@ public class MiMarketNewsController {
 
 
     @ApiOrder(3)
-    @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
-    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 30)")
-    @Parameter(name = "category", description = "뉴스 카테고리 )")
+    @Parameter(name = "sort", description = "정렬 방향 (기본값: NEWEST)")
+    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)")
     @Operation(
         summary = "시장 뉴스 피드 조회",
         description = "시장 뉴스를 피드 형태로 조회합니다."
@@ -109,22 +110,25 @@ public class MiMarketNewsController {
     @GetMapping("/feed")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<PaginationRes<NewsfeedListRes>> getMarketNewsFeed(
-        @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
-        @RequestParam(value = "size", defaultValue = "30") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
-        @RequestParam(value = "category") String category) {
+    public BaseResponse<List<NewsfeedListRes>> getMarketNewsFeed(
+        @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") SortType sort,
+        @RequestParam(value = "category", defaultValue = "CROIL") String category) {
 
-        log.debug("시장 뉴스 피드 조회 요청 - page: {}, size: {}, category: {}",
-            page, size, category);
+        log.debug("시장 뉴스 피드 조회 요청 - sort: {}, category: {}", sort, category);
+
+        LocalDateTime startDateTime = LocalDateTime.parse("2025-07-29 07:00:00",
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime endDateTime = LocalDateTime.parse("2025-09-15 07:00:00",
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getNewsfeedList(page, size, SortType.NEWEST, LocalDateTime.parse("2025-07-29 07:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), LocalDateTime.parse("2025-09-15 07:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), category)
+            miMarketNewsService.getNewsfeedList(sort, startDateTime, endDateTime, category)
         );
     }
 
     @ApiOrder(4)
     @Parameter(name = "crtrDt", description = "기준 일자 (yyyyMMdd 형식)", required = true, example = "20250729")
-    @Parameter(name = "nwsMrktCtgrCd", description = "뉴스 시장 카테고리 코드", required = true, example = "CROIL")
+    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드", required = true, example = "CROIL")
     @Operation(
         summary = "마켓 리캡 조회 (날짜/카테고리)",
         description = "기준일자와 카테고리 코드로 마켓 리캡을 조회합니다."
@@ -135,12 +139,12 @@ public class MiMarketNewsController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<MarketRecapRes> getMarketRecap(
         @RequestParam(value = "crtrDt") String crtrDt,
-        @RequestParam(value = "nwsMrktCtgrCd") String nwsMrktCtgrCd) {
+        @RequestParam(value = "category") String category) {
 
-        log.debug("마켓 리캡 조회 요청 - crtrDt: {}, nwsMrktCtgrCd: {}", crtrDt, nwsMrktCtgrCd);
+        log.debug("마켓 리캡 조회 요청 - crtrDt: {}, category: {}", crtrDt, category);
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getMarketRecapByCriteriaDateAndCategory(crtrDt, nwsMrktCtgrCd)
+            miMarketNewsService.getMarketRecapByCriteriaDateAndCategory(crtrDt, category)
         );
     }
 
