@@ -11,9 +11,10 @@ spring:
         password: ${SKT_MI_DB_PASSWORD_MASTER:mippcc07377!@}
         hikari:
           connection-timeout: 7s
-          maximum-pool-size: 10
+          maximum-pool-size: 100
           idle-timeout: 10m
           max-lifetime: 15m
+          minimum-idle: 20
       - company-cd: ${SKT_MI_DB_DEDICATED_NAME:midb-skens}
         jdbc-url: ${SKT_MI_DB_DEDICATED_URL:jdbc:mysql://db-32qpgf.vpc-cdb-pcs03.ntruss.com:3306/mi-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -21,12 +22,12 @@ spring:
         password: ${SKT_MI_DB_PASSWORD_MASTER}
         hikari:
           connection-timeout: 7s
-          maximum-pool-size: 10
+          maximum-pool-size: 100
           idle-timeout: 10m
           max-lifetime: 15m
           connection-test-query: SELECT 1
           validation-timeout: 3000
-          minimum-idle: 5
+          minimum-idle: 20
 
 dedicated:
   company-no: 2013

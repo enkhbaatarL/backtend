@@ -44,6 +44,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -388,7 +389,6 @@ public class MiDashboardService {
      * 대시보드 요약 파일 다운로드 가능 여부 체크
      *
      * @param chartPredictSettingDetails 차트 설정 상세 목록
-     * @param permissionRes 권한 정보
      * @param companyNo 회사 번호
      * @return boolean
      */
@@ -603,7 +603,6 @@ public class MiDashboardService {
      * @param customerCompanyNo 고객 회사 번호
      * @param baseDate 기준 날짜
      * @param chartPredictSetting 차트 설정
-     * @param isFileDownload 파일 다운로드 여부
      * @param actualGoodsDataSourceDetail 실제 데이터 소스 상세 정보
      * @param chartMap 차트 맵
      * @return 차트 데이터 목록
@@ -902,7 +901,6 @@ public class MiDashboardService {
      * @param endDate 종료일
      * @return List<Map<String, Object>>
      */
-    @Transactional
     private List<Map<String, Object>> getForecastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, String valueColumnName,
             LocalDate startDate,
             LocalDate endDate) {
@@ -984,7 +982,6 @@ public class MiDashboardService {
      * @param endDate               데이터 범위 종료일 (포함, 예측 데이터는 YYYYMMDD 형식, 정형 데이터는 yyyy-MM-dd 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getActualDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName, LocalDate startDate,
             LocalDate endDate) {
         if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
@@ -1005,7 +1002,6 @@ public class MiDashboardService {
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getLastUpdateDateData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
 
         if (goodsDataSourceDetail == null || dateColumnName == null) {
@@ -1026,11 +1022,8 @@ public class MiDashboardService {
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @param dateColumnName        필터링할 날짜 컬럼명
-     * @param startDate             데이터 범위 시작일 (포함, 예측 데이터는 YYYYMMDD 형식, 정형 데이터는 yyyy-MM-dd 형식)
-     * @param endDate               데이터 범위 종료일 (포함, 예측 데이터는 YYYYMMDD 형식, 정형 데이터는 yyyy-MM-dd 형식)
      * @return 조건에 맞는 데이터 행 목록
      */
-    @Transactional
     private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
         if (goodsDataSourceDetail == null || dateColumnName == null) {
             return Collections.emptyList();
@@ -1050,9 +1043,8 @@ public class MiDashboardService {
     /**
      * 차트 파일 다운로드
      *
-     * @param companyNo 고객사 번호
+     * @param customerCompanyNo 고객사 번호
      * @param date 조회할 년월
-     * @param authentication 인증 정보
      * @return DashboardChartRes
      */
     public byte[] getChartFileDownload(int customerCompanyNo, String date) throws IOException {

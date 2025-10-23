@@ -39,6 +39,7 @@ public class MybatisDynamicQueryService {
      */
     private static final Set<String> FORBIDDEN_TOKENS = Set.of(";", "--", "#", "UNION");
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public List<Map<String, Object>> getDynamicData(DynamicDataReq dynamicDataReq) {
 
         // 데이터 소스 설정
@@ -110,7 +111,7 @@ public class MybatisDynamicQueryService {
      * @param dynamicDataReq
      * @return
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public List<Map<String, Object>> getDynamicRawQuery(DynamicDataDetailReq dynamicDataDetailReq) {
         // 데이터 소스 설정
         DataSourceContextHolder.setDataSourceKey(dynamicDataDetailReq.targetDataSource());
@@ -149,6 +150,7 @@ public class MybatisDynamicQueryService {
         return dynamicMapper.selectPredictResultData(params);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public List<DoubleValueResultData> getDoubleValueResultQuery(DynamicDataReq dynamicDataReq) {
 
         DataSourceContextHolder.setDataSourceKey(dynamicDataReq.targetDataSource());

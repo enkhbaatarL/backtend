@@ -12,12 +12,12 @@ spring:
       password: ${SKT_MI_DB_PASSWORD_MASTER}
       hikari:
         connection-timeout: 7s
-        maximum-pool-size: 10
+        maximum-pool-size: 50
         idle-timeout: 10m
         max-lifetime: 15m
         connection-test-query: SELECT 1
         validation-timeout: 3000
-        minimum-idle: 5
+        minimum-idle: 10
     tenants:
       - company-cd: midb
         jdbc-url: ${SKT_MI_DB_URL_MASTER}
@@ -26,12 +26,12 @@ spring:
         password: ${SKT_MI_DB_PASSWORD_MASTER}
         hikari:
           connection-timeout: 7s
-          maximum-pool-size: 10
+          maximum-pool-size: 50
           idle-timeout: 10m
           max-lifetime: 15m
           connection-test-query: SELECT 1
           validation-timeout: 3000
-          minimum-idle: 5
+          minimum-idle: 10
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
