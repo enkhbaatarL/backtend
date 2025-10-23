@@ -2,7 +2,6 @@ package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
-import com.sk.common.enums.ResultCode.Success;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -166,5 +165,28 @@ public class MiMarketNewsController {
         return BaseResponseFactory.create(
             miMarketNewsService.getMarketRecapById(mrktRcapId)
         );
+    }
+
+    @ApiOrder(6)
+    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)")
+    @Operation(
+        summary = "시장 뉴스 타임라인 조회",
+        description = "시장 뉴스를 영향도 점수 8.0 이상 최대 10개의 뉴스를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/timeline")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<List<NewsfeedListRes>> getMarketNewsFeed(
+        @RequestParam(value = "category", defaultValue = "CROIL") String category) {
+
+        log.debug("시장 뉴스 타임라인 조회 요청 - category: {}", category);
+
+        LocalDateTime startDateTime = LocalDateTime.parse("2025-07-29 07:00:00",
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime endDateTime = LocalDateTime.parse("2025-09-15 07:00:00",
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        return BaseResponseFactory.create(miMarketNewsService.getNewsTimeline(startDateTime, endDateTime, category));
     }
 }

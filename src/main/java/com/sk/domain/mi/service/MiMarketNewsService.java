@@ -336,4 +336,34 @@ public class MiMarketNewsService {
                 checkpointItemResList
         );
     }
+
+    public List<NewsfeedListRes> getNewsTimeline(
+        LocalDateTime startDateTime,
+        LocalDateTime endDateTime,
+        String category) {
+
+        // ns.firstCreated, ns.dataRegistrationSn 기준 내림차순 정렬
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+
+        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
+            startDateTime, endDateTime, category, sortBy);
+
+        return results.stream()
+            .filter(result -> {
+                SignificantNews significantNews = (SignificantNews) result[1];
+                // impctScre가 8.0 이상인 뉴스만 필터링
+                return significantNews != null &&
+                    significantNews.getImpctScre() != null &&
+                    significantNews.getImpctScre().compareTo(new java.math.BigDecimal("8.0")) >= 0;
+            })
+            .limit(10)  // 최대 10개로 제한
+            .map(result -> {
+                NewsSignificance newsSignificance = (NewsSignificance) result[0];
+                SignificantNews significantNews = (SignificantNews) result[1];
+                NewsSummary newsSummary = (NewsSummary) result[2];
+
+                return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+            })
+            .toList();
+    }
 }
