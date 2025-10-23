@@ -25,6 +25,7 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,39 +81,44 @@ public class MiMarketNewsService {
         return PaginationRes.toRes(newsListPage);
     }
 
-    public PaginationRes<NewsfeedListRes> getNewsfeedList(
-            int page,
-            int size,
+    public List<NewsfeedListRes> getNewsfeedList(
             SortType sort,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime,
             String category) {
 
-        // 페이지 설정 및 정렬
-        Sort.Direction direction = (sort == SortType.OLDEST)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
+        // 정렬 방향 설정
+        Sort sortBy = Sort.by(Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
 
-        Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(direction, "ns.firstCreated", "ns.dataRegistrationSn"));
+        switch (sort) {
+            case OLDEST:
+                sortBy = Sort.by(Direction.ASC, "ns.firstCreated", "ns.dataRegistrationSn");
+                break;
+            case NEWEST:
+                sortBy = Sort.by(Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+                break;
+            case HIGHEST:
+                sortBy = Sort.by(Direction.DESC, "sn.impctScre");
+                break;
+            case LOWEST:
+                sortBy = Sort.by(Direction.ASC, "sn.impctScre");
+                break;
+            default:
+        }
 
-        Page<Object[]> resultPage = newsSignificanceRepository.findNewsfeedWithFetchJoin(
-                startDateTime,
-                endDateTime,
-                category,
-                pageable
-        );
 
-        // DTO 변환
-        Page<NewsfeedListRes> newsfeedPage = resultPage.map(result -> {
-            NewsSignificance newsSignificance = (NewsSignificance) result[0];
-            SignificantNews significantNews = (SignificantNews) result[1];
-            NewsSummary newsSummary = (NewsSummary) result[2];
+        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
+                startDateTime, endDateTime, category, sortBy);
 
-            return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
-        });
+        return results.stream()
+                .map(result -> {
+                    NewsSignificance newsSignificance = (NewsSignificance) result[0];
+                    SignificantNews significantNews = (SignificantNews) result[1];
+                    NewsSummary newsSummary = (NewsSummary) result[2];
 
-        return PaginationRes.toRes(newsfeedPage);
+                    return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+                })
+                .toList();
     }
 
     /**
@@ -189,7 +196,6 @@ public class MiMarketNewsService {
             // category 필터
             if (StringUtils.hasText(category)) {
                 spec = spec.and((r, q, criteriaBuilder) -> {
-                    // EXISTS 서브쿼리로 NewsSignificance와 조인
                     Subquery<Long> subquery = q.subquery(Long.class);
                     Root<NewsSignificance> newsSignificance = subquery.from(NewsSignificance.class);
                     subquery.select(newsSignificance.get("nwsSigId"));
@@ -269,7 +275,7 @@ public class MiMarketNewsService {
                 newsSignificance.getNwsMrktCtgrCd(),
                 newsSummary != null ? newsSummary.getNewsSummaryId() : null,
                 newsSummary != null ? newsSummary.getBriefSummary() : null,
-                newsSummary != null ? newsSummary.getSummary() : null,
+                newsSummary != null ? Arrays.asList(newsSummary.getSummary().split("\n")) : null,
                 newsSummary != null && newsSummary.getRefinitivNewsData() != null
                         ? newsSummary.getRefinitivNewsData().getTitle() : null,
                 newsSummary != null ? newsSummary.getProvider() : null,
@@ -343,5 +349,35 @@ public class MiMarketNewsService {
                 highlightItemResList,
                 checkpointItemResList
         );
+    }
+
+    public List<NewsfeedListRes> getNewsTimeline(
+        LocalDateTime startDateTime,
+        LocalDateTime endDateTime,
+        String category) {
+
+        // ns.firstCreated, ns.dataRegistrationSn 기준 내림차순 정렬
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+
+        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
+            startDateTime, endDateTime, category, sortBy);
+
+        return results.stream()
+            .filter(result -> {
+                SignificantNews significantNews = (SignificantNews) result[1];
+                // impctScre가 8.0 이상인 뉴스만 필터링
+                return significantNews != null &&
+                    significantNews.getImpctScre() != null &&
+                    significantNews.getImpctScre().compareTo(new java.math.BigDecimal("8.0")) >= 0;
+            })
+            .limit(10)  // 최대 10개로 제한
+            .map(result -> {
+                NewsSignificance newsSignificance = (NewsSignificance) result[0];
+                SignificantNews significantNews = (SignificantNews) result[1];
+                NewsSummary newsSummary = (NewsSummary) result[2];
+
+                return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+            })
+            .toList();
     }
 }

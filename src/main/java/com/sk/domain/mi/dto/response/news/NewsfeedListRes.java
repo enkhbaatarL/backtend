@@ -3,6 +3,7 @@ package com.sk.domain.mi.dto.response.news;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 뉴스피드 목록 응답 DTO
@@ -27,7 +28,7 @@ public record NewsfeedListRes(
     String briefSummary,
 
     @Schema(description = "요약", example = "")
-    String summary,
+    List<String> summary,
 
     @Schema(description = "뉴스 제목", example = "Approval to Amend Term of Warrants")
     String title,

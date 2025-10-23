@@ -24,7 +24,8 @@ import org.hibernate.annotations.Comment;
 @Comment("TMD_뉴스요약")
 @Table(name = "tmd_nws_smry",
     indexes = {
-        @Index(name = "tmd_nws_smry_ix_01", columnList = "data_reg_sn, first_created")
+        @Index(name = "tmd_nws_smry_ix_01", columnList = "data_reg_sn, first_created"),
+        @Index(name = "tmd_nws_smry_ix_02", columnList = "data_reg_sn, first_created, crtr_dt")
     })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NewsSummary extends BaseEntity {
@@ -51,6 +52,10 @@ public class NewsSummary extends BaseEntity {
         insertable = false, updatable = false)
     @Comment("Refinitiv 뉴스 데이터")
     private RefinitivNewsData refinitivNewsData;
+
+    @Column(name = "crtr_dt", length = 8, nullable = false)
+    @Comment("기준 일자")
+    private String crtrDt;
 
     @Column(name = "brf_smry", length = 200)
     @Comment("간략요약")

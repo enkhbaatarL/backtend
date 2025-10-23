@@ -30,7 +30,8 @@ import org.hibernate.annotations.Comment;
     name = "tmd_nws_sig",
     indexes = {
         @Index(name = "tmd_nws_sig_ix_01", columnList = "data_reg_sn, first_created"),
-        @Index(name = "tmd_nws_sig_ix_02", columnList = "nws_mrkt_ctgr_cd")
+        @Index(name = "tmd_nws_sig_ix_02", columnList = "nws_mrkt_ctgr_cd"),
+        @Index(name = "tmd_nws_sig_ix_03", columnList = "nws_mrkt_ctgr_cd, crtr_dt"),
     }
 )
 @Getter
@@ -64,6 +65,10 @@ public class NewsSignificance extends BaseEntity {
     @Column(name = "nws_mrkt_ctgr_cd", length = 20, nullable = false)
     @Comment("뉴스시장카테고리코드 - 시장 분류 (Market Category) 원유, 천연가스, 반도체, EV배터리 등으로 분류")
     private String nwsMrktCtgrCd;
+
+    @Column(name = "crtr_dt", length = 8, nullable = false)
+    @Comment("기준 일자")
+    private String crtrDt;
 
     @Column(name = "sig", precision = 4, scale = 2)
     @Comment("중요도")

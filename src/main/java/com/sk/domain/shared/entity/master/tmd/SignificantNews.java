@@ -27,7 +27,8 @@ import org.hibernate.annotations.Comment;
 @Table(
     name = "tmd_sgt_nws",
     indexes = {
-        @Index(name = "tmd_sgt_news_ix_01", columnList = "nws_sig_id")
+        @Index(name = "tmd_sgt_news_ix_01", columnList = "nws_sig_id"),
+        @Index(name = "tmd_sgt_news_ix_02", columnList = "nws_sig_id, crtr_dt)")
     }
 )
 @Getter
@@ -48,6 +49,10 @@ public class SignificantNews extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "nws_sig_id")
     private NewsSignificance newsSignificance;
+
+    @Column(name = "crtr_dt", length = 8, nullable = false)
+    @Comment("기준 일자")
+    private String crtrDt;
 
     @Column(name = "impct_scre", precision = 4, scale = 2, nullable = false)
     @Comment("영향도점수")
