@@ -2,8 +2,9 @@ package com.sk.domain.mi.dto.response.news;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 
-public record MarketNewsFeedRes (
+public record MarketNewsFeedRes(
     @Schema(description = "뉴스 요약 ID", example = "11")
     Integer newsSummaryId,
 
@@ -17,6 +18,12 @@ public record MarketNewsFeedRes (
     String title,
 
     @Schema(description = "프로바이더", example = "reuters")
-    String provider) {
+    String provider,
+
+    @Schema(description = "지역", example = "[Global, Asia Pacific]")
+    List<String> region,
+
+    @Schema(description = "산업", example = "[Energy, Latin America]")
+    List<String> industry) {
 
 }

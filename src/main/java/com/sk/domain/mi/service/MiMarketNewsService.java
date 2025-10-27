@@ -11,6 +11,8 @@ import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpointItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItemRelationship;
+import com.sk.domain.shared.entity.master.tmd.NewsIndustryClassifications;
+import com.sk.domain.shared.entity.master.tmd.NewsRegionClassifications;
 import com.sk.domain.shared.entity.master.tmd.NewsSignificance;
 import com.sk.domain.shared.entity.master.tmd.NewsSummary;
 import com.sk.domain.shared.entity.master.tmd.SignificantNews;
@@ -19,6 +21,8 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointItemRepos
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsIndustryClassificationsRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsRegionClassificationsRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
 import jakarta.persistence.criteria.Root;
@@ -26,7 +30,11 @@ import jakarta.persistence.criteria.Subquery;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -47,6 +55,8 @@ public class MiMarketNewsService {
 
     private final NewsSummaryRepository newsSummaryRepository;
     private final NewsSignificanceRepository newsSignificanceRepository;
+    private final NewsRegionClassificationsRepository newsRegionClassificationsRepository;
+    private final NewsIndustryClassificationsRepository newsIndustryClassificationsRepository;
     private final MarketRecapRepository marketRecapRepository;
     private final MarketRecapHighlightItemRepository marketRecapHighlightItemRepository;
     private final MarketRecapCheckpointItemRepository marketRecapCheckpointItemRepository;
@@ -75,8 +85,40 @@ public class MiMarketNewsService {
         // 데이터 조회
         Page<NewsSummary> newsPage = newsSummaryRepository.findAll(spec, pageable);
 
+        List<Integer> newsSummaryIds = newsPage.getContent().stream()
+            .map(NewsSummary::getNewsSummaryId)
+            .toList();
+
+        // 3. IN 쿼리로 모든 region을 한 번에 조회
+        List<NewsRegionClassifications> allRegions =
+            newsRegionClassificationsRepository.findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds);
+
+        // 4. IN 쿼리로 모든 industry를 한 번에 조회
+        List<NewsIndustryClassifications> allIndustries =
+            newsIndustryClassificationsRepository.findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds);
+
+        Map<Integer, List<String>> regionMap = allRegions.stream()
+            .collect(Collectors.groupingBy(
+                NewsRegionClassifications::getNewsSummaryId,
+                Collectors.mapping(
+                    NewsRegionClassifications::getNewsRegionSeparationCd,
+                    Collectors.toList()
+                )
+            ));
+
+        Map<Integer, List<String>> industryMap = allIndustries.stream()
+            .collect(Collectors.groupingBy(
+                NewsIndustryClassifications::getNewsSummaryId,
+                Collectors.mapping(
+                    NewsIndustryClassifications::getNewsIndustrySectorCd,
+                    Collectors.toList()
+                )
+            ));
+
         // DTO 변환
-        Page<MarketNewsListRes> newsListPage = newsPage.map(this::toMarketNewsListRes);
+        Page<MarketNewsListRes> newsListPage = newsPage.map(news ->
+            toMarketNewsListRes(news, regionMap, industryMap)
+        );
 
         return PaginationRes.toRes(newsListPage);
     }
@@ -110,13 +152,52 @@ public class MiMarketNewsService {
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
                 startDateTime, endDateTime, category, sortBy);
 
+        List<Integer> newsSummaryIds = results.stream()
+                .map(result -> (NewsSummary) result[2])
+                .filter(Objects::nonNull)
+                .map(NewsSummary::getNewsSummaryId)
+                .distinct()
+                .toList();
+
+        Map<Integer, List<String>> regionMap = Collections.emptyMap();
+        if (!newsSummaryIds.isEmpty()) {
+            regionMap = newsRegionClassificationsRepository
+                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            NewsRegionClassifications::getNewsSummaryId,
+                            Collectors.mapping(
+                                    NewsRegionClassifications::getNewsRegionSeparationCd,
+                                    Collectors.toList()
+                            )
+                    ));
+        }
+
+        Map<Integer, List<String>> industryMap = Collections.emptyMap();
+        if (!newsSummaryIds.isEmpty()) {
+            industryMap = newsIndustryClassificationsRepository
+                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            NewsIndustryClassifications::getNewsSummaryId,
+                            Collectors.mapping(
+                                    NewsIndustryClassifications::getNewsIndustrySectorCd,
+                                    Collectors.toList()
+                            )
+                    ));
+        }
+
+        final Map<Integer, List<String>> finalRegionMap = regionMap;
+        final Map<Integer, List<String>> finalIndustryMap = industryMap;
+
         return results.stream()
                 .map(result -> {
                     NewsSignificance newsSignificance = (NewsSignificance) result[0];
                     SignificantNews significantNews = (SignificantNews) result[1];
                     NewsSummary newsSummary = (NewsSummary) result[2];
 
-                    return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+                    return toNewsfeedListRes(newsSignificance, newsSummary, significantNews,
+                            finalRegionMap, finalIndustryMap);
                 })
                 .toList();
     }
@@ -193,7 +274,7 @@ public class MiMarketNewsService {
                 );
             }
 
-            // category 필터
+            // category 필터 - NewsSignificance 테이블과 조인하여 카테고리 검색
             if (StringUtils.hasText(category)) {
                 spec = spec.and((r, q, criteriaBuilder) -> {
                     Subquery<Long> subquery = q.subquery(Long.class);
@@ -235,14 +316,29 @@ public class MiMarketNewsService {
     /**
      * NewsSummary -> MarketNewsListRes 변환
      */
-    private MarketNewsListRes toMarketNewsListRes(NewsSummary newsSummary) {
+    private MarketNewsListRes toMarketNewsListRes(
+        NewsSummary newsSummary,
+        Map<Integer, List<String>> regionMap,
+        Map<Integer, List<String>> industryMap) {
+
+        List<String> regions = regionMap.getOrDefault(
+            newsSummary.getNewsSummaryId(),
+            Collections.emptyList()
+        );
+
+        List<String> industries = industryMap.getOrDefault(
+            newsSummary.getNewsSummaryId(),
+            Collections.emptyList()
+        );
 
         return new MarketNewsListRes(
-                newsSummary.getNewsSummaryId(),
-                newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
-                newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
-                newsSummary.getRefinitivNewsData().getTitle(),
-                newsSummary.getProvider()
+            newsSummary.getNewsSummaryId(),
+            newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
+            newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
+            newsSummary.getRefinitivNewsData().getTitle(),
+            newsSummary.getProvider(),
+            regions,
+            industries
         );
     }
 
@@ -264,23 +360,37 @@ public class MiMarketNewsService {
      * NewsSignificance, NewsSummary, SignificantNews -> NewsfeedListRes 변환
      */
     private NewsfeedListRes toNewsfeedListRes(
-            NewsSignificance newsSignificance,
-            NewsSummary newsSummary,
-            SignificantNews significantNews) {
+        NewsSignificance newsSignificance,
+        NewsSummary newsSummary,
+        SignificantNews significantNews,
+        Map<Integer, List<String>> regionMap,
+        Map<Integer, List<String>> industryMap
+    ) {
+
+        List<String> regions = regionMap.getOrDefault(
+            newsSummary != null ? newsSummary.getNewsSummaryId() : null,
+            Collections.emptyList()
+        );
+
+        List<String> industries = industryMap.getOrDefault(
+            newsSummary != null ? newsSummary.getNewsSummaryId() : null,
+            Collections.emptyList()
+        );
 
         return new NewsfeedListRes(
-                newsSignificance.getNwsSigId(),
-                newsSignificance.getDataRegistrationSn().intValue(),
-                newsSignificance.getFirstCreated(),
-                newsSignificance.getNwsMrktCtgrCd(),
-                newsSummary != null ? newsSummary.getNewsSummaryId() : null,
-                newsSummary != null ? newsSummary.getBriefSummary() : null,
-                newsSummary != null ? Arrays.asList(newsSummary.getSummary().split("\n")) : null,
-                newsSummary != null && newsSummary.getRefinitivNewsData() != null
-                        ? newsSummary.getRefinitivNewsData().getTitle() : null,
-                newsSummary != null ? newsSummary.getProvider() : null,
-                significantNews != null ? significantNews.getImpctScre() : null,
-                significantNews != null ? significantNews.getDrctnlt() : null
+            newsSignificance.getNwsSigId(),
+            newsSignificance.getDataRegistrationSn().intValue(),
+            newsSignificance.getFirstCreated(),
+            newsSignificance.getNwsMrktCtgrCd(),
+            Objects.requireNonNull(newsSummary).getNewsSummaryId(),
+            newsSummary.getBriefSummary(),
+            Arrays.asList(newsSummary.getSummary().split("\n")),
+            newsSummary.getRefinitivNewsData().getTitle(),
+            newsSummary.getProvider(),
+            significantNews != null ? significantNews.getImpctScre() : null,
+            significantNews != null ? significantNews.getDrctnlt() : null,
+            regions,
+            industries
         );
     }
 
@@ -362,7 +472,8 @@ public class MiMarketNewsService {
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
             startDateTime, endDateTime, category, sortBy);
 
-        return results.stream()
+        // 2. impctScre 필터링 및 limit 적용
+        List<Object[]> filteredResults = results.stream()
             .filter(result -> {
                 SignificantNews significantNews = (SignificantNews) result[1];
                 // impctScre가 8.0 이상인 뉴스만 필터링
@@ -371,12 +482,54 @@ public class MiMarketNewsService {
                     significantNews.getImpctScre().compareTo(new java.math.BigDecimal("8.0")) >= 0;
             })
             .limit(10)  // 최대 10개로 제한
+            .toList();
+
+        List<Integer> newsSummaryIds = filteredResults.stream()
+                .map(result -> (NewsSummary) result[2])
+                .filter(Objects::nonNull)
+                .map(NewsSummary::getNewsSummaryId)
+                .distinct()
+                .toList();
+
+        Map<Integer, List<String>> regionMap = Collections.emptyMap();
+        if (!newsSummaryIds.isEmpty()) {
+            regionMap = newsRegionClassificationsRepository
+                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            NewsRegionClassifications::getNewsSummaryId,
+                            Collectors.mapping(
+                                    NewsRegionClassifications::getNewsRegionSeparationCd,
+                                    Collectors.toList()
+                            )
+                    ));
+        }
+
+        Map<Integer, List<String>> industryMap = Collections.emptyMap();
+        if (!newsSummaryIds.isEmpty()) {
+            industryMap = newsIndustryClassificationsRepository
+                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            NewsIndustryClassifications::getNewsSummaryId,
+                            Collectors.mapping(
+                                    NewsIndustryClassifications::getNewsIndustrySectorCd,
+                                    Collectors.toList()
+                            )
+                    ));
+        }
+
+        final Map<Integer, List<String>> finalRegionMap = regionMap;
+        final Map<Integer, List<String>> finalIndustryMap = industryMap;
+
+        return filteredResults.stream()
             .map(result -> {
                 NewsSignificance newsSignificance = (NewsSignificance) result[0];
                 SignificantNews significantNews = (SignificantNews) result[1];
                 NewsSummary newsSummary = (NewsSummary) result[2];
 
-                return toNewsfeedListRes(newsSignificance, newsSummary, significantNews);
+                return toNewsfeedListRes(newsSignificance, newsSummary, significantNews,
+                        finalRegionMap, finalIndustryMap);
             })
             .toList();
     }

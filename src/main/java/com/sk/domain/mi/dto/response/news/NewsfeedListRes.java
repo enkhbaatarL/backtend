@@ -40,7 +40,13 @@ public record NewsfeedListRes(
     BigDecimal impctScre,
 
     @Schema(description = "방향성", example = "Upward")
-    String drctnlt
+    String drctnlt,
+
+    @Schema(description = "지역", example = "[Global, Asia Pacific]")
+    List<String> region,
+
+    @Schema(description = "산업", example = "[Energy, Latin America]")
+    List<String> industry
 ) {
 
 }
