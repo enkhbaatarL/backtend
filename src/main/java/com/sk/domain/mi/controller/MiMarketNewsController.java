@@ -51,6 +51,8 @@ public class MiMarketNewsController {
     @Parameter(name = "startDate", description = "조회 시작일 (선택사항)")
     @Parameter(name = "endDate", description = "조회 종료일 (선택사항)")
     @Parameter(name = "category", description = "카테고리 (선택사항)")
+    @Parameter(name = "region", description = "지역 (선택사항)")
+    @Parameter(name = "industry", description = "산업 (선택사항)")
     @Operation(
         summary = "시장 뉴스 목록 조회",
         description = "시장 뉴스 목록을 페이징하여 조회합니다."
@@ -62,18 +64,20 @@ public class MiMarketNewsController {
     public BaseResponse<PaginationRes<MarketNewsListRes>> getMarketNewsList(
         @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
         @RequestParam(value = "size", defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
-        @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") SortType sort,
+        @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
         @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
         @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
         @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
-        @RequestParam(value = "category", required = false, defaultValue = "") String category
+        @RequestParam(value = "category", required = false) List<String> category,
+        @RequestParam(value = "region", required = false) List<String> region,
+        @RequestParam(value = "industry", required = false) List<String> industry
     ) {
 
         log.debug("시장 뉴스 목록 조회 요청 - page: {}, size: {}, keyword: {}", page, size, keyword);
 
         return BaseResponseFactory.create(
             miMarketNewsService.getMarketNewsList(page, size, sort, keyword, startDate, endDate,
-                category)
+                category, region, industry)
         );
     }
 
@@ -101,6 +105,8 @@ public class MiMarketNewsController {
     @ApiOrder(3)
     @Parameter(name = "sort", description = "정렬 방향 (기본값: NEWEST)")
     @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)")
+    @Parameter(name = "region", description = "지역")
+    @Parameter(name = "industry", description = "산업")
     @Operation(
         summary = "시장 뉴스 피드 조회",
         description = "시장 뉴스를 피드 형태로 조회합니다."
@@ -111,7 +117,9 @@ public class MiMarketNewsController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<List<NewsfeedListRes>> getMarketNewsFeed(
         @RequestParam(value = "sort", required = false, defaultValue = "NEWEST") SortType sort,
-        @RequestParam(value = "category", defaultValue = "CROIL") String category) {
+        @RequestParam(value = "category", defaultValue = "CROIL") String category,
+        @RequestParam(value = "region", required = false) List<String> region,
+        @RequestParam(value = "industry", required = false) List<String> industry) {
 
         log.debug("시장 뉴스 피드 조회 요청 - sort: {}, category: {}", sort, category);
 
@@ -121,7 +129,7 @@ public class MiMarketNewsController {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getNewsfeedList(sort, startDateTime, endDateTime, category)
+            miMarketNewsService.getNewsfeedList(sort, startDateTime, endDateTime, category, region, industry)
         );
     }
 

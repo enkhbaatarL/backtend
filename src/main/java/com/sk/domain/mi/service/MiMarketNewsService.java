@@ -11,41 +11,26 @@ import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpointItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItemRelationship;
-import com.sk.domain.shared.entity.master.tmd.NewsIndustryClassifications;
-import com.sk.domain.shared.entity.master.tmd.NewsRegionClassifications;
-import com.sk.domain.shared.entity.master.tmd.NewsSignificance;
 import com.sk.domain.shared.entity.master.tmd.NewsSummary;
-import com.sk.domain.shared.entity.master.tmd.SignificantNews;
 import com.sk.domain.shared.enums.news.SortType;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointItemRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
-import com.sk.domain.shared.repository.master.tmd.NewsIndustryClassificationsRepository;
-import com.sk.domain.shared.repository.master.tmd.NewsRegionClassificationsRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -55,160 +40,194 @@ public class MiMarketNewsService {
 
     private final NewsSummaryRepository newsSummaryRepository;
     private final NewsSignificanceRepository newsSignificanceRepository;
-    private final NewsRegionClassificationsRepository newsRegionClassificationsRepository;
-    private final NewsIndustryClassificationsRepository newsIndustryClassificationsRepository;
     private final MarketRecapRepository marketRecapRepository;
     private final MarketRecapHighlightItemRepository marketRecapHighlightItemRepository;
     private final MarketRecapCheckpointItemRepository marketRecapCheckpointItemRepository;
     private final MarketRecapHighlightItemRelationshipRepository marketRecapHighlightItemRelationshipRepository;
 
     public PaginationRes<MarketNewsListRes> getMarketNewsList(
-            int page,
-            int size,
-            SortType sort,
-            String keyword,
-            LocalDate startDate,
-            LocalDate endDate,
-            String category) {
+        int page,
+        int size,
+        SortType sort,
+        String keyword,
+        LocalDate startDate,
+        LocalDate endDate,
+        List<String> categories,
+        List<String> regions,
+        List<String> industries) {
 
-        // 페이지 설정 및 정렬
-        Sort.Direction direction = (sort == SortType.OLDEST)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
+        String sortDirection = (sort == SortType.OLDEST) ? "ASC" : "DESC";
 
-        Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(direction, "refinitivNewsData.id.firstCreated", "refinitivNewsData.id.dataRegistrationSn"));
+        LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
+        LocalDateTime endDateTime = endDate != null ? endDate.atTime(23, 59, 59) : null;
 
-        // 검색 조건 생성
-        Specification<NewsSummary> spec = createSpecification(keyword, startDate, endDate, category);
+        int offset = (page - 1) * size;
 
-        // 데이터 조회
-        Page<NewsSummary> newsPage = newsSummaryRepository.findAll(spec, pageable);
+        boolean filterByCategory = categories != null && !categories.isEmpty();
+        boolean filterByRegion = regions != null && !regions.isEmpty();
+        boolean filterByIndustry = industries != null && !industries.isEmpty();
 
-        List<Integer> newsSummaryIds = newsPage.getContent().stream()
-            .map(NewsSummary::getNewsSummaryId)
+        List<Object[]> results = newsSignificanceRepository.findMarketNewsListWithGroupConcat(
+            keyword, startDateTime, endDateTime,
+            filterByCategory ? categories : null, filterByCategory,
+            filterByRegion ? regions : null, filterByRegion,
+            filterByIndustry ? industries : null, filterByIndustry,
+            sortDirection, size, offset);
+
+        long totalCount = newsSignificanceRepository.countMarketNewsList(
+            keyword, startDateTime, endDateTime,
+            filterByCategory ? categories : null, filterByCategory,
+            filterByRegion ? regions : null, filterByRegion,
+            filterByIndustry ? industries : null, filterByIndustry);
+
+        List<MarketNewsListRes> content = results.stream()
+            .map(result -> {
+                Integer newsSummaryId = result[0] != null
+                    ? ((Number) result[0]).intValue()
+                    : null;
+                Integer dataRegistrationSn = result[1] != null
+                    ? ((Number) result[1]).intValue()
+                    : null;
+                LocalDateTime firstCreated = result[2] != null
+                    ? ((java.sql.Timestamp) result[2]).toLocalDateTime()
+                    : null;
+                String title = (String) result[3];
+                String provider = (String) result[4];
+                String categoryStr = (String) result[5];
+                String regionsStr = (String) result[6];
+                String industriesStr = (String) result[7];
+
+                List<String> categoryList = parseGroupConcatResult(categoryStr);
+                List<String> regionList = parseGroupConcatResult(regionsStr);
+                List<String> industryList = parseGroupConcatResult(industriesStr);
+
+                return new MarketNewsListRes(
+                    newsSummaryId,
+                    dataRegistrationSn,
+                    firstCreated,
+                    title,
+                    provider,
+                    categoryList,
+                    regionList,
+                    industryList
+                );
+            })
             .toList();
 
-        // 3. IN 쿼리로 모든 region을 한 번에 조회
-        List<NewsRegionClassifications> allRegions =
-            newsRegionClassificationsRepository.findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds);
-
-        // 4. IN 쿼리로 모든 industry를 한 번에 조회
-        List<NewsIndustryClassifications> allIndustries =
-            newsIndustryClassificationsRepository.findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds);
-
-        Map<Integer, List<String>> regionMap = allRegions.stream()
-            .collect(Collectors.groupingBy(
-                NewsRegionClassifications::getNewsSummaryId,
-                Collectors.mapping(
-                    NewsRegionClassifications::getNewsRegionSeparationCd,
-                    Collectors.toList()
-                )
-            ));
-
-        Map<Integer, List<String>> industryMap = allIndustries.stream()
-            .collect(Collectors.groupingBy(
-                NewsIndustryClassifications::getNewsSummaryId,
-                Collectors.mapping(
-                    NewsIndustryClassifications::getNewsIndustrySectorCd,
-                    Collectors.toList()
-                )
-            ));
-
-        // DTO 변환
-        Page<MarketNewsListRes> newsListPage = newsPage.map(news ->
-            toMarketNewsListRes(news, regionMap, industryMap)
-        );
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<MarketNewsListRes> newsListPage = new org.springframework.data.domain.PageImpl<>(
+            content, pageable, totalCount);
 
         return PaginationRes.toRes(newsListPage);
     }
 
     public List<NewsfeedListRes> getNewsfeedList(
-            SortType sort,
-            LocalDateTime startDateTime,
-            LocalDateTime endDateTime,
-            String category) {
+        SortType sort,
+        LocalDateTime startDateTime,
+        LocalDateTime endDateTime,
+        String category,
+        List<String> regions,
+        List<String> industries
+    ) {
 
-        // 정렬 방향 설정
-        Sort sortBy = Sort.by(Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+        String sortField = "firstCreated";
+        String sortDirection = "DESC";
 
         switch (sort) {
             case OLDEST:
-                sortBy = Sort.by(Direction.ASC, "ns.firstCreated", "ns.dataRegistrationSn");
+                sortField = "firstCreated";
+                sortDirection = "ASC";
                 break;
             case NEWEST:
-                sortBy = Sort.by(Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+                sortField = "firstCreated";
+                sortDirection = "DESC";
                 break;
             case HIGHEST:
-                sortBy = Sort.by(Direction.DESC, "sn.impctScre");
+                sortField = "impctScre";
+                sortDirection = "DESC";
                 break;
             case LOWEST:
-                sortBy = Sort.by(Direction.ASC, "sn.impctScre");
+                sortField = "impctScre";
+                sortDirection = "ASC";
                 break;
             default:
         }
 
+        boolean filterByRegion = regions != null && !regions.isEmpty();
+        boolean filterByIndustry = industries != null && !industries.isEmpty();
 
-        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
-                startDateTime, endDateTime, category, sortBy);
-
-        List<Integer> newsSummaryIds = results.stream()
-                .map(result -> (NewsSummary) result[2])
-                .filter(Objects::nonNull)
-                .map(NewsSummary::getNewsSummaryId)
-                .distinct()
-                .toList();
-
-        Map<Integer, List<String>> regionMap = Collections.emptyMap();
-        if (!newsSummaryIds.isEmpty()) {
-            regionMap = newsRegionClassificationsRepository
-                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
-                    .stream()
-                    .collect(Collectors.groupingBy(
-                            NewsRegionClassifications::getNewsSummaryId,
-                            Collectors.mapping(
-                                    NewsRegionClassifications::getNewsRegionSeparationCd,
-                                    Collectors.toList()
-                            )
-                    ));
-        }
-
-        Map<Integer, List<String>> industryMap = Collections.emptyMap();
-        if (!newsSummaryIds.isEmpty()) {
-            industryMap = newsIndustryClassificationsRepository
-                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
-                    .stream()
-                    .collect(Collectors.groupingBy(
-                            NewsIndustryClassifications::getNewsSummaryId,
-                            Collectors.mapping(
-                                    NewsIndustryClassifications::getNewsIndustrySectorCd,
-                                    Collectors.toList()
-                            )
-                    ));
-        }
-
-        final Map<Integer, List<String>> finalRegionMap = regionMap;
-        final Map<Integer, List<String>> finalIndustryMap = industryMap;
+        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
+            startDateTime, endDateTime, category,
+            filterByRegion ? regions : null, filterByRegion,
+            filterByIndustry ? industries : null, filterByIndustry,
+            sortField, sortDirection);
 
         return results.stream()
-                .map(result -> {
-                    NewsSignificance newsSignificance = (NewsSignificance) result[0];
-                    SignificantNews significantNews = (SignificantNews) result[1];
-                    NewsSummary newsSummary = (NewsSummary) result[2];
+            .map(result -> {
+                Long nwsSigId = ((Number) result[0]).longValue();
+                Long dataRegSn = ((Number) result[1]).longValue();
+                LocalDateTime firstCreated = result[2] != null
+                    ? ((java.sql.Timestamp) result[2]).toLocalDateTime()
+                    : null;
+                String nwsMrktCtgrCd = (String) result[3];
 
-                    return toNewsfeedListRes(newsSignificance, newsSummary, significantNews,
-                            finalRegionMap, finalIndustryMap);
-                })
-                .toList();
+                java.math.BigDecimal impctScre = result[5] != null
+                    ? (java.math.BigDecimal) result[5]
+                    : null;
+                String drctnlt = (String) result[6];
+
+                Integer newsSummaryId = result[7] != null
+                    ? ((Number) result[7]).intValue()
+                    : null;
+                String briefSummary = (String) result[8];
+                String summary = (String) result[9];
+                String provider = (String) result[10];
+                String title = (String) result[11];
+
+                String regionsStr = (String) result[12];
+                String industriesStr = (String) result[13];
+
+                List<String> regionList = parseGroupConcatResult(regionsStr);
+                List<String> industryList = parseGroupConcatResult(industriesStr);
+
+                return new NewsfeedListRes(
+                    nwsSigId,
+                    dataRegSn,
+                    firstCreated,
+                    nwsMrktCtgrCd,
+                    newsSummaryId,
+                    briefSummary,
+                    summary != null ? Arrays.asList(summary.split("\n")) : null,
+                    title,
+                    provider,
+                    impctScre,
+                    drctnlt,
+                    regionList,
+                    industryList
+                );
+            })
+            .toList();
+    }
+
+    /**
+     * GROUP_CONCAT 결과 문자열을 List로 변환
+     */
+    private List<String> parseGroupConcatResult(String groupConcatStr) {
+        if (groupConcatStr == null || groupConcatStr.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(groupConcatStr.split(","));
     }
 
     /**
      * 날짜와 카테고리로 MarketRecap 조회
      */
-    public MarketRecapRes getMarketRecapByCriteriaDateAndCategory(String crtrDt, String nwsMrktCtgrCd) {
-        MarketRecap marketRecap = marketRecapRepository.findByCrtrDtAndNwsMrktCtgrCd(crtrDt, nwsMrktCtgrCd)
-                .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
-                        "마켓 리캡을 찾을 수 없습니다. crtrDt: " + crtrDt + ", nwsMrktCtgrCd: " + nwsMrktCtgrCd));
+    public MarketRecapRes getMarketRecapByCriteriaDateAndCategory(String crtrDt,
+        String nwsMrktCtgrCd) {
+        MarketRecap marketRecap = marketRecapRepository.findByCrtrDtAndNwsMrktCtgrCd(crtrDt,
+                nwsMrktCtgrCd)
+            .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
+                "마켓 리캡을 찾을 수 없습니다. crtrDt: " + crtrDt + ", nwsMrktCtgrCd: " + nwsMrktCtgrCd));
 
         return toMarketRecapRes(marketRecap);
     }
@@ -218,128 +237,19 @@ public class MiMarketNewsService {
      */
     public MarketRecapRes getMarketRecapById(Long mrktRcapId) {
         MarketRecap marketRecap = marketRecapRepository.findById(mrktRcapId)
-                .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
-                        "마켓 리캡을 찾을 수 없습니다. mrktRcapId: " + mrktRcapId));
+            .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
+                "마켓 리캡을 찾을 수 없습니다. mrktRcapId: " + mrktRcapId));
 
         return toMarketRecapRes(marketRecap);
-    }
-
-    /**
-     * 검색 조건 Specification 생성
-     */
-    private Specification<NewsSummary> createSpecification(
-            String keyword,
-            LocalDate startDate,
-            LocalDate endDate,
-            String category) {
-
-        return (root, query, cb) -> {
-            Specification<NewsSummary> spec = Specification.where(null);
-
-            // keyword 검색 (title 또는 story에서 검색)
-            if (StringUtils.hasText(keyword)) {
-                spec = spec.and((r, q, criteriaBuilder) ->
-                        criteriaBuilder.or(
-                                criteriaBuilder.like(
-                                        r.get("refinitivNewsData").get("title"),
-                                        "%" + keyword + "%"
-                                ),
-                                criteriaBuilder.like(
-                                        r.get("refinitivNewsData").get("story"),
-                                        "%" + keyword + "%"
-                                )
-                        )
-                );
-            }
-
-            // startDate 필터
-            if (startDate != null) {
-                LocalDateTime startDateTime = startDate.atStartOfDay();
-                spec = spec.and((r, q, criteriaBuilder) ->
-                        criteriaBuilder.greaterThanOrEqualTo(
-                                r.get("refinitivNewsData").get("id").get("firstCreated"),
-                                startDateTime
-                        )
-                );
-            }
-
-            // endDate 필터
-            if (endDate != null) {
-                LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
-                spec = spec.and((r, q, criteriaBuilder) ->
-                        criteriaBuilder.lessThanOrEqualTo(
-                                r.get("refinitivNewsData").get("id").get("firstCreated"),
-                                endDateTime
-                        )
-                );
-            }
-
-            // category 필터 - NewsSignificance 테이블과 조인하여 카테고리 검색
-            if (StringUtils.hasText(category)) {
-                spec = spec.and((r, q, criteriaBuilder) -> {
-                    Subquery<Long> subquery = q.subquery(Long.class);
-                    Root<NewsSignificance> newsSignificance = subquery.from(NewsSignificance.class);
-                    subquery.select(newsSignificance.get("nwsSigId"));
-                    subquery.where(
-                            criteriaBuilder.and(
-                                    criteriaBuilder.equal(
-                                            newsSignificance.get("dataRegistrationSn"),
-                                            r.get("dataRegistrationSn")
-                                    ),
-                                    criteriaBuilder.equal(
-                                            newsSignificance.get("firstCreated"),
-                                            r.get("firstCreated")
-                                    ),
-                                    criteriaBuilder.equal(
-                                            newsSignificance.get("nwsMrktCtgrCd"),
-                                            category
-                                    )
-                            )
-                    );
-                    return criteriaBuilder.exists(subquery);
-                });
-            }
-
-            return spec.toPredicate(root, query, cb);
-        };
     }
 
     public MarketNewsDetailRes getMarketNewsDetail(String newsSummaryId) {
 
         NewsSummary newsData = newsSummaryRepository.findById(Integer.parseInt(newsSummaryId))
-                .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
-                        "뉴스를 찾을 수 없습니다. newsSummaryId: " + newsSummaryId));
+            .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
+                "뉴스를 찾을 수 없습니다. newsSummaryId: " + newsSummaryId));
 
         return toMarketNewsDetailRes(newsData);
-    }
-
-    /**
-     * NewsSummary -> MarketNewsListRes 변환
-     */
-    private MarketNewsListRes toMarketNewsListRes(
-        NewsSummary newsSummary,
-        Map<Integer, List<String>> regionMap,
-        Map<Integer, List<String>> industryMap) {
-
-        List<String> regions = regionMap.getOrDefault(
-            newsSummary.getNewsSummaryId(),
-            Collections.emptyList()
-        );
-
-        List<String> industries = industryMap.getOrDefault(
-            newsSummary.getNewsSummaryId(),
-            Collections.emptyList()
-        );
-
-        return new MarketNewsListRes(
-            newsSummary.getNewsSummaryId(),
-            newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
-            newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
-            newsSummary.getRefinitivNewsData().getTitle(),
-            newsSummary.getProvider(),
-            regions,
-            industries
-        );
     }
 
     /**
@@ -347,50 +257,12 @@ public class MiMarketNewsService {
      */
     private MarketNewsDetailRes toMarketNewsDetailRes(NewsSummary newsSummary) {
         return new MarketNewsDetailRes(
-                newsSummary.getNewsSummaryId(),
-                newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
-                newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
-                newsSummary.getRefinitivNewsData().getTitle(),
-                newsSummary.getRefinitivNewsData().getStory(),
-                newsSummary.getProvider()
-        );
-    }
-
-    /**
-     * NewsSignificance, NewsSummary, SignificantNews -> NewsfeedListRes 변환
-     */
-    private NewsfeedListRes toNewsfeedListRes(
-        NewsSignificance newsSignificance,
-        NewsSummary newsSummary,
-        SignificantNews significantNews,
-        Map<Integer, List<String>> regionMap,
-        Map<Integer, List<String>> industryMap
-    ) {
-
-        List<String> regions = regionMap.getOrDefault(
-            newsSummary != null ? newsSummary.getNewsSummaryId() : null,
-            Collections.emptyList()
-        );
-
-        List<String> industries = industryMap.getOrDefault(
-            newsSummary != null ? newsSummary.getNewsSummaryId() : null,
-            Collections.emptyList()
-        );
-
-        return new NewsfeedListRes(
-            newsSignificance.getNwsSigId(),
-            newsSignificance.getDataRegistrationSn().intValue(),
-            newsSignificance.getFirstCreated(),
-            newsSignificance.getNwsMrktCtgrCd(),
-            Objects.requireNonNull(newsSummary).getNewsSummaryId(),
-            newsSummary.getBriefSummary(),
-            Arrays.asList(newsSummary.getSummary().split("\n")),
+            newsSummary.getNewsSummaryId(),
+            newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
+            newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
             newsSummary.getRefinitivNewsData().getTitle(),
-            newsSummary.getProvider(),
-            significantNews != null ? significantNews.getImpctScre() : null,
-            significantNews != null ? significantNews.getDrctnlt() : null,
-            regions,
-            industries
+            newsSummary.getRefinitivNewsData().getStory(),
+            newsSummary.getProvider()
         );
     }
 
@@ -400,64 +272,63 @@ public class MiMarketNewsService {
     private MarketRecapRes toMarketRecapRes(MarketRecap marketRecap) {
         // 하이라이트 아이템 조회
         List<MarketRecapHighlightItem> highlightItems =
-                marketRecapHighlightItemRepository.findByMarketRecap(marketRecap);
+            marketRecapHighlightItemRepository.findByMarketRecap(marketRecap);
 
         // 체크포인트 아이템 조회
         List<MarketRecapCheckpointItem> checkpointItems =
-                marketRecapCheckpointItemRepository.findByMarketRecap(marketRecap);
+            marketRecapCheckpointItemRepository.findByMarketRecap(marketRecap);
 
         // 하이라이트 아이템 DTO 변환
         List<MarketRecapRes.HighlightItemRes> highlightItemResList = highlightItems.stream()
-                .map(highlightItem -> {
-                    // 관련 뉴스 조회
-                    List<MarketRecapHighlightItemRelationship> relationships =
-                            marketRecapHighlightItemRelationshipRepository
-                                    .findByMarketRecapHighlightItem(highlightItem);
+            .map(highlightItem -> {
+                List<MarketRecapHighlightItemRelationship> relationships =
+                    marketRecapHighlightItemRelationshipRepository
+                        .findByMarketRecapHighlightItem(highlightItem);
 
-                    List<MarketRecapRes.RelatedNewsRes> relatedNewsList = relationships.stream()
-                            .map(rel -> {
-                                NewsSummary newsSummary = rel.getNewsSummary();
-                                return new MarketRecapRes.RelatedNewsRes(
-                                        newsSummary.getNewsSummaryId(),
-                                        newsSummary.getRefinitivNewsData() != null
-                                                ? newsSummary.getRefinitivNewsData().getTitle() : null,
-                                        newsSummary.getProvider()
-                                );
-                            })
-                            .toList();
+                List<MarketRecapRes.RelatedNewsRes> relatedNewsList = relationships.stream()
+                    .map(rel -> {
+                        NewsSummary newsSummary = rel.getNewsSummary();
+                        return new MarketRecapRes.RelatedNewsRes(
+                            newsSummary.getNewsSummaryId(),
+                            newsSummary.getRefinitivNewsData() != null
+                                ? newsSummary.getRefinitivNewsData().getTitle() : null,
+                            newsSummary.getProvider()
+                        );
+                    })
+                    .toList();
 
-                    return new MarketRecapRes.HighlightItemRes(
-                            highlightItem.getMrktRcapHlItmId(),
-                            highlightItem.getTitl(),
-                            highlightItem.getCntt(),
-                            highlightItem.getMntm(),
-                            relatedNewsList
-                    );
-                })
-                .toList();
+                return new MarketRecapRes.HighlightItemRes(
+                    highlightItem.getMrktRcapHlItmId(),
+                    highlightItem.getTitl(),
+                    highlightItem.getCntt(),
+                    highlightItem.getMntm(),
+                    relatedNewsList
+                );
+            })
+            .toList();
 
         // 체크포인트 아이템 DTO 변환
         List<MarketRecapRes.CheckpointItemRes> checkpointItemResList = checkpointItems.stream()
-                .map(checkpointItem -> new MarketRecapRes.CheckpointItemRes(
-                        checkpointItem.getMrktRcapCkptItmId(),
-                        checkpointItem.getTitl(),
-                        checkpointItem.getCntt()
-                ))
-                .toList();
+            .map(checkpointItem -> new MarketRecapRes.CheckpointItemRes(
+                checkpointItem.getMrktRcapCkptItmId(),
+                checkpointItem.getTitl(),
+                checkpointItem.getCntt()
+            ))
+            .toList();
 
         return new MarketRecapRes(
-                marketRecap.getMrktRcapId(),
-                marketRecap.getCrtrDt(),
-                marketRecap.getNwsMrktCtgrCd(),
-                marketRecap.getUpwSgnlNwsCnt(),
-                marketRecap.getNtrlSgnlNwsCnt(),
-                marketRecap.getDwnSgnlNwsCnt(),
-                marketRecap.getHiTitl(),
-                marketRecap.getHiCntt(),
-                marketRecap.getCkptTitl(),
-                marketRecap.getCkptCntt(),
-                highlightItemResList,
-                checkpointItemResList
+            marketRecap.getMrktRcapId(),
+            marketRecap.getCrtrDt(),
+            marketRecap.getNwsMrktCtgrCd(),
+            marketRecap.getUpwSgnlNwsCnt(),
+            marketRecap.getNtrlSgnlNwsCnt(),
+            marketRecap.getDwnSgnlNwsCnt(),
+            marketRecap.getHiTitl(),
+            marketRecap.getHiCntt(),
+            marketRecap.getCkptTitl(),
+            marketRecap.getCkptCntt(),
+            highlightItemResList,
+            checkpointItemResList
         );
     }
 
@@ -466,70 +337,63 @@ public class MiMarketNewsService {
         LocalDateTime endDateTime,
         String category) {
 
-        // ns.firstCreated, ns.dataRegistrationSn 기준 내림차순 정렬
-        Sort sortBy = Sort.by(Sort.Direction.DESC, "ns.firstCreated", "ns.dataRegistrationSn");
+        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
+            startDateTime, endDateTime, category, null, false, null, false, "firstCreated", "ASC");
 
-        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithFetchJoin(
-            startDateTime, endDateTime, category, sortBy);
-
-        // 2. impctScre 필터링 및 limit 적용
-        List<Object[]> filteredResults = results.stream()
+        // impctScre 필터링 및 limit 적용 후 DTO 변환
+        return results.stream()
             .filter(result -> {
-                SignificantNews significantNews = (SignificantNews) result[1];
                 // impctScre가 8.0 이상인 뉴스만 필터링
-                return significantNews != null &&
-                    significantNews.getImpctScre() != null &&
-                    significantNews.getImpctScre().compareTo(new java.math.BigDecimal("8.0")) >= 0;
+                java.math.BigDecimal impctScre = result[5] != null
+                    ? (java.math.BigDecimal) result[5]
+                    : null;
+                return impctScre != null &&
+                    impctScre.compareTo(new java.math.BigDecimal("8.0")) >= 0;
             })
-            .limit(10)  // 최대 10개로 제한
-            .toList();
-
-        List<Integer> newsSummaryIds = filteredResults.stream()
-                .map(result -> (NewsSummary) result[2])
-                .filter(Objects::nonNull)
-                .map(NewsSummary::getNewsSummaryId)
-                .distinct()
-                .toList();
-
-        Map<Integer, List<String>> regionMap = Collections.emptyMap();
-        if (!newsSummaryIds.isEmpty()) {
-            regionMap = newsRegionClassificationsRepository
-                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
-                    .stream()
-                    .collect(Collectors.groupingBy(
-                            NewsRegionClassifications::getNewsSummaryId,
-                            Collectors.mapping(
-                                    NewsRegionClassifications::getNewsRegionSeparationCd,
-                                    Collectors.toList()
-                            )
-                    ));
-        }
-
-        Map<Integer, List<String>> industryMap = Collections.emptyMap();
-        if (!newsSummaryIds.isEmpty()) {
-            industryMap = newsIndustryClassificationsRepository
-                    .findByNewsSummaryIdInAndIsDeletedFalse(newsSummaryIds)
-                    .stream()
-                    .collect(Collectors.groupingBy(
-                            NewsIndustryClassifications::getNewsSummaryId,
-                            Collectors.mapping(
-                                    NewsIndustryClassifications::getNewsIndustrySectorCd,
-                                    Collectors.toList()
-                            )
-                    ));
-        }
-
-        final Map<Integer, List<String>> finalRegionMap = regionMap;
-        final Map<Integer, List<String>> finalIndustryMap = industryMap;
-
-        return filteredResults.stream()
+            .limit(10)
             .map(result -> {
-                NewsSignificance newsSignificance = (NewsSignificance) result[0];
-                SignificantNews significantNews = (SignificantNews) result[1];
-                NewsSummary newsSummary = (NewsSummary) result[2];
+                // Native Query 결과 매핑
+                Long nwsSigId = ((Number) result[0]).longValue();
+                Long dataRegSn = ((Number) result[1]).longValue();
+                LocalDateTime firstCreated = result[2] != null
+                    ? ((java.sql.Timestamp) result[2]).toLocalDateTime()
+                    : null;
+                String nwsMrktCtgrCd = (String) result[3];
 
-                return toNewsfeedListRes(newsSignificance, newsSummary, significantNews,
-                        finalRegionMap, finalIndustryMap);
+                java.math.BigDecimal impctScre = result[5] != null
+                    ? (java.math.BigDecimal) result[5]
+                    : null;
+                String drctnlt = (String) result[6];
+
+                Integer newsSummaryId = result[7] != null
+                    ? ((Number) result[7]).intValue()
+                    : null;
+                String briefSummary = (String) result[8];
+                String summary = (String) result[9];
+                String provider = (String) result[10];
+                String title = (String) result[11];
+
+                String regionsStr = (String) result[12];
+                String industriesStr = (String) result[13];
+
+                List<String> regionList = parseGroupConcatResult(regionsStr);
+                List<String> industryList = parseGroupConcatResult(industriesStr);
+
+                return new NewsfeedListRes(
+                    nwsSigId,
+                    dataRegSn,
+                    firstCreated,
+                    nwsMrktCtgrCd,
+                    newsSummaryId,
+                    briefSummary,
+                    summary != null ? Arrays.asList(summary.split("\n")) : null,
+                    title,
+                    provider,
+                    impctScre,
+                    drctnlt,
+                    regionList,
+                    industryList
+                );
             })
             .toList();
     }

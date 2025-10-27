@@ -20,6 +20,9 @@ public record MarketNewsListRes(
     @Schema(description = "프로바이더", example = "reuters")
     String provider,
 
+    @Schema(description = "카테고리", example = "[CROIL, BTRY]")
+    List<String> category,
+
     @Schema(description = "지역", example = "[Global, Asia Pacific]")
     List<String> region,
 
