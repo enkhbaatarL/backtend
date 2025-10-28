@@ -52,9 +52,9 @@ public class MiMarketNewsService {
         String keyword,
         LocalDate startDate,
         LocalDate endDate,
-        List<String> categories,
-        List<String> regions,
-        List<String> industries) {
+        String categories,
+        String regions,
+        String industries) {
 
         String sortDirection = (sort == SortType.OLDEST) ? "ASC" : "DESC";
 
@@ -63,22 +63,26 @@ public class MiMarketNewsService {
 
         int offset = (page - 1) * size;
 
-        boolean filterByCategory = categories != null && !categories.isEmpty();
-        boolean filterByRegion = regions != null && !regions.isEmpty();
-        boolean filterByIndustry = industries != null && !industries.isEmpty();
+        List<String> categoryList = categories != null ? Arrays.asList(categories.split(",")) : null;
+        List<String> regionList = regions != null ? Arrays.asList(regions.split(",")) : null;
+        List<String> industryList = industries != null ? Arrays.asList(industries.split(",")) : null;
+
+        boolean filterByCategory = categories != null && !categoryList.isEmpty();
+        boolean filterByRegion = regionList != null && !regionList.isEmpty();
+        boolean filterByIndustry = industries != null && !industryList.isEmpty();
 
         List<Object[]> results = newsSignificanceRepository.findMarketNewsListWithGroupConcat(
             keyword, startDateTime, endDateTime,
-            filterByCategory ? categories : null, filterByCategory,
-            filterByRegion ? regions : null, filterByRegion,
-            filterByIndustry ? industries : null, filterByIndustry,
+            filterByCategory ? categoryList : null, filterByCategory,
+            filterByRegion ? regionList : null, filterByRegion,
+            filterByIndustry ? industryList : null, filterByIndustry,
             sortDirection, size, offset);
 
         long totalCount = newsSignificanceRepository.countMarketNewsList(
             keyword, startDateTime, endDateTime,
-            filterByCategory ? categories : null, filterByCategory,
-            filterByRegion ? regions : null, filterByRegion,
-            filterByIndustry ? industries : null, filterByIndustry);
+            filterByCategory ? categoryList : null, filterByCategory,
+            filterByRegion ? regionList : null, filterByRegion,
+            filterByIndustry ? industryList : null, filterByIndustry);
 
         List<MarketNewsListRes> content = results.stream()
             .map(result -> {
@@ -97,9 +101,9 @@ public class MiMarketNewsService {
                 String regionsStr = (String) result[6];
                 String industriesStr = (String) result[7];
 
-                List<String> categoryList = parseGroupConcatResult(categoryStr);
-                List<String> regionList = parseGroupConcatResult(regionsStr);
-                List<String> industryList = parseGroupConcatResult(industriesStr);
+                List<String> category = parseGroupConcatResult(categoryStr);
+                List<String> region = parseGroupConcatResult(regionsStr);
+                List<String> industry = parseGroupConcatResult(industriesStr);
 
                 return new MarketNewsListRes(
                     newsSummaryId,
@@ -107,9 +111,9 @@ public class MiMarketNewsService {
                     firstCreated,
                     title,
                     provider,
-                    categoryList,
-                    regionList,
-                    industryList
+                    category,
+                    region,
+                    industry
                 );
             })
             .toList();
@@ -123,11 +127,11 @@ public class MiMarketNewsService {
 
     public List<NewsfeedListRes> getNewsfeedList(
         SortType sort,
-        LocalDateTime startDateTime,
-        LocalDateTime endDateTime,
+        String criteriaDate,
         String category,
-        List<String> regions,
-        List<String> industries
+        String sentiments,
+        String impactScores,
+        String regions
     ) {
 
         String sortField = "firstCreated";
@@ -153,13 +157,19 @@ public class MiMarketNewsService {
             default:
         }
 
-        boolean filterByRegion = regions != null && !regions.isEmpty();
-        boolean filterByIndustry = industries != null && !industries.isEmpty();
+        List<String> sentimentList = sentiments != null ? Arrays.asList(sentiments.split(",")) : null;
+        List<String> impactScoreList = impactScores != null ? Arrays.asList(impactScores.split(",")) : null;
+        List<String> regionList = regions != null ? Arrays.asList(regions.split(",")) : null;
+
+        boolean filterBySentiment = sentimentList != null && !sentimentList.isEmpty();
+        boolean filterByImpactScore = impactScoreList != null && !impactScoreList.isEmpty();
+        boolean filterByRegion = regionList != null && !regionList.isEmpty();
 
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
-            startDateTime, endDateTime, category,
-            filterByRegion ? regions : null, filterByRegion,
-            filterByIndustry ? industries : null, filterByIndustry,
+            criteriaDate, category,
+            filterBySentiment ? sentimentList : null, filterBySentiment,
+            filterByImpactScore ? impactScoreList : null, filterByImpactScore,
+            filterByRegion ? regionList : null, filterByRegion,
             sortField, sortDirection);
 
         return results.stream()
@@ -185,10 +195,8 @@ public class MiMarketNewsService {
                 String title = (String) result[11];
 
                 String regionsStr = (String) result[12];
-                String industriesStr = (String) result[13];
 
-                List<String> regionList = parseGroupConcatResult(regionsStr);
-                List<String> industryList = parseGroupConcatResult(industriesStr);
+                List<String> region = parseGroupConcatResult(regionsStr);
 
                 return new NewsfeedListRes(
                     nwsSigId,
@@ -202,8 +210,7 @@ public class MiMarketNewsService {
                     provider,
                     impctScre,
                     drctnlt,
-                    regionList,
-                    industryList
+                    region
                 );
             })
             .toList();
@@ -333,12 +340,10 @@ public class MiMarketNewsService {
     }
 
     public List<NewsfeedListRes> getNewsTimeline(
-        LocalDateTime startDateTime,
-        LocalDateTime endDateTime,
-        String category) {
+        String criteriaDate, String category) {
 
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
-            startDateTime, endDateTime, category, null, false, null, false, "firstCreated", "ASC");
+            criteriaDate, category, null, false, null, false, null, false,"firstCreated", "ASC");
 
         // impctScre 필터링 및 limit 적용 후 DTO 변환
         return results.stream()
@@ -374,10 +379,8 @@ public class MiMarketNewsService {
                 String title = (String) result[11];
 
                 String regionsStr = (String) result[12];
-                String industriesStr = (String) result[13];
 
                 List<String> regionList = parseGroupConcatResult(regionsStr);
-                List<String> industryList = parseGroupConcatResult(industriesStr);
 
                 return new NewsfeedListRes(
                     nwsSigId,
@@ -391,8 +394,7 @@ public class MiMarketNewsService {
                     provider,
                     impctScre,
                     drctnlt,
-                    regionList,
-                    industryList
+                    regionList
                 );
             })
             .toList();

@@ -25,8 +25,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.smry,
             nsum.provider,
             rnd.title,
-            GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions,
-            GROUP_CONCAT(DISTINCT nic.nws_ind_sctr_cd SEPARATOR ',') as industries
+            GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
         FROM tmd_nws_sig ns
         INNER JOIN tmd_sgt_nws sn ON sn.nws_sig_id = ns.nws_sig_id
         LEFT JOIN tmd_nws_smry nsum ON nsum.data_reg_sn = ns.data_reg_sn
@@ -34,19 +33,18 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         LEFT JOIN tif_refinewsdatar rnd ON rnd.data_reg_sn = nsum.data_reg_sn
             AND rnd.first_created = nsum.first_created
         LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = nsum.nws_smry_id
-        LEFT JOIN tmd_nws_ind_cls nic ON nic.nws_smry_id = nsum.nws_smry_id
-        WHERE (:startDateTime IS NULL OR ns.first_created >= :startDateTime)
-          AND (:endDateTime IS NULL OR ns.first_created <= :endDateTime)
+        WHERE (:criteriaDate IS NULL OR ns.crtr_dt = :criteriaDate)
           AND (:category IS NULL OR ns.nws_mrkt_ctgr_cd = :category)
+          AND (:filterBySentiment = FALSE OR sn.drctnlt IN (:sentimentList))
+          AND (:filterByImpactScore = FALSE OR (
+              ('HIGH' IN (:impactScoreList) AND sn.impct_scre >= 9.0)
+              OR ('MEDIUM' IN (:impactScoreList) AND sn.impct_scre >= 7.0 AND sn.impct_scre < 9.0)
+              OR ('LOW' IN (:impactScoreList) AND sn.impct_scre < 7.0)
+          ))
           AND (:filterByRegion = FALSE OR EXISTS (
               SELECT 1 FROM tmd_nws_rgn_cls nrc2
               WHERE nrc2.nws_smry_id = nsum.nws_smry_id
-              AND nrc2.nws_rgn_spt_cd IN (:regions)
-          ))
-          AND (:filterByIndustry = FALSE OR EXISTS (
-              SELECT 1 FROM tmd_nws_ind_cls nic2
-              WHERE nic2.nws_smry_id = nsum.nws_smry_id
-              AND nic2.nws_ind_sctr_cd IN (:industries)
+              AND nrc2.nws_rgn_spt_cd IN (:regionList)
           ))
         GROUP BY
             ns.nws_sig_id,
@@ -69,13 +67,14 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             ns.data_reg_sn DESC
         """, nativeQuery = true)
     List<Object[]> findNewsfeedWithGroupConcat(
-        @Param("startDateTime") LocalDateTime startDateTime,
-        @Param("endDateTime") LocalDateTime endDateTime,
+        @Param("criteriaDate") String criteriaDate,
         @Param("category") String category,
-        @Param("regions") List<String> regions,
+        @Param("sentimentList") List<String> sentimentList,
+        @Param("filterBySentiment") boolean filterBySentiment,
+        @Param("impactScoreList") List<String> impactScoreList,
+        @Param("filterByImpactScore") boolean filterByImpactScore,
+        @Param("regionList") List<String> regionList,
         @Param("filterByRegion") boolean filterByRegion,
-        @Param("industries") List<String> industries,
-        @Param("filterByIndustry") boolean filterByIndustry,
         @Param("sortField") String sortField,
         @Param("sortDirection") String sortDirection
     );
