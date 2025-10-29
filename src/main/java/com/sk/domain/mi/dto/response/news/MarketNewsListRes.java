@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.news;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record MarketNewsListRes(
     @Schema(description = "뉴스 요약 ID", example = "11")
@@ -17,6 +18,16 @@ public record MarketNewsListRes(
     String title,
 
     @Schema(description = "프로바이더", example = "reuters")
-    String provider) {
+    String provider,
+
+    @Schema(description = "카테고리", example = "[CROIL, BTRY]")
+    List<String> category,
+
+    @Schema(description = "지역", example = "[Global, Asia Pacific]")
+    List<String> region,
+
+    @Schema(description = "산업", example = "[Energy, Latin America]")
+    List<String> industry
+    ) {
 
 }

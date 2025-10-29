@@ -13,7 +13,7 @@ public record NewsfeedListRes(
     Long nwsSigId,
 
     @Schema(description = "데이터등록일련번호", example = "36033981")
-    Integer dataRegistrationSn,
+    Long dataRegistrationSn,
 
     @Schema(description = "NEWS최초생성일시", example = "2025-07-29 23:59:09")
     LocalDateTime firstCreated,
@@ -40,7 +40,10 @@ public record NewsfeedListRes(
     BigDecimal impctScre,
 
     @Schema(description = "방향성", example = "Upward")
-    String drctnlt
+    String drctnlt,
+
+    @Schema(description = "지역", example = "[Global, Asia Pacific]")
+    List<String> region
 ) {
 
 }
