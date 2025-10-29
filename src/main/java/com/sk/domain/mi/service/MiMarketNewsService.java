@@ -105,9 +105,9 @@ public class MiMarketNewsService {
                 String regionsStr = (String) result[6];
                 String industriesStr = (String) result[7];
 
-                List<String> category = parseGroupConcatResult(categoryStr);
-                List<String> region = parseGroupConcatResult(regionsStr);
-                List<String> industry = parseGroupConcatResult(industriesStr);
+                List<String> cList = parseGroupConcatResult(categoryStr);
+                List<String> rList = parseGroupConcatResult(regionsStr);
+                List<String> iList = parseGroupConcatResult(industriesStr);
 
                 return new MarketNewsListRes(
                     newsSummaryId,
@@ -115,9 +115,9 @@ public class MiMarketNewsService {
                     firstCreated,
                     title,
                     provider,
-                    category,
-                    region,
-                    industry
+                    cList,
+                    rList,
+                    iList
                 );
             })
             .toList();
@@ -200,7 +200,7 @@ public class MiMarketNewsService {
 
                 String regionsStr = (String) result[12];
 
-                List<String> region = parseGroupConcatResult(regionsStr);
+                List<String> rList = parseGroupConcatResult(regionsStr);
 
                 return new NewsfeedListRes(
                     nwsSigId,
@@ -214,7 +214,7 @@ public class MiMarketNewsService {
                     provider,
                     impctScre,
                     drctnlt,
-                    region
+                    rList
                 );
             })
             .toList();

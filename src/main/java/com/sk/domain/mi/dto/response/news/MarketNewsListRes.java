@@ -21,13 +21,13 @@ public record MarketNewsListRes(
     String provider,
 
     @Schema(description = "카테고리", example = "[CROIL, BTRY]")
-    List<String> category,
+    List<String> categories,
 
     @Schema(description = "지역", example = "[Global, Asia Pacific]")
-    List<String> region,
+    List<String> regions,
 
-    @Schema(description = "산업", example = "[Energy, Latin America]")
-    List<String> industry
+    @Schema(description = "산업", example = "[Energy, Financials]")
+    List<String> industries
     ) {
 
 }

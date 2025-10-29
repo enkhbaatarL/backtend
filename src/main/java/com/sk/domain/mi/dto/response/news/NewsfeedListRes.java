@@ -43,7 +43,7 @@ public record NewsfeedListRes(
     String drctnlt,
 
     @Schema(description = "지역", example = "[Global, Asia Pacific]")
-    List<String> region
+    List<String> regions
 ) {
 
 }
