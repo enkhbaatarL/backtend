@@ -2,10 +2,11 @@ package com.sk.domain.mi.dto.response.news;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record MarketNewsDetailRes(
     @Schema(description = "뉴스 요약 ID", example = "11")
-    Integer newsSummaryId,
+    Long newsSummaryId,
 
     @Schema(description = "데이터등록일련번호", example = "36033981")
     Integer dataRegistrationSn,
@@ -20,6 +21,9 @@ public record MarketNewsDetailRes(
     String story,
 
     @Schema(description = "프로바이더", example = "reuters")
-    String provider) {
+    String provider,
+
+    @Schema(description = "태그 목록")
+    List<String> tagList) {
 
 }

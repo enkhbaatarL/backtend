@@ -1,17 +1,24 @@
 package com.sk.domain.shared.enums.news;
 
+import lombok.Getter;
+
 public enum MarketCategoryCode {
-    CROIL("CROIL", "원유"),
-    LNG("LNG", "천연가스"),
-    SCDT("SCDT", "반도체"),
-    BTRY("BTRY", "EV배터리");
+    CROIL("CROIL", "Crude Oil", "원유"),
+    LNG("LNG", "Natural Gas", "천연가스"),
+    SCDT("SCDT", "Semiconductor", "반도체"),
+    BTRY("BTRY", "EV Battery", "EV배터리");
 
+    @Getter
     private final String code;
+    @Getter
     private final String name;
+    @Getter
+    private final String description;
 
-    MarketCategoryCode(String code, String name) {
+    MarketCategoryCode(String code, String name, String description) {
         this.code = code;
         this.name = name;
+        this.description = description;
     }
 
     public static MarketCategoryCode fromCode(String code) {
@@ -21,14 +28,6 @@ public enum MarketCategoryCode {
             }
         }
         throw new IllegalArgumentException("Unknown code: " + code);
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getName() {
-        return name;
     }
 
 }

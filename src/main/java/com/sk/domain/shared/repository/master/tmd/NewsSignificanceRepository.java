@@ -181,4 +181,6 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         @Param("industries") List<String> industries,
         @Param("filterByIndustry") boolean filterByIndustry
     );
+
+    List<NewsSignificance> findByFirstCreatedAndDataRegistrationSn(LocalDateTime firstCreated, Integer dataRegistrationSn);
 }

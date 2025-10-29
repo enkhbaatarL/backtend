@@ -11,6 +11,7 @@ import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpointItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightItemRelationship;
+import com.sk.domain.shared.entity.master.tmd.NewsSignificance;
 import com.sk.domain.shared.entity.master.tmd.NewsSummary;
 import com.sk.domain.shared.enums.news.SortType;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointItemRepository;
@@ -19,8 +20,10 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightItemReposi
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
+import com.sk.domain.shared.repository.master.tmd.SignificantNewsRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +47,7 @@ public class MiMarketNewsService {
     private final MarketRecapHighlightItemRepository marketRecapHighlightItemRepository;
     private final MarketRecapCheckpointItemRepository marketRecapCheckpointItemRepository;
     private final MarketRecapHighlightItemRelationshipRepository marketRecapHighlightItemRelationshipRepository;
+    private final SignificantNewsRepository significantNewsRepository;
 
     public PaginationRes<MarketNewsListRes> getMarketNewsList(
         int page,
@@ -256,20 +260,40 @@ public class MiMarketNewsService {
             .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
                 "뉴스를 찾을 수 없습니다. newsSummaryId: " + newsSummaryId));
 
-        return toMarketNewsDetailRes(newsData);
+        List<String> tagList = new ArrayList<>();
+        List<NewsSignificance> newsSignificances = newsSignificanceRepository.findByFirstCreatedAndDataRegistrationSn(
+            newsData.getFirstCreated(),
+            newsData.getDataRegistrationSn()
+        );
+
+        if (newsSignificances != null && !newsSignificances.isEmpty()) {
+            newsSignificances.forEach(newsSignificance -> {
+                tagList.add(newsSignificance.getNwsMrktCtgrCd().getName());
+
+                significantNewsRepository.findByNwsSigId(newsSignificance.getNwsSigId())
+                .ifPresent(significantNews -> {
+                    if (significantNews.getEvntDtctn() != null) {
+                        tagList.add(significantNews.getEvntDtctn());
+                    }
+                });
+            });
+        }
+
+        return toMarketNewsDetailRes(newsData, tagList);
     }
 
     /**
      * NewsSummary -> MarketNewsDetailRes 변환
      */
-    private MarketNewsDetailRes toMarketNewsDetailRes(NewsSummary newsSummary) {
+    private MarketNewsDetailRes toMarketNewsDetailRes(NewsSummary newsSummary, List<String> tagList) {
         return new MarketNewsDetailRes(
             newsSummary.getNewsSummaryId(),
             newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
             newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
             newsSummary.getRefinitivNewsData().getTitle(),
             newsSummary.getRefinitivNewsData().getStory(),
-            newsSummary.getProvider()
+            newsSummary.getProvider(),
+            tagList
         );
     }
 

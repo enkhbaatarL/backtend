@@ -71,7 +71,7 @@ public record MarketRecapRes(
 
     public record RelatedNewsRes(
         @Schema(description = "뉴스 요약 ID", example = "123")
-        Integer newsSummaryId,
+        Long newsSummaryId,
 
         @Schema(description = "뉴스 제목", example = "Apple Reports Strong Earnings")
         String title,

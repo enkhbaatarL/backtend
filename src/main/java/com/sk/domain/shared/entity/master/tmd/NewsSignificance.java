@@ -2,15 +2,17 @@ package com.sk.domain.shared.entity.master.tmd;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tif.RefinitivNewsData;
+import com.sk.domain.shared.enums.news.MarketCategoryCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
@@ -62,9 +64,10 @@ public class NewsSignificance extends BaseEntity {
     @Comment("Refinitiv 뉴스 데이터")
     private RefinitivNewsData refinitivNewsData;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "nws_mrkt_ctgr_cd", length = 20, nullable = false)
     @Comment("뉴스시장카테고리코드 - 시장 분류 (Market Category) 원유, 천연가스, 반도체, EV배터리 등으로 분류")
-    private String nwsMrktCtgrCd;
+    private MarketCategoryCode nwsMrktCtgrCd;
 
     @Column(name = "crtr_dt", length = 8, nullable = false)
     @Comment("기준 일자")
@@ -74,18 +77,12 @@ public class NewsSignificance extends BaseEntity {
     @Comment("중요도")
     private BigDecimal sig;
 
-    @Lob
-    @Column(name = "derv_rsn", columnDefinition = "TEXT")
-    @Comment("도출이유")
-    private String dervRsn;
-
     @Builder
-    public NewsSignificance(Long dataRegistrationSn, LocalDateTime firstCreated, String nwsMrktCtgrCd,
-                           BigDecimal sig, String dervRsn) {
+    public NewsSignificance(Long dataRegistrationSn, LocalDateTime firstCreated, MarketCategoryCode nwsMrktCtgrCd,
+                           BigDecimal sig) {
         this.dataRegistrationSn = dataRegistrationSn;
         this.firstCreated = firstCreated;
         this.nwsMrktCtgrCd = nwsMrktCtgrCd;
         this.sig = sig;
-        this.dervRsn = dervRsn;
     }
 }

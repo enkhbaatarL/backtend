@@ -34,7 +34,7 @@ public class NewsSummary extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "nws_smry_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("뉴스 요약 ID")
-    private Integer newsSummaryId;
+    private Long newsSummaryId;
 
     @Column(name = "data_reg_sn", nullable = false, columnDefinition = "int unsigned")
     @Comment("Refinitiv 뉴스 데이터등록일련번호")
@@ -84,7 +84,7 @@ public class NewsSummary extends BaseEntity {
     @Builder
     public NewsSummary(LocalDateTime createDt, LocalDateTime modifyDt,
         String createUserId, String modifyUserId, Boolean isDeleted,
-        Integer newsSummaryId, Integer dataRegistrationSn, LocalDateTime firstCreated,
+        Long newsSummaryId, Integer dataRegistrationSn, LocalDateTime firstCreated,
         RefinitivNewsData refinitivNewsData, String briefSummary, String summary,
         String provider, String source, String originalLink, String keyword) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
