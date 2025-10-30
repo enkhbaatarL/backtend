@@ -68,11 +68,33 @@ public class CustomerCompany extends BaseEntity {
     @Comment("고객회사MI플랫폼URL주소")
     private String customerCompanyMipUrl;
 
+    @Column(name = "qlttv_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("정성모델 표시여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isQualitative;
+
+    @Column(name = "mari_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("마리 표시여부")
+    @ColumnDefault("'Y'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isMari;
+
+    @Column(name = "future_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("미래 기능 예시 표출 여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isFuture;
+
+
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
 
     @Builder
-    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String marketIndexAnalysisTargetCd, String useBeginDt, String useEndDt, Boolean isUsed, Boolean isMipManagementCompany) {
+    public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
+        Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd,
+        String marketIndexAnalysisTargetCd, String useBeginDt, String useEndDt, Boolean isUsed, Boolean isMipManagementCompany,
+        Boolean isQualitative, Boolean isMari, Boolean isFuture) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
@@ -82,6 +104,9 @@ public class CustomerCompany extends BaseEntity {
         this.useEndDt = useEndDt;
         this.isUsed = isUsed;
         this.isMipManagementCompany = isMipManagementCompany;
+        this.isQualitative = isQualitative;
+        this.isMari = isMari;
+        this.isFuture = isFuture;
     }
 
 

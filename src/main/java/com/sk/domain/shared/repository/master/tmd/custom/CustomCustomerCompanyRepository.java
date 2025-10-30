@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tmd.custom;
 
+import com.sk.domain.mi.dto.response.MiCompanyDetailRes;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -24,4 +25,6 @@ public interface CustomCustomerCompanyRepository {
     List<CompanyTypeAndCompanyRes> findCompaniesByTypeWithSubCompanies();
 
     List<MiCompanyRes> findAllMiCompanies();
+
+    MiCompanyDetailRes findMiCompany(Integer companyNo);
 }
