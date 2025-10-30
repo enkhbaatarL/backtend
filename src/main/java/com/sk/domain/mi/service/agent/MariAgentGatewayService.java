@@ -3,7 +3,6 @@ package com.sk.domain.mi.service.agent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sk.common.utils.MDCUtil;
 import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
@@ -15,8 +14,15 @@ import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.annotation.PostConstruct;
+import java.net.SocketTimeoutException;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,12 +34,8 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
-import reactor.core.publisher.Flux;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.net.SocketTimeoutException;
-import java.time.Duration;
-import java.util.*;
+import reactor.core.publisher.Flux;
 
 @Slf4j
 @Service
@@ -41,9 +43,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MariAgentGatewayService {
 
-    @Value("${api.model-agent.app-id}")
-    private String appId;
-
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private final AuthorizationService authorizationService;
 
     private final ModelAgentApi modelAgentApi;
@@ -51,15 +51,15 @@ public class MariAgentGatewayService {
     private final MariAgentResParser mariAgentResParser;
     private final Map<String, StreamEventHandler> streamEventHandlerNameMap;
     private final Map<String, StreamEventHandler> streamEventHandlerMap = new HashMap<>();
-
+    private final GoodsRepository goodsRepository;
+    @Value("${api.model-agent.app-id}")
+    private String appId;
     // Agent Stream
     private WebClient webClient;
     @Value("${api.model-agent.url}") private String agentUrl;
     @Value("${api.model-agent.api-key}") private String agentApiKey;
     @Value("${api.model-agent.connection-timeout:1s}") private Duration agentConnectTimeout;
     @Value("${api.model-agent.read-timeout:10s}") private Duration agentReadTimeout;
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostConstruct
     public void init(){
@@ -88,8 +88,9 @@ public class MariAgentGatewayService {
 //            CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
 //                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
 
+            List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo());
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo(), goodsNos);
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
@@ -133,9 +134,10 @@ public class MariAgentGatewayService {
 
         Integer companyNo = authorizationService.getCompanyNoWithPriority();
         Integer userNo = authorizationService.getUserNo();
+        List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
 
         HttpHeaders headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toHeaders();
-        ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo());
+        ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo(), goodsNos);
 
         return Flux.create(sink -> {
             // Agent에 스트림 요청

@@ -7,13 +7,12 @@ import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.dto.response.agent.talk.Series;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
-import lombok.Builder;
-import org.apache.commons.lang3.ObjectUtils;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.Builder;
+import org.apache.commons.lang3.ObjectUtils;
 
 @Builder
 public record ModelAgentReq(
@@ -21,6 +20,12 @@ public record ModelAgentReq(
     Input input
 
 ) {
+
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+        return ModelAgentReq.builder()
+            .input(Input.of(talkReq, histories, companyNo, userNo, authGdsList))
+            .build();
+    }
 
     @Builder
     public record Input(
@@ -37,22 +42,29 @@ public record ModelAgentReq(
         String companyNo,
 
         @JsonProperty("user_num")
-        Integer userNo
+        Integer userNo,
+
+        @JsonProperty("authorized_product_num")
+        List<Integer> authGdsList
 
     ) {
+
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+            return Input.builder()
+                .message(talkReq.question())
+                .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
+                .histories(History.ofList(histories))
+                .companyNo(String.valueOf(companyNo))
+                .userNo(userNo)
+                .authGdsList(authGdsList)
+                .build();
+        }
 
         @Builder
         public record History(
             String user,
             List<Ai> ai
         ) {
-
-            @Builder
-            public record Ai(
-                String text,
-                List<ModelAgentRes.Output.Message.Content.Chart> chart
-            ) {
-            }
 
             public static List<History> ofList(List<ChatbotTalkQna> histories) {
                 return Optional.ofNullable(histories).orElse(List.of()).stream()
@@ -92,25 +104,16 @@ public record ModelAgentReq(
                     .toList();
             }
 
+            @Builder
+            public record Ai(
+                String text,
+                List<ModelAgentRes.Output.Message.Content.Chart> chart
+            ) {
+            }
+
 
         }
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
-            return Input.builder()
-                .message(talkReq.question())
-                .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
-                .histories(History.ofList(histories))
-                .companyNo(String.valueOf(companyNo))
-                .userNo(userNo)
-                .build();
-        }
-
-    }
-
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
-        return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyNo, userNo))
-            .build();
     }
 
 }

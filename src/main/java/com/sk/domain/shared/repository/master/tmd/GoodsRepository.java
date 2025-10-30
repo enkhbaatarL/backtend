@@ -4,14 +4,13 @@ import com.sk.domain.admin.dto.response.provider.GoodsDetailRes;
 import com.sk.domain.admin.dto.response.provider.GoodsLatestUpdatedRes;
 import com.sk.domain.admin.dto.response.provider.GoodsRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface GoodsRepository extends JpaRepository<Goods, Integer> {
     /**
@@ -107,4 +106,27 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
 
     List<Goods> findByProvider_ProviderNoAndIsUsedTrueAndIsDeletedFalse(Integer providerNo);
 
+    @Query(value = """
+        SELECT DISTINCT g.gds_no
+        FROM tmd_gdsm g
+             INNER JOIN tam_custcpnygdsmappl c ON c.gds_no = g.gds_no
+                                               AND c.cust_cpny_no = :customerCompanyNo
+                                               AND c.use_yn = 'Y'
+                                               AND c.del_yn = 'N'
+             INNER JOIN tam_authmnagtgdsmappl a ON a.cust_cpny_no = c.cust_cpny_no
+                                                AND a.gds_no = c.gds_no
+                                                AND a.gds_auth_mnagt_spt_cd = c.gds_auth_mnagt_spt_cd
+                                                AND a.gds_auth_cd = 'DOWNLOAD'
+                                                AND a.del_yn = 'N'
+                                                AND a.use_bgn_dt <= CURDATE()
+                                                AND a.use_end_dt >= CURDATE()
+                                                AND (c.gds_auth_mnagt_spt_cd = 'COMPANY' OR a.usr_no = :userNo)
+             INNER JOIN tam_custcpnyprvdmappl ccpm ON ccpm.cust_cpny_no = c.cust_cpny_no
+                                                   AND ccpm.use_yn = 'Y'
+                                                   AND ccpm.del_yn = 'N'
+        """, nativeQuery = true)
+    List<Integer> findGoodsNosWithPermission(
+        @Param("customerCompanyNo") Integer customerCompanyNo,
+        @Param("userNo") Integer userNo
+    );
 }
