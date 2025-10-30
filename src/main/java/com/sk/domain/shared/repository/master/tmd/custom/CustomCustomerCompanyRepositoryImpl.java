@@ -4,6 +4,9 @@ import static com.sk.domain.shared.entity.master.tam.QCustomerCompanyProviderMap
 import static com.sk.domain.shared.entity.master.tmd.QCustomerCompany.customerCompany;
 import static com.sk.domain.shared.entity.master.tmd.QUser.user;
 
+import com.sk.common.enums.ResultCode.Error;
+import com.sk.common.exception.ApiErrorException;
+import com.sk.domain.mi.dto.response.MiCompanyDetailRes;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -312,5 +315,22 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
         return companies.stream()
             .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain))
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public MiCompanyDetailRes findMiCompany(Integer companyNo) {
+        CustomerCompany company = queryFactory
+            .selectFrom(customerCompany)
+            .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse(), customerCompany.isMipManagementCompany.isFalse(),
+                customerCompany.useBeginDt.loe(DateUtil.toYmd(LocalDate.now()))
+                    .and(customerCompany.useEndDt.goe(DateUtil.toYmd(LocalDate.now())))
+                    .and(customerCompany.customerCompanyNo.eq(companyNo)))
+            .fetchOne();
+
+        if(company == null){
+            throw AppErrorException.of(Error.RSC_NOT_FOUND);
+        }
+
+        return MiCompanyDetailRes.of(company, miDefaultDomain);
     }
 }

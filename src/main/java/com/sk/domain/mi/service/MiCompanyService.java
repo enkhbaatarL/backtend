@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service;
 
+import com.sk.domain.mi.dto.response.MiCompanyDetailRes;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -21,10 +22,14 @@ public class MiCompanyService {
 
     /**
      * 고객사 회사 목록 조회
-     * 
+     *
      * @return 고객사 회사 목록
      */
     public List<MiCompanyRes> getCompanyList() {
         return customerCompanyRepository.findAllMiCompanies();
+    }
+
+    public MiCompanyDetailRes getCompanyDetail(Integer companyNo) {
+        return customerCompanyRepository.findMiCompany(companyNo);
     }
 }
