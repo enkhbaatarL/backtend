@@ -6,6 +6,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
+import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpointItem;
@@ -331,7 +332,7 @@ public class MiMarketNewsService {
                 return new MarketRecapRes.HighlightItemRes(
                     highlightItem.getMrktRcapHlItmId(),
                     highlightItem.getTitl(),
-                    highlightItem.getCntt(),
+                    Arrays.asList(highlightItem.getCntt().split("\n")),
                     highlightItem.getMntm(),
                     relatedNewsList
                 );
@@ -343,23 +344,38 @@ public class MiMarketNewsService {
             .map(checkpointItem -> new MarketRecapRes.CheckpointItemRes(
                 checkpointItem.getMrktRcapCkptItmId(),
                 checkpointItem.getTitl(),
-                checkpointItem.getCntt()
+                Arrays.asList(checkpointItem.getCntt().split("\n"))
             ))
             .toList();
+
+        MarketRecapRes.SignalNewsCount current = new MarketRecapRes.SignalNewsCount(
+            marketRecap.getUpwSgnlNwsCnt(),
+            marketRecap.getNtrlSgnlNwsCnt(),
+            marketRecap.getDwnSgnlNwsCnt()
+        );
+        MarketRecapRes.SignalNewsCount previous = new MarketRecapRes.SignalNewsCount(20, 30, 40);
+        MarketRecapRes.SignalNewsCount last7days = new MarketRecapRes.SignalNewsCount(10, 50, 30);
+        MarketRecapRes.SignalNewsCount last30days = new MarketRecapRes.SignalNewsCount(22, 33, 11);
+        MarketRecapRes.Sentiments sentiments = new MarketRecapRes.Sentiments(current, previous,
+            last7days, last30days);
+
+        MarketRecapRes.Highlights highlights = new MarketRecapRes.Highlights(
+            new Narrative(marketRecap.getHiTitl(),
+                Arrays.asList(marketRecap.getHiCntt().split("\n"))), highlightItemResList
+        );
+
+        MarketRecapRes.Checkpoints checkpoints = new MarketRecapRes.Checkpoints(
+            new Narrative(marketRecap.getCkptTitl(),
+                Arrays.asList(marketRecap.getCkptCntt().split("\n"))), checkpointItemResList
+        );
 
         return new MarketRecapRes(
             marketRecap.getMrktRcapId(),
             marketRecap.getCrtrDt(),
             marketRecap.getNwsMrktCtgrCd(),
-            marketRecap.getUpwSgnlNwsCnt(),
-            marketRecap.getNtrlSgnlNwsCnt(),
-            marketRecap.getDwnSgnlNwsCnt(),
-            marketRecap.getHiTitl(),
-            marketRecap.getHiCntt(),
-            marketRecap.getCkptTitl(),
-            marketRecap.getCkptCntt(),
-            highlightItemResList,
-            checkpointItemResList
+            sentiments,
+            highlights,
+            checkpoints
         );
     }
 
@@ -367,7 +383,7 @@ public class MiMarketNewsService {
         String criteriaDate, String category) {
 
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
-            criteriaDate, category, null, false, null, false, null, false,"firstCreated", "ASC");
+            criteriaDate, category, null, false, null, false, null, false, "firstCreated", "ASC");
 
         // impctScre 필터링 및 limit 적용 후 DTO 변환
         return results.stream()
