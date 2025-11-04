@@ -12,11 +12,16 @@ import com.sk.domain.admin.service.collector.dto.SkEnsData;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 import com.sk.domain.admin.service.json.DataCollectorJsonStrategy;
 import com.sk.domain.shared.enums.ComponentType;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +41,23 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy, DataColle
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static Set<LocalDate> TTF_HOLIDAYS;
+    static{
+        TTF_HOLIDAYS = Set.of(
+            parseDate("2025-12-25"),
+            parseDate("2025-12-26"),
+            parseDate("2026-01-01"),
+            parseDate("2026-04-03"),
+            parseDate("2026-04-06"),
+            parseDate("2026-05-04"),
+            parseDate("2026-05-25"),
+            parseDate("2026-08-31"),
+            parseDate("2026-12-25"),
+            parseDate("2026-12-28"),
+            parseDate("2027-01-01")
+        );
+    }
 
 
     @Override
@@ -116,7 +138,11 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy, DataColle
               try {
                 SkEnsData.Code codeData = objectMapper.treeToValue(n, SkEnsData.Code.class);
                 for(SkEnsData.Data rawData : codeData.data()){
-                    result.add(new Object[]{parseDate(rawData.date()), codeData.code(), Double.parseDouble(rawData.value())});
+                    result.add(new Object[]{
+                        handleDateExceptionCase(codeData.code(), parseDate(rawData.date())),
+                        codeData.code(),
+                        Double.parseDouble(rawData.value())
+                    });
                 }
               } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -124,5 +150,49 @@ public class SkEnsTypeBDataCollector implements DataCollectorStrategy, DataColle
             });
         }
         return result;
+    }
+
+    private LocalDate handleDateExceptionCase(String code, LocalDate date){
+        if(!"TFMBUSMBTMc1".equalsIgnoreCase(code) && !"TFMBUSMBTMc2".equalsIgnoreCase(code)){
+            return date;
+        }
+
+        return previousBusinessDay(TTF_HOLIDAYS);
+    }
+
+    /**
+     * 기준일(LocalDate.now(zone))의 "영업일 기준 어제"를 구한다.
+     * 예: 2025-11-03(월) 기준 → 2025-10-31(금)이 휴일/주말이면 그 전날로 계속 이동
+     */
+    public static LocalDate previousBusinessDay(ZoneId zoneId, Set<LocalDate> holidays) {
+        return previousBusinessDay(LocalDate.now(zoneId), holidays);
+    }
+
+    /**
+     * 기준일을 명시해서 "영업일 기준 어제"를 구한다.
+     * 즉 baseDate.minusDays(1)에서 시작해 휴일/주말이면 계속 뒤로 간다.
+     */
+    private static LocalDate previousBusinessDay(LocalDate baseDate, Set<LocalDate> holidays) {
+        // holidays가 null이면 빈 Set로 간주
+        Set<LocalDate> hs = holidays == null ? Set.of() : holidays;
+
+        LocalDate d = baseDate.minusDays(1);
+        while (isHolidayOrWeekend(d, hs)) {
+            d = d.minusDays(1);
+        }
+        return d;
+    }
+
+    /** d가 휴일 또는 주말(토/일)이면 true */
+    private static boolean isHolidayOrWeekend(LocalDate d, Set<LocalDate> holidays) {
+        DayOfWeek dow = d.getDayOfWeek();
+        boolean weekend = (dow == DayOfWeek.SATURDAY) || (dow == DayOfWeek.SUNDAY);
+        boolean holiday = holidays.contains(d);
+        return weekend || holiday;
+    }
+
+    // 편의 오버로드: 시스템 기본 타임존 사용
+    public static LocalDate previousBusinessDay(Set<LocalDate> holidays) {
+        return previousBusinessDay(ZoneId.systemDefault(), holidays);
     }
 }
