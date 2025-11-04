@@ -110,6 +110,17 @@ public class MiMarketDataService {
     private final Map<String, PeriodCalculator> periodCalculators;
     private Map<CalculatePeriodChangeType, PeriodCalculator> periodCalculatorMap;
 
+    private static Double getValueFromRawData(List<Map<String, Object>> rawData, int index,
+        String defaultDataColumnName) {
+        double result =
+            Double.parseDouble(
+                rawData.get(index).get(defaultDataColumnName)
+                    .toString());
+        BigDecimal bd = BigDecimal.valueOf(result)
+            .setScale(2, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    }
+
     @PostConstruct
     public void init() {
         periodCalculatorMap = new HashMap<>();
@@ -662,10 +673,14 @@ public class MiMarketDataService {
                     Double lastValue = null;
                     Double previousValue = null;
                     for (int i = 1; i <= rawData.size(); i++) {
-                        if (lastValue == null && rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
-                            lastValue = getValueFromRawData(rawData, rawData.size() - i, defaultDataColumnName);
-                        }else if(lastValue != null && rawData.get(rawData.size() - i).get(defaultDataColumnName) != null){
-                            previousValue = getValueFromRawData(rawData, rawData.size() - i, defaultDataColumnName);
+                        if (lastValue == null
+                            && rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
+                            lastValue = getValueFromRawData(rawData, rawData.size() - i,
+                                defaultDataColumnName);
+                        } else if (lastValue != null
+                            && rawData.get(rawData.size() - i).get(defaultDataColumnName) != null) {
+                            previousValue = getValueFromRawData(rawData, rawData.size() - i,
+                                defaultDataColumnName);
                             break;
                         }
                     }
@@ -742,7 +757,7 @@ public class MiMarketDataService {
                     }
                     return rankA.compareTo(rankB);
                 })
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -981,7 +996,6 @@ public class MiMarketDataService {
         return result;
     }
 
-
     /**
      * Market Data - Data Catalog 목록 조회
      *
@@ -1184,7 +1198,7 @@ public class MiMarketDataService {
     /**
      * Market Data - Recent Viewed 목록 삭제 (논리 삭제)
      *
-     * @param userNo    사용자 번호
+     * @param userNo 사용자 번호
      */
     @Transactional
     public void clearRecentViewed(int companyNo, int userNo) {
@@ -1192,17 +1206,8 @@ public class MiMarketDataService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "사용자 정보를 찾을 수 없습니다."));
 
-        miGoodsDataInquiryUserService.clearGoodsDataInquiryUser(companyNo, userNo, user.getUserLoginId());
-    }
-
-    private static Double getValueFromRawData(List<Map<String, Object>> rawData, int index, String defaultDataColumnName){
-        double result =
-            Double.parseDouble(
-                rawData.get(index).get(defaultDataColumnName)
-                    .toString());
-        BigDecimal bd = BigDecimal.valueOf(result)
-            .setScale(2, RoundingMode.HALF_UP);
-        return bd.doubleValue();
+        miGoodsDataInquiryUserService.clearGoodsDataInquiryUser(companyNo, userNo,
+            user.getUserLoginId());
     }
 
     private record LastValueDto(
