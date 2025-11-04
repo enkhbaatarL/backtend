@@ -310,6 +310,8 @@ public class MiMarketNewsService {
         List<MarketRecapCheckpointItem> checkpointItems =
             marketRecapCheckpointItemRepository.findByMarketRecap(marketRecap);
 
+        List<MarketRecapRes.RelatedNewsRes> hrList = new ArrayList<>();
+
         // 하이라이트 아이템 DTO 변환
         List<MarketRecapRes.HighlightItemRes> highlightItemResList = highlightItems.stream()
             .map(highlightItem -> {
@@ -329,6 +331,7 @@ public class MiMarketNewsService {
                     })
                     .toList();
 
+                hrList.addAll(relatedNewsList);
                 return new MarketRecapRes.HighlightItemRes(
                     highlightItem.getMrktRcapHlItmId(),
                     highlightItem.getTitl(),
@@ -351,17 +354,19 @@ public class MiMarketNewsService {
         MarketRecapRes.SignalNewsCount current = new MarketRecapRes.SignalNewsCount(
             marketRecap.getUpwSgnlNwsCnt(),
             marketRecap.getNtrlSgnlNwsCnt(),
-            marketRecap.getDwnSgnlNwsCnt()
+            marketRecap.getDwnSgnlNwsCnt(),
+            "Sep 12 07:00 - Sep 13 07:00"
         );
-        MarketRecapRes.SignalNewsCount previous = new MarketRecapRes.SignalNewsCount(20, 30, 40);
-        MarketRecapRes.SignalNewsCount last7days = new MarketRecapRes.SignalNewsCount(10, 50, 30);
-        MarketRecapRes.SignalNewsCount last30days = new MarketRecapRes.SignalNewsCount(22, 33, 11);
+        MarketRecapRes.SignalNewsCount previous = new MarketRecapRes.SignalNewsCount(20, 30, 40 , "Sep 12 07:00 - Sep 13 07:00");
+        MarketRecapRes.SignalNewsCount last7days = new MarketRecapRes.SignalNewsCount(10, 50, 30, "Sep 12 07:00 - Sep 13 07:00");
+        MarketRecapRes.SignalNewsCount last30days = new MarketRecapRes.SignalNewsCount(22, 33, 11, "Sep 12 07:00 - Sep 13 07:00");
         MarketRecapRes.Sentiments sentiments = new MarketRecapRes.Sentiments(current, previous,
             last7days, last30days);
 
         MarketRecapRes.Highlights highlights = new MarketRecapRes.Highlights(
             new Narrative(marketRecap.getHiTitl(),
-                Arrays.asList(marketRecap.getHiCntt().split("\n"))), highlightItemResList
+                Arrays.asList(marketRecap.getHiCntt().split("\n"))), highlightItemResList, hrList
+
         );
 
         MarketRecapRes.Checkpoints checkpoints = new MarketRecapRes.Checkpoints(

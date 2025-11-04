@@ -47,7 +47,10 @@ public record MarketRecapRes(
         Integer neutralCount,
 
         @Schema(description = "하락 신호 뉴스 수", example = "3")
-        Integer downwardCount
+        Integer downwardCount,
+
+        @Schema(description = "기간", example = "Sep 12 07:00 - Sep 13 07:00")
+        String period
     ) {}
 
     public record HighlightItemRes(
@@ -91,7 +94,10 @@ public record MarketRecapRes(
         Narrative narrative,
 
         @Schema(description = "하이라이트 아이템 목록")
-        List<HighlightItemRes> items
+        List<HighlightItemRes> items,
+
+        @Schema(description = "관련 뉴스 목록")
+        List<RelatedNewsRes> relatedNews
     ) {
 
     }
