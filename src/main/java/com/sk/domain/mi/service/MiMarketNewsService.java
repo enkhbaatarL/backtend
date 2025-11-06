@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -226,7 +225,7 @@ public class MiMarketNewsService {
      */
     private List<String> parseGroupConcatResult(String groupConcatStr) {
         if (groupConcatStr == null || groupConcatStr.trim().isEmpty()) {
-            return Collections.emptyList();
+            return List.of("GLO");
         }
         return Arrays.asList(groupConcatStr.split(","));
     }
