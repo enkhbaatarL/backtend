@@ -10,14 +10,18 @@ import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -148,5 +152,12 @@ public class MariAgentResParser {
             .map(ModelAgentRes.Output.Message.Content.VectorSource::gdsDataDstgId)
             .toList();
     }
+
+    public List<Related> prepareRelatedData(List<Integer> relatedDataIds) {
+    if (relatedDataIds == null || relatedDataIds.isEmpty()) {
+        return Collections.emptyList();
+    }
+    return prepareStructuredDateResources(relatedDataIds);
+}
 
 }

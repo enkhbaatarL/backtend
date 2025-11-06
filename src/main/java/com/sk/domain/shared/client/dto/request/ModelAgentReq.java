@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import lombok.Builder;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -22,9 +21,9 @@ public record ModelAgentReq(
 
 ) {
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyNo, userNo, authGdsList, repositoryIds))
+            .input(Input.of(talkReq, histories, companyNo, userNo))
             .build();
     }
 
@@ -43,20 +42,17 @@ public record ModelAgentReq(
         String companyNo,
 
         @JsonProperty("user_num")
-        Integer userNo,
+        Integer userNo
 
-        @JsonProperty("authorized_product_nums")
-        Set<Integer> authGdsList
     ) {
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
             return Input.builder()
                 .message(talkReq.question())
                 .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
                 .histories(History.ofList(histories))
                 .companyNo(String.valueOf(companyNo))
                 .userNo(userNo)
-                .authGdsList(authGdsList)
                 .build();
         }
 
@@ -115,5 +111,6 @@ public record ModelAgentReq(
         }
 
     }
+
 
 }

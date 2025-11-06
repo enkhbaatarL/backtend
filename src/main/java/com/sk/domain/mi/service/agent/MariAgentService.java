@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service.agent;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import static com.sk.common.enums.ResultCode.Error.BIZ_RULE_VIOLATION;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.ApiErrorException;
@@ -16,7 +17,6 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
-import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.service.ProhibitedWordService;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
@@ -30,10 +30,17 @@ import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -41,40 +48,28 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.*;
-
-import static com.sk.common.enums.ResultCode.Error.BIZ_RULE_VIOLATION;
-
 @Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MariAgentService {
 
-    @Value("${features.validation.model-agent.write-length:-1}")
-    private int writeLimit;
-    @Value("${api.model-agent.read-timeout:10s}") private Duration agentReadTimeout;
-
-    @Value("${api.model-agent.app-id}")
-    private String appId;
-
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private final AuthorizationService authorizationService;
-
     private final TokenQuotaGuard tokenQuotaGuard;
     private final ChatbotTalkService chatbotTalkService;
     private final MariAgentGatewayService mariAgentGatewayService;
-
     private final ProhibitedWordService prohibitedWordService;
-
     private final ChatbotTalkRepository chatbotTalkRepository;
     private final ChatbotTalkQnaRepository chatbotTalkQnaRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChatbotMajorQuestionRepository chatbotMajorQuestionRepository;
     private final ApiAccessLogService apiAccessLogService;
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    @Value("${features.validation.model-agent.write-length:-1}")
+    private int writeLimit;
+    @Value("${api.model-agent.read-timeout:10s}") private Duration agentReadTimeout;
+    @Value("${api.model-agent.app-id}")
+    private String appId;
 
     /**
      * 주어진 분과 코드로 필터링된 주요 질의문 목록을 조회합니다.
@@ -228,7 +223,7 @@ public class MariAgentService {
                         MDCUtil.restoreContextMap(mdcContextMap);
                         SecurityContextHolder.setContext(securityContext);
                         try {
-                            log.info("SSE 청크 전송: {}", chunk);
+                            // log.info("SSE 청크 전송: {}", chunk);
                             QnaRes qnaRes = Optional.ofNullable(chunk)
                             .map(answer -> QnaRes.of(qna, answer))
                                 .orElse(QnaRes.of(qna));
