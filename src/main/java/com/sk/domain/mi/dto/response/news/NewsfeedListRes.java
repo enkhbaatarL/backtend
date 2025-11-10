@@ -10,16 +10,16 @@ import java.util.List;
  */
 public record NewsfeedListRes(
     @Schema(description = "뉴스 중요도 ID", example = "11")
-    Long nwsSigId,
+    Long newsSignalId,
 
     @Schema(description = "데이터등록일련번호", example = "36033981")
-    Long dataRegistrationSn,
+    Long dataRegistrationSerialNo,
 
     @Schema(description = "NEWS최초생성일시", example = "2025-07-29 23:59:09")
     LocalDateTime firstCreated,
 
     @Schema(description = "뉴스시장카테고리코드", example = "CROIL")
-    String nwsMrktCtgrCd,
+    String newsMarketCategoryCode,
 
     @Schema(description = "뉴스 요약 ID", example = "11")
     Integer newsSummaryId,
@@ -36,11 +36,14 @@ public record NewsfeedListRes(
     @Schema(description = "프로바이더", example = "reuters")
     String provider,
 
-    @Schema(description = "영향도점수", example = "2.10")
-    BigDecimal impctScre,
+    @Schema(description = "영향도점수", example = "9.1")
+    BigDecimal impactScore,
 
     @Schema(description = "방향성", example = "Upward")
-    String drctnlt,
+    String directionality,
+
+    @Schema(description = "방향점수", example = "-2.1")
+    BigDecimal directionalScore,
 
     @Schema(description = "지역", example = "[Global, Asia Pacific]")
     List<String> regions

@@ -184,21 +184,23 @@ public class MiMarketNewsService {
                     ? ((java.sql.Timestamp) result[2]).toLocalDateTime()
                     : null;
                 String nwsMrktCtgrCd = (String) result[3];
-
-                java.math.BigDecimal impctScre = result[5] != null
-                    ? (java.math.BigDecimal) result[5]
+                java.math.BigDecimal sig = result[4] != null
+                    ? (java.math.BigDecimal) result[4]
                     : null;
-                String drctnlt = (String) result[6];
-
-                Integer newsSummaryId = result[7] != null
-                    ? ((Number) result[7]).intValue()
+                java.math.BigDecimal impctScre = result[6] != null
+                    ? (java.math.BigDecimal) result[6]
                     : null;
-                String briefSummary = (String) result[8];
-                String summary = (String) result[9];
-                String provider = (String) result[10];
-                String title = (String) result[11];
+                String drctnlt = (String) result[7];
 
-                String regionsStr = (String) result[12];
+                Integer newsSummaryId = result[8] != null
+                    ? ((Number) result[8]).intValue()
+                    : null;
+                String briefSummary = (String) result[9];
+                String summary = (String) result[10];
+                String provider = (String) result[11];
+                String title = (String) result[12];
+
+                String regionsStr = (String) result[13];
 
                 List<String> rList = parseGroupConcatResult(regionsStr);
 
@@ -212,8 +214,9 @@ public class MiMarketNewsService {
                     summary != null ? Arrays.asList(summary.split("\n")) : null,
                     title,
                     provider,
-                    impctScre,
+                    sig,
                     drctnlt,
+                    impctScre,
                     rList
                 );
             })
@@ -271,11 +274,11 @@ public class MiMarketNewsService {
                 tagList.add(newsSignificance.getNwsMrktCtgrCd().getName());
 
                 significantNewsRepository.findByNwsSigId(newsSignificance.getNwsSigId())
-                .ifPresent(significantNews -> {
-                    if (significantNews.getEvntDtctn() != null) {
-                        tagList.add(significantNews.getEvntDtctn());
-                    }
-                });
+                    .ifPresent(significantNews -> {
+                        if (significantNews.getEvntDtctn() != null) {
+                            tagList.add(significantNews.getEvntDtctn());
+                        }
+                    });
             });
         }
 
@@ -285,7 +288,8 @@ public class MiMarketNewsService {
     /**
      * NewsSummary -> MarketNewsDetailRes 변환
      */
-    private MarketNewsDetailRes toMarketNewsDetailRes(NewsSummary newsSummary, List<String> tagList) {
+    private MarketNewsDetailRes toMarketNewsDetailRes(NewsSummary newsSummary,
+        List<String> tagList) {
         return new MarketNewsDetailRes(
             newsSummary.getNewsSummaryId(),
             newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
@@ -356,9 +360,12 @@ public class MiMarketNewsService {
             marketRecap.getDwnSgnlNwsCnt(),
             "Sep 12 07:00 - Sep 13 07:00"
         );
-        MarketRecapRes.SignalNewsCount previous = new MarketRecapRes.SignalNewsCount(20, 30, 40 , "Sep 12 07:00 - Sep 13 07:00");
-        MarketRecapRes.SignalNewsCount last7days = new MarketRecapRes.SignalNewsCount(10, 50, 30, "Sep 12 07:00 - Sep 13 07:00");
-        MarketRecapRes.SignalNewsCount last30days = new MarketRecapRes.SignalNewsCount(22, 33, 11, "Sep 12 07:00 - Sep 13 07:00");
+        MarketRecapRes.SignalNewsCount previous = new MarketRecapRes.SignalNewsCount(20, 30, 40,
+            "Sep 12 07:00 - Sep 13 07:00");
+        MarketRecapRes.SignalNewsCount last7days = new MarketRecapRes.SignalNewsCount(10, 50, 30,
+            "Sep 12 07:00 - Sep 13 07:00");
+        MarketRecapRes.SignalNewsCount last30days = new MarketRecapRes.SignalNewsCount(22, 33, 11,
+            "Sep 12 07:00 - Sep 13 07:00");
         MarketRecapRes.Sentiments sentiments = new MarketRecapRes.Sentiments(current, previous,
             last7days, last30days);
 
@@ -393,11 +400,11 @@ public class MiMarketNewsService {
         return results.stream()
             .filter(result -> {
                 // impctScre가 8.0 이상인 뉴스만 필터링
-                java.math.BigDecimal impctScre = result[5] != null
-                    ? (java.math.BigDecimal) result[5]
+                java.math.BigDecimal sig = result[4] != null
+                    ? (java.math.BigDecimal) result[4]
                     : null;
-                return impctScre != null &&
-                    impctScre.compareTo(new java.math.BigDecimal("8.0")) >= 0;
+                return sig != null &&
+                    sig.compareTo(new java.math.BigDecimal("8.0")) >= 0;
             })
             .limit(10)
             .map(result -> {
@@ -409,20 +416,25 @@ public class MiMarketNewsService {
                     : null;
                 String nwsMrktCtgrCd = (String) result[3];
 
-                java.math.BigDecimal impctScre = result[5] != null
-                    ? (java.math.BigDecimal) result[5]
+                java.math.BigDecimal sig = result[4] != null
+                    ? (java.math.BigDecimal) result[4]
                     : null;
-                String drctnlt = (String) result[6];
 
-                Integer newsSummaryId = result[7] != null
-                    ? ((Number) result[7]).intValue()
+                java.math.BigDecimal impctScre = result[6] != null
+                    ? (java.math.BigDecimal) result[6]
                     : null;
-                String briefSummary = (String) result[8];
-                String summary = (String) result[9];
-                String provider = (String) result[10];
-                String title = (String) result[11];
 
-                String regionsStr = (String) result[12];
+                String drctnlt = (String) result[7];
+
+                Integer newsSummaryId = result[8] != null
+                    ? ((Number) result[8]).intValue()
+                    : null;
+                String briefSummary = (String) result[9];
+                String summary = (String) result[10];
+                String provider = (String) result[11];
+                String title = (String) result[12];
+
+                String regionsStr = (String) result[13];
 
                 List<String> regionList = parseGroupConcatResult(regionsStr);
 
@@ -436,8 +448,9 @@ public class MiMarketNewsService {
                     summary != null ? Arrays.asList(summary.split("\n")) : null,
                     title,
                     provider,
-                    impctScre,
+                    sig,
                     drctnlt,
+                    impctScre,
                     regionList
                 );
             })
