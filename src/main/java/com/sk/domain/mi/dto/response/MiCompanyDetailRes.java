@@ -1,14 +1,11 @@
 package com.sk.domain.mi.dto.response;
 
-import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.enums.news.MarketCategoryCode;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import lombok.Builder;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
 
+@Builder(toBuilder = true)
 public record MiCompanyDetailRes(
 
     @Schema(description = "고객회사번호")
@@ -30,19 +27,26 @@ public record MiCompanyDetailRes(
     Boolean isMari,
 
     @Schema(description = "미래 기능 예시 표출 여부")
-    Boolean isFuture
+    Boolean isFuture,
+
+    @Schema(description = "뉴스시장카테고리코드", example = "CROIL")
+    MarketCategoryCode newsMarketCategoryCode
+
 ) {
 
     @Builder
     public MiCompanyDetailRes(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String customerCompanyMipUrl,
         Boolean isQualitative, Boolean isMari, Boolean isFuture) {
-        this.customerCompanyNo = customerCompanyNo;
-        this.customerCompanyNm = customerCompanyNm;
-        this.customerCompanyCd = customerCompanyCd;
-        this.customerCompanyMipUrl = customerCompanyMipUrl;
-        this.isQualitative = isQualitative;
-        this.isMari = isMari;
-        this.isFuture = isFuture;
+        this(
+            customerCompanyNo,
+            customerCompanyNm,
+            customerCompanyCd,
+            customerCompanyMipUrl,
+            isQualitative,
+            isMari,
+            isFuture,
+            null
+        );
     }
 
     public static MiCompanyDetailRes of(CustomerCompany customerCompany, String miDefaultDomain) {
