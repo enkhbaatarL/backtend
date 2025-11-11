@@ -37,6 +37,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         WHERE (:criteriaDate IS NULL OR ns.crtr_dt = :criteriaDate)
           AND (:category IS NULL OR ns.nws_mrkt_ctgr_cd = :category)
           AND (:filterBySentiment = FALSE OR sn.drctnlt IN (:sentimentList))
+          AND ns.sig >= 6.0
           AND (:filterByImpactScore = FALSE OR (
               ('HIGH' IN (:impactScoreList) AND ns.sig >= 9.0)
               OR ('MEDIUM' IN (:impactScoreList) AND ns.sig >= 7.0 AND ns.sig < 9.0)
@@ -189,52 +190,4 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
 
     List<NewsSignificance> findByFirstCreatedAndDataRegistrationSn(LocalDateTime firstCreated,
         Integer dataRegistrationSn);
-
-    @Query(value = """
-        SELECT
-            ns.nws_sig_id,
-            ns.data_reg_sn,
-            ns.first_created,
-            ns.nws_mrkt_ctgr_cd,
-            sn.nws_sig_id as sn_nws_sig_id,
-            sn.impct_scre,
-            sn.drctnlt,
-            nsum.nws_smry_id,
-            nsum.brf_smry,
-            nsum.smry,
-            nsum.provider,
-            rnd.title,
-            GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
-        FROM tmd_nws_sig ns
-        INNER JOIN tmd_sgt_nws sn ON sn.nws_sig_id = ns.nws_sig_id
-        LEFT JOIN tmd_nws_smry nsum ON nsum.data_reg_sn = ns.data_reg_sn
-            AND nsum.first_created = ns.first_created
-        LEFT JOIN tif_refinewsdatar rnd ON rnd.data_reg_sn = nsum.data_reg_sn
-            AND rnd.first_created = nsum.first_created
-        LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = nsum.nws_smry_id
-        WHERE (:criteriaDate IS NULL OR ns.crtr_dt = :criteriaDate)
-          AND (:category IS NULL OR ns.nws_mrkt_ctgr_cd = :category)
-          AND sn.impct_scre >= 8.0
-        GROUP BY
-            ns.nws_sig_id,
-            ns.data_reg_sn,
-            ns.first_created,
-            ns.nws_mrkt_ctgr_cd,
-            sn.nws_sig_id,
-            sn.impct_scre,
-            sn.drctnlt,
-            nsum.nws_smry_id,
-            nsum.brf_smry,
-            nsum.smry,
-            nsum.provider,
-            rnd.title
-        ORDER BY
-            sn.impct_scre DESC,
-            ns.first_created ASC
-        LIMIT 10
-        """, nativeQuery = true)
-    List<Object[]> findNewsTimelineTop10(
-        @Param("criteriaDate") String criteriaDate,
-        @Param("category") String category
-    );
 }
