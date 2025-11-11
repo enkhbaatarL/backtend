@@ -20,7 +20,14 @@ public record MarketRecapRes(
     Highlights highlights,
 
     @Schema(description = "체크포인트")
-    Checkpoints checkpoints
+    Checkpoints checkpoints,
+
+    @Schema(description = "분석 주기", example = "24H")
+    String analysisFrequency,
+
+    @Schema(description = "분석 기간", example = "[\"1753747200000\", \"1753833600000\"]")
+    List<String> analysisPeriod
+
 ) {
 
     public record Sentiments(

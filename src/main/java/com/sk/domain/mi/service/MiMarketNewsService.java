@@ -3,6 +3,7 @@ package com.sk.domain.mi.service;
 import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
@@ -22,8 +23,12 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
 import com.sk.domain.shared.repository.master.tmd.SignificantNewsRepository;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +53,53 @@ public class MiMarketNewsService {
     private final MarketRecapCheckpointItemRepository marketRecapCheckpointItemRepository;
     private final MarketRecapHighlightItemRelationshipRepository marketRecapHighlightItemRelationshipRepository;
     private final SignificantNewsRepository significantNewsRepository;
+
+
+    private boolean isMonday(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) {
+            throw new IllegalArgumentException("날짜 문자열이 null이거나 비어있습니다.");
+        }
+
+        LocalDate date = DateUtil.fromYmd(dateStr);
+
+        return date.getDayOfWeek() == DayOfWeek.MONDAY;
+    }
+
+    private String toUtcEpochMillis(LocalDateTime localDateTime) {
+        ZonedDateTime utcZonedDateTime = localDateTime.atZone(ZoneId.of("UTC"));
+        return String.valueOf(utcZonedDateTime.toInstant().toEpochMilli());
+    }
+
+    private List<String> getTimestampRange(LocalDate date, boolean isMonday) {
+        if (date == null) {
+            throw new IllegalArgumentException("날짜가 null입니다.");
+        }
+
+        if (isMonday) {
+            LocalDate friday = date.minusDays(3);
+            return List.of(
+                toUtcEpochMillis(friday.atTime(LocalTime.MIDNIGHT)),
+                toUtcEpochMillis(date.atTime(LocalTime.MIDNIGHT))
+            );
+        } else {
+            LocalDate previousDay = date.minusDays(1);
+            return List.of(
+                toUtcEpochMillis(previousDay.atTime(LocalTime.MIDNIGHT)),
+                toUtcEpochMillis(date.atTime(LocalTime.MIDNIGHT))
+            );
+        }
+    }
+
+    private List<String> getTimestampRangeFromDateString(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) {
+            throw new IllegalArgumentException("날짜 문자열이 null이거나 비어있습니다.");
+        }
+
+        LocalDate date = DateUtil.fromYmd(dateStr);
+
+        boolean monday = date.getDayOfWeek() == DayOfWeek.MONDAY;
+        return getTimestampRange(date, monday);
+    }
 
     public PaginationRes<MarketNewsListRes> getMarketNewsList(
         int page,
@@ -386,7 +438,9 @@ public class MiMarketNewsService {
             marketRecap.getNwsMrktCtgrCd(),
             sentiments,
             highlights,
-            checkpoints
+            checkpoints,
+            isMonday(marketRecap.getCrtrDt()) ? "72H" : "24H",
+            getTimestampRangeFromDateString(marketRecap.getCrtrDt())
         );
     }
 
