@@ -81,7 +81,6 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         @Param("sortDirection") String sortDirection
     );
 
-
     @Query(value = """
         SELECT
             nsum.nws_smry_id,
@@ -100,7 +99,9 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = nsum.nws_smry_id
         LEFT JOIN tmd_nws_ind_cls nic ON nic.nws_smry_id = nsum.nws_smry_id
         WHERE 1=1
-          AND (:keyword IS NULL OR rnd.title LIKE CONCAT('%', :keyword, '%') OR rnd.story LIKE CONCAT('%', :keyword, '%'))
+          AND (:keyword IS NULL OR :keyword = ''
+              OR UPPER(rnd.title) LIKE UPPER(CONCAT('%', :keyword, '%'))
+              OR UPPER(rnd.story) LIKE UPPER(CONCAT('%', :keyword, '%')))
           AND (:startDateTime IS NULL OR nsum.first_created >= :startDateTime)
           AND (:endDateTime IS NULL OR nsum.first_created <= :endDateTime)
           AND (:filterByCategory = FALSE OR EXISTS (
@@ -152,7 +153,9 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         LEFT JOIN tif_refinewsdatar rnd ON rnd.data_reg_sn = nsum.data_reg_sn
             AND rnd.first_created = nsum.first_created
         WHERE 1=1
-          AND (:keyword IS NULL OR rnd.title LIKE CONCAT('%', :keyword, '%') OR rnd.story LIKE CONCAT('%', :keyword, '%'))
+          AND (:keyword IS NULL OR :keyword = ''
+              OR UPPER(rnd.title) LIKE UPPER(CONCAT('%', :keyword, '%'))
+              OR UPPER(rnd.story) LIKE UPPER(CONCAT('%', :keyword, '%')))
           AND (:startDateTime IS NULL OR nsum.first_created >= :startDateTime)
           AND (:endDateTime IS NULL OR nsum.first_created <= :endDateTime)
           AND (:filterByCategory = FALSE OR EXISTS (
