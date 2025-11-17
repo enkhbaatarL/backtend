@@ -11,18 +11,23 @@ import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Getter
 @Entity
@@ -138,23 +143,23 @@ public class ChatbotTalkQna extends BaseEntity {
 
     public void updateCompleteResult(ModelAgentRes.Output output, AnswerRes answerRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
-        this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
-        this.inputTokenCnt = Optional.ofNullable(output)
-            .map(ModelAgentRes.Output::messages)
-            .stream()
-            .flatMap(List::stream)
-            .map(ModelAgentRes.Output.Message::usage)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.Usage::promptTokens)
-            .sum();
-        this.outputTokenCnt = Optional.ofNullable(output)
-            .map(ModelAgentRes.Output::messages)
-            .stream()
-            .flatMap(List::stream)
-            .map(ModelAgentRes.Output.Message::usage)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.Usage::completionTokens)
-            .sum();
+        this.chatbotAnswerCntt = JsonUtil.toJson(answerRes);
+//        this.inputTokenCnt = Optional.ofNullable(output)
+//            .map(ModelAgentRes.Output::messages)
+//            .stream()
+//            .flatMap(List::stream)
+//            .map(ModelAgentRes.Output.Message::usage)
+//            .filter(Objects::nonNull)
+//            .mapToInt(ModelAgentRes.Output.Message.Usage::promptTokens)
+//            .sum();
+//        this.outputTokenCnt = Optional.ofNullable(output)
+//            .map(ModelAgentRes.Output::messages)
+//            .stream()
+//            .flatMap(List::stream)
+//            .map(ModelAgentRes.Output.Message::usage)
+//            .filter(Objects::nonNull)
+//            .mapToInt(ModelAgentRes.Output.Message.Usage::completionTokens)
+//            .sum();
     }
 
     public void updateFailResult() {

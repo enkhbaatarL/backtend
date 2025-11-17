@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.mi.service.agent.stream.StreamEventHandler;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.request.ModelAgentHeaders;
@@ -90,9 +89,9 @@ public class MariAgentGatewayService {
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
-            List<Related> related = mariAgentResParser.prepareAnswerDataResources(modelAgentRes.output());
+            // List<Related> related = mariAgentResParser.prepareAnswerDataResources(modelAgentRes.output());
 
-            AnswerRes answerRes = AnswerRes.of(modelAgentRes.output().messages(), related);
+            AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
             qna.updateCompleteResult(modelAgentRes.output(), answerRes);
 
             TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), qna.getInputTokenCnt() + qna.getOutputTokenCnt());
@@ -158,7 +157,7 @@ public class MariAgentGatewayService {
 
                         // log.debug("Agent 응답 Event Type: {}", eventType);
                         // log.debug("Agent 응답 Event ID: {}", event.id());
-                        log.debug("Agent 응답 Event Data: {}", chunk);
+                        // log.debug("Agent 응답 Event Data: {}", chunk);
 
                         if (chunk == null || chunk.trim().isEmpty()) {
                             return;
@@ -176,13 +175,13 @@ public class MariAgentGatewayService {
                                 ModelAgentStreamBody streamBody =
                                     objectMapper.readValue(chunk, ModelAgentStreamBody.class);
 
-                                if (streamBody.node() == null || streamBody.type() == null) {
-                                    log.warn("Invalid event data structure: node={}, type={}",
-                                        streamBody.node(), streamBody.type());
+                                if (streamBody.node() == null || streamBody.data() == null) {
+                                    log.warn("Invalid event data structure: node={}, data={}",
+                                        streamBody.node(), streamBody.data());
                                     return;
                                 }
 
-                                // log.debug("처리 중 - Node: {}, Type: {}", streamBody.node(), streamBody.type());
+                                log.debug("처리 중 - Node: {}, Data: {}", streamBody.node(), streamBody.data());
 
                                 // type에 따라 적절한 Handler 선택
                                 StreamEventHandler streamEventHandler = selectHandler(streamBody);
@@ -191,8 +190,8 @@ public class MariAgentGatewayService {
                                     AnswerRes answerRes = streamEventHandler.createAnswerRes(qna, companyNo, streamBody);
                                     sink.next(answerRes);
                                 } else {
-                                    log.debug("Agent Event 처리 Skip - Node: {}, Type: {}",
-                                        streamBody.node(), streamBody.type());
+                                    log.debug("Agent Event 처리 Skip - Node: {}, Data: {}",
+                                        streamBody.node(), streamBody.data());
                                 }
                             }
 
@@ -256,24 +255,13 @@ public class MariAgentGatewayService {
      */
     private StreamEventHandler selectHandler(ModelAgentStreamBody streamBody) {
         // type에 따른 매핑
-        if (streamBody.isInfoType()) {
-            // info 타입은 진행 상태 메시지
-            return streamEventHandlerMap.get("plan");
-        }
-
-        if (streamBody.isAnalysisChunkType()) {
-            // LLM 생성 청크 (스트리밍 응답)
+        if (streamBody.isStreamingRequired()) {
             return streamEventHandlerMap.get("execute");
-        }
-
-        if (streamBody.isAnalysisCompleteType()) {
-            // LLM 생성 완료 (최종 저장)
+        } else if (!streamBody.isCompleteState()) {
+            return streamEventHandlerMap.get("plan");
+        } else {
             return streamEventHandlerMap.get("generate");
         }
-
-        log.debug("Unknown type: {}", streamBody.type());
-        return null;
-
     }
 
 }

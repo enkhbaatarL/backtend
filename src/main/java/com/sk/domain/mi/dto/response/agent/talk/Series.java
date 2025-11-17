@@ -2,14 +2,13 @@ package com.sk.domain.mi.dto.response.agent.talk;
 
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Builder
 public record Series(
@@ -31,6 +30,32 @@ public record Series(
 
 ) {
 
+    public static Series of(ModelAgentRes.Output.Content.Chart chart) {
+
+        List<String> timestamps = chart.date().stream().map(s -> s.replaceAll("-", "")).toList();
+        List<BigDecimal> values = chart.value().stream().map(BigDecimal::valueOf).toList();
+
+        return Series.builder()
+            .order(chart.order())
+            .type(Type.typeOf(chart.type()))
+            .legend(chart.legend())
+            .timestamps(timestamps)
+            .values(values)
+            .build();
+
+    }
+
+    public static List<Series> ofList(List<ModelAgentRes.Output.Content.Chart> charts) {
+
+        if (charts == null)
+            return Collections.emptyList();
+
+        return charts.stream()
+            .map(Series::of)
+            .toList();
+
+    }
+
     @Getter
     @RequiredArgsConstructor
     public enum Type {
@@ -49,32 +74,6 @@ public record Series(
                 .findFirst()
                 .orElse(ACTUAL);
         }
-
-    }
-
-    public static Series of(ModelAgentRes.Output.Message.Content.Chart chart) {
-
-        List<String> timestamps = chart.date().stream().map(s -> s.replaceAll("-", "")).toList();
-        List<BigDecimal> values = chart.value().stream().map(BigDecimal::valueOf).toList();
-
-        return Series.builder()
-            .order(chart.order())
-            .type(Type.typeOf(chart.type()))
-            .legend(chart.legend())
-            .timestamps(timestamps)
-            .values(values)
-            .build();
-
-    }
-
-    public static List<Series> ofList(List<ModelAgentRes.Output.Message.Content.Chart> charts) {
-
-        if (charts == null)
-            return Collections.emptyList();
-
-        return charts.stream()
-            .map(Series::of)
-            .toList();
 
     }
 

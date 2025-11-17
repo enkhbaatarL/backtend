@@ -1,41 +1,51 @@
 package com.sk.domain.mi.dto.response.agent.talk;
 
+
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
 import lombok.Builder;
 
 @Builder
 public record AnswerRes(
 
-        @Schema(description = "메시지 번들 리스트")
-        List<MessageBundle> bundles,
+        @Schema(description = "메시지")
+        Object message,
 
         @Schema(description = "스트림 메타데이터 (스트리밍 응답일 경우)")
         StreamMetadata metadata
 
 ) {
 
-    public static AnswerRes of(List<ModelAgentRes.Output.Message> messages, List<Related> related) {
+    public static AnswerRes of(ModelAgentRes.Output message) {
         return AnswerRes.builder()
-                .bundles(messages
-                        .stream()
-                        .map(message -> MessageBundle.of(message, related))
-                        .toList())
+                .message(message)
                 .metadata(null)  // 비스트리밍은 metadata 없음
                 .build();
     }
 
     // ===== 기존 정적 팩토리 메서드 (비스트리밍) =====
 
-    public static AnswerRes of(String text, ModelAgentStreamBody streamBody, List<Related> related) {
+    public static AnswerRes of(ModelAgentStreamBody streamBody) {
         return AnswerRes.builder()
-            .bundles(List.of(MessageBundle.of(text, streamBody, related)))
+            .message(streamBody.getValueAsString())
             .metadata(StreamMetadata.builder()
-                .type(streamBody.type())
+                .state(streamBody.state())
+                .data(streamBody.data())
                 .node(streamBody.node())
-                .streaming(isStreamingType(streamBody.type()))
+                .streaming(isStreamingType(streamBody.data()))
+                .build())
+            .build();
+    }
+
+    public static AnswerRes of(ModelAgentStreamBody streamBody, String data) {
+        return AnswerRes.builder()
+            .message(streamBody.getValueAsString())
+            .metadata(StreamMetadata.builder()
+                .state(streamBody.state())
+                .data(data)
+                .node(streamBody.node())
+                .streaming(isStreamingType(streamBody.data()))
                 .build())
             .build();
     }
@@ -46,7 +56,7 @@ public record AnswerRes(
      * 스트리밍 타입인지 확인 (analysis_chunk만 true)
      */
     private static boolean isStreamingType(String type) {
-        return "analysis_chunk".equals(type);
+        return "chunk".equals(type);
     }
 
     /**
@@ -55,34 +65,19 @@ public record AnswerRes(
     @Builder
     public record StreamMetadata(
 
-            @Schema(description = "이벤트 타입", example = "info", allowableValues = {"info", "analysis_chunk", "analysis_complete"})
-            String type,
+            @Schema(description = "이벤트 상태", example = "start", allowableValues = {"start", "progress", "error", "complete"})
+            String state,
 
-            @Schema(description = "노드명", example = "DataAnalysisNode")
+            @Schema(description = "데이터 타입", example = "message", allowableValues = {"message", "series", "table", "chunk"})
+            String data,
+
+            @Schema(description = "노드명", example = "PreparePromptNode")
             String node,
 
             @Schema(description = "스트리밍 여부 - true면 프론트에서 누적 처리 필요")
             Boolean streaming
     ) {
-        /**
-         * info 타입인지 확인
-         */
-        public boolean isInfo() {
-            return "info".equals(type);
-        }
 
-        /**
-         * analysis_chunk 타입인지 확인 (누적 필요)
-         */
-        public boolean isChunk() {
-            return "analysis_chunk".equals(type);
-        }
-
-        /**
-         * analysis_complete 타입인지 확인 (누적 종료)
-         */
-        public boolean isComplete() {
-            return "analysis_complete".equals(type);
-        }
     }
+
 }

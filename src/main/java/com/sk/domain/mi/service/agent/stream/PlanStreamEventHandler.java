@@ -1,13 +1,9 @@
 package com.sk.domain.mi.service.agent.stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
-import java.util.Collections;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,18 +42,15 @@ public class PlanStreamEventHandler implements StreamEventHandler {
 
     @Override
     @Transactional(readOnly = true)
-    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody)
-            throws JsonProcessingException {
+    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody) {
 
-        log.debug("PlanStreamEventHandler - node: {}, type: {}, value: {}",
-            streamBody.node(), streamBody.type(), streamBody.value());
+        log.debug("PlanStreamEventHandler - state: {}, node: {}, data: {}, value: {}",
+            streamBody.state(),
+            streamBody.node(),
+            streamBody.data(),
+            streamBody.value());
 
-        String text = streamBody.node();
-        List<Related> relatedList = Collections.emptyList();
-        if (streamBody.relatedData() != null && !streamBody.relatedData().isEmpty()) {
-            relatedList = mariAgentResParser.prepareRelatedData(streamBody.relatedData());
-        }
 
-        return AnswerRes.of(text, streamBody, relatedList);
+        return AnswerRes.of(streamBody);
     }
 }

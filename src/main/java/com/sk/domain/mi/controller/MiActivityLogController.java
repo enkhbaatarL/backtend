@@ -38,39 +38,33 @@ public class MiActivityLogController {
 
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
-    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)")
+    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 12)")
     @Parameter(name = "customerCompanyNo", description = "고객회사번호")
     @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
     @Parameter(name = "eventTypes", description = "이벤트타입 (복수개일 경우, 쉼표로 구분)")
-    @Parameter(name = "eventDateSort", description = "이벤트발생일자 정렬 (ASC 또는 DESC, 선택사항)")
-    @Parameter(name = "significanceLevelSort", description = "중요도 정렬 (ASC 또는 DESC, 선택사항)")
     @Operation(
-        summary = "활동 기록 목록 조회",
-        description = "활동 기록 목록을 페이징하여 조회합니다."
+            summary = "활동 기록 목록 조회",
+            description = "활동 기록 목록을 페이징하여 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
     @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+            roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+            condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<PaginationRes<ActivityLogListRes>> getActivityLogList(
-        @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
-        @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
-        @RequestParam(value = "customerCompanyNo") Integer customerCompanyNo,
-        @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-        @RequestParam(value = "eventTypes", required = false) String eventTypes,
-        @RequestParam(value = "eventDateSort", required = false) String eventDateSort,
-        @RequestParam(value = "significanceLevelSort", required = false) String significanceLevelSort
+            @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
+            @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
+            @RequestParam(value = "customerCompanyNo") Integer customerCompanyNo,
+            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(value = "eventTypes", required = false) String eventTypes
     ) {
 
-        log.debug(
-            "활동 기록 목록 조회 요청 - page: {}, size: {}, customerCompanyNo: {}, eventTypes: {}, evntDtSort: {}, significanceLevelSort: {}",
-            page, size, customerCompanyNo, eventTypes, eventDateSort, significanceLevelSort);
+        log.debug("활동 기록 목록 조회 요청 - page: {}, size: {}, customerCompanyNo: {}, eventTypes: {}",
+                page, size, customerCompanyNo, eventTypes);
 
         return BaseResponseFactory.create(
-            miActivityLogService.getActivityLogList(page, size, customerCompanyNo, keyword,
-                eventTypes, eventDateSort, significanceLevelSort)
+                miActivityLogService.getActivityLogList(page, size, customerCompanyNo, keyword, eventTypes)
         );
     }
 

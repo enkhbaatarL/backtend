@@ -7,7 +7,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.interceptor.ApiAccessLogService;
-import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.MDCUtil;
 import com.sk.domain.admin.service.TokenQuotaGuard;
@@ -17,6 +16,7 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.mi.service.ProhibitedWordService;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tcm.ChatbotMajorQuestion;
@@ -36,7 +36,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -215,7 +214,20 @@ public class MariAgentService {
 
         Map<String, String> mdcContextMap = MDCUtil.copyAndGetContextMap();
         SecurityContext securityContext = SecurityContextHolder.getContext();
+
         try {
+            StreamRes streamRes = StreamRes.ofCompact(qna);
+            emitter.send(SseEmitter.event()
+                .name("connected")
+                .data(streamRes));
+        } catch (IOException e) {
+            log.error("Failed to send initial connection message", e);
+            emitter.completeWithError(e);
+            return emitter;
+        }
+
+        try {
+
             // 스트림 처리
             mariAgentGatewayService.executeModelAgentStream(talkReq, qna, histories)
                 .subscribe(
@@ -224,11 +236,13 @@ public class MariAgentService {
                         SecurityContextHolder.setContext(securityContext);
                         try {
                             // log.info("SSE 청크 전송: {}", chunk);
-                            QnaRes qnaRes = Optional.ofNullable(chunk)
-                            .map(answer -> QnaRes.of(qna, answer))
-                                .orElse(QnaRes.of(qna));
+                            StreamRes sr = StreamRes.of(qna, chunk);
+
                             emitter.send(SseEmitter.event()
-                                .data(BaseResponseFactory.create(qnaRes)));
+                                .id(chunk.metadata().node())
+                                .name(chunk.metadata().data())
+                                .data(sr));
+
                         } catch (IOException e) {
                             log.error("SSE 전송 중 오류", e);
                             emitter.completeWithError(e);

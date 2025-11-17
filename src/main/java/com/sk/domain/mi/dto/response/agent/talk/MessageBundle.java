@@ -5,10 +5,9 @@ import com.sk.common.utils.MarkdownUtil;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
 
 @Builder
 public record MessageBundle(
@@ -30,7 +29,7 @@ public record MessageBundle(
 
 ) {
 
-    public static MessageBundle of(ModelAgentRes.Output.Message message, List<Related> related) {
+    public static MessageBundle of(ModelAgentRes.Output message, List<Related> related) {
         String updatedMarkdown = MarkdownUtil.insertTableIds(message.content().text());
         if(related == null){
             related = new ArrayList<>(0);
@@ -38,9 +37,6 @@ public record MessageBundle(
         return MessageBundle.builder()
             .content(updatedMarkdown)
             .series(Series.ofList(message.content().charts()))
-            .tables(MarkdownUtil.parseTablesWithIds(updatedMarkdown))
-            .sources(Source.ofList(message.content().sources()))
-            .relatedData(related)
             .build();
     }
 
@@ -51,9 +47,7 @@ public record MessageBundle(
         }
         return MessageBundle.builder()
             .content(updatedMarkdown)
-            .series(Series.ofList(modelAgentStreamBody.charts()))
             .tables(MarkdownUtil.parseTablesWithIds(updatedMarkdown))
-            .sources(Source.ofList(modelAgentStreamBody.webSources()))
             .relatedData(related)
             .build();
     }

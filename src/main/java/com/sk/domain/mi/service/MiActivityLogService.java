@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,17 +31,17 @@ public class MiActivityLogService {
 
     private final AuthorizationService authorizationService;
 
+    /**
+     * ActivityLog 목록 조회 (페이징)
+     */
     public PaginationRes<ActivityLogListRes> getActivityLogList(
-        int page,
-        int size,
-        Integer customerCompanyNo,
-        String keyword,
-        String eventTypes,
-        String eventDateSort,
-        String significanceLevelSort
-    ) {
+            int page,
+            int size,
+            Integer customerCompanyNo,
+            String keyword,
+            String eventTypes) {
 
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "evntDt", "actLogId"));
 
         List<ActivityLogType> aList = eventTypes != null ? Arrays.stream(eventTypes.split(","))
             .map(String::trim)
@@ -48,12 +49,10 @@ public class MiActivityLogService {
             .toList() : null;
 
         Page<ActivityLog> activityLogPage = activityLogRepository.findByCustomerCompanyNoAndEventTypes(
-            customerCompanyNo,
-            keyword,
-            aList,
-            eventDateSort,
-            significanceLevelSort,
-            pageable
+                customerCompanyNo,
+                keyword,
+                aList,
+                pageable
         );
 
         Page<ActivityLogListRes> resultPage = activityLogPage.map(this::toActivityLogListRes);
@@ -69,21 +68,22 @@ public class MiActivityLogService {
 
         Integer customerCompanyNo = authorizationService.getCompanyNoWithPriority();
 
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(
-            customerCompanyNo).orElse(null);
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalseAndIsUsedTrue(customerCompanyNo).orElse(null);
 
+        // ActivityLog 생성
         ActivityLog activityLog = ActivityLog.of(
-            customerCompany,
-            customerCompanyNo,
-            request.eventDate(),
-            request.eventType(),
-            request.accountName(),
-            request.eventDetailExpression(),
-            request.significanceLevel(),
-            request.sourceName(),
-            request.departmentName()
+                customerCompany,
+                customerCompanyNo,
+                request.eventDate(),
+                request.eventType(),
+                request.accountName(),
+                request.eventDetailExpression(),
+                request.significanceLevel(),
+                request.sourceName(),
+                request.departmentName()
         );
 
+        // 저장
         ActivityLog savedActivityLog = activityLogRepository.save(activityLog);
 
         log.info("ActivityLog 생성 완료. actLogId: {}", savedActivityLog.getActLogId());
@@ -91,17 +91,20 @@ public class MiActivityLogService {
         return savedActivityLog.getActLogId();
     }
 
+    /**
+     * ActivityLog -> ActivityLogListRes 변환
+     */
     private ActivityLogListRes toActivityLogListRes(ActivityLog activityLog) {
         return new ActivityLogListRes(
-            activityLog.getActLogId(),
-            activityLog.getEvntDt(),
-            activityLog.getEvntType() != null ? activityLog.getEvntType().getName() : null,
-            activityLog.getAcctNm(),
-            activityLog.getEvntDtlExpn(),
-            activityLog.getSigLvl() != null ? activityLog.getSigLvl().getName() : null,
-            activityLog.getSrcNm(),
-            activityLog.getCreateUser() != null ? activityLog.getCreateUser().getUserNm() : null,
-            activityLog.getDeptNm()
+                activityLog.getActLogId(),
+                activityLog.getEvntDt(),
+                activityLog.getEvntType() != null ? activityLog.getEvntType().getName() : null,
+                activityLog.getAcctNm(),
+                activityLog.getEvntDtlExpn(),
+                activityLog.getSigLvl() != null ? activityLog.getSigLvl().getName() : null,
+                activityLog.getSrcNm(),
+                activityLog.getCreateUser() != null ? activityLog.getCreateUser().getUserNm() : null,
+                activityLog.getDeptNm()
         );
     }
 }

@@ -1,8 +1,11 @@
 package com.sk.domain.shared.client.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.Map;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Agent 스트림 이벤트의 data 부분을 나타내는 DTO
@@ -10,73 +13,65 @@ import lombok.Builder;
  * 구조 예시:
  * event: data
  * data: {
- *   "node": "DataAnalysisNode",
- *   "type": "analysis_chunk",
- *   "value": "_specific",
- *   "message": "...",
- *   "charts": [...],
- *   ...
+ *   "state": "start | progress | error | complete",
+ *   "data": "message | series | table | chunk",
+ *   "node": "PreparePromptNode | DataAnalysisNode | ...",
+ *   "value": "string or dict depending on data type"
  * }
  */
+@Slf4j
 @Builder
 public record ModelAgentStreamBody(
-        /**
+        /*
+         * 이벤트 상태
+         * - "start": 시작
+         * - "progress": 진행 중
+         * - "error": 오류 발생
+         * - "complete": 완료
+         */
+        String state,
+
+        /*
+         * 데이터 타입
+         * - "message": 일반 메시지
+         * - "series": 시계열 데이터
+         * - "table": 테이블 데이터
+         * - "chunk": 스트리밍 청크
+         */
+        String data,
+
+        /*
          * 현재 실행 중인 노드
-         * 예: "PreparePromptNode", "DataAnalysisNode", "PlannerNode"
+         * 예: "PreparePromptNode", "RewriteQueryNode", "PlannerNode",
+         *     "DataCollectNode", "DataAnalysisNode", "RdbSearchNode",
+         *     "WebSearchNode", "VectorSearchNode", "TimeseriesTrendNode"
          */
         String node,
 
-        /**
-         * 이벤트 타입
-         * - "info": 진행 상태 정보
-         * - "analysis_chunk": LLM 생성 청크 (스트리밍)
-         * - "analysis_complete": LLM 생성 완료
+        /*
+         * 이벤트의 값
+         * - data가 "message" 또는 "chunk"인 경우: String
+         * - data가 "series" 또는 "table"인 경우: Map/Object 형태
+         * <p>
+         * Object 타입으로 받아 런타임에 타입 체크 후 처리
          */
-        String type,
-
-        /**
-         * 이벤트의 주요 값
-         * - info 타입: 진행 상태 메시지 (예: "분석에 사용할 프롬프트 리소스를 준비중입니다...")
-         * - analysis_chunk: LLM 생성 텍스트 조각
-         * - analysis_complete: 전체 완성된 텍스트
-         */
-        String value,
-
-        // ===== 기존 필드 =====
-        String message,
-        String rewrite,
-
-        @JsonProperty("used_data")
-        List<String> usedData,
-
-        List<ModelAgentRes.Output.Message.Content.Chart> charts,
-
-        @JsonProperty("analysis_type")
-        String analysisType,
-
-        @JsonProperty("plan_steps")
-        List<PlanStep> planSteps,
-
-        @JsonProperty("related_data")
-        List<Integer> relatedData,
-
-        @JsonProperty("vector_metadata")
-        List<ModelAgentRes.Output.Message.Content.VectorSource> vectorSources,
-
-        @JsonProperty("web_sources")
-        List<ModelAgentRes.Output.Message.Content.Source> webSources,
-
-        /**
-         * analysis_complete 시 포함될 수 있는 토큰 사용량 정보
-         */
-        ModelAgentRes.Output.Message.Usage usage
+        Object value
 
 ) {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
-     * Type enum으로 변환
+     * State enum으로 변환
      */
-    public Type getTypeEnum() {
-        return Type.fromValue(type);
+    public State getStateEnum() {
+        return State.fromValue(state);
+    }
+
+    /**
+     * Data type enum으로 변환
+     */
+    public DataType getDataTypeEnum() {
+        return DataType.fromValue(data);
     }
 
     /**
@@ -87,52 +82,166 @@ public record ModelAgentStreamBody(
     }
 
     /**
-     * info 타입 이벤트인지 확인
+     * value가 String인 경우 반환
      */
-    public boolean isInfoType() {
-        return Type.INFO.value.equals(type);
+    public String getValueAsString() {
+        if (value instanceof String stringValue) {
+            return stringValue;
+        }
+        return null;
     }
 
     /**
-     * analysis_chunk 타입 이벤트인지 확인
+     * value가 Map인 경우 반환
      */
-    public boolean isAnalysisChunkType() {
-        return Type.ANALYSIS_CHUNK.value.equals(type);
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getValueAsMap() {
+        if (value instanceof Map) {
+            return (Map<String, Object>) value;
+        }
+        return Collections.emptyMap();
     }
 
     /**
-     * analysis_complete 타입 이벤트인지 확인
+     * value를 특정 타입으로 변환
      */
-    public boolean isAnalysisCompleteType() {
-        return Type.ANALYSIS_COMPLETE.value.equals(type);
+    public <T> T getValueAs(Class<T> clazz) {
+        try {
+            if (value == null) {
+                return null;
+            }
+            if (clazz.isInstance(value)) {
+                return clazz.cast(value);
+            }
+            // Map이나 List 형태인 경우 ObjectMapper를 사용해 변환
+            return objectMapper.convertValue(value, clazz);
+        } catch (Exception e) {
+            log.error("Failed to convert value to {}: {}", clazz.getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 시작 상태인지 확인
+     */
+    public boolean isStartState() {
+        return State.START.value.equals(state);
+    }
+
+    /**
+     * 진행 중 상태인지 확인
+     */
+    public boolean isProgressState() {
+        return State.PROGRESS.value.equals(state);
+    }
+
+    /**
+     * 오류 상태인지 확인
+     */
+    public boolean isErrorState() {
+        return State.ERROR.value.equals(state);
+    }
+
+    /**
+     * 완료 상태인지 확인
+     */
+    public boolean isCompleteState() {
+        return State.COMPLETE.value.equals(state);
+    }
+
+    /**
+     * 메시지 데이터 타입인지 확인
+     */
+    public boolean isMessageData() {
+        return DataType.MESSAGE.value.equals(data);
+    }
+
+    /**
+     * 청크 데이터 타입인지 확인 (스트리밍)
+     */
+    public boolean isChunkData() {
+        return DataType.CHUNK.value.equals(data);
+    }
+
+    /**
+     * 시리즈 데이터 타입인지 확인
+     */
+    public boolean isSeriesData() {
+        return DataType.SERIES.value.equals(data);
+    }
+
+    /**
+     * 테이블 데이터 타입인지 확인
+     */
+    public boolean isTableData() {
+        return DataType.TABLE.value.equals(data);
+    }
+
+    /**
+     * 스트리밍 처리가 필요한지 확인
+     * chunk 데이터이면서 progress 상태일 때 true
+     */
+    public boolean isStreamingRequired() {
+        return isChunkData() && isProgressState();
     }
 
     /**
      * 표시할 텍스트를 반환
-     * - value가 있으면 value
-     * - 없으면 message
      */
     public String getDisplayText() {
-        return value != null && !value.isEmpty() ? value : message;
+        if (isMessageData() || isChunkData()) {
+            return getValueAsString();
+        }
+        return null;
     }
 
     /**
-     * 이벤트 타입 열거형
+     * 이벤트 상태 열거형
      */
-    public enum Type {
-        INFO("info"),
-        ANALYSIS_CHUNK("analysis_chunk"),
-        ANALYSIS_COMPLETE("analysis_complete");
+    @Getter
+    public enum State {
+        START("start"),
+        PROGRESS("progress"),
+        ERROR("error"),
+        COMPLETE("complete");
 
         private final String value;
 
-        Type(String value) {
+        State(String value) {
             this.value = value;
         }
 
-        public static Type fromValue(String value) {
+        public static State fromValue(String value) {
             if (value == null) return null;
-            for (Type type : values()) {
+            for (State state : values()) {
+                if (state.value.equals(value)) {
+                    return state;
+                }
+            }
+            return null;
+        }
+
+    }
+
+    /**
+     * 데이터 타입 열거형
+     */
+    @Getter
+    public enum DataType {
+        MESSAGE("message"),
+        SERIES("series"),
+        TABLE("table"),
+        CHUNK("chunk");
+
+        private final String value;
+
+        DataType(String value) {
+            this.value = value;
+        }
+
+        public static DataType fromValue(String value) {
+            if (value == null) return null;
+            for (DataType type : values()) {
                 if (type.value.equals(value)) {
                     return type;
                 }
@@ -140,14 +249,12 @@ public record ModelAgentStreamBody(
             return null;
         }
 
-        public String getValue() {
-            return value;
-        }
     }
 
     /**
      * 노드 타입 열거형
      */
+    @Getter
     public enum Node {
         PREPARE_PROMPT_NODE("PreparePromptNode"),
         REWRITE_QUERY_NODE("RewriteQueryNode"),
@@ -177,14 +284,5 @@ public record ModelAgentStreamBody(
             return null;
         }
 
-        public String getValue() {
-            return value;
-        }
-    }
-
-    public record PlanStep(
-            String tool,
-            String description
-    ) {
     }
 }

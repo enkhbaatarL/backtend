@@ -1,16 +1,12 @@
 package com.sk.domain.mi.service.agent.stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.mi.dto.response.agent.talk.Related;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.repository.master.tcm.ChatbotTalkQnaRepository;
-import java.util.Collections;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,36 +42,27 @@ public class GenerateStreamEventHandler implements StreamEventHandler {
 
     @Override
     @Transactional
-    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody)
-            throws JsonProcessingException {
+    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody) {
 
-        log.info("GenerateStreamEventHandler - node: {}, type: {}, 완료된 텍스트 길이: {}",
-            streamBody.node(), streamBody.type(),
-            streamBody.value() != null ? streamBody.value().length() : 0);
-
-        // analysis_complete의 경우 value에 전체 생성된 텍스트가 포함
-        String completedText = streamBody.value();
-
-        // ModelAgentStreamBody를 ModelAgentRes.Output 형식으로 변환
-        ModelAgentRes.Output output = convertToOutput(streamBody, completedText);
-
-        // 관련 데이터 리소스 준비
-        List<Related> relatedList = mariAgentResParser.prepareAnswerDataResources(output);
+        log.debug("GenerateStreamEventHandler - state: {} data:{} node: {}, value: {}",
+            streamBody.state(), streamBody.data(), streamBody.node(),
+            streamBody.value());
 
         // 최종 응답 생성
-        AnswerRes answerRes = AnswerRes.of(output.messages(), relatedList);
+        AnswerRes answerRes = AnswerRes.of(streamBody, "fulltext");
 
         // DB에 완료 결과 저장
-        qna.updateCompleteResult(output, answerRes);
+        qna.updateCompleteResult(null, answerRes);
         chatbotTalkQnaRepository.save(qna);
 
         // 토큰 사용량 체크 및 로깅
         TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(
             companyNo,
-            qna.getInputTokenCnt() + qna.getOutputTokenCnt()
+            0
         );
         log.info("[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}",
             companyNo, quotaResult.delta(), quotaResult.usage(), quotaResult.allowed());
+
 
         return answerRes;
     }
@@ -90,25 +77,25 @@ public class GenerateStreamEventHandler implements StreamEventHandler {
     private ModelAgentRes.Output convertToOutput(ModelAgentStreamBody streamBody, String completedText) {
 
         // Content 생성
-        ModelAgentRes.Output.Message.Content content = new ModelAgentRes.Output.Message.Content(
+        ModelAgentRes.Output.Content content = new ModelAgentRes.Output.Content(
             completedText,
-            streamBody.charts(),
-            streamBody.webSources(),
-            streamBody.vectorSources(),
-            streamBody.relatedData()
+            null
         );
 
         // Message 생성
-        ModelAgentRes.Output.Message message = new ModelAgentRes.Output.Message(
+        ModelAgentRes.Output message = new ModelAgentRes.Output(
             content,
-            streamBody.usage(),  // analysis_complete에 usage 정보가 포함될 수 있음
+            null,  // analysis_complete에 usage 정보가 포함될 수 있음
             "assistant",  // 기본 타입
             null  // id는 필요시 생성
         );
 
         // Output 생성
         return new ModelAgentRes.Output(
-            Collections.singletonList(message)
+            message.content(),
+            null,
+            "assistant",
+            null
         );
     }
 }

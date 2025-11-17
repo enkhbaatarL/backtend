@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -79,8 +77,9 @@ public class MariAgentResParser {
 
     private List<Related> prepareStructuredDateResources(ModelAgentStreamBody modelAgentStreamBody) {
 
-        List<Integer> gdsNos = modelAgentStreamBody.relatedData();
-        return prepareStructuredDateResources(gdsNos);
+        // List<Integer> gdsNos = modelAgentStreamBody.relatedData();
+        // return prepareStructuredDateResources(gdsNos);
+        return Collections.emptyList();
     }
 
     private List<Related> prepareStructuredDateResources(List<Integer> gdsNos) {
@@ -96,7 +95,8 @@ public class MariAgentResParser {
     }
 
     private List<Related> prepareUnstructuredDateResources(ModelAgentStreamBody modelAgentStreamBody) {
-        return prepareUnstructuredDateResources(extractDistinguishIds(modelAgentStreamBody.vectorSources()));
+        // return prepareUnstructuredDateResources(extractDistinguishIds(modelAgentStreamBody.vectorSources()));
+        return Collections.emptyList();
     }
 
     private List<Related> prepareUnstructuredDateResources(List<String> distinguishIds) {
@@ -115,42 +115,45 @@ public class MariAgentResParser {
      * 정형데이터 식별자 추출
      */
     private List<Integer> extractRelatedGdsNos(ModelAgentRes.Output output) {
-        return Optional.ofNullable(output)
-            .map(ModelAgentRes.Output::messages)
-            .orElse(Collections.emptyList()) // null 체크 강화
-            .stream()
-            .map(ModelAgentRes.Output.Message::content)
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message.Content::relatedData)
-            .filter(Objects::nonNull)
-            .flatMap(List::stream)
-            .toList();
+//        return Optional.ofNullable(output)
+//            .map(ModelAgentRes.Output::messages)
+//            .orElse(Collections.emptyList()) // null 체크 강화
+//            .stream()
+//            .map(ModelAgentRes.Output.Message::content)
+//            .filter(Objects::nonNull)
+//            .map(ModelAgentRes.Output.Message.Content::relatedData)
+//            .filter(Objects::nonNull)
+//            .flatMap(List::stream)
+//            .toList();
+        return Collections.emptyList();
     }
 
     /**
      * 상품 데이터 식별번호 추출
      */
     private List<String> extractDistinguishIds(ModelAgentRes.Output output) {
-        List<ModelAgentRes.Output.Message.Content.VectorSource> vectorSources = Optional.ofNullable(output)
-            .map(ModelAgentRes.Output::messages)
-            .orElse(Collections.emptyList()) // null 체크 강화
-            .stream()
-            .map(ModelAgentRes.Output.Message::content)
-            .filter(Objects::nonNull)
-            .map(ModelAgentRes.Output.Message.Content::vectorSources)
-            .filter(Objects::nonNull)
-            .flatMap(List::stream)
-            .toList();
-
-        return extractDistinguishIds(vectorSources);
+//        List<ModelAgentRes.Output.Message.Content.VectorSource> vectorSources = Optional.ofNullable(output)
+//            .map(ModelAgentRes.Output::messages)
+//            .orElse(Collections.emptyList()) // null 체크 강화
+//            .stream()
+//            .map(ModelAgentRes.Output.Message::content)
+//            .filter(Objects::nonNull)
+//            .map(ModelAgentRes.Output.Message.Content::vectorSources)
+//            .filter(Objects::nonNull)
+//            .flatMap(List::stream)
+//            .toList();
+//
+//        return extractDistinguishIds(vectorSources);
+        return Collections.emptyList();
     }
 
-    private List<String> extractDistinguishIds(List<ModelAgentRes.Output.Message.Content.VectorSource> vectorSources) {
-        return Optional.ofNullable(vectorSources)
-            .orElse(Collections.emptyList())
-            .stream()
-            .map(ModelAgentRes.Output.Message.Content.VectorSource::gdsDataDstgId)
-            .toList();
+    private List<String> extractDistinguishIds(List<ModelAgentRes.Output> vectorSources) {
+//        return Optional.ofNullable(vectorSources)
+//            .orElse(Collections.emptyList())
+//            .stream()
+//            .map(ModelAgentRes.Output.Message.Content.VectorSource::gdsDataDstgId)
+//            .toList();
+        return Collections.emptyList();
     }
 
     public List<Related> prepareRelatedData(List<Integer> relatedDataIds) {
