@@ -491,12 +491,12 @@ public class MiNewsletterService {
 
             TreeMap<Long, NewsletterChart> chartMap = new TreeMap<>();
             for (NewsletterChart chart : flowCharts) {
-                Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
+                long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
                 chartMap.put(timestamp, chart);
             }
 
-            Long firstTimestamp = chartMap.keySet().iterator().next();
-            Long lastTimestamp = chartMap.lastKey();
+            long firstTimestamp = chartMap.keySet().iterator().next();
+            long lastTimestamp = chartMap.lastKey();
 
             long startTimestamp = Long.parseLong(marketTimes[2]);
             long endTimestamp = Long.parseLong(marketTimes[3]);
@@ -884,18 +884,17 @@ public class MiNewsletterService {
 
             // today를 뉴욕 시간대로 변환하여 DST 확인
             ZonedDateTime todayInNY = today.atStartOfDay(newYorkZone);
-            boolean isDST = newYorkZone.getRules().isDaylightSavings(todayInNY.toInstant());
 
-            // 개장 시간: DST이면 9:30, 아니면 10:30
+            // 개장 시간
             ZonedDateTime startTime = todayInNY
-                .withHour(isDST ? 9 : 10)
+                .withHour(9)
                 .withMinute(30)
                 .withSecond(0)
                 .withNano(0);
 
-            // 폐장 시간: DST이면 16:00, 아니면 17:00
+            // 폐장 시간
             ZonedDateTime endTime = todayInNY
-                .withHour(isDST ? 16 : 17)
+                .withHour(17)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
@@ -904,14 +903,14 @@ public class MiNewsletterService {
             // 전일 20시
             ZonedDateTime chartStartTime = todayInNY
                 .minusDays(1)
-                .withHour(isDST ? 20 : 21)
+                .withHour(20)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
 
-            // 당일 18시
+            // 당일 17시
             ZonedDateTime chartEndTime = todayInNY
-                .withHour(isDST ? 17 : 18)
+                .withHour(17)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
