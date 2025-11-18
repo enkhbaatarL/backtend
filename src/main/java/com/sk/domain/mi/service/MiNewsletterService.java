@@ -489,21 +489,21 @@ public class MiNewsletterService {
                 );
             }
 
-            Map<Long, NewsletterChart> chartMap = new TreeMap<>();
+            TreeMap<Long, NewsletterChart> chartMap = new TreeMap<>();
             for (NewsletterChart chart : flowCharts) {
                 Long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
                 chartMap.put(timestamp, chart);
             }
 
             Long firstTimestamp = chartMap.keySet().iterator().next();
-            Long lastTimestamp = ((TreeMap<Long, NewsletterChart>) chartMap).lastKey();
+            Long lastTimestamp = chartMap.lastKey();
 
-            Long startTimestamp = Long.parseLong(marketTimes[2]);
-            Long endTimestamp = Long.parseLong(marketTimes[3]);
+            long startTimestamp = Long.parseLong(marketTimes[2]);
+            long endTimestamp = Long.parseLong(marketTimes[3]);
 
             // 실제 데이터와 설정된 범위를 비교하여 더 넓은 범위 사용
-            Long actualStartTimestamp = Math.min(firstTimestamp, startTimestamp);
-            Long actualEndTimestamp = Math.max(lastTimestamp, endTimestamp);
+            long actualStartTimestamp = Math.min(firstTimestamp, startTimestamp);
+            long actualEndTimestamp = Math.max(lastTimestamp, endTimestamp);
 
             // 5분 간격으로 모든 timestamp 생성 (5분 = 300,000 밀리초)
             long interval = 5 * 60 * 1000L;
@@ -904,14 +904,14 @@ public class MiNewsletterService {
             // 전일 20시
             ZonedDateTime chartStartTime = todayInNY
                 .minusDays(1)
-                .withHour(20)
+                .withHour(isDST ? 20 : 21)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
 
             // 당일 18시
             ZonedDateTime chartEndTime = todayInNY
-                .withHour(17)
+                .withHour(isDST ? 17 : 18)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
