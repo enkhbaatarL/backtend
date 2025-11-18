@@ -44,7 +44,7 @@ public record ModelAgentReq(
         @JsonProperty("user_num")
         Integer userNo,
 
-        @JsonProperty("authorized_product_num")
+        @JsonProperty("authorized_product_nums")
         List<Integer> authGdsList
 
     ) {
