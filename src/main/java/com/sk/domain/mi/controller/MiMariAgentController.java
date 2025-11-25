@@ -14,9 +14,11 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.exception.AgentStreamException;
 import com.sk.domain.mi.service.agent.MariAgentService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -46,6 +48,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 @Profile("!dedicated")
 @Tag(name = "11. Mari Agent API", description = "AI Agent 채팅 서비스 Mari API 입니다.")
@@ -56,6 +60,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class MiMariAgentController {
 
     private final MariAgentService mariAgentService;
+    @Qualifier("sseExecutor")
+    private final ExecutorService executor;
+    private final AuthorizationService authorizationService;
+    @Value("${api.model-agent.read-timeout}")
+    private Duration sseTimeout;
 
     @ApiOrder(1)
     @Operation(summary = "주요 질의문 목록 조회 API", description = "분과 별 주요 질의문 목록을 조회합니다. <br>목록은 `questionRank` 필드를 기반으로 오름차순 정렬됩니다.")
@@ -130,21 +139,120 @@ public class MiMariAgentController {
         @RequestBody @Valid QnaReq.Insert qnaReq,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(mariAgentService.postChatRoomQna(chatRoomId, qnaReq, user));
+        int companyNo = authorizationService.getCompanyNoWithPriority();
+        return BaseResponseFactory.create(mariAgentService.postChatRoomQna(chatRoomId, qnaReq, user, companyNo));
     }
 
     @ApiOrder(7)
     @Parameter(name = "chatRoomId", description = "채팅룸 ID (UUID)")
     @Operation(summary = "질의 Stream API", description = "Mari 에이전트에게 Stream 방식으로 질의합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value="/chat-rooms/{chatRoomId}/stream", produces = "text/event-stream;charset=UTF-8")
+    @PostMapping(value = "/chat-rooms/{chatRoomId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public SseEmitter postChatRoomStream(
         @PathVariable(value = "chatRoomId") UUID chatRoomId,
         @RequestBody @Valid QnaReq.Insert qnaReq,
         @UserResolve User user
     ) {
-        return mariAgentService.postChatRoomStream(chatRoomId, qnaReq, user);
+        SseEmitter emitter = new SseEmitter(sseTimeout.toMillis());
+        log.info("Creating SSE connection - chatRoomId: {}, user: {}", chatRoomId,
+            user.getUserNo());
+
+        int companyNo = authorizationService.getCompanyNoWithPriority();
+
+        Flux.defer(() ->
+                mariAgentService.streamChatResponse(chatRoomId, qnaReq, user, companyNo)
+            )
+            .subscribeOn(Schedulers.boundedElastic())
+            .doOnNext(answerRes -> executor.execute(() -> {
+                try {
+                    emitter.send(SseEmitter.event()
+                        .id(answerRes.metadata().node())
+                        .name(answerRes.metadata().data())
+                        .data(answerRes.message()));
+                } catch (IOException e) {
+                    log.error("Failed to send stream event - chatRoomId: {}", chatRoomId, e);
+                    emitter.completeWithError(e);
+                }
+            }))
+            .doOnError(error -> {
+                log.error("Stream processing error - chatRoomId: {}", chatRoomId, error);
+
+                executor.execute(() -> {
+                    sendErrorEvent(emitter, error, String.valueOf(chatRoomId));
+                    emitter.complete();
+                });
+            })
+            .doOnComplete(() -> {
+                log.info("Stream completed successfully - chatRoomId: {}", chatRoomId);
+
+                executor.execute(() -> {
+                    try {
+                        emitter.send(SseEmitter.event()
+                            .id("CompleteNode")
+                            .name("complete")
+                            .data(Map.of(
+                                "qnaNo", chatRoomId,
+                                "data", "completed"
+                            )));
+                        emitter.complete();
+                    } catch (IOException e) {
+                        log.error("Failed to send completion event - chatRoomId: {}", chatRoomId,
+                            e);
+                        emitter.complete();
+                    }
+                });
+            })
+            .subscribe();
+
+        emitter.onCompletion(() ->
+            log.info("SSE connection completed - chatRoomId: {}", chatRoomId));
+        emitter.onTimeout(() -> {
+            log.warn("SSE connection timeout - chatRoomId: {}", chatRoomId);
+            emitter.complete();
+        });
+
+        return emitter;
+    }
+
+    /**
+     * 에러를 SSE 이벤트로 안전하게 전송
+     */
+    private void sendErrorEvent(SseEmitter emitter, Throwable error, String chatRoomId) {
+        try {
+            Map<String, Object> errorData = new HashMap<>();
+            errorData.put("timestamp", System.currentTimeMillis());
+
+            if (error instanceof ApiErrorException apiError) {
+                errorData.put("error", "VALIDATION_ERROR");
+                errorData.put("code", apiError.getStatusCode());
+                errorData.put("message", apiError.getMessage());
+
+            } else if (error instanceof CustomAuthorizationException authError) {
+                errorData.put("error", "AUTHORIZATION_ERROR");
+                errorData.put("code", authError.getErrorCode());
+                errorData.put("message", authError.getMessage());
+
+            } else if (error instanceof AgentStreamException agentStreamError) {
+                errorData.put("error", "STREAM_ERROR");
+                errorData.put("statusCode", agentStreamError.getStatusCode());
+                errorData.put("message", agentStreamError.getMessage());
+
+            } else {
+                errorData.put("error", error.getClass().getSimpleName());
+                errorData.put("message", error.getMessage());
+            }
+
+            emitter.send(SseEmitter.event()
+                .name("error")
+                .data(errorData));
+
+            log.info("Sent error event - chatRoomId: {}, error: {}",
+                chatRoomId, errorData.get("error"));
+
+        } catch (IOException e) {
+            log.error("Failed to send error event - chatRoomId: {}", chatRoomId, e);
+        }
     }
 
     @ApiOrder(8)
@@ -174,7 +282,8 @@ public class MiMariAgentController {
         @PathVariable(value = "qnaNo") Integer qnaNo,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(mariAgentService.postQnaRetry(chatRoomId, qnaNo, user));
+        int companyNo = authorizationService.getCompanyNoWithPriority();
+        return BaseResponseFactory.create(mariAgentService.postQnaRetry(chatRoomId, qnaNo, user, companyNo));
     }
 
 }

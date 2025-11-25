@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.domain.admin.service.TokenQuotaGuard;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
+import com.sk.domain.mi.exception.AgentStreamException;
 import com.sk.domain.mi.service.agent.stream.StreamEventHandler;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.request.ModelAgentHeaders;
@@ -13,6 +14,7 @@ import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.annotation.PostConstruct;
 import java.net.SocketTimeoutException;
@@ -21,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,19 +49,16 @@ public class MariAgentGatewayService {
 
     private final ModelAgentApi modelAgentApi;
     private final TokenQuotaGuard tokenQuotaGuard;
-    private final MariAgentResParser mariAgentResParser;
     private final Map<String, StreamEventHandler> streamEventHandlerNameMap;
     private final Map<String, StreamEventHandler> streamEventHandlerMap = new HashMap<>();
+    private final GoodsRepository goodsRepository;
+    String currentRunId;
     @Value("${api.model-agent.app-id}")
     private String appId;
-    // Agent Stream
     private WebClient webClient;
     @Value("${api.model-agent.url}") private String agentUrl;
     @Value("${api.model-agent.api-key}") private String agentApiKey;
-    @Value("${api.model-agent.connection-timeout:1s}") private Duration agentConnectTimeout;
     @Value("${api.model-agent.read-timeout:10s}") private Duration agentReadTimeout;
-    // metadata 이벤트 처리를 위한 임시 저장소 (필요시 사용)
-    private String currentRunId;
 
     @PostConstruct
     public void init(){
@@ -71,11 +71,6 @@ public class MariAgentGatewayService {
         }
     }
 
-    /**
-     * Model-Agent API를 호출하여 질의 결과를 가져옵니다. (비스트리밍)
-     *
-     * @return Optional<AnswerRes>
-     */
     @Transactional
     protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna, List<ChatbotTalkQna> histories) {
 
@@ -84,17 +79,16 @@ public class MariAgentGatewayService {
             Integer companyNo = authorizationService.getCompanyNoWithPriority();
             Integer userNo = authorizationService.getUserNo();
 
+            List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo());
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, goodsNos);
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
-
-            // List<Related> related = mariAgentResParser.prepareAnswerDataResources(modelAgentRes.output());
 
             AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
             qna.updateCompleteResult(modelAgentRes.output(), answerRes);
 
-            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), qna.getInputTokenCnt() + qna.getOutputTokenCnt());
+            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), 0);
             log.info("[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.delta(), quotaResult.usage(), quotaResult.allowed());
 
             return Optional.ofNullable(answerRes);
@@ -121,118 +115,161 @@ public class MariAgentGatewayService {
 
     }
 
-    /**
-     * Model-Agent API를 스트림으로 호출하여 질의 결과를 가져옵니다.
-     *
-     * @return Flux<AnswerRes>
-     */
-    @Transactional
-    protected Flux<AnswerRes> executeModelAgentStream(QnaReq.Insert talkReq, ChatbotTalkQna qna, List<ChatbotTalkQna> histories) {
+    protected Flux<AnswerRes> executeModelAgentStream(
+        QnaReq.Insert talkReq,
+        ChatbotTalkQna qna,
+        List<ChatbotTalkQna> histories,
+        List<Integer> goodsNos,
+        int userNo,
+        int companyNo
+    ) {
 
-        Integer companyNo = authorizationService.getCompanyNoWithPriority();
-        Integer userNo = authorizationService.getUserNo();
+        long streamStartTime = System.currentTimeMillis();
+        AtomicLong eventCount = new AtomicLong(0);
+        AtomicLong lastEventTime = new AtomicLong(streamStartTime);
 
-        HttpHeaders headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toHeaders();
-        ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo());
+        HttpHeaders headers = ModelAgentHeaders.of(
+            companyNo, userNo,
+            qna.getChatbotTalk().getChatbotTalkUuid(),
+            qna.getChatbotTalkQnaNo()
+        ).toHeaders();
 
-        return Flux.create(sink -> {
-            // Agent에 스트림 요청
-            webClient.post()
-                .uri("/" + appId +"/stream")
-                .contentType(MediaType.APPLICATION_JSON)
-                .headers(httpHeaders->{
-                    httpHeaders.addAll(headers);
-                    httpHeaders.add("Authorization", "Bearer " + agentApiKey);
-                })
-                .bodyValue(body)
-                .retrieve()
-                .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
-                .timeout(Duration.ofSeconds(agentReadTimeout.getSeconds()))
-                .subscribe(
-                    event -> {
-                        if(event == null) return;
+        ModelAgentReq body = ModelAgentReq.of(
+            talkReq, histories, companyNo, userNo, goodsNos
+        );
 
-                        String eventType = event.event();  // "data" 또는 "metadata"
-                        String chunk = event.data();
+        log.info("[PERF] Stream started for qnaNo: {}", qna.getChatbotTalkQnaNo());
 
-                        // log.debug("Agent 응답 Event Type: {}", eventType);
-                        // log.debug("Agent 응답 Event ID: {}", event.id());
-                        // log.debug("Agent 응답 Event Data: {}", chunk);
+        return webClient.post()
+            .uri("/" + appId + "/stream")
+            .contentType(MediaType.APPLICATION_JSON)
+            .headers(httpHeaders -> {
+                httpHeaders.addAll(headers);
+                httpHeaders.add("Authorization", "Bearer " + agentApiKey);
+            })
+            .bodyValue(body)
+            .retrieve()
+            .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {
+            })
+            .timeout(Duration.ofSeconds(agentReadTimeout.getSeconds()))
+            .doOnNext(event -> {
+                long now = System.currentTimeMillis();
+                long count = eventCount.incrementAndGet();
+                long gap = now - lastEventTime.get();
+                lastEventTime.set(now);
 
-                        if (chunk == null || chunk.trim().isEmpty()) {
-                            return;
-                        }
+                log.info("[PERF] Event #{} received - type: {}, gap: {}ms, total: {}ms",
+                    count, event.event(), gap, (now - streamStartTime));
+            })
+            .flatMap(event -> processServerSentEvent(event, qna))
+            .doOnNext(answerRes -> {
+                long now = System.currentTimeMillis();
+                long processingTime = now - lastEventTime.get();
 
-                        try {
-                            // metadata 이벤트 처리
-                            if ("metadata".equals(eventType)) {
-                                handleMetadataEvent(chunk);
-                                return;
-                            }
+                String eventType = answerRes.metadata() != null ? answerRes.metadata().data() : "unknown";
+                log.info("[PERF] Response emitted - type: {}, processing: {}ms, total: {}ms",
+                    eventType, processingTime, (now - streamStartTime));
+            })
+            .doOnComplete(() -> {
+                long totalTime = System.currentTimeMillis() - streamStartTime;
+                log.info("[PERF] ===== Stream completed for qnaNo: {} =====", qna.getChatbotTalkQnaNo());
+                log.info("[PERF] Total events: {}, Total time: {}ms, Avg per event: {}ms",
+                    eventCount.get(), totalTime,
+                    eventCount.get() > 0 ? totalTime / eventCount.get() : 0);
+            })
+            .doOnError(error -> {
+                long totalTime = System.currentTimeMillis() - streamStartTime;
+                log.error("[PERF] Stream error after {}ms - qnaNo: {}, chatRoomId: {}",
+                    totalTime,
+                    qna.getChatbotTalkQnaNo(),
+                    qna.getChatbotTalk().getChatbotTalkUuid(),
+                    error);
+            });
+    }
 
-                            // data 이벤트 처리
-                            if ("data".equals(eventType)) {
-                                ModelAgentStreamBody streamBody =
-                                    objectMapper.readValue(chunk, ModelAgentStreamBody.class);
+    private Flux<AnswerRes> processServerSentEvent(
+        ServerSentEvent<String> event,
+        ChatbotTalkQna qna
+    ) {
+        long processStart = System.currentTimeMillis();
 
-                                if (streamBody.node() == null || streamBody.data() == null) {
-                                    log.warn("Invalid event data structure: node={}, data={}",
-                                        streamBody.node(), streamBody.data());
-                                    return;
-                                }
+        if (event == null || event.data() == null || event.data().trim().isEmpty()) {
+            return Flux.empty();
+        }
 
-                                log.debug("처리 중 - Node: {}, Data: {}", streamBody.node(), streamBody.data());
+        String eventType = event.event();
+        String chunk = event.data();
 
-                                // type에 따라 적절한 Handler 선택
-                                StreamEventHandler streamEventHandler = selectHandler(streamBody);
+        try {
+            // metadata 이벤트 처리
+            if ("metadata".equals(eventType)) {
+                handleMetadataEvent(chunk);
+                return Flux.empty();
+            }
 
-                                if (streamEventHandler != null) {
-                                    AnswerRes answerRes = streamEventHandler.createAnswerRes(qna, companyNo, streamBody);
-                                    sink.next(answerRes);
-                                } else {
-                                    log.debug("Agent Event 처리 Skip - Node: {}, Data: {}",
-                                        streamBody.node(), streamBody.data());
-                                }
-                            }
+            // data 이벤트 처리
+            if ("data".equals(eventType)) {
+                long parseStart = System.currentTimeMillis();
+                ModelAgentStreamBody streamBody =
+                    objectMapper.readValue(chunk, ModelAgentStreamBody.class);
+                long parseTime = System.currentTimeMillis() - parseStart;
 
-                        } catch (JsonProcessingException e) {
-                            log.error("[Model-Agent API call parse error] for qnaNo: {}, chatRoomId: {}. Error: {}",
-                                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
-                            qna.updateFailResult(AnswerStatusCd.FAIL_PARSE_MESSAGE);
-                            sink.error(e);
-                        } catch (Exception e) {
-                            log.error("[Model-Agent API call processing error] for qnaNo: {}, chatRoomId: {}. Error: {}",
-                                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
-                            sink.error(e);
-                        }
-                    },
-                    error -> {
-                        log.error("Agent 스트림 처리 중 오류 발생", error);
-                        if (error instanceof SocketTimeoutException err) {
-                            log.error("[Model-Agent API call read-timeout] for qnaNo: {}, chatRoomId: {}. Error: {}",
-                                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), err.getMessage(), err);
-                            qna.updateFailResult(AnswerStatusCd.FAIL_TIMED_OUT);
-                        } else if(error instanceof ResourceAccessException err) {
-                            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}",
-                                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), err.getMessage(), err);
-                            qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
-                        } else if(error instanceof JsonProcessingException err ){
-                            log.error("[Model-Agent API call parse error] for qnaNo: {}, chatRoomId: {}. Error: {}",
-                                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), err.getMessage(), err);
-                            qna.updateFailResult(AnswerStatusCd.FAIL_PARSE_MESSAGE);
-                        } else {
-                            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}",
-                                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), error.getMessage(), error);
-                            qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
-                        }
-                        sink.error(error);
-                    },
-                    () -> {
-                        log.info("Agent 스트림 완료");
-                        sink.complete();
-                    }
-                );
-        });
+                if (streamBody.node() == null || streamBody.data() == null) {
+                    log.warn("Invalid event data: node={}, data={}",
+                        streamBody.node(), streamBody.data());
+                    return Flux.empty();
+                }
+
+                // Handler 선택
+                long handlerSelectStart = System.currentTimeMillis();
+                StreamEventHandler handler = selectHandler(streamBody);
+                long handlerSelectTime = System.currentTimeMillis() - handlerSelectStart;
+
+                if (handler != null) {
+                    // Handler 실행 시간 측정
+                    long handlerExecuteStart = System.currentTimeMillis();
+                    AnswerRes answerRes = handler.createAnswerRes(qna, streamBody);
+                    long handlerExecuteTime = System.currentTimeMillis() - handlerExecuteStart;
+
+                    long totalProcessTime = System.currentTimeMillis() - processStart;
+
+                    log.info("[PERF] Handler execution - node: {}, handler: {}, " +
+                            "parse: {}ms, select: {}ms, execute: {}ms, total: {}ms",
+                        streamBody.node(),
+                        handler.getEventDataType(),
+                        parseTime,
+                        handlerSelectTime,
+                        handlerExecuteTime,
+                        totalProcessTime
+                    );
+
+                    return Flux.just(answerRes);
+                } else {
+                    log.debug("Agent Event 처리 Skip - Node: {}", streamBody.node());
+                    return Flux.empty();
+                }
+            }
+
+            return Flux.empty();
+
+        } catch (JsonProcessingException e) {
+            log.error("JSON parsing error - qnaNo: {}",
+                qna.getChatbotTalkQnaNo(), e);
+            return Flux.error(new AgentStreamException(
+                "Failed to parse agent response",
+                AnswerStatusCd.FAIL_PARSE_MESSAGE,
+                e
+            ));
+
+        } catch (Exception e) {
+            log.error("Event processing error - qnaNo: {}",
+                qna.getChatbotTalkQnaNo(), e);
+            return Flux.error(new AgentStreamException(
+                "Failed to process agent event",
+                AnswerStatusCd.FAIL_AGENT_COMMUNICATION,
+                e
+            ));
+        }
     }
 
     /**
@@ -245,16 +282,12 @@ public class MariAgentGatewayService {
         this.currentRunId = runId;
 
         log.info("Received metadata event - run_id: {}", runId);
-        // TODO: run_id를 저장하거나 추가 처리가 필요한 경우 여기에 구현
-        // 예: MDCUtil.setRunId(runId);
-        // 예: qna.setRunId(runId);
     }
 
     /**
      * ModelAgentStreamBody의 type에 따라 적절한 Handler를 선택
      */
     private StreamEventHandler selectHandler(ModelAgentStreamBody streamBody) {
-        // type에 따른 매핑
         if (streamBody.isStreamingRequired()) {
             return streamEventHandlerMap.get("execute");
         } else if (!streamBody.isCompleteState()) {

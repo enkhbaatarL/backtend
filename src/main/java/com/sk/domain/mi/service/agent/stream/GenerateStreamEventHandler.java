@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service.agent.stream;
 
 import com.sk.domain.admin.service.TokenQuotaGuard;
+import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
@@ -42,27 +43,18 @@ public class GenerateStreamEventHandler implements StreamEventHandler {
 
     @Override
     @Transactional
-    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody) {
+    public AnswerRes createAnswerRes(ChatbotTalkQna qna, ModelAgentStreamBody streamBody) {
 
         log.debug("GenerateStreamEventHandler - state: {} data:{} node: {}, value: {}",
             streamBody.state(), streamBody.data(), streamBody.node(),
             streamBody.value());
 
-        // 최종 응답 생성
-        AnswerRes answerRes = AnswerRes.of(streamBody, "fulltext");
+        StreamRes streamRes = StreamRes.of(qna, streamBody);
+        AnswerRes answerRes = AnswerRes.of(streamBody, streamRes, "fulltext");
 
         // DB에 완료 결과 저장
         qna.updateCompleteResult(null, answerRes);
         chatbotTalkQnaRepository.save(qna);
-
-        // 토큰 사용량 체크 및 로깅
-        TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(
-            companyNo,
-            0
-        );
-        log.info("[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}",
-            companyNo, quotaResult.delta(), quotaResult.usage(), quotaResult.allowed());
-
 
         return answerRes;
     }

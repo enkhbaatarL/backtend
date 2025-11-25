@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.agent.stream;
 
+import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
@@ -7,7 +8,6 @@ import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -22,14 +22,21 @@ public class ExecuteStreamEventHandler implements StreamEventHandler {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo,
-        ModelAgentStreamBody streamBody) {
+    public AnswerRes createAnswerRes(ChatbotTalkQna qna, ModelAgentStreamBody streamBody) {
 
-        log.debug("ExecuteStreamEventHandler - state: {} data:{} node: {}, value: {}",
-            streamBody.state(), streamBody.data(), streamBody.node(),
-            streamBody.value());
+        long start = System.currentTimeMillis();
 
-        return AnswerRes.of(streamBody);
+        StreamRes streamRes = StreamRes.of(qna, streamBody);
+        long streamResTime = System.currentTimeMillis() - start;
+
+        AnswerRes answerRes = AnswerRes.of(streamBody, streamRes);
+        long totalTime = System.currentTimeMillis() - start;
+
+        if (totalTime > 50) {
+            log.warn("[PERF] ExecuteHandler slow - StreamRes.of: {}ms, AnswerRes.of: {}ms, total: {}ms",
+                streamResTime, (totalTime - streamResTime), totalTime);
+        }
+
+        return answerRes;
     }
 }

@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.agent.stream;
 
+import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.service.agent.MariAgentResParser;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
@@ -42,15 +43,14 @@ public class PlanStreamEventHandler implements StreamEventHandler {
 
     @Override
     @Transactional(readOnly = true)
-    public AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody) {
+    public AnswerRes createAnswerRes(ChatbotTalkQna qna, ModelAgentStreamBody streamBody) {
 
         log.debug("PlanStreamEventHandler - state: {}, node: {}, data: {}, value: {}",
             streamBody.state(),
             streamBody.node(),
             streamBody.data(),
             streamBody.value());
-
-
-        return AnswerRes.of(streamBody);
+        StreamRes streamRes = StreamRes.of(qna, streamBody);
+        return AnswerRes.of(streamBody, streamRes);
     }
 }

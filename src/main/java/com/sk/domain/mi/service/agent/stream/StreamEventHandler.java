@@ -19,11 +19,10 @@ public interface StreamEventHandler {
      * ModelAgentStreamBody를 처리하여 AnswerRes를 생성
      *
      * @param qna 현재 질의응답 엔티티
-     * @param companyNo 회사 번호
      * @param streamBody 스트림 데이터
      * @return 응답 DTO
      * @throws JsonProcessingException JSON 처리 중 오류 발생 시
      */
-    AnswerRes createAnswerRes(ChatbotTalkQna qna, Integer companyNo, ModelAgentStreamBody streamBody)
+    AnswerRes createAnswerRes(ChatbotTalkQna qna, ModelAgentStreamBody streamBody)
         throws JsonProcessingException;
 }

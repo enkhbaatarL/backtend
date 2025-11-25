@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.response.agent.talk;
 
 
+import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,9 +39,21 @@ public record AnswerRes(
             .build();
     }
 
-    public static AnswerRes of(ModelAgentStreamBody streamBody, String data) {
+    public static AnswerRes of(ModelAgentStreamBody streamBody, StreamRes streamRes) {
         return AnswerRes.builder()
-            .message(streamBody.getValueAsString())
+            .message(streamRes)
+            .metadata(StreamMetadata.builder()
+                .state(streamBody.state())
+                .data(streamBody.data())
+                .node(streamBody.node())
+                .streaming(isStreamingType(streamBody.data()))
+                .build())
+            .build();
+    }
+
+    public static AnswerRes of(ModelAgentStreamBody streamBody, StreamRes streamRes,  String data) {
+        return AnswerRes.builder()
+            .message(streamRes)
             .metadata(StreamMetadata.builder()
                 .state(streamBody.state())
                 .data(data)
@@ -77,6 +90,9 @@ public record AnswerRes(
             @Schema(description = "스트리밍 여부 - true면 프론트에서 누적 처리 필요")
             Boolean streaming
     ) {
+        public boolean isComplete() {
+            return "complete".equals(state);
+        }
 
     }
 

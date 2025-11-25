@@ -1,7 +1,7 @@
 package com.sk.domain.mi.dto.response.agent;
 
 import com.querydsl.core.annotations.QueryProjection;
-import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
+import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -52,10 +52,10 @@ public record StreamRes(
             .build();
     }
 
-    public static StreamRes of(ChatbotTalkQna qna, AnswerRes answer) {
+    public static StreamRes of(ChatbotTalkQna qna, ModelAgentStreamBody body) {
         return StreamRes.builder()
             .qnaNo(qna.getChatbotTalkQnaNo())
-            .data(answer.message())
+            .data(body.value())
             .build();
     }
 

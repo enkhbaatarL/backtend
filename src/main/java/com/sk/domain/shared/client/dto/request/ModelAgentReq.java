@@ -18,39 +18,57 @@ public record ModelAgentReq(
 
 ) {
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> gdsNoList) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyNo, userNo))
+            .input(Input.of(talkReq, histories, companyNo, userNo, gdsNoList))
             .build();
     }
 
     @Builder
     public record Input(
 
-        String query,
-
-        @JsonProperty("web_search")
-        Boolean shouldWebSearch,
-
-        List<History> histories,
-
-        // 06-24 회사번호 변경요청(문자열로 요청받음..)
-        @JsonProperty("company_code")
-        String companyNo,
-
-        @JsonProperty("user_num")
-        Integer userNo
+        @JsonProperty("req_input")
+        ReqInput reqInput
 
     ) {
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo) {
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> authGdsList) {
             return Input.builder()
-                .query(talkReq.question())
-                .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
-                .histories(History.ofList(histories))
-                .companyNo(String.valueOf(companyNo))
-                .userNo(userNo)
+                .reqInput(ReqInput.of(talkReq, histories, companyNo, userNo, authGdsList))
                 .build();
+        }
+
+        @Builder
+        public record ReqInput(
+            String query,
+
+            @JsonProperty("company_code")
+            String companyNo,
+
+            @JsonProperty("user_num")
+            Integer userNo,
+
+            @JsonProperty("authorized_product_nums")
+            List<Integer> authGdsList,
+
+            List<History> histories,
+
+            @JsonProperty("web_search_enabled")
+            Boolean shouldWebSearch
+        ) {
+
+            public static ReqInput of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
+                Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+                return ReqInput.builder()
+                    .query(talkReq.question())
+                    .shouldWebSearch(
+                        ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
+                    .histories(History.ofList(histories))
+                    .companyNo(String.valueOf(companyNo))
+                    .userNo(userNo)
+                    .authGdsList(authGdsList)
+                    .build();
+            }
         }
 
         @Builder
