@@ -4,8 +4,9 @@ import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
+import com.sk.domain.mi.dto.response.agent.StreamRes;
+import com.sk.domain.mi.dto.response.agent.talk.Answer;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -141,25 +142,19 @@ public class ChatbotTalkQna extends BaseEntity {
 
     }
 
-    public void updateCompleteResult(ModelAgentRes.Output output, AnswerRes answerRes) {
+    public void updateCompleteResult(AnswerRes answerRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
-        this.chatbotAnswerCntt = JsonUtil.toJson(answerRes);
-//        this.inputTokenCnt = Optional.ofNullable(output)
-//            .map(ModelAgentRes.Output::messages)
-//            .stream()
-//            .flatMap(List::stream)
-//            .map(ModelAgentRes.Output.Message::usage)
-//            .filter(Objects::nonNull)
-//            .mapToInt(ModelAgentRes.Output.Message.Usage::promptTokens)
-//            .sum();
-//        this.outputTokenCnt = Optional.ofNullable(output)
-//            .map(ModelAgentRes.Output::messages)
-//            .stream()
-//            .flatMap(List::stream)
-//            .map(ModelAgentRes.Output.Message::usage)
-//            .filter(Objects::nonNull)
-//            .mapToInt(ModelAgentRes.Output.Message.Usage::completionTokens)
-//            .sum();
+
+        if (ObjectUtils.isEmpty(this.chatbotAnswerCntt)) {
+            Answer answer = Answer.of(answerRes);
+            this.chatbotAnswerCntt = JsonUtil.toJson(answer);
+        } else {
+            StreamRes streamRes = (StreamRes) answerRes.message();
+            Answer previousAnswer = JsonUtil.fromJson(this.chatbotAnswerCntt, Answer.class);
+            Answer updateAnswer = new Answer(String.valueOf(streamRes.data()),
+                previousAnswer.series(), previousAnswer.tables());
+            this.chatbotAnswerCntt = JsonUtil.toJson(updateAnswer);
+        }
     }
 
     public void updateFailResult() {

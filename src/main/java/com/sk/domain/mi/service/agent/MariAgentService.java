@@ -16,6 +16,7 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.dto.response.agent.talk.Answer;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.exception.AgentStreamException;
 import com.sk.domain.mi.service.ProhibitedWordService;
@@ -179,7 +180,10 @@ public class MariAgentService {
             .toList();
 
         return mariAgentGatewayService.executeModelAgent(talkReq, qna, histories)
-            .map(answer -> QnaRes.of(qna, answer))
+            .map(answerRes -> {
+                Answer answerData = Answer.of(answerRes);
+                return QnaRes.of(qna, answerData);
+            })
             .orElse(QnaRes.of(qna));
     }
 
@@ -354,7 +358,10 @@ public class MariAgentService {
             .toList();
 
         return mariAgentGatewayService.executeModelAgent(QnaReq.Insert.ofDefault(qna.getUserQuestionCntt()), qna, histories)
-            .map(answer -> QnaRes.of(qna, answer))
+            .map(answerRes -> {
+                Answer answerData = Answer.of(answerRes);
+                return QnaRes.of(qna, answerData);
+            })
             .orElse(QnaRes.of(qna));
     }
 

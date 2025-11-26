@@ -53,7 +53,7 @@ public class GenerateStreamEventHandler implements StreamEventHandler {
         AnswerRes answerRes = AnswerRes.of(streamBody, streamRes, "fulltext");
 
         // DB에 완료 결과 저장
-        qna.updateCompleteResult(null, answerRes);
+        qna.updateCompleteResult(answerRes);
         chatbotTalkQnaRepository.save(qna);
 
         return answerRes;

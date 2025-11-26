@@ -86,7 +86,7 @@ public class MariAgentGatewayService {
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
             AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
-            qna.updateCompleteResult(modelAgentRes.output(), answerRes);
+            qna.updateCompleteResult(answerRes);
 
             TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), 0);
             log.info("[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.delta(), quotaResult.usage(), quotaResult.allowed());
