@@ -26,7 +26,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
-import com.sk.domain.shared.entity.master.tmd.PreferenceTable;
+import com.sk.domain.shared.entity.master.tmd.NewsletterTemplatePreferenceTable;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tif.NewsletterChartRepository;
@@ -36,6 +36,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateCollectionChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateRepository;
 import com.sk.domain.shared.repository.master.tmd.PreferenceTableRepository;
 import java.io.IOException;
@@ -88,6 +89,7 @@ public class MiNewsletterService {
     private final NewsletterTemplateCollectionChartRepository newsletterTemplateCollectionChartRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final NewsletterCollectionChartRepository newsletterCollectionChartRepository;
+    private final NewsletterTemplatePreferenceTableRepository newsletterTemplatePreferenceTableRepository;
 
     public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -646,18 +648,36 @@ public class MiNewsletterService {
         String dataCode = referenceMap.get("RERNC_TABLE_CD");
 
         try {
-            Optional<PreferenceTable> preferenceTableOpt =
-                preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(nph,
-                    dataCode);
+            NewsletterTemplatePreferenceTable config =
+                newsletterTemplatePreferenceTableRepository.findTopByPreferenceTableCodeAndIsDeletedFalse(dataCode).orElse(null);
 
-            if (preferenceTableOpt.isPresent()) {
-                TableRes tableData = readTableDataFromJsonString(
-                    preferenceTableOpt.get().getJsonValue());
-                return Reference.ofTable(title, "", tableData);
-            } else {
-                log.warn("PreferenceTable not found for code: {}", dataCode);
-                return Reference.ofTable(title, "데이터를 찾을 수 없습니다", null);
+            if (config == null) {
+                return Reference.ofTable(title, "템플릿 참조 테이블 데이터를 찾을 수 없습니다", null);
             }
+            String additionalWhereClause = CombineUtil.createWhereClause("nws_ltr_pub_id", String.valueOf(nph.getNewsletterPublishId()));
+
+            DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
+                .targetDataSource(config.getTargetDatabaseName())     // tgt_db_nm
+                .tableName(config.getTargetTableName())               // tgt_tbl_nm
+                .columns(config.getTableColumnName())                 // tbl_colm_nm
+                .whereClause(
+                    config.getQueryConditionContent())       // qry_cdtn_cntt
+                .additionalWhereClause(additionalWhereClause)
+                .build();
+
+            // 동적 쿼리 실행
+            List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(
+                dynamicDataReq);
+
+            if (dataQuery.isEmpty()) {
+                log.warn("No Reference Table data found : {}", dataCode);
+                return Reference.ofTable(title, "데이터를 찾을 수 없습니다", null);
+            } else {
+                TableRes tableData = readTableDataFromJsonString(
+                    dataQuery.get(0).get(config.getTableColumnName()).toString());
+                return Reference.ofTable(title, "", tableData);
+            }
+
         } catch (Exception e) {
             log.error("PreferenceTable 조회 중 오류 발생 - code: {}", dataCode, e);
             return Reference.ofTable(title, "데이터 조회 중 오류 발생", null);
