@@ -1,16 +1,8 @@
 package com.sk.domain.shared.entity.master.tmd;
 
-import java.time.LocalDateTime;
-
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
-
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.listener.GoodsListener;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -22,10 +14,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
@@ -70,10 +67,14 @@ public class Goods extends BaseEntity {
     @Comment("프로바이더번호")
     private Provider provider;
 
+    @Column(name = "vctr_rpstry_id", length = 50)
+    @Comment("비정형 벡터 DB 레포지토리 ID")
+    private String vectorRepositoryId;
+
     @Builder
     public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic,
-            Provider provider) {
+            Provider provider, String vectorRepositoryId) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
@@ -82,6 +83,7 @@ public class Goods extends BaseEntity {
         this.isUsed = isUsed;
         this.isPublic = isPublic;
         this.provider = provider;
+        this.vectorRepositoryId = vectorRepositoryId;
     }
 
     public static Goods of(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic, Provider provider) {

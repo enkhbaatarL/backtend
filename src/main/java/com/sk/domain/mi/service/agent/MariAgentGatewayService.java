@@ -22,7 +22,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -81,21 +84,21 @@ public class MariAgentGatewayService {
     protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna, List<ChatbotTalkQna> histories) {
 
         try {
-
             Integer companyNo = authorizationService.getCompanyNoWithPriority();
             Integer userNo = authorizationService.getUserNo();
 
-//            CustomerCompany company = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-//                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [company]. companyNo: %s".formatted(companyNo)));
-
-            List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
+            List<Object[]> goodsNosAndRepositoryIds = goodsRepository.findGoodsNosAndRepositoryIdsWithPermission(companyNo, userNo);
+            Set<Integer> goodsNos = goodsNosAndRepositoryIds.stream()
+                .map(row -> (Integer) row[0])
+                .collect(Collectors.toSet());
+            Set<String> repositoryIds = goodsNosAndRepositoryIds.stream()
+                .map(row -> (String) row[1])
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo(), goodsNos);
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, goodsNos, repositoryIds);
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
-
-            // 테스트용 더미 데이터
-//            ModelAgentRes modelAgentRes = JsonUtil.fromJson(DummyResponses.random(), ModelAgentRes.class);
 
             List<Related> related = mariAgentResParser.prepareAnswerDataResources(modelAgentRes.output());
 
@@ -134,10 +137,17 @@ public class MariAgentGatewayService {
 
         Integer companyNo = authorizationService.getCompanyNoWithPriority();
         Integer userNo = authorizationService.getUserNo();
-        List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
+        List<Object[]> goodsNosAndRepositoryIds = goodsRepository.findGoodsNosAndRepositoryIdsWithPermission(companyNo, userNo);
+        Set<Integer> goodsNos = goodsNosAndRepositoryIds.stream()
+            .map(row -> (Integer) row[0])
+            .collect(Collectors.toSet());
+        Set<String> repositoryIds = goodsNosAndRepositoryIds.stream()
+            .map(row -> (String) row[1])
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
 
         HttpHeaders headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toHeaders();
-        ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo(), goodsNos);
+        ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, authorizationService.getUserNo(), goodsNos, repositoryIds);
 
         return Flux.create(sink -> {
             // Agent에 스트림 요청

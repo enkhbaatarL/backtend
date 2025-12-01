@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Builder;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -21,9 +22,9 @@ public record ModelAgentReq(
 
 ) {
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyNo, userNo, authGdsList))
+            .input(Input.of(talkReq, histories, companyNo, userNo, authGdsList, repositoryIds))
             .build();
     }
 
@@ -45,11 +46,13 @@ public record ModelAgentReq(
         Integer userNo,
 
         @JsonProperty("authorized_product_nums")
-        List<Integer> authGdsList
+        Set<Integer> authGdsList,
 
+        @JsonProperty("repository_ids")
+        Set<String> repositoryIds
     ) {
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
             return Input.builder()
                 .message(talkReq.question())
                 .shouldWebSearch(ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
@@ -57,6 +60,7 @@ public record ModelAgentReq(
                 .companyNo(String.valueOf(companyNo))
                 .userNo(userNo)
                 .authGdsList(authGdsList)
+                .repositoryIds(repositoryIds)
                 .build();
         }
 
