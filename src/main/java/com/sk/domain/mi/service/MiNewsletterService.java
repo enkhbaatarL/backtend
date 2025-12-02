@@ -39,6 +39,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedCha
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateRepository;
 import com.sk.domain.shared.repository.master.tmd.PreferenceTableRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -90,8 +91,9 @@ public class MiNewsletterService {
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final NewsletterCollectionChartRepository newsletterCollectionChartRepository;
     private final NewsletterTemplatePreferenceTableRepository newsletterTemplatePreferenceTableRepository;
+    private final AuthorizationService authorizationService;
 
-    public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
+    public PaginationRes<NewsletterListRes> getNewsletterList(Integer companyNo, int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
 
         try {
@@ -104,11 +106,11 @@ public class MiNewsletterService {
             if (StringUtils.isBlank(keyword)) {
                 historyPage = newsletterPublishHistoryRepository
                     .findByPublishStatusCodeAndIsDeletedFalseWithMaster(PublishStatusCode.PUBLISHED,
-                        pageable);
+                        companyNo, pageable);
             } else {
                 historyPage = newsletterPublishHistoryRepository
                     .findByPublishStatusCodeAndIsDeletedFalseAndKeywordWithMaster(
-                        PublishStatusCode.PUBLISHED, keyword, pageable);
+                        PublishStatusCode.PUBLISHED, companyNo, keyword, pageable);
             }
 
             Page<NewsletterListRes> newsletterPage = historyPage.map(
@@ -176,9 +178,9 @@ public class MiNewsletterService {
     /**
      * 뉴스레터별 최근호 조회
      */
-    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(int page, int size) {
+    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(Integer companyNo, int page, int size) {
 
-        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters();
+        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters(companyNo);
 
         // 페이징 처리
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -195,11 +197,12 @@ public class MiNewsletterService {
         return PaginationRes.toRes(newsletterPage);
     }
 
-    private List<NewsletterFeaturedListRes> getFeaturedNewsletters() {
+    private List<NewsletterFeaturedListRes> getFeaturedNewsletters(Integer companyNo) {
         List<NewsletterFeaturedListRes> latestNewsletters = new ArrayList<>();
 
         try {
-            List<NewsletterMaster> newsletterMasters = newsletterMasterRepository.findAll();
+            List<NewsletterMaster> newsletterMasters = newsletterMasterRepository
+                .findByCustomerCompanyNoAndIsDeletedFalse(companyNo);
 
             for (NewsletterMaster master : newsletterMasters) {
                 Optional<NewsletterPublishHistory> latestPublished =
@@ -264,14 +267,14 @@ public class MiNewsletterService {
     /**
      * 뉴스레터 발행 리스트 조회
      */
-    public NewsletterIssueListRes getNewsletterIssueList(String newsletterId) {
+    public NewsletterIssueListRes getNewsletterIssueList(Integer companyNo, String newsletterId) {
         log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
 
         try {
             Integer parsedNewsletterId = parseInteger(newsletterId, "newsletterId");
 
             Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository
-                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId);
+                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId, companyNo);
 
             if (newsletterMaster.isEmpty()) {
                 log.warn("뉴스레터를 찾을 수 없습니다. - newsletterId: {}", newsletterId);
@@ -302,7 +305,7 @@ public class MiNewsletterService {
         }
     }
 
-    public NewsletterDetailRes getNewsletterDetail(String newsletterId, String issueNo) {
+    public NewsletterDetailRes getNewsletterDetail(Integer companyNo, String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
         DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
@@ -315,7 +318,7 @@ public class MiNewsletterService {
 
             // 2. 뉴스레터 마스터 조회
             NewsletterMaster nm = newsletterMasterRepository
-                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId)
+                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId, companyNo)
                 .orElseThrow(
                     () -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
 

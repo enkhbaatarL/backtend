@@ -36,6 +36,7 @@ public class MiNewsletterController {
     private final MiNewsletterService miNewsletterService;
 
     @ApiOrder(1)
+    @Parameter(name = "companyNo", description = "고객회사번호")
     @Parameter(name = "page", description = "페이지번호 (기본값: 1)")
     @Parameter(name = "size", description = "페이지당항목수 (기본값: 20)")
     @Parameter(name = "keyword", description = "검색키워드 (제목, 이름 검색)")
@@ -43,42 +44,46 @@ public class MiNewsletterController {
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<PaginationRes<NewsletterListRes>> getNewsletterList(
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
+        @RequestParam(value = "companyNo") Integer companyNo,
+        @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+        @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
+        @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
 
         return BaseResponseFactory.create(
-            miNewsletterService.getNewsletterList(page, size, keyword)
+            miNewsletterService.getNewsletterList(companyNo, page, size, keyword)
         );
     }
 
     @ApiOrder(2)
+    @Parameter(name = "companyNo", description = "고객회사번호")
     @Parameter(name = "page", description = "페이지번호 (기본값: 1)")
     @Parameter(name = "size", description = "페이지당항목수 (기본값: 6)")
     @Operation(summary = "뉴스레터 featured 조회", description = "각 뉴스레터별로 가장 최근 발행된 호를 조회합니다. (현재 Mock 데이터)")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/featured")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<PaginationRes<NewsletterFeaturedListRes>> getLatestNewsletters(
+        @RequestParam(value = "companyNo") Integer companyNo,
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "6") @Min(value = 1) int size) {
-        return BaseResponseFactory.create(miNewsletterService.getLatestNewsletters(page, size));
+        @RequestParam(value = "size", required = false, defaultValue = "6") @Min(value = 1) int size) {
+        return BaseResponseFactory.create(miNewsletterService.getLatestNewsletters(companyNo, page, size));
     }
 
     @ApiOrder(3)
+    @Parameter(name = "companyNo", description = "고객회사번호")
     @Operation(summary = "뉴스레터 발행 리스트 조회", description = "특정 뉴스레터의 발행 리스트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{newsletterId}/issues")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-            Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterIssueListRes> getNewsletterIssueList(
-            @PathVariable("newsletterId") String newsletterId) {
-
+        @PathVariable("newsletterId") String newsletterId,
+        @RequestParam(value = "companyNo") Integer companyNo) {
         return BaseResponseFactory.create(
-            miNewsletterService.getNewsletterIssueList(newsletterId)
+            miNewsletterService.getNewsletterIssueList(companyNo, newsletterId)
         );
     }
 

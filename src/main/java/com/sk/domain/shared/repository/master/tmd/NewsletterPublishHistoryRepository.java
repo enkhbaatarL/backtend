@@ -29,22 +29,26 @@ public interface NewsletterPublishHistoryRepository extends
 
     // 기본 조회 (키워드 없음) - FETCH JOIN 사용
     @Query("SELECT nph FROM NewsletterPublishHistory nph " +
-        "JOIN FETCH nph.newsletterMaster " +
+        "JOIN FETCH nph.newsletterMaster nm " +
         "WHERE nph.publishStatusCode = :status AND nph.isDeleted = false " +
+        "AND (nm.customerCompanyNo IS NULL OR nm.customerCompanyNo = :customerCompanyNo) " +
         "ORDER BY nph.publishDateTime DESC")
     Page<NewsletterPublishHistory> findByPublishStatusCodeAndIsDeletedFalseWithMaster(
         @Param("status") PublishStatusCode status,
+        @Param("customerCompanyNo") Integer customerCompanyNo,
         Pageable pageable
     );
 
     @Query("SELECT nph FROM NewsletterPublishHistory nph " +
         "JOIN FETCH nph.newsletterMaster nm " +
         "WHERE nph.publishStatusCode = :status AND nph.isDeleted = false " +
+        "AND (nm.customerCompanyNo IS NULL OR nm.customerCompanyNo = :customerCompanyNo) " +
         "AND (LOWER(nph.newsletterTitle) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
         "OR LOWER(nm.masterName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
         "ORDER BY nph.publishDateTime DESC")
     Page<NewsletterPublishHistory> findByPublishStatusCodeAndIsDeletedFalseAndKeywordWithMaster(
         @Param("status") PublishStatusCode status,
+        @Param("customerCompanyNo") Integer customerCompanyNo,
         @Param("keyword") String keyword,
         Pageable pageable
     );
