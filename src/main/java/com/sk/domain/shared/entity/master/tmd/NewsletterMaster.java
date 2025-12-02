@@ -59,6 +59,10 @@ public class NewsletterMaster extends BaseEntity {
     @Comment("뉴스레터마스터 이름")
     private String masterName;
 
+    @Column(name = "cust_cpny_no", columnDefinition = "mediumint unsigned")
+    @Comment("고객회사번호. NULL이면 모든 회사 표출")
+    private Integer customerCompanyNo;
+
     @OneToMany(mappedBy = "newsletterMaster", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OrderBy("issueNo DESC")
     private List<NewsletterPublishHistory> publishHistories = new ArrayList<>();
@@ -67,7 +71,8 @@ public class NewsletterMaster extends BaseEntity {
     public NewsletterMaster(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
         String modifyUserId,
         Boolean isDeleted, Integer newsletterMasterId, PeriodType periodType, String explanation,
-        String imageUrl, Integer newsletterTemplateId, String masterName) {
+        String imageUrl, Integer newsletterTemplateId, String masterName,
+        Integer customerCompanyNo) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.newsletterMasterId = newsletterMasterId;
         this.periodType = periodType;
@@ -75,21 +80,23 @@ public class NewsletterMaster extends BaseEntity {
         this.imageUrl = imageUrl;
         this.newsletterTemplateId = newsletterTemplateId;
         this.masterName = masterName;
+        this.customerCompanyNo = customerCompanyNo;
     }
 
     public static NewsletterMaster of(PeriodType periodType, String explanation, String imageUrl,
-        Integer newsletterTemplateId, String masterName) {
+        Integer newsletterTemplateId, String masterName, Integer customerCompanyNo) {
         return NewsletterMaster.builder()
             .periodType(periodType)
             .explanation(explanation)
             .imageUrl(imageUrl)
             .newsletterTemplateId(newsletterTemplateId)
             .masterName(masterName)
+            .customerCompanyNo(customerCompanyNo)
             .build();
     }
 
     public void update(PeriodType periodType, String explanation, String imageUrl,
-        String masterName) {
+        String masterName, Integer customerCompanyNo) {
         if (ObjectUtils.isNotEmpty(periodType)) {
             this.periodType = periodType;
         }
@@ -104,6 +111,10 @@ public class NewsletterMaster extends BaseEntity {
 
         if (StringUtils.isNotEmpty(masterName)) {
             this.masterName = masterName;
+        }
+
+        if (ObjectUtils.isNotEmpty(customerCompanyNo)) {
+            this.customerCompanyNo = customerCompanyNo;
         }
     }
 
