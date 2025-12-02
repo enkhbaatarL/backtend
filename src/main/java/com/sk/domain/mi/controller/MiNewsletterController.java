@@ -5,7 +5,6 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
@@ -83,18 +82,4 @@ public class MiNewsletterController {
         );
     }
 
-    @ApiOrder(4)
-    @Operation(summary = "뉴스레터 상세 조회", description = "특정 뉴스레터의 특정 발행호 상세 정보를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/{newsletterId}/{issueNo}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-            Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<NewsletterDetailRes> getNewsletterDetail(
-            @PathVariable("newsletterId") String newsletterId,
-            @PathVariable("issueNo") String issueNo) {
-
-        return BaseResponseFactory.create(
-            miNewsletterService.getNewsletterDetail(newsletterId, issueNo)
-        );
-    }
 }
