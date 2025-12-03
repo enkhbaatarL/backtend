@@ -1,7 +1,10 @@
 package com.sk.domain.mi.service;
 
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
+import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
 import com.sk.domain.shared.enums.CountryCurrency;
 import com.sk.domain.shared.enums.EconomicCalendarDateRange;
 import com.sk.domain.shared.repository.master.tif.EconomicCalendarRepository;
@@ -112,6 +115,36 @@ public class MiEconomicCalendarService {
     }
 
     /**
+     * 경제 지표 달력 상세 조회 (code 기준 최신 데이터)
+     */
+    public EconomicCalendarDetailRes getDetail(String code) {
+        log.debug("경제 지표 달력 상세 조회 요청 - code: {}", code);
+
+        EconomicCalendarDetailRes detail = economicCalendarRepository.findLatestEconomicCalendarByCode(code)
+            .orElseThrow(() -> new IllegalArgumentException("해당 코드의 경제 지표 데이터를 찾을 수 없습니다: " + code));
+
+        return populateCountryInfoForDetail(detail);
+    }
+
+    /**
+     * 경제 지표 달력 히스토리 조회
+     */
+    public PaginationRes<EconomicCalendarHistoryRes> getHistory(String code, int page, int size) {
+        log.debug("경제 지표 달력 히스토리 조회 요청 - code: {}, page: {}, size: {}", code, page, size);
+
+        Pageable pageable = PageRequest.of(page - 1, size,
+            Sort.by(Sort.Direction.DESC, "date"));
+
+        Page<EconomicCalendar> resultPage = economicCalendarRepository.findByCodeAndIsDeletedFalseOrderByDateDesc(
+            code, pageable
+        );
+
+        Page<EconomicCalendarHistoryRes> historyPage = resultPage.map(this::convertToHistoryRes);
+
+        return PaginationRes.toRes(historyPage);
+    }
+
+    /**
      * importance 문자열을 priority 값 리스트로 변환
      * HIGH=3, MEDIUM=2, LOW=1
      */
@@ -178,6 +211,73 @@ public class MiEconomicCalendarService {
             source.refinitivPresentationDatetime(),
             countryCurrency.getCountryCode(),
             countryCurrency.getCurrencyCode()
+        );
+    }
+
+    private EconomicCalendarDetailRes populateCountryInfoForDetail(EconomicCalendarDetailRes source) {
+        if ((source.countryNameCode() != null && source.countryCurrencyCode() != null)
+            || source.refinitivPresentationRegion() == null) {
+            return source;
+        }
+
+        CountryCurrency countryCurrency = CountryCurrency.getByCountryName(
+            source.refinitivPresentationRegion());
+        if (countryCurrency == null) {
+            countryCurrency = CountryCurrency.getByCountryCode(
+                source.refinitivPresentationRegion());
+        }
+
+        if (countryCurrency == null) {
+            return source;
+        }
+
+        return new EconomicCalendarDetailRes(
+            source.economicCalendarId(),
+            source.code(),
+            source.date(),
+            source.economicIndicatorName(),
+            source.economicIndicatorPresentationDay(),
+            source.economicIndicatorPresentationTime(),
+            source.economicIndicatorRealValue(),
+            source.economicIndicatorPredictionDay(),
+            source.economicIndicatorPresentationPriorValue(),
+            source.economicIndicatorPredictionValue(),
+            source.unitPrefix(),
+            source.unit(),
+            source.nextEconomicIndicatorPresentationDay(),
+            source.refinitivName(),
+            source.refinitivPresentationRegion(),
+            source.refinitivExplanation(),
+            source.refinitivSourceOrganization(),
+            source.refinitivType(),
+            source.refinitivUnit(),
+            source.refinitivPresentationCycle(),
+            source.refinitivIsUsed(),
+            source.refinitivPriority(),
+            source.refinitivPresentationDatetime(),
+            countryCurrency.getCountryCode(),
+            countryCurrency.getCurrencyCode()
+        );
+    }
+
+    /**
+     * EconomicCalendar 엔티티를 EconomicCalendarHistoryRes DTO로 변환
+     */
+    private EconomicCalendarHistoryRes convertToHistoryRes(EconomicCalendar entity) {
+        return new EconomicCalendarHistoryRes(
+            entity.getEconomicCalendarId(),
+            entity.getCode(),
+            entity.getDate(),
+            entity.getEconomicIndicatorName(),
+            entity.getEconomicIndicatorPresentationDay(),
+            entity.getEconomicIndicatorPresentationTime(),
+            entity.getEconomicIndicatorRealValue(),
+            entity.getEconomicIndicatorPredictionDay(),
+            entity.getEconomicIndicatorPresentationPriorValue(),
+            entity.getEconomicIndicatorPredictionValue(),
+            entity.getUnitPrefix(),
+            entity.getUnit(),
+            entity.getNextEconomicIndicatorPresentationDay()
         );
     }
 }

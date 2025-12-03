@@ -1,8 +1,10 @@
 package com.sk.domain.shared.repository.master.tif;
 
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
 import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -248,4 +250,50 @@ public interface EconomicCalendarRepository extends JpaRepository<EconomicCalend
         @Param("filterByImportance") boolean filterByImportance,
         Pageable pageable
     );
+
+    @Query(
+        value = """
+            select new com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes(
+                ec.economicCalendarId,
+                ec.code,
+                ec.date,
+                ec.economicIndicatorName,
+                ec.economicIndicatorPresentationDay,
+                ec.economicIndicatorPresentationTime,
+                ec.economicIndicatorRealValue,
+                ec.economicIndicatorPredictionDay,
+                ec.economicIndicatorPresentationPriorValue,
+                ec.economicIndicatorPredictionValue,
+                ec.unitPrefix,
+                ec.unit,
+                ec.nextEconomicIndicatorPresentationDay,
+                rec.name,
+                rec.presentationRegion,
+                rec.explanation,
+                rec.sourceOrganization,
+                rec.type,
+                rec.unit,
+                rec.presentationCycle,
+                rec.isUsed,
+                rec.priority,
+                rec.presentationDatetime,
+                null,
+                null
+            )
+            from EconomicCalendar ec
+            left join RefinitivEconomicCalendar rec on ec.code = rec.code
+            where ec.code = :code
+              and ec.isDeleted = false
+            order by ec.date desc
+            limit 1
+            """
+    )
+    Optional<EconomicCalendarDetailRes> findLatestEconomicCalendarByCode(
+        @Param("code") String code
+    );
+
+    /**
+     * 경제 지표 달력 히스토리 조회 (code 기준, 최신순)
+     */
+    Page<EconomicCalendar> findByCodeAndIsDeletedFalseOrderByDateDesc(String code, Pageable pageable);
 }

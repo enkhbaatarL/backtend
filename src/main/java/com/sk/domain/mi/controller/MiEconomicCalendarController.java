@@ -5,6 +5,8 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
 import com.sk.domain.mi.service.MiEconomicCalendarService;
 import com.sk.domain.shared.enums.EconomicCalendarDateRange;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -78,5 +81,52 @@ public class MiEconomicCalendarController {
         );
     }
 
+    @ApiOrder(2)
+    @Parameter(name = "code", description = "RIC 코드 (예: DEZEWC=ECI)")
+    @Operation(
+            summary = "경제 지표 달력 상세 조회",
+            description = "RIC 코드를 기준으로 가장 최신의 경제 지표 달력 데이터를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{code}")
+    @RequiredPermission(
+            roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+            condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<EconomicCalendarDetailRes> getEconomicCalendarDetail(
+            @PathVariable("code") String code
+    ) {
+        log.debug("경제 지표 달력 상세 조회 요청 - code: {}", code);
+
+        return BaseResponseFactory.create(
+                miEconomicCalendarService.getDetail(code)
+        );
+    }
+
+    @ApiOrder(3)
+    @Parameter(name = "code", description = "RIC 코드 (예: DEZEWC=ECI)")
+    @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
+    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)")
+    @Operation(
+            summary = "경제 지표 달력 히스토리 조회",
+            description = "RIC 코드를 기준으로 해당 경제 지표의 전체 히스토리를 최신순으로 페이징하여 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{code}/history")
+    @RequiredPermission(
+            roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+            condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<PaginationRes<EconomicCalendarHistoryRes>> getEconomicCalendarHistory(
+            @PathVariable("code") String code,
+            @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
+            @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size
+    ) {
+        log.debug("경제 지표 달력 히스토리 조회 요청 - code: {}, page: {}, size: {}", code, page, size);
+
+        return BaseResponseFactory.create(
+                miEconomicCalendarService.getHistory(code, page, size)
+        );
+    }
 
 }
