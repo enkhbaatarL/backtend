@@ -7,13 +7,16 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
 import com.sk.domain.mi.service.MiEconomicCalendarService;
+import com.sk.domain.shared.enums.EconomicCalendarDateRange;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -35,9 +38,13 @@ public class MiEconomicCalendarController {
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
     @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)")
+    @Parameter(name = "dateRange", description = "날짜 범위 (TODAY, YESTERDAY, TOMORROW, THISWEEK, NEXTWEEK)", schema = @Schema(implementation = EconomicCalendarDateRange.class))
+    @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
+    @Parameter(name = "categories", description = "카테고리 (선택사항)")
+    @Parameter(name = "importance", description = "중요도 (선택사항, HIGH=3, MEDIUM=2, LOW=1)")
     @Operation(
             summary = "경제 지표 달력 목록 조회",
-            description = "경제 지표 달력 목록을 페이징하여 조회합니다."
+            description = "경제 지표 달력 목록을 페이징하여 조회합니다. 날짜 범위를 지정하여 조회할 수 있습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
@@ -47,15 +54,27 @@ public class MiEconomicCalendarController {
     )
     public BaseResponse<PaginationRes<EconomicCalendarListRes>> getEconomicCalendarList(
             @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
-            @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size
+            @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
+            @RequestParam(value = "dateRange") @NotNull(message = "날짜 범위는 필수입니다") String dateRangeStr,
+            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(value = "categories", required = false) String categories,
+            @RequestParam(value = "importance", required = false) String importance
     ) {
 
-        log.debug("경제 지표 달력 목록 조회 요청 - page: {}, size: {}",
-                page, size);
-        String date = "2025-10-20";
+        log.debug("경제 지표 달력 목록 조회 요청 - page: {}, size: {}, dateRange: {}, keyword: {}, categories: {}, importances: {}",
+                page, size, dateRangeStr, keyword, categories, importance);
+
+        if (dateRangeStr == null || dateRangeStr.isBlank()) {
+            throw new IllegalArgumentException("날짜 범위는 필수입니다. (TODAY, YESTERDAY, TOMORROW, THISWEEK, NEXTWEEK 중 하나를 선택해주세요)");
+        }
+
+        EconomicCalendarDateRange dateRange = EconomicCalendarDateRange.findByCode(dateRangeStr);
+        if (dateRange == null) {
+            throw new IllegalArgumentException("유효하지 않은 날짜 범위입니다. (TODAY, YESTERDAY, TOMORROW, THISWEEK, NEXTWEEK 중 하나를 선택해주세요)");
+        }
 
         return BaseResponseFactory.create(
-                miEconomicCalendarService.getList(page, size, date)
+                miEconomicCalendarService.getList(page, size, dateRange, keyword, categories, importance)
         );
     }
 
