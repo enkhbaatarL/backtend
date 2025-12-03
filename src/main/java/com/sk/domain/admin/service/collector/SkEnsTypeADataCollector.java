@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,8 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
     }
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
+        String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

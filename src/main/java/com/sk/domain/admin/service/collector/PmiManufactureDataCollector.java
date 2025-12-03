@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,8 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
     }
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
+        String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             // Sheet sheet = (Sheet) data;

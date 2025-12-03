@@ -6,6 +6,7 @@ import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.ExcelParsedUtil;
 import com.sk.domain.admin.service.excel.DataCollectorStrategy;
 import com.sk.domain.shared.enums.ComponentType;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -40,7 +41,8 @@ public class GlobalCrudeOilDataCollector implements DataCollectorStrategy {
     }
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
+        String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

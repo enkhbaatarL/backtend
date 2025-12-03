@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import java.util.Map;
 import org.apache.commons.csv.CSVParser;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -38,7 +39,8 @@ public class ShortTermEoDataCollector implements DataCollectorStrategy {
     }
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
+        String category, Map<String, String> conditionMap, List<String> dbColumns) {
         if (category == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, String.format("category is null: %s", category));
         }

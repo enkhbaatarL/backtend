@@ -37,8 +37,8 @@ public record ComponentInfoReq() {
         @Schema(description = "엑셀컬럼목록명", example = "po,co,ph,ad,aavt")
         String excelColumnListNm,
 
-        @Schema(description = "엑셀조건내용", example = "date >= '2024-01-01'")
-        String excelConditionCntt,
+        @Schema(description = "추가 데이터", example = "date=1234")
+        String addData,
 
         @Schema(description = "엑셀테이블컬럼목록명", example = "po,co,ph,ad,aavt")
         String excelTableColumnListNm,

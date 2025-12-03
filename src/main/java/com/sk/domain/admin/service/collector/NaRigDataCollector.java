@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import java.util.Map;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.poi.ss.usermodel.Cell;
@@ -38,7 +39,8 @@ public class NaRigDataCollector implements DataCollectorStrategy {
     }
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
+        String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
         if (data instanceof Sheet) { // 엑셀 파일 파싱
             Sheet sheet = (Sheet) data;

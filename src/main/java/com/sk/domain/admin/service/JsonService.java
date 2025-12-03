@@ -11,7 +11,9 @@ import com.sk.domain.admin.service.json.DataCollectorJsonStrategyResolver;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +33,13 @@ public class JsonService {
     public Boolean uploadStructuredData(ComponentInfo componentInfo, String criteriaDt, String category, JsonNode jsonNode){
         try {
             importService.validateComponentInfo(componentInfo);
-            List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .collect(Collectors.toList());
+            List<String> columnNames = componentInfo.generateDbColumns();
+
+            Map<String, String> conditionMap = getStringStringMap(componentInfo);
 
             DataCollectorJsonStrategy dataCollectorJsonStrategy = dataCollectorJsonStrategyResolver.resolve(componentInfo.getDataStructureConvertNm());
-            List<Object[]> values = dataCollectorJsonStrategy.processJsonData(jsonNode,null, null, null );
+            List<Object[]> values = dataCollectorJsonStrategy.processJsonData(jsonNode,
+                null, null, null , conditionMap, columnNames);
 
             return importService.saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
         } catch (Exception e) {
@@ -48,7 +50,20 @@ public class JsonService {
         }
     }
 
+    private static Map<String, String> getStringStringMap(ComponentInfo componentInfo) {
+        Map<String, String> conditionMap = new HashMap<>();
 
+        if (componentInfo.getAddData() != null && !componentInfo.getAddData().isBlank()) {
+            String[] conditions = componentInfo.getAddData().split(";");
+            for (String cond : conditions) {
+                String[] keyValue = cond.split("=");
+                if(keyValue.length < 2) continue;
+                if(keyValue[0] == null || keyValue[0].isBlank()) continue;
+                conditionMap.put(keyValue[0], keyValue[1]);
+            }
+        }
+        return conditionMap;
+    }
 
 
 }

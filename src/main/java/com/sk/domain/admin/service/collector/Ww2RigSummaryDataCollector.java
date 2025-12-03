@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import java.util.Map;
 import org.apache.commons.csv.CSVParser;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -31,7 +32,8 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
     }
 
     @Override
-    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt, String category) {
+    public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
+        String category, Map<String, String> conditionMap, List<String> dbColumns) {
         if (criteriaDt == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID, String.format("criteriaDt is null: %s", criteriaDt));
         }

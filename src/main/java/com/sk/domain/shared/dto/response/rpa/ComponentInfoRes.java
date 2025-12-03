@@ -31,12 +31,12 @@ public record ComponentInfoRes(
     @Schema(description = "엑셀컬럼목록명", example = "po,co,ph,ad,aavt")
     String excelColumnListNm,
 
-    @Schema(description = "엑셀조건내용", example = "date >= '2024-01-01'")
-    String excelConditionCntt
+    @Schema(description = "추가데이터", example = "date=12345")
+    String addData
 ) {
 
     @Builder
-    public ComponentInfoRes(String componentTypeId, String componentTypeNm, String goodsDataSourceNm, String targetDbNm, String targetTableNm, String queryConditionCntt, String tableColumnListNm, String excelColumnListNm, String excelConditionCntt) {
+    public ComponentInfoRes(String componentTypeId, String componentTypeNm, String goodsDataSourceNm, String targetDbNm, String targetTableNm, String queryConditionCntt, String tableColumnListNm, String excelColumnListNm, String addData) {
         this.componentTypeId = componentTypeId;
         this.componentTypeNm = componentTypeNm;
         this.goodsDataSourceNm = goodsDataSourceNm;
@@ -45,7 +45,7 @@ public record ComponentInfoRes(
         this.queryConditionCntt = queryConditionCntt;
         this.tableColumnListNm = tableColumnListNm;
         this.excelColumnListNm = excelColumnListNm;
-        this.excelConditionCntt = excelConditionCntt;
+        this.addData = addData;
     }
 
     public static ComponentInfoRes of(ComponentInfo componentInfo) {
@@ -58,7 +58,7 @@ public record ComponentInfoRes(
             .queryConditionCntt(componentInfo.getQueryConditionCntt())
             .tableColumnListNm(componentInfo.getTableColumnListNm())
             .excelColumnListNm(componentInfo.getExcelColumnListNm())
-            .excelConditionCntt(componentInfo.getExcelConditionCntt())
+            .addData(componentInfo.getAddData())
             .build();
     }
 }

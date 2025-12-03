@@ -3,7 +3,9 @@ package com.sk.domain.admin.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -155,28 +157,21 @@ public class ExcelService {
     public boolean uploadStructuredData(MultipartFile file, ComponentInfo componentInfo, String criteriaDt, String category) throws IOException {
         try {
             importService.validateComponentInfo(componentInfo);
-            List<String> columnNames = Arrays.stream(componentInfo.getExcelTableColumnListNm().split(","))
-                    .map(String::trim)
-                    .filter(name -> !name.isEmpty())
-                    .collect(Collectors.toList());
+            List<String> columnNames = componentInfo.generateDbColumns();
 
-            int headerRowIndex = DEFAULT_HEADER_ROW_INDEX;
-            int dataStartRowIndex = DEFAULT_DATA_START_ROW_INDEX;
+            Map<String, String> conditionMap = new HashMap<>();
 
-            if (componentInfo.getExcelConditionCntt() != null && !componentInfo.getExcelConditionCntt().isBlank()) {
-                String[] conditions = componentInfo.getExcelConditionCntt().split(";");
+            if (componentInfo.getAddData() != null && !componentInfo.getAddData().isBlank()) {
+                String[] conditions = componentInfo.getAddData().split(";");
                 for (String cond : conditions) {
                     String[] keyValue = cond.split("=");
-                    if (keyValue[0].equals("HEADER_ROW_INDEX")) {
-                        headerRowIndex = Math.max(0, Integer.parseInt(keyValue[1]) - 1);
-                    } else if (keyValue[0].equals("DATA_START_ROW_INDEX")) {
-                        dataStartRowIndex = Math.max(1, Integer.parseInt(keyValue[1]) - 1);
-                    }
+                    if(keyValue.length < 2) continue;
+                    if(keyValue[0] == null || keyValue[0].isBlank()) continue;
+                    conditionMap.put(keyValue[0], keyValue[1]);
                 }
             }
-
             FileTypeStrategy strategy = fileTypeStrategyResolver.resolve(ExcelParsedUtil.validateFile(file));
-            List<Object[]> values = strategy.processFile(file, componentInfo, headerRowIndex, dataStartRowIndex, criteriaDt, category);
+            List<Object[]> values = strategy.processFile(file, componentInfo, conditionMap, criteriaDt, category);
 
             boolean result = importService.saveBatchData(componentInfo.getTargetDbNm(), columnNames, values, componentInfo.getTargetTableNm());
             if(result){

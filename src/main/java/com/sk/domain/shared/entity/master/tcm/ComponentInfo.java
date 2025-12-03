@@ -2,6 +2,9 @@ package com.sk.domain.shared.entity.master.tcm;
 
 import java.time.LocalDateTime;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
@@ -66,9 +69,9 @@ public class ComponentInfo extends BaseEntity {
     @Comment("엑셀테이블컬럼목록명")
     private String excelTableColumnListNm;
 
-    @Column(name = "exl_cdtn_cntt", length = 1000)
-    @Comment("엑셀조건내용")
-    private String excelConditionCntt;
+    @Column(name = "add_data", length = 1000)
+    @Comment("추가 데이터")
+    private String addData;
 
     @Column(name = "gds_data_src_unit_nm", length = 50)
     @Comment("상품데이터소스단위명")
@@ -86,7 +89,7 @@ public class ComponentInfo extends BaseEntity {
 
     @Column(name = "conv_tgt_dtl_type_nm", length = 50)
     @Comment("변환대상상세유형명")
-    private String convertTargetDetailTypeNm;  
+    private String convertTargetDetailTypeNm;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "data_strt_conv_nm", length = 50)
@@ -97,7 +100,7 @@ public class ComponentInfo extends BaseEntity {
     public ComponentInfo(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, String componentTypeId, String componentTypeNm, String goodsDataSourceNm,
             String targetDbNm, String targetTableNm, String queryConditionCntt,
-            String tableColumnListNm, String excelColumnListNm, String excelTableColumnListNm, String excelConditionCntt, String goodsDataSourceUnitNm,
+            String tableColumnListNm, String excelColumnListNm, String excelTableColumnListNm, String addData, String goodsDataSourceUnitNm,
             String goodsDataSourceCurrencyUnitNm, Boolean isCandleChartPossible, String convertTargetDetailTypeNm,
             ComponentType dataStructureConvertNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
@@ -110,7 +113,7 @@ public class ComponentInfo extends BaseEntity {
         this.tableColumnListNm = tableColumnListNm;
         this.excelColumnListNm = excelColumnListNm;
         this.excelTableColumnListNm = excelTableColumnListNm;
-        this.excelConditionCntt = excelConditionCntt;
+        this.addData = addData;
         this.goodsDataSourceUnitNm = goodsDataSourceUnitNm;
         this.goodsDataSourceCurrencyUnitNm = goodsDataSourceCurrencyUnitNm;
         this.isCandleChartPossible = isCandleChartPossible;
@@ -129,12 +132,19 @@ public class ComponentInfo extends BaseEntity {
                 .tableColumnListNm(dto.tableColumnListNm())
                 .excelColumnListNm(dto.excelColumnListNm())
                 .excelTableColumnListNm(dto.excelTableColumnListNm())
-                .excelConditionCntt(dto.excelConditionCntt())
+                .addData(dto.addData())
                 .goodsDataSourceUnitNm(dto.goodsDataSourceUnitNm())
                 .goodsDataSourceCurrencyUnitNm(dto.goodsDataSourceCurrencyUnitNm())
                 .isCandleChartPossible(dto.isCandleChartPossible())
                 .convertTargetDetailTypeNm(dto.convertTargetDetailTypeNm())
                 .dataStructureConvertNm(dto.dataStructureConvertNm())
                 .build();
+    }
+
+    public List<String> generateDbColumns(){
+        return Arrays.stream(this.getExcelTableColumnListNm().split(","))
+            .map(String::trim)
+            .filter(name -> !name.isEmpty())
+            .collect(Collectors.toList());
     }
 }

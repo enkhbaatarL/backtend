@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.Map;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,19 +31,18 @@ public class ExcelFileParsed implements FileTypeStrategy {
      *
      * @param file 엑셀 파일
      * @param componentInfo 컴포넌트 정보
-     * @param headerRowIndex 헤더 행 인덱스 (기본값 0)
-     * @param dataStartRowIndex 데이터 시작 행 인덱스 (기본값 1)
      * @param criteriaDt 조건 일자
      * @return 파싱된 데이터
      * @throws IOException 파일 처리 중 오류 발생 시
      */
     @Override
-    public List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, int headerRowIndex, int dataStartRowIndex, String criteriaDt, String category) throws IOException {
+    public List<Object[]> processFile(MultipartFile file, ComponentInfo componentInfo, Map<String, String> conditionMap, String criteriaDt, String category) throws IOException {
         Workbook workbook = ExcelParsedUtil.createWorkbook(file);
         try {
             Sheet sheet = workbook.getSheetAt(0); // 첫번째 시트
             DataCollectorStrategy strategy = dataCollectorStrategyResolver.resolve(componentInfo.getDataStructureConvertNm());
-            List<Object[]> result = strategy.processData(sheet, Arrays.asList(componentInfo.getExcelColumnListNm().split(",")), criteriaDt, category);
+            List<Object[]> result = strategy.processData(sheet, Arrays.asList(componentInfo.getExcelColumnListNm().split(",")),
+                criteriaDt, category, conditionMap, componentInfo.generateDbColumns());
             workbook.close();
             return result;
         } catch (IOException e) {
