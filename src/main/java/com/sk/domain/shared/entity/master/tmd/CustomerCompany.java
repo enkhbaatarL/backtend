@@ -5,7 +5,19 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.company.CompanyReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.listener.CustomerCompanyListener;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,10 +25,6 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Entity
@@ -86,6 +94,11 @@ public class CustomerCompany extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isFuture;
 
+    @Column(name = "nws_ltr_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("뉴스레터 화면 표출 여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isNewsLetter;
 
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
@@ -94,7 +107,7 @@ public class CustomerCompany extends BaseEntity {
     public CustomerCompany(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
         Boolean isDeleted, Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd,
         String marketIndexAnalysisTargetCd, String useBeginDt, String useEndDt, Boolean isUsed, Boolean isMipManagementCompany,
-        Boolean isQualitative, Boolean isMari, Boolean isFuture) {
+        Boolean isQualitative, Boolean isMari, Boolean isFuture, Boolean isNewsLetter) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.customerCompanyNo = customerCompanyNo;
         this.customerCompanyNm = customerCompanyNm;
@@ -107,9 +120,8 @@ public class CustomerCompany extends BaseEntity {
         this.isQualitative = isQualitative;
         this.isMari = isMari;
         this.isFuture = isFuture;
+        this.isNewsLetter = isNewsLetter;
     }
-
-
 
     public static CustomerCompany ofOwner(CompanyReq.OwnerInsert dto, String companyNm) {
         return CustomerCompany.builder()

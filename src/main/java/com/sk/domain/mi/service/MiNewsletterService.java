@@ -26,7 +26,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
-import com.sk.domain.shared.entity.master.tmd.PreferenceTable;
+import com.sk.domain.shared.entity.master.tmd.NewsletterTemplatePreferenceTable;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tif.NewsletterChartRepository;
@@ -36,8 +36,10 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateCollectionChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateRepository;
 import com.sk.domain.shared.repository.master.tmd.PreferenceTableRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -88,8 +90,10 @@ public class MiNewsletterService {
     private final NewsletterTemplateCollectionChartRepository newsletterTemplateCollectionChartRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final NewsletterCollectionChartRepository newsletterCollectionChartRepository;
+    private final NewsletterTemplatePreferenceTableRepository newsletterTemplatePreferenceTableRepository;
+    private final AuthorizationService authorizationService;
 
-    public PaginationRes<NewsletterListRes> getNewsletterList(int page, int size, String keyword) {
+    public PaginationRes<NewsletterListRes> getNewsletterList(Integer companyNo, int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
 
         try {
@@ -102,11 +106,11 @@ public class MiNewsletterService {
             if (StringUtils.isBlank(keyword)) {
                 historyPage = newsletterPublishHistoryRepository
                     .findByPublishStatusCodeAndIsDeletedFalseWithMaster(PublishStatusCode.PUBLISHED,
-                        pageable);
+                        companyNo, pageable);
             } else {
                 historyPage = newsletterPublishHistoryRepository
                     .findByPublishStatusCodeAndIsDeletedFalseAndKeywordWithMaster(
-                        PublishStatusCode.PUBLISHED, keyword, pageable);
+                        PublishStatusCode.PUBLISHED, companyNo, keyword, pageable);
             }
 
             Page<NewsletterListRes> newsletterPage = historyPage.map(
@@ -174,9 +178,9 @@ public class MiNewsletterService {
     /**
      * 뉴스레터별 최근호 조회
      */
-    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(int page, int size) {
+    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(Integer companyNo, int page, int size) {
 
-        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters();
+        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters(companyNo);
 
         // 페이징 처리
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -193,11 +197,12 @@ public class MiNewsletterService {
         return PaginationRes.toRes(newsletterPage);
     }
 
-    private List<NewsletterFeaturedListRes> getFeaturedNewsletters() {
+    private List<NewsletterFeaturedListRes> getFeaturedNewsletters(Integer companyNo) {
         List<NewsletterFeaturedListRes> latestNewsletters = new ArrayList<>();
 
         try {
-            List<NewsletterMaster> newsletterMasters = newsletterMasterRepository.findAll();
+            List<NewsletterMaster> newsletterMasters = newsletterMasterRepository
+                .findByCustomerCompanyNoAndIsDeletedFalse(companyNo);
 
             for (NewsletterMaster master : newsletterMasters) {
                 Optional<NewsletterPublishHistory> latestPublished =
@@ -262,14 +267,14 @@ public class MiNewsletterService {
     /**
      * 뉴스레터 발행 리스트 조회
      */
-    public NewsletterIssueListRes getNewsletterIssueList(String newsletterId) {
+    public NewsletterIssueListRes getNewsletterIssueList(Integer companyNo, String newsletterId) {
         log.info("뉴스레터 발행 리스트 조회 - newsletterId: {}", newsletterId);
 
         try {
             Integer parsedNewsletterId = parseInteger(newsletterId, "newsletterId");
 
             Optional<NewsletterMaster> newsletterMaster = newsletterMasterRepository
-                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId);
+                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId, companyNo);
 
             if (newsletterMaster.isEmpty()) {
                 log.warn("뉴스레터를 찾을 수 없습니다. - newsletterId: {}", newsletterId);
@@ -300,7 +305,7 @@ public class MiNewsletterService {
         }
     }
 
-    public NewsletterDetailRes getNewsletterDetail(String newsletterId, String issueNo) {
+    public NewsletterDetailRes getNewsletterDetail(Integer companyNo, String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
         DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
@@ -313,7 +318,7 @@ public class MiNewsletterService {
 
             // 2. 뉴스레터 마스터 조회
             NewsletterMaster nm = newsletterMasterRepository
-                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId)
+                .findByNewsletterMasterIdAndIsDeletedFalse(parsedNewsletterId, companyNo)
                 .orElseThrow(
                     () -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
 
@@ -646,18 +651,36 @@ public class MiNewsletterService {
         String dataCode = referenceMap.get("RERNC_TABLE_CD");
 
         try {
-            Optional<PreferenceTable> preferenceTableOpt =
-                preferenceTableRepository.findByNewsletterPublishHistoryAndPreferenceTableCode(nph,
-                    dataCode);
+            NewsletterTemplatePreferenceTable config =
+                newsletterTemplatePreferenceTableRepository.findTopByPreferenceTableCodeAndIsDeletedFalse(dataCode).orElse(null);
 
-            if (preferenceTableOpt.isPresent()) {
-                TableRes tableData = readTableDataFromJsonString(
-                    preferenceTableOpt.get().getJsonValue());
-                return Reference.ofTable(title, "", tableData);
-            } else {
-                log.warn("PreferenceTable not found for code: {}", dataCode);
-                return Reference.ofTable(title, "데이터를 찾을 수 없습니다", null);
+            if (config == null) {
+                return Reference.ofTable(title, "템플릿 참조 테이블 데이터를 찾을 수 없습니다", null);
             }
+            String additionalWhereClause = CombineUtil.createWhereClause("nws_ltr_pub_id", String.valueOf(nph.getNewsletterPublishId()));
+
+            DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
+                .targetDataSource(config.getTargetDatabaseName())     // tgt_db_nm
+                .tableName(config.getTargetTableName())               // tgt_tbl_nm
+                .columns(config.getTableColumnName())                 // tbl_colm_nm
+                .whereClause(
+                    config.getQueryConditionContent())       // qry_cdtn_cntt
+                .additionalWhereClause(additionalWhereClause)
+                .build();
+
+            // 동적 쿼리 실행
+            List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(
+                dynamicDataReq);
+
+            if (dataQuery.isEmpty()) {
+                log.warn("No Reference Table data found : {}", dataCode);
+                return Reference.ofTable(title, "데이터를 찾을 수 없습니다", null);
+            } else {
+                TableRes tableData = readTableDataFromJsonString(
+                    dataQuery.get(0).get(config.getTableColumnName()).toString());
+                return Reference.ofTable(title, "", tableData);
+            }
+
         } catch (Exception e) {
             log.error("PreferenceTable 조회 중 오류 발생 - code: {}", dataCode, e);
             return Reference.ofTable(title, "데이터 조회 중 오류 발생", null);
