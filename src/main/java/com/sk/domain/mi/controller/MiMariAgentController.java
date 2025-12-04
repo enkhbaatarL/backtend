@@ -11,6 +11,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.agent.ChatRoomReq;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
+import com.sk.domain.mi.dto.request.agent.StreamCancelReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
@@ -312,7 +313,7 @@ public class MiMariAgentController {
     }
 
     /**
-     * Mari Agent Stream 중단 API
+     * 질의 Stream 중단 API
      * <p>
      * 동작 흐름: 1. 활성 스트림 확인 2. 스트림 중단 (dispose 호출) 3. doFinally에서 자동으로 DB 저장 4. 클라이언트에게 응답 반환
      * <p>
@@ -320,11 +321,10 @@ public class MiMariAgentController {
      */
     @ApiOrder(10)
     @Operation(
-        summary = "Mari Agent Stream 중단 API",
+        summary = "질의 Stream 중단 API",
         description = """
             특정 채팅룸에서 진행 중인 Stream 질의응답 작업을 중단합니다.
 
-            - 스트림 중단 시 현재까지 생성된 부분 응답은 저장되지 않습니다
             - 중단 상태(CANCELLED_BY_USER)는 자동으로 DB에 저장됩니다
             - 이미 중단되었거나 완료된 스트림에 대한 요청은 무시됩니다
             """
@@ -334,14 +334,14 @@ public class MiMariAgentController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER})
     public BaseResponse<Map<String, Object>> cancelMariAgentStream(
         @PathVariable(value = "chatRoomId") UUID chatRoomId,
-        @RequestBody(required = false) Map<String, String> requestBody,
+        @RequestBody(required = false) StreamCancelReq streamCancelReq,
         @UserResolve User user
     ) {
         log.info("Stream cancellation requested - chatRoomId: {}, user: {}",
             chatRoomId, user.getUserNo());
 
         // 1. 취소 메시지 추출
-        String message = requestBody != null ? requestBody.get("message") : null;
+        String message = streamCancelReq != null ? streamCancelReq.message() : null;
         String cancelMessage = message != null ? message : "canceled_by_user";
 
         // 2. 스트림 중단 시도
