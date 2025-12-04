@@ -38,4 +38,8 @@ public record Answer(
             .message(String.valueOf(streamRes.data()))
             .build();
     }
+
+    public static Answer of(String message) {
+        return Answer.builder().message(message).build();
+    }
 }

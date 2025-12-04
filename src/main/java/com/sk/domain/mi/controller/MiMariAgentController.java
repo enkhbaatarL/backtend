@@ -14,8 +14,10 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.ChatRoomRes;
 import com.sk.domain.mi.dto.response.agent.MajorQuestionRes;
 import com.sk.domain.mi.dto.response.agent.QnaRes;
+import com.sk.domain.mi.dto.response.agent.StreamResponseWrapper;
 import com.sk.domain.mi.exception.AgentStreamException;
 import com.sk.domain.mi.service.agent.MariAgentService;
+import com.sk.domain.mi.service.agent.stream.SseConnectionManager;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -48,7 +50,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import reactor.core.publisher.Flux;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 
 @Profile("!dedicated")
@@ -63,6 +65,7 @@ public class MiMariAgentController {
     @Qualifier("sseExecutor")
     private final ExecutorService executor;
     private final AuthorizationService authorizationService;
+    private final SseConnectionManager sseConnectionManager;
     @Value("${api.model-agent.read-timeout}")
     private Duration sseTimeout;
 
@@ -95,7 +98,8 @@ public class MiMariAgentController {
         @RequestBody @Valid ChatRoomReq chatRoomReq,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(mariAgentService.patchChatRoom(chatRoomId, chatRoomReq, user));
+        return BaseResponseFactory.create(
+            mariAgentService.patchChatRoom(chatRoomId, chatRoomReq, user));
     }
 
     @ApiOrder(4)
@@ -125,7 +129,8 @@ public class MiMariAgentController {
         @RequestParam(value = "size", required = false, defaultValue = "3") int size,
         @UserResolve User user
     ) {
-        return BaseResponseFactory.create(mariAgentService.getChatRoomQnaList(page, size, chatRoomId, user));
+        return BaseResponseFactory.create(
+            mariAgentService.getChatRoomQnaList(page, size, chatRoomId, user));
     }
 
     @ApiOrder(6)
@@ -140,7 +145,8 @@ public class MiMariAgentController {
         @UserResolve User user
     ) {
         int companyNo = authorizationService.getCompanyNoWithPriority();
-        return BaseResponseFactory.create(mariAgentService.postChatRoomQna(chatRoomId, qnaReq, user, companyNo));
+        return BaseResponseFactory.create(
+            mariAgentService.postChatRoomQna(chatRoomId, qnaReq, user, companyNo));
     }
 
     @ApiOrder(7)
@@ -160,9 +166,14 @@ public class MiMariAgentController {
 
         int companyNo = authorizationService.getCompanyNoWithPriority();
 
-        Flux.defer(() ->
-                mariAgentService.streamChatResponse(chatRoomId, qnaReq, user, companyNo)
-            )
+        // StreamResponseWrapper를 받아서 qnaNo와 Flux 분리
+        StreamResponseWrapper streamWrapper = mariAgentService.streamChatResponse(chatRoomId,
+            qnaReq, user, companyNo);
+        Integer qnaNo = streamWrapper.getQnaNo();
+
+        log.info("Stream initialized - chatRoomId: {}, qnaNo: {}", chatRoomId, qnaNo);
+
+        Disposable disposable = streamWrapper.getStream()
             .subscribeOn(Schedulers.boundedElastic())
             .doOnNext(answerRes -> executor.execute(() -> {
                 try {
@@ -192,7 +203,7 @@ public class MiMariAgentController {
                             .id("CompleteNode")
                             .name("complete")
                             .data(Map.of(
-                                "qnaNo", chatRoomId,
+                                "qnaNo", qnaNo != null ? qnaNo : chatRoomId,
                                 "data", "completed"
                             )));
                         emitter.complete();
@@ -202,11 +213,23 @@ public class MiMariAgentController {
                         emitter.complete();
                     }
                 });
+                sseConnectionManager.removeActiveStream(chatRoomId);
             })
-            .subscribe();
+            .subscribe(null, null, () -> sseConnectionManager.removeActiveStream(chatRoomId));
 
-        emitter.onCompletion(() ->
-            log.info("SSE connection completed - chatRoomId: {}", chatRoomId));
+        // qnaNo와 Disposable을 SseConnectionManager에 등록
+        if (qnaNo != null) {
+            sseConnectionManager.registerActiveStream(chatRoomId, qnaNo, disposable);
+        } else {
+            log.error("Failed to register stream - qnaNo is null for chatRoomId: {}", chatRoomId);
+        }
+
+        emitter.onCompletion(() -> {
+                log.info("SSE connection completed - chatRoomId: {}", chatRoomId);
+                sseConnectionManager.removeActiveStream(chatRoomId);
+            }
+        );
+
         emitter.onTimeout(() -> {
             log.warn("SSE connection timeout - chatRoomId: {}", chatRoomId);
             emitter.complete();
@@ -267,7 +290,8 @@ public class MiMariAgentController {
         @PathVariable(value = "qnaNo") Integer qnaNo,
         @RequestBody @Valid QnaAssessmentReq qnaAssessmentReq
     ) {
-        return BaseResponseFactory.create(mariAgentService.patchQnaAssessment(chatRoomId, qnaNo, qnaAssessmentReq));
+        return BaseResponseFactory.create(
+            mariAgentService.patchQnaAssessment(chatRoomId, qnaNo, qnaAssessmentReq));
     }
 
     @ApiOrder(9)
@@ -283,7 +307,77 @@ public class MiMariAgentController {
         @UserResolve User user
     ) {
         int companyNo = authorizationService.getCompanyNoWithPriority();
-        return BaseResponseFactory.create(mariAgentService.postQnaRetry(chatRoomId, qnaNo, user, companyNo));
+        return BaseResponseFactory.create(
+            mariAgentService.postQnaRetry(chatRoomId, qnaNo, user, companyNo));
+    }
+
+    /**
+     * Mari Agent Stream 중단 API
+     * <p>
+     * 동작 흐름: 1. 활성 스트림 확인 2. 스트림 중단 (dispose 호출) 3. doFinally에서 자동으로 DB 저장 4. 클라이언트에게 응답 반환
+     * <p>
+     * 주의사항: - DB 저장은 doFinally에서 비동기로 수행됨 - 저장 실패 시 로그에만 기록되며 응답에는 영향 없음 - 중복 취소 요청은 자동으로 무시됨
+     */
+    @ApiOrder(10)
+    @Operation(
+        summary = "Mari Agent Stream 중단 API",
+        description = """
+            특정 채팅룸에서 진행 중인 Stream 질의응답 작업을 중단합니다.
+
+            - 스트림 중단 시 현재까지 생성된 부분 응답은 저장되지 않습니다
+            - 중단 상태(CANCELLED_BY_USER)는 자동으로 DB에 저장됩니다
+            - 이미 중단되었거나 완료된 스트림에 대한 요청은 무시됩니다
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/chat-rooms/{chatRoomId}/stream-cancel")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER})
+    public BaseResponse<Map<String, Object>> cancelMariAgentStream(
+        @PathVariable(value = "chatRoomId") UUID chatRoomId,
+        @RequestBody(required = false) Map<String, String> requestBody,
+        @UserResolve User user
+    ) {
+        log.info("Stream cancellation requested - chatRoomId: {}, user: {}",
+            chatRoomId, user.getUserNo());
+
+        // 1. 취소 메시지 추출
+        String message = requestBody != null ? requestBody.get("message") : null;
+        String cancelMessage = message != null ? message : "canceled_by_user";
+
+        // 2. 스트림 중단 시도
+        SseConnectionManager.StreamContext context =
+            sseConnectionManager.cancelActiveStream(chatRoomId, cancelMessage);
+
+        // 3. 스트림이 없거나 이미 중단된 경우
+        if (context == null) {
+            log.warn("No active stream to cancel - chatRoomId: {}", chatRoomId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "No active Mari Agent stream to cancel.");
+            result.put("qnaNo", null);
+            result.put("chatRoomId", chatRoomId.toString());
+
+            return BaseResponseFactory.create(result);
+        }
+
+        // 4. 스트림 중단 성공
+        Integer qnaNo = context.getQnaNo();
+
+        log.info("Stream cancellation initiated - chatRoomId: {}, qnaNo: {}, message: {}",
+            chatRoomId, qnaNo, cancelMessage);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("message", "Mari Agent Stream operation cancelled successfully.");
+        result.put("qnaNo", qnaNo);
+        result.put("chatRoomId", chatRoomId.toString());
+
+        // DB 저장은 doFinally에서 비동기로 처리됨
+        // - SignalType.CANCEL 감지 시 updateQnaStatusOnCancel() 호출
+        // - 저장 실패는 로그에만 기록되며 응답에는 영향 없음
+
+        return BaseResponseFactory.create(result);
     }
 
 }

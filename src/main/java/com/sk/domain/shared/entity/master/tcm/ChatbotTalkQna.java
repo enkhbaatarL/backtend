@@ -89,10 +89,13 @@ public class ChatbotTalkQna extends BaseEntity {
     private Integer outputTokenCnt;
 
     @Builder
-    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
-                          Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt, String chatbotAnswerCntt, Boolean isRecommended,
-                          Boolean isNotRecommended, AnswerStatusCd answerStatusCd, AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt,
-                          Integer inputTokenCnt, Integer outputTokenCnt) {
+    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
+        String modifyUserId, Boolean isDeleted,
+        Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt,
+        String chatbotAnswerCntt, Boolean isRecommended,
+        Boolean isNotRecommended, AnswerStatusCd answerStatusCd,
+        AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt,
+        Integer inputTokenCnt, Integer outputTokenCnt) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.chatbotTalkQnaNo = chatbotTalkQnaNo;
         this.chatbotTalk = chatbotTalk;
@@ -117,7 +120,8 @@ public class ChatbotTalkQna extends BaseEntity {
             .build();
     }
 
-    public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk, AnswerStatusCd answerStatusCd) {
+    public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk,
+        AnswerStatusCd answerStatusCd) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
             .userQuestionCntt(talkReq.question())
@@ -136,7 +140,8 @@ public class ChatbotTalkQna extends BaseEntity {
             this.assessmentFeedbackCd = dto.feedbackCd();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.feedbackComment()) && AssessmentFeedbackCd.OTHER == dto.feedbackCd()) {
+        if (ObjectUtils.isNotEmpty(dto.feedbackComment())
+            && AssessmentFeedbackCd.OTHER == dto.feedbackCd()) {
             this.assessmentFeedbackCntt = dto.feedbackComment();
         }
 
@@ -164,6 +169,15 @@ public class ChatbotTalkQna extends BaseEntity {
 
     public void updateFailResult(AnswerStatusCd validationStatus) {
         this.answerStatusCd = validationStatus;
+        this.chatbotAnswerCntt = validationStatus.getDescription();
+    }
+
+    /**
+     * 스트림 중단 시 부분 응답을 저장합니다.
+     */
+    public void updateCancelledResult(String message) {
+        this.answerStatusCd = AnswerStatusCd.CANCELLED_BY_USER;
+        this.chatbotAnswerCntt = message;
     }
 
 }
