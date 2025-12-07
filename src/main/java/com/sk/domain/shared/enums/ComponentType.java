@@ -15,5 +15,7 @@ public enum ComponentType {
     KPLER_US_EXPORT, // Kpler US LNG 수출
     KPLER_WORLD_IMPORT, // Kpler LNG 수입
     SKENS_DATA_A, // SKENS 데이터 A
-    SKENS_DATA_B // SKENS 데이터 B
+    SKENS_DATA_B, // SKENS 데이터 B
+
+    YEAR_QUARTER_ADD; // 2025, 2025 Q1 이런식의 컬럼이 있을때, 2025-03-15 를 date 롤 맨앞에 추가.
 }
