@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,23 +55,28 @@ public class MariAgentGatewayService {
     @Value("${api.model-agent.app-id}")
     private String appId;
     private WebClient webClient;
-    @Value("${api.model-agent.url}") private String agentUrl;
-    @Value("${api.model-agent.api-key}") private String agentApiKey;
-    @Value("${api.model-agent.read-timeout:10s}") private Duration agentReadTimeout;
+    @Value("${api.model-agent.url}")
+    private String agentUrl;
+    @Value("${api.model-agent.api-key}")
+    private String agentApiKey;
+    @Value("${api.model-agent.read-timeout:10s}")
+    private Duration agentReadTimeout;
 
     @PostConstruct
-    public void init(){
+    public void init() {
         this.webClient = WebClient.builder()
             .baseUrl(agentUrl)
             .build();
 
-        for(StreamEventHandler streamEventHandler : streamEventHandlerNameMap.values()){
-            this.streamEventHandlerMap.put(streamEventHandler.getEventDataType(), streamEventHandler);
+        for (StreamEventHandler streamEventHandler : streamEventHandlerNameMap.values()) {
+            this.streamEventHandlerMap.put(streamEventHandler.getEventDataType(),
+                streamEventHandler);
         }
     }
 
     @Transactional
-    protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna, List<ChatbotTalkQna> histories) {
+    protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna,
+        List<ChatbotTalkQna> histories) {
 
         try {
 
@@ -80,7 +84,8 @@ public class MariAgentGatewayService {
             Integer userNo = authorizationService.getUserNo();
 
             List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
-            Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo, qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
+            Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo,
+                qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
             ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, goodsNos);
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
@@ -88,8 +93,12 @@ public class MariAgentGatewayService {
             AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
             qna.updateCompleteResult(answerRes);
 
-            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(authorizationService.getCompanyNoWithPriority(), 0);
-            log.info("[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}", authorizationService.getCompanyNoWithPriority(), quotaResult.delta(), quotaResult.usage(), quotaResult.allowed());
+            TokenQuotaGuard.QuotaResult quotaResult = tokenQuotaGuard.addAndCheck(
+                authorizationService.getCompanyNoWithPriority(), 0);
+            log.info(
+                "[Model-Agent API call token usage] company: {}, used: {}, total: {}, next-request-allowed: {}",
+                authorizationService.getCompanyNoWithPriority(), quotaResult.delta(),
+                quotaResult.usage(), quotaResult.allowed());
 
             return Optional.ofNullable(answerRes);
 
@@ -98,17 +107,24 @@ public class MariAgentGatewayService {
             Throwable root = NestedExceptionUtils.getMostSpecificCause(e);
 
             if (root instanceof SocketTimeoutException err) {
-                log.error("[Model-Agent API call read-timeout] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), err.getMessage(), err);
+                log.error(
+                    "[Model-Agent API call read-timeout] for qnaNo: {}, chatRoomId: {}. Error: {}",
+                    qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(),
+                    err.getMessage(), err);
                 qna.updateFailResult(AnswerStatusCd.FAIL_TIMED_OUT);
             } else {
-                log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+                log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}",
+                    qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(),
+                    e.getMessage(), e);
                 qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
             }
 
             return Optional.empty();
 
         } catch (Exception e) {
-            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(), e.getMessage(), e);
+            log.error("[Model-Agent API call failed] for qnaNo: {}, chatRoomId: {}. Error: {}",
+                qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid(),
+                e.getMessage(), e);
             qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
             return Optional.empty();
         }
@@ -125,8 +141,6 @@ public class MariAgentGatewayService {
     ) {
 
         long streamStartTime = System.currentTimeMillis();
-        AtomicLong eventCount = new AtomicLong(0);
-        AtomicLong lastEventTime = new AtomicLong(streamStartTime);
 
         HttpHeaders headers = ModelAgentHeaders.of(
             companyNo, userNo,
@@ -153,29 +167,11 @@ public class MariAgentGatewayService {
             })
             .timeout(Duration.ofSeconds(agentReadTimeout.getSeconds()))
             .doOnNext(event -> {
-                long now = System.currentTimeMillis();
-                long count = eventCount.incrementAndGet();
-                long gap = now - lastEventTime.get();
-                lastEventTime.set(now);
-
-                log.info("[PERF] Event #{} received - type: {}, gap: {}ms, total: {}ms",
-                    count, event.event(), gap, (now - streamStartTime));
             })
-            .flatMap(event -> processServerSentEvent(event, qna))
+            .concatMap(event -> processServerSentEvent(event, qna))
             .doOnNext(answerRes -> {
-                long now = System.currentTimeMillis();
-                long processingTime = now - lastEventTime.get();
-
-                String eventType = answerRes.metadata() != null ? answerRes.metadata().data() : "unknown";
-                log.info("[PERF] Response emitted - type: {}, processing: {}ms, total: {}ms",
-                    eventType, processingTime, (now - streamStartTime));
             })
             .doOnComplete(() -> {
-                long totalTime = System.currentTimeMillis() - streamStartTime;
-                log.info("[PERF] ===== Stream completed for qnaNo: {} =====", qna.getChatbotTalkQnaNo());
-                log.info("[PERF] Total events: {}, Total time: {}ms, Avg per event: {}ms",
-                    eventCount.get(), totalTime,
-                    eventCount.get() > 0 ? totalTime / eventCount.get() : 0);
             })
             .doOnError(error -> {
                 long totalTime = System.currentTimeMillis() - streamStartTime;
@@ -191,8 +187,6 @@ public class MariAgentGatewayService {
         ServerSentEvent<String> event,
         ChatbotTalkQna qna
     ) {
-        long processStart = System.currentTimeMillis();
-
         if (event == null || event.data() == null || event.data().trim().isEmpty()) {
             return Flux.empty();
         }
@@ -209,10 +203,8 @@ public class MariAgentGatewayService {
 
             // data 이벤트 처리
             if ("data".equals(eventType)) {
-                long parseStart = System.currentTimeMillis();
                 ModelAgentStreamBody streamBody =
                     objectMapper.readValue(chunk, ModelAgentStreamBody.class);
-                long parseTime = System.currentTimeMillis() - parseStart;
 
                 if (streamBody.node() == null || streamBody.data() == null) {
                     log.warn("Invalid event data: node={}, data={}",
@@ -221,28 +213,10 @@ public class MariAgentGatewayService {
                 }
 
                 // Handler 선택
-                long handlerSelectStart = System.currentTimeMillis();
                 StreamEventHandler handler = selectHandler(streamBody);
-                long handlerSelectTime = System.currentTimeMillis() - handlerSelectStart;
 
                 if (handler != null) {
-                    // Handler 실행 시간 측정
-                    long handlerExecuteStart = System.currentTimeMillis();
                     AnswerRes answerRes = handler.createAnswerRes(qna, streamBody);
-                    long handlerExecuteTime = System.currentTimeMillis() - handlerExecuteStart;
-
-                    long totalProcessTime = System.currentTimeMillis() - processStart;
-
-                    log.info("[PERF] Handler execution - node: {}, handler: {}, " +
-                            "parse: {}ms, select: {}ms, execute: {}ms, total: {}ms",
-                        streamBody.node(),
-                        handler.getEventDataType(),
-                        parseTime,
-                        handlerSelectTime,
-                        handlerExecuteTime,
-                        totalProcessTime
-                    );
-
                     return Flux.just(answerRes);
                 } else {
                     log.debug("Agent Event 처리 Skip - Node: {}", streamBody.node());
@@ -273,8 +247,7 @@ public class MariAgentGatewayService {
     }
 
     /**
-     * metadata 이벤트 처리
-     * data: {"run_id": "..."}
+     * metadata 이벤트 처리 data: {"run_id": "..."}
      */
     private void handleMetadataEvent(String chunk) throws JsonProcessingException {
         Map<String, Object> metadata = objectMapper.readValue(chunk, Map.class);

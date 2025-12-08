@@ -34,10 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
@@ -63,8 +61,6 @@ import reactor.core.scheduler.Schedulers;
 public class MiMariAgentController {
 
     private final MariAgentService mariAgentService;
-    @Qualifier("sseExecutor")
-    private final ExecutorService executor;
     private final AuthorizationService authorizationService;
     private final SseConnectionManager sseConnectionManager;
     @Value("${api.model-agent.read-timeout}")
@@ -176,7 +172,7 @@ public class MiMariAgentController {
 
         Disposable disposable = streamWrapper.getStream()
             .subscribeOn(Schedulers.boundedElastic())
-            .doOnNext(answerRes -> executor.execute(() -> {
+            .doOnNext(answerRes -> {
                 try {
                     emitter.send(SseEmitter.event()
                         .id(answerRes.metadata().node())
@@ -186,34 +182,27 @@ public class MiMariAgentController {
                     log.error("Failed to send stream event - chatRoomId: {}", chatRoomId, e);
                     emitter.completeWithError(e);
                 }
-            }))
+            })
             .doOnError(error -> {
                 log.error("Stream processing error - chatRoomId: {}", chatRoomId, error);
-
-                executor.execute(() -> {
-                    sendErrorEvent(emitter, error, String.valueOf(chatRoomId));
-                    emitter.complete();
-                });
+                sendErrorEvent(emitter, error, String.valueOf(chatRoomId));
+                emitter.complete();
             })
             .doOnComplete(() -> {
                 log.info("Stream completed successfully - chatRoomId: {}", chatRoomId);
-
-                executor.execute(() -> {
-                    try {
-                        emitter.send(SseEmitter.event()
-                            .id("CompleteNode")
-                            .name("complete")
-                            .data(Map.of(
-                                "qnaNo", qnaNo != null ? qnaNo : chatRoomId,
-                                "data", "completed"
-                            )));
-                        emitter.complete();
-                    } catch (IOException e) {
-                        log.error("Failed to send completion event - chatRoomId: {}", chatRoomId,
-                            e);
-                        emitter.complete();
-                    }
-                });
+                try {
+                    emitter.send(SseEmitter.event()
+                        .id("CompleteNode")
+                        .name("complete")
+                        .data(Map.of(
+                            "qnaNo", qnaNo != null ? qnaNo : chatRoomId,
+                            "data", "completed"
+                        )));
+                    emitter.complete();
+                } catch (IOException e) {
+                    log.error("Failed to send completion event - chatRoomId: {}", chatRoomId, e);
+                    emitter.complete();
+                }
                 sseConnectionManager.removeActiveStream(chatRoomId);
             })
             .subscribe(null, null, () -> sseConnectionManager.removeActiveStream(chatRoomId));
