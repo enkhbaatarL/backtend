@@ -12,6 +12,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -24,8 +25,12 @@ import org.hibernate.annotations.Comment;
 @Comment("TMD_뉴스요약")
 @Table(name = "tmd_nws_smry",
     indexes = {
-        @Index(name = "tmd_nws_smry_ix_01", columnList = "data_reg_sn, first_created"),
-        @Index(name = "tmd_nws_smry_ix_02", columnList = "data_reg_sn, first_created, crtr_dt")
+        @Index(name = "tmd_nws_smry_ix01", columnList = "prvd_id, data_reg_sn, first_created"),
+        @Index(name = "tmd_nws_smry_ix02", columnList = "prvd_id, data_reg_sn, first_created, crtr_dt"),
+        @Index(name = "tmd_nws_smry_ix03", columnList = "crtr_dt, simlr_grp_stat_cd")
+    },
+    uniqueConstraints = {
+        @UniqueConstraint(name = "tmd_nws_smry_ux01", columnNames = {"prvd_id", "data_reg_sn", "first_created"})
     })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NewsSummary extends BaseEntity {
@@ -37,11 +42,15 @@ public class NewsSummary extends BaseEntity {
     private Long newsSummaryId;
 
     @Column(name = "data_reg_sn", nullable = false, columnDefinition = "int unsigned")
-    @Comment("Refinitiv 뉴스 데이터등록일련번호")
+    @Comment("데이터등록일련번호")
     private Integer dataRegistrationSn;
 
+    @Column(name = "prvd_id", nullable = false, length = 20)
+    @Comment("프로바이더ID")
+    private String providerId;
+
     @Column(name = "first_created", nullable = false)
-    @Comment("Refinitiv 뉴스 최초생성일시")
+    @Comment("NEWS최초생성일시")
     private LocalDateTime firstCreated;
 
     // 논리적 연관관계 (조회용, insertable=false, updatable=false)
@@ -57,46 +66,44 @@ public class NewsSummary extends BaseEntity {
     @Comment("기준 일자")
     private String crtrDt;
 
-    @Column(name = "brf_smry", length = 200)
+    @Column(name = "brf_smry", length = 500)
     @Comment("간략요약")
     private String briefSummary;
 
-    @Column(name = "smry", length = 500)
+    @Column(name = "smry", length = 1000)
     @Comment("요약")
     private String summary;
 
-    @Column(name = "provider", length = 50)
-    @Comment("프로바이더")
-    private String provider;
+    @Column(name = "brf_smry_en", length = 500)
+    @Comment("간략 요약 영문")
+    private String briefSummaryEn;
 
-    @Column(name = "source", length = 100)
-    @Comment("소스")
-    private String source;
+    @Column(name = "smry_en", length = 1000)
+    @Comment("요약 영문")
+    private String summaryEn;
 
-    @Column(name = "org_link", columnDefinition = "text")
-    @Comment("원문링크")
-    private String originalLink;
-
-    @Column(name = "kwd", columnDefinition = "text")
-    @Comment("핵심단어")
-    private String keyword;
+    @Column(name = "simlr_grp_stat_cd", length = 10, nullable = false, columnDefinition = "varchar(10) default 'NONE'")
+    @Comment("유사 그룹 상태 코드 (INCL:포함, NONE:비포함, HEAD:대표뉴스)")
+    private String similarGroupStatusCode = "NONE";
 
     @Builder
     public NewsSummary(LocalDateTime createDt, LocalDateTime modifyDt,
         String createUserId, String modifyUserId, Boolean isDeleted,
-        Long newsSummaryId, Integer dataRegistrationSn, LocalDateTime firstCreated,
-        RefinitivNewsData refinitivNewsData, String briefSummary, String summary,
-        String provider, String source, String originalLink, String keyword) {
+        Long newsSummaryId, Integer dataRegistrationSn, String providerId, LocalDateTime firstCreated,
+        RefinitivNewsData refinitivNewsData, String crtrDt, String briefSummary, String summary,
+        String briefSummaryEn, String summaryEn, String similarGroupStatusCode) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.newsSummaryId = newsSummaryId;
         this.dataRegistrationSn = dataRegistrationSn;
+        this.providerId = providerId;
         this.firstCreated = firstCreated;
         this.refinitivNewsData = refinitivNewsData;
+        this.crtrDt = crtrDt;
         this.briefSummary = briefSummary;
         this.summary = summary;
-        this.provider = provider;
-        this.source = source;
-        this.originalLink = originalLink;
-        this.keyword = keyword;
+        this.briefSummaryEn = briefSummaryEn;
+        this.summaryEn = summaryEn;
+        this.similarGroupStatusCode = similarGroupStatusCode != null ? similarGroupStatusCode : "NONE";
     }
+
 }

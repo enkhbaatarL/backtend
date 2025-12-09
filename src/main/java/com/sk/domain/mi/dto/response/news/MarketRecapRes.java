@@ -60,26 +60,26 @@ public record MarketRecapRes(
         String period
     ) {}
 
-    public record HighlightItemRes(
-        @Schema(description = "하이라이트 아이템 ID", example = "1")
-        Long highlightItemId,
+    public record HighlightEventRes(
+        @Schema(description = "하이라이트 이벤트 ID", example = "1")
+        Long highlightEventId,
 
-        @Schema(description = "제목", example = "Apple Stock Surges")
-        String title,
+        @Schema(description = "이벤트 한글명", example = "애플 주가 급등")
+        String nameKorean,
 
-        @Schema(description = "내용", example = "Apple shares rose 5% today...")
-        List<String> content,
+        @Schema(description = "이벤트 영문명", example = "Apple Stock Surges")
+        String nameEnglish,
 
-        @Schema(description = "동향", example = "UP")
+        @Schema(description = "동향", example = "Upward")
         String momentum,
 
         @Schema(description = "관련 뉴스 목록")
         List<RelatedNewsRes> relatedNews
     ) {}
 
-    public record CheckpointItemRes(
-        @Schema(description = "체크포인트 아이템 ID", example = "1")
-        Long checkpointItemId,
+    public record CheckpointRes(
+        @Schema(description = "체크포인트 ID", example = "1")
+        Long checkpointId,
 
         @Schema(description = "제목", example = "Federal Reserve Meeting")
         String title,
@@ -100,8 +100,8 @@ public record MarketRecapRes(
         @Schema(description = "하이라이트 narrative")
         Narrative narrative,
 
-        @Schema(description = "하이라이트 아이템 목록")
-        List<HighlightItemRes> items,
+        @Schema(description = "하이라이트 이벤트 목록")
+        List<HighlightEventRes> items,
 
         @Schema(description = "관련 뉴스 목록")
         List<RelatedNewsRes> relatedNews
@@ -113,8 +113,8 @@ public record MarketRecapRes(
         @Schema(description = "체크포인트 narrative")
         Narrative narrative,
 
-        @Schema(description = "체크포인트 아이템 목록")
-        List<CheckpointItemRes> items
+        @Schema(description = "체크포인트 목록")
+        List<CheckpointRes> items
     ) {
 
     }
@@ -126,7 +126,7 @@ public record MarketRecapRes(
         @Schema(description = "뉴스 제목", example = "Apple Reports Strong Earnings")
         String title,
 
-        @Schema(description = "프로바이더", example = "reuters")
-        String provider
+        @Schema(description = "프로바이더 ID", example = "reuters")
+        String providerId
     ) {}
 }

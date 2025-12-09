@@ -1,7 +1,6 @@
 package com.sk.domain.shared.entity.master.tmd;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
-import com.sk.domain.shared.entity.master.tif.RefinitivNewsData;
 import com.sk.domain.shared.enums.news.MarketCategoryCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,10 +12,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,9 +30,12 @@ import org.hibernate.annotations.Comment;
 @Table(
     name = "tmd_nws_sig",
     indexes = {
-        @Index(name = "tmd_nws_sig_ix_01", columnList = "data_reg_sn, first_created"),
-        @Index(name = "tmd_nws_sig_ix_02", columnList = "nws_mrkt_ctgr_cd"),
-        @Index(name = "tmd_nws_sig_ix_03", columnList = "nws_mrkt_ctgr_cd, crtr_dt"),
+        @Index(name = "tmd_nws_sig_ix01", columnList = "nws_smry_id"),
+        @Index(name = "tmd_nws_sig_ix02", columnList = "nws_mrkt_ctgr_cd"),
+        @Index(name = "tmd_nws_sig_ix03", columnList = "nws_mrkt_ctgr_cd, crtr_dt")
+    },
+    uniqueConstraints = {
+        @UniqueConstraint(name = "tmd_nws_sig_ux01", columnNames = {"nws_smry_id", "nws_mrkt_ctgr_cd"})
     }
 )
 @Getter
@@ -47,22 +49,14 @@ public class NewsSignificance extends BaseEntity {
     @Comment("뉴스중요도 ID")
     private Long nwsSigId;
 
-    @Column(name = "data_reg_sn", nullable = false, columnDefinition = "int unsigned")
-    @Comment("Refinitiv 뉴스 데이터등록일련번호")
-    private Long dataRegistrationSn;
+    @Column(name = "nws_smry_id", nullable = false, columnDefinition = "int unsigned", insertable = false, updatable = false)
+    @Comment("뉴스 요약 ID")
+    private Long newsSummaryId;
 
-    @Column(name = "first_created", nullable = false)
-    @Comment("Refinitiv 뉴스 최초생성일시")
-    private LocalDateTime firstCreated;
-
-    // 논리적 연관관계 (조회용, insertable=false, updatable=false)
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "data_reg_sn", referencedColumnName = "data_reg_sn",
-        insertable = false, updatable = false)
-    @JoinColumn(name = "first_created", referencedColumnName = "first_created",
-        insertable = false, updatable = false)
-    @Comment("Refinitiv 뉴스 데이터")
-    private RefinitivNewsData refinitivNewsData;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nws_smry_id", referencedColumnName = "nws_smry_id", nullable = false)
+    @Comment("뉴스 요약")
+    private NewsSummary newsSummary;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "nws_mrkt_ctgr_cd", length = 20, nullable = false)
@@ -73,16 +67,17 @@ public class NewsSignificance extends BaseEntity {
     @Comment("기준 일자")
     private String crtrDt;
 
-    @Column(name = "sig", precision = 4, scale = 2)
-    @Comment("중요도")
-    private BigDecimal sig;
+    @Column(name = "scre", precision = 4, scale = 2)
+    @Comment("점수")
+    private BigDecimal score;
 
     @Builder
-    public NewsSignificance(Long dataRegistrationSn, LocalDateTime firstCreated, MarketCategoryCode nwsMrktCtgrCd,
-                           BigDecimal sig) {
-        this.dataRegistrationSn = dataRegistrationSn;
-        this.firstCreated = firstCreated;
+    public NewsSignificance(NewsSummary newsSummary, MarketCategoryCode nwsMrktCtgrCd,
+                           String crtrDt, BigDecimal score) {
+        this.newsSummary = newsSummary;
         this.nwsMrktCtgrCd = nwsMrktCtgrCd;
-        this.sig = sig;
+        this.crtrDt = crtrDt;
+        this.score = score;
     }
+
 }
