@@ -46,10 +46,7 @@ public record ModelAgentReq(
         Integer userNo,
 
         @JsonProperty("authorized_product_nums")
-        Set<Integer> authGdsList,
-
-        @JsonProperty("repository_ids")
-        Set<String> repositoryIds
+        Set<Integer> authGdsList
     ) {
 
         public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
@@ -60,7 +57,6 @@ public record ModelAgentReq(
                 .companyNo(String.valueOf(companyNo))
                 .userNo(userNo)
                 .authGdsList(authGdsList)
-                .repositoryIds(repositoryIds)
                 .build();
         }
 

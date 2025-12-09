@@ -30,13 +30,16 @@ public record MiCompanyDetailRes(
     Boolean isFuture,
 
     @Schema(description = "뉴스시장카테고리코드", example = "CROIL")
-    MarketCategoryCode newsMarketCategoryCode
+    MarketCategoryCode newsMarketCategoryCode,
+
+    @Schema(description = "뉴스레터 화면 표출 여부")
+    Boolean isNewsletter
 
 ) {
 
     @Builder
     public MiCompanyDetailRes(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String customerCompanyMipUrl,
-        Boolean isQualitative, Boolean isMari, Boolean isFuture) {
+        Boolean isQualitative, Boolean isMari, Boolean isFuture, Boolean isNewsletter) {
         this(
             customerCompanyNo,
             customerCompanyNm,
@@ -45,7 +48,8 @@ public record MiCompanyDetailRes(
             isQualitative,
             isMari,
             isFuture,
-            null
+            null,
+            isNewsletter
         );
     }
 
@@ -58,6 +62,7 @@ public record MiCompanyDetailRes(
             .isQualitative(customerCompany.getIsQualitative())
             .isMari(customerCompany.getIsMari())
             .isFuture(customerCompany.getIsFuture())
+            .isNewsletter(customerCompany.getIsNewsLetter())
             .build();
     }
 }
