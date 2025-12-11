@@ -1,0 +1,26 @@
+package com.sk.domain.shared.repository.master.tmd;
+
+import com.sk.domain.shared.entity.master.tmd.MarketRecap;
+import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightEvent;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface MarketRecapHighlightEventRepository extends JpaRepository<MarketRecapHighlightEvent, Long> {
+
+    /**
+     * 마켓 리캡의 하이라이트 이벤트 목록 조회
+     */
+    List<MarketRecapHighlightEvent> findByMarketRecap(MarketRecap marketRecap);
+
+    /**
+     * 마켓 리캡 ID로 하이라이트 이벤트 조회
+     */
+    @Query("SELECT mhe FROM MarketRecapHighlightEvent mhe " +
+           "WHERE mhe.mrktRcapId = :marketRecapId " +
+           "ORDER BY mhe.score DESC")
+    List<MarketRecapHighlightEvent> findByMarketRecapIdOrderByScoreDesc(
+        @Param("marketRecapId") Long marketRecapId
+    );
+}

@@ -9,9 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -27,8 +27,11 @@ import org.hibernate.annotations.Comment;
 @Table(
     name = "tmd_sgt_nws",
     indexes = {
-        @Index(name = "tmd_sgt_news_ix_01", columnList = "nws_sig_id"),
-        @Index(name = "tmd_sgt_news_ix_02", columnList = "nws_sig_id, crtr_dt)")
+        @Index(name = "tmd_sgt_nws_ix01", columnList = "nws_sig_id"),
+        @Index(name = "tmd_sgt_nws_ix02", columnList = "crtr_dt")
+    },
+    uniqueConstraints = {
+        @UniqueConstraint(name = "tmd_sgt_nws_ux01", columnNames = {"nws_sig_id"})
     }
 )
 @Getter
@@ -47,37 +50,23 @@ public class SignificantNews extends BaseEntity {
     private Long nwsSigId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "nws_sig_id")
+    @JoinColumn(name = "nws_sig_id", nullable = false)
+    @Comment("뉴스 중요도")
     private NewsSignificance newsSignificance;
 
     @Column(name = "crtr_dt", length = 8, nullable = false)
     @Comment("기준 일자")
     private String crtrDt;
 
-    @Column(name = "impct_scre", precision = 4, scale = 2, nullable = false)
-    @Comment("영향도점수")
-    private BigDecimal impctScre;
-
-    @Column(name = "drctnlt", length = 20, nullable = false)
-    @Comment("방향성")
-    private String drctnlt;
-
-    @Column(name = "evnt_dtctn", length = 1000)
-    @Comment("이벤트탐지 - 이벤트 판단")
-    private String evntDtctn;
-
-    @Lob
-    @Column(name = "derv_rsn", columnDefinition = "TEXT")
-    @Comment("도출이유")
-    private String dervRsn;
+    @Column(name = "scre", precision = 4, scale = 2, nullable = false)
+    @Comment("점수")
+    private BigDecimal score;
 
     @Builder
-    public SignificantNews(NewsSignificance newsSignificance, BigDecimal impctScre,
-                          String drctnlt, String evntDtctn, String dervRsn) {
+    public SignificantNews(NewsSignificance newsSignificance, String crtrDt,
+                          BigDecimal score) {
         this.newsSignificance = newsSignificance;
-        this.impctScre = impctScre;
-        this.drctnlt = drctnlt;
-        this.evntDtctn = evntDtctn;
-        this.dervRsn = dervRsn;
+        this.crtrDt = crtrDt;
+        this.score = score;
     }
 }

@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -23,7 +24,8 @@ import org.hibernate.annotations.Comment;
 @Table(
     name = "tmd_mrkt_rcap",
     indexes = {
-        @Index(name = "tmd_mrkt_rcap_ix_01", columnList = "crtr_dt, nws_mrkt_ctgr_cd")
+        @Index(name = "tmd_mrkt_rcap_ix01", columnList = "crtr_dt"),
+        @Index(name = "tmd_mrkt_rcap_ix02", columnList = "nws_mrkt_ctgr_cd")
     },
     uniqueConstraints = {
         @UniqueConstraint(name = "tmd_mrkt_rcap_ux01", columnNames = {"crtr_dt", "nws_mrkt_ctgr_cd"})
@@ -32,6 +34,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Comment("TMD_마켓 리캡")
 public class MarketRecap extends BaseEntity {
 
     @Id
@@ -41,53 +44,55 @@ public class MarketRecap extends BaseEntity {
     private Long mrktRcapId;
 
     @Column(name = "crtr_dt", length = 8, nullable = false)
-    @Comment("기준 일자")
+    @Comment("기준 일자 (YYYYMMDD)")
     private String crtrDt;
 
     @Column(name = "nws_mrkt_ctgr_cd", length = 20, nullable = false)
     @Comment("뉴스 시장 카테고리 코드")
     private String nwsMrktCtgrCd;
 
-    @Column(name = "upw_sgnl_nws_cnt", columnDefinition = "SMALLINT UNSIGNED", nullable = false)
-    @Comment("상승 신호 뉴스 수")
-    private Integer upwSgnlNwsCnt;
+    @Column(name = "hl_evnt_titl", length = 500)
+    @Comment("하이라이트 이벤트 제목 (narrative 모드시 표시)")
+    private String hlEvntTitl;
 
-    @Column(name = "ntrl_sgnl_nws_cnt", columnDefinition = "SMALLINT UNSIGNED", nullable = false)
-    @Comment("중립 신호 뉴스 수")
-    private Integer ntrlSgnlNwsCnt;
+    @Lob
+    @Column(name = "hl_evnt_cntt", columnDefinition = "TEXT")
+    @Comment("하이라이트 이벤트 내용 (narrative 모드시 표시)")
+    private String hlEvntCntt;
 
-    @Column(name = "dwn_sgnl_nws_cnt", columnDefinition = "SMALLINT UNSIGNED", nullable = false)
-    @Comment("하락 신호 뉴스 수")
-    private Integer dwnSgnlNwsCnt;
-
-    @Column(name = "hi_titl", length = 200)
-    @Comment("하이라이트 제목")
-    private String hiTitl;
-
-    @Column(name = "hi_cntt", columnDefinition = "TEXT")
-    @Comment("하이라이트 내용")
-    private String hiCntt;
-
-    @Column(name = "ckpt_titl", length = 200)
-    @Comment("체크 포인트 제목")
+    @Column(name = "ckpt_titl", length = 500)
+    @Comment("체크포인트 제목 (narrative 모드시 표시)")
     private String ckptTitl;
 
+    @Lob
     @Column(name = "ckpt_cntt", columnDefinition = "TEXT")
-    @Comment("체크 포인트 내용")
+    @Comment("체크포인트 내용 (narrative 모드시 표시)")
     private String ckptCntt;
 
     @Builder
-    public MarketRecap(String crtrDt, String nwsMrktCtgrCd, Integer upwSgnlNwsCnt,
-        Integer ntrlSgnlNwsCnt, Integer dwnSgnlNwsCnt, String hiTitl,
-        String hiCntt, String ckptTitl, String ckptCntt) {
+    public MarketRecap(String crtrDt, String nwsMrktCtgrCd, String hlEvntTitl,
+        String hlEvntCntt, String ckptTitl, String ckptCntt) {
         this.crtrDt = crtrDt;
         this.nwsMrktCtgrCd = nwsMrktCtgrCd;
-        this.upwSgnlNwsCnt = upwSgnlNwsCnt;
-        this.ntrlSgnlNwsCnt = ntrlSgnlNwsCnt;
-        this.dwnSgnlNwsCnt = dwnSgnlNwsCnt;
-        this.hiTitl = hiTitl;
-        this.hiCntt = hiCntt;
+        this.hlEvntTitl = hlEvntTitl;
+        this.hlEvntCntt = hlEvntCntt;
         this.ckptTitl = ckptTitl;
         this.ckptCntt = ckptCntt;
+    }
+
+    /**
+     * 하이라이트 이벤트 업데이트
+     */
+    public void updateHighlightEvent(String title, String content) {
+        this.hlEvntTitl = title;
+        this.hlEvntCntt = content;
+    }
+
+    /**
+     * 체크포인트 업데이트
+     */
+    public void updateCheckpoint(String title, String content) {
+        this.ckptTitl = title;
+        this.ckptCntt = content;
     }
 }
