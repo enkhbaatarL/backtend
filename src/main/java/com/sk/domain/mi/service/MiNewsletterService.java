@@ -850,8 +850,11 @@ public class MiNewsletterService {
 
                 // timestamp별로 데이터 정리
                 for (Map<String, Object> data : dataQuery) {
-                    LocalDateTime dateTime = (LocalDateTime) data.get("date");
-                    BigDecimal value = (BigDecimal) data.get("ry");
+                    String col1 = config.getTableColumnName().split(",")[0];
+                    String col2 = config.getTableColumnName().split(",")[1];
+
+                    LocalDateTime dateTime = (LocalDateTime) data.get(col1);
+                    BigDecimal value = (BigDecimal) data.get(col2);
 
                     if (dateTime != null && value != null) {
                         String timestamp = String.valueOf(
