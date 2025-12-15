@@ -826,7 +826,10 @@ public class MiNewsletterService {
 
         for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
             try {
-                String additionalWhereClause = CombineUtil.createBetweenClause("date",
+                String col1 = config.getTableColumnName().split(",")[0];
+                String col2 = config.getTableColumnName().split(",")[1];
+
+                String additionalWhereClause = CombineUtil.createBetweenClause(col1,
                     newsletterCollectionChart.getStartDate().format(f3),
                     newsletterCollectionChart.getEndDate().format(f3));
 
@@ -850,10 +853,9 @@ public class MiNewsletterService {
 
                 // timestamp별로 데이터 정리
                 for (Map<String, Object> data : dataQuery) {
-                    String col1 = config.getTableColumnName().split(",")[0];
-                    String col2 = config.getTableColumnName().split(",")[1];
-
-                    LocalDateTime dateTime = (LocalDateTime) data.get(col1);
+                    LocalDateTime dateTime = data.get(col1) != null
+                        ? ((java.sql.Timestamp) data.get(col1)).toLocalDateTime()
+                        : null;
                     BigDecimal value = (BigDecimal) data.get(col2);
 
                     if (dateTime != null && value != null) {
