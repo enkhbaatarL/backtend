@@ -43,7 +43,7 @@ public class MiMarketNewsController {
 
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
-    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 10)")
+    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 30)")
     @Parameter(name = "sort", description = "정렬기준", schema = @Schema(implementation = SortType.class))
     @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
     @Parameter(name = "startDate", description = "조회 시작일 (선택사항)")
@@ -61,7 +61,7 @@ public class MiMarketNewsController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<PaginationRes<MarketNewsListRes>> getMarketNewsList(
         @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
-        @RequestParam(value = "size", defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
+        @RequestParam(value = "size", defaultValue = "30") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
         @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
         @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
         @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
@@ -177,7 +177,7 @@ public class MiMarketNewsController {
     @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)")
     @Operation(
         summary = "시장 뉴스 타임라인 조회",
-        description = "시장 뉴스를 영향도 점수 8.0 이상 최대 10개의 뉴스를 조회합니다."
+        description = "시장 뉴스를 특정 점수 이상 최대 10개의 뉴스를 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/timeline")
