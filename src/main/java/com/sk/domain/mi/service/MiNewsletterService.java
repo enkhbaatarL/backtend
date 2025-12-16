@@ -919,7 +919,7 @@ public class MiNewsletterService {
 
             // 폐장 시간
             ZonedDateTime endTime = todayInNY
-                .withHour(17)
+                .withHour(16)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
