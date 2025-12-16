@@ -853,9 +853,7 @@ public class MiNewsletterService {
 
                 // timestamp별로 데이터 정리
                 for (Map<String, Object> data : dataQuery) {
-                    LocalDateTime dateTime = data.get(col1) != null
-                        ? ((java.sql.Timestamp) data.get(col1)).toLocalDateTime()
-                        : null;
+                    LocalDateTime dateTime = convertToLocalDateTime(data.get(col1));
                     BigDecimal value = (BigDecimal) data.get(col2);
 
                     if (dateTime != null && value != null) {
@@ -954,6 +952,28 @@ public class MiNewsletterService {
             log.error("주식 시장 시간 계산 중 오류 발생", e);
             // 기본값 반환 (EST 기준)
             return new String[]{"1704110200000", "1704133200000", "1704110200000", "1704133200000"};
+        }
+    }
+
+    /**
+     * Object를 LocalDateTime으로 변환 MySQL JDBC에서 TIMESTAMP와 DATETIME 컬럼이 서로 다른 타입으로 반환될 수 있음을 처리
+     *
+     * @param obj java.sql.Timestamp 또는 LocalDateTime 객체
+     * @return LocalDateTime, null이면 null 반환
+     */
+    private LocalDateTime convertToLocalDateTime(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof java.sql.Timestamp t) {
+            return t.toLocalDateTime();
+        } else if (obj instanceof LocalDateTime l) {
+            return l;
+        } else {
+            log.warn("Unexpected date type for conversion: {} (class: {})",
+                obj, obj.getClass().getName());
+            return null;
         }
     }
 }
