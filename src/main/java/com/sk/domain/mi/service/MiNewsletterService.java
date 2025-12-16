@@ -883,7 +883,6 @@ public class MiNewsletterService {
         for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
             List<BigDecimal> values = timestamps.stream()
                 .map(ts -> timeSeriesData.get(ts).get(config.getColor()))
-                .filter(Objects::nonNull)
                 .toList();
 
             if (!values.isEmpty()) {
