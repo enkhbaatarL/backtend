@@ -23,11 +23,9 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointRepositor
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
-import com.sk.domain.shared.repository.master.tmd.NewsEventRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
-import com.sk.domain.shared.repository.master.tmd.SignificantNewsRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -62,8 +60,6 @@ public class MiMarketNewsService {
     private final MarketRecapHighlightEventRepository marketRecapHighlightEventRepository;
     private final MarketRecapCheckpointRepository marketRecapCheckpointRepository;
     private final MarketRecapHighlightEventRelationshipRepository marketRecapHighlightEventRelationshipRepository;
-    private final SignificantNewsRepository significantNewsRepository;
-    private final NewsEventRelationshipRepository newsEventRelationshipRepository;
     private final NewsEventRepository newsEventRepository;
 
 
@@ -391,7 +387,7 @@ public class MiMarketNewsService {
         List<MarketRecapCheckpoint> checkpoints =
             marketRecapCheckpointRepository.findByMarketRecap(marketRecap);
 
-        List<MarketRecapRes.RelatedNewsRes> hrList = new ArrayList<>();
+        List<MarketRecapRes.RelatedEventRepresentativeNewsRes> hrList = new ArrayList<>();
 
         // 하이라이트 이벤트 DTO 변환
         List<MarketRecapRes.HighlightEventRes> highlightEventResList = highlightEvents.stream()
@@ -400,7 +396,7 @@ public class MiMarketNewsService {
                     marketRecapHighlightEventRelationshipRepository
                         .findByMarketRecapHighlightEvent(highlightEvent);
 
-                List<MarketRecapRes.RelatedNewsRes> relatedNewsList = relationships.stream()
+                List<MarketRecapRes.RelatedEventRepresentativeNewsRes> relatedNewsList = relationships.stream()
                     .map(rel -> {
                         NewsEvent newsEvent = rel.getNewsEvent();
                         NewsSummary representativeNews = newsEvent.getRepresentativeNewsSummary();
@@ -409,7 +405,7 @@ public class MiMarketNewsService {
                             return null;
                         }
 
-                        return new MarketRecapRes.RelatedNewsRes(
+                        return new MarketRecapRes.RelatedEventRepresentativeNewsRes(
                             representativeNews.getNewsSummaryId(),
                             representativeNews.getRefinitivNewsData() != null
                                 ? representativeNews.getRefinitivNewsData().getTitle() : null,

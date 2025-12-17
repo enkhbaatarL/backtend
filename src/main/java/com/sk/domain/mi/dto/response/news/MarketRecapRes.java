@@ -74,7 +74,7 @@ public record MarketRecapRes(
         String momentum,
 
         @Schema(description = "관련 뉴스 목록")
-        List<RelatedNewsRes> relatedNews
+        List<RelatedEventRepresentativeNewsRes> relatedEventRepresentativeNewsResNews
     ) {}
 
     public record CheckpointRes(
@@ -97,14 +97,14 @@ public record MarketRecapRes(
     ) {}
 
     public record Highlights(
-        @Schema(description = "하이라이트 narrative")
+        @Schema(description = "투데이 하이라이트 이벤트 narrative")
         Narrative narrative,
 
         @Schema(description = "하이라이트 이벤트 목록")
         List<HighlightEventRes> items,
 
-        @Schema(description = "관련 뉴스 목록")
-        List<RelatedNewsRes> relatedNews
+        @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트들의 대표 뉴스 목록")
+        List<RelatedEventRepresentativeNewsRes> relatedEventRepresentativeNewsResNews
     ) {
 
     }
@@ -119,14 +119,14 @@ public record MarketRecapRes(
 
     }
 
-    public record RelatedNewsRes(
-        @Schema(description = "뉴스 요약 ID", example = "123")
+    public record RelatedEventRepresentativeNewsRes(
+        @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트의 대표 뉴스 요약 ID", example = "123")
         Long newsSummaryId,
 
-        @Schema(description = "뉴스 제목", example = "Apple Reports Strong Earnings")
+        @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트의 대표 뉴스 제목", example = "Apple Reports Strong Earnings")
         String title,
 
-        @Schema(description = "프로바이더 ID", example = "reuters")
-        String providerId
+        @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트의 대표 뉴스 프로바이더", example = "reuters")
+        String provider
     ) {}
 }
