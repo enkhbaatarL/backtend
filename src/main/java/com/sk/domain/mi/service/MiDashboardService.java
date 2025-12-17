@@ -722,6 +722,7 @@ public class MiDashboardService {
                                     r->((String)r.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)).substring(0, 6).equals(baseYm)
                                 )
                                 .toList();
+                            if(baseYmRawData.isEmpty()) return null;
                             lastUpdated = DateUtil.parseDate(baseYmRawData.get(baseYmRawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                             dashboardDataSource = DashboardDataSource.of(goodsDataSource, chartPredictSettingDetail);
                         }
@@ -774,6 +775,7 @@ public class MiDashboardService {
 
                     return DashboardChartData.of(lastUpdated, dashboardDataSource, actualGoodsDataSourceDetail[0], dashboardChart);
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
