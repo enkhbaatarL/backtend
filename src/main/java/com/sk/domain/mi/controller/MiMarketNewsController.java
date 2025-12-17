@@ -103,7 +103,7 @@ public class MiMarketNewsController {
     @ApiOrder(3)
     @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", required = true, example = "20250730")
     @Parameter(name = "sort", description = "정렬 방향 (기본값: NEWEST)")
-    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)")
+    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)", required = true)
     @Parameter(name = "sentiments", description = "방향성 (복수 선택 가능)")
     @Parameter(name = "impactScores", description = "영향도 (복수 선택 가능)")
     @Parameter(name = "regions", description = "지역 (복수 선택 가능)")
@@ -174,7 +174,7 @@ public class MiMarketNewsController {
 
     @ApiOrder(6)
     @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", required = true, example = "20250730")
-    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)")
+    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)", required = true)
     @Operation(
         summary = "시장 뉴스 타임라인 조회",
         description = "시장 뉴스를 특정 점수 이상 최대 10개의 뉴스를 조회합니다."

@@ -12,7 +12,9 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
     JpaSpecificationExecutor<NewsSignificance> {
 
     /**
-     * Newsfeed 목록 조회
+     * Newsfeed 목록 조회 (HEAD, NONE만 조회)
+     * - HEAD: tmd_simlr_nws_grp에 존재하는 뉴스
+     * - NONE: tmd_simlr_nws_grp, tmd_simlr_nws_grp_rel 모두에 없는 뉴스
      */
     @Query(value = """
         SELECT
@@ -20,29 +22,31 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.data_reg_sn,
             nsum.first_created,
             ns.nws_mrkt_ctgr_cd,
-            ns.scre,
-            sn.nws_sig_id as sn_nws_sig_id,
-            sn.scre as sn_scre,
+            ns.scre as ns_scre,
+            sn.sgt_nws_id,
+            sn.scre,
             nsum.nws_smry_id,
+            nsum.simlr_grp_stat_cd,
             nsum.brf_smry,
             nsum.smry,
             nsum.prvd_id,
             rnd.title,
             GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
-        FROM tmd_nws_sig ns
-        INNER JOIN tmd_nws_smry nsum ON nsum.nws_smry_id = ns.nws_smry_id
-        LEFT JOIN tmd_sgt_nws sn ON sn.nws_sig_id = ns.nws_sig_id
+        FROM tmd_sgt_nws sn
+        LEFT JOIN tmd_nws_sig ns ON sn.nws_sig_id = ns.nws_sig_id
+        LEFT JOIN tmd_nws_smry nsum ON ns.nws_smry_id = nsum.nws_smry_id
         LEFT JOIN tif_refinewsdatar rnd ON rnd.data_reg_sn = nsum.data_reg_sn
             AND rnd.first_created = nsum.first_created
         LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = nsum.nws_smry_id
-        WHERE (:criteriaDate IS NULL OR ns.crtr_dt = :criteriaDate)
-          AND (:category IS NULL OR ns.nws_mrkt_ctgr_cd = :category)
+        WHERE (sn.crtr_dt = :criteriaDate AND sn.scre >= 7.0)
+          AND (ns.nws_mrkt_ctgr_cd = :category)
+          AND (nsum.simlr_grp_stat_cd IN ('HEAD', 'NONE'))
+          AND nsum.del_yn = 'N'
           AND (:filterBySentiment = FALSE OR (:sentimentList IS NOT NULL))
-          AND ns.scre >= 6.0
           AND (:filterByImpactScore = FALSE OR (
-              ('HIGH' IN (:impactScoreList) AND ns.scre >= 9.0)
-              OR ('MEDIUM' IN (:impactScoreList) AND ns.scre >= 7.0 AND ns.scre < 9.0)
-              OR ('LOW' IN (:impactScoreList) AND ns.scre < 7.0)
+              ('HIGH' IN (:impactScoreList) AND sn.scre >= 9.0)
+              OR ('MEDIUM' IN (:impactScoreList) AND sn.scre >= 8.0 AND sn.scre < 9.0)
+              OR ('LOW' IN (:impactScoreList) AND sn.scre < 8.0)
           ))
           AND (:filterByRegion = FALSE OR EXISTS (
               SELECT 1 FROM tmd_nws_rgn_cls nrc2
@@ -55,9 +59,10 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.first_created,
             ns.nws_mrkt_ctgr_cd,
             ns.scre,
-            sn.nws_sig_id,
+            sn.sgt_nws_id,
             sn.scre,
             nsum.nws_smry_id,
+            nsum.simlr_grp_stat_cd,
             nsum.brf_smry,
             nsum.smry,
             nsum.prvd_id,
@@ -65,9 +70,10 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         ORDER BY
             CASE WHEN :sortField = 'firstCreated' AND :sortDirection = 'ASC' THEN nsum.first_created END ASC,
             CASE WHEN :sortField = 'firstCreated' AND :sortDirection = 'DESC' THEN nsum.first_created END DESC,
-            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'ASC' THEN ns.scre END ASC,
-            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'DESC' THEN ns.scre END DESC,
+            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'ASC' THEN sn.scre END ASC,
+            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'DESC' THEN sn.scre END DESC,
             nsum.data_reg_sn DESC
+        LIMIT 100
         """, nativeQuery = true)
     List<Object[]> findNewsfeedWithGroupConcat(
         @Param("criteriaDate") String criteriaDate,
@@ -83,8 +89,34 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
     );
 
     /**
+     * 특정 HEAD 뉴스의 유사 뉴스(INCL) 목록 조회
+     *
+     * @param headNewsSummaryIds HEAD 뉴스들의 nws_smry_id 목록
+     * @return [simlr_nws_grp_id, head_nws_smry_id, incl_nws_smry_id, title, first_created, data_reg_sn]
+     */
+    @Query(value = """
+        SELECT
+            sng.simlr_nws_grp_id,
+            sng.nws_smry_id as head_nws_smry_id,
+            nsum.nws_smry_id as incl_nws_smry_id,
+            rnd.title,
+            nsum.first_created,
+            nsum.data_reg_sn
+        FROM tmd_simlr_nws_grp sng
+        INNER JOIN tmd_simlr_nws_grp_rel sngr ON sng.simlr_nws_grp_id = sngr.simlr_nws_grp_id
+        INNER JOIN tmd_nws_smry nsum ON sngr.nws_smry_id = nsum.nws_smry_id
+        LEFT JOIN tif_refinewsdatar rnd ON rnd.data_reg_sn = nsum.data_reg_sn
+            AND rnd.first_created = nsum.first_created
+        WHERE sng.nws_smry_id IN (:headNewsSummaryIds)
+          AND sng.del_yn = 'N'
+          AND sngr.del_yn = 'N'
+          AND nsum.del_yn = 'N'
+        ORDER BY sng.nws_smry_id, nsum.first_created DESC
+        """, nativeQuery = true)
+    List<Object[]> findSimilarNewsByHeadIds(@Param("headNewsSummaryIds") List<Long> headNewsSummaryIds);
+
+    /**
      * Market News 목록 조회 (GROUP_CONCAT 사용)
-     * 변경: data_reg_sn, first_created JOIN → nws_smry_id 직접 JOIN
      */
     @Query(value = """
         SELECT
@@ -152,7 +184,6 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
 
     /**
      * Market News 총 개수 조회
-     * 변경: data_reg_sn, first_created JOIN → nws_smry_id 직접 JOIN
      */
     @Query(value = """
         SELECT COUNT(DISTINCT nsum.nws_smry_id)

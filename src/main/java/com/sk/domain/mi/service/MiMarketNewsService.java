@@ -9,6 +9,7 @@ import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
+import com.sk.domain.mi.dto.response.news.NewsfeedListRes.SimilarNewsItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpoint;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightEvent;
@@ -34,7 +35,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -240,53 +244,40 @@ public class MiMarketNewsService {
             sortField, sortDirection
         );
 
-        return results.stream()
-            .map(result -> {
-                Long nwsSigId = ((Number) result[0]).longValue();
-                Long dataRegSn = ((Number) result[1]).longValue();
-                LocalDateTime firstCreated = result[2] != null
-                    ? ((java.sql.Timestamp) result[2]).toLocalDateTime()
-                    : null;
-                String nwsMrktCtgrCd = (String) result[3];
-                java.math.BigDecimal score = result[4] != null
-                    ? (java.math.BigDecimal) result[4]
-                    : null;
+        if (results.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-                java.math.BigDecimal sgtScore = result[6] != null
-                    ? (java.math.BigDecimal) result[6]
-                    : null;
+        List<Long> headNewsSummaryIds = results.stream()
+                .filter(row -> "HEAD".equals(String.valueOf(row[8])))
+                .map(row -> ((Number) row[7]).longValue()) // nws_smry_id
+                .toList();
 
-                Integer newsSummaryId = result[7] != null
-                    ? ((Number) result[7]).intValue()
-                    : null;
-                String briefSummary = (String) result[8];
-                String summary = (String) result[9];
-                String providerId = (String) result[10];  // provider → providerId
-                String title = (String) result[11];
-                String regionsStr = (String) result[12];
+        Map<Long, List<SimilarNewsItem>> similarNewsMap = new HashMap<>();
+        if (!headNewsSummaryIds.isEmpty()) {
+            List<Object[]> similarResults = newsSignificanceRepository
+                    .findSimilarNewsByHeadIds(headNewsSummaryIds);
 
-                List<String> regionsList = parseGroupConcatResult(regionsStr);
+            // headNewsSummaryId별로 그룹핑
+            for (Object[] row : similarResults) {
+                Long headNewsSummaryId = ((Number) row[1]).longValue();
 
-                // directionality 계산 (score 기반)
-                String directionality = calculateDirectionality(sgtScore);
-
-                return new NewsfeedListRes(
-                    nwsSigId,
-                    dataRegSn,
-                    firstCreated,
-                    nwsMrktCtgrCd,
-                    newsSummaryId,
-                    briefSummary,
-                    summary != null ? Arrays.asList(summary.split("\n")) : null,
-                    title,
-                    providerId,  // provider → providerId
-                    score,
-                    directionality,
-                    sgtScore,
-                    regionsList
+                SimilarNewsItem item = new SimilarNewsItem(
+                    ((Number) row[2]).longValue(), // incl_nws_smry_id
+                    (String) row[3],                // title
+                    ((java.sql.Timestamp) row[4]).toLocalDateTime(), // first_created
+                    ((Number) row[5]).longValue()   // data_reg_sn
                 );
-            })
-            .toList();
+
+                similarNewsMap
+                        .computeIfAbsent(headNewsSummaryId, k -> new ArrayList<>())
+                        .add(item);
+            }
+        }
+
+        return results.stream()
+                .map(row -> convertToNewsfeedListRes(row, similarNewsMap))
+                .toList();
     }
 
     /**
@@ -509,72 +500,87 @@ public class MiMarketNewsService {
     }
 
     /**
-     * News Timeline 조회 (영향도 8.0 이상, 최대 10개)
+     * News Timeline 조회
      */
     public List<NewsfeedListRes> getNewsTimeline(
         String criteriaDate, String category) {
 
+        // TODO: 개별뉴스 아닌 뉴스이벤트로 조회하도록 변경
         List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
             criteriaDate, category, null, false, null, false, null, false,
             "firstCreated", "ASC");
 
-        // impctScre 필터링 및 limit 적용 후 DTO 변환
+        // 점수 필터링 및 limit 적용 후 DTO 변환
         return results.stream()
             .filter(result -> {
                 // score가 8.0 이상인 뉴스만 필터링
-                java.math.BigDecimal score = result[4] != null
-                    ? (java.math.BigDecimal) result[4]
+                java.math.BigDecimal score = result[5] != null
+                    ? (java.math.BigDecimal) result[5]
                     : null;
                 return score != null &&
                     score.compareTo(new java.math.BigDecimal("8.0")) >= 0;
             })
             .limit(10)
-            .map(result -> {
-                Long nwsSigId = ((Number) result[0]).longValue();
-                Long dataRegSn = ((Number) result[1]).longValue();
-                LocalDateTime firstCreated = result[2] != null
-                    ? ((java.sql.Timestamp) result[2]).toLocalDateTime()
-                    : null;
-                String nwsMrktCtgrCd = (String) result[3];
-
-                java.math.BigDecimal score = result[4] != null
-                    ? (java.math.BigDecimal) result[4]
-                    : null;
-
-                java.math.BigDecimal sgtScore = result[6] != null
-                    ? (java.math.BigDecimal) result[6]
-                    : null;
-
-                Integer newsSummaryId = result[7] != null
-                    ? ((Number) result[7]).intValue()
-                    : null;
-                String briefSummary = (String) result[8];
-                String summary = (String) result[9];
-                String providerId = (String) result[10];  // provider → providerId
-                String title = (String) result[11];
-
-                String regionsStr = (String) result[12];
-
-                List<String> regionList = parseGroupConcatResult(regionsStr);
-
-                String directionality = calculateDirectionality(sgtScore);
-
-                return new NewsfeedListRes(
-                    nwsSigId,
-                    dataRegSn,
-                    firstCreated,
-                    nwsMrktCtgrCd,
-                    newsSummaryId,
-                    briefSummary,
-                    summary != null ? Arrays.asList(summary.split("\n")) : null,
-                    title,
-                    providerId,  // provider → providerId
-                    score,
-                    directionality,
-                    sgtScore,
-                    regionList
-                );
-            })
+            .map(result -> convertToNewsfeedListRes(result, null))
             .toList();
+    }
+
+    /**
+     * Object[] → NewsfeedListRes 변환
+     */
+    private NewsfeedListRes convertToNewsfeedListRes(
+        Object[] row,
+        Map<Long, List<SimilarNewsItem>> similarNewsMap) {
+
+        Long newsSignificanceId = ((Number) row[0]).longValue();
+        Long dataRegistrationSerialNo = ((Number) row[1]).longValue();
+        LocalDateTime firstCreated = row[2] != null
+                    ? ((java.sql.Timestamp) row[2]).toLocalDateTime()
+                    : null;
+        String newsMarketCategoryCode = (String) row[3];
+        BigDecimal newsSignificanceScore = (BigDecimal) row[4];
+        Long newsSignalId = ((Number) row[5]).longValue();
+        BigDecimal significantNewsScore = (BigDecimal) row[6];
+        Long newsSummaryId = ((Number) row[7]).longValue();
+        String similarityGroupStatusCode = (String) row[8];
+        String briefSummary = (String) row[9];
+        String summaryStr = (String) row[10];
+        String provider = (String) row[11];
+        String title = (String) row[12];
+        String regionsStr = (String) row[13];
+
+        // summary 파싱 (쉼표로 구분된 문자열 → List)
+        List<String> summary = summaryStr != null
+            ? Arrays.asList(summaryStr.split(","))
+            : Collections.emptyList();
+
+        // 유사 뉴스 목록 (HEAD인 경우에만)
+        List<SimilarNewsItem> similarNewsList = "HEAD".equals(similarityGroupStatusCode)
+            ? similarNewsMap.getOrDefault(newsSummaryId, Collections.emptyList())
+            : null;
+
+        List<String> regionsList = parseGroupConcatResult(regionsStr);
+
+        // directionality 계산 (significantNewsScore 기반)
+        String directionality = calculateDirectionality(significantNewsScore);
+
+        return new NewsfeedListRes(
+            newsSignificanceId,
+            newsSignalId,
+            dataRegistrationSerialNo,
+            firstCreated,
+            newsMarketCategoryCode,
+            newsSummaryId,
+            similarityGroupStatusCode,
+            briefSummary,
+            summary,
+            title,
+            provider,
+            newsSignificanceScore,
+            significantNewsScore,
+            directionality,
+            regionsList,
+            similarNewsList
+        );
     }
 }

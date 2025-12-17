@@ -10,7 +10,10 @@ import java.util.List;
  */
 public record NewsfeedListRes(
     @Schema(description = "뉴스 중요도 ID", example = "11")
-    Long newsSignalId,
+    Long newsSignificanceId,
+
+    @Schema(description = "중요 뉴스 ID", example = "11")
+    Long significantNewsId,
 
     @Schema(description = "데이터등록일련번호", example = "36033981")
     Long dataRegistrationSerialNo,
@@ -22,7 +25,10 @@ public record NewsfeedListRes(
     String newsMarketCategoryCode,
 
     @Schema(description = "뉴스 요약 ID", example = "11")
-    Integer newsSummaryId,
+    Long newsSummaryId,
+
+    @Schema(description = "유사그룹상태코드", example = "HEAD")
+    String similarityGroupStatusCode,
 
     @Schema(description = "간략요약", example = "")
     String briefSummary,
@@ -36,17 +42,36 @@ public record NewsfeedListRes(
     @Schema(description = "프로바이더", example = "reuters")
     String provider,
 
-    @Schema(description = "영향도점수", example = "9.1")
-    BigDecimal impactScore,
+    @Schema(description = "뉴스 중요도 점수", example = "9.1")
+    BigDecimal newsSignificanceScore,
+
+    @Schema(description = "중요 뉴스 점수", example = "9.1")
+    BigDecimal significantNewsScore,
 
     @Schema(description = "방향성", example = "Upward")
     String directionality,
 
-    @Schema(description = "방향점수", example = "-2.1")
-    BigDecimal directionalScore,
-
     @Schema(description = "지역", example = "[Global, Asia Pacific]")
-    List<String> regions
+    List<String> regions,
+
+    @Schema(description = "유사 뉴스 목록 (HEAD인 경우에만)", nullable = true)
+    List<SimilarNewsItem> similarNewsList
 ) {
 
+    /**
+     * 유사그룹 내 개별 뉴스 항목
+     */
+    public record SimilarNewsItem(
+        @Schema(description = "뉴스 요약 ID")
+        Long newsSummaryId,
+
+        @Schema(description = "뉴스 제목")
+        String title,
+
+        @Schema(description = "NEWS최초생성일시")
+        LocalDateTime firstCreated,
+
+        @Schema(description = "데이터등록일련번호")
+        Long dataRegistrationSerialNo
+    ) {}
 }
