@@ -39,16 +39,33 @@ public interface NewsEventRepository extends JpaRepository<NewsEvent, Long> {
     List<NewsEvent> findByRepresentativeNewsSummaryId(@Param("newsSummaryId") Long newsSummaryId);
 
     /**
-     * 기준 일자와 점수 범위로 이벤트 조회 (정렬)
+     * 기준 일자와 시장카테고리로 뉴스 타임라인 조회 (뉴스 발행시간 오름차순, 최대 10개)
      */
-    @Query("SELECT ne FROM NewsEvent ne " +
-           "WHERE ne.crtrDt = :crtrDt " +
-           "AND (:minScore IS NULL OR ne.score >= :minScore) " +
-           "AND (:maxScore IS NULL OR ne.score <= :maxScore) " +
-           "ORDER BY ne.score DESC")
-    List<NewsEvent> findByCrtrDtAndScoreRange(
+    @Query(value = """
+        SELECT
+            ne.nws_evnt_id,
+            ne.nm_kr,
+            ne.nm_en,
+            ne.nws_mrkt_ctgr_cd,
+            ns.nws_smry_id,
+            ns.data_reg_sn,
+            ns.first_created,
+            ns.brf_smry,
+            ns.smry,
+            rnd.title,
+            ns.prvd_id,
+            ne.scre
+        FROM tmd_nws_evnt ne
+        LEFT JOIN tmd_nws_smry ns ON ne.nws_smry_id = ns.nws_smry_id
+        LEFT JOIN tif_refinewsdatar rnd ON ns.data_reg_sn = rnd.data_reg_sn
+            AND ns.first_created = rnd.first_created
+        WHERE ne.crtr_dt = :crtrDt
+            AND ne.nws_mrkt_ctgr_cd = :newsMarketCategoryCode
+        ORDER BY ns.first_created ASC
+        LIMIT 10
+        """, nativeQuery = true)
+    List<Object[]> findNewsTimelineData(
         @Param("crtrDt") String crtrDt,
-        @Param("minScore") java.math.BigDecimal minScore,
-        @Param("maxScore") java.math.BigDecimal maxScore
+        @Param("newsMarketCategoryCode") String newsMarketCategoryCode
     );
 }

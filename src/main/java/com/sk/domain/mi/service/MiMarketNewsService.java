@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
+import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes.SimilarNewsItem;
 import com.sk.domain.shared.entity.master.tmd.MarketRecap;
@@ -23,6 +24,7 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRelat
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsEventRelationshipRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
 import com.sk.domain.shared.repository.master.tmd.SignificantNewsRepository;
@@ -62,6 +64,7 @@ public class MiMarketNewsService {
     private final MarketRecapHighlightEventRelationshipRepository marketRecapHighlightEventRelationshipRepository;
     private final SignificantNewsRepository significantNewsRepository;
     private final NewsEventRelationshipRepository newsEventRelationshipRepository;
+    private final NewsEventRepository newsEventRepository;
 
 
     private boolean isMonday(String dateStr) {
@@ -502,26 +505,53 @@ public class MiMarketNewsService {
     /**
      * News Timeline 조회
      */
-    public List<NewsfeedListRes> getNewsTimeline(
+    public List<NewsTimelineRes> getNewsTimeline(
         String criteriaDate, String category) {
 
-        // TODO: 개별뉴스 아닌 뉴스이벤트로 조회하도록 변경
-        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
-            criteriaDate, category, null, false, null, false, null, false,
-            "firstCreated", "ASC");
+        List<Object[]> results = newsEventRepository.findNewsTimelineData(
+            criteriaDate, category);
 
-        // 점수 필터링 및 limit 적용 후 DTO 변환
         return results.stream()
-            .filter(result -> {
-                // score가 8.0 이상인 뉴스만 필터링
-                java.math.BigDecimal score = result[5] != null
-                    ? (java.math.BigDecimal) result[5]
+            .map(row -> {
+                Long newsEventId = ((Number) row[0]).longValue();
+                String newsEventNameKr = (String) row[1];
+                String newsEventNameEn = (String) row[2];
+                String newsMarketCategoryCode = (String) row[3];
+                Long newsSummaryId = row[4] != null ? ((Number) row[4]).longValue() : null;
+                Integer dataRegistrationSn = row[5] != null ? ((Number) row[5]).intValue() : null;
+                LocalDateTime firstCreated = row[6] != null
+                    ? ((java.sql.Timestamp) row[6]).toLocalDateTime()
                     : null;
-                return score != null &&
-                    score.compareTo(new java.math.BigDecimal("8.0")) >= 0;
+                String briefSummary = (String) row[7];
+                String summaryStr = (String) row[8];
+                String title = (String) row[9];
+                String providerId = (String) row[10];
+                BigDecimal score = (BigDecimal) row[11];
+
+                // summary 변환: String → List<String> (개행 구분)
+                List<String> summary = summaryStr != null && !summaryStr.isBlank()
+                    ? Arrays.asList(summaryStr.split("\n"))
+                    : Collections.emptyList();
+
+                // directionality 계산
+                String directionality = calculateDirectionality(score);
+
+                return new NewsTimelineRes(
+                    newsEventId,
+                    newsEventNameKr,
+                    newsEventNameEn,
+                    newsMarketCategoryCode,
+                    newsSummaryId,
+                    dataRegistrationSn != null ? dataRegistrationSn.longValue() : null,
+                    firstCreated,
+                    briefSummary,
+                    summary,
+                    title,
+                    providerId,
+                    score,
+                    directionality
+                );
             })
-            .limit(10)
-            .map(result -> convertToNewsfeedListRes(result, null))
             .toList();
     }
 

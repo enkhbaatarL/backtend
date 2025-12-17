@@ -28,10 +28,11 @@ import org.hibernate.annotations.Comment;
     indexes = {
         @Index(name = "tmd_nws_evnt_ix01", columnList = "crtr_dt"),
         @Index(name = "tmd_nws_evnt_ix02", columnList = "nws_smry_id"),
-        @Index(name = "tmd_nws_evnt_ix03", columnList = "evnt_ctgr_id")
+        @Index(name = "tmd_nws_evnt_ix03", columnList = "evnt_ctgr_id"),
+        @Index(name = "tmd_nws_evnt_ix04", columnList = "nws_mrkt_ctgr_cd, crtr_dt") // 신규 인덱스 추가
     },
     uniqueConstraints = {
-        @UniqueConstraint(name = "tmd_nws_evnt_ux01", columnNames = {"crtr_dt", "nm_kr"})
+        @UniqueConstraint(name = "tmd_nws_evnt_ux01", columnNames = {"nws_mrkt_ctgr_cd", "crtr_dt", "nm_kr"}) // 제약 조건 변경
     }
 )
 @Getter
@@ -44,6 +45,10 @@ public class NewsEvent extends BaseEntity {
     @Column(name = "nws_evnt_id", columnDefinition = "INT UNSIGNED")
     @Comment("뉴스 이벤트 ID")
     private Long newsEventId;
+
+    @Column(name = "nws_mrkt_ctgr_cd", length = 20, nullable = false) // 신규 컬럼 추가
+    @Comment("뉴스 시장 카테고리 코드")
+    private String newsMarketCategoryCode;
 
     @Column(name = "crtr_dt", length = 8, nullable = false)
     @Comment("기준 일자 (YYYYMMDD) - 뉴스 분석 기준일자")
@@ -70,6 +75,10 @@ public class NewsEvent extends BaseEntity {
     @Comment("점수 (BE 에서 sentiment(upward/neutral/downward) 변환)")
     private BigDecimal score;
 
+    @Column(name = "derv_rsn", columnDefinition = "TEXT") // 신규 컬럼 추가
+    @Comment("도출 이유")
+    private String derivationReason;
+
     @Column(name = "nws_smry_id", columnDefinition = "INT UNSIGNED", insertable = false, updatable = false)
     @Comment("이벤트의 대표 뉴스 요약 ID")
     private Long newsSummaryId;
@@ -80,13 +89,16 @@ public class NewsEvent extends BaseEntity {
     private NewsSummary representativeNewsSummary;
 
     @Builder
-    public NewsEvent(String crtrDt, NewsEventCategory eventCategory, String nameKr,
-                    String nameEn, BigDecimal score, NewsSummary representativeNewsSummary) {
+    public NewsEvent(String newsMarketCategoryCode, String crtrDt, NewsEventCategory eventCategory,
+                    String nameKr, String nameEn, BigDecimal score, String derivationReason,
+                    NewsSummary representativeNewsSummary) {
+        this.newsMarketCategoryCode = newsMarketCategoryCode;
         this.crtrDt = crtrDt;
         this.eventCategory = eventCategory;
         this.nameKr = nameKr;
         this.nameEn = nameEn;
         this.score = score;
+        this.derivationReason = derivationReason;
         this.representativeNewsSummary = representativeNewsSummary;
     }
 }

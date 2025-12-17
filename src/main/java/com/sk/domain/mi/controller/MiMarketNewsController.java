@@ -8,6 +8,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
+import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -183,7 +184,7 @@ public class MiMarketNewsController {
     @GetMapping("/timeline")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<List<NewsfeedListRes>> getMarketNewsFeed(
+    public BaseResponse<List<NewsTimelineRes>> getMarketNewsFeed(
        @RequestParam(value = "criteriaDate") String criteriaDate,
         @RequestParam(value = "category", defaultValue = "CROIL") String category) {
 
