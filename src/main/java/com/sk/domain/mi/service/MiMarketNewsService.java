@@ -588,7 +588,7 @@ public class MiMarketNewsService {
                 String title = (String) row[9];
                 String providerId = (String) row[10];
                 BigDecimal score = (BigDecimal) row[11];
-
+                String regionsStr = (String) row[12];
                 // summary 변환: String → List<String> (개행 구분)
                 List<String> summary = summaryStr != null && !summaryStr.isBlank()
                     ? Arrays.asList(summaryStr.split("\n"))
@@ -596,7 +596,7 @@ public class MiMarketNewsService {
 
                 // directionality 계산
                 String directionality = calculateEventDirectionality(score);
-
+                List<String> rList = parseGroupConcatResult(regionsStr);
                 return new NewsTimelineRes(
                     newsEventId,
                     newsEventNameKr,
@@ -610,7 +610,8 @@ public class MiMarketNewsService {
                     title,
                     providerId,
                     score,
-                    directionality
+                    directionality,
+                    rList
                 );
             })
             .toList();

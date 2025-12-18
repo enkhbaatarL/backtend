@@ -46,7 +46,10 @@ public record NewsTimelineRes(
     BigDecimal score,
 
     @Schema(description = "방향성(이벤트 점수 기준으로 변환, 기준은 변경될 예정)", example = "UPWARD")
-    String directionality
+    String directionality,
+
+    @Schema(description = "지역", example = "[Global, Asia Pacific]")
+    List<String> regions
 ) {
 
 }

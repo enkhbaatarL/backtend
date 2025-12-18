@@ -54,13 +54,28 @@ public interface NewsEventRepository extends JpaRepository<NewsEvent, Long> {
             ns.smry,
             rnd.title,
             ns.prvd_id,
-            ne.scre
+            ne.scre,
+            GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
         FROM tmd_nws_evnt ne
         LEFT JOIN tmd_nws_smry ns ON ne.nws_smry_id = ns.nws_smry_id
         LEFT JOIN tif_refinewsdatar rnd ON ns.data_reg_sn = rnd.data_reg_sn
             AND ns.first_created = rnd.first_created
+        LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = ns.nws_smry_id
         WHERE ne.crtr_dt = :crtrDt
             AND ne.nws_mrkt_ctgr_cd = :newsMarketCategoryCode
+        GROUP BY
+            ne.nws_evnt_id,
+            ne.nm_kr,
+            ne.nm_en,
+            ne.nws_mrkt_ctgr_cd,
+            ns.nws_smry_id,
+            ns.data_reg_sn,
+            ns.first_created,
+            ns.brf_smry,
+            ns.smry,
+            rnd.title,
+            ns.prvd_id,
+            ne.scre
         ORDER BY ns.first_created ASC
         LIMIT 10
         """, nativeQuery = true)
