@@ -227,7 +227,8 @@ public class MiDashboardHistoryService {
             if(r.baseline() == null && r.baseline2() == null){
                 return r;
             }
-            List<DashboardSummary> dashboardSummaries = miDashboardService.getDashboardSummaries(settingDetailForCheckDownload, DateUtil.toYmd(fulfillDate), r.date()+"01");
+            List<DashboardSummary> dashboardSummaries = miDashboardService.getDashboardSummaries(settingDetailForCheckDownload, DateUtil.toYmd(fulfillDate),
+                r.date().length() == 6 ? r.date()+"01" : r.date());
             boolean download = false;
             for(DashboardSummary dashboardSummary : dashboardSummaries){
                 if(org.springframework.util.StringUtils.hasText(dashboardSummary.explanatoryFilePath())){

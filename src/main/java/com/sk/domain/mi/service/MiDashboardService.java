@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -44,7 +45,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -463,7 +463,14 @@ public class MiDashboardService {
      */
     public DashboardChartRes getChart(Integer customerCompanyNo, String date) {
         String finalDate = (date == null || date.isEmpty()) ? DateUtil.toYearMonth(LocalDate.now()) : date;
-        LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
+        LocalDate baseDate = null;
+        if(date == null || date.isEmpty()){
+            baseDate = LocalDate.now();
+        }else if(date.length() == 6){
+            baseDate = DateUtil.fromYearMonth(date);
+        }else{
+            baseDate = DateUtil.fromYmdHyphen(date);
+        }
 
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
@@ -658,10 +665,27 @@ public class MiDashboardService {
                     String defaultDataColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
                     // 날짜 범위 설정
-                    LocalDate endDate = baseDate.plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt())
-                            .with(TemporalAdjusters.lastDayOfMonth());
-                    LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH)
-                            .withDayOfMonth(1);
+                    LocalDate endDate = baseDate
+                        .plus(
+                            chartPredictSetting.getPredictPeriodMonthsCnt(),
+                            chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit());
+
+                    endDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                        case W -> endDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+                        case D -> endDate;
+                        default -> endDate.with(TemporalAdjusters.lastDayOfMonth());
+                    };
+
+                    LocalDate startDate = endDate.minus(
+                        DASHBOARD_CHART_START_DATE_FROM_MONTH,
+                        chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit()
+                    );
+
+                    startDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                        case W -> startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                        case D -> startDate;
+                        default -> startDate.withDayOfMonth(1);
+                    };
 
                     String cacheKey = getDashboardChartCacheKey(chartPredictSettingDetail.getChartPredictSettingDetailNo(),
                             baseDate.toString());
@@ -698,16 +722,17 @@ public class MiDashboardService {
                                     r->((String)r.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)).substring(0, 6).equals(baseYm)
                                 )
                                 .toList();
+                            if(baseYmRawData.isEmpty()) return null;
                             lastUpdated = DateUtil.parseDate(baseYmRawData.get(baseYmRawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                             dashboardDataSource = DashboardDataSource.of(goodsDataSource, chartPredictSettingDetail);
                         }
 
                         // 월별 날짜 생성
-                        List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
+                        List<LocalDate> monthlyDates = generateDates(startDate, endDate, chartPredictSetting);
 
                         // 월별 평균 계산
-                        monthlyAverages = calculateMonthlyAverages(monthlyDates, rawData, dateColumnName, defaultDataColumnName,
-                                chartPredictSettingDetail.getIsChartLinePredictVal(), lastUpdated);
+                        monthlyAverages = calculateAverages(monthlyDates, rawData, dateColumnName, defaultDataColumnName,
+                                chartPredictSettingDetail.getIsChartLinePredictVal(), lastUpdated, chartPredictSetting);
 
                         // 캐시 저장
                         DashboardDataCache dashboardDataCache = DashboardDataCache.of(monthlyAverages, lastUpdated, dashboardDataSource);
@@ -750,6 +775,7 @@ public class MiDashboardService {
 
                     return DashboardChartData.of(lastUpdated, dashboardDataSource, actualGoodsDataSourceDetail[0], dashboardChart);
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -760,14 +786,26 @@ public class MiDashboardService {
      * @param endDate 종료일
      * @return List<LocalDate>
      */
-    public List<LocalDate> generateMonthlyDates(LocalDate startDate, LocalDate endDate) {
-        List<LocalDate> monthlyDates = new ArrayList<>();
-        LocalDate current = startDate.withDayOfMonth(1); // 월의 첫 번째 날
-        while (!current.isAfter(endDate)) {
-            monthlyDates.add(current);
-            current = current.plusMonths(1).withDayOfMonth(1);
+    public List<LocalDate> generateDates(LocalDate startDate, LocalDate endDate, ChartPredictSetting chartPredictSetting) {
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate current = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+          case W -> {
+            int diff = DayOfWeek.WEDNESDAY.getValue() - startDate.getDayOfWeek().getValue();
+            yield startDate.plusDays(diff);
+          }
+          case D -> startDate;
+          default -> startDate.withDayOfMonth(1); // 월의 첫 번째 날
+        };
+
+      while (!current.isAfter(endDate)) {
+            dates.add(current);
+          current = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+            case W -> current.plusWeeks(1);
+            case D -> current.plusDays(1);
+            default -> current.plusMonths(1).withDayOfMonth(1);
+          };
         }
-        return monthlyDates;
+        return dates;
     }
 
     /**
@@ -779,19 +817,28 @@ public class MiDashboardService {
      * @param defaultDataColumnName 기본 데이터 칼럼명
      * @return List<DashboardChartRawData>
      */
-    public List<DashboardChartRawData> calculateMonthlyAverages(List<LocalDate> monthlyDates, List<Map<String, Object>> rawData,
-            String dateColumnName, String defaultDataColumnName, boolean isPredict, LocalDate lastUpdated) {
+    public List<DashboardChartRawData> calculateAverages(List<LocalDate> monthlyDates, List<Map<String, Object>> rawData,
+            String dateColumnName, String defaultDataColumnName, boolean isPredict, LocalDate lastUpdated, ChartPredictSetting chartPredictSetting) {
         // 결과 리스트
-        List<DashboardChartRawData> monthlyAverages = new ArrayList<>();
+        List<DashboardChartRawData> periodAverages = new ArrayList<>();
 
         // DateTimeFormatter for YYYY-MM
         DateTimeFormatter yyyyMMFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
-
         // rawData를 월별로 그룹화
-        Map<String, List<Double>> monthlyValues = new TreeMap<>();
+        Map<String, List<Double>> periodValues = new TreeMap<>();
         Map<String, String> monthlyPredictDates = new TreeMap<>(); // prdc_fulf_dt 저장
         for (Map<String, Object> row : rawData) {
-            String yearMonth = DateUtil.toYyyyMm(DateUtil.parseDate(row.get(dateColumnName)));
+            String period = null;
+            LocalDate localDate = DateUtil.parseDate(row.get(dateColumnName));
+            period = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                case W -> {
+                  int diff = DayOfWeek.WEDNESDAY.getValue() - localDate.getDayOfWeek().getValue();
+                  yield DateUtil.toYmdHyphen(localDate.plusDays(diff));
+                }
+                case D -> DateUtil.toYmdHyphen(localDate);
+                default -> DateUtil.toYyyyMm(localDate);
+            };
+
             String predictDate = null;
 
             // 기본 데이터 칼럼 값
@@ -803,7 +850,7 @@ public class MiDashboardService {
                 predictDate = (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
                 // 예측 수행 날짜가 다르면 skip ( 제외 )
                 if(predictDate.equals(DateUtil.toYmd(lastUpdated))){
-                    monthlyPredictDates.put(yearMonth, predictDate);
+                    monthlyPredictDates.put(period, predictDate);
                 }else{
                     continue;
                 }
@@ -827,24 +874,31 @@ public class MiDashboardService {
             }
 
             // 월별 평균 그룹화
-            monthlyValues.computeIfAbsent(yearMonth, k -> new ArrayList<>()).add(valueData);
+            periodValues.computeIfAbsent(period, k -> new ArrayList<>()).add(valueData);
         }
 
         // 월별 평균 계산
-        for (LocalDate month : monthlyDates) {
-            String yearMonth = month.format(yyyyMMFormatter);
-            List<Double> values = monthlyValues.getOrDefault(yearMonth, Collections.emptyList());
-            String predictDate = isPredict ? monthlyPredictDates.getOrDefault(yearMonth, null) : null;
+        for (LocalDate periodDate : monthlyDates) {
+            String periodStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                case W -> {
+                    int diff = DayOfWeek.WEDNESDAY.getValue() - periodDate.getDayOfWeek().getValue();
+                    yield DateUtil.toYmdHyphen(periodDate.plusDays(diff));
+                }
+                case D -> DateUtil.toYmdHyphen(periodDate);
+                default -> periodDate.format(yyyyMMFormatter);
+            };
+            List<Double> values = periodValues.getOrDefault(periodStr, Collections.emptyList());
+            String predictDate = isPredict ? monthlyPredictDates.getOrDefault(periodStr, null) : null;
 
             // 월별 평균 결과 데이터
             DashboardChartRawData dashboardChartRawData;
             if (values.isEmpty()) {
                 // 예측 데이터인 경우
                 if (isPredict) {
-                    dashboardChartRawData = DashboardChartRawData.ofForecast(yearMonth, predictDate, null);
+                    dashboardChartRawData = DashboardChartRawData.ofForecast(periodStr, predictDate, null);
                     // 정형 데이터인 경우
                 } else {
-                    dashboardChartRawData = DashboardChartRawData.ofActual(yearMonth, null);
+                    dashboardChartRawData = DashboardChartRawData.ofActual(periodStr, null);
                 }
             } else {
                 // 월별 평균 계산
@@ -858,17 +912,17 @@ public class MiDashboardService {
                         .setScale(2, RoundingMode.HALF_UP);
                 // 예측 데이터인 경우
                 if (isPredict) {
-                    dashboardChartRawData = DashboardChartRawData.ofForecast(yearMonth, predictDate, bd.doubleValue());
+                    dashboardChartRawData = DashboardChartRawData.ofForecast(periodStr, predictDate, bd.doubleValue());
                     // 정형 데이터인 경우
                 } else {
-                    dashboardChartRawData = DashboardChartRawData.ofActual(yearMonth, bd.doubleValue());
+                    dashboardChartRawData = DashboardChartRawData.ofActual(periodStr, bd.doubleValue());
                 }
             }
 
             // 월별 평균 결과 저장
-            monthlyAverages.add(dashboardChartRawData);
+            periodAverages.add(dashboardChartRawData);
         }
-        return monthlyAverages;
+        return periodAverages;
     }
 
     /**
@@ -1144,7 +1198,7 @@ public class MiDashboardService {
                 .with(TemporalAdjusters.lastDayOfMonth());
         LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
         // 월별 날짜 생성
-        List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
+        List<LocalDate> monthlyDates = generateDates(startDate, endDate, chartPredictSetting);
 
         GoodsDataSourceDetail forecastGoodsDataSourceDetail = chartDataResults.stream()
                 .map(DashboardChartData::forecastGoodsDataSourceDetail)
@@ -1488,7 +1542,11 @@ public class MiDashboardService {
             // 기본 데이터 칼럼
             String actualDefaultDataColumnName = actualTableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
-            LocalDate endDate = baseDate.with(TemporalAdjusters.lastDayOfMonth());
+            LocalDate endDate = baseDate
+                .plus(
+                    chartPredictSetting.getPredictPeriodMonthsCnt(),
+                    chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit())
+                .with(TemporalAdjusters.lastDayOfMonth());
 
             LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
 
@@ -1496,11 +1554,11 @@ public class MiDashboardService {
             List<Map<String, Object>> graphRawData = getActualDataRows(actualGoodsDataSourceDetail, actualDateColumnName, startDate, endDate);
 
             // 월별 날짜 생성
-            List<LocalDate> monthlyDates = generateMonthlyDates(startDate, endDate);
+            List<LocalDate> monthlyDates = generateDates(startDate, endDate, chartPredictSetting);
 
             // 월별 평균 계산
-            List<DashboardChartRawData> monthlyAverages = isPermitted ? calculateMonthlyAverages(monthlyDates, graphRawData, actualDateColumnName,
-                    actualDefaultDataColumnName, false, null) : null;
+            List<DashboardChartRawData> monthlyAverages = isPermitted ? calculateAverages(monthlyDates, graphRawData, actualDateColumnName,
+                    actualDefaultDataColumnName, false, null, chartPredictSetting) : null;
 
             DashboardChartFactorGraphMetadata graphMetadata = DashboardChartFactorGraphMetadata.of(
                     actualGoodsDataSourceDetail, chartPredictSetting);
