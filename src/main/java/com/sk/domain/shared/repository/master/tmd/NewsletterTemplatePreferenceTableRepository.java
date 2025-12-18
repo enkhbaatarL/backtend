@@ -8,4 +8,7 @@ public interface NewsletterTemplatePreferenceTableRepository extends JpaReposito
 
     Optional<NewsletterTemplatePreferenceTable> findTopByPreferenceTableCodeAndIsDeletedFalse(
         String preferenceTableCode);
+
+    Optional<NewsletterTemplatePreferenceTable> findTopByDataRegSnAndIsDeletedFalse(
+        Integer dataRegSn);
 }

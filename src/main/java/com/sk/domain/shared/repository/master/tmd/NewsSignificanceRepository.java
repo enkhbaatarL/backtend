@@ -44,9 +44,9 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
           AND nsum.del_yn = 'N'
           AND (:filterBySentiment = FALSE OR (:sentimentList IS NOT NULL))
           AND (:filterByImpactScore = FALSE OR (
-              ('HIGH' IN (:impactScoreList) AND sn.scre >= 9.0)
-              OR ('MEDIUM' IN (:impactScoreList) AND sn.scre >= 8.0 AND sn.scre < 9.0)
-              OR ('LOW' IN (:impactScoreList) AND sn.scre < 8.0)
+              ('HIGH' IN (:impactScoreList) AND ns.scre >= 9.0)
+              OR ('MEDIUM' IN (:impactScoreList) AND ns.scre >= 8.0 AND ns.scre < 9.0)
+              OR ('LOW' IN (:impactScoreList) AND ns.scre < 8.0)
           ))
           AND (:filterByRegion = FALSE OR EXISTS (
               SELECT 1 FROM tmd_nws_rgn_cls nrc2

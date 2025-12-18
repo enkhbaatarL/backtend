@@ -648,11 +648,12 @@ public class MiNewsletterService {
     private Reference createTableReference(Map<String, String> referenceMap,
         NewsletterPublishHistory nph) {
         String title = referenceMap.get("RERNC_TABLE_NM");
-        String dataCode = referenceMap.get("RERNC_TABLE_CD");
+        String dataRegSn = referenceMap.get("RERNC_TABLE_CD");
+
 
         try {
             NewsletterTemplatePreferenceTable config =
-                newsletterTemplatePreferenceTableRepository.findTopByPreferenceTableCodeAndIsDeletedFalse(dataCode).orElse(null);
+                newsletterTemplatePreferenceTableRepository.findTopByDataRegSnAndIsDeletedFalse(Integer.parseInt(dataRegSn)).orElse(null);
 
             if (config == null) {
                 return Reference.ofTable(title, "템플릿 참조 테이블 데이터를 찾을 수 없습니다", null);
@@ -673,7 +674,7 @@ public class MiNewsletterService {
                 dynamicDataReq);
 
             if (dataQuery.isEmpty()) {
-                log.warn("No Reference Table data found : {}", dataCode);
+                log.warn("No Reference Table data found : {}", dataRegSn);
                 return Reference.ofTable(title, "데이터를 찾을 수 없습니다", null);
             } else {
                 TableRes tableData = readTableDataFromJsonString(
@@ -682,7 +683,7 @@ public class MiNewsletterService {
             }
 
         } catch (Exception e) {
-            log.error("PreferenceTable 조회 중 오류 발생 - code: {}", dataCode, e);
+            log.error("PreferenceTable 조회 중 오류 발생 - code: {}", dataRegSn, e);
             return Reference.ofTable(title, "데이터 조회 중 오류 발생", null);
         }
     }
