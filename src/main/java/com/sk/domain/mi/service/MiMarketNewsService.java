@@ -280,18 +280,31 @@ public class MiMarketNewsService {
     }
 
     /**
-     * 점수 기반 방향성 계산
+     * 점수 기반 방향성 계산 (significantNewsScore)
      */
     private String calculateDirectionality(BigDecimal score) {
+        // 0.3 <= Upward <= 1.0
+        // -1.0 <= Downward <= -0.3
+        // -0.3 < Neutral < 0.3
+        // 그 외: Out of Range (규격 외 값)
+
         if (score == null) {
-            return "Neutral";
+            return "NULL";
         }
-        if (score.compareTo(BigDecimal.valueOf(7.0)) >= 0) {
-            return "Upward";
-        } else if (score.compareTo(BigDecimal.valueOf(4.0)) <= 0) {
-            return "Downward";
+
+        // 1. 규격 외 값 체크 (절대값이 1.0을 초과하는 경우)
+        if (score.compareTo(new BigDecimal("1.0")) > 0 ||
+            score.compareTo(new BigDecimal("-1.0")) < 0) {
+            return "OUTOFRANGE";
+        }
+
+        // 2. 방향성 판단
+        if (score.compareTo(new BigDecimal("0.3")) >= 0) {
+            return "UPWARD";
+        } else if (score.compareTo(new BigDecimal("-0.3")) <= 0) {
+            return "DOWNWARD";
         } else {
-            return "Neutral";
+            return "NEUTRAL";
         }
     }
 

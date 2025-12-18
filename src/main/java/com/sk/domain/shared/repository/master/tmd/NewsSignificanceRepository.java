@@ -38,11 +38,18 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         LEFT JOIN tif_refinewsdatar rnd ON rnd.data_reg_sn = nsum.data_reg_sn
             AND rnd.first_created = nsum.first_created
         LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = nsum.nws_smry_id
-        WHERE (sn.crtr_dt = :criteriaDate AND sn.scre >= 7.0)
-          AND (ns.nws_mrkt_ctgr_cd = :category)
+        WHERE (sn.crtr_dt = :criteriaDate)
+          AND (ns.nws_mrkt_ctgr_cd = :category AND ns.scre >= 6.0)
           AND (nsum.simlr_grp_stat_cd IN ('HEAD', 'NONE'))
           AND nsum.del_yn = 'N'
-          AND (:filterBySentiment = FALSE OR (:sentimentList IS NOT NULL))
+          AND (:filterBySentiment = FALSE OR (
+                                     /* UPWARD: 0.3 <= score <= 1.0 */
+                                     ('UPWARD' IN (:sentimentList) AND sn.scre >= 0.3 AND sn.scre <= 1.0)
+                                  OR /* NEUTRAL: -0.3 < score < 0.3 */
+                                     ('NEUTRAL' IN (:sentimentList) AND sn.scre > -0.3 AND sn.scre < 0.3)
+                                  OR /* DOWNWARD: -1.0 <= score <= -0.3 */
+                                     ('DOWNWARD' IN (:sentimentList) AND sn.scre >= -1.0 AND sn.scre <= -0.3)
+                              ))
           AND (:filterByImpactScore = FALSE OR (
               ('HIGH' IN (:impactScoreList) AND ns.scre >= 9.0)
               OR ('MEDIUM' IN (:impactScoreList) AND ns.scre >= 8.0 AND ns.scre < 9.0)
