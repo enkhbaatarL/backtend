@@ -129,10 +129,22 @@ public class MiMarketNewsService {
         LocalDateTime endDateTime = endDate != null ? endDate.atTime(23, 59, 59) : null;
 
         int offset = (page - 1) * size;
-
-        List<String> categoryList = categories != null ? Arrays.asList(categories.split(",")) : null;
-        List<String> regionList = regions != null ? Arrays.asList(regions.split(",")) : null;
-        List<String> industryList = industries != null ? Arrays.asList(industries.split(",")) : null;
+        List<String> categoryList = (categories != null && !categories.isBlank())
+            ? Arrays.stream(categories.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList()
+            : null;
+        List<String> regionList =
+            (regions != null && !regions.isBlank()) ? Arrays.stream(regions.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList() : null;
+        List<String> industryList =
+            (industries != null && !industries.isBlank()) ? Arrays.stream(industries.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList() : null;
 
         boolean filterByCategory = categories != null && !categoryList.isEmpty();
         boolean filterByRegion = regionList != null && !regionList.isEmpty();
@@ -227,9 +239,18 @@ public class MiMarketNewsService {
             default:
         }
 
-        List<String> sentimentList = sentiments != null ? Arrays.asList(sentiments.split(",")) : null;
-        List<String> impactScoreList = impactScores != null ? Arrays.asList(impactScores.split(",")) : null;
-        List<String> regionList = regions != null ? Arrays.asList(regions.split(",")) : null;
+        List<String> sentimentList = sentiments != null ? Arrays.stream(sentiments.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList(): null;
+        List<String> impactScoreList = impactScores != null ? Arrays.stream(impactScores.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList(): null;
+        List<String> regionList = regions != null ? Arrays.stream(regions.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList(): null;
 
         boolean filterBySentiment = sentiments != null && !sentimentList.isEmpty();
         boolean filterByImpactScore = impactScores != null && !impactScoreList.isEmpty();
