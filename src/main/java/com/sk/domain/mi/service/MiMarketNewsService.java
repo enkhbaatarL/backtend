@@ -309,6 +309,37 @@ public class MiMarketNewsService {
     }
 
     /**
+     * 이벤트 점수 기반 방향성 계산 (Event Score)
+     */
+    private String calculateEventDirectionality(BigDecimal score) {
+
+        // 기준은 나중에 전달받아서 변경 예정
+        // 3.0 <= Upward <= 10.0
+        // -10.0 <= Downward <= -3.0
+        // -3.0 < Neutral < 3.0
+        // 그 외: Out of Range (규격 외 값)
+
+        if (score == null) {
+            return "NULL";
+        }
+
+        // 1. 규격 외 값 체크 (절대값이 1.0을 초과하는 경우)
+        if (score.compareTo(new BigDecimal("10.0")) > 0 ||
+            score.compareTo(new BigDecimal("-10.0")) < 0) {
+            return "OUTOFRANGE";
+        }
+
+        // 2. 방향성 판단
+        if (score.compareTo(new BigDecimal("3.0")) >= 0) {
+            return "UPWARD";
+        } else if (score.compareTo(new BigDecimal("-3.0")) <= 0) {
+            return "DOWNWARD";
+        } else {
+            return "NEUTRAL";
+        }
+    }
+
+    /**
      * GROUP_CONCAT 결과 파싱
      */
     private List<String> parseGroupConcatResult(String groupConcatStr) {
@@ -431,7 +462,7 @@ public class MiMarketNewsService {
                 hrList.addAll(relatedNewsList);
 
                 // momentum 계산 (score 기반)
-                String momentum = calculateDirectionality(highlightEvent.getScore());
+                String momentum = calculateEventDirectionality(highlightEvent.getScore());
 
                 return new MarketRecapRes.HighlightEventRes(
                     highlightEvent.getMrktRcapHlEvntId(),
@@ -543,7 +574,7 @@ public class MiMarketNewsService {
                     : Collections.emptyList();
 
                 // directionality 계산
-                String directionality = calculateDirectionality(score);
+                String directionality = calculateEventDirectionality(score);
 
                 return new NewsTimelineRes(
                     newsEventId,

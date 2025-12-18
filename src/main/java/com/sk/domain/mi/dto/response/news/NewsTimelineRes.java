@@ -45,7 +45,7 @@ public record NewsTimelineRes(
     @Schema(description = "이벤트 점수", example = "9.1")
     BigDecimal score,
 
-    @Schema(description = "방향성", example = "Upward")
+    @Schema(description = "방향성", example = "UPWARD")
     String directionality
 ) {
 
