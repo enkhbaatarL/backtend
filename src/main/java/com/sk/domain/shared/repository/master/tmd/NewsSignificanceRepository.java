@@ -77,8 +77,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         ORDER BY
             CASE WHEN :sortField = 'firstCreated' AND :sortDirection = 'ASC' THEN nsum.first_created END ASC,
             CASE WHEN :sortField = 'firstCreated' AND :sortDirection = 'DESC' THEN nsum.first_created END DESC,
-            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'ASC' THEN sn.scre END ASC,
-            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'DESC' THEN sn.scre END DESC,
+            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'ASC' THEN ns.scre END ASC,
+            CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'DESC' THEN ns.scre END DESC,
             nsum.data_reg_sn DESC
         LIMIT 100
         """, nativeQuery = true)
