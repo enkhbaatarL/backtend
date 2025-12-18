@@ -469,7 +469,7 @@ public class MiDashboardService {
         }else if(date.length() == 6){
             baseDate = DateUtil.fromYearMonth(date);
         }else{
-            baseDate = DateUtil.fromYmdHyphen(date);
+            baseDate = DateUtil.fromYmd(date);
         }
 
         String currentDate = DateUtil.toYmd(LocalDate.now());
