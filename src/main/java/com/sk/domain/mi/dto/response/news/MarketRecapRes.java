@@ -10,7 +10,7 @@ public record MarketRecapRes(
     @Schema(description = "기준 일자", example = "20250729")
     String criteriaDate,
 
-    @Schema(description = "뉴스 시장 카테고리 코드", example = "STOCK")
+    @Schema(description = "뉴스 시장 카테고리 코드", example = "CROIL")
     String categoryCode,
 
     @Schema(description = "센티먼츠")

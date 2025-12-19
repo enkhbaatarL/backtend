@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
+import com.sk.domain.mi.dto.response.news.MarketRecapRes.SignalNewsCount;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes.SimilarNewsItem;
@@ -26,6 +27,7 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
+import com.sk.domain.shared.repository.master.tmd.SignificantNewsRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -33,14 +35,18 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -61,6 +67,7 @@ public class MiMarketNewsService {
     private final MarketRecapCheckpointRepository marketRecapCheckpointRepository;
     private final MarketRecapHighlightEventRelationshipRepository marketRecapHighlightEventRelationshipRepository;
     private final NewsEventRepository newsEventRepository;
+    private final SignificantNewsRepository significantNewsRepository;
 
 
     private boolean isMonday(String dateStr) {
@@ -506,19 +513,7 @@ public class MiMarketNewsService {
             .toList();
 
         // Sentiment 카운트 계산 (SignificantNews 기반)
-        MarketRecapRes.SignalNewsCount current = calculateSentimentCount(
-            marketRecap.getCrtrDt(), marketRecap.getNwsMrktCtgrCd());
-
-        // TODO: previous, last7days, last30days 계산 로직 추가 필요
-        MarketRecapRes.SignalNewsCount previous = new MarketRecapRes.SignalNewsCount(
-            0, 0, 0, "Previous Period");
-        MarketRecapRes.SignalNewsCount last7days = new MarketRecapRes.SignalNewsCount(
-            0, 0, 0, "Last 7 Days");
-        MarketRecapRes.SignalNewsCount last30days = new MarketRecapRes.SignalNewsCount(
-            0, 0, 0, "Last 30 Days");
-
-        MarketRecapRes.Sentiments sentiments = new MarketRecapRes.Sentiments(
-            current, previous, last7days, last30days);
+        MarketRecapRes.Sentiments sentiments = calculateSentimentCount(marketRecap.getCrtrDt(), marketRecap.getNwsMrktCtgrCd());
 
         MarketRecapRes.Highlights highlights = new MarketRecapRes.Highlights(
             new Narrative(marketRecap.getHlEvntTitl(),
@@ -548,19 +543,51 @@ public class MiMarketNewsService {
     }
 
     /**
-     * Sentiment 카운트 계산 (SignificantNews 점수 기반)
+     * 기준일자와 카테고리 코드를 기반으로 sentiment 개수 계산
+     *
+     * @param criteriaDate 기준일자 (yyyyMMdd)
+     * @param categoryCode 시장 카테고리 코드
+     * @return Sentiments (금일, 전일, 최근 7일, 최근 30일)
      */
-    private MarketRecapRes.SignalNewsCount calculateSentimentCount(
-        String criteriaDate, String categoryCode) {
+    private MarketRecapRes.Sentiments calculateSentimentCount(String criteriaDate,
+        String categoryCode) {
 
-        // TODO: 실제 계산 로직 구현 필요
-        // SignificantNews에서 해당 기준일자와 카테고리의 뉴스들을 가져와서
-        // 점수 기반으로 upward/neutral/downward 카운트
+        // 날짜 계산
+        LocalDate criteria = LocalDate.parse(criteriaDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDate yesterday = criteria.minusDays(1);
+        LocalDate last7DaysStart = criteria.minusDays(6); // 오늘 포함 7일
+        LocalDate last30DaysStart = criteria.minusDays(29); // 오늘 포함 30일
 
-        return new MarketRecapRes.SignalNewsCount(
-            0, 0, 0,
-            "Period for " + criteriaDate
+        // 단일 쿼리로 전체 기간 조회 (30일 전 ~ 오늘)
+        String startDate = last30DaysStart.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        List<Object[]> results = significantNewsRepository.countSentimentsByDateRange(
+            categoryCode,
+            startDate,
+            criteriaDate
         );
+
+        // 결과를 Map으로 변환
+        Map<String, SentimentCount> sentimentMap = results.stream()
+            .collect(Collectors.toMap(
+                row -> (String) row[0],
+                row -> new SentimentCount(
+                    ((Number) row[1]).intValue(),
+                    ((Number) row[2]).intValue(),
+                    ((Number) row[3]).intValue()
+                )
+            ));
+
+        // 각 기간별 집계
+        SignalNewsCount current = buildSignalNewsCount(sentimentMap, criteria, criteria, "current");
+        SignalNewsCount previous = buildSignalNewsCount(sentimentMap, yesterday, yesterday,
+            "previous");
+        SignalNewsCount last7Days = buildSignalNewsCount(sentimentMap, last7DaysStart, criteria,
+            "last7days");
+        SignalNewsCount last30Days = buildSignalNewsCount(sentimentMap, last30DaysStart, criteria,
+            "last30days");
+
+        return new MarketRecapRes.Sentiments(current, previous, last7Days, last30Days);
     }
 
     /**
@@ -674,5 +701,69 @@ public class MiMarketNewsService {
             regionsList,
             similarNewsList
         );
+    }
+
+    /**
+     * 기간별 SignalNewsCount 생성
+     *
+     * @param sentimentMap 날짜별 sentiment 카운트 맵
+     * @param startDate    시작일
+     * @param endDate      종료일
+     * @param periodType   기간 타입 (current/previous/last7days/last30days)
+     * @return SignalNewsCount
+     */
+    private MarketRecapRes.SignalNewsCount buildSignalNewsCount(
+        Map<String, SentimentCount> sentimentMap,
+        LocalDate startDate,
+        LocalDate endDate,
+        String periodType
+    ) {
+        int upward = 0;
+        int neutral = 0;
+        int downward = 0;
+
+        // 기간 내 모든 날짜를 순회하며 집계
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            String dateKey = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            SentimentCount count = sentimentMap.getOrDefault(dateKey, new SentimentCount(0, 0, 0));
+            upward += count.getUpward();
+            neutral += count.getNeutral();
+            downward += count.getDownward();
+        }
+
+        String period = formatPeriod(startDate, endDate, periodType);
+        return new MarketRecapRes.SignalNewsCount(upward, neutral, downward, period);
+    }
+
+    /**
+     * 기간 포맷팅 (예: "Sep 12 07:00 - Sep 13 07:00")
+     *
+     * @param startDate  시작일
+     * @param endDate    종료일
+     * @param periodType 기간 타입
+     * @return 포맷된 기간 문자열
+     */
+    private String formatPeriod(LocalDate startDate, LocalDate endDate, String periodType) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd HH:mm", Locale.ENGLISH);
+
+        // 시작 시간은 07:00, 종료 시간도 07:00으로 설정 (24시간 기준)
+        LocalDateTime start = startDate.atTime(7, 0);
+        LocalDateTime end = endDate.plusDays(1).atTime(7, 0);
+
+        return String.format("%s - %s",
+            start.format(formatter),
+            end.format(formatter)
+        );
+    }
+
+    /**
+     * Sentiment 카운트를 담는 내부 DTO
+     */
+    @Value
+    private static class SentimentCount {
+
+        int upward;
+        int neutral;
+        int downward;
     }
 }
