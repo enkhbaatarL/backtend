@@ -16,6 +16,7 @@ public interface ChartPredictSettingRepository extends JpaRepository<ChartPredic
     @Query(value = """
             SELECT cps FROM ChartPredictSetting cps
             WHERE cps.customerCompany.customerCompanyNo = :companyNo
+                AND cps.isDeleted = false
                 AND cps.customerCompany.isDeleted = false
             """)
     Optional<ChartPredictSetting> findByCustomerCompanyNo(@Param("companyNo") Integer companyNo);
