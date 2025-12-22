@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "16. Economic Calendar API", description = "경제 지표 달력 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/economic-calendars")
+@RequestMapping("/api/v1/mi/econ-cal")
 @RequiredArgsConstructor
 public class MiEconomicCalendarController {
 
@@ -135,10 +135,10 @@ public class MiEconomicCalendarController {
     @Parameter(name = "category", description = "뉴스 시장 카테고리 코드", required = true, example = "CROIL")
     @Operation(
         summary = "주요 경제 지표 조회 (날짜/카테고리)",
-        description = "기준일자와 카테고리 코드로 마켓 리캡을 조회합니다."
+        description = "기준일자와 카테고리 코드로 주요 경제지표와 분석내용을 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/key-economic-indicators")
+    @GetMapping("/key")
     @RequiredPermission(
         roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
