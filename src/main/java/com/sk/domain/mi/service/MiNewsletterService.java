@@ -715,6 +715,7 @@ public class MiNewsletterService {
                 .orElseThrow(
                     () -> new IllegalArgumentException("NewsletterCollectionChart not found"));
 
+
             NewsletterDetailRes.ChartData chartData = getCltnChartData(dataCode,
                 newsletterCollectionChart);
             return Reference.ofChart(title, description, chartData);
@@ -741,8 +742,7 @@ public class MiNewsletterService {
 
             // timestamp별로 데이터 정리
             for (NewsletterChart chart : chartData) {
-                String timestamp = String.valueOf(
-                    Timestamp.valueOf(chart.getTimestamp()).getTime());
+                String timestamp = String.valueOf(Timestamp.valueOf(chart.getTimestamp()).getTime());
                 BigDecimal value = chart.getTradePrice1();
 
                 timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
