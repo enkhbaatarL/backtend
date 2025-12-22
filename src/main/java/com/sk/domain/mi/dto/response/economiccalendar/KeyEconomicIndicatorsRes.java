@@ -64,7 +64,10 @@ public record KeyEconomicIndicatorsRes(
         EconomicUnit unit,
 
         @Schema(description = "Refinitiv 지표 우선순위", example = "1")
-        Short refinitivPriority
+        Short refinitivPriority,
+
+        @Schema(description = "대상 기간", example = "Aug")
+        String targetPeriod
     ) {
 
     }
