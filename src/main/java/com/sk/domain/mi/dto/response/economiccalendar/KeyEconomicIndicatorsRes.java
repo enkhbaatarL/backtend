@@ -39,35 +39,32 @@ public record KeyEconomicIndicatorsRes(
         @Schema(description = "경제지표이름", example = "Redbook YY *")
         String economicIndicatorName,
 
-        @Schema(description = "경제지표발표날짜", example = "2025-10-21")
+        @Schema(description = "발표날짜", example = "2025-10-21")
         String economicIndicatorPresentationDay,
 
-        @Schema(description = "경제지표발표시간", example = "12:55:00")
+        @Schema(description = "발표시간", example = "12:55:00")
         String economicIndicatorPresentationTime,
 
-        @Schema(description = "경제지표실제값", example = "5")
+        @Schema(description = "실제값", example = "5")
         BigDecimal economicIndicatorRealValue,
 
-        @Schema(description = "경제지표예측날짜", example = "2025-10-29")
+        @Schema(description = "예측날짜", example = "2025-10-29")
         String economicIndicatorPredictionDay,
 
-        @Schema(description = "경제지표발표직전값", example = "5.9")
+        @Schema(description = "직전값", example = "5.9")
         BigDecimal economicIndicatorPresentationPriorValue,
 
-        @Schema(description = "경제지표예측값", example = "3.524")
+        @Schema(description = "예측값", example = "3.524")
         BigDecimal economicIndicatorPredictionValue,
 
-        @Schema(description = "경제지표의 값의 단위 ( K,M 등 )", example = "Mln")
+        @Schema(description = "경제지표의 값의 단위 ( T, B, M, K )", example = "M")
         UnitPrefix unitPrefix,
 
         @Schema(description = "경제지표 단위", example = "Barrel")
         EconomicUnit unit,
 
-        @Schema(description = "Refinitiv 지표 우선순위", example = "1")
-        Short refinitivPriority,
-
-        @Schema(description = "대상 기간", example = "Aug")
-        String targetPeriod
+        @Schema(description = "우선순위", example = "1")
+        Short refinitivPriority
     ) {
 
     }

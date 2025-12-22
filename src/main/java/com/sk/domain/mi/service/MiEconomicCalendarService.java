@@ -280,8 +280,7 @@ public class MiEconomicCalendarService {
             economicCalendar.getEconomicIndicatorPredictionValue(),
             UnitPrefix.fromCode(economicCalendar.getUnitPrefix()),
             EconomicUnit.fromCode(economicCalendar.getUnit()),
-            refinitivPriority,
-            "Aug"
+            refinitivPriority
         );
     }
 
