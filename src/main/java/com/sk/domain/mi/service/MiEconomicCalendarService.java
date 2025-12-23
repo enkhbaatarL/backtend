@@ -1,17 +1,32 @@
 package com.sk.domain.mi.service;
 
+import com.sk.common.enums.ResultCode.Error;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
+import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
+import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes.RelatedEconomicIndicator;
 import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
+import com.sk.domain.shared.entity.master.tif.RefinitivEconomicCalendar;
+import com.sk.domain.shared.entity.master.tmd.EconomicIndicatorAnalysis;
+import com.sk.domain.shared.entity.master.tmd.EconomicIndicatorAnalysisRelationship;
 import com.sk.domain.shared.enums.CountryCurrency;
 import com.sk.domain.shared.enums.EconomicCalendarDateRange;
+import com.sk.domain.shared.enums.EconomicUnit;
+import com.sk.domain.shared.enums.UnitPrefix;
+import com.sk.domain.shared.enums.news.MarketCategoryCode;
 import com.sk.domain.shared.repository.master.tif.EconomicCalendarRepository;
+import com.sk.domain.shared.repository.master.tif.RefinitivEconomicCalendarRepository;
+import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRelationshipRepository;
+import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRepository;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,6 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class MiEconomicCalendarService {
 
     private final EconomicCalendarRepository economicCalendarRepository;
+    private final RefinitivEconomicCalendarRepository refinitivEconomicCalendarRepository;
+    private final EconomicIndicatorAnalysisRepository economicIndicatorAnalysisRepository;
+    private final EconomicIndicatorAnalysisRelationshipRepository economicIndicatorAnalysisRelationshipRepository;
 
     /**
      * 경제 지표 달력 목록 조회
@@ -145,6 +163,64 @@ public class MiEconomicCalendarService {
     }
 
     /**
+     * 주요 경제 지표 분석 조회 (기준날짜, 뉴스시장카테고리)
+     */
+    public KeyEconomicIndicatorsRes getKeyList(String criteriaDate, String category) {
+        log.debug("주요 경제 지표 분석 조회 요청 - criteriaDate: {}, category: {}", criteriaDate, category);
+
+        // 1. 경제 지표 분석 조회
+        EconomicIndicatorAnalysis analysis = economicIndicatorAnalysisRepository
+            .findByCriteriaDateAndCategory(criteriaDate, MarketCategoryCode.fromCode(category))
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_DATA_NOT_FOUND,
+                "해당 기준일자(%s)와 카테고리(%s)의 경제 지표 분석 데이터를 찾을 수 없습니다"
+                    .formatted(criteriaDate, category)
+            ));
+
+        // 2. 분석 내용 파싱 (줄바꿈으로 구분된 내용을 List로 변환)
+        List<String> contentList = parseAnalysisContent(analysis.getAnalysisCntt());
+
+        // 3. 관련 경제 지표 관계 조회
+        List<EconomicIndicatorAnalysisRelationship> relationships =
+            economicIndicatorAnalysisRelationshipRepository
+                .findByEconomicIndicatorAnalysisWithEconomicCalendar(analysis);
+
+        // 5. Refinitiv 경제 달력 정보 조회 (우선순위 정보 포함)
+        Map<String, Short> codeToRefinitivPriorityMap = refinitivEconomicCalendarRepository
+            .findByCodeIn(
+                relationships.stream()
+                    .map(r -> r.getEconomicCalendar().getCode())
+                    .distinct()
+                    .toList()
+            )
+            .stream()
+            .collect(Collectors.toMap(
+                RefinitivEconomicCalendar::getCode,
+                rec -> rec.getPriority() != null ? rec.getPriority() : (short) 0
+            ));
+
+        // 6. 관련 경제 지표 DTO 변환
+        List<RelatedEconomicIndicator> relatedIndicators = relationships.stream()
+            .map(relationship -> convertToRelatedIndicator(
+                relationship.getEconomicCalendar(),
+                codeToRefinitivPriorityMap.getOrDefault(
+                    relationship.getEconomicCalendar().getCode(),
+                    (short) 0
+                )
+            ))
+            .toList();
+
+        // 7. 최종 응답 생성
+        return new KeyEconomicIndicatorsRes(
+            analysis.getEconomicIndicatorAnalysisId(),
+            category,
+            criteriaDate,
+            contentList,
+            relatedIndicators
+        );
+    }
+
+    /**
      * importance 문자열을 priority 값 리스트로 변환
      * HIGH=3, MEDIUM=2, LOW=1
      */
@@ -166,6 +242,46 @@ public class MiEconomicCalendarService {
             })
             .filter(Objects::nonNull)
             .toList();
+    }
+
+    /**
+     * 분석 내용 문자열을 List로 파싱
+     * - 줄바꿈 문자(\n)로 구분
+     * - 빈 줄 제거
+     */
+    private List<String> parseAnalysisContent(String analysisContent) {
+        if (analysisContent == null || analysisContent.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.stream(analysisContent.split("\n"))
+            .map(String::trim)
+            .filter(line -> !line.isEmpty())
+            .toList();
+    }
+
+    /**
+     * EconomicCalendar를 RelatedEconomicIndicator DTO로 변환
+     */
+    private RelatedEconomicIndicator convertToRelatedIndicator(
+        EconomicCalendar economicCalendar,
+        Short refinitivPriority
+    ) {
+        return new RelatedEconomicIndicator(
+            economicCalendar.getEconomicCalendarId(),
+            economicCalendar.getCode(),
+            economicCalendar.getDate(),
+            economicCalendar.getEconomicIndicatorName(),
+            economicCalendar.getEconomicIndicatorPresentationDay(),
+            economicCalendar.getEconomicIndicatorPresentationTime(),
+            economicCalendar.getEconomicIndicatorRealValue(),
+            economicCalendar.getEconomicIndicatorPredictionDay(),
+            economicCalendar.getEconomicIndicatorPresentationPriorValue(),
+            economicCalendar.getEconomicIndicatorPredictionValue(),
+            UnitPrefix.fromCode(economicCalendar.getUnitPrefix()),
+            EconomicUnit.fromCode(economicCalendar.getUnit()),
+            refinitivPriority
+        );
     }
 
     private EconomicCalendarListRes populateCountryInfo(EconomicCalendarListRes source) {

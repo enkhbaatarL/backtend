@@ -8,6 +8,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
+import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
 import com.sk.domain.mi.service.MiEconomicCalendarService;
 import com.sk.domain.shared.enums.EconomicCalendarDateRange;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "16. Economic Calendar API", description = "경제 지표 달력 API 입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/economic-calendars")
+@RequestMapping("/api/v1/mi/econ-cal")
 @RequiredArgsConstructor
 public class MiEconomicCalendarController {
 
@@ -126,6 +127,31 @@ public class MiEconomicCalendarController {
 
         return BaseResponseFactory.create(
                 miEconomicCalendarService.getHistory(code, page, size)
+        );
+    }
+
+    @ApiOrder(4)
+    @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", required = true, example = "20250730")
+    @Parameter(name = "category", description = "뉴스 시장 카테고리 코드", required = true, example = "CROIL")
+    @Operation(
+        summary = "주요 경제 지표 조회 (날짜/카테고리)",
+        description = "기준일자와 카테고리 코드로 주요 경제지표와 분석내용을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/key")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<KeyEconomicIndicatorsRes> getKeyEconomicCalendarList(
+        @RequestParam(value = "criteriaDate") String criteriaDate,
+        @RequestParam(value = "category") String category
+    ) {
+
+        log.debug("주요 경제 지표 조회 요청 - criteriaDate: {}, category: {}", criteriaDate, category);
+
+        return BaseResponseFactory.create(
+            miEconomicCalendarService.getKeyList(criteriaDate, category)
         );
     }
 

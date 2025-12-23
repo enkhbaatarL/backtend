@@ -296,4 +296,6 @@ public interface EconomicCalendarRepository extends JpaRepository<EconomicCalend
      * 경제 지표 달력 히스토리 조회 (code 기준, 최신순)
      */
     Page<EconomicCalendar> findByCodeAndIsDeletedFalseOrderByDateDesc(String code, Pageable pageable);
+
+    List<EconomicCalendar> findByEconomicCalendarIdIn(List<Long> economicCalendarIds);
 }
