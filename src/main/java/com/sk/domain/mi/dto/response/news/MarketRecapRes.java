@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.response.news;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Collections;
 import java.util.List;
 
 public record MarketRecapRes(
@@ -30,6 +31,22 @@ public record MarketRecapRes(
 
 ) {
 
+    /**
+     * 데이터가 없을 때 반환할 빈 응답 생성
+     */
+    public static MarketRecapRes empty() {
+        return new MarketRecapRes(
+            null,                           // marketRecapId
+            null,                           // criteriaDate
+            null,                           // categoryCode
+            Sentiments.empty(),             // sentiments
+            Highlights.empty(),             // highlights
+            Checkpoints.empty(),            // checkpoints
+            null,                           // analysisFrequency
+            Collections.emptyList()         // analysisPeriod
+        );
+    }
+
     public record Sentiments(
         @Schema(description = "현재 신호 뉴스 수")
         SignalNewsCount current,
@@ -43,7 +60,14 @@ public record MarketRecapRes(
         @Schema(description = "최근 30일 신호 뉴스 수")
         SignalNewsCount last30days
     ) {
-
+        public static Sentiments empty() {
+            return new Sentiments(
+                SignalNewsCount.empty(),    // current
+                SignalNewsCount.empty(),    // previous
+                SignalNewsCount.empty(),    // last7days
+                SignalNewsCount.empty()     // last30days
+            );
+        }
     }
 
     public record SignalNewsCount(
@@ -58,7 +82,16 @@ public record MarketRecapRes(
 
         @Schema(description = "기간", example = "Sep 12 07:00 - Sep 13 07:00")
         String period
-    ) {}
+    ) {
+        public static SignalNewsCount empty() {
+            return new SignalNewsCount(
+                0,      // upwardCount
+                0,      // neutralCount
+                0,      // downwardCount
+                null    // period
+            );
+        }
+    }
 
     public record HighlightEventRes(
         @Schema(description = "하이라이트 이벤트 ID", example = "1")
@@ -94,7 +127,14 @@ public record MarketRecapRes(
 
         @Schema(description = "내용", example = "Technology stocks showed strong performance...")
         List<String> content
-    ) {}
+    ) {
+        public static Narrative empty() {
+            return new Narrative(
+                null,                       // title
+                Collections.emptyList()     // content
+            );
+        }
+    }
 
     public record Highlights(
         @Schema(description = "투데이 하이라이트 이벤트 narrative")
@@ -106,7 +146,13 @@ public record MarketRecapRes(
         @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트들의 대표 뉴스 목록")
         List<RelatedEventRepresentativeNewsRes> relatedEventRepresentativeNewsResNews
     ) {
-
+        public static Highlights empty() {
+            return new Highlights(
+                Narrative.empty(),              // narrative
+                Collections.emptyList(),        // items
+                Collections.emptyList()         // relatedEventRepresentativeNewsResNews
+            );
+        }
     }
 
     public record Checkpoints(
@@ -116,7 +162,12 @@ public record MarketRecapRes(
         @Schema(description = "체크포인트 목록")
         List<CheckpointRes> items
     ) {
-
+        public static Checkpoints empty() {
+            return new Checkpoints(
+                Narrative.empty(),              // narrative
+                Collections.emptyList()         // items
+            );
+        }
     }
 
     public record RelatedEventRepresentativeNewsRes(

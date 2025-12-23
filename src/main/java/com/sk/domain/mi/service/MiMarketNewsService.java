@@ -386,13 +386,10 @@ public class MiMarketNewsService {
     public MarketRecapRes getMarketRecapByCriteriaDateAndCategory(
         String criteriaDate, String category) {
 
-        MarketRecap marketRecap = marketRecapRepository
+        return marketRecapRepository
             .findByCrtrDtAndNwsMrktCtgrCd(criteriaDate, category)
-            .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
-                "MarketRecap not found for criteriaDate: %s, category: %s"
-                    .formatted(criteriaDate, category)));
-
-        return toMarketRecapRes(marketRecap);
+            .map(this::toMarketRecapRes)
+            .orElseGet(MarketRecapRes::empty);
     }
 
     /**
