@@ -11,6 +11,7 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1107,7 +1108,15 @@ public class MiDashboardService {
      * @return DashboardChartRes
      */
     public byte[] getChartFileDownload(int customerCompanyNo, String date) throws IOException {
-        LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
+
+        LocalDate baseDate = null;
+        if(date == null || date.isEmpty()){
+            baseDate = LocalDate.now();
+        }else if(date.length() == 6){
+            baseDate = DateUtil.fromYearMonth(date);
+        }else{
+            baseDate = DateUtil.fromYmd(date);
+        }
 
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
@@ -1194,9 +1203,28 @@ public class MiDashboardService {
         DashboardChartDataTableType dataTableType = calculateDashboardChartDataTableType(chartPredictSettingDetails);
 
         // 날짜 범위 설정
-        LocalDate endDate = baseDate.plusMonths(chartPredictSetting.getPredictPeriodMonthsCnt())
-                .with(TemporalAdjusters.lastDayOfMonth());
-        LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
+
+        LocalDate endDate = baseDate
+            .plus(
+                chartPredictSetting.getPredictPeriodMonthsCnt(),
+                chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit());
+
+        endDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+            case W -> endDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+            case D -> endDate;
+            default -> endDate.with(TemporalAdjusters.lastDayOfMonth());
+        };
+
+        LocalDate startDate = endDate.minus(
+            DASHBOARD_CHART_START_DATE_FROM_MONTH,
+            chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit()
+        );
+
+        startDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+            case W -> startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case D -> startDate;
+            default -> startDate.withDayOfMonth(1);
+        };
         // 월별 날짜 생성
         List<LocalDate> monthlyDates = generateDates(startDate, endDate, chartPredictSetting);
 
@@ -1253,7 +1281,13 @@ public class MiDashboardService {
             for (int i = headerStartIndex; i < monthlyDates.size() + headerStartIndex; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellStyle(headerStyle);
-                cell.setCellValue(DateUtil.toYyyyMm(monthlyDates.get(i - headerStartIndex)));
+
+                String dateHeaderStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                    case W -> DateUtil.toYyyyMm(monthlyDates.get(i - headerStartIndex)) + " W" + getWeekOfMonth(monthlyDates.get(i - headerStartIndex));
+                    case D -> DateUtil.toYmdHyphen(monthlyDates.get(i - headerStartIndex));
+                    default -> DateUtil.toYyyyMm(monthlyDates.get(i - headerStartIndex));
+                };
+                cell.setCellValue(dateHeaderStr);
             }
 
             if (dataTableType == DashboardChartDataTableType.FORECAST_SINGLE_LAYER) {
@@ -1414,6 +1448,22 @@ public class MiDashboardService {
         } catch (IOException e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, String.format("엑셀 파일 생성 실패 : %s", e.getMessage()));
         }
+    }
+
+    private static int getWeekOfMonth(LocalDate date) {
+        // 1. 해당 월의 1일
+        LocalDate firstDayOfMonth = date.withDayOfMonth(1);
+
+        // 2. 월의 1일이 속한 주의 월요일
+        LocalDate firstWeekStart =
+            firstDayOfMonth.with(DayOfWeek.MONDAY);
+
+        // 3. 현재 날짜가 속한 주의 월요일
+        LocalDate currentWeekStart =
+            date.with(DayOfWeek.MONDAY);
+
+        // 4. 주차 계산
+        return (int) ChronoUnit.WEEKS.between(firstWeekStart, currentWeekStart) + 1;
     }
 
     /**
