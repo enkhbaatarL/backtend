@@ -552,8 +552,9 @@ public class MiMarketNewsService {
         // 날짜 계산
         LocalDate criteria = LocalDate.parse(criteriaDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
         LocalDate yesterday = criteria.minusDays(1);
-        LocalDate last7DaysStart = criteria.minusDays(6); // 오늘 포함 7일
-        LocalDate last30DaysStart = criteria.minusDays(29); // 오늘 포함 30일
+        LocalDate twoDaysAgo = criteria.minusDays(2);
+        LocalDate last7DaysStart = yesterday.minusDays(6); // 어제 포함 7일
+        LocalDate last30DaysStart = yesterday.minusDays(29); // 어제 포함 30일
 
         // 단일 쿼리로 전체 기간 조회 (30일 전 ~ 오늘)
         String startDate = last30DaysStart.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -561,7 +562,7 @@ public class MiMarketNewsService {
         List<Object[]> results = significantNewsRepository.countSentimentsByDateRange(
             categoryCode,
             startDate,
-            criteriaDate
+            yesterday.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
         );
 
         // 결과를 Map으로 변환
@@ -576,12 +577,12 @@ public class MiMarketNewsService {
             ));
 
         // 각 기간별 집계
-        SignalNewsCount current = buildSignalNewsCount(sentimentMap, criteria, criteria, "current");
-        SignalNewsCount previous = buildSignalNewsCount(sentimentMap, yesterday, yesterday,
+        SignalNewsCount current = buildSignalNewsCount(sentimentMap, yesterday, yesterday, "current");
+        SignalNewsCount previous = buildSignalNewsCount(sentimentMap, twoDaysAgo, twoDaysAgo,
             "previous");
-        SignalNewsCount last7Days = buildSignalNewsCount(sentimentMap, last7DaysStart, criteria,
+        SignalNewsCount last7Days = buildSignalNewsCount(sentimentMap, last7DaysStart, yesterday,
             "last7days");
-        SignalNewsCount last30Days = buildSignalNewsCount(sentimentMap, last30DaysStart, criteria,
+        SignalNewsCount last30Days = buildSignalNewsCount(sentimentMap, last30DaysStart, yesterday,
             "last30days");
 
         return new MarketRecapRes.Sentiments(current, previous, last7Days, last30Days);
@@ -733,7 +734,7 @@ public class MiMarketNewsService {
     }
 
     /**
-     * 기간 포맷팅 (예: "Sep 12 07:00 - Sep 13 07:00")
+     * 기간 포맷팅 (예: "Sep 12 00:00 - Sep 13 00:00")
      *
      * @param startDate  시작일
      * @param endDate    종료일
@@ -743,9 +744,9 @@ public class MiMarketNewsService {
     private String formatPeriod(LocalDate startDate, LocalDate endDate, String periodType) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd HH:mm", Locale.ENGLISH);
 
-        // 시작 시간은 07:00, 종료 시간도 07:00으로 설정 (24시간 기준)
-        LocalDateTime start = startDate.atTime(7, 0);
-        LocalDateTime end = endDate.plusDays(1).atTime(7, 0);
+        // 시작 시간은 00:00, 종료 시간도 00:00으로 설정 (24시간 기준)
+        LocalDateTime start = startDate.atTime(0, 0);
+        LocalDateTime end = endDate.plusDays(1).atTime(0, 0);
 
         return String.format("%s - %s",
             start.format(formatter),
