@@ -60,7 +60,7 @@ public record KeyEconomicIndicatorsRes(
         @Schema(description = "경제지표의 값의 단위 ( T, B, M, K )", example = "M")
         UnitPrefix unitPrefix,
 
-        @Schema(description = "경제지표 단위", example = "Barrel")
+        @Schema(description = "경제지표 단위", example = "Bbl")
         EconomicUnit unit,
 
         @Schema(description = "우선순위", example = "1")
