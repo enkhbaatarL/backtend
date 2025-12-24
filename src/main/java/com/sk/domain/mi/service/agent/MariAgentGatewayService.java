@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,17 +77,13 @@ public class MariAgentGatewayService {
 
     @Transactional
     protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna,
-        List<ChatbotTalkQna> histories) {
+        List<ChatbotTalkQna> histories, Set<Integer> goodsNos, Set<String> repositoryIds, int userNo,
+        int companyNo) {
 
         try {
-
-            Integer companyNo = authorizationService.getCompanyNoWithPriority();
-            Integer userNo = authorizationService.getUserNo();
-
-            List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo, userNo);
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo,
                 qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, goodsNos);
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, goodsNos, repositoryIds);
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
@@ -135,9 +132,10 @@ public class MariAgentGatewayService {
         QnaReq.Insert talkReq,
         ChatbotTalkQna qna,
         List<ChatbotTalkQna> histories,
-        List<Integer> goodsNos,
+        Set<Integer> goodsNos,
         int userNo,
-        int companyNo
+        int companyNo,
+        Set<String> repositoryIds
     ) {
 
         long streamStartTime = System.currentTimeMillis();
@@ -149,7 +147,7 @@ public class MariAgentGatewayService {
         ).toHeaders();
 
         ModelAgentReq body = ModelAgentReq.of(
-            talkReq, histories, companyNo, userNo, goodsNos
+            talkReq, histories, companyNo, userNo, goodsNos, repositoryIds
         );
 
         log.info("[PERF] Stream started for qnaNo: {}", qna.getChatbotTalkQnaNo());
@@ -261,13 +259,23 @@ public class MariAgentGatewayService {
      * ModelAgentStreamBody의 type에 따라 적절한 Handler를 선택
      */
     private StreamEventHandler selectHandler(ModelAgentStreamBody streamBody) {
+        // 1. 스트리밍이 필요한 경우 (chunk + progress)
         if (streamBody.isStreamingRequired()) {
             return streamEventHandlerMap.get("execute");
-        } else if (!streamBody.isCompleteState()) {
-            return streamEventHandlerMap.get("plan");
-        } else {
-            return streamEventHandlerMap.get("generate");
         }
+
+        // 2. vector_data 타입 처리
+        if (streamBody.isVectorData()) {
+            return streamEventHandlerMap.get("vector_data");
+        }
+
+        // 3. 완료되지 않은 상태 (중간 진행 상태)
+        if (!streamBody.isCompleteState()) {
+            return streamEventHandlerMap.get("plan");
+        }
+
+        // 4. 완료 상태 (최종 결과)
+        return streamEventHandlerMap.get("generate");
     }
 
 }

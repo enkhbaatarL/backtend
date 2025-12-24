@@ -8,6 +8,7 @@ import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Builder;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -18,9 +19,9 @@ public record ModelAgentReq(
 
 ) {
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> gdsNoList) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyNo, userNo, gdsNoList))
+            .input(Input.of(talkReq, histories, companyNo, userNo, authGdsList, repositoryIds))
             .build();
     }
 
@@ -32,9 +33,9 @@ public record ModelAgentReq(
 
     ) {
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
             return Input.builder()
-                .reqInput(ReqInput.of(talkReq, histories, companyNo, userNo, authGdsList))
+                .reqInput(ReqInput.of(talkReq, histories, companyNo, userNo, authGdsList, repositoryIds))
                 .build();
         }
 
@@ -49,7 +50,10 @@ public record ModelAgentReq(
             Integer userNo,
 
             @JsonProperty("authorized_product_nums")
-            List<Integer> authGdsList,
+            Set<Integer> authGdsList,
+
+            @JsonProperty("repository_ids")
+            Set<String> repositoryIds,
 
             List<History> histories,
 
@@ -58,7 +62,7 @@ public record ModelAgentReq(
         ) {
 
             public static ReqInput of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
-                Integer companyNo, Integer userNo, List<Integer> authGdsList) {
+                Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
                 return ReqInput.builder()
                     .query(talkReq.question())
                     .shouldWebSearch(
@@ -67,6 +71,7 @@ public record ModelAgentReq(
                     .companyNo(String.valueOf(companyNo))
                     .userNo(userNo)
                     .authGdsList(authGdsList)
+                    .repositoryIds(repositoryIds)
                     .build();
             }
         }

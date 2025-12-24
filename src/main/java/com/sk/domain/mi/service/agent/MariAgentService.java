@@ -40,7 +40,9 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -192,7 +194,16 @@ public class MariAgentService {
             .sorted(Comparator.comparing(ChatbotTalkQna::getChatbotTalkQnaNo))
             .toList();
 
-        return mariAgentGatewayService.executeModelAgent(talkReq, qna, histories)
+        List<Object[]> goodsNosAndRepositoryIds = goodsRepository.findGoodsNosAndRepositoryIdsWithPermission(companyNo, user.getUserNo());
+            Set<Integer> goodsNos = goodsNosAndRepositoryIds.stream()
+                .map(row -> (Integer) row[0])
+                .collect(Collectors.toSet());
+            Set<String> repositoryIds = goodsNosAndRepositoryIds.stream()
+                .map(row -> (String) row[1])
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return mariAgentGatewayService.executeModelAgent(talkReq, qna, histories, goodsNos, repositoryIds, user.getUserNo(), companyNo)
             .map(answerRes -> {
                 Answer answerData = Answer.of(answerRes);
                 return QnaRes.of(qna, answerData);
@@ -243,15 +254,21 @@ public class MariAgentService {
                 .sorted(Comparator.comparing(ChatbotTalkQna::getChatbotTalkQnaNo))
                 .toList();
 
-            List<Integer> goodsNos = goodsRepository.findGoodsNosWithPermission(companyNo,
-                user.getUserNo());
+            List<Object[]> goodsNosAndRepositoryIds = goodsRepository.findGoodsNosAndRepositoryIdsWithPermission(companyNo, user.getUserNo());
+            Set<Integer> goodsNos = goodsNosAndRepositoryIds.stream()
+                .map(row -> (Integer) row[0])
+                .collect(Collectors.toSet());
+            Set<String> repositoryIds = goodsNosAndRepositoryIds.stream()
+                .map(row -> (String) row[1])
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
             log.info("Prepared QnA - qnaNo: {}, chatRoomId: {}",
                 qna.getChatbotTalkQnaNo(), chatRoomId);
 
             // 5. Model Agent 스트림 생성
             Flux<AnswerRes> stream = mariAgentGatewayService.executeModelAgentStream(talkReq, qna,
-                    histories, goodsNos, user.getUserNo(), companyNo)
+                    histories, goodsNos, user.getUserNo(), companyNo, repositoryIds)
                 .doOnSubscribe(subscription ->
                     log.info("Stream subscribed - qnaNo: {}, chatRoomId: {}",
                         qna.getChatbotTalkQnaNo(), chatRoomId)
@@ -471,8 +488,18 @@ public class MariAgentService {
             .sorted(Comparator.comparing(ChatbotTalkQna::getChatbotTalkQnaNo))
             .toList();
 
+        List<Object[]> goodsNosAndRepositoryIds = goodsRepository.findGoodsNosAndRepositoryIdsWithPermission(companyNo, user.getUserNo());
+            Set<Integer> goodsNos = goodsNosAndRepositoryIds.stream()
+                .map(row -> (Integer) row[0])
+                .collect(Collectors.toSet());
+            Set<String> repositoryIds = goodsNosAndRepositoryIds.stream()
+                .map(row -> (String) row[1])
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
         return mariAgentGatewayService.executeModelAgent(
-                QnaReq.Insert.ofDefault(qna.getUserQuestionCntt()), qna, histories)
+                QnaReq.Insert.ofDefault(qna.getUserQuestionCntt()), qna, histories, goodsNos, repositoryIds,
+                user.getUserNo(), companyNo)
             .map(answerRes -> {
                 Answer answerData = Answer.of(answerRes);
                 return QnaRes.of(qna, answerData);

@@ -14,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
  * event: data
  * data: {
  *   "state": "start | progress | error | complete",
- *   "data": "message | series | table | chunk",
- *   "node": "PreparePromptNode | DataAnalysisNode | ...",
+ *   "data": "message | series | table | chunk | vector_data",
+ *   "node": "PreparePromptNode | DataAnalysisNode | VectorSearchNode | ...",
  *   "value": "string or dict depending on data type"
  * }
  */
@@ -37,6 +37,7 @@ public record ModelAgentStreamBody(
          * - "series": 시계열 데이터
          * - "table": 테이블 데이터
          * - "chunk": 스트리밍 청크
+         * - "vector_data": 벡터 검색 데이터
          */
         String data,
 
@@ -51,7 +52,7 @@ public record ModelAgentStreamBody(
         /*
          * 이벤트의 값
          * - data가 "message" 또는 "chunk"인 경우: String
-         * - data가 "series" 또는 "table"인 경우: Map/Object 형태
+         * - data가 "series", "table", "vector_data"인 경우: Map/Object 형태
          * <p>
          * Object 타입으로 받아 런타임에 타입 체크 후 처리
          */
@@ -178,6 +179,13 @@ public record ModelAgentStreamBody(
     }
 
     /**
+     * 벡터 데이터 타입인지 확인
+     */
+    public boolean isVectorData() {
+        return DataType.VECTOR_DATA.value.equals(data);
+    }
+
+    /**
      * 스트리밍 처리가 필요한지 확인
      * chunk 데이터이면서 progress 상태일 때 true
      */
@@ -231,7 +239,8 @@ public record ModelAgentStreamBody(
         MESSAGE("message"),
         SERIES("series"),
         TABLE("table"),
-        CHUNK("chunk");
+        CHUNK("chunk"),
+        VECTOR_DATA("vector_data");
 
         private final String value;
 
