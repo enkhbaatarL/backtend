@@ -497,6 +497,9 @@ public class MiMarketNewsService {
                     relatedNewsList
                 );
             })
+            .filter(highlightEventRes ->
+                highlightEventRes.relatedEventRepresentativeNewsResNews() != null &&
+                !highlightEventRes.relatedEventRepresentativeNewsResNews().isEmpty())
             .toList();
 
         // 체크포인트 DTO 변환
