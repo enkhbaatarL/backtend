@@ -1454,16 +1454,31 @@ public class MiDashboardService {
         // 1. 해당 월의 1일
         LocalDate firstDayOfMonth = date.withDayOfMonth(1);
 
-        // 2. 월의 1일이 속한 주의 월요일
-        LocalDate firstWeekStart =
+        // 2. 1일이 속한 주의 월요일
+        LocalDate firstWeekMonday =
             firstDayOfMonth.with(DayOfWeek.MONDAY);
 
-        // 3. 현재 날짜가 속한 주의 월요일
-        LocalDate currentWeekStart =
+        // 3. 해당 주에 목요일이 있는지 확인
+        LocalDate firstWeekThursday =
+            firstWeekMonday.with(DayOfWeek.THURSDAY);
+
+        // 4. 월 1주차 시작 주 결정
+        LocalDate firstWeekStart;
+        if (firstWeekThursday.getMonth() == firstDayOfMonth.getMonth()) {
+            // 목요일이 같은 달 → 이 주가 1주차
+            firstWeekStart = firstWeekMonday;
+        } else {
+            // 아니면 다음 주가 1주차
+            firstWeekStart = firstWeekMonday.plusWeeks(1);
+        }
+
+        // 5. 대상 날짜가 속한 주의 월요일
+        LocalDate targetWeekMonday =
             date.with(DayOfWeek.MONDAY);
 
-        // 4. 주차 계산
-        return (int) ChronoUnit.WEEKS.between(firstWeekStart, currentWeekStart) + 1;
+        // 6. 주차 계산
+        return (int) ChronoUnit.WEEKS
+            .between(firstWeekStart, targetWeekMonday) + 1;
     }
 
     /**
