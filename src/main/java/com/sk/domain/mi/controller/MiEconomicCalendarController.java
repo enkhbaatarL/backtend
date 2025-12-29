@@ -8,6 +8,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
 import com.sk.domain.mi.service.MiEconomicCalendarService;
 import com.sk.domain.shared.enums.EconomicCalendarDateRange;
@@ -20,6 +21,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -155,4 +157,28 @@ public class MiEconomicCalendarController {
         );
     }
 
+    @ApiOrder(5)
+    @Parameter(name = "categories", description = "카테고리 (선택사항)")
+    @Parameter(name = "importance", description = "중요도 (선택사항, HIGH=3, MEDIUM=2, LOW=1)")
+    @Operation(
+        summary = "경제 지표 달력 위젯용 조회",
+        description = "대시보드 위젯용 경제 지표 달력 목록을 조회합니다. 오늘 날짜 기준, 페이징 없이 전체 데이터를 반환합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/widget")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<List<EconomicCalendarWidgetRes>> getEconomicCalendarWidget(
+        @RequestParam(value = "categories", required = false) String categories,
+        @RequestParam(value = "importance", required = false) String importance
+    ) {
+        log.debug("경제 지표 달력 위젯 조회 요청 - categories: {}, importance: {}",
+            categories, importance);
+
+        return BaseResponseFactory.create(
+            miEconomicCalendarService.getWidgetList(categories, importance)
+        );
+    }
 }

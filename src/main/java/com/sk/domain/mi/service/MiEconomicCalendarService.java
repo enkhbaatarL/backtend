@@ -6,6 +6,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes.RelatedEconomicIndicator;
 import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
@@ -21,6 +22,9 @@ import com.sk.domain.shared.repository.master.tif.EconomicCalendarRepository;
 import com.sk.domain.shared.repository.master.tif.RefinitivEconomicCalendarRepository;
 import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRepository;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -49,7 +54,7 @@ public class MiEconomicCalendarService {
     private final EconomicIndicatorAnalysisRelationshipRepository economicIndicatorAnalysisRelationshipRepository;
 
     /**
-     * 경제 지표 달력 목록 조회
+     * 경제 지표 달력 목록 조회 (통합 쿼리 사용)
      */
     public PaginationRes<EconomicCalendarListRes> getList(
         int page,
@@ -60,76 +65,98 @@ public class MiEconomicCalendarService {
         String importance
     ) {
 
-        Pageable pageable = PageRequest.of(page - 1, size,
-            Sort.by(Sort.Direction.ASC, "economicIndicatorPresentationTime", "economicCalendarId"));
-
         Pair<String, String> dateRangePair = dateRange.getDateRange();
         String startDate = dateRangePair.getLeft();
         String endDate = dateRangePair.getRight();
 
-        List<String> categoryList = categories != null ? Arrays.asList(categories.split(",")) : null;
-        boolean filterByCategory = categories != null && !categoryList.isEmpty();
+        List<String> categoryList = (categories != null && !categories.isBlank())
+            ? Arrays.asList(categories.split(","))
+            : List.of("");
+        boolean filterByCategory =
+            categories != null && !categoryList.isEmpty() && !categories.isBlank();
 
         List<Short> priorityList = parseImportance(importance);
-        boolean filterByImportance = importance != null && priorityList != null && !priorityList.isEmpty();
-
-        Page<EconomicCalendarListRes> resultPage;
-
-        // TOMORROW와 NEXTWEEK는 nextEconomicIndicatorPresentationDay 컬럼 사용
-        boolean useNextDay = dateRange == EconomicCalendarDateRange.TOMORROW
-            || dateRange == EconomicCalendarDateRange.NEXTWEEK;
-
-        if (useNextDay) {
-            // nextEconomicIndicatorPresentationDay 컬럼 사용
-            if (startDate.equals(endDate)) {
-                resultPage = economicCalendarRepository.findEconomicCalendarsWithRefinitivByNextDay(
-                    startDate,
-                    keyword,
-                    filterByCategory ? categoryList : null,
-                    filterByCategory,
-                    filterByImportance ? priorityList : null,
-                    filterByImportance,
-                    pageable
-                ).map(this::populateCountryInfo);
-            } else {
-                resultPage = economicCalendarRepository.findEconomicCalendarsWithRefinitivByNextDayRange(
-                    startDate,
-                    endDate,
-                    keyword,
-                    filterByCategory ? categoryList : null,
-                    filterByCategory,
-                    filterByImportance ? priorityList : null,
-                    filterByImportance,
-                    pageable
-                ).map(this::populateCountryInfo);
-            }
-        } else {
-            // economicIndicatorPresentationDay 컬럼 사용
-            if (startDate.equals(endDate)) {
-                resultPage = economicCalendarRepository.findEconomicCalendarsWithRefinitiv(
-                    startDate,
-                    keyword,
-                    filterByCategory ? categoryList : null,
-                    filterByCategory,
-                    filterByImportance ? priorityList : null,
-                    filterByImportance,
-                    pageable
-                ).map(this::populateCountryInfo);
-            } else {
-                resultPage = economicCalendarRepository.findEconomicCalendarsWithRefinitivByDateRange(
-                    startDate,
-                    endDate,
-                    keyword,
-                    filterByCategory ? categoryList : null,
-                    filterByCategory,
-                    filterByImportance ? priorityList : null,
-                    filterByImportance,
-                    pageable
-                ).map(this::populateCountryInfo);
-            }
+        if (priorityList == null || priorityList.isEmpty()) {
+            priorityList = List.of((short) -1);
         }
+        boolean filterByImportance = importance != null && !importance.isBlank();
+
+        int offset = (page - 1) * size;
+
+        List<Object[]> results = economicCalendarRepository.findEconomicIndicatorsByPeriodWithStatus(
+            startDate,
+            endDate,
+            keyword,
+            categoryList,
+            filterByCategory,
+            priorityList,
+            filterByImportance,
+            size,
+            offset
+        );
+
+        long totalCount = economicCalendarRepository.countEconomicIndicatorsByPeriodWithStatus(
+            startDate,
+            endDate,
+            keyword,
+            categoryList,
+            filterByCategory,
+            priorityList,
+            filterByImportance
+        );
+
+        List<EconomicCalendarListRes> content = results.stream()
+            .map(this::convertToListRes)
+            .map(this::populateCountryInfo)
+            .toList();
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<EconomicCalendarListRes> resultPage = new PageImpl<>(content, pageable, totalCount);
 
         return PaginationRes.toRes(resultPage);
+    }
+
+    /**
+     * Object[] → EconomicCalendarListRes 변환
+     */
+    private EconomicCalendarListRes convertToListRes(Object[] row) {
+        int idx = 0;
+        return new EconomicCalendarListRes(
+            ((Number) row[idx++]).longValue(),                    // economicCalendarId
+            (String) row[idx++],                                   // code
+            convertToLocalDateTime(row[idx++]),                    // date
+            (String) row[idx++],                                   // economicIndicatorName
+            (String) row[idx++],                                   // economicIndicatorPresentationDay
+            (String) row[idx++],                                   // economicIndicatorPresentationTime
+            (BigDecimal) row[idx++],                               // economicIndicatorRealValue
+            (String) row[idx++],                                   // economicIndicatorPredictionDay
+            (BigDecimal) row[idx++],                               // economicIndicatorPresentationPriorValue
+            (BigDecimal) row[idx++],                               // economicIndicatorPredictionValue
+            UnitPrefix.fromCode((String) row[idx++]),                                   // unitPrefix
+            EconomicUnit.fromCode((String) row[idx++]),                                   // unit
+            (String) row[idx++],                                   // refinitivPresentationRegion
+            row[idx] != null ? ((Number) row[idx]).shortValue() : null,  // refinitivPriority
+            (String) row[++idx],                                   // type
+            (String) row[++idx],                                   // status
+            null,                                                  // countryNameCode (나중에 채움)
+            null                                                   // countryCurrencyCode (나중에 채움)
+        );
+    }
+
+    /**
+     * Timestamp 또는 LocalDateTime을 LocalDateTime으로 변환
+     */
+    private LocalDateTime convertToLocalDateTime(Object dateObj) {
+        if (dateObj == null) {
+            return null;
+        }
+        if (dateObj instanceof Timestamp t) {
+            return t.toLocalDateTime();
+        }
+        if (dateObj instanceof LocalDateTime ld) {
+            return ld;
+        }
+        return null;
     }
 
     /**
@@ -232,14 +259,14 @@ public class MiEconomicCalendarService {
         return Arrays.stream(importance.split(","))
             .map(String::trim)
             .map(String::toUpperCase)
-            .map(imp -> {
-                return switch (imp) {
+            .map(imp ->
+                switch (imp) {
                     case "HIGH" -> (short) 3;
                     case "MEDIUM" -> (short) 2;
                     case "LOW" -> (short) 1;
                     default -> null;
-                };
-            })
+                }
+            )
             .filter(Objects::nonNull)
             .toList();
     }
@@ -314,17 +341,10 @@ public class MiEconomicCalendarService {
             source.economicIndicatorPredictionValue(),
             source.unitPrefix(),
             source.unit(),
-            source.nextEconomicIndicatorPresentationDay(),
-            source.refinitivName(),
             source.refinitivPresentationRegion(),
-            source.refinitivExplanation(),
-            source.refinitivSourceOrganization(),
-            source.refinitivType(),
-            source.refinitivUnit(),
-            source.refinitivPresentationCycle(),
-            source.refinitivIsUsed(),
             source.refinitivPriority(),
-            source.refinitivPresentationDatetime(),
+            source.refinitivType(),
+            source.status(),
             countryCurrency.getCountryCode(),
             countryCurrency.getCurrencyCode()
         );
@@ -394,6 +414,93 @@ public class MiEconomicCalendarService {
             entity.getUnitPrefix(),
             entity.getUnit(),
             entity.getNextEconomicIndicatorPresentationDay()
+        );
+    }
+
+    /**
+     * 위젯용 경제 지표 달력 목록 조회 (TODAY 고정, 페이징 없음)
+     */
+    public List<EconomicCalendarWidgetRes> getWidgetList(
+        String categories,
+        String importance
+    ) {
+        log.debug("위젯용 경제 지표 달력 조회 - categories: {}, importance: {}",
+            categories, importance);
+
+        // TODAY 고정
+        EconomicCalendarDateRange dateRange = EconomicCalendarDateRange.TODAY;
+        Pair<String, String> dateRangePair = dateRange.getDateRange();
+        String startDate = dateRangePair.getLeft();
+        String endDate = dateRangePair.getRight();
+
+        List<String> categoryList = (categories != null && !categories.isBlank())
+            ? Arrays.asList(categories.split(","))
+            : List.of("");
+        boolean filterByCategory =
+            categories != null && !categoryList.isEmpty() && !categories.isBlank();
+
+        List<Short> priorityList = parseImportance(importance);
+        if (priorityList == null || priorityList.isEmpty()) {
+            priorityList = List.of((short) -1);
+        }
+        boolean filterByImportance = importance != null && !importance.isBlank();
+
+        List<Object[]> results = economicCalendarRepository.findEconomicIndicatorsByPeriodWithStatus(
+            startDate,
+            endDate,
+            "",
+            categoryList,
+            filterByCategory,
+            priorityList,
+            filterByImportance,
+            1000,  // limit
+            0      // offset
+        );
+
+        // Object[] → EconomicCalendarWidgetRes 변환 (국가 정보 포함)
+        return results.stream()
+            .map(this::convertToWidgetRes)
+            .toList();
+    }
+
+    /**
+     * EconomicCalendarListRes를 위젯용 DTO로 변환
+     */
+    private EconomicCalendarWidgetRes convertToWidgetRes(Object[] row) {
+        int idx = 0;
+
+        Long economicCalendarId = ((Number) row[idx++]).longValue();
+        String code = (String) row[idx++];
+        idx++;  // date 스킵
+        String economicIndicatorName = (String) row[idx++];
+        String economicIndicatorPresentationDay = (String) row[idx++];
+        String economicIndicatorPresentationTime = (String) row[idx++];
+        BigDecimal economicIndicatorRealValue = (BigDecimal) row[idx++];
+        idx++;  // economicIndicatorPredictionDay 스킵
+        BigDecimal economicIndicatorPresentationPriorValue = (BigDecimal) row[idx++];
+        BigDecimal economicIndicatorPredictionValue = (BigDecimal) row[idx++];
+        String unitPrefix = (String) row[idx++];
+        String unit = (String) row[idx++];
+        idx++;  // refinitivPresentationRegion 스킵
+        Short refinitivPriority = row[idx] != null ? ((Number) row[idx]).shortValue() : null;
+        idx++;
+        String refinitivType = (String) row[idx++];
+        String status = (String) row[idx];
+
+        return new EconomicCalendarWidgetRes(
+            economicCalendarId,
+            code,
+            economicIndicatorName,
+            economicIndicatorPresentationDay,
+            economicIndicatorPresentationTime,
+            economicIndicatorRealValue,
+            economicIndicatorPresentationPriorValue,
+            economicIndicatorPredictionValue,
+            UnitPrefix.fromCode(unitPrefix),
+            EconomicUnit.fromCode(unit),
+            refinitivPriority,
+            refinitivType,
+            status
         );
     }
 }

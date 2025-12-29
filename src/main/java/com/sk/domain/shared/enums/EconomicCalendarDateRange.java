@@ -68,13 +68,11 @@ public enum EconomicCalendarDateRange {
                 yield Pair.of(date, date);
             }
             case THISWEEK -> {
-                // 이번 주 월요일부터 일요일까지
                 LocalDate monday = today.with(DayOfWeek.MONDAY);
                 LocalDate sunday = today.with(DayOfWeek.SUNDAY);
                 yield Pair.of(DateUtil.toYmdHyphen(monday), DateUtil.toYmdHyphen(sunday));
             }
             case NEXTWEEK -> {
-                // 다음 주 월요일부터 일요일까지
                 LocalDate nextMonday = today.with(DayOfWeek.MONDAY).plusWeeks(1);
                 LocalDate nextSunday = nextMonday.with(DayOfWeek.SUNDAY);
                 yield Pair.of(DateUtil.toYmdHyphen(nextMonday), DateUtil.toYmdHyphen(nextSunday));
