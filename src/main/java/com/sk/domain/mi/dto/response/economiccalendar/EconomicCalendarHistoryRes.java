@@ -1,5 +1,7 @@
 package com.sk.domain.mi.dto.response.economiccalendar;
 
+import com.sk.domain.shared.enums.EconomicUnit;
+import com.sk.domain.shared.enums.UnitPrefix;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,11 +38,11 @@ public record EconomicCalendarHistoryRes(
     @Schema(description = "경제지표예측값", example = "")
     BigDecimal economicIndicatorPredictionValue,
 
-    @Schema(description = "경제지표의 값의 단위 ( K,M 등 )", example = "")
-    String unitPrefix,
+    @Schema(description = "경제지표의 값의 단위 ( T, B, M, K )", example = "M")
+    UnitPrefix unitPrefix,
 
-    @Schema(description = "경제지표 단위", example = "Percent")
-    String unit,
+    @Schema(description = "경제지표 단위", example = "Bbl")
+    EconomicUnit unit,
 
     @Schema(description = "다음경제지표발표날짜", example = "2025-10-28")
     String nextEconomicIndicatorPresentationDay

@@ -383,8 +383,8 @@ public class MiEconomicCalendarService {
             source.economicIndicatorPredictionDay(),
             source.economicIndicatorPresentationPriorValue(),
             source.economicIndicatorPredictionValue(),
-            source.unitPrefix(),
-            source.unit(),
+            source.unitPrefix() == null ? null : UnitPrefix.fromCode(source.unitPrefix()).getDisplayValue(),
+            source.unit() == null ? null : EconomicUnit.fromCode(source.unit()).getAbbreviation(),
             source.nextEconomicIndicatorPresentationDay(),
             source.refinitivName(),
             source.refinitivPresentationRegion(),
@@ -416,8 +416,8 @@ public class MiEconomicCalendarService {
             entity.getEconomicIndicatorPredictionDay(),
             entity.getEconomicIndicatorPresentationPriorValue(),
             entity.getEconomicIndicatorPredictionValue(),
-            entity.getUnitPrefix(),
-            entity.getUnit(),
+            UnitPrefix.fromCode(entity.getUnitPrefix()),
+            EconomicUnit.fromCode(entity.getUnit()),
             entity.getNextEconomicIndicatorPresentationDay()
         );
     }
@@ -433,9 +433,11 @@ public class MiEconomicCalendarService {
         log.debug("위젯용 경제 지표 달력 조회 - categories: {}, importance: {}",
             categories, importance);
 
-        String today = DateUtil.toYmdHyphen(LocalDate.now());
+        String today;
 
         if(criteriaDate == null || criteriaDate.isBlank()) {
+            today = DateUtil.toYmdHyphen(LocalDate.now());
+        }else{
             LocalDate cDate = DateUtil.fromYmd(criteriaDate);
             today = DateUtil.toYmdHyphen(cDate);
         }
