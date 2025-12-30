@@ -4,9 +4,19 @@ import com.sk.domain.shared.enums.EconomicUnit;
 import com.sk.domain.shared.enums.UnitPrefix;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.util.List;
 
 public record EconomicCalendarWidgetRes(
-    @Schema(description = "경제달력데이터ID", example = "1")
+
+    @Schema(description = "최종 업데이트 시간", example = "Sep 15 09:45")
+    String updateTime,
+
+    @Schema(description = "경제 지표 목록")
+    List<EconomicCalendarWidget> economicCalendarWidgetList
+
+) {
+    public record EconomicCalendarWidget(
+        @Schema(description = "경제달력데이터ID", example = "1")
     Long economicCalendarId,
 
     @Schema(description = "RIC코드", example = "USREDY=ECI")
@@ -44,5 +54,8 @@ public record EconomicCalendarWidgetRes(
 
     @Schema(description = "발표 상태 (ANNOUNCED: 발표됨, SCHEDULED: 발표 예정)", example = "ANNOUNCED")
     String status
-) {
+    ) {
+
+    }
+
 }

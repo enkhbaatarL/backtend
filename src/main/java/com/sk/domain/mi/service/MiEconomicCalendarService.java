@@ -3,10 +3,12 @@ package com.sk.domain.mi.service;
 import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
+import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes.EconomicCalendarWidget;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes.RelatedEconomicIndicator;
 import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
@@ -24,10 +26,13 @@ import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRelat
 import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRepository;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -420,22 +425,25 @@ public class MiEconomicCalendarService {
     /**
      * 위젯용 경제 지표 달력 목록 조회 (TODAY 고정, 페이징 없음)
      */
-    public List<EconomicCalendarWidgetRes> getWidgetList(
+    public EconomicCalendarWidgetRes getWidgetList(
+        String criteriaDate,
         String categories,
         String importance
     ) {
         log.debug("위젯용 경제 지표 달력 조회 - categories: {}, importance: {}",
             categories, importance);
 
-        // TODAY 고정
-        EconomicCalendarDateRange dateRange = EconomicCalendarDateRange.TODAY;
-        Pair<String, String> dateRangePair = dateRange.getDateRange();
-        String startDate = dateRangePair.getLeft();
-        String endDate = dateRangePair.getRight();
+        String today = DateUtil.toYmdHyphen(LocalDate.now());
+
+        if(criteriaDate == null || criteriaDate.isBlank()) {
+            LocalDate cDate = DateUtil.fromYmd(criteriaDate);
+            today = DateUtil.toYmdHyphen(cDate);
+        }
 
         List<String> categoryList = (categories != null && !categories.isBlank())
             ? Arrays.asList(categories.split(","))
             : List.of("");
+
         boolean filterByCategory =
             categories != null && !categoryList.isEmpty() && !categories.isBlank();
 
@@ -446,8 +454,8 @@ public class MiEconomicCalendarService {
         boolean filterByImportance = importance != null && !importance.isBlank();
 
         List<Object[]> results = economicCalendarRepository.findEconomicIndicatorsByPeriodWithStatus(
-            startDate,
-            endDate,
+            today,
+            today,
             "",
             categoryList,
             filterByCategory,
@@ -457,16 +465,20 @@ public class MiEconomicCalendarService {
             0      // offset
         );
 
-        // Object[] → EconomicCalendarWidgetRes 변환 (국가 정보 포함)
-        return results.stream()
+        String updateTime = generateUpdateTime(results);
+
+        return new EconomicCalendarWidgetRes(
+            updateTime,
+            results.stream()
             .map(this::convertToWidgetRes)
-            .toList();
+            .toList()
+        );
     }
 
     /**
      * EconomicCalendarListRes를 위젯용 DTO로 변환
      */
-    private EconomicCalendarWidgetRes convertToWidgetRes(Object[] row) {
+    private EconomicCalendarWidget convertToWidgetRes(Object[] row) {
         int idx = 0;
 
         Long economicCalendarId = ((Number) row[idx++]).longValue();
@@ -487,7 +499,7 @@ public class MiEconomicCalendarService {
         String refinitivType = (String) row[idx++];
         String status = (String) row[idx];
 
-        return new EconomicCalendarWidgetRes(
+        return new EconomicCalendarWidget(
             economicCalendarId,
             code,
             economicIndicatorName,
@@ -502,5 +514,69 @@ public class MiEconomicCalendarService {
             refinitivType,
             status
         );
+    }
+
+    /**
+     * results에서 마지막 ANNOUNCED 상태 항목의 발표 일시를 기반으로 updateTime 생성 형식: "Sep 15 09:45"
+     */
+    private String generateUpdateTime(List<Object[]> results) {
+        if (results == null || results.isEmpty()) {
+            return "";
+        }
+
+        // results를 역순으로 탐색하여 마지막 ANNOUNCED 항목 찾기
+        for (int i = results.size() - 1; i >= 0; i--) {
+            Object[] row = results.get(i);
+
+            // status는 row 배열의 마지막 인덱스 (15번)
+            String status = (String) row[15];
+
+            if ("ANNOUNCED".equals(status)) {
+                // economicIndicatorPresentationDay는 인덱스 4
+                // economicIndicatorPresentationTime은 인덱스 5
+                String presentationDay = (String) row[4];  // "20250915" 형식
+                String presentationTime = (String) row[5]; // "09:45:00" 형식
+
+                return formatUpdateTime(presentationDay, presentationTime);
+            }
+        }
+
+        // ANNOUNCED 항목이 없을 경우 빈 문자열 반환
+        return "";
+    }
+
+    /**
+     * 발표 일자와 시간을 "Sep 15 09:45" 형식으로 변환
+     *
+     * @param presentationDay  "2025-09-16" 형식 (하이픈 포함)
+     * @param presentationTime "14:00:00" 형식
+     * @return "Sep 16 14:00" 형식
+     */
+    private String formatUpdateTime(String presentationDay, String presentationTime) {
+        if (presentationDay == null || presentationDay.isEmpty()) {
+            return "";
+        }
+
+        try {
+            // 날짜 파싱: "2025-09-16" -> LocalDate
+            LocalDate date = LocalDate.parse(presentationDay);
+
+            // 시간 추출: "14:00:00" -> "14:00"
+            String time = (presentationTime != null && presentationTime.length() >= 5)
+                ? presentationTime.substring(0, 5)
+                : "";
+
+            // DateTimeFormatter로 "Sep 16" 형식 생성
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH);
+            String formattedDate = date.format(formatter);
+
+            // 결과 조합: "Sep 16 14:00"
+            return String.format("%s %s", formattedDate, time);
+
+        } catch (Exception e) {
+            log.error("updateTime 포맷 변환 중 오류 발생 - presentationDay: {}, presentationTime: {}",
+                presentationDay, presentationTime, e);
+            return "";
+        }
     }
 }

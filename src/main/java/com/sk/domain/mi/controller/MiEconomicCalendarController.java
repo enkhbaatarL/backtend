@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -158,6 +157,7 @@ public class MiEconomicCalendarController {
     }
 
     @ApiOrder(5)
+    @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", example = "20250730")
     @Parameter(name = "categories", description = "카테고리 (선택사항)")
     @Parameter(name = "importance", description = "중요도 (선택사항, HIGH=3, MEDIUM=2, LOW=1)")
     @Operation(
@@ -170,15 +170,16 @@ public class MiEconomicCalendarController {
         roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
-    public BaseResponse<List<EconomicCalendarWidgetRes>> getEconomicCalendarWidget(
+    public BaseResponse<EconomicCalendarWidgetRes> getEconomicCalendarWidget(
+        @RequestParam(value = "criteriaDate", required = false) String criteriaDate,
         @RequestParam(value = "categories", required = false) String categories,
         @RequestParam(value = "importance", required = false) String importance
     ) {
-        log.debug("경제 지표 달력 위젯 조회 요청 - categories: {}, importance: {}",
-            categories, importance);
+        log.debug("경제 지표 달력 위젯 조회 요청 - criteriaDate: {}, categories: {}, importance: {}",
+            criteriaDate, categories, importance);
 
         return BaseResponseFactory.create(
-            miEconomicCalendarService.getWidgetList(categories, importance)
+            miEconomicCalendarService.getWidgetList(criteriaDate, categories, importance)
         );
     }
 }
