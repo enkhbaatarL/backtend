@@ -6,12 +6,14 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
-import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
+import com.sk.domain.mi.dto.response.news.TopicInfoRes;
 import com.sk.domain.mi.service.MiMarketNewsService;
+import com.sk.domain.mi.service.MiTopicTrackerService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.news.SortType;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,18 +21,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "17. Topic Tracker API", description = "시장 뉴스 API입니다.")
+@Tag(name = "17. Topic Tracker API", description = "Topic Tracker API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/topic-tracker")
@@ -38,6 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class MiTopicTrackerController {
 
     private final MiMarketNewsService miMarketNewsService;
+    private final MiTopicTrackerService miTopicTrackerService;
+    private final AuthorizationService authorizationService;
 
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
@@ -49,8 +53,8 @@ public class MiTopicTrackerController {
     @Parameter(name = "topics", description = "토픽 (선택사항)")
     @Parameter(name = "regions", description = "지역 (선택사항)")
     @Operation(
-        summary = "시장 뉴스 목록 조회",
-        description = "시장 뉴스 목록을 페이징하여 조회합니다."
+        summary = "Topic Tracker 목록 조회",
+        description = "Topic Tracker 목록을 페이징하여 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
@@ -68,7 +72,7 @@ public class MiTopicTrackerController {
         @RequestParam(value = "industries", required = false) String industries
     ) {
 
-        log.debug("시장 뉴스 목록 조회 요청 - page: {}, size: {}, keyword: {}", page, size, keyword);
+        log.debug("Topic Tracker 목록 조회 요청 - page: {}, size: {}, keyword: {}", page, size, keyword);
 
         return BaseResponseFactory.create(
             miMarketNewsService.getMarketNewsList(page, size, sort, keyword, startDate, endDate,
@@ -76,33 +80,13 @@ public class MiTopicTrackerController {
         );
     }
 
+
     @ApiOrder(2)
-    @Parameter(name = "newsSummaryId", description = "뉴스 요약 ID", required = true)
-    @Operation(
-        summary = "시장 뉴스 상세 조회",
-        description = "특정 시장 뉴스의 상세 정보를 조회합니다."
-    )
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/{newsSummaryId}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<MarketNewsDetailRes> getMarketNewsDetail(
-        @PathVariable("newsSummaryId") String newsSummaryId) {
-
-        log.debug("시장 뉴스 상세 조회 요청 - newsSummaryId: {}", newsSummaryId);
-
-        return BaseResponseFactory.create(
-            miMarketNewsService.getMarketNewsDetail(newsSummaryId)
-        );
-    }
-
-
-    @ApiOrder(3)
     @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", example = "20250730")
     @Parameter(name = "categories", description = "카테고리 (선택사항)")
     @Operation(
-        summary = "경제 지표 달력 위젯용 조회",
-        description = "대시보드 위젯용 경제 지표 달력 목록을 조회합니다. 오늘 날짜 기준, 페이징 없이 전체 데이터를 반환합니다."
+        summary = "토픽 트래커 위젯용 조회",
+        description = "대시보드 위젯용 토픽 트래커 목록을 조회합니다. 오늘 날짜 기준, 페이징 없이 전체 데이터를 반환합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/widget")
@@ -120,7 +104,23 @@ public class MiTopicTrackerController {
         return BaseResponseFactory.create(new EconomicCalendarWidgetRes("", null));
     }
 
+    @ApiOrder(3)
+    @Operation(
+        summary = "토픽 목록 조회",
+        description = "활성화된 토픽 목록을 조회합니다. (del_yn='N', use_yn='Y')"
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/topics")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<List<TopicInfoRes>> getTopicList() {
+        log.debug("토픽 목록 조회 요청");
+        int userNo = authorizationService.getUserNo();
 
+        return BaseResponseFactory.create(miTopicTrackerService.getTopicList(userNo));
+    }
 
 
 }
