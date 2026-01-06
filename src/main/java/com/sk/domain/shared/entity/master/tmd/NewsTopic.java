@@ -7,7 +7,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -25,9 +24,6 @@ import org.hibernate.annotations.Comment;
 @Entity
 @Table(
     name = "tmd_nwstopm",
-    indexes = {
-        @Index(name = "tmd_nwstopm_ix02", columnList = "cre_usr_no")
-    },
     uniqueConstraints = {
         @UniqueConstraint(name = "tmd_nwstopm_ux01", columnNames = {"nws_top_nm"})
     }
@@ -66,17 +62,11 @@ public class NewsTopic extends BaseEntity {
     @Comment("사용자 등록 여부 (Y: 사용자 승인 토픽, N: 시스템 기본 토픽)")
     private String userRegisteredYn;
 
-    @Column(name = "cre_usr_no", columnDefinition = "INT UNSIGNED")
-    @Comment("등록자 번호 (사용자 등록 토픽인 경우)")
-    private Long creatorUserNo;
-
     @Builder
-    public NewsTopic(NewsEventCategory eventCategory, String newsTopicName, String useYn,
-                     String userRegisteredYn, Long creatorUserNo) {
+    public NewsTopic(NewsEventCategory eventCategory, String newsTopicName, String useYn, String userRegisteredYn) {
         this.eventCategory = eventCategory;
         this.newsTopicName = newsTopicName;
         this.useYn = useYn != null ? useYn : "Y";
         this.userRegisteredYn = userRegisteredYn != null ? userRegisteredYn : "N";
-        this.creatorUserNo = creatorUserNo;
     }
 }

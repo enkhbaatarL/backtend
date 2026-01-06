@@ -5,8 +5,8 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
+import com.sk.domain.mi.dto.response.news.NewsTopicListRes;
 import com.sk.domain.mi.dto.response.news.TopicInfoRes;
 import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.mi.service.MiTopicTrackerService;
@@ -82,8 +82,8 @@ public class MiTopicTrackerController {
 
 
     @ApiOrder(2)
-    @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", example = "20250730")
-    @Parameter(name = "categories", description = "카테고리 (선택사항)")
+    @Parameter(name = "criteriaDate", description = "기준 일자 (yyyyMMdd 형식)", example = "20251210")
+    @Parameter(name = "newsTopicId", description = "뉴스 토픽 ID (선택, 값이 없으면 전체 조회)")
     @Operation(
         summary = "토픽 트래커 위젯용 조회",
         description = "대시보드 위젯용 토픽 트래커 목록을 조회합니다. 오늘 날짜 기준, 페이징 없이 전체 데이터를 반환합니다."
@@ -94,14 +94,14 @@ public class MiTopicTrackerController {
         roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
-    public BaseResponse<EconomicCalendarWidgetRes> getEconomicCalendarWidget(
+    public BaseResponse<List<NewsTopicListRes>> getTopicTrackerWidget(
         @RequestParam(value = "criteriaDate", required = false) String criteriaDate,
-        @RequestParam(value = "categories", required = false) String categories
+        @RequestParam(value = "newsTopicId", required = false) Long newsTopicId
     ) {
-        log.debug("경제 지표 달력 위젯 조회 요청 - criteriaDate: {}, categories: {}, importance: {}",
-            criteriaDate, categories);
+        log.debug("경제 지표 달력 위젯 조회 요청 - criteriaDate: {}, newsTopicId: {}",
+            criteriaDate, newsTopicId);
 
-        return BaseResponseFactory.create(new EconomicCalendarWidgetRes("", null));
+        return BaseResponseFactory.create(miTopicTrackerService.getNewsTopicList(criteriaDate, newsTopicId));
     }
 
     @ApiOrder(3)

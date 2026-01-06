@@ -10,10 +10,13 @@ public record TopicInfoRes(
     String iconImagePath,
 
     @Schema(description = "뉴스 토픽명", example = "Trump Tariff")
-    String newsTopicName
+    String newsTopicName,
+
+    @Schema(description = "사용자 등록 여부", example = "Trump Tariff")
+    String userRegisteredYn
 ) {
 
-    public static TopicInfoRes of(Long newsTopicId, String iconImagePath, String newsTopicName) {
-        return new TopicInfoRes(newsTopicId, iconImagePath, newsTopicName);
+    public static TopicInfoRes of(Long newsTopicId, String iconImagePath, String newsTopicName, String userRegisteredYn) {
+        return new TopicInfoRes(newsTopicId, iconImagePath, newsTopicName, userRegisteredYn);
     }
 }
