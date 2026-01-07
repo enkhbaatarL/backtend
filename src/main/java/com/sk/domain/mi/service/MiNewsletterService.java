@@ -808,6 +808,71 @@ public class MiNewsletterService {
         return String.format("[%s, %s]", resultMax, resultMin);
     }
 
+    /**
+     * Y축 range 계산 (dtick 기반)
+     *
+     * @param max      데이터의 최대값 (BigDecimal)
+     * @param min      데이터의 최소값 (BigDecimal)
+     * @param dtickStr Y축 눈금 간격 (String)
+     * @return [resultMin, resultMax] 배열
+     */
+    private List<Double> calculateRangeWithDtick(BigDecimal max, BigDecimal min, String dtickStr) {
+        // dtick 유효성 검사 및 변환
+        Double dtick = convertDtickToDouble(dtickStr);
+        if (dtick == null || dtick == 0) {
+            log.warn("Invalid dtick value: {}", dtickStr);
+            return List.of(0.0, 0.0);
+        }
+
+        // max, min null 체크
+        if (max == null || min == null) {
+            log.warn("Max or Min is null - max: {}, min: {}", max, min);
+            return List.of(0.0, dtick);
+        }
+
+        // BigDecimal을 Double로 변환
+        double maxValue = max.doubleValue();
+        double minValue = min.doubleValue();
+
+        // resultMax: (max + dtick)보다 크면서 dtick의 배수인 수 중 가장 작은 값
+        double targetMax = maxValue + dtick;
+        double resultMax = Math.ceil(targetMax / dtick) * dtick;
+
+        // resultMin: (min - dtick)보다 작으면서 dtick의 배수인 수 중 가장 큰 값
+        double targetMin = minValue - dtick;
+        double resultMin = Math.floor(targetMin / dtick) * dtick;
+
+        log.debug("Range calculation - max: {}, min: {}, dtick: {} -> resultMin: {}, resultMax: {}",
+            max, min, dtick, resultMin, resultMax);
+
+        return List.of(resultMin, resultMax);
+    }
+
+    /**
+     * dtick String을 Double로 안전하게 변환
+     *
+     * @param dtickStr dtick 문자열
+     * @return 변환된 Double 값, 변환 실패 시 null
+     */
+    private Double convertDtickToDouble(String dtickStr) {
+        if (dtickStr == null || dtickStr.trim().isEmpty()) {
+            log.warn("Dtick string is null or empty");
+            return null;
+        }
+
+        try {
+            double value = Double.parseDouble(dtickStr.trim());
+            if (value <= 0) {
+                log.warn("Dtick must be positive, got: {}", value);
+                return null;
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            log.error("Failed to convert dtick to Double: {}", dtickStr, e);
+            return null;
+        }
+    }
+
     private NewsletterDetailRes.ChartData getCltnChartData(
         String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
 
@@ -885,6 +950,19 @@ public class MiNewsletterService {
                 .toList();
 
             if (!values.isEmpty()) {
+
+                BigDecimal max = values.stream()
+                    .filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+                BigDecimal min = values.stream()
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+
+                List<Double> rangeValues = calculateRangeWithDtick(max, min, config.getDtick());
+                String range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
+
                 Series series = Series.ofWithChartOption(
                     config.getColor(),  // seriesId
                     config.getColor(),  // label
@@ -893,7 +971,7 @@ public class MiNewsletterService {
                     true,
                     config.getColor(),
                     config.getDtick(),
-                    config.getRange()
+                    range
                 );
                 allSeries.add(series);
             }
