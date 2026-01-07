@@ -554,10 +554,10 @@ public class MiMarketNewsService {
 
         // 날짜 계산
         LocalDate criteria = LocalDate.parse(criteriaDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        LocalDate yesterday = criteria.minusDays(1);
-        LocalDate twoDaysAgo = criteria.minusDays(2);
-        LocalDate last7DaysStart = yesterday.minusDays(6); // 어제 포함 7일
-        LocalDate last30DaysStart = yesterday.minusDays(29); // 어제 포함 30일
+        boolean monday = criteria.getDayOfWeek() == DayOfWeek.MONDAY;
+        LocalDate yesterday = monday ? criteria.minusDays(3) : criteria.minusDays(1);
+        LocalDate last7DaysStart = criteria.minusDays(7);
+        LocalDate last30DaysStart = criteria.minusDays(30);
 
         // 단일 쿼리로 전체 기간 조회 (30일 전 ~ 오늘)
         String startDate = last30DaysStart.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -565,7 +565,7 @@ public class MiMarketNewsService {
         List<Object[]> results = significantNewsRepository.countSentimentsByDateRange(
             categoryCode,
             startDate,
-            yesterday.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+            criteriaDate
         );
 
         // 결과를 Map으로 변환
@@ -580,12 +580,12 @@ public class MiMarketNewsService {
             ));
 
         // 각 기간별 집계
-        SignalNewsCount current = buildSignalNewsCount(sentimentMap, yesterday, yesterday, "current");
-        SignalNewsCount previous = buildSignalNewsCount(sentimentMap, twoDaysAgo, twoDaysAgo,
+        SignalNewsCount current = buildSignalNewsCount(sentimentMap, criteria, criteria, "current");
+        SignalNewsCount previous = buildSignalNewsCount(sentimentMap, yesterday, yesterday,
             "previous");
-        SignalNewsCount last7Days = buildSignalNewsCount(sentimentMap, last7DaysStart, yesterday,
+        SignalNewsCount last7Days = buildSignalNewsCount(sentimentMap, last7DaysStart, criteria,
             "last7days");
-        SignalNewsCount last30Days = buildSignalNewsCount(sentimentMap, last30DaysStart, yesterday,
+        SignalNewsCount last30Days = buildSignalNewsCount(sentimentMap, last30DaysStart, criteria,
             "last30days");
 
         return new MarketRecapRes.Sentiments(current, previous, last7Days, last30Days);
@@ -748,8 +748,10 @@ public class MiMarketNewsService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd HH:mm", Locale.ENGLISH);
 
         // 시작 시간은 00:00, 종료 시간도 00:00으로 설정 (24시간 기준)
-        LocalDateTime start = startDate.atTime(0, 0);
-        LocalDateTime end = endDate.plusDays(1).atTime(0, 0);
+        boolean startIsMonday = startDate.getDayOfWeek() == DayOfWeek.MONDAY;
+        LocalDate sd = startIsMonday ? startDate.minusDays(3) : startDate.minusDays(1);
+        LocalDateTime start = sd.atTime(0, 0);
+        LocalDateTime end = endDate.atTime(0, 0);
 
         return String.format("%s - %s",
             start.format(formatter),
