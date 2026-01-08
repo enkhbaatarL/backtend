@@ -950,18 +950,20 @@ public class MiNewsletterService {
                 .toList();
 
             if (!values.isEmpty()) {
+                String range = config.getRange();
+                if (range == null || range.trim().isEmpty()) {
+                    BigDecimal max = values.stream()
+                        .filter(Objects::nonNull)
+                        .max(BigDecimal::compareTo)
+                        .orElse(BigDecimal.ZERO);
+                    BigDecimal min = values.stream()
+                        .filter(Objects::nonNull)
+                        .min(BigDecimal::compareTo)
+                        .orElse(BigDecimal.ZERO);
 
-                BigDecimal max = values.stream()
-                    .filter(Objects::nonNull)
-                    .max(BigDecimal::compareTo)
-                    .orElse(BigDecimal.ZERO);
-                BigDecimal min = values.stream()
-                    .filter(Objects::nonNull)
-                    .min(BigDecimal::compareTo)
-                    .orElse(BigDecimal.ZERO);
-
-                List<Double> rangeValues = calculateRangeWithDtick(max, min, config.getDtick());
-                String range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
+                    List<Double> rangeValues = calculateRangeWithDtick(max, min, config.getDtick());
+                    range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
+                }
 
                 Series series = Series.ofWithChartOption(
                     config.getColor(),  // seriesId
