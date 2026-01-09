@@ -760,6 +760,178 @@ public class MiMarketNewsService {
     }
 
     /**
+     * 마켓 리캡 목록 조회
+     *
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     * @param sort 정렬 기준
+     * @param keyword 검색 키워드
+     * @param dateRangeOption 날짜 범위 옵션
+     * @param recapCategory 리캡 카테고리 (HIGHLIGHT/CHECKPOINT)
+     * @return 마켓 리캡 목록 페이징 응답
+     */
+    public PaginationRes<com.sk.domain.mi.dto.response.news.MarketRecapListRes> getMarketRecaps(
+        int page,
+        int size,
+        SortType sort,
+        String keyword,
+        com.sk.domain.shared.enums.news.DateRangeOption dateRangeOption,
+        com.sk.domain.shared.enums.news.RecapCategory recapCategory
+    ) {
+        // 날짜 범위 계산
+        LocalDate endDate = LocalDate.now();
+        String endDateStr = DateUtil.toYmd(endDate);
+        String startDateStr = null;
+
+        // ALL_TIME이 아닌 경우에만 시작일 계산
+        if (dateRangeOption != com.sk.domain.shared.enums.news.DateRangeOption.ALL_TIME) {
+            LocalDate startDate = dateRangeOption.getStartDate(endDate);
+            startDateStr = DateUtil.toYmd(startDate);
+        }
+
+        // 페이징 및 정렬 설정
+        Pageable pageable = PageRequest.of(
+            page - 1,
+            size,
+            sort == SortType.NEWEST
+                ? org.springframework.data.domain.Sort.by("crtrDt").descending()
+                : org.springframework.data.domain.Sort.by("crtrDt").ascending()
+        );
+
+        // MarketRecap 조회
+        Page<MarketRecap> marketRecapPage = marketRecapRepository.findMarketRecaps(
+            startDateStr,
+            endDateStr,
+            keyword,
+            pageable
+        );
+
+        // MarketRecapListRes로 변환
+        List<com.sk.domain.mi.dto.response.news.MarketRecapListRes> resultList =
+            marketRecapPage.getContent().stream()
+                .flatMap(marketRecap -> {
+                    if (recapCategory == null) {
+                        // HIGHLIGHT와 CHECKPOINT 둘 다 반환
+                        return java.util.stream.Stream.of(
+                            buildHighlightResponse(marketRecap),
+                            buildCheckpointResponse(marketRecap)
+                        );
+                    } else if (recapCategory == com.sk.domain.shared.enums.news.RecapCategory.HIGHLIGHT) {
+                        return java.util.stream.Stream.of(buildHighlightResponse(marketRecap));
+                    } else {
+                        return java.util.stream.Stream.of(buildCheckpointResponse(marketRecap));
+                    }
+                })
+                .toList();
+
+        // recapCategory가 null이면 각 MarketRecap당 2개의 레코드(HIGHLIGHT + CHECKPOINT)가 반환되므로
+        // total elements는 원래의 2배가 됩니다
+        long totalElements = recapCategory == null
+            ? marketRecapPage.getTotalElements() * 2
+            : marketRecapPage.getTotalElements();
+
+        Page<com.sk.domain.mi.dto.response.news.MarketRecapListRes> resultPage =
+            new org.springframework.data.domain.PageImpl<>(
+                resultList,
+                pageable,
+                totalElements
+            );
+
+        return PaginationRes.toRes(resultPage);
+    }
+
+    /**
+     * HIGHLIGHT 응답 생성
+     */
+    private com.sk.domain.mi.dto.response.news.MarketRecapListRes buildHighlightResponse(MarketRecap marketRecap) {
+        // Narrative 생성
+        com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative narrative =
+            new com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative(
+                marketRecap.getHlEvntTitl(),
+                marketRecap.getHlEvntCntt() != null
+                    ? Arrays.asList(marketRecap.getHlEvntCntt().split("\n"))
+                    : Collections.emptyList()
+            );
+
+        // HighlightEvent 조회
+        List<MarketRecapHighlightEvent> highlightEvents =
+            marketRecapHighlightEventRepository.findByMarketRecap(marketRecap);
+
+        // HighlightEventRes 변환
+        List<com.sk.domain.mi.dto.response.news.MarketRecapListRes.HighlightEventRes> highlightItems =
+            highlightEvents.stream()
+                .map(event -> {
+                    // 관련 뉴스 조회
+                    List<MarketRecapHighlightEventRelationship> relationships =
+                        marketRecapHighlightEventRelationshipRepository.findByMarketRecapHighlightEvent(event);
+
+                    List<com.sk.domain.mi.dto.response.news.MarketRecapListRes.RelatedEventRepresentativeNewsRes> relatedNews =
+                        relationships.stream()
+                            .map(rel -> new com.sk.domain.mi.dto.response.news.MarketRecapListRes.RelatedEventRepresentativeNewsRes(
+                                rel.getNewsEvent().getRepresentativeNewsSummary().getNewsSummaryId(),
+                                rel.getNewsEvent().getRepresentativeNewsSummary().getBriefSummary(),
+                                rel.getNewsEvent().getRepresentativeNewsSummary().getProviderId()
+                            ))
+                            .toList();
+
+                    return new com.sk.domain.mi.dto.response.news.MarketRecapListRes.HighlightEventRes(
+                        event.getMrktRcapHlEvntId(),
+                        event.getNameKr(),
+                        event.getNameEn(),
+                        null,
+                        relatedNews
+                    );
+                })
+                .toList();
+
+        return com.sk.domain.mi.dto.response.news.MarketRecapListRes.ofHighlight(
+            marketRecap.getMrktRcapId(),
+            marketRecap.getCrtrDt(),
+            marketRecap.getNwsMrktCtgrCd(),
+            narrative,
+            highlightItems
+        );
+    }
+
+    /**
+     * CHECKPOINT 응답 생성
+     */
+    private com.sk.domain.mi.dto.response.news.MarketRecapListRes buildCheckpointResponse(MarketRecap marketRecap) {
+        // Narrative 생성
+        com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative narrative =
+            new com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative(
+                marketRecap.getCkptTitl(),
+                marketRecap.getCkptCntt() != null
+                    ? Arrays.asList(marketRecap.getCkptCntt().split("\n"))
+                    : Collections.emptyList()
+            );
+
+        // Checkpoint 조회
+        List<MarketRecapCheckpoint> checkpoints =
+            marketRecapCheckpointRepository.findByMarketRecap(marketRecap);
+
+        // CheckpointRes 변환
+        List<com.sk.domain.mi.dto.response.news.MarketRecapListRes.CheckpointRes> checkpointItems =
+            checkpoints.stream()
+                .map(checkpoint -> new com.sk.domain.mi.dto.response.news.MarketRecapListRes.CheckpointRes(
+                    checkpoint.getMrktRcapCkptId(),
+                    checkpoint.getTitle(),
+                    checkpoint.getContent() != null
+                        ? Arrays.asList(checkpoint.getContent().split("\n"))
+                        : Collections.emptyList()
+                ))
+                .toList();
+
+        return com.sk.domain.mi.dto.response.news.MarketRecapListRes.ofCheckpoint(
+            marketRecap.getMrktRcapId(),
+            marketRecap.getCrtrDt(),
+            marketRecap.getNwsMrktCtgrCd(),
+            narrative,
+            checkpointItems
+        );
+    }
+
+    /**
      * Sentiment 카운트를 담는 내부 DTO
      */
     @Value
