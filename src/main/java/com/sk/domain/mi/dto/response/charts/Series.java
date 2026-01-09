@@ -16,7 +16,8 @@ public record Series(
     boolean isVisible,
     String color,
     BigDecimal dtick,
-    List<BigDecimal> range
+    List<BigDecimal> range,
+    Boolean isBidirectional
 ) {
 
     private static SeriesBuilder builderOf(String seriesId, String label, RenderAs renderAs,
@@ -35,7 +36,8 @@ public record Series(
     }
 
     public static Series ofWithChartOption(String seriesId, String label, RenderAs renderAs,
-        List<BigDecimal> values, boolean isVisible, String color, String dtick, String rangeStr) {
+        List<BigDecimal> values, boolean isVisible, String color, String dtick, String rangeStr,
+        Boolean isBidirectional) {
         return Series.builder()
             .seriesId(seriesId)
             .label(label)
@@ -45,6 +47,7 @@ public record Series(
             .color(color)
             .dtick(new BigDecimal(dtick))
             .range(parseRangeString(rangeStr))
+            .isBidirectional(isBidirectional)
             .build();
     }
 
