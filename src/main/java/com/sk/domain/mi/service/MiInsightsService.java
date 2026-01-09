@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.response.insights.FocusedDataDto;
 import com.sk.domain.mi.dto.response.insights.FocusedDataRes;
 import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
+import com.sk.domain.mi.dto.response.insights.ProviderCategoryRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -189,7 +190,7 @@ public class MiInsightsService {
     public GoodsDataFilterRes getAdvancedFilter(int companyNo) {
 
         List<GoodsDataCategoryRes> documentTypes = commonCodeDetailRepository.findDocTypeCategory();
-        List<GoodsDataCategoryRes> providers = commonCodeDetailRepository.findProviderTypeCategory(companyNo);
+        List<ProviderCategoryRes> providers = commonCodeDetailRepository.findProviderTypeCategory(companyNo);
         List<GoodsDataCategoryRes> languages = commonCodeDetailRepository.findLangTypeCategory();
 
         return GoodsDataFilterRes.of(documentTypes, providers, languages);

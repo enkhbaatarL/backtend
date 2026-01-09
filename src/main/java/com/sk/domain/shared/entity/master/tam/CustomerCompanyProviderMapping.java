@@ -7,15 +7,23 @@ import com.sk.domain.shared.entity.compositeKey.tam.CustomerCompanyProviderMappi
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Provider;
 import com.sk.domain.shared.listener.CustomerCompanyProviderMappingListener;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -44,6 +52,11 @@ public class CustomerCompanyProviderMapping extends BaseEntity {
     @Comment("사용여부")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isUsed;
+
+    @Column(name = "defl_ustrc_yn", nullable = false, length = 1, columnDefinition = "char(1) DEFAULT 'N'")
+    @Comment("기본설정여부(비정형)")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isDefaultUnstructured;
 
     @Builder
     public CustomerCompanyProviderMapping(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted, CustomerCompanyProviderMappingId id, CustomerCompany customerCompany, Provider provider, Boolean isUsed) {
