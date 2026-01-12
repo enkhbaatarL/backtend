@@ -159,4 +159,66 @@ public class AdminProviderDedicatedController {
         }
         return BaseResponseFactory.create(goodsDataService.uploadStructuredDataJson(companyCd, role, structuredDataJsonReq));
     }
+
+
+    @ApiOrder(21)
+    @Parameters({
+        @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품번호"),
+    })
+    @Operation(summary = "데이터 등록: 신규등록", description = "데이터 등록: 신규 등록합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/providers/{providerNo}/goods/{goodsNo}/goods-data")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<String> createGoodsData(
+        @RequestBody @Valid GoodsDataCreateReq body,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+
+        goodsDataService.createGoodsData(companyNo, role, providerNo, goodsNo, body);
+
+        return BaseResponseFactory.create("success");
+    }
+
+    @ApiOrder(22)
+    @Parameters({
+        @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
+        @Parameter(name = "goodsNo", description = "상품번호"),
+        @Parameter(name = "goodsDataNo", description = "상품데이타번호")
+    })
+    @Operation(summary = "데이터 등록: 기존 데이타 업데이트", description = "데이터 등록: 기존 데이타 업데이트합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PatchMapping("/providers/{providerNo}/goods/{goodsNo}/goods-datas/{goodsDataNo}")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<String> updateGoodsData(
+        @RequestBody @Valid GoodsDataUpdateReq body,
+        @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+        @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
+
+        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+
+        goodsDataService.updateGoodsData(companyNo, role, providerNo, goodsNo, goodsDataNo, body);
+
+        return BaseResponseFactory.create("success");
+    }
+
+
+    @ApiOrder(99)
+    @Operation(summary = "비정형 Meta 파일 업로드", description = "비정형 Meta 파일을 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @PostMapping("/axplatform/upload")
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<String> uploadMetaFile(
+        @RequestParam(value = "goodsDataNo", required = true, defaultValue = "") Integer goodsDataNo) {
+
+        goodsDataService.uploadMetaFile(goodsDataNo);
+
+        return BaseResponseFactory.create("success");
+    }
+
 }

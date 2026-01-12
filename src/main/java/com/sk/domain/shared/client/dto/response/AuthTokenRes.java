@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 // @formatter:off
 public record AuthTokenRes(
-        @JsonProperty("access_token") 
-        String accessToken) {
+        @JsonProperty("access_token") String accessToken,
+        @JsonProperty("expires_in") long expiresIn
+){
 
 }
 // @formatter:on

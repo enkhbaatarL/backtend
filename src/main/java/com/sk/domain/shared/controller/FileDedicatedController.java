@@ -51,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/api/v1/file-management")
 @RequiredArgsConstructor
-public class FileController {
+public class FileDedicatedController {
     private final AuthorizationService authorizationService;
     private final FileService fileService;
     private final CustomerCompanyRepository customerCompanyRepository;

@@ -21,13 +21,13 @@ import com.sk.domain.shared.client.dto.response.AXMetaUploadRes;
 public interface AxPlatformApi {
 
     @PostExchange(value = "/api/v1/datasources/upload/files", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
-    AXMetaUploadRes upload(@RequestHeader("Authorization") String authToken, @RequestPart(value = "files") MultipartFile file);
+    AXMetaUploadRes upload(@RequestPart(value = "files") MultipartFile file);
 
     @PutExchange("/api/v1/datasources/{datasourceId}")
-    AXMetaRegisterRes register(@RequestHeader("Authorization") String authToken, @PathVariable String datasourceId,
+    AXMetaRegisterRes register(@PathVariable String datasourceId,
             @RequestBody AXMetaRegisterReq req);
 
     @GetExchange("/api/v1/datasources/{datasourceId}/files")
-    AXMetaLookUpRes lookup(@RequestHeader("Authorization") String authToken, @PathVariable String datasourceId,
+    AXMetaLookUpRes lookup(@PathVariable String datasourceId,
             @RequestParam(name = "file_name") String fileName);
 }

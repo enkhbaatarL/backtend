@@ -106,9 +106,12 @@ api:
     api-key: ${SKT_MI_MODEL_AGENT_API_KEY:sk-a001c3a2cb5dbb234bc1fa1d113f2d53}
     app-id: ${SKT_MI_MODEL_AGENT_APP_ID:e3064bc4-1871-4072-8f79-ed5271c50f81}
   auth-token:
-    url: https://dev-mi.sk.com
+    url: https://devadxp.adotbiz.ai
     connection-timeout: 1s
     read-timeout: 20s
+    username: mip_skcc_svc
+    password: password
+    client-id: mip_skcc
   ax-platform:
     url: https://devadxp.adotbiz.ai
     connection-timeout: 1s

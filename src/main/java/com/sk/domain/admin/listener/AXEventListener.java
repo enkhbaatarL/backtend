@@ -70,16 +70,8 @@ public class AXEventListener {
             File file = new File(directoryPath + File.separator + uniqueFilename);
             MultipartFileUtil multipartFile = new MultipartFileUtil("files", file, null);
 
-            AuthTokenRes authTokenRes = authTokenApi.getToken();
-            if (authTokenRes == null || authTokenRes.accessToken() == null) {
-                log.error("[AX Platform] getToken: " + authTokenRes);
-                return;
-            }
-
-            String accessToken = "Bearer ".concat(authTokenRes.accessToken());
-
             // 문서 Meta File 업로드
-            AXMetaUploadRes uploadRes = axPlatformApi.upload(accessToken, multipartFile);
+            AXMetaUploadRes uploadRes = axPlatformApi.upload(multipartFile);
             log.info("[AX Platform] upload: " + uploadRes);
 
             ModifiedFile uploadFile = new ModifiedFile(uploadRes.data().get(0).fileName(),
@@ -97,7 +89,7 @@ public class AXEventListener {
 
                 if (fileName != null && !fileName.isEmpty()) {
                     // 삭제 대상 파일의 정보 조회
-                    AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(accessToken, datasourceId, fileName);
+                    AXMetaLookUpRes lookUpRes = axPlatformApi.lookup(datasourceId, fileName);
                     log.info("[AX Platform] lookup: " + lookUpRes);
 
                     ModifiedFile deletedFile = new ModifiedFile(
@@ -113,7 +105,7 @@ public class AXEventListener {
             }
 
             // Datasource에 삭제 대상 파일, 변경된 파일 정보 등록
-            AXMetaRegisterRes axMetaRegisterRes = axPlatformApi.register(accessToken, datasourceId, registerReq);
+            AXMetaRegisterRes axMetaRegisterRes = axPlatformApi.register(datasourceId, registerReq);
             log.info("[AX Platform] register: " + axMetaRegisterRes);
 
             // 업로드 결과 저장
