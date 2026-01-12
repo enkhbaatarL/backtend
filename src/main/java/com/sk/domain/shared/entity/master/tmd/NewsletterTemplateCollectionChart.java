@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -91,4 +92,17 @@ public class NewsletterTemplateCollectionChart {
     @Comment("차트에서 사용할 Range 값. 배열형식 그대로 사용")
     private String range;
 
+    @Column(name = "bidir_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("양방향 여부")
+    @ColumnDefault("'N'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private boolean isBidirectional = false;
+
+    @Column(name = "tm_axis_intvl_val", precision = 12, scale = 4)
+    @Comment("시간축간격값")
+    private BigDecimal timeAxisIntervalValue;
+
+    @Column(name = "tm_axis_intvl_unit", length = 10)
+    @Comment("시간축간격값")
+    private String timeAxisIntervalUnit;
 }

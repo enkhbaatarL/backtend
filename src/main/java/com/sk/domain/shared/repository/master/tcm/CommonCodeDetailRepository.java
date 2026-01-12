@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tcm;
 
 import com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes;
+import com.sk.domain.mi.dto.response.insights.ProviderCategoryRes;
 import com.sk.domain.shared.entity.compositeKey.tcm.CommonCodeDetailId;
 import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 import java.util.List;
@@ -11,10 +12,11 @@ import org.springframework.data.repository.query.Param;
 public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDetail, CommonCodeDetailId> {
 
     @Query(value = """
-            SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(
+            SELECT new com.sk.domain.mi.dto.response.insights.ProviderCategoryRes(
             ccd.id.codeId,
             ccd.codeNm,
-            ccd.codeExpn
+            ccd.codeExpn,
+            ccpm.isDefaultUnstructured
             )
             FROM CommonCodeDetail ccd
             JOIN Provider p ON CONCAT('A_', p.providerId) = ccd.id.codeId
@@ -33,7 +35,7 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
                 AND ccpm.isDeleted = false
             ORDER BY ccd.codeRnk
             """)
-    List<GoodsDataCategoryRes> findProviderTypeCategory(@Param("companyNo") int companyNo);
+    List<ProviderCategoryRes> findProviderTypeCategory(@Param("companyNo") int companyNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(

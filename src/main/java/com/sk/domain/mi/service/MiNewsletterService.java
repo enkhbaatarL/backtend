@@ -567,7 +567,7 @@ public class MiNewsletterService {
             Series.of("low", "Low", RenderAs.LOW, lowValues, true),
             Series.of("open", "Open", RenderAs.OPEN, openValues, true),
             Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, "1",
-                range),
+                range, false),
             Series.of("volume", "Volume", RenderAs.VOLUME, volumeValues, true)
         );
 
@@ -778,7 +778,8 @@ public class MiNewsletterService {
                     true,
                     config.getColor(),
                     config.getDtick(),
-                    range);
+                    range,
+                    config.isBidirectional());
                 allSeries.add(series);
             }
         }
@@ -973,7 +974,8 @@ public class MiNewsletterService {
                     true,
                     config.getColor(),
                     config.getDtick(),
-                    range
+                    range,
+                    config.isBidirectional()
                 );
                 allSeries.add(series);
             }

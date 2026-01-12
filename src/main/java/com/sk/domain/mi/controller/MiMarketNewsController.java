@@ -13,6 +13,8 @@ import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.news.DateRangeOption;
+import com.sk.domain.shared.enums.news.RecapCategory;
 import com.sk.domain.shared.enums.news.SortType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -160,7 +162,7 @@ public class MiMarketNewsController {
         description = "마켓 리캡 ID로 상세 정보를 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/recap/{mrktRcapId}")
+    @GetMapping("/recaps/{mrktRcapId}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<MarketRecapRes> getMarketRecapById(
@@ -184,12 +186,44 @@ public class MiMarketNewsController {
     @GetMapping("/timeline")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<List<NewsTimelineRes>> getMarketNewsFeed(
+    public BaseResponse<List<NewsTimelineRes>> getMarketNewsTimeline(
        @RequestParam(value = "criteriaDate") String criteriaDate,
         @RequestParam(value = "category", defaultValue = "CROIL") String category) {
 
         log.debug("시장 뉴스 타임라인 조회 요청 - criteriaDate: {}, category: {}", criteriaDate, category);
 
         return BaseResponseFactory.create(miMarketNewsService.getNewsTimeline(criteriaDate, category));
+    }
+
+    @ApiOrder(7)
+    @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
+    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)")
+    @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = SortType.class))
+    @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
+    @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = DateRangeOption.class))
+    @Parameter(name = "recapCategory", description = "리캡 카테고리", schema = @Schema(implementation = RecapCategory.class))
+    @Operation(
+        summary = "마켓 리캡 목록 조회",
+        description = "마켓 리캡 목록을 페이징하여 조회합니다. recapCategory에 따라 HIGHLIGHT 또는 CHECKPOINT 아이템이 반환됩니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/recaps")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<PaginationRes<com.sk.domain.mi.dto.response.news.MarketRecapListRes>> getMarketRecaps(
+        @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
+        @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
+        @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
+        @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+        @RequestParam(value = "dateRangeOption", defaultValue = "LAST_30_DAYS") DateRangeOption dateRangeOption,
+        @RequestParam(value = "recapCategory", required = false) RecapCategory recapCategory
+    ) {
+
+        log.debug("마켓 리캡 목록 조회 요청 - page: {}, size: {}, sort: {}, keyword: {}, dateRangeOption: {}, recapCategory: {}",
+            page, size, sort, keyword, dateRangeOption, recapCategory);
+
+        return BaseResponseFactory.create(
+            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategory)
+        );
     }
 }
