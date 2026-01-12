@@ -1,7 +1,12 @@
 package com.sk.domain.shared.entity.master.tmd;
 
+import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
@@ -83,10 +88,18 @@ public class GoodsData extends BaseEntity {
     @Comment("metad_upld_file_nm")
     private String metadUpldFileNm;
 
+    @Column(name = "pub_dt")
+    @Comment("발행일")
+    private LocalDate publishedDate;
+
+    @Column(name = "authors", length = 200)
+    @Comment("저자 리스트")
+    private String authors;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
-            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked) {
+            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate, String authors) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
@@ -98,10 +111,12 @@ public class GoodsData extends BaseEntity {
         this.dataContributorNm = dataContributorNm;
         this.isMetaDataUploaded = isMetaDataUploaded;
         this.isGoodsDataMarked = isGoodsDataMarked;
+        this.publishedDate = publishedDate;
+        this.authors = authors;
     }
 
     public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt,
-            String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked) {
+            String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate, String authors) {
         return GoodsData.builder()
                 .goodsDataNm(goodsDataNm)
                 .goodsDataExpn(goodsDataExpn)
@@ -111,10 +126,12 @@ public class GoodsData extends BaseEntity {
                 .dataContributorNm(dataContributorNm)
                 .isMetaDataUploaded(isMetaDataUploaded)
                 .isGoodsDataMarked(isGoodsDataMarked)
+                .publishedDate(publishedDate)
+                .authors(authors)
                 .build();
     }
 
-    public void update(String goodsDataExpn, String goodsDataSummaryCntt, String dataContributorNm) {
+    public void update(String goodsDataExpn, String goodsDataSummaryCntt, String dataContributorNm, LocalDate publishedDate, String authors) {
         if (StringUtils.isNotEmpty(goodsDataExpn)) {
             this.goodsDataExpn = goodsDataExpn;
         }
@@ -125,6 +142,12 @@ public class GoodsData extends BaseEntity {
 
         if (StringUtils.isNotEmpty(dataContributorNm)) {
             this.dataContributorNm = dataContributorNm;
+        }
+        if (publishedDate != null) {
+            this.publishedDate = publishedDate;
+        }
+        if (StringUtils.isNotEmpty(authors)) {
+            this.authors = authors;
         }
 
         this.modifyDt = LocalDateTime.now();
@@ -148,5 +171,12 @@ public class GoodsData extends BaseEntity {
 
     public void softDelete() {
         super.softDelete();
+    }
+
+    public List<String> getAuthors(){
+        if(this.authors == null || this.authors.trim().isEmpty()){
+            return List.of("");
+        }
+        return Arrays.stream(this.authors.trim().split(",")).map(String::trim).toList();
     }
 }

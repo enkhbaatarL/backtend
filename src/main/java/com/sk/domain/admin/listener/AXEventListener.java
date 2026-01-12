@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -21,7 +20,6 @@ import com.sk.domain.shared.client.dto.request.AXMetaRegisterReq.ModifiedFile;
 import com.sk.domain.shared.client.dto.response.AXMetaLookUpRes;
 import com.sk.domain.shared.client.dto.response.AXMetaRegisterRes;
 import com.sk.domain.shared.client.dto.response.AXMetaUploadRes;
-import com.sk.domain.shared.client.dto.response.AuthTokenRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 

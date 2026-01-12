@@ -22,6 +22,7 @@ import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
@@ -58,7 +59,6 @@ public class MiInsightsService {
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final GoodsDataRepository goodsDataRepository;
     private final EntityManager entityManager;
-    private final GoodsRepository goodsRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
     private final AuthorizationService authorizationService;
 
@@ -424,57 +424,6 @@ public class MiInsightsService {
                 .map(GoodsDataCategory::getGoodsDataCategoryCd)
                 .distinct()
                 .collect(Collectors.joining(","));
-    }
-
-    /**
-     *
-     * debug용 더미 데이터 생성
-     *
-     */
-    @Transactional
-    public void createDummyData() {
-        List<String> A_TYPES = List.of(
-                "A_INSIGHT",
-                "A_CMMDT_MRKT_RPT",
-                "A_CMPY_RPT",
-                "A_ASST_RPT",
-                "A_DEAL_INSIGHT",
-                "A_INFORM");
-
-        List<String> A_LANGUAGES = List.of(
-                "A_ENG",
-                "A_KOR",
-                "A_OTHERS");
-
-        for (int i = 0; i < 100; i++) {
-            Goods goods = goodsRepository.findByGoodsNo(5000, 70008).orElse(null);
-
-            GoodsData savedGoodsData = goodsDataRepository
-                    .save(GoodsData.of(goods, null, "데이타명 %d".formatted(i), "데이타설명 %d".formatted(i), "데이타요약 %d".formatted(i),
-                            "기고자명 %d".formatted(i), false, true));
-
-            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "A_LSEG", "",
-                    GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-
-            List<String> copy1 = new ArrayList<>(A_TYPES);
-            Collections.shuffle(copy1);
-            List<String> results1 = copy1.subList(0, 3);
-            for (String result : results1) {
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
-                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-            }
-
-            List<String> copy2 = new ArrayList<>(A_LANGUAGES);
-            Collections.shuffle(copy2);
-            List<String> results2 = copy2.subList(0, 2);
-            for (String result : results2) {
-                goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, result, "",
-                        GoodsDataManagementSeparateCode.GDAT.getCode(), null));
-            }
-
-            goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", "20250425",
-                    GoodsDataManagementSeparateCode.GUDAT.getCode(), 33L));
-        }
     }
 
     public List<RecentViewedRes> getRecentViewedInsights(

@@ -1,6 +1,8 @@
 package com.sk.domain.admin.service;
 
 import com.sk.domain.admin.dto.request.provider.StructuredDataJsonReq;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -87,9 +89,7 @@ public class AdminGoodsDataService {
     private final JsonService jsonService;
     private final UnitConvertRepository unitConvertRepository;
     private final GoodsDataUnitConvertRepository goodsDataUnitConvertRepository;
-    private final UserRepository userRepository;
-    private final PlatformTransactionManager masterTransactionManager;
-    private final PlatformTransactionManager myBatisTransactionManager;
+    private final GoodsDataExtensionRepository goodsDataExtensionRepository;
     private final ApplicationEventPublisher publisher;
     private final ProviderDefaultProperties providerDefaultProperties;
 
@@ -305,6 +305,9 @@ public class AdminGoodsDataService {
         if (goodsDatas.size() > 0) {
             GoodsData goodsData = goodsDatas.get(0);
 
+            goodsDataExtensionRepository.deleteById(goodsData.getGoodsDataNo());
+            goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url()));
+
             // 비정형 데이타
             if (dto.unstructuredDataList() != null) {
                 List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
@@ -358,9 +361,9 @@ public class AdminGoodsDataService {
                         .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
                                 : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
                         .contributor(goodsData.getDataContributorNm())
-                        .authors(List.of(""))
+                        .authors(dto.getAuthors())
                         .documentFileName(fileNameList)
-                        .language("")
+                        .language(dto.getLanguage())
                         .countries(List.of(""))
                         .build();
 
@@ -409,7 +412,9 @@ public class AdminGoodsDataService {
             // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
             GoodsData savedGoodsData = goodsDataRepository
                     .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                            dto.dataContributorNm(), false, true));
+                            dto.dataContributorNm(), false, true, DateUtil.fromYmdHyphen(dto.publishedDate()), dto.authors()));
+
+            goodsDataExtensionRepository.save(GoodsDataExtension.of(savedGoodsData.getGoodsDataNo(), dto.recommendations(), dto.url()));
 
             // 프로바이더 타입 카테고리 등록
             Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -519,9 +524,9 @@ public class AdminGoodsDataService {
                         .synopsis(savedGoodsData.getGoodsDataExpn() != null ? savedGoodsData.getGoodsDataExpn()
                                 : "" + savedGoodsData.getGoodsDataSummaryCntt() != null ? savedGoodsData.getGoodsDataSummaryCntt() : "")
                         .contributor(savedGoodsData.getDataContributorNm())
-                        .authors(List.of(""))
+                        .authors(dto.getAuthors())
                         .documentFileName(fileNameList)
-                        .language("")
+                        .language(dto.getLanguage())
                         .countries(List.of(""))
                         .build();
 
@@ -602,7 +607,10 @@ public class AdminGoodsDataService {
     }
 
     private void internalUpdateGoodsData(int providerNo, GoodsData goodsData, GoodsDataUpdateReq dto) {
-        goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm());
+        goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm(), DateUtil.fromYmdHyphen(dto.publishedDate()), dto.authors());
+
+        goodsDataExtensionRepository.deleteById(goodsData.getGoodsDataNo());
+        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url()));
 
         // 문서 타입 카테고리 수정
         if (dto.docCategoryList() != null) {
@@ -773,9 +781,9 @@ public class AdminGoodsDataService {
                     .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
                             : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
                     .contributor(goodsData.getDataContributorNm())
-                    .authors(List.of(""))
+                    .authors(dto.getAuthors())
                     .documentFileName(fileNameList)
-                    .language("")
+                    .language(dto.getLanguage())
                     .countries(List.of(""))
                     .build();
 
@@ -850,6 +858,8 @@ public class AdminGoodsDataService {
 
         String documentId = UUID.randomUUID().toString();
 
+        List<CategoryDataRes> categoryDataResList = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+
         AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
                 .gdsNo(goodsData.getGoods().getGoodsNo())
                 .documentId(documentId)
@@ -858,9 +868,9 @@ public class AdminGoodsDataService {
                 .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
                         : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
                 .contributor(goodsData.getDataContributorNm())
-                .authors(List.of(""))
+                .authors(goodsData.getAuthors())
                 .documentFileName(fileNameList)
-                .language("")
+                .language(getLanguage(categoryDataResList))
                 .countries(List.of(""))
                 .build();
 
@@ -869,4 +879,17 @@ public class AdminGoodsDataService {
 
         publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
     }
+    private static String getLanguage(List<CategoryDataRes> categoryDataResList){
+        if(categoryDataResList == null || categoryDataResList.isEmpty()){
+            return "English";
+        }
+        for(CategoryDataRes code : categoryDataResList){
+            if(code == null || code.codeId() == null) continue;
+            if("A_ENG".equals(code.codeId().trim())) return "English";
+            if("A_KOR".equals(code.codeId().trim())) return "Korean";
+            if("A_OTHERS".equals(code.codeId().trim())) return "Other";
+        }
+        return "English";
+    }
+
 }
