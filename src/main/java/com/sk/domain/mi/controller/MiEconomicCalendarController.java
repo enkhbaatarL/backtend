@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.enums.ResultCode.Success;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -10,10 +11,12 @@ import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarHistoryRes
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarListRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
+import com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarRes;
 import com.sk.domain.mi.service.MiEconomicCalendarService;
 import com.sk.domain.shared.enums.EconomicCalendarDateRange;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,9 +24,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MiEconomicCalendarController {
 
     private final MiEconomicCalendarService miEconomicCalendarService;
+    private final AuthorizationService authorizationService;
 
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
@@ -99,9 +105,10 @@ public class MiEconomicCalendarController {
             @PathVariable("code") String code
     ) {
         log.debug("경제 지표 달력 상세 조회 요청 - code: {}", code);
+        int userNo = authorizationService.getUserNo();
 
         return BaseResponseFactory.create(
-                miEconomicCalendarService.getDetail(code)
+                miEconomicCalendarService.getDetail(code, userNo)
         );
     }
 
@@ -181,5 +188,44 @@ public class MiEconomicCalendarController {
         return BaseResponseFactory.create(
             miEconomicCalendarService.getWidgetList(criteriaDate, categories, importance)
         );
+    }
+
+    @ApiOrder(6)
+    @Operation(
+        summary = "최근 조회 경제 지표 목록 조회",
+        description = "사용자가 최근에 상세 조회한 경제 지표 목록 5개를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/recent-viewed")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<List<RecentViewedEconomicCalendarRes>> getRecentViewedList() {
+        // AuthorizationService를 통해 현재 로그인한 사용자의 userNo를 가져옵니다.
+        int userNo = authorizationService.getUserNo();
+        log.debug("최근 조회 경제 지표 목록 요청 - userNo: {}", userNo);
+
+        return BaseResponseFactory.create(
+            miEconomicCalendarService.getRecentViewedList(userNo)
+        );
+    }
+
+    @ApiOrder(7)
+    @Operation(
+        summary = "최근 조회 경제 지표 전체 삭제",
+        description = "사용자의 최근 조회 경제 지표 로그를 모두 논리 삭제합니다."
+    )
+    @DeleteMapping("/recent-viewed")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<Void> deleteAllRecentViewed() {
+        int userNo = authorizationService.getUserNo();
+        log.debug("최근 조회 경제 지표 전체 삭제 요청 - userNo: {}", userNo);
+
+        miEconomicCalendarService.deleteAllRecentViewed(userNo);
+        return BaseResponseFactory.create(Success.OK);
     }
 }

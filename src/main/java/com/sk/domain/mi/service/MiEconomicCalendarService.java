@@ -11,8 +11,10 @@ import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes.EconomicCalendarWidget;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes.RelatedEconomicIndicator;
+import com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarRes;
 import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
 import com.sk.domain.shared.entity.master.tif.RefinitivEconomicCalendar;
+import com.sk.domain.shared.entity.master.tlm.EconomicCalendarInquiryLog;
 import com.sk.domain.shared.entity.master.tmd.EconomicIndicatorAnalysis;
 import com.sk.domain.shared.entity.master.tmd.EconomicIndicatorAnalysisRelationship;
 import com.sk.domain.shared.enums.CountryCurrency;
@@ -22,6 +24,7 @@ import com.sk.domain.shared.enums.UnitPrefix;
 import com.sk.domain.shared.enums.news.MarketCategoryCode;
 import com.sk.domain.shared.repository.master.tif.EconomicCalendarRepository;
 import com.sk.domain.shared.repository.master.tif.RefinitivEconomicCalendarRepository;
+import com.sk.domain.shared.repository.master.tlm.EconomicCalendarInquiryLogRepository;
 import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.EconomicIndicatorAnalysisRepository;
 import java.math.BigDecimal;
@@ -50,13 +53,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MiEconomicCalendarService {
 
     private final EconomicCalendarRepository economicCalendarRepository;
     private final RefinitivEconomicCalendarRepository refinitivEconomicCalendarRepository;
     private final EconomicIndicatorAnalysisRepository economicIndicatorAnalysisRepository;
     private final EconomicIndicatorAnalysisRelationshipRepository economicIndicatorAnalysisRelationshipRepository;
+    private final EconomicCalendarInquiryLogRepository economicCalendarInquiryLogRepository;
 
     /**
      * 경제 지표 달력 목록 조회 (통합 쿼리 사용)
@@ -137,7 +140,8 @@ public class MiEconomicCalendarService {
             (String) row[idx++],                                   // economicIndicatorPredictionDay
             (BigDecimal) row[idx++],                               // economicIndicatorPresentationPriorValue
             (BigDecimal) row[idx++],                               // economicIndicatorPredictionValue
-            UnitPrefix.fromCode((String) row[idx++]),                                   // unitPrefix
+            UnitPrefix.fromCode(
+                (String) row[idx++]),                                   // unitPrefix
             EconomicUnit.fromCode((String) row[idx++]),                                   // unit
             (String) row[idx++],                                   // refinitivPresentationRegion
             row[idx] != null ? ((Number) row[idx]).shortValue() : null,  // refinitivPriority
@@ -164,17 +168,28 @@ public class MiEconomicCalendarService {
         return null;
     }
 
-    /**
-     * 경제 지표 달력 상세 조회 (code 기준 최신 데이터)
-     */
-    public EconomicCalendarDetailRes getDetail(String code) {
-        log.debug("경제 지표 달력 상세 조회 요청 - code: {}", code);
+    @Transactional
+    public EconomicCalendarDetailRes getDetail(String code, int userNo) {
+        log.debug("경제 지표 달력 상세 조회 요청 - code: {}, userNo: {}", code, userNo);
 
-        EconomicCalendarDetailRes detail = economicCalendarRepository.findLatestEconomicCalendarByCode(code)
-            .orElseThrow(() -> new IllegalArgumentException("해당 코드의 경제 지표 데이터를 찾을 수 없습니다: " + code));
+        EconomicCalendarDetailRes detail = economicCalendarRepository.findLatestEconomicCalendarByCode(
+                code)
+            .orElseThrow(() -> new IllegalArgumentException("해당 코드의 데이터를 찾을 수 없습니다: " + code));
+
+        saveInquiryLog(userNo, code);
 
         return populateCountryInfoForDetail(detail);
     }
+
+    private void saveInquiryLog(int userNo, String code) {
+        try {
+            EconomicCalendarInquiryLog log = EconomicCalendarInquiryLog.createLog(userNo, code);
+            economicCalendarInquiryLogRepository.save(log);
+        } catch (Exception e) {
+            log.error("경제 지표 조회 로그 저장 중 오류 발생", e);
+        }
+    }
+
 
     /**
      * 경제 지표 달력 히스토리 조회
@@ -253,8 +268,7 @@ public class MiEconomicCalendarService {
     }
 
     /**
-     * importance 문자열을 priority 값 리스트로 변환
-     * HIGH=3, MEDIUM=2, LOW=1
+     * importance 문자열을 priority 값 리스트로 변환 HIGH=3, MEDIUM=2, LOW=1
      */
     private List<Short> parseImportance(String importance) {
         if (importance == null || importance.isBlank()) {
@@ -277,9 +291,7 @@ public class MiEconomicCalendarService {
     }
 
     /**
-     * 분석 내용 문자열을 List로 파싱
-     * - 줄바꿈 문자(\n)로 구분
-     * - 빈 줄 제거
+     * 분석 내용 문자열을 List로 파싱 - 줄바꿈 문자(\n)로 구분 - 빈 줄 제거
      */
     private List<String> parseAnalysisContent(String analysisContent) {
         if (analysisContent == null || analysisContent.isBlank()) {
@@ -355,7 +367,8 @@ public class MiEconomicCalendarService {
         );
     }
 
-    private EconomicCalendarDetailRes populateCountryInfoForDetail(EconomicCalendarDetailRes source) {
+    private EconomicCalendarDetailRes populateCountryInfoForDetail(
+        EconomicCalendarDetailRes source) {
         if ((source.countryNameCode() != null && source.countryCurrencyCode() != null)
             || source.refinitivPresentationRegion() == null) {
             return source;
@@ -383,7 +396,8 @@ public class MiEconomicCalendarService {
             source.economicIndicatorPredictionDay(),
             source.economicIndicatorPresentationPriorValue(),
             source.economicIndicatorPredictionValue(),
-            source.unitPrefix() == null ? null : UnitPrefix.fromCode(source.unitPrefix()).getDisplayValue(),
+            source.unitPrefix() == null ? null
+                : UnitPrefix.fromCode(source.unitPrefix()).getDisplayValue(),
             source.unit() == null ? null : EconomicUnit.fromCode(source.unit()).getAbbreviation(),
             source.nextEconomicIndicatorPresentationDay(),
             source.refinitivName(),
@@ -435,9 +449,9 @@ public class MiEconomicCalendarService {
 
         String today;
 
-        if(criteriaDate == null || criteriaDate.isBlank()) {
+        if (criteriaDate == null || criteriaDate.isBlank()) {
             today = DateUtil.toYmdHyphen(LocalDate.now());
-        }else{
+        } else {
             LocalDate cDate = DateUtil.fromYmd(criteriaDate);
             today = DateUtil.toYmdHyphen(cDate);
         }
@@ -472,8 +486,8 @@ public class MiEconomicCalendarService {
         return new EconomicCalendarWidgetRes(
             updateTime,
             results.stream()
-            .map(this::convertToWidgetRes)
-            .toList()
+                .map(this::convertToWidgetRes)
+                .toList()
         );
     }
 
@@ -580,5 +594,26 @@ public class MiEconomicCalendarService {
                 presentationDay, presentationTime, e);
             return "";
         }
+    }
+
+    /**
+     * 사용자의 최근 조회 경제 달력 목록 5개 조회 (Join 쿼리를 통한 최적화)
+     */
+    @Transactional(readOnly = true)
+    public List<RecentViewedEconomicCalendarRes> getRecentViewedList(int userNo) {
+        log.debug("최근 조회 경제 달력 5개 요청(최적화) - userNo: {}", userNo);
+
+        return economicCalendarInquiryLogRepository.findTop5RecentViewedWithSource(
+            userNo,
+            PageRequest.of(0, 5)
+        );
+    }
+
+    /**
+     * 최근 조회 내역 전체 삭제 (Soft Delete)
+     */
+    @Transactional
+    public void deleteAllRecentViewed(int userNo) {
+        economicCalendarInquiryLogRepository.softDeleteAllByUserNo(userNo);
     }
 }
