@@ -5,14 +5,14 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.NewsTopicListRes;
 import com.sk.domain.mi.dto.response.news.TopicInfoRes;
-import com.sk.domain.mi.service.MiMarketNewsService;
+import com.sk.domain.mi.dto.response.news.TopicTrackerListRes;
 import com.sk.domain.mi.service.MiTopicTrackerService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.enums.news.SortType;
+import com.sk.domain.shared.enums.topic.DateRangeOption;
+import com.sk.domain.shared.enums.topic.SortType;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,12 +20,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
-import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,17 +37,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MiTopicTrackerController {
 
-    private final MiMarketNewsService miMarketNewsService;
     private final MiTopicTrackerService miTopicTrackerService;
     private final AuthorizationService authorizationService;
 
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
-    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 30)")
+    @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)")
     @Parameter(name = "sort", description = "정렬기준", schema = @Schema(implementation = SortType.class))
     @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
-    @Parameter(name = "startDate", description = "조회 시작일 (선택사항)")
-    @Parameter(name = "endDate", description = "조회 종료일 (선택사항)")
+    @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = DateRangeOption.class))
     @Parameter(name = "topics", description = "토픽 (선택사항)")
     @Parameter(name = "regions", description = "지역 (선택사항)")
     @Operation(
@@ -60,23 +56,21 @@ public class MiTopicTrackerController {
     @GetMapping
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<PaginationRes<MarketNewsListRes>> getMarketNewsList(
+    public BaseResponse<PaginationRes<TopicTrackerListRes>> getTopicTrackerList(
         @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
-        @RequestParam(value = "size", defaultValue = "30") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
+        @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
         @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
-        @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-        @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
-        @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
-        @RequestParam(value = "categories", required = false) String categories,
-        @RequestParam(value = "regions", required = false) String regions,
-        @RequestParam(value = "industries", required = false) String industries
+        @RequestParam(value = "keyword", required = false) String keyword,
+        @RequestParam(value = "dateRangeOption", defaultValue = "LAST_7_DAYS") DateRangeOption dateRangeOption,
+        @RequestParam(value = "topics", required = false) String topics,
+        @RequestParam(value = "regions", required = false) String regions
     ) {
 
         log.debug("Topic Tracker 목록 조회 요청 - page: {}, size: {}, keyword: {}", page, size, keyword);
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getMarketNewsList(page, size, sort, keyword, startDate, endDate,
-                categories, regions, industries)
+            miTopicTrackerService.getTopicTrackerList(page, size, sort, keyword, dateRangeOption,
+                topics, regions)
         );
     }
 
@@ -95,7 +89,7 @@ public class MiTopicTrackerController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<List<NewsTopicListRes>> getTopicTrackerWidget(
-        @RequestParam(value = "criteriaDate", required = false) String criteriaDate,
+        @RequestParam(value = "criteriaDate") String criteriaDate,
         @RequestParam(value = "newsTopicId", required = false) Long newsTopicId
     ) {
         log.debug("경제 지표 달력 위젯 조회 요청 - criteriaDate: {}, newsTopicId: {}",

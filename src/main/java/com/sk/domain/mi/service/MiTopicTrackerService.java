@@ -1,17 +1,28 @@
 package com.sk.domain.mi.service;
 
 
+import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.news.NewsTopicListRes;
 import com.sk.domain.mi.dto.response.news.TopicInfoRes;
+import com.sk.domain.mi.dto.response.news.TopicTrackerListRes;
 import com.sk.domain.shared.entity.master.tmd.NewsTopic;
+import com.sk.domain.shared.enums.topic.DateRangeOption;
+import com.sk.domain.shared.enums.topic.SortType;
 import com.sk.domain.shared.repository.master.tmd.NewsTopicRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsTopicRepository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +34,135 @@ public class MiTopicTrackerService {
 
     private final NewsTopicRepository newsTopicRepository;
     private final NewsTopicRelationshipRepository newsTopicRelationshipRepository;
+
+    /**
+     * Topic Tracker 목록 조회
+     */
+    public PaginationRes<TopicTrackerListRes> getTopicTrackerList(
+        int page,
+        int size,
+        SortType sort,
+        String keyword,
+        DateRangeOption dateRangeOption,
+        String topics,
+        String regions
+    ) {
+        String sortDirection = (sort == SortType.OLDEST) ? "ASC" : "DESC";
+
+        LocalDateTime startDateTime = null;
+        LocalDateTime endDateTime = null;
+        if (dateRangeOption != DateRangeOption.ALL_TIME) {
+            LocalDate endDate = LocalDate.now();
+            LocalDate startDate = dateRangeOption.getStartDate(endDate);
+            startDateTime = startDate.atStartOfDay();
+            endDateTime = endDate.atTime(LocalTime.MAX);
+        }
+
+        int offset = (page - 1) * size;
+        List<Long> topicList = (topics != null && !topics.isBlank())
+            ? Arrays.stream(topics.split(","))
+            .map(String::trim)
+            .filter(value -> !value.isEmpty())
+            .map(Long::parseLong)
+            .toList()
+            : Collections.emptyList();
+        List<String> regionList = (regions != null && !regions.isBlank())
+            ? Arrays.stream(regions.split(","))
+            .map(String::trim)
+            .filter(value -> !value.isEmpty())
+            .toList()
+            : Collections.emptyList();
+
+        boolean filterByTopic = !topicList.isEmpty();
+        boolean filterByRegion = !regionList.isEmpty();
+
+        List<Long> topicIdsParam = filterByTopic ? topicList : List.of(-1L);
+        List<String> regionParam = filterByRegion ? regionList : List.of("DUMMY");
+
+        List<Object[]> results = newsTopicRelationshipRepository.findTopicTrackerListWithRegions(
+            keyword,
+            startDateTime,
+            endDateTime,
+            topicIdsParam,
+            filterByTopic,
+            regionParam,
+            filterByRegion,
+            sortDirection,
+            size,
+            offset
+        );
+
+        long totalCount = newsTopicRelationshipRepository.countTopicTrackerList(
+            keyword,
+            startDateTime,
+            endDateTime,
+            topicIdsParam,
+            filterByTopic,
+            regionParam,
+            filterByRegion
+        );
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        List<TopicTrackerListRes> content = results.stream()
+            .map(row -> {
+                int idx = 0;
+                Long newsTopicRelationshipId = row[idx] != null
+                    ? ((Number) row[idx]).longValue()
+                    : null;
+                idx++;
+
+                String criteriaDate = (String) row[idx++];
+
+                Long newsSummaryId = row[idx] != null ? ((Number) row[idx]).longValue() : null;
+                idx++;
+
+                LocalDateTime firstCreated = row[idx] != null
+                    ? ((java.sql.Timestamp) row[idx]).toLocalDateTime()
+                    : null;
+                idx++;
+
+                String topicName = (String) row[idx++];
+                Long topicId = row[idx] != null ? ((Number) row[idx]).longValue() : null;
+                idx++;
+                String providerName = (String) row[idx++];
+                String summaryStr = (String) row[idx++];
+                String briefSummary = (String) row[idx++];
+                String briefSummaryEn = (String) row[idx++];
+                String regionsStr = (String) row[idx];
+
+                List<String> summary = summaryStr != null && !summaryStr.isBlank()
+                    ? Arrays.asList(summaryStr.split("\n"))
+                    : Collections.emptyList();
+
+                List<String> regionItems = parseRegions(regionsStr);
+
+                String publishDate = firstCreated != null ? firstCreated.format(dateFormatter) : null;
+                String publishTime = firstCreated != null ? firstCreated.format(timeFormatter) : null;
+
+                return new TopicTrackerListRes(
+                    newsTopicRelationshipId,
+                    newsSummaryId,
+                    criteriaDate,
+                    publishDate,
+                    publishTime,
+                    topicName,
+                    topicId,
+                    providerName,
+                    regionItems,
+                    briefSummary,
+                    summary,
+                    briefSummaryEn
+                );
+            })
+            .toList();
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<TopicTrackerListRes> topicTrackerPage = new PageImpl<>(content, pageable, totalCount);
+
+        return PaginationRes.toRes(topicTrackerPage);
+    }
 
     /**
      * 활성화된 토픽 목록 조회
