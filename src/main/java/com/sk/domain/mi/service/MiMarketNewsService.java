@@ -6,6 +6,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
+import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.SignalNewsCount;
@@ -773,7 +774,7 @@ public class MiMarketNewsService {
      * @param recapCategories 리캡 카테고리 (HIGHLIGHT/CHECKPOINT)
      * @return 마켓 리캡 목록 페이징 응답
      */
-    public PaginationRes<com.sk.domain.mi.dto.response.news.MarketRecapListRes> getMarketRecaps(
+    public PaginationRes<MarketRecapListRes> getMarketRecaps(
         int page,
         int size,
         SortType sort,
@@ -787,7 +788,7 @@ public class MiMarketNewsService {
         String startDateStr = null;
 
         // ALL_TIME이 아닌 경우에만 시작일 계산
-        if (dateRangeOption != com.sk.domain.shared.enums.news.DateRangeOption.ALL_TIME) {
+        if (dateRangeOption != DateRangeOption.ALL_TIME) {
             LocalDate startDate = dateRangeOption.getStartDate(endDate);
             startDateStr = DateUtil.toYmd(startDate);
         }
@@ -800,40 +801,99 @@ public class MiMarketNewsService {
         boolean includeCheckpoint = recapCategoryList.contains(RecapCategory.CHECKPOINT);
         boolean isNewest = sort == SortType.NEWEST;
 
-        Page<MarketRecapListRow> marketRecapPage = marketRecapRepository.findMarketRecapRows(
-            startDateStr,
-            endDateStr,
-            keyword,
-            includeHighlight,
-            includeCheckpoint,
-            isNewest,
-            pageable
-        );
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
 
-        Map<Long, MarketRecap> recapMap = marketRecapRepository.findAllById(
-            marketRecapPage.getContent().stream()
-                .map(MarketRecapListRow::getMrktRcapId)
+        Page<MarketRecapListRow> marketRecapPage;
+        if (hasKeyword) {
+            marketRecapPage = isNewest
+                ? marketRecapRepository.findMarketRecapRowsNewest(
+                    startDateStr,
+                    endDateStr,
+                    keyword,
+                    includeHighlight,
+                    includeCheckpoint,
+                    pageable
+                )
+                : marketRecapRepository.findMarketRecapRowsOldest(
+                    startDateStr,
+                    endDateStr,
+                    keyword,
+                    includeHighlight,
+                    includeCheckpoint,
+                    pageable
+                );
+        } else {
+            marketRecapPage = isNewest
+                ? marketRecapRepository.findMarketRecapRowsNewestWithoutKeyword(
+                    startDateStr,
+                    endDateStr,
+                    includeHighlight,
+                    includeCheckpoint,
+                    pageable
+                )
+                : marketRecapRepository.findMarketRecapRowsOldestWithoutKeyword(
+                    startDateStr,
+                    endDateStr,
+                    includeHighlight,
+                    includeCheckpoint,
+                    pageable
+                );
+        }
+
+        List<Long> recapIds = marketRecapPage.getContent().stream()
+            .map(MarketRecapListRow::getMrktRcapId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        Map<Long, List<MarketRecapHighlightEvent>> highlightEventsByRecap = new HashMap<>();
+        Map<Long, List<MarketRecapHighlightEventRelationship>> relationshipsByEventId = new HashMap<>();
+        if (includeHighlight && !recapIds.isEmpty()) {
+            List<MarketRecapHighlightEvent> highlightEvents =
+                marketRecapHighlightEventRepository.findByMarketRecapIdInOrderByScoreDesc(recapIds);
+
+            highlightEventsByRecap.putAll(highlightEvents.stream()
+                .collect(Collectors.groupingBy(MarketRecapHighlightEvent::getMrktRcapId)));
+
+            List<Long> highlightEventIds = highlightEvents.stream()
+                .map(MarketRecapHighlightEvent::getMrktRcapHlEvntId)
                 .filter(Objects::nonNull)
-                .distinct()
-                .toList()
-        ).stream().collect(Collectors.toMap(MarketRecap::getMrktRcapId, recap -> recap));
+                .toList();
 
-        List<com.sk.domain.mi.dto.response.news.MarketRecapListRes> resultList =
+            if (!highlightEventIds.isEmpty()) {
+                List<MarketRecapHighlightEventRelationship> relationships =
+                    marketRecapHighlightEventRelationshipRepository.findByHighlightEventIds(highlightEventIds);
+                relationshipsByEventId.putAll(relationships.stream()
+                    .collect(Collectors.groupingBy(MarketRecapHighlightEventRelationship::getMrktRcapHlEvntId)));
+            }
+        }
+
+        Map<Long, List<MarketRecapCheckpoint>> checkpointsByRecap = new HashMap<>();
+        if (includeCheckpoint && !recapIds.isEmpty()) {
+            List<MarketRecapCheckpoint> checkpoints =
+                marketRecapCheckpointRepository.findByMarketRecapIdInOrderById(recapIds);
+            checkpointsByRecap.putAll(checkpoints.stream()
+                .collect(Collectors.groupingBy(MarketRecapCheckpoint::getMrktRcapId)));
+        }
+
+        List<MarketRecapListRes> resultList =
             marketRecapPage.getContent().stream()
                 .map(row -> {
-                    MarketRecap marketRecap = recapMap.get(row.getMrktRcapId());
-                    if (marketRecap == null) {
-                        return com.sk.domain.mi.dto.response.news.MarketRecapListRes.empty(
-                            RecapCategory.valueOf(row.getRecapCategory()));
-                    }
                     RecapCategory recapCategory = RecapCategory.valueOf(row.getRecapCategory());
                     return recapCategory == RecapCategory.HIGHLIGHT
-                        ? buildHighlightResponse(marketRecap)
-                        : buildCheckpointResponse(marketRecap);
+                        ? buildHighlightResponse(
+                            row,
+                            highlightEventsByRecap.getOrDefault(row.getMrktRcapId(), Collections.emptyList()),
+                            relationshipsByEventId
+                        )
+                        : buildCheckpointResponse(
+                            row,
+                            checkpointsByRecap.getOrDefault(row.getMrktRcapId(), Collections.emptyList())
+                        );
                 })
                 .toList();
 
-        Page<com.sk.domain.mi.dto.response.news.MarketRecapListRes> resultPage =
+        Page<MarketRecapListRes> resultPage =
             new org.springframework.data.domain.PageImpl<>(
                 resultList,
                 pageable,
@@ -865,38 +925,37 @@ public class MiMarketNewsService {
     /**
      * HIGHLIGHT 응답 생성
      */
-    private com.sk.domain.mi.dto.response.news.MarketRecapListRes buildHighlightResponse(MarketRecap marketRecap) {
-        // Narrative 생성
-        com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative narrative =
-            new com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative(
-                marketRecap.getHlEvntTitl(),
-                marketRecap.getHlEvntCntt() != null
-                    ? Arrays.asList(marketRecap.getHlEvntCntt().split("\n"))
-                    : Collections.emptyList()
-            );
-
-        // HighlightEvent 조회
-        List<MarketRecapHighlightEvent> highlightEvents =
-            marketRecapHighlightEventRepository.findByMarketRecap(marketRecap);
-
-        // HighlightEventRes 변환
-        List<com.sk.domain.mi.dto.response.news.MarketRecapListRes.HighlightEventRes> highlightItems =
+    private MarketRecapListRes buildHighlightResponse(
+        MarketRecapListRow row,
+        List<MarketRecapHighlightEvent> highlightEvents,
+        Map<Long, List<MarketRecapHighlightEventRelationship>> relationshipsByEventId
+    ) {
+        List<MarketRecapListRes.HighlightEventRes> highlightItems =
             highlightEvents.stream()
                 .map(event -> {
-                    // 관련 뉴스 조회
                     List<MarketRecapHighlightEventRelationship> relationships =
-                        marketRecapHighlightEventRelationshipRepository.findByMarketRecapHighlightEvent(event);
-
-                    List<com.sk.domain.mi.dto.response.news.MarketRecapListRes.RelatedEventRepresentativeNewsRes> relatedNews =
+                        relationshipsByEventId.getOrDefault(event.getMrktRcapHlEvntId(), Collections.emptyList());
+                    List<MarketRecapListRes.RelatedEventRepresentativeNewsRes> relatedNews =
                         relationships.stream()
-                            .map(rel -> new com.sk.domain.mi.dto.response.news.MarketRecapListRes.RelatedEventRepresentativeNewsRes(
-                                rel.getNewsEvent().getRepresentativeNewsSummary().getNewsSummaryId(),
-                                rel.getNewsEvent().getRepresentativeNewsSummary().getBriefSummary(),
-                                rel.getNewsEvent().getRepresentativeNewsSummary().getProviderId()
-                            ))
+                            .map(rel -> {
+                                if (rel.getNewsEvent() == null ||
+                                    rel.getNewsEvent().getRepresentativeNewsSummary() == null) {
+                                    return null;
+                                }
+                                NewsSummary representativeNews =
+                                    rel.getNewsEvent().getRepresentativeNewsSummary();
+                                return new MarketRecapListRes.RelatedEventRepresentativeNewsRes(
+                                    representativeNews.getNewsSummaryId(),
+                                    representativeNews.getRefinitivNewsData() != null
+                                        ? representativeNews.getRefinitivNewsData().getTitle()
+                                        : null,
+                                    representativeNews.getProviderId()
+                                );
+                            })
+                            .filter(Objects::nonNull)
                             .toList();
 
-                    return new com.sk.domain.mi.dto.response.news.MarketRecapListRes.HighlightEventRes(
+                    return new MarketRecapListRes.HighlightEventRes(
                         event.getMrktRcapHlEvntId(),
                         event.getNameKr(),
                         event.getNameEn(),
@@ -906,11 +965,10 @@ public class MiMarketNewsService {
                 })
                 .toList();
 
-        return com.sk.domain.mi.dto.response.news.MarketRecapListRes.ofHighlight(
-            marketRecap.getMrktRcapId(),
-            marketRecap.getCrtrDt(),
-            marketRecap.getNwsMrktCtgrCd(),
-            narrative,
+        return MarketRecapListRes.ofHighlight(
+            row.getMrktRcapId(),
+            row.getCrtrDt(),
+            row.getNwsMrktCtgrCd(),
             highlightItems
         );
     }
@@ -918,21 +976,10 @@ public class MiMarketNewsService {
     /**
      * CHECKPOINT 응답 생성
      */
-    private com.sk.domain.mi.dto.response.news.MarketRecapListRes buildCheckpointResponse(MarketRecap marketRecap) {
-        // Narrative 생성
-        com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative narrative =
-            new com.sk.domain.mi.dto.response.news.MarketRecapListRes.Narrative(
-                marketRecap.getCkptTitl(),
-                marketRecap.getCkptCntt() != null
-                    ? Arrays.asList(marketRecap.getCkptCntt().split("\n"))
-                    : Collections.emptyList()
-            );
-
-        // Checkpoint 조회
-        List<MarketRecapCheckpoint> checkpoints =
-            marketRecapCheckpointRepository.findByMarketRecap(marketRecap);
-
-        // CheckpointRes 변환
+    private MarketRecapListRes buildCheckpointResponse(
+        MarketRecapListRow row,
+        List<MarketRecapCheckpoint> checkpoints
+    ) {
         List<com.sk.domain.mi.dto.response.news.MarketRecapListRes.CheckpointRes> checkpointItems =
             checkpoints.stream()
                 .map(checkpoint -> new com.sk.domain.mi.dto.response.news.MarketRecapListRes.CheckpointRes(
@@ -944,11 +991,10 @@ public class MiMarketNewsService {
                 ))
                 .toList();
 
-        return com.sk.domain.mi.dto.response.news.MarketRecapListRes.ofCheckpoint(
-            marketRecap.getMrktRcapId(),
-            marketRecap.getCrtrDt(),
-            marketRecap.getNwsMrktCtgrCd(),
-            narrative,
+        return MarketRecapListRes.ofCheckpoint(
+            row.getMrktRcapId(),
+            row.getCrtrDt(),
+            row.getNwsMrktCtgrCd(),
             checkpointItems
         );
     }

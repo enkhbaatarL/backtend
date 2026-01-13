@@ -18,9 +18,6 @@ public record MarketRecapListRes(
     @Schema(description = "리캡 카테고리 (HIGHLIGHT/CHECKPOINT)", example = "HIGHLIGHT")
     RecapCategory recapCategory,
 
-    @Schema(description = "narrative")
-    Narrative narrative,
-
     @Schema(description = "아이템 목록 (HIGHLIGHT일 때: HighlightEventRes[], CHECKPOINT일 때: CheckpointRes[])")
     Object items
 ) {
@@ -32,7 +29,6 @@ public record MarketRecapListRes(
         Long marketRecapId,
         String criteriaDate,
         String categoryCode,
-        Narrative narrative,
         List<HighlightEventRes> highlightItems
     ) {
         return new MarketRecapListRes(
@@ -40,7 +36,6 @@ public record MarketRecapListRes(
             criteriaDate,
             categoryCode,
             RecapCategory.HIGHLIGHT,
-            narrative,
             highlightItems
         );
     }
@@ -52,7 +47,6 @@ public record MarketRecapListRes(
         Long marketRecapId,
         String criteriaDate,
         String categoryCode,
-        Narrative narrative,
         List<CheckpointRes> checkpointItems
     ) {
         return new MarketRecapListRes(
@@ -60,7 +54,6 @@ public record MarketRecapListRes(
             criteriaDate,
             categoryCode,
             RecapCategory.CHECKPOINT,
-            narrative,
             checkpointItems
         );
     }
@@ -74,7 +67,6 @@ public record MarketRecapListRes(
             null,
             null,
             recapCategory,
-            Narrative.empty(),
             Collections.emptyList()
         );
     }
@@ -106,55 +98,6 @@ public record MarketRecapListRes(
         @Schema(description = "내용", example = "Fed to announce interest rate decision...")
         List<String> content
     ) {}
-
-    public record Narrative(
-        @Schema(description = "제목", example = "Tech Sector Leads Market Rally")
-        String title,
-
-        @Schema(description = "내용", example = "Technology stocks showed strong performance...")
-        List<String> content
-    ) {
-        public static Narrative empty() {
-            return new Narrative(
-                null,                       // title
-                Collections.emptyList()     // content
-            );
-        }
-    }
-
-    public record Highlights(
-        @Schema(description = "투데이 하이라이트 이벤트 narrative")
-        Narrative narrative,
-
-        @Schema(description = "하이라이트 이벤트 목록")
-        List<HighlightEventRes> items,
-
-        @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트들의 대표 뉴스 목록")
-        List<RelatedEventRepresentativeNewsRes> relatedEventRepresentativeNewsResNews
-    ) {
-        public static Highlights empty() {
-            return new Highlights(
-                Narrative.empty(),              // narrative
-                Collections.emptyList(),        // items
-                Collections.emptyList()         // relatedEventRepresentativeNewsResNews
-            );
-        }
-    }
-
-    public record Checkpoints(
-        @Schema(description = "체크포인트 narrative")
-        Narrative narrative,
-
-        @Schema(description = "체크포인트 목록")
-        List<CheckpointRes> items
-    ) {
-        public static Checkpoints empty() {
-            return new Checkpoints(
-                Narrative.empty(),              // narrative
-                Collections.emptyList()         // items
-            );
-        }
-    }
 
     public record RelatedEventRepresentativeNewsRes(
         @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트의 대표 뉴스 요약 ID", example = "123")

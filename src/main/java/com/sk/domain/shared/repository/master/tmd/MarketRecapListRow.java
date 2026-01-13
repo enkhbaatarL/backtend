@@ -7,13 +7,5 @@ public interface MarketRecapListRow {
 
     String getNwsMrktCtgrCd();
 
-    String getHlEvntTitl();
-
-    String getHlEvntCntt();
-
-    String getCkptTitl();
-
-    String getCkptCntt();
-
     String getRecapCategory();
 }

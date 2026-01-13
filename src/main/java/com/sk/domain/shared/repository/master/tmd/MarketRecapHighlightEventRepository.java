@@ -23,4 +23,11 @@ public interface MarketRecapHighlightEventRepository extends JpaRepository<Marke
     List<MarketRecapHighlightEvent> findByMarketRecapIdOrderByScoreDesc(
         @Param("marketRecapId") Long marketRecapId
     );
+
+    @Query("SELECT mhe FROM MarketRecapHighlightEvent mhe " +
+           "WHERE mhe.mrktRcapId IN :marketRecapIds " +
+           "ORDER BY mhe.mrktRcapId, mhe.score DESC")
+    List<MarketRecapHighlightEvent> findByMarketRecapIdInOrderByScoreDesc(
+        @Param("marketRecapIds") List<Long> marketRecapIds
+    );
 }

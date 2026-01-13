@@ -33,4 +33,13 @@ public interface MarketRecapHighlightEventRelationshipRepository extends JpaRepo
     List<MarketRecapHighlightEventRelationship> findByNewsEventId(
         @Param("newsEventId") Long newsEventId
     );
+
+    @Query("SELECT mher FROM MarketRecapHighlightEventRelationship mher " +
+           "JOIN FETCH mher.newsEvent ne " +
+           "JOIN FETCH ne.representativeNewsSummary ns " +
+           "LEFT JOIN FETCH ns.refinitivNewsData " +
+           "WHERE mher.mrktRcapHlEvntId IN :highlightEventIds")
+    List<MarketRecapHighlightEventRelationship> findByHighlightEventIds(
+        @Param("highlightEventIds") List<Long> highlightEventIds
+    );
 }

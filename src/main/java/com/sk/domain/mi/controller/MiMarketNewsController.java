@@ -7,6 +7,7 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
+import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
@@ -209,7 +210,7 @@ public class MiMarketNewsController {
     @GetMapping("/recaps")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<PaginationRes<com.sk.domain.mi.dto.response.news.MarketRecapListRes>> getMarketRecaps(
+    public BaseResponse<PaginationRes<MarketRecapListRes>> getMarketRecaps(
         @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
         @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
         @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
