@@ -14,7 +14,6 @@ import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.news.DateRangeOption;
-import com.sk.domain.shared.enums.news.RecapCategory;
 import com.sk.domain.shared.enums.news.SortType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -201,10 +200,10 @@ public class MiMarketNewsController {
     @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = SortType.class))
     @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
     @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = DateRangeOption.class))
-    @Parameter(name = "recapCategory", description = "리캡 카테고리", schema = @Schema(implementation = RecapCategory.class))
+    @Parameter(name = "recapCategories", description = "리캡 카테고리")
     @Operation(
         summary = "마켓 리캡 목록 조회",
-        description = "마켓 리캡 목록을 페이징하여 조회합니다. recapCategory에 따라 HIGHLIGHT 또는 CHECKPOINT 아이템이 반환됩니다."
+        description = "마켓 리캡 목록을 페이징하여 조회합니다. recapCategories 따라 HIGHLIGHT 또는 CHECKPOINT 아이템이 반환됩니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/recaps")
@@ -216,14 +215,14 @@ public class MiMarketNewsController {
         @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
         @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
         @RequestParam(value = "dateRangeOption", defaultValue = "LAST_30_DAYS") DateRangeOption dateRangeOption,
-        @RequestParam(value = "recapCategory", required = false) RecapCategory recapCategory
+        @RequestParam(value = "recapCategories", required = false) String recapCategories
     ) {
 
-        log.debug("마켓 리캡 목록 조회 요청 - page: {}, size: {}, sort: {}, keyword: {}, dateRangeOption: {}, recapCategory: {}",
-            page, size, sort, keyword, dateRangeOption, recapCategory);
+        log.debug("마켓 리캡 목록 조회 요청 - page: {}, size: {}, sort: {}, keyword: {}, dateRangeOption: {}, recapCategories: {}",
+            page, size, sort, keyword, dateRangeOption, recapCategories);
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategory)
+            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategories)
         );
     }
 }

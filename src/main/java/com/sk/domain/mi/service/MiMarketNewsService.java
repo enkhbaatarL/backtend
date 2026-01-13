@@ -19,10 +19,13 @@ import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightEventRelations
 import com.sk.domain.shared.entity.master.tmd.NewsEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsSignificance;
 import com.sk.domain.shared.entity.master.tmd.NewsSummary;
+import com.sk.domain.shared.enums.news.DateRangeOption;
+import com.sk.domain.shared.enums.news.RecapCategory;
 import com.sk.domain.shared.enums.news.SortType;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRepository;
+import com.sk.domain.shared.repository.master.tmd.MarketRecapListRow;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
@@ -671,7 +674,7 @@ public class MiMarketNewsService {
 
         // summary 파싱 (쉼표로 구분된 문자열 → List)
         List<String> summary = summaryStr != null
-            ? Arrays.asList(summaryStr.split(","))
+            ? Arrays.asList(summaryStr.split("\n"))
             : Collections.emptyList();
 
         // 유사 뉴스 목록 (HEAD인 경우에만)
@@ -767,7 +770,7 @@ public class MiMarketNewsService {
      * @param sort 정렬 기준
      * @param keyword 검색 키워드
      * @param dateRangeOption 날짜 범위 옵션
-     * @param recapCategory 리캡 카테고리 (HIGHLIGHT/CHECKPOINT)
+     * @param recapCategories 리캡 카테고리 (HIGHLIGHT/CHECKPOINT)
      * @return 마켓 리캡 목록 페이징 응답
      */
     public PaginationRes<com.sk.domain.mi.dto.response.news.MarketRecapListRes> getMarketRecaps(
@@ -775,8 +778,8 @@ public class MiMarketNewsService {
         int size,
         SortType sort,
         String keyword,
-        com.sk.domain.shared.enums.news.DateRangeOption dateRangeOption,
-        com.sk.domain.shared.enums.news.RecapCategory recapCategory
+        DateRangeOption dateRangeOption,
+        String recapCategories
     ) {
         // 날짜 범위 계산
         LocalDate endDate = LocalDate.now();
@@ -790,54 +793,73 @@ public class MiMarketNewsService {
         }
 
         // 페이징 및 정렬 설정
-        Pageable pageable = PageRequest.of(
-            page - 1,
-            size,
-            sort == SortType.NEWEST
-                ? org.springframework.data.domain.Sort.by("crtrDt").descending()
-                : org.springframework.data.domain.Sort.by("crtrDt").ascending()
-        );
+        Pageable pageable = PageRequest.of(page - 1, size);
 
-        // MarketRecap 조회
-        Page<MarketRecap> marketRecapPage = marketRecapRepository.findMarketRecaps(
+        List<RecapCategory> recapCategoryList = parseRecapCategories(recapCategories);
+        boolean includeHighlight = recapCategoryList.contains(RecapCategory.HIGHLIGHT);
+        boolean includeCheckpoint = recapCategoryList.contains(RecapCategory.CHECKPOINT);
+        boolean isNewest = sort == SortType.NEWEST;
+
+        Page<MarketRecapListRow> marketRecapPage = marketRecapRepository.findMarketRecapRows(
             startDateStr,
             endDateStr,
             keyword,
+            includeHighlight,
+            includeCheckpoint,
+            isNewest,
             pageable
         );
 
-        // MarketRecapListRes로 변환
+        Map<Long, MarketRecap> recapMap = marketRecapRepository.findAllById(
+            marketRecapPage.getContent().stream()
+                .map(MarketRecapListRow::getMrktRcapId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList()
+        ).stream().collect(Collectors.toMap(MarketRecap::getMrktRcapId, recap -> recap));
+
         List<com.sk.domain.mi.dto.response.news.MarketRecapListRes> resultList =
             marketRecapPage.getContent().stream()
-                .flatMap(marketRecap -> {
-                    if (recapCategory == null) {
-                        // HIGHLIGHT와 CHECKPOINT 둘 다 반환
-                        return java.util.stream.Stream.of(
-                            buildHighlightResponse(marketRecap),
-                            buildCheckpointResponse(marketRecap)
-                        );
-                    } else if (recapCategory == com.sk.domain.shared.enums.news.RecapCategory.HIGHLIGHT) {
-                        return java.util.stream.Stream.of(buildHighlightResponse(marketRecap));
-                    } else {
-                        return java.util.stream.Stream.of(buildCheckpointResponse(marketRecap));
+                .map(row -> {
+                    MarketRecap marketRecap = recapMap.get(row.getMrktRcapId());
+                    if (marketRecap == null) {
+                        return com.sk.domain.mi.dto.response.news.MarketRecapListRes.empty(
+                            RecapCategory.valueOf(row.getRecapCategory()));
                     }
+                    RecapCategory recapCategory = RecapCategory.valueOf(row.getRecapCategory());
+                    return recapCategory == RecapCategory.HIGHLIGHT
+                        ? buildHighlightResponse(marketRecap)
+                        : buildCheckpointResponse(marketRecap);
                 })
                 .toList();
-
-        // recapCategory가 null이면 각 MarketRecap당 2개의 레코드(HIGHLIGHT + CHECKPOINT)가 반환되므로
-        // total elements는 원래의 2배가 됩니다
-        long totalElements = recapCategory == null
-            ? marketRecapPage.getTotalElements() * 2
-            : marketRecapPage.getTotalElements();
 
         Page<com.sk.domain.mi.dto.response.news.MarketRecapListRes> resultPage =
             new org.springframework.data.domain.PageImpl<>(
                 resultList,
                 pageable,
-                totalElements
+                marketRecapPage.getTotalElements()
             );
 
         return PaginationRes.toRes(resultPage);
+    }
+
+    private List<RecapCategory> parseRecapCategories(String recapCategories) {
+        if (recapCategories == null || recapCategories.isBlank()) {
+            return List.of(RecapCategory.HIGHLIGHT, RecapCategory.CHECKPOINT);
+        }
+
+        List<RecapCategory> parsedCategories = Arrays.stream(recapCategories.split(","))
+            .map(String::trim)
+            .filter(value -> !value.isEmpty())
+            .map(value -> RecapCategory.valueOf(value.toUpperCase(Locale.ENGLISH)))
+            .distinct()
+            .toList();
+
+        if (parsedCategories.isEmpty()) {
+            return List.of(RecapCategory.HIGHLIGHT, RecapCategory.CHECKPOINT);
+        }
+
+        return parsedCategories;
     }
 
     /**
