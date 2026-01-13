@@ -321,30 +321,6 @@ public class AdminProviderController {
      *
      *********************************************************************************************************************/
 
-    @ApiOrder(14)
-    @Parameters({
-            @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
-            @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
-            @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
-            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-            @Parameter(name = "goodsNo", description = "상품번호")
-    })
-    @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goods-data")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public BaseResponse<PaginationRes<GoodsDataRes>> getGoodsDataSoueces(
-            @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-            @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
-            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
-
-        int companyNo = authorizationService.getCompanyNo();
-        Role role = authorizationService.getCurrentRole();
-
-        return BaseResponseFactory.create(goodsDataService.getAllGoodsData(companyNo, role, page, size, keyword, providerNo, goodsNo));
-    }
 
     // [2025-05-09] 권한 상세 목록 조회 API 추가
     @ApiOrder(15)
@@ -427,64 +403,5 @@ public class AdminProviderController {
         return BaseResponseFactory.create(goodsDataService.getAllGoodsDataNm(companyNo, role, providerNo, goodsNo));
     }
 
-    @ApiOrder(20)
-    @Parameters({
-            @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-            @Parameter(name = "goodsNo", description = "상품번호"),
-            @Parameter(name = "goodsDataNo", description = "상품데이타번호")
-    })
-    @Operation(summary = "데이터 상세 조회", description = "데이터 싱세 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/providers/{providerNo}/goods/{goodsNo}/goods-datas/{goodsDataNo}")
-    @RequiredPermission(roles = {Role.ADMIN, Role.API_SUB_ADMIN, Role.OPERATOR, Role.API_PLUS_OPERATOR})
-    public BaseResponse<GoodsDataDetailRes> getGoodsData(
-            @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-            @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
-            @PathVariable(value = "goodsDataNo") @Min(value = 1) Integer goodsDataNo) {
-
-        int companyNo = authorizationService.getCompanyNo();
-        Role role = authorizationService.getCurrentRole();
-
-        return BaseResponseFactory.create(goodsDataService.getGoodsData(companyNo, role, providerNo, goodsNo, goodsDataNo));
-    }
-
-    @ApiOrder(101)
-    @Parameters({
-            @Parameter(name = "fileName", required = true, description = "파일명"),
-            @Parameter(name = "fileHash", required = true, description = "파일해시값"),
-            @Parameter(name = "goodsDataNm", required = true, description = "상품데이타명")
-    })
-    @Operation(summary = "동일한 file 존재 여부 체크", description = "")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping(value = "/goods-datas/upload-file/unstructured-data/exist")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
-    public BaseResponse<List<FileExistRes>> fileExists(
-            @RequestParam(value = "fileName", required = true, defaultValue = "") String fileName,
-            @RequestParam(value = "fileHash", required = true, defaultValue = "") String fileHash,
-            @RequestParam(value = "goodsDataNm", required = true, defaultValue = "") String goodsDataNm) {
-
-        if (fileName == null || fileName.isEmpty() || fileHash == null || fileHash.isEmpty() || goodsDataNm == null || goodsDataNm.isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
-        }
-
-        List<FileExistRes> result = new ArrayList<>();
-
-        List<GoodsData> goodsDatas = goodsDataService.getGoodsData(goodsDataNm);
-        if (goodsDatas.size() > 0) {
-            List<UploadedFile> uploadedFiles = fileService.fileExist(fileName, fileHash);
-            if (uploadedFiles.size() > 0) {
-                for (GoodsData goodsData : goodsDatas) {
-                    for (UploadedFile uploadedFile : uploadedFiles) {
-                        if (goodsData.getGoodsDataNo() != null && uploadedFile.getFileRelationshipObjectDistinguishNo() != null
-                                && goodsData.getGoodsDataNo().equals(uploadedFile.getFileRelationshipObjectDistinguishNo())) {
-                            result.add(new FileExistRes(goodsData.getGoodsDataNo(), uploadedFile.getFileNo()));
-                        }
-                    }
-                }
-            }
-        }
-
-        return BaseResponseFactory.create(result);
-    }
 
 }
