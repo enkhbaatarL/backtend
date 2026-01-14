@@ -61,154 +61,9 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                       OR EXISTS (
                           SELECT 1
                           FROM tmd_mrkt_rcap_hl_evnt mhe
-                              JOIN tmd_mrkt_rcap_hl_evnt_rel mher
-                                  ON mher.mrkt_rcap_hl_evnt_id = mhe.mrkt_rcap_hl_evnt_id
-                                  AND mher.del_yn = 'N'
-                              JOIN tmd_nws_evnt ne
-                                  ON ne.nws_evnt_id = mher.nws_evnt_id
-                                  AND ne.del_yn = 'N'
-                              JOIN tmd_nws_smry ns
-                                  ON ns.nws_smry_id = ne.nws_smry_id
-                                  AND ns.del_yn = 'N'
-                              JOIN tif_refinewsdatar rnd
-                                  ON rnd.data_reg_sn = ns.data_reg_sn
-                                  AND rnd.first_created = ns.first_created
-                                  AND rnd.del_yn = 'N'
                           WHERE mhe.mrkt_rcap_id = mr.mrkt_rcap_id
                             AND mhe.del_yn = 'N'
-                            AND LOWER(rnd.title) LIKE CONCAT('%', LOWER(:keyword), '%')
-                      )
-                  )
-                UNION ALL
-                SELECT
-                    mr.mrkt_rcap_id,
-                    mr.crtr_dt,
-                    mr.nws_mrkt_ctgr_cd,
-                    'CHECKPOINT' AS recap_category
-                FROM tmd_mrkt_rcap mr
-                WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
-                  AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
-                  AND mr.del_yn = 'N'
-                  AND :includeCheckpoint = true
-                  AND (
-                      :keyword IS NULL OR :keyword = ''
-                      OR EXISTS (
-                          SELECT 1
-                          FROM tmd_mrkt_rcap_ckpt mc
-                          WHERE mc.mrkt_rcap_id = mr.mrkt_rcap_id
-                            AND mc.del_yn = 'N'
-                            AND LOWER(mc.titl) LIKE CONCAT('%', LOWER(:keyword), '%')
-                      )
-                  )
-            ) recap
-            ORDER BY
-                CASE WHEN :isNewest = true THEN recap.crtr_dt END DESC,
-                CASE WHEN :isNewest = false THEN recap.crtr_dt END ASC,
-                CASE WHEN recap.recap_category = 'HIGHLIGHT' THEN 0 ELSE 1 END ASC,
-                recap.mrkt_rcap_id DESC
-            """,
-        countQuery = """
-            SELECT COUNT(*)
-            FROM (
-                SELECT mr.mrkt_rcap_id
-                FROM tmd_mrkt_rcap mr
-                WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
-                  AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
-                  AND mr.del_yn = 'N'
-                  AND :includeHighlight = true
-                  AND (
-                      :keyword IS NULL OR :keyword = ''
-                      OR EXISTS (
-                          SELECT 1
-                          FROM tmd_mrkt_rcap_hl_evnt mhe
-                              JOIN tmd_mrkt_rcap_hl_evnt_rel mher
-                                  ON mher.mrkt_rcap_hl_evnt_id = mhe.mrkt_rcap_hl_evnt_id
-                                  AND mher.del_yn = 'N'
-                              JOIN tmd_nws_evnt ne
-                                  ON ne.nws_evnt_id = mher.nws_evnt_id
-                                  AND ne.del_yn = 'N'
-                              JOIN tmd_nws_smry ns
-                                  ON ns.nws_smry_id = ne.nws_smry_id
-                                  AND ns.del_yn = 'N'
-                              JOIN tif_refinewsdatar rnd
-                                  ON rnd.data_reg_sn = ns.data_reg_sn
-                                  AND rnd.first_created = ns.first_created
-                                  AND rnd.del_yn = 'N'
-                          WHERE mhe.mrkt_rcap_id = mr.mrkt_rcap_id
-                            AND mhe.del_yn = 'N'
-                            AND LOWER(rnd.title) LIKE CONCAT('%', LOWER(:keyword), '%')
-                      )
-                  )
-                UNION ALL
-                SELECT mr.mrkt_rcap_id
-                FROM tmd_mrkt_rcap mr
-                WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
-                  AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
-                  AND mr.del_yn = 'N'
-                  AND :includeCheckpoint = true
-                  AND (
-                      :keyword IS NULL OR :keyword = ''
-                      OR EXISTS (
-                          SELECT 1
-                          FROM tmd_mrkt_rcap_ckpt mc
-                          WHERE mc.mrkt_rcap_id = mr.mrkt_rcap_id
-                            AND mc.del_yn = 'N'
-                            AND LOWER(mc.titl) LIKE CONCAT('%', LOWER(:keyword), '%')
-                      )
-                  )
-            ) recap
-            """,
-        nativeQuery = true
-    )
-    Page<MarketRecapListRow> findMarketRecapRows(
-        @Param("startDate") String startDate,
-        @Param("endDate") String endDate,
-        @Param("keyword") String keyword,
-        @Param("includeHighlight") boolean includeHighlight,
-        @Param("includeCheckpoint") boolean includeCheckpoint,
-        @Param("isNewest") boolean isNewest,
-        Pageable pageable
-    );
-
-    @Query(
-        value = """
-            SELECT
-                recap.mrkt_rcap_id AS mrktRcapId,
-                recap.crtr_dt AS crtrDt,
-                recap.nws_mrkt_ctgr_cd AS nwsMrktCtgrCd,
-                recap.recap_category AS recapCategory
-            FROM (
-                SELECT
-                    mr.mrkt_rcap_id,
-                    mr.crtr_dt,
-                    mr.nws_mrkt_ctgr_cd,
-                    'HIGHLIGHT' AS recap_category
-                FROM tmd_mrkt_rcap mr
-                WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
-                  AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
-                  AND mr.del_yn = 'N'
-                  AND :includeHighlight = true
-                  AND (
-                      :keyword IS NULL OR :keyword = ''
-                      OR EXISTS (
-                          SELECT 1
-                          FROM tmd_mrkt_rcap_hl_evnt mhe
-                              JOIN tmd_mrkt_rcap_hl_evnt_rel mher
-                                  ON mher.mrkt_rcap_hl_evnt_id = mhe.mrkt_rcap_hl_evnt_id
-                                  AND mher.del_yn = 'N'
-                              JOIN tmd_nws_evnt ne
-                                  ON ne.nws_evnt_id = mher.nws_evnt_id
-                                  AND ne.del_yn = 'N'
-                              JOIN tmd_nws_smry ns
-                                  ON ns.nws_smry_id = ne.nws_smry_id
-                                  AND ns.del_yn = 'N'
-                              JOIN tif_refinewsdatar rnd
-                                  ON rnd.data_reg_sn = ns.data_reg_sn
-                                  AND rnd.first_created = ns.first_created
-                                  AND rnd.del_yn = 'N'
-                          WHERE mhe.mrkt_rcap_id = mr.mrkt_rcap_id
-                            AND mhe.del_yn = 'N'
-                            AND LOWER(rnd.title) LIKE CONCAT('%', LOWER(:keyword), '%')
+                            AND LOWER(mhe.nm_en) LIKE CONCAT('%', LOWER(:keyword), '%')
                       )
                   )
                 UNION ALL
@@ -252,22 +107,9 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                       OR EXISTS (
                           SELECT 1
                           FROM tmd_mrkt_rcap_hl_evnt mhe
-                              JOIN tmd_mrkt_rcap_hl_evnt_rel mher
-                                  ON mher.mrkt_rcap_hl_evnt_id = mhe.mrkt_rcap_hl_evnt_id
-                                  AND mher.del_yn = 'N'
-                              JOIN tmd_nws_evnt ne
-                                  ON ne.nws_evnt_id = mher.nws_evnt_id
-                                  AND ne.del_yn = 'N'
-                              JOIN tmd_nws_smry ns
-                                  ON ns.nws_smry_id = ne.nws_smry_id
-                                  AND ns.del_yn = 'N'
-                              JOIN tif_refinewsdatar rnd
-                                  ON rnd.data_reg_sn = ns.data_reg_sn
-                                  AND rnd.first_created = ns.first_created
-                                  AND rnd.del_yn = 'N'
                           WHERE mhe.mrkt_rcap_id = mr.mrkt_rcap_id
                             AND mhe.del_yn = 'N'
-                            AND LOWER(rnd.title) LIKE CONCAT('%', LOWER(:keyword), '%')
+                            AND LOWER(mhe.nm_en) LIKE CONCAT('%', LOWER(:keyword), '%')
                       )
                   )
                 UNION ALL
@@ -323,22 +165,9 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                       OR EXISTS (
                           SELECT 1
                           FROM tmd_mrkt_rcap_hl_evnt mhe
-                              JOIN tmd_mrkt_rcap_hl_evnt_rel mher
-                                  ON mher.mrkt_rcap_hl_evnt_id = mhe.mrkt_rcap_hl_evnt_id
-                                  AND mher.del_yn = 'N'
-                              JOIN tmd_nws_evnt ne
-                                  ON ne.nws_evnt_id = mher.nws_evnt_id
-                                  AND ne.del_yn = 'N'
-                              JOIN tmd_nws_smry ns
-                                  ON ns.nws_smry_id = ne.nws_smry_id
-                                  AND ns.del_yn = 'N'
-                              JOIN tif_refinewsdatar rnd
-                                  ON rnd.data_reg_sn = ns.data_reg_sn
-                                  AND rnd.first_created = ns.first_created
-                                  AND rnd.del_yn = 'N'
                           WHERE mhe.mrkt_rcap_id = mr.mrkt_rcap_id
                             AND mhe.del_yn = 'N'
-                            AND LOWER(rnd.title) LIKE CONCAT('%', LOWER(:keyword), '%')
+                            AND LOWER(mhe.nm_en) LIKE CONCAT('%', LOWER(:keyword), '%')
                       )
                   )
                 UNION ALL
