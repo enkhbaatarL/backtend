@@ -757,6 +757,37 @@ public class MiMarketNewsService {
         return new NewsTrendDailyRes(criteriaItemName, data);
     }
 
+    /**
+     * 시장 뉴스 기준일자 계산
+     */
+    public String getMarketNewsCriteriaDate() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+        // 몇 시 기준으로 날짜를 변경할지는 DB 조회로 변경예정
+        LocalTime cutoff = LocalTime.of(10, 0);
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ||
+            (dayOfWeek == DayOfWeek.MONDAY && now.toLocalTime().isBefore(cutoff))) {
+            return DateUtil.toYmd(getLastFriday(today));
+        }
+
+        if (now.toLocalTime().isBefore(cutoff)) {
+            return DateUtil.toYmd(today.minusDays(1));
+        }
+
+        return DateUtil.toYmd(today);
+    }
+
+    private LocalDate getLastFriday(LocalDate referenceDate) {
+        return switch (referenceDate.getDayOfWeek()) {
+            case SATURDAY -> referenceDate.minusDays(1);
+            case SUNDAY -> referenceDate.minusDays(2);
+            case MONDAY -> referenceDate.minusDays(3);
+            default -> referenceDate;
+        };
+    }
+
     private String buildCriteriaItemName(String categoryCode) {
         if ("CROIL".equals(categoryCode)) {
             return "Brent Crude Price";

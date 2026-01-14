@@ -251,4 +251,17 @@ public class MiMarketNewsController {
             miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategories)
         );
     }
+
+    @ApiOrder(9)
+    @Operation(
+        summary = "시장 뉴스 기준일자 조회",
+        description = "서버 로컬 시간 기준으로 시장 뉴스 기준일자를 계산하여 반환합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/criteria-date")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<String> getMarketNewsCriteriaDate() {
+        return BaseResponseFactory.create(miMarketNewsService.getMarketNewsCriteriaDate());
+    }
 }
