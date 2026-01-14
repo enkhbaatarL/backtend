@@ -27,4 +27,21 @@ public interface NewsEventRelationshipRepository extends JpaRepository<NewsEvent
     @Query("SELECT ner FROM NewsEventRelationship ner " +
            "WHERE ner.newsSummaryId = :newsSummaryId")
     List<NewsEventRelationship> findByNewsSummaryId(@Param("newsSummaryId") Long newsSummaryId);
+
+    /**
+     * 뉴스 요약 ID 목록과 기준일자로 이벤트명 조회
+     */
+    @Query("""
+        SELECT DISTINCT ner.newsSummaryId, ne.nameEn
+        FROM NewsEventRelationship ner
+        JOIN ner.newsEvent ne
+        WHERE ner.newsSummaryId IN :newsSummaryIds
+          AND ner.isDeleted = false
+          AND ne.isDeleted = false
+          AND ne.crtrDt = :criteriaDate
+        """)
+    List<Object[]> findEventNamesByNewsSummaryIds(
+        @Param("newsSummaryIds") List<Long> newsSummaryIds,
+        @Param("criteriaDate") String criteriaDate
+    );
 }

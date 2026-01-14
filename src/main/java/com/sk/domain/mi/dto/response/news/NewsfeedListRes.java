@@ -54,6 +54,9 @@ public record NewsfeedListRes(
     @Schema(description = "지역", example = "[Global, Asia Pacific]")
     List<String> regions,
 
+    @Schema(description = "이벤트명 목록", example = "[Event A, Event B]")
+    List<String> events,
+
     @Schema(description = "유사 뉴스 목록 (HEAD인 경우에만)", nullable = true)
     List<SimilarNewsItem> similarNewsList
 ) {

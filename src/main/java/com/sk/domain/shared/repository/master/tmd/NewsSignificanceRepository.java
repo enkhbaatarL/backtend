@@ -1,8 +1,11 @@
 package com.sk.domain.shared.repository.master.tmd;
 
+import com.sk.domain.mi.dto.response.news.NewsfeedListRowProjection;
 import com.sk.domain.shared.entity.master.tmd.NewsSignificance;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -18,20 +21,20 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
      */
     @Query(value = """
         SELECT
-            ns.nws_sig_id,
-            nsum.data_reg_sn,
-            nsum.first_created,
-            ns.nws_mrkt_ctgr_cd,
-            ns.scre as ns_scre,
-            sn.sgt_nws_id,
-            sn.scre,
-            nsum.nws_smry_id,
-            nsum.simlr_grp_stat_cd,
-            nsum.brf_smry,
-            nsum.smry,
-            nsum.prvd_id,
-            rnd.title,
-            GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
+            ns.nws_sig_id AS newsSignificanceId,
+            nsum.data_reg_sn AS dataRegistrationSerialNo,
+            nsum.first_created AS firstCreated,
+            ns.nws_mrkt_ctgr_cd AS newsMarketCategoryCode,
+            ns.scre AS newsSignificanceScore,
+            sn.sgt_nws_id AS newsSignalId,
+            sn.scre AS significantNewsScore,
+            nsum.nws_smry_id AS newsSummaryId,
+            nsum.simlr_grp_stat_cd AS similarityGroupStatusCode,
+            nsum.brf_smry AS briefSummary,
+            nsum.smry AS summary,
+            nsum.prvd_id AS provider,
+            rnd.title AS title,
+            GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') AS regions
         FROM tmd_sgt_nws sn
         LEFT JOIN tmd_nws_sig ns ON sn.nws_sig_id = ns.nws_sig_id
         LEFT JOIN tmd_nws_smry nsum ON ns.nws_smry_id = nsum.nws_smry_id
@@ -42,6 +45,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
           AND (ns.nws_mrkt_ctgr_cd = :category)
           AND (nsum.simlr_grp_stat_cd IN ('HEAD', 'NONE'))
           AND nsum.del_yn = 'N'
+          AND (:minScore IS NULL OR ns.scre >= :minScore)
           AND (:filterBySentiment = FALSE OR (
                                      /* UPWARD: 0.3 <= score <= 1.0 */
                                      ('upward' IN (:sentimentList) AND sn.scre >= 0.3 AND sn.scre <= 1.0)
@@ -80,11 +84,11 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'ASC' THEN ns.scre END ASC,
             CASE WHEN :sortField = 'impctScre' AND :sortDirection = 'DESC' THEN ns.scre END DESC,
             nsum.data_reg_sn DESC
-        LIMIT 100
         """, nativeQuery = true)
-    List<Object[]> findNewsfeedWithGroupConcat(
+    List<NewsfeedListRowProjection> findNewsfeedWithGroupConcat(
         @Param("criteriaDate") String criteriaDate,
         @Param("category") String category,
+        @Param("minScore") BigDecimal minScore,
         @Param("sentimentList") List<String> sentimentList,
         @Param("filterBySentiment") boolean filterBySentiment,
         @Param("impactScoreList") List<String> impactScoreList,
@@ -92,7 +96,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         @Param("regionList") List<String> regionList,
         @Param("filterByRegion") boolean filterByRegion,
         @Param("sortField") String sortField,
-        @Param("sortDirection") String sortDirection
+        @Param("sortDirection") String sortDirection,
+        Pageable pageable
     );
 
     /**

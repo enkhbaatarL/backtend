@@ -13,6 +13,7 @@ import com.sk.domain.mi.dto.response.news.MarketRecapRes.SignalNewsCount;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes.SimilarNewsItem;
+import com.sk.domain.mi.dto.response.news.NewsfeedListRowProjection;
 import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpoint;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightEvent;
@@ -28,6 +29,7 @@ import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRelat
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapListRow;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsEventRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
@@ -44,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,6 +73,7 @@ public class MiMarketNewsService {
     private final MarketRecapHighlightEventRepository marketRecapHighlightEventRepository;
     private final MarketRecapCheckpointRepository marketRecapCheckpointRepository;
     private final MarketRecapHighlightEventRelationshipRepository marketRecapHighlightEventRelationshipRepository;
+    private final NewsEventRelationshipRepository newsEventRelationshipRepository;
     private final NewsEventRepository newsEventRepository;
     private final SignificantNewsRepository significantNewsRepository;
 
@@ -267,27 +271,50 @@ public class MiMarketNewsService {
         boolean filterByImpactScore = impactScores != null && !impactScoreList.isEmpty();
         boolean filterByRegion = regions != null && !regionList.isEmpty();
 
-        List<Object[]> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
+        BigDecimal minScore = filterBySentiment ? null : BigDecimal.valueOf(5.0);
+        List<NewsfeedListRowProjection> results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
             criteriaDate, category,
+            minScore,
             filterBySentiment ? sentimentList : null, filterBySentiment,
             filterByImpactScore ? impactScoreList : null, filterByImpactScore,
             filterByRegion ? regionList : null, filterByRegion,
-            sortField, sortDirection
+            sortField, sortDirection,
+            PageRequest.of(0, 1000)
         );
+
+        if (!filterBySentiment && results.isEmpty()) {
+            results = newsSignificanceRepository.findNewsfeedWithGroupConcat(
+                criteriaDate, category,
+                null,
+                null, false,
+                filterByImpactScore ? impactScoreList : null, filterByImpactScore,
+                filterByRegion ? regionList : null, filterByRegion,
+                sortField, sortDirection,
+                PageRequest.of(0, 100)
+            );
+        }
 
         if (results.isEmpty()) {
             return Collections.emptyList();
         }
 
-        List<Long> headNewsSummaryIds = results.stream()
-                .filter(row -> "HEAD".equals(String.valueOf(row[8])))
-                .map(row -> ((Number) row[7]).longValue()) // nws_smry_id
-                .toList();
+        LinkedHashSet<Long> headNewsSummaryIds = new LinkedHashSet<>();
+        LinkedHashSet<Long> newsSummaryIds = new LinkedHashSet<>();
+        for (NewsfeedListRowProjection row : results) {
+            Long newsSummaryId = row.getNewsSummaryId();
+            if (newsSummaryId == null) {
+                continue;
+            }
+            newsSummaryIds.add(newsSummaryId);
+            if ("HEAD".equals(row.getSimilarityGroupStatusCode())) {
+                headNewsSummaryIds.add(newsSummaryId);
+            }
+        }
 
         Map<Long, List<SimilarNewsItem>> similarNewsMap = new HashMap<>();
         if (!headNewsSummaryIds.isEmpty()) {
             List<Object[]> similarResults = newsSignificanceRepository
-                    .findSimilarNewsByHeadIds(headNewsSummaryIds);
+                    .findSimilarNewsByHeadIds(new ArrayList<>(headNewsSummaryIds));
 
             // headNewsSummaryId별로 그룹핑
             for (Object[] row : similarResults) {
@@ -306,9 +333,30 @@ public class MiMarketNewsService {
             }
         }
 
-        return results.stream()
-                .map(row -> convertToNewsfeedListRes(row, similarNewsMap))
-                .toList();
+        Map<Long, List<String>> eventsByNewsSummaryId = new HashMap<>();
+        if (!newsSummaryIds.isEmpty()) {
+            List<Object[]> eventRows =
+                newsEventRelationshipRepository.findEventNamesByNewsSummaryIds(
+                    new ArrayList<>(newsSummaryIds),
+                    criteriaDate
+                );
+            for (Object[] row : eventRows) {
+                Long newsSummaryId = ((Number) row[0]).longValue();
+                String eventName = (String) row[1];
+                if (eventName == null || eventName.isBlank()) {
+                    continue;
+                }
+                eventsByNewsSummaryId
+                    .computeIfAbsent(newsSummaryId, k -> new ArrayList<>())
+                    .add(eventName);
+            }
+        }
+
+        List<NewsfeedListRes> response = new ArrayList<>(results.size());
+        for (NewsfeedListRowProjection row : results) {
+            response.add(convertToNewsfeedListRes(row, similarNewsMap, eventsByNewsSummaryId));
+        }
+        return response;
     }
 
     /**
@@ -653,25 +701,24 @@ public class MiMarketNewsService {
      * Object[] → NewsfeedListRes 변환
      */
     private NewsfeedListRes convertToNewsfeedListRes(
-        Object[] row,
-        Map<Long, List<SimilarNewsItem>> similarNewsMap) {
+        NewsfeedListRowProjection row,
+        Map<Long, List<SimilarNewsItem>> similarNewsMap,
+        Map<Long, List<String>> eventsByNewsSummaryId) {
 
-        Long newsSignificanceId = ((Number) row[0]).longValue();
-        Long dataRegistrationSerialNo = ((Number) row[1]).longValue();
-        LocalDateTime firstCreated = row[2] != null
-                    ? ((java.sql.Timestamp) row[2]).toLocalDateTime()
-                    : null;
-        String newsMarketCategoryCode = (String) row[3];
-        BigDecimal newsSignificanceScore = (BigDecimal) row[4];
-        Long newsSignalId = ((Number) row[5]).longValue();
-        BigDecimal significantNewsScore = (BigDecimal) row[6];
-        Long newsSummaryId = ((Number) row[7]).longValue();
-        String similarityGroupStatusCode = (String) row[8];
-        String briefSummary = (String) row[9];
-        String summaryStr = (String) row[10];
-        String provider = (String) row[11];
-        String title = (String) row[12];
-        String regionsStr = (String) row[13];
+        Long newsSignificanceId = row.getNewsSignificanceId();
+        Long dataRegistrationSerialNo = row.getDataRegistrationSerialNo();
+        LocalDateTime firstCreated = row.getFirstCreated();
+        String newsMarketCategoryCode = row.getNewsMarketCategoryCode();
+        BigDecimal newsSignificanceScore = row.getNewsSignificanceScore();
+        Long newsSignalId = row.getNewsSignalId();
+        BigDecimal significantNewsScore = row.getSignificantNewsScore();
+        Long newsSummaryId = row.getNewsSummaryId();
+        String similarityGroupStatusCode = row.getSimilarityGroupStatusCode();
+        String briefSummary = row.getBriefSummary();
+        String summaryStr = row.getSummary();
+        String provider = row.getProvider();
+        String title = row.getTitle();
+        String regionsStr = row.getRegions();
 
         // summary 파싱 (쉼표로 구분된 문자열 → List)
         List<String> summary = summaryStr != null
@@ -684,6 +731,10 @@ public class MiMarketNewsService {
             : null;
 
         List<String> regionsList = parseGroupConcatResult(regionsStr);
+        List<String> events = eventsByNewsSummaryId.getOrDefault(
+            newsSummaryId,
+            Collections.emptyList()
+        );
 
         // directionality 계산 (significantNewsScore 기반)
         String directionality = calculateDirectionality(significantNewsScore);
@@ -704,6 +755,7 @@ public class MiMarketNewsService {
             significantNewsScore,
             directionality,
             regionsList,
+            events,
             similarNewsList
         );
     }
