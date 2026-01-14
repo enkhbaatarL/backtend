@@ -11,9 +11,12 @@ import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.SignalNewsCount;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
+import com.sk.domain.mi.dto.response.news.NewsTrendDailyRes;
+import com.sk.domain.mi.dto.response.news.NewsTrendDailyRes.NewsTrendDailyItemRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes.SimilarNewsItem;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRowProjection;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompanyMarketCategory;
 import com.sk.domain.shared.entity.master.tmd.MarketRecap;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapCheckpoint;
 import com.sk.domain.shared.entity.master.tmd.MarketRecapHighlightEvent;
@@ -24,6 +27,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsSummary;
 import com.sk.domain.shared.enums.news.DateRangeOption;
 import com.sk.domain.shared.enums.news.RecapCategory;
 import com.sk.domain.shared.enums.news.SortType;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyMarketCategoryRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRepository;
@@ -76,6 +80,7 @@ public class MiMarketNewsService {
     private final NewsEventRelationshipRepository newsEventRelationshipRepository;
     private final NewsEventRepository newsEventRepository;
     private final SignificantNewsRepository significantNewsRepository;
+    private final CustomerCompanyMarketCategoryRepository customerCompanyMarketCategoryRepository;
 
 
     private boolean isMonday(String dateStr) {
@@ -695,6 +700,68 @@ public class MiMarketNewsService {
                 );
             })
             .toList();
+    }
+
+    /**
+     * 일별 뉴스 트렌드 데이터 조회
+     */
+    public NewsTrendDailyRes getDailyTrend(Integer companyNo, DateRangeOption dateRangeOption) {
+        CustomerCompanyMarketCategory marketCategory =
+            customerCompanyMarketCategoryRepository
+                .findFirstByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> AppErrorException.of(
+                    Error.RSC_DATA_NOT_FOUND,
+                    "Customer company market category not found. companyNo: %s".formatted(companyNo)
+                ));
+
+        String categoryCode = marketCategory.getNwsMrktCtgrCd().getCode();
+        String criteriaItemName = buildCriteriaItemName(categoryCode);
+
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = dateRangeOption == DateRangeOption.ALL_TIME
+            ? dateRangeOption.getStartDate(endDate)
+            : dateRangeOption.getStartDate(endDate);
+
+        String startDateStr = DateUtil.toYmd(startDate);
+        String endDateStr = DateUtil.toYmd(endDate);
+
+        List<Object[]> results = significantNewsRepository.countSentimentsByDateRange(
+            categoryCode,
+            startDateStr,
+            endDateStr
+        );
+
+        Map<String, SentimentCount> sentimentMap = results.stream()
+            .collect(Collectors.toMap(
+                row -> (String) row[0],
+                row -> new SentimentCount(
+                    ((Number) row[1]).intValue(),
+                    ((Number) row[2]).intValue(),
+                    ((Number) row[3]).intValue()
+                )
+            ));
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<NewsTrendDailyItemRes> data = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            String dateKey = DateUtil.toYmd(date);
+            SentimentCount count = sentimentMap.getOrDefault(dateKey, new SentimentCount(0, 0, 0));
+            data.add(new NewsTrendDailyItemRes(
+                date.format(dateFormatter),
+                count.upward,
+                count.neutral,
+                count.downward
+            ));
+        }
+
+        return new NewsTrendDailyRes(criteriaItemName, data);
+    }
+
+    private String buildCriteriaItemName(String categoryCode) {
+        if ("CROIL".equals(categoryCode)) {
+            return "Brent Crude Price";
+        }
+        return categoryCode + " Price";
     }
 
     /**

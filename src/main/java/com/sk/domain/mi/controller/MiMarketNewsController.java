@@ -10,6 +10,7 @@ import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
+import com.sk.domain.mi.dto.response.news.NewsTrendDailyRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
 import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -196,6 +197,30 @@ public class MiMarketNewsController {
     }
 
     @ApiOrder(7)
+    @Parameter(name = "companyNo", description = "고객사 번호", required = true)
+    @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = DateRangeOption.class))
+    @Operation(
+        summary = "일별 뉴스 트렌드 조회",
+        description = "고객사의 시장 카테고리 기준으로 일별 뉴스 트렌드 데이터를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/daily-trend")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<NewsTrendDailyRes> getDailyNewsTrend(
+        @RequestParam(value = "companyNo") Integer companyNo,
+        @RequestParam(value = "dateRangeOption", defaultValue = "LAST_30_DAYS") DateRangeOption dateRangeOption
+    ) {
+
+        log.debug("일별 뉴스 트렌드 조회 요청 - companyNo: {}, dateRangeOption: {}",
+            companyNo, dateRangeOption);
+
+        return BaseResponseFactory.create(
+            miMarketNewsService.getDailyTrend(companyNo, dateRangeOption)
+        );
+    }
+
+    @ApiOrder(8)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
     @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)")
     @Parameter(name = "sort", description = "정렬 기준", schema = @Schema(implementation = SortType.class))
