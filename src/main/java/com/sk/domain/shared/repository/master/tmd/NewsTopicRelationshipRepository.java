@@ -83,6 +83,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
             nt.nws_top_id,
             nsum.prvd_id,
             nsum.smry,
+            rnd.title,
             nsum.brf_smry,
             nsum.brf_smry_en,
             GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
@@ -119,6 +120,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
             nt.nws_top_id,
             nsum.prvd_id,
             nsum.smry,
+            rnd.title,
             nsum.brf_smry,
             nsum.brf_smry_en
         ORDER BY
