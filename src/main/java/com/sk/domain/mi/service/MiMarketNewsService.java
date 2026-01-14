@@ -10,6 +10,7 @@ import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.Narrative;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes.SignalNewsCount;
+import com.sk.domain.mi.dto.response.news.NewsCriteriaDateRes;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsTrendDailyRes;
 import com.sk.domain.mi.dto.response.news.NewsTrendDailyRes.NewsTrendDailyItemRes;
@@ -760,23 +761,30 @@ public class MiMarketNewsService {
     /**
      * 시장 뉴스 기준일자 계산
      */
-    public String getMarketNewsCriteriaDate() {
+    public NewsCriteriaDateRes getMarketNewsCriteriaDate() {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         // 몇 시 기준으로 날짜를 변경할지는 DB 조회로 변경예정
         LocalTime cutoff = LocalTime.of(10, 0);
         DayOfWeek dayOfWeek = today.getDayOfWeek();
 
+        LocalDate criteriaDate;
+        LocalDateTime nextUpdate;
         if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ||
             (dayOfWeek == DayOfWeek.MONDAY && now.toLocalTime().isBefore(cutoff))) {
-            return DateUtil.toYmd(getLastFriday(today));
+            criteriaDate = getLastFriday(today);
+            nextUpdate = getNextMondayUpdate(today);
+        } else if (now.toLocalTime().isBefore(cutoff)) {
+            criteriaDate = today.minusDays(1);
+            nextUpdate = today.atTime(cutoff);
+        } else {
+            criteriaDate = today;
+            nextUpdate = getNextUpdateAfterCutoff(today);
         }
 
-        if (now.toLocalTime().isBefore(cutoff)) {
-            return DateUtil.toYmd(today.minusDays(1));
-        }
-
-        return DateUtil.toYmd(today);
+        String criteriaDateStr = DateUtil.toYmd(criteriaDate);
+        String nextUpdateStr = nextUpdate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        return new NewsCriteriaDateRes(criteriaDateStr, nextUpdateStr);
     }
 
     private LocalDate getLastFriday(LocalDate referenceDate) {
@@ -786,6 +794,23 @@ public class MiMarketNewsService {
             case MONDAY -> referenceDate.minusDays(3);
             default -> referenceDate;
         };
+    }
+
+    private LocalDateTime getNextMondayUpdate(LocalDate referenceDate) {
+        LocalDate monday = switch (referenceDate.getDayOfWeek()) {
+            case SATURDAY -> referenceDate.plusDays(2);
+            case SUNDAY -> referenceDate.plusDays(1);
+            case MONDAY -> referenceDate;
+            default -> referenceDate;
+        };
+        return monday.atTime(10, 0);
+    }
+
+    private LocalDateTime getNextUpdateAfterCutoff(LocalDate today) {
+        if (today.getDayOfWeek() == DayOfWeek.FRIDAY) {
+            return today.plusDays(3).atTime(10, 0);
+        }
+        return today.plusDays(1).atTime(10, 0);
     }
 
     private String buildCriteriaItemName(String categoryCode) {

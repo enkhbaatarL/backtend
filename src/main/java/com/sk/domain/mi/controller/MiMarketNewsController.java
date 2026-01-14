@@ -9,6 +9,7 @@ import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapRes;
+import com.sk.domain.mi.dto.response.news.NewsCriteriaDateRes;
 import com.sk.domain.mi.dto.response.news.NewsTimelineRes;
 import com.sk.domain.mi.dto.response.news.NewsTrendDailyRes;
 import com.sk.domain.mi.dto.response.news.NewsfeedListRes;
@@ -261,7 +262,9 @@ public class MiMarketNewsController {
     @GetMapping("/criteria-date")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<String> getMarketNewsCriteriaDate() {
-        return BaseResponseFactory.create(miMarketNewsService.getMarketNewsCriteriaDate());
+    public BaseResponse<NewsCriteriaDateRes> getMarketNewsCriteriaDate() {
+        return BaseResponseFactory.create(
+            miMarketNewsService.getMarketNewsCriteriaDate()
+        );
     }
 }
