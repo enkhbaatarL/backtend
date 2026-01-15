@@ -710,7 +710,7 @@ public class MiNewsletterService {
         String dataCode = referenceMap.get("CLTN_CHRT_CD");
 
         try {
-            NewsletterCollectionChart newsletterCollectionChart = newsletterCollectionChartRepository.findByNewsletterPublishHistoryAndCollectionChartTypeAndIsDeletedFalse(
+            NewsletterCollectionChart newsletterCollectionChart = newsletterCollectionChartRepository.findTopByNewsletterPublishHistoryAndCollectionChartTypeAndIsDeletedFalse(
                     nph, dataCode)
                 .orElseThrow(
                     () -> new IllegalArgumentException("NewsletterCollectionChart not found"));
