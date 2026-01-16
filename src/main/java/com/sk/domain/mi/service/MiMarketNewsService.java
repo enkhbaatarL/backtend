@@ -29,6 +29,7 @@ import com.sk.domain.shared.enums.news.DateRangeOption;
 import com.sk.domain.shared.enums.news.RecapCategory;
 import com.sk.domain.shared.enums.news.SortType;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyMarketCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapCheckpointRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.MarketRecapHighlightEventRepository;
@@ -39,6 +40,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSignificanceRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsSummaryRepository;
 import com.sk.domain.shared.repository.master.tmd.SignificantNewsRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -58,7 +60,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -82,6 +83,8 @@ public class MiMarketNewsService {
     private final NewsEventRepository newsEventRepository;
     private final SignificantNewsRepository significantNewsRepository;
     private final CustomerCompanyMarketCategoryRepository customerCompanyMarketCategoryRepository;
+    private final GoodsRepository goodsRepository;
+    private final AuthorizationService authorizationService;
 
 
     private boolean isMonday(String dateStr) {
@@ -506,6 +509,7 @@ public class MiMarketNewsService {
      * MarketRecap -> MarketRecapRes 변환
      */
     private MarketRecapRes toMarketRecapRes(MarketRecap marketRecap) {
+        Map<String, Boolean> viewableByProviderId = new HashMap<>();
         // 하이라이트 이벤트 조회
         List<MarketRecapHighlightEvent> highlightEvents =
             marketRecapHighlightEventRepository.findByMarketRecap(marketRecap);
@@ -532,11 +536,20 @@ public class MiMarketNewsService {
                             return null;
                         }
 
+                        String providerId = representativeNews.getProviderId();
+                        boolean isViewable = providerId != null && viewableByProviderId.computeIfAbsent(
+                            providerId,
+                            key -> goodsRepository.queryGoodsNoByGoodsId(key)
+                                .map(authorizationService::hasGoodsViewPermission)
+                                .orElse(false)
+                        );
+
                         return new MarketRecapRes.RelatedEventRepresentativeNewsRes(
                             representativeNews.getNewsSummaryId(),
                             representativeNews.getRefinitivNewsData() != null
                                 ? representativeNews.getRefinitivNewsData().getTitle() : null,
-                            representativeNews.getProviderId()
+                            providerId,
+                            isViewable
                         );
                     })
                     .filter(Objects::nonNull)
@@ -1177,7 +1190,7 @@ public class MiMarketNewsService {
     /**
      * Sentiment 카운트를 담는 내부 DTO
      */
-    @Value
+    @lombok.Value
     private static class SentimentCount {
 
         int upward;
