@@ -186,6 +186,13 @@ public record ModelAgentStreamBody(
     }
 
     /**
+     * 벡터 데이터 타입인지 확인
+     */
+    public boolean isRdbData() {
+        return DataType.RDB_DATA.value.equals(data);
+    }
+
+    /**
      * 스트리밍 처리가 필요한지 확인
      * chunk 데이터이면서 progress 상태일 때 true
      */
@@ -240,7 +247,8 @@ public record ModelAgentStreamBody(
         SERIES("series"),
         TABLE("table"),
         CHUNK("chunk"),
-        VECTOR_DATA("vector_data");
+        VECTOR_DATA("vector_data"),
+        RDB_DATA("rdb_data");
 
         private final String value;
 

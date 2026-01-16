@@ -217,7 +217,7 @@ public class MariAgentGatewayService {
                     AnswerRes answerRes = handler.createAnswerRes(qna, streamBody);
                     return Flux.just(answerRes);
                 } else {
-                    log.debug("Agent Event 처리 Skip - Node: {}", streamBody.node());
+                    log.info("Agent Event 처리 Skip - Node: {}", streamBody.node());
                     return Flux.empty();
                 }
             }
@@ -269,12 +269,18 @@ public class MariAgentGatewayService {
             return streamEventHandlerMap.get("vector_data");
         }
 
-        // 3. 완료되지 않은 상태 (중간 진행 상태)
+        // 3. rdb_data 타입 처리
+        if (streamBody.isRdbData()) {
+            return streamEventHandlerMap.get("rdb_data");
+        }
+
+
+        // 4. 완료되지 않은 상태 (중간 진행 상태)
         if (!streamBody.isCompleteState()) {
             return streamEventHandlerMap.get("plan");
         }
 
-        // 4. 완료 상태 (최종 결과)
+        // 5. 완료 상태 (최종 결과)
         return streamEventHandlerMap.get("generate");
     }
 
