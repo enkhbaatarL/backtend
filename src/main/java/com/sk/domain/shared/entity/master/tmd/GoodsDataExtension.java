@@ -60,10 +60,11 @@ public class GoodsDataExtension extends BaseEntity {
             this.payload = payload;
     }
 
-    public static GoodsDataExtension of(Integer goodsDataNo, List<Recommendation> recommendations, String url) {
+    public static GoodsDataExtension of(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId) {
 
       ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
-      objectNode.put("url", url);
+      if(providerContentId != null) objectNode.put("providerContentId", providerContentId);
+      if(url != null) objectNode.put("providerContentId", url);
       ArrayNode recommendationsNode = objectNode.putArray("recommendations");
       if(recommendations != null && !recommendations.isEmpty()){
           for(Recommendation recommendation : recommendations){

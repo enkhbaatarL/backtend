@@ -1,5 +1,6 @@
 package com.sk.domain.admin.service;
 
+import com.sk.domain.admin.dto.request.provider.Recommendation;
 import com.sk.domain.admin.dto.request.provider.StructuredDataJsonReq;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
@@ -288,6 +289,20 @@ public class AdminGoodsDataService {
         }
     }
 
+    private void updateGoodsDataExtension(GoodsData goodsData, GoodsDataUpdateReq dto){
+        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId());
+    }
+
+    private void updateGoodsDataExtension(GoodsData goodsData, GoodsDataCreateReq dto){
+        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId());
+    }
+
+    private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId){
+        goodsDataExtensionRepository.deleteById(goodsDataNo);
+        if(recommendations == null && url == null && providerContentId == null) return;
+        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, recommendations, url, providerContentId));
+    }
+
     /**
      * 데이터 저장
      *
@@ -305,8 +320,7 @@ public class AdminGoodsDataService {
         if (goodsDatas.size() > 0) {
             GoodsData goodsData = goodsDatas.get(0);
 
-            goodsDataExtensionRepository.deleteById(goodsData.getGoodsDataNo());
-            goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url()));
+            updateGoodsDataExtension(goodsData, dto);
 
             // 비정형 데이타
             if (dto.unstructuredDataList() != null) {
@@ -414,7 +428,7 @@ public class AdminGoodsDataService {
                     .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
                             dto.dataContributorNm(), false, true, DateUtil.fromYmdHyphen(dto.publishedDate()), dto.authors()));
 
-            goodsDataExtensionRepository.save(GoodsDataExtension.of(savedGoodsData.getGoodsDataNo(), dto.recommendations(), dto.url()));
+            updateGoodsDataExtension(savedGoodsData, dto);
 
             // 프로바이더 타입 카테고리 등록
             Provider provider = providerRepository.findByProviderNoAndIsDeletedFalse(providerNo)
@@ -609,8 +623,7 @@ public class AdminGoodsDataService {
     private void internalUpdateGoodsData(int providerNo, GoodsData goodsData, GoodsDataUpdateReq dto) {
         goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm(), DateUtil.fromYmdHyphen(dto.publishedDate()), dto.authors());
 
-        goodsDataExtensionRepository.deleteById(goodsData.getGoodsDataNo());
-        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url()));
+        updateGoodsDataExtension(goodsData, dto);
 
         // 문서 타입 카테고리 수정
         if (dto.docCategoryList() != null) {
