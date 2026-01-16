@@ -8,6 +8,8 @@ import lombok.Getter;
 
 @Getter
 public enum DateRangeOption {
+    LAST_7_DAYS("LAST_7_DAYS", "최근 7일", now -> now.minusDays(7)),
+    LAST_14_DAYS("LAST_14_DAYS", "최근 14일", now -> now.minusDays(14)),
     LAST_30_DAYS("LAST_30_DAYS", "최근 30일", now -> now.minusDays(30)),
     LAST_60_DAYS("LAST_60_DAYS", "최근 60일", now -> now.minusDays(60)),
     LAST_12_MONTHS("LAST_12_MONTHS", "최근 12개월", now -> now.minusMonths(12)),

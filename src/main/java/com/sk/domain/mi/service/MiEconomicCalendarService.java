@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarWidgetRes.EconomicCalendarWidget;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes;
 import com.sk.domain.mi.dto.response.economiccalendar.KeyEconomicIndicatorsRes.RelatedEconomicIndicator;
+import com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarProjection;
 import com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarRes;
 import com.sk.domain.shared.entity.master.tif.EconomicCalendar;
 import com.sk.domain.shared.entity.master.tif.RefinitivEconomicCalendar;
@@ -603,10 +604,19 @@ public class MiEconomicCalendarService {
     public List<RecentViewedEconomicCalendarRes> getRecentViewedList(int userNo) {
         log.debug("최근 조회 경제 달력 5개 요청(최적화) - userNo: {}", userNo);
 
-        return economicCalendarInquiryLogRepository.findTop5RecentViewedWithSource(
+        List<RecentViewedEconomicCalendarProjection> rows =
+            economicCalendarInquiryLogRepository.findTop5RecentViewedWithSource(
             userNo,
             PageRequest.of(0, 5)
         );
+        return rows.stream()
+            .map(row -> new RecentViewedEconomicCalendarRes(
+                row.getCode(),
+                row.getEconomicIndicatorName(),
+                row.getInquiryDateTime(),
+                row.getRefinitivSourceOrganization()
+            ))
+            .toList();
     }
 
     /**

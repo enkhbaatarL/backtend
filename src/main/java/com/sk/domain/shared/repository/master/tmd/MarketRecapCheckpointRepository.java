@@ -23,4 +23,11 @@ public interface MarketRecapCheckpointRepository extends JpaRepository<MarketRec
     List<MarketRecapCheckpoint> findByMarketRecapIdOrderById(
         @Param("marketRecapId") Long marketRecapId
     );
+
+    @Query("SELECT mc FROM MarketRecapCheckpoint mc " +
+           "WHERE mc.mrktRcapId IN :marketRecapIds " +
+           "ORDER BY mc.mrktRcapId, mc.mrktRcapCkptId")
+    List<MarketRecapCheckpoint> findByMarketRecapIdInOrderById(
+        @Param("marketRecapIds") List<Long> marketRecapIds
+    );
 }

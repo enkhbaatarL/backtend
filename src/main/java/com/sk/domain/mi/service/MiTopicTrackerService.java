@@ -128,6 +128,7 @@ public class MiTopicTrackerService {
                 idx++;
                 String providerName = (String) row[idx++];
                 String summaryStr = (String) row[idx++];
+                String title = (String) row[idx++];
                 String briefSummary = (String) row[idx++];
                 String briefSummaryEn = (String) row[idx++];
                 String regionsStr = (String) row[idx];
@@ -152,6 +153,7 @@ public class MiTopicTrackerService {
                     providerName,
                     regionItems,
                     briefSummary,
+                    title,
                     summary,
                     briefSummaryEn
                 );

@@ -34,6 +34,9 @@ public record TopicTrackerListRes(
     @Schema(description = "간략 요약", example = "OPEC+ signaled a potential shift in output targets...")
     String briefSummary,
 
+    @Schema(description = "뉴스 제목", example = "Approval to Amend Term of Warrants")
+    String title,
+
     @Schema(description = "요약", example = "[\"Line1\", \"Line2\"]")
     List<String> summary,
 

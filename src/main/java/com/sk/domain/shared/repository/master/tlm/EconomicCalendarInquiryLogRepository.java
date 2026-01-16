@@ -1,6 +1,6 @@
 package com.sk.domain.shared.repository.master.tlm;
 
-import com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarRes;
+import com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarProjection;
 import com.sk.domain.shared.entity.compositeKey.tlm.EconomicCalendarInquiryLogId;
 import com.sk.domain.shared.entity.master.tlm.EconomicCalendarInquiryLog;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -14,20 +14,31 @@ import org.springframework.data.jpa.repository.Query;
 public interface EconomicCalendarInquiryLogRepository
     extends JpaRepository<EconomicCalendarInquiryLog, EconomicCalendarInquiryLogId> {
 
-    @Query("""
-        SELECT new com.sk.domain.mi.dto.response.economiccalendar.RecentViewedEconomicCalendarRes(
-            l.economicCalendarCode,
-            r.name,
-            l.inquiryDateTime,
-            r.sourceOrganization
-        )
-        FROM EconomicCalendarInquiryLog l
-        JOIN RefinitivEconomicCalendar r ON l.economicCalendarCode = r.code
-        WHERE l.userNo = :userNo
-          AND l.isDeleted = false
-        ORDER BY l.inquiryDateTime DESC
-        """)
-    List<RecentViewedEconomicCalendarRes> findTop5RecentViewedWithSource(
+    @Query(
+        value = """
+            WITH ranked AS (
+                SELECT
+                    l.ecn_cal_code AS code,
+                    MAX(l.inqr_dtm) AS max_inqr
+                FROM tlm_ecncalinqrusrl l
+                WHERE l.usr_no = :userNo
+                  AND l.del_yn = 'N'
+                GROUP BY l.ecn_cal_code
+                ORDER BY max_inqr DESC
+                LIMIT 100
+            )
+            SELECT
+                r.code AS code,
+                rec.name AS economicIndicatorName,
+                r.max_inqr AS inquiryDateTime,
+                rec.src_org AS refinitivSourceOrganization
+            FROM ranked r
+            JOIN tif_refiecnmicclndrr rec ON rec.code = r.code
+            ORDER BY r.max_inqr DESC
+            """,
+        nativeQuery = true
+    )
+    List<RecentViewedEconomicCalendarProjection> findTop5RecentViewedWithSource(
         @Param("userNo") Integer userNo, Pageable pageable);
 
 

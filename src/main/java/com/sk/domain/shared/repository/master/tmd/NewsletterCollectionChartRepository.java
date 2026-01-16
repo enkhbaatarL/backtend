@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface NewsletterCollectionChartRepository extends
     JpaRepository<NewsletterCollectionChart, Integer> {
 
-    Optional<NewsletterCollectionChart> findByNewsletterPublishHistoryAndCollectionChartTypeAndIsDeletedFalse(
+    Optional<NewsletterCollectionChart> findTopByNewsletterPublishHistoryAndCollectionChartTypeAndIsDeletedFalse(
         NewsletterPublishHistory newsletterPublishHistory, String collectionChartType);
 }
