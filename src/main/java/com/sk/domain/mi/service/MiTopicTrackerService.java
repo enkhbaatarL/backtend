@@ -237,7 +237,7 @@ public class MiTopicTrackerService {
      * @return 뉴스 토픽 목록
      */
     public List<NewsTopicListRes> getNewsTopicList(String crtrDt, Long newsTopicId) {
-        log.debug("뉴스 토픽 목록 조회 시작 - crtrDt: {}, newsTopicId: {}", crtrDt, newsTopicId);
+        log.debug("뉴스 토픽 위젯용 조회 시작 - crtrDt: {}, newsTopicId: {}", crtrDt, newsTopicId);
 
         boolean filterByTopic = newsTopicId != null;
 
@@ -247,8 +247,31 @@ public class MiTopicTrackerService {
             filterByTopic
         );
 
+        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        for (Object[] row : results) {
+            String providerId = (String) row[10];
+            if (providerId != null && !providerId.isBlank()) {
+                providerIds.add(providerId);
+            }
+        }
+
+        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
+        if (!providerIds.isEmpty()) {
+            List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
+                new ArrayList<>(providerIds)
+            );
+            for (Object[] row : goodsRows) {
+                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+            }
+        }
+
+        PermissionRes permissions = authorizationService.getPermissions();
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(
+            authorizationService.getCompanyNoWithPriority()
+        );
+
         List<NewsTopicListRes> response = results.stream()
-            .map(this::convertToNewsTopicListRes)
+            .map(row -> convertToNewsTopicListRes(row, goodsNoByProviderId, goodsViewableMap))
             .toList();
 
         log.debug("뉴스 토픽 {} 건 조회 완료", response.size());
@@ -280,7 +303,10 @@ public class MiTopicTrackerService {
      *             summary, title, providerId, regions]
      * @return NewsTopicListRes
      */
-    private NewsTopicListRes convertToNewsTopicListRes(Object[] row) {
+    private NewsTopicListRes convertToNewsTopicListRes(
+        Object[] row,
+        Map<String, Integer> goodsNoByProviderId,
+        Map<Integer, Boolean> goodsViewableMap) {
         int idx = 0;
 
         Long newsTopicRelationshipId = row[idx] != null ? ((Number) row[idx]).longValue() : null;
@@ -316,6 +342,10 @@ public class MiTopicTrackerService {
         String regionsStr = (String) row[idx];
         List<String> regions = parseRegions(regionsStr);
 
+        Integer goodsNo = provider != null ? goodsNoByProviderId.get(provider) : null;
+        boolean isViewable = newsSummaryId != null && goodsNo != null
+            && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
+
         return new NewsTopicListRes(
             newsTopicRelationshipId,
             crtrDt,
@@ -328,6 +358,7 @@ public class MiTopicTrackerService {
             summary,
             title,
             provider,
+            isViewable,
             regions
         );
     }

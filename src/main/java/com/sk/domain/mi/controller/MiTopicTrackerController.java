@@ -92,7 +92,7 @@ public class MiTopicTrackerController {
         @RequestParam(value = "criteriaDate") String criteriaDate,
         @RequestParam(value = "newsTopicId", required = false) Long newsTopicId
     ) {
-        log.debug("경제 지표 달력 위젯 조회 요청 - criteriaDate: {}, newsTopicId: {}",
+        log.debug("토픽 트래커 위젯용 조회 요청 - criteriaDate: {}, newsTopicId: {}",
             criteriaDate, newsTopicId);
 
         return BaseResponseFactory.create(miTopicTrackerService.getNewsTopicList(criteriaDate, newsTopicId));
