@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
@@ -309,6 +310,7 @@ public class MiMarketNewsService {
 
         LinkedHashSet<Long> headNewsSummaryIds = new LinkedHashSet<>();
         LinkedHashSet<Long> newsSummaryIds = new LinkedHashSet<>();
+        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
         for (NewsfeedListRowProjection row : results) {
             Long newsSummaryId = row.getNewsSummaryId();
             if (newsSummaryId == null) {
@@ -318,22 +320,55 @@ public class MiMarketNewsService {
             if ("HEAD".equals(row.getSimilarityGroupStatusCode())) {
                 headNewsSummaryIds.add(newsSummaryId);
             }
+            String providerId = row.getProvider();
+            if (providerId != null && !providerId.isBlank()) {
+                providerIds.add(providerId);
+            }
         }
 
-        Map<Long, List<SimilarNewsItem>> similarNewsMap = new HashMap<>();
+        List<Object[]> similarResults = Collections.emptyList();
         if (!headNewsSummaryIds.isEmpty()) {
-            List<Object[]> similarResults = newsSignificanceRepository
-                    .findSimilarNewsByHeadIds(new ArrayList<>(headNewsSummaryIds));
+            similarResults = newsSignificanceRepository
+                .findSimilarNewsByHeadIds(new ArrayList<>(headNewsSummaryIds));
+            for (Object[] row : similarResults) {
+                String providerId = (String) row[6];
+                if (providerId != null && !providerId.isBlank()) {
+                    providerIds.add(providerId);
+                }
+            }
+        }
 
+        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
+        if (!providerIds.isEmpty()) {
+            List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
+                new ArrayList<>(providerIds)
+            );
+            for (Object[] row : goodsRows) {
+                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+            }
+        }
+
+        PermissionRes permissions = authorizationService.getPermissions();
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(
+            authorizationService.getCompanyNoWithPriority()
+        );
+
+        Map<Long, List<SimilarNewsItem>> similarNewsMap = new HashMap<>();
+        if (!similarResults.isEmpty()) {
             // headNewsSummaryId별로 그룹핑
             for (Object[] row : similarResults) {
                 Long headNewsSummaryId = ((Number) row[1]).longValue();
+                String providerId = (String) row[6];
+                Integer goodsNo = providerId != null ? goodsNoByProviderId.get(providerId) : null;
+                boolean isViewable = goodsNo != null
+                    && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
 
                 SimilarNewsItem item = new SimilarNewsItem(
                     ((Number) row[2]).longValue(), // incl_nws_smry_id
                     (String) row[3],                // title
                     ((java.sql.Timestamp) row[4]).toLocalDateTime(), // first_created
-                    ((Number) row[5]).longValue()   // data_reg_sn
+                    ((Number) row[5]).longValue(),  // data_reg_sn
+                    isViewable
                 );
 
                 similarNewsMap
@@ -363,7 +398,13 @@ public class MiMarketNewsService {
 
         List<NewsfeedListRes> response = new ArrayList<>(results.size());
         for (NewsfeedListRowProjection row : results) {
-            response.add(convertToNewsfeedListRes(row, similarNewsMap, eventsByNewsSummaryId));
+            response.add(convertToNewsfeedListRes(
+                row,
+                similarNewsMap,
+                eventsByNewsSummaryId,
+                goodsNoByProviderId,
+                goodsViewableMap
+            ));
         }
         return response;
     }
@@ -849,7 +890,9 @@ public class MiMarketNewsService {
     private NewsfeedListRes convertToNewsfeedListRes(
         NewsfeedListRowProjection row,
         Map<Long, List<SimilarNewsItem>> similarNewsMap,
-        Map<Long, List<String>> eventsByNewsSummaryId) {
+        Map<Long, List<String>> eventsByNewsSummaryId,
+        Map<String, Integer> goodsNoByProviderId,
+        Map<Integer, Boolean> goodsViewableMap) {
 
         Long newsSignificanceId = row.getNewsSignificanceId();
         Long dataRegistrationSerialNo = row.getDataRegistrationSerialNo();
@@ -882,6 +925,10 @@ public class MiMarketNewsService {
             Collections.emptyList()
         );
 
+        Integer goodsNo = provider != null ? goodsNoByProviderId.get(provider) : null;
+        boolean isViewable = newsSummaryId != null && goodsNo != null
+            && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
+
         // directionality 계산 (significantNewsScore 기반)
         String directionality = calculateDirectionality(significantNewsScore);
 
@@ -897,6 +944,7 @@ public class MiMarketNewsService {
             summary,
             title,
             provider,
+            isViewable,
             newsSignificanceScore,
             significantNewsScore,
             directionality,

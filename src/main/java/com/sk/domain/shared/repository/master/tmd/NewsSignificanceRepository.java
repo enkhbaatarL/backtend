@@ -104,7 +104,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
      * 특정 HEAD 뉴스의 유사 뉴스(INCL) 목록 조회
      *
      * @param headNewsSummaryIds HEAD 뉴스들의 nws_smry_id 목록
-     * @return [simlr_nws_grp_id, head_nws_smry_id, incl_nws_smry_id, title, first_created, data_reg_sn]
+     * @return [simlr_nws_grp_id, head_nws_smry_id, incl_nws_smry_id, title, first_created, data_reg_sn, provider_id]
      */
     @Query(value = """
         SELECT
@@ -113,7 +113,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.nws_smry_id as incl_nws_smry_id,
             rnd.title,
             nsum.first_created,
-            nsum.data_reg_sn
+            nsum.data_reg_sn,
+            nsum.prvd_id
         FROM tmd_simlr_nws_grp sng
         INNER JOIN tmd_simlr_nws_grp_rel sngr ON sng.simlr_nws_grp_id = sngr.simlr_nws_grp_id
         INNER JOIN tmd_nws_smry nsum ON sngr.nws_smry_id = nsum.nws_smry_id

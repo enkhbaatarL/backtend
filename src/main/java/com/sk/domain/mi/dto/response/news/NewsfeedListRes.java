@@ -42,6 +42,9 @@ public record NewsfeedListRes(
     @Schema(description = "프로바이더", example = "reuters")
     String provider,
 
+    @Schema(description = "보기 권한 여부", example = "true")
+    boolean isViewable,
+
     @Schema(description = "뉴스 중요도 점수", example = "9.1")
     BigDecimal newsSignificanceScore,
 
@@ -75,6 +78,9 @@ public record NewsfeedListRes(
         LocalDateTime firstCreated,
 
         @Schema(description = "데이터등록일련번호")
-        Long dataRegistrationSerialNo
+        Long dataRegistrationSerialNo,
+
+        @Schema(description = "보기 권한 여부")
+        boolean isViewable
     ) {}
 }

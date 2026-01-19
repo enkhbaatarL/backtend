@@ -30,6 +30,14 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
             """)
     Optional<Integer> queryGoodsNoByGoodsId(@Param("goodsId") String goodsId);
 
+    @Query(value = """
+            SELECT g.goodsId, g.goodsNo
+            FROM Goods g
+            WHERE g.isDeleted = false
+              AND g.goodsId IN :goodsIds
+            """)
+    List<Object[]> findGoodsNoByGoodsIdIn(@Param("goodsIds") List<String> goodsIds);
+
     // 관리자는 전체 상품 목록을 조회한다.
     @Query(value = """
         SELECT new com.sk.domain.admin.dto.response.provider.GoodsRes(
