@@ -1,7 +1,5 @@
 package com.sk.domain.mi.service;
 
-import com.sk.common.enums.ResultCode.Error;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.economiccalendar.EconomicCalendarDetailRes;
@@ -216,14 +214,19 @@ public class MiEconomicCalendarService {
     public KeyEconomicIndicatorsRes getKeyList(String criteriaDate, String category) {
         log.debug("주요 경제 지표 분석 조회 요청 - criteriaDate: {}, category: {}", criteriaDate, category);
 
-        // 1. 경제 지표 분석 조회
+        // 1. 주요 경제 지표 분석 조회
         EconomicIndicatorAnalysis analysis = economicIndicatorAnalysisRepository
             .findByCriteriaDateAndCategory(criteriaDate, MarketCategoryCode.fromCode(category))
-            .orElseThrow(() -> AppErrorException.of(
-                Error.RSC_DATA_NOT_FOUND,
-                "해당 기준일자(%s)와 카테고리(%s)의 경제 지표 분석 데이터를 찾을 수 없습니다"
-                    .formatted(criteriaDate, category)
-            ));
+            .orElse(null);
+        if (analysis == null) {
+            return new KeyEconomicIndicatorsRes(
+                null,
+                category,
+                criteriaDate,
+                Collections.emptyList(),
+                Collections.emptyList()
+            );
+        }
 
         // 2. 분석 내용 파싱 (줄바꿈으로 구분된 내용을 List로 변환)
         List<String> contentList = parseAnalysisContent(analysis.getAnalysisCntt());
@@ -233,7 +236,7 @@ public class MiEconomicCalendarService {
             economicIndicatorAnalysisRelationshipRepository
                 .findByEconomicIndicatorAnalysisWithEconomicCalendar(analysis);
 
-        // 5. Refinitiv 경제 달력 정보 조회 (우선순위 정보 포함)
+        // 4. Refinitiv 경제 달력 정보 조회 (우선순위 정보 포함)
         Map<String, Short> codeToRefinitivPriorityMap = refinitivEconomicCalendarRepository
             .findByCodeIn(
                 relationships.stream()
@@ -247,7 +250,7 @@ public class MiEconomicCalendarService {
                 rec -> rec.getPriority() != null ? rec.getPriority() : (short) 0
             ));
 
-        // 6. 관련 경제 지표 DTO 변환
+        // 5. 관련 경제 지표 DTO 변환
         List<RelatedEconomicIndicator> relatedIndicators = relationships.stream()
             .map(relationship -> convertToRelatedIndicator(
                 relationship.getEconomicCalendar(),
@@ -258,7 +261,7 @@ public class MiEconomicCalendarService {
             ))
             .toList();
 
-        // 7. 최종 응답 생성
+        // 6. 최종 응답 생성
         return new KeyEconomicIndicatorsRes(
             analysis.getEconomicIndicatorAnalysisId(),
             category,
