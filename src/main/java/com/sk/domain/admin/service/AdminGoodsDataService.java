@@ -300,7 +300,7 @@ public class AdminGoodsDataService {
 
     private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId, List<UnstructuredDataLinkReq> unstructuredDataLinkList){
         goodsDataExtensionRepository.deleteById(goodsDataNo);
-        if(recommendations == null && url == null && providerContentId == null) return;
+        if(recommendations == null && url == null && providerContentId == null && unstructuredDataLinkList == null) return;
         goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, recommendations, url, providerContentId, unstructuredDataLinkList));
     }
 
