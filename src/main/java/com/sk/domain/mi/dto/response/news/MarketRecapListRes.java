@@ -107,6 +107,9 @@ public record MarketRecapListRes(
         String title,
 
         @Schema(description = "하이라이트 이벤트에 속하는 뉴스 이벤트의 대표 뉴스 프로바이더", example = "reuters")
-        String provider
+        String provider,
+
+        @Schema(description = "보기 권한 여부", example = "true")
+        boolean isViewable
     ) {}
 }

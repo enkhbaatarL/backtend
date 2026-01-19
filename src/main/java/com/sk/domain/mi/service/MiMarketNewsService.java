@@ -1150,6 +1150,39 @@ public class MiMarketNewsService {
                 .collect(Collectors.groupingBy(MarketRecapCheckpoint::getMrktRcapId)));
         }
 
+        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
+        Map<Integer, Boolean> goodsViewableMap = new HashMap<>();
+        if (includeHighlight) {
+            LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+            for (List<MarketRecapHighlightEventRelationship> relationships : relationshipsByEventId.values()) {
+                for (MarketRecapHighlightEventRelationship relationship : relationships) {
+                    if (relationship.getNewsEvent() == null ||
+                        relationship.getNewsEvent().getRepresentativeNewsSummary() == null) {
+                        continue;
+                    }
+                    String providerId =
+                        relationship.getNewsEvent().getRepresentativeNewsSummary().getProviderId();
+                    if (providerId != null && !providerId.isBlank()) {
+                        providerIds.add(providerId);
+                    }
+                }
+            }
+
+            if (!providerIds.isEmpty()) {
+                List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
+                    new ArrayList<>(providerIds)
+                );
+                for (Object[] row : goodsRows) {
+                    goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+                }
+            }
+
+            PermissionRes permissions = authorizationService.getPermissions();
+            goodsViewableMap.putAll(permissions.getGoodsViewableMap(
+                authorizationService.getCompanyNoWithPriority()
+            ));
+        }
+
         List<MarketRecapListRes> resultList =
             marketRecapPage.getContent().stream()
                 .map(row -> {
@@ -1158,7 +1191,9 @@ public class MiMarketNewsService {
                         ? buildHighlightResponse(
                             row,
                             highlightEventsByRecap.getOrDefault(row.getMrktRcapId(), Collections.emptyList()),
-                            relationshipsByEventId
+                            relationshipsByEventId,
+                            goodsNoByProviderId,
+                            goodsViewableMap
                         )
                         : buildCheckpointResponse(
                             row,
@@ -1202,7 +1237,9 @@ public class MiMarketNewsService {
     private MarketRecapListRes buildHighlightResponse(
         MarketRecapListRow row,
         List<MarketRecapHighlightEvent> highlightEvents,
-        Map<Long, List<MarketRecapHighlightEventRelationship>> relationshipsByEventId
+        Map<Long, List<MarketRecapHighlightEventRelationship>> relationshipsByEventId,
+        Map<String, Integer> goodsNoByProviderId,
+        Map<Integer, Boolean> goodsViewableMap
     ) {
         List<MarketRecapListRes.HighlightEventRes> highlightItems =
             highlightEvents.stream()
@@ -1218,12 +1255,18 @@ public class MiMarketNewsService {
                                 }
                                 NewsSummary representativeNews =
                                     rel.getNewsEvent().getRepresentativeNewsSummary();
+                                String providerId = representativeNews.getProviderId();
+                                Integer goodsNo =
+                                    providerId != null ? goodsNoByProviderId.get(providerId) : null;
+                                boolean isViewable = goodsNo != null
+                                    && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
                                 return new MarketRecapListRes.RelatedEventRepresentativeNewsRes(
                                     representativeNews.getNewsSummaryId(),
                                     representativeNews.getRefinitivNewsData() != null
                                         ? representativeNews.getRefinitivNewsData().getTitle()
                                         : null,
-                                    representativeNews.getProviderId()
+                                    providerId,
+                                    isViewable
                                 );
                             })
                             .filter(Objects::nonNull)
