@@ -89,7 +89,7 @@ public class GoodsDataExtension extends BaseEntity {
       }
     }
     ArrayNode unstructuredDataLinkNodes = objectNode.putArray("unstructuredDataLinkList");
-    if (unstructuredDataLinkNodes != null && !unstructuredDataLinkNodes.isEmpty()) {
+    if (unstructuredDataLinkList != null && !unstructuredDataLinkList.isEmpty()) {
       for (String link : unstructuredDataLinkList) {
         unstructuredDataLinkNodes.add(link);
       }
