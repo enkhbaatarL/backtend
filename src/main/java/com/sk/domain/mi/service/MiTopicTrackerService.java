@@ -2,21 +2,28 @@ package com.sk.domain.mi.service;
 
 
 import com.sk.common.model.PaginationRes;
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.news.NewsTopicListRes;
 import com.sk.domain.mi.dto.response.news.TopicInfoRes;
 import com.sk.domain.mi.dto.response.news.TopicTrackerListRes;
 import com.sk.domain.shared.entity.master.tmd.NewsTopic;
 import com.sk.domain.shared.enums.topic.DateRangeOption;
 import com.sk.domain.shared.enums.topic.SortType;
+import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsTopicRelationshipRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsTopicRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -34,6 +41,8 @@ public class MiTopicTrackerService {
 
     private final NewsTopicRepository newsTopicRepository;
     private final NewsTopicRelationshipRepository newsTopicRelationshipRepository;
+    private final GoodsRepository goodsRepository;
+    private final AuthorizationService authorizationService;
 
     /**
      * Topic Tracker 목록 조회
@@ -105,6 +114,29 @@ public class MiTopicTrackerService {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
+        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        for (Object[] row : results) {
+            String providerId = (String) row[6];
+            if (providerId != null && !providerId.isBlank()) {
+                providerIds.add(providerId);
+            }
+        }
+
+        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
+        if (!providerIds.isEmpty()) {
+            List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
+                new ArrayList<>(providerIds)
+            );
+            for (Object[] row : goodsRows) {
+                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+            }
+        }
+
+        PermissionRes permissions = authorizationService.getPermissions();
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(
+            authorizationService.getCompanyNoWithPriority()
+        );
+
         List<TopicTrackerListRes> content = results.stream()
             .map(row -> {
                 int idx = 0;
@@ -142,6 +174,10 @@ public class MiTopicTrackerService {
                 String publishDate = firstCreated != null ? firstCreated.format(dateFormatter) : null;
                 String publishTime = firstCreated != null ? firstCreated.format(timeFormatter) : null;
 
+                Integer goodsNo = providerName != null ? goodsNoByProviderId.get(providerName) : null;
+                boolean isViewable = newsSummaryId != null && goodsNo != null
+                    && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
+
                 return new TopicTrackerListRes(
                     newsTopicRelationshipId,
                     newsSummaryId,
@@ -151,6 +187,7 @@ public class MiTopicTrackerService {
                     topicName,
                     topicId,
                     providerName,
+                    isViewable,
                     regionItems,
                     briefSummary,
                     title,

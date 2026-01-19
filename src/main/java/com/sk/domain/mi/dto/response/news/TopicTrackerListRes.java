@@ -28,6 +28,9 @@ public record TopicTrackerListRes(
     @Schema(description = "프로바이더 이름", example = "reuters")
     String providerName,
 
+    @Schema(description = "보기 권한 여부", example = "true")
+    boolean isViewable,
+
     @Schema(description = "지역", example = "[\"APAC\", \"NAM\"]")
     List<String> regions,
 
