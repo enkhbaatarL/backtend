@@ -45,7 +45,7 @@ public record GoodsDataUpdateReq(
     String providerContentId,
 
     @Schema(description = "비정형 데이타 링크 리스트", example = "")
-    List<String> unstructuredDataLinkList
+    List<UnstructuredDataLinkReq> unstructuredDataLinkList
 ) {
 
     public List<String> getAuthors(){

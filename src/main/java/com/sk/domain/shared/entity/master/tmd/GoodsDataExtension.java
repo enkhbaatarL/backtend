@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.Recommendation;
+import com.sk.domain.admin.dto.request.provider.UnstructuredDataLinkReq;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -65,7 +66,7 @@ public class GoodsDataExtension extends BaseEntity {
       List<Recommendation> recommendations,
       String url,
       String providerContentId,
-      List<String> unstructuredDataLinkList) {
+      List<UnstructuredDataLinkReq> unstructuredDataLinkList) {
 
     ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
     if (providerContentId != null) objectNode.put("providerContentId", providerContentId);
@@ -90,8 +91,11 @@ public class GoodsDataExtension extends BaseEntity {
     }
     ArrayNode unstructuredDataLinkNodes = objectNode.putArray("unstructuredDataLinkList");
     if (unstructuredDataLinkList != null && !unstructuredDataLinkList.isEmpty()) {
-      for (String link : unstructuredDataLinkList) {
-        unstructuredDataLinkNodes.add(link);
+      for (UnstructuredDataLinkReq unstructuredDataLinkReq : unstructuredDataLinkList) {
+          ObjectNode unstructuredDataLinkNode = OBJECT_MAPPER.createObjectNode();
+          if(unstructuredDataLinkReq.name() != null ) unstructuredDataLinkNode.put("name", unstructuredDataLinkReq.name());
+          unstructuredDataLinkNode.put("url", unstructuredDataLinkReq.url());
+          unstructuredDataLinkNodes.add(unstructuredDataLinkNode);
       }
     }
     return GoodsDataExtension.builder().goodsDataNo(goodsDataNo).payload(objectNode).build();

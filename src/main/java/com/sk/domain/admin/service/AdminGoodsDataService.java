@@ -2,6 +2,7 @@ package com.sk.domain.admin.service;
 
 import com.sk.domain.admin.dto.request.provider.Recommendation;
 import com.sk.domain.admin.dto.request.provider.StructuredDataJsonReq;
+import com.sk.domain.admin.dto.request.provider.UnstructuredDataLinkReq;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import java.io.IOException;
@@ -297,7 +298,7 @@ public class AdminGoodsDataService {
         updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
     }
 
-    private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId, List<String> unstructuredDataLinkList){
+    private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId, List<UnstructuredDataLinkReq> unstructuredDataLinkList){
         goodsDataExtensionRepository.deleteById(goodsDataNo);
         if(recommendations == null && url == null && providerContentId == null) return;
         goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, recommendations, url, providerContentId, unstructuredDataLinkList));
