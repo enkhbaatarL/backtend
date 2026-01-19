@@ -60,28 +60,40 @@ public class GoodsDataExtension extends BaseEntity {
             this.payload = payload;
     }
 
-    public static GoodsDataExtension of(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId) {
+  public static GoodsDataExtension of(
+      Integer goodsDataNo,
+      List<Recommendation> recommendations,
+      String url,
+      String providerContentId,
+      List<String> unstructuredDataLinkList) {
 
-      ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
-      if(providerContentId != null) objectNode.put("providerContentId", providerContentId);
-      if(url != null) objectNode.put("providerContentId", url);
-      ArrayNode recommendationsNode = objectNode.putArray("recommendations");
-      if(recommendations != null && !recommendations.isEmpty()){
-          for(Recommendation recommendation : recommendations){
-              ObjectNode recommendationNode = OBJECT_MAPPER.createObjectNode();
-              recommendationNode.put("goodsDataNm", recommendation.goodsDataNm());
-              recommendationNode.put("authors", recommendation.authors());
-              recommendationNode.put("goodsDataSummaryCntt", recommendation.goodsDataSummaryCntt());
-              recommendationNode.put("publishedDate", recommendation.publishedDate());
-              ArrayNode docCategoryArray = recommendationNode.putArray("docCategoryList");
-              if(recommendation.docCategoryList() != null && !recommendation.docCategoryList().isEmpty()){
-                  for(CategoryDataReq categoryDataReq: recommendation.docCategoryList()){
-                      docCategoryArray.add(categoryDataReq.codeId());
-                  }
-              }
-              recommendationsNode.add(recommendationNode);
+    ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
+    if (providerContentId != null) objectNode.put("providerContentId", providerContentId);
+    if (url != null) objectNode.put("providerContentId", url);
+    ArrayNode recommendationsNode = objectNode.putArray("recommendations");
+    if (recommendations != null && !recommendations.isEmpty()) {
+      for (Recommendation recommendation : recommendations) {
+        ObjectNode recommendationNode = OBJECT_MAPPER.createObjectNode();
+        recommendationNode.put("goodsDataNm", recommendation.goodsDataNm());
+        recommendationNode.put("authors", recommendation.authors());
+        recommendationNode.put("goodsDataSummaryCntt", recommendation.goodsDataSummaryCntt());
+        recommendationNode.put("publishedDate", recommendation.publishedDate());
+        ArrayNode docCategoryArray = recommendationNode.putArray("docCategoryList");
+        if (recommendation.docCategoryList() != null
+            && !recommendation.docCategoryList().isEmpty()) {
+          for (CategoryDataReq categoryDataReq : recommendation.docCategoryList()) {
+            docCategoryArray.add(categoryDataReq.codeId());
           }
+        }
+        recommendationsNode.add(recommendationNode);
       }
-      return GoodsDataExtension.builder().goodsDataNo(goodsDataNo).payload(objectNode).build();
     }
+    ArrayNode unstructuredDataLinkNodes = objectNode.putArray("unstructuredDataLinkList");
+    if (unstructuredDataLinkNodes != null && !unstructuredDataLinkNodes.isEmpty()) {
+      for (String link : unstructuredDataLinkList) {
+        unstructuredDataLinkNodes.add(link);
+      }
+    }
+    return GoodsDataExtension.builder().goodsDataNo(goodsDataNo).payload(objectNode).build();
+  }
 }

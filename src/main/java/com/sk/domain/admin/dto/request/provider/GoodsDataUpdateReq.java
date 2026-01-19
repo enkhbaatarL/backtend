@@ -42,7 +42,10 @@ public record GoodsDataUpdateReq(
     String url,
 
     @Schema(description = "프로바이더 데이터 ID, 프로바이더가 관리하는 데이터 ID", example = "")
-    String providerContentId
+    String providerContentId,
+
+    @Schema(description = "비정형 데이타 링크 리스트", example = "")
+    List<String> unstructuredDataLinkList
 ) {
 
     public List<String> getAuthors(){

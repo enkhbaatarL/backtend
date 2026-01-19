@@ -290,17 +290,17 @@ public class AdminGoodsDataService {
     }
 
     private void updateGoodsDataExtension(GoodsData goodsData, GoodsDataUpdateReq dto){
-        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId());
+        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
     }
 
     private void updateGoodsDataExtension(GoodsData goodsData, GoodsDataCreateReq dto){
-        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId());
+        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
     }
 
-    private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId){
+    private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId, List<String> unstructuredDataLinkList){
         goodsDataExtensionRepository.deleteById(goodsDataNo);
         if(recommendations == null && url == null && providerContentId == null) return;
-        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, recommendations, url, providerContentId));
+        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, recommendations, url, providerContentId, unstructuredDataLinkList));
     }
 
     /**
