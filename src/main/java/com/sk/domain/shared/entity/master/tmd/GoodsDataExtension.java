@@ -70,7 +70,7 @@ public class GoodsDataExtension extends BaseEntity {
 
     ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
     if (providerContentId != null) objectNode.put("providerContentId", providerContentId);
-    if (url != null) objectNode.put("providerContentId", url);
+    if (url != null) objectNode.put("url", url);
     ArrayNode recommendationsNode = objectNode.putArray("recommendations");
     if (recommendations != null && !recommendations.isEmpty()) {
       for (Recommendation recommendation : recommendations) {
