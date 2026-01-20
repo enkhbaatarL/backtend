@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sk.domain.shared.mapper.dynamic.ForecastMapper">
+    <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap">
+        <result column="mrkt_idx_anly_tgt_cd" property="marketIndexAnalysisTargetCd"/>
+        <result column="prdc_fulf_dt" property="predictionFulfillDt"/>
+        <result column="prdc_inpt_mnmnc_dtl_cd" property="predictionInputMnemonicDetailCd"/>
+        <result column="prdc_inpt_mnmnc_cd" property="predictionInputMnemonicCd"/>
+        <result column="expp_lvl_dtl_nm" property="explanatoryLevelDetailNm"/>
+        <result column="expp_scre" property="explanatoryScore"/>
+        <result column="expp_rnk" property="explanatoryRnk"/>
+        <result column="mnmnc_cd" property="mnemonicCd"/>
+        <result column="expp_dir_symb_nm" property="explanatoryDirectionSymbolNm"/>
+        <result column="dir_rank" property="dirRank"/>
+    </resultMap>
+
+    <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap">
+        <result column="mrkt_idx_anly_tgt_cd" property="marketIndexAnalysisTargetCd"/>
+        <result column="prdc_fulf_dt" property="predictionFulfillDt"/>
+        <result column="mnmnc_cd" property="mnemonicCd"/>
+        <result column="prdc_inpt_mnmnc_cd" property="predictionInputMnemonicCd"/>
+        <result column="expp_lvl_nm" property="explanatoryLevelNm"/>
+        <result column="expp_dtl_cntt" property="explanatoryDetailCntt"/>
+        <result column="expp_lvl_dtl_nm" property="explanatoryLevelDetailNm"/>
+    </resultMap>
+    <resultMap id="dashboardChartFactorGraphMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorGraphMap">
+        <result column="mrkt_idx_data_no" property="marketIndexDataNo"/>
+        <result column="ric_cd" property="ricCd"/>
+        <result column="mnmnc_cd" property="mnemonicCd"/>
+        <result column="instm_cltn_tbl_nm" property="instrumentCollectionTableNm"/>
+        <result column="instm_data_spt_cd" property="instrumentDataSeparateCd"/>
+        <result column="gds_data_src_no" property="goodsDataSourceNo"/>
+    </resultMap>
+
+    <resultMap id="dashboardChartSummaryMap" type="com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap">
+        <result column="mrkt_idx_anly_tgt_cd" property="marketIndexAnalysisTargetCd"/>
+        <result column="prdc_fulf_dt" property="predictionFulfillDt"/>
+        <result column="mnmnc_cd" property="mnemonicCd"/>
+        <result column="prdc_rslt_dt" property="predictionResultDt"/>
+        <result column="expp_titl_cntt" property="explanatoryTitleContent"/>
+        <result column="expp_smry_cntt" property="explanatorySummaryContent"/>
+        <result column="expp_cntt_file_path_nm" property="explanatoryFilePath"/>
+    </resultMap>
+    <select id="chartFactorCategory" resultType="java.lang.String">
+        SELECT DISTINCT tb.expp_lvl_nm
+          FROM tmm_bztgtprdcexppinfom tb
+         WHERE ${queryWhere}
+           AND tb.prdc_fulf_dt = #{predictDate}
+           AND SUBSTR(tb.prdc_rslt_dt, 1, 6) = #{date}
+           AND tb.del_yn = 'N'
+         ORDER BY tb.expp_lvl_nm
+    </select>
+
+    <select id="chartFactors" resultMap="dashboardChartFactorMap">
+         SELECT mrkt_idx_anly_tgt_cd
+              , prdc_fulf_dt
+              , prdc_inpt_mnmnc_dtl_cd
+              , prdc_inpt_mnmnc_cd
+              , expp_lvl_dtl_nm
+              , expp_scre
+              , prdc_rslt_ym
+              , expp_lvl_nm
+              , mnmnc_cd
+              , expp_dir_symb_nm
+              , expp_dir_synb_scre
+              , expp_rnk
+              , dir_rank
+          FROM (
+            select OA.mrkt_idx_anly_tgt_cd /* 시장지수분석대상코드 */
+              , OA.mnmnc_cd /* MNEMONIC코드 예측대상값 */
+              , OA.prdc_fulf_dt /* 예측수행일자 */
+              , OA.prdc_rslt_ym /* 예측결과년월 */
+              , OA.prdc_inpt_mnmnc_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+              , MIN(OA.prdc_inpt_mnmnc_dtl_cd) AS prdc_inpt_mnmnc_dtl_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+              , MIN(OA.expp_lvl_nm) AS expp_lvl_nm /* 설명력레벨명 설명력산출변수 카테고리 */
+              , MIN(OA.expp_lvl_dtl_nm) AS expp_lvl_dtl_nm /* 설명력레벨상세명 설명력산출변수명 */
+              , AVG(OA.expp_scre) AS expp_scre /* 설명력점수 */
+              , SUM(OA.expp_dir_synb_scre) AS expp_dir_synb_scre /* 설명력방향 기준 점수 */
+              , OA.expp_dir_symb_nm AS expp_dir_symb_nm
+              , OA.expp_rnk AS expp_rnk
+              , CASE WHEN SUM(OA.expp_dir_synb_scre) = 1 THEN '+'
+                  WHEN SUM(OA.expp_dir_synb_scre) = -1 THEN '-'
+                  WHEN SUM(OA.expp_dir_synb_scre) = 0 THEN '0'
+                  END AS expp_dir_symn_nm /* 설명력방향 */
+              , RANK() OVER (PARTITION BY SUM(OA.expp_dir_synb_scre) ORDER BY AVG(OA.expp_scre) DESC) AS dir_rank
+              from (
+                select a.mrkt_idx_anly_tgt_cd /* 시장지수분석대상코드 */
+                    , a.mnmnc_cd /* MNEMONIC코드 예측대상값 */
+                    , a.prdc_fulf_dt /* 예측수행일자 */
+                    , a.prdc_rslt_dt /* 예측결과일자 */
+                    , SUBSTR(a.prdc_rslt_dt, 1, 6) AS prdc_rslt_ym /* 예측결과년월 */
+                    , a.prdc_inpt_mnmnc_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+                    , a.prdc_inpt_mnmnc_dtl_cd /* 예측입력MNEMONIC코드 설명력상세차트출력대상변수 */
+                    , a.expp_lvl_nm /* 설명력레벨명 설명력산출변수 카테고리 */
+                    , a.expp_lvl_dtl_nm /* 설명력레벨상세명 설명력산출변수명 */
+                    , a.expp_scre /* 설명력점수 */
+                    , a.expp_rnk /* 설명력순위 점수기준 전체 순위 */
+                    , a.expp_dir_symb_nm /* 설명력방향 */
+                    , CASE WHEN a.expp_dir_symb_nm = '+' THEN 1
+                        WHEN a.expp_dir_symb_nm = '-' THEN -1
+                        WHEN a.expp_dir_symb_nm = '0' THEN 0
+                        END AS expp_dir_synb_scre /* 설명력방향 기준 점수 */
+                  from tmm_bztgtprdcexppinfom a
+                where ${queryWhere}
+                  and a.expp_lvl_nm = #{explanatoryLevelNm}
+                  and a.del_yn = 'N'
+                  and a.expp_scre != 0
+                  and a.expp_dir_symb_nm != '0'
+                  and a.prdc_fulf_dt = #{predictDate}
+                  and SUBSTR(a.prdc_rslt_dt, 1, 6) = #{date}
+                ) OA
+                GROUP BY OA.mrkt_idx_anly_tgt_cd, OA.mnmnc_cd, OA.prdc_fulf_dt, OA.prdc_rslt_ym, OA.prdc_inpt_mnmnc_cd
+          ) OOA
+          WHERE OOA.expp_dir_symn_nm = #{direction}
+          ORDER BY expp_scre DESC
+          LIMIT #{limit}
+    </select>
+
+    <select id="chartFactorExplanatory" resultMap="dashboardChartFactorExplanatoryMap">
+        SELECT
+            tb.mrkt_idx_anly_tgt_cd
+          , tb.prdc_fulf_dt
+          , tb.mnmnc_cd
+          , tb.prdc_inpt_mnmnc_cd
+          , tb.expp_lvl_nm
+          , tb.expp_dtl_cntt
+          , tb.expp_lvl_dtl_nm
+          FROM tmm_bztgtexppcnttd tb
+         WHERE ${queryWhere}
+           AND tb.del_yn = 'N'
+           AND tb.expp_lvl_nm = expp_lvl_dtl_nm
+           AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+           AND tb.prdc_fulf_dt = #{predictDate}
+         LIMIT 1
+    </select>
+    <select id="chartFactorGraphExplanatory" resultMap="dashboardChartFactorExplanatoryMap">
+        SELECT
+            tb.mrkt_idx_anly_tgt_cd
+          , tb.prdc_fulf_dt
+          , tb.mnmnc_cd
+          , tb.prdc_inpt_mnmnc_cd
+          , tb.expp_lvl_nm
+          , tb.expp_dtl_cntt
+          , tb.expp_lvl_dtl_nm
+          FROM tmm_bztgtexppcnttd tb
+         WHERE ${queryWhere}
+           AND tb.del_yn = 'N'
+           AND tb.expp_lvl_nm != expp_lvl_dtl_nm
+           AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+           AND tb.prdc_fulf_dt = #{predictDate}
+           AND tb.prdc_inpt_mnmnc_cd = #{predictionInputMnemonicCd}
+         LIMIT 1
+    </select>
+
+    <select id="chartFactorGraph" resultMap="dashboardChartFactorGraphMap">
+        SELECT
+            a.mrkt_idx_data_no
+          , a.ric_cd
+          , a.mnmnc_cd
+          , b.instm_cltn_tbl_nm
+          , b.instm_data_spt_cd
+          , a.gds_data_src_no
+          FROM tmm_mrktidxdatam a
+          , tmm_mrktidxdatad b
+         WHERE a.mrkt_idx_data_no = b.mrkt_idx_data_no
+           AND a.del_yn = b.del_yn
+           AND a.del_yn = 'N'
+           AND b.mrkt_idx_anly_tgt_cd = #{marketIndexAnalysisTargetCd}
+           AND (a.ric_cd = #{predictionInputMnemonicDetailCd} OR a.mnmnc_cd = #{predictionInputMnemonicDetailCd})
+         LIMIT 1
+    </select>
+    <select id="chartSummary" resultMap="dashboardChartSummaryMap">
+        SELECT mrkt_idx_anly_tgt_cd
+            , prdc_fulf_dt
+            , mnmnc_cd
+            , prdc_rslt_dt
+            , expp_titl_cntt
+            , expp_smry_cntt
+            , expp_cntt_file_path_nm
+          FROM tmm_bztgtprdcexppcnttm
+         WHERE ${queryWhere}
+           AND prdc_fulf_dt = #{date}
+           AND del_yn = 'N'
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            AND prdc_rslt_dt BETWEEN #{startDate} AND #{endDate}
+        </if>
+         ORDER BY prdc_fulf_dt DESC,
+                  prdc_rslt_dt DESC
+   </select>
+</mapper>

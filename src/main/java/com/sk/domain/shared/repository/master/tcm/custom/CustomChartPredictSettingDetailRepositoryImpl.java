@@ -2,13 +2,9 @@ package com.sk.domain.shared.repository.master.tcm.custom;
 
 import static com.sk.domain.shared.entity.master.tcm.QChartPredictSetting.chartPredictSetting;
 import static com.sk.domain.shared.entity.master.tcm.QChartPredictSettingDetail.chartPredictSettingDetail;
-import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
-import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
 import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsDataSourceDetail.goodsDataSourceDetail;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -16,7 +12,10 @@ import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
-
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -51,7 +50,7 @@ public class CustomChartPredictSettingDetailRepositoryImpl implements CustomChar
         // 단일 ChartPredictSetting 추출
         Set<ChartPredictSetting> settings = tuples.stream()
                 .map(tuple -> tuple.get(chartPredictSetting))
-                .filter(setting -> setting != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
         if (settings.isEmpty()) {
@@ -66,8 +65,8 @@ public class CustomChartPredictSettingDetailRepositoryImpl implements CustomChar
         // ChartPredictSettingDetail 목록 수집
         List<ChartPredictSettingDetail> details = tuples.stream()
                 .map(tuple -> tuple.get(chartPredictSettingDetail))
-                .filter(detail -> detail != null)
-                .collect(Collectors.toList());
+                .filter(Objects::nonNull)
+                .toList();
 
         return ChartSettingAndDetails.builder()
                 .chartPredictSetting(setting)
