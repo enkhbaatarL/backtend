@@ -389,6 +389,9 @@ public class MiEconomicCalendarService {
             return source;
         }
 
+        UnitPrefix unitPrefix = UnitPrefix.fromCode(source.unitPrefix());
+        EconomicUnit economicUnit = EconomicUnit.fromCode(source.unit());
+
         return new EconomicCalendarDetailRes(
             source.economicCalendarId(),
             source.code(),
@@ -400,9 +403,8 @@ public class MiEconomicCalendarService {
             source.economicIndicatorPredictionDay(),
             source.economicIndicatorPresentationPriorValue(),
             source.economicIndicatorPredictionValue(),
-            source.unitPrefix() == null ? null
-                : UnitPrefix.fromCode(source.unitPrefix()).getDisplayValue(),
-            source.unit() == null ? null : EconomicUnit.fromCode(source.unit()).getAbbreviation(),
+            unitPrefix == null ? null : unitPrefix.getDisplayValue(),
+            economicUnit == null ? null : economicUnit.getAbbreviation(),
             source.nextEconomicIndicatorPresentationDay(),
             source.refinitivName(),
             source.refinitivPresentationRegion(),
