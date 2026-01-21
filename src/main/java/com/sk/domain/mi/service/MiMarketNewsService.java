@@ -188,21 +188,21 @@ public class MiMarketNewsService {
             filterByRegion ? regionList : null, filterByRegion,
             filterByIndustry ? industryList : null, filterByIndustry);
 
-        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        LinkedHashSet<String> goodsIds = new LinkedHashSet<>();
         for (Object[] result : results) {
-            String providerId = (String) result[4];
-            if (providerId != null && !providerId.isBlank()) {
-                providerIds.add(providerId);
+            String goodsId = (String) result[5];
+            if (goodsId != null && !goodsId.isBlank()) {
+                goodsIds.add(goodsId);
             }
         }
 
-        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
-        if (!providerIds.isEmpty()) {
+        Map<String, Integer> goodsNoByGoodsId = new HashMap<>();
+        if (!goodsIds.isEmpty()) {
             List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
-                new ArrayList<>(providerIds)
+                new ArrayList<>(goodsIds)
             );
             for (Object[] row : goodsRows) {
-                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+                goodsNoByGoodsId.putIfAbsent((String) row[0], (Integer) row[1]);
             }
         }
 
@@ -224,15 +224,16 @@ public class MiMarketNewsService {
                     : null;
                 String title = (String) result[3];
                 String providerId = (String) result[4];  // provider → providerId
-                String categoryStr = (String) result[5];
-                String regionsStr = (String) result[6];
-                String industriesStr = (String) result[7];
+                String goodsId = (String) result[5];
+                String categoryStr = (String) result[6];
+                String regionsStr = (String) result[7];
+                String industriesStr = (String) result[8];
 
                 List<String> cList = parseGroupConcatResult(categoryStr);
                 List<String> rList = parseGroupConcatResult(regionsStr);
                 List<String> iList = parseGroupConcatResult(industriesStr);
 
-                Integer goodsNo = providerId != null ? goodsNoByProviderId.get(providerId) : null;
+                Integer goodsNo = goodsId != null ? goodsNoByGoodsId.get(goodsId) : null;
                 boolean isViewable = newsSummaryId != null && goodsNo != null
                     && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
 
@@ -338,7 +339,7 @@ public class MiMarketNewsService {
 
         LinkedHashSet<Long> headNewsSummaryIds = new LinkedHashSet<>();
         LinkedHashSet<Long> newsSummaryIds = new LinkedHashSet<>();
-        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        LinkedHashSet<String> goodsIds = new LinkedHashSet<>();
         for (NewsfeedListRowProjection row : results) {
             Long newsSummaryId = row.getNewsSummaryId();
             if (newsSummaryId == null) {
@@ -348,9 +349,9 @@ public class MiMarketNewsService {
             if ("HEAD".equals(row.getSimilarityGroupStatusCode())) {
                 headNewsSummaryIds.add(newsSummaryId);
             }
-            String providerId = row.getProvider();
-            if (providerId != null && !providerId.isBlank()) {
-                providerIds.add(providerId);
+            String goodsId = row.getGoodsId();
+            if (goodsId != null && !goodsId.isBlank()) {
+                goodsIds.add(goodsId);
             }
         }
 
@@ -359,20 +360,20 @@ public class MiMarketNewsService {
             similarResults = newsSignificanceRepository
                 .findSimilarNewsByHeadIds(new ArrayList<>(headNewsSummaryIds));
             for (Object[] row : similarResults) {
-                String providerId = (String) row[6];
-                if (providerId != null && !providerId.isBlank()) {
-                    providerIds.add(providerId);
+                String goodsId = (String) row[7];
+                if (goodsId != null && !goodsId.isBlank()) {
+                    goodsIds.add(goodsId);
                 }
             }
         }
 
-        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
-        if (!providerIds.isEmpty()) {
+        Map<String, Integer> goodsNoByGoodsId = new HashMap<>();
+        if (!goodsIds.isEmpty()) {
             List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
-                new ArrayList<>(providerIds)
+                new ArrayList<>(goodsIds)
             );
             for (Object[] row : goodsRows) {
-                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+                goodsNoByGoodsId.putIfAbsent((String) row[0], (Integer) row[1]);
             }
         }
 
@@ -386,8 +387,8 @@ public class MiMarketNewsService {
             // headNewsSummaryId별로 그룹핑
             for (Object[] row : similarResults) {
                 Long headNewsSummaryId = ((Number) row[1]).longValue();
-                String providerId = (String) row[6];
-                Integer goodsNo = providerId != null ? goodsNoByProviderId.get(providerId) : null;
+                String goodsId = (String) row[7];
+                Integer goodsNo = goodsId != null ? goodsNoByGoodsId.get(goodsId) : null;
                 boolean isViewable = goodsNo != null
                     && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
 
@@ -430,7 +431,7 @@ public class MiMarketNewsService {
                 row,
                 similarNewsMap,
                 eventsByNewsSummaryId,
-                goodsNoByProviderId,
+                goodsNoByGoodsId,
                 goodsViewableMap
             ));
         }
@@ -578,7 +579,7 @@ public class MiMarketNewsService {
      * MarketRecap -> MarketRecapRes 변환
      */
     private MarketRecapRes toMarketRecapRes(MarketRecap marketRecap) {
-        Map<String, Boolean> viewableByProviderId = new HashMap<>();
+        Map<String, Boolean> viewableByGoodsId = new HashMap<>();
         // 하이라이트 이벤트 조회
         List<MarketRecapHighlightEvent> highlightEvents =
             marketRecapHighlightEventRepository.findByMarketRecap(marketRecap);
@@ -606,8 +607,9 @@ public class MiMarketNewsService {
                         }
 
                         String providerId = representativeNews.getProviderId();
-                        boolean isViewable = providerId != null && viewableByProviderId.computeIfAbsent(
-                            providerId,
+                        String goodsId = representativeNews.getGoodsId();
+                        boolean isViewable = goodsId != null && viewableByGoodsId.computeIfAbsent(
+                            goodsId,
                             key -> goodsRepository.queryGoodsNoByGoodsId(key)
                                 .map(authorizationService::hasGoodsViewPermission)
                                 .orElse(false)
@@ -739,7 +741,7 @@ public class MiMarketNewsService {
 
         List<Object[]> results = newsEventRepository.findNewsTimelineData(
             criteriaDate, category);
-        Map<String, Boolean> viewableByProviderId = new HashMap<>();
+        Map<String, Boolean> viewableByGoodsId = new HashMap<>();
 
         return results.stream()
             .map(row -> {
@@ -756,16 +758,17 @@ public class MiMarketNewsService {
                 String summaryStr = (String) row[8];
                 String title = (String) row[9];
                 String providerId = (String) row[10];
-                BigDecimal score = (BigDecimal) row[11];
-                String regionsStr = (String) row[12];
+                String goodsId = (String) row[11];
+                BigDecimal score = (BigDecimal) row[12];
+                String regionsStr = (String) row[13];
                 // summary 변환: String → List<String> (개행 구분)
                 List<String> summary = summaryStr != null && !summaryStr.isBlank()
                     ? Arrays.asList(summaryStr.split("\n"))
                     : Collections.emptyList();
 
-                boolean isViewable = newsSummaryId != null && providerId != null
-                    && viewableByProviderId.computeIfAbsent(
-                        providerId,
+                boolean isViewable = newsSummaryId != null && goodsId != null
+                    && viewableByGoodsId.computeIfAbsent(
+                        goodsId,
                         key -> goodsRepository.queryGoodsNoByGoodsId(key)
                             .map(authorizationService::hasGoodsViewPermission)
                             .orElse(false)
@@ -919,7 +922,7 @@ public class MiMarketNewsService {
         NewsfeedListRowProjection row,
         Map<Long, List<SimilarNewsItem>> similarNewsMap,
         Map<Long, List<String>> eventsByNewsSummaryId,
-        Map<String, Integer> goodsNoByProviderId,
+        Map<String, Integer> goodsNoByGoodsId,
         Map<Integer, Boolean> goodsViewableMap) {
 
         Long newsSignificanceId = row.getNewsSignificanceId();
@@ -934,6 +937,7 @@ public class MiMarketNewsService {
         String briefSummary = row.getBriefSummary();
         String summaryStr = row.getSummary();
         String provider = row.getProvider();
+        String goodsId = row.getGoodsId();
         String title = row.getTitle();
         String regionsStr = row.getRegions();
 
@@ -953,7 +957,7 @@ public class MiMarketNewsService {
             Collections.emptyList()
         );
 
-        Integer goodsNo = provider != null ? goodsNoByProviderId.get(provider) : null;
+        Integer goodsNo = goodsId != null ? goodsNoByGoodsId.get(goodsId) : null;
         boolean isViewable = newsSummaryId != null && goodsNo != null
             && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
 
@@ -1150,30 +1154,30 @@ public class MiMarketNewsService {
                 .collect(Collectors.groupingBy(MarketRecapCheckpoint::getMrktRcapId)));
         }
 
-        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
+        Map<String, Integer> goodsNoByGoodsId = new HashMap<>();
         Map<Integer, Boolean> goodsViewableMap = new HashMap<>();
         if (includeHighlight) {
-            LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+            LinkedHashSet<String> goodsIds = new LinkedHashSet<>();
             for (List<MarketRecapHighlightEventRelationship> relationships : relationshipsByEventId.values()) {
                 for (MarketRecapHighlightEventRelationship relationship : relationships) {
                     if (relationship.getNewsEvent() == null ||
                         relationship.getNewsEvent().getRepresentativeNewsSummary() == null) {
                         continue;
                     }
-                    String providerId =
-                        relationship.getNewsEvent().getRepresentativeNewsSummary().getProviderId();
-                    if (providerId != null && !providerId.isBlank()) {
-                        providerIds.add(providerId);
+                    String goodsId =
+                        relationship.getNewsEvent().getRepresentativeNewsSummary().getGoodsId();
+                    if (goodsId != null && !goodsId.isBlank()) {
+                        goodsIds.add(goodsId);
                     }
                 }
             }
 
-            if (!providerIds.isEmpty()) {
+            if (!goodsIds.isEmpty()) {
                 List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
-                    new ArrayList<>(providerIds)
+                    new ArrayList<>(goodsIds)
                 );
                 for (Object[] row : goodsRows) {
-                    goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+                    goodsNoByGoodsId.putIfAbsent((String) row[0], (Integer) row[1]);
                 }
             }
 
@@ -1192,7 +1196,7 @@ public class MiMarketNewsService {
                             row,
                             highlightEventsByRecap.getOrDefault(row.getMrktRcapId(), Collections.emptyList()),
                             relationshipsByEventId,
-                            goodsNoByProviderId,
+                            goodsNoByGoodsId,
                             goodsViewableMap
                         )
                         : buildCheckpointResponse(
@@ -1238,7 +1242,7 @@ public class MiMarketNewsService {
         MarketRecapListRow row,
         List<MarketRecapHighlightEvent> highlightEvents,
         Map<Long, List<MarketRecapHighlightEventRelationship>> relationshipsByEventId,
-        Map<String, Integer> goodsNoByProviderId,
+        Map<String, Integer> goodsNoByGoodsId,
         Map<Integer, Boolean> goodsViewableMap
     ) {
         List<MarketRecapListRes.HighlightEventRes> highlightItems =
@@ -1256,8 +1260,9 @@ public class MiMarketNewsService {
                                 NewsSummary representativeNews =
                                     rel.getNewsEvent().getRepresentativeNewsSummary();
                                 String providerId = representativeNews.getProviderId();
+                                String goodsId = representativeNews.getGoodsId();
                                 Integer goodsNo =
-                                    providerId != null ? goodsNoByProviderId.get(providerId) : null;
+                                    goodsId != null ? goodsNoByGoodsId.get(goodsId) : null;
                                 boolean isViewable = goodsNo != null
                                     && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
                                 return new MarketRecapListRes.RelatedEventRepresentativeNewsRes(

@@ -114,21 +114,21 @@ public class MiTopicTrackerService {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        LinkedHashSet<String> goodsIds = new LinkedHashSet<>();
         for (Object[] row : results) {
-            String providerId = (String) row[6];
-            if (providerId != null && !providerId.isBlank()) {
-                providerIds.add(providerId);
+            String goodsId = (String) row[7];
+            if (goodsId != null && !goodsId.isBlank()) {
+                goodsIds.add(goodsId);
             }
         }
 
-        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
-        if (!providerIds.isEmpty()) {
+        Map<String, Integer> goodsNoByGoodsId = new HashMap<>();
+        if (!goodsIds.isEmpty()) {
             List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
-                new ArrayList<>(providerIds)
+                new ArrayList<>(goodsIds)
             );
             for (Object[] row : goodsRows) {
-                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+                goodsNoByGoodsId.putIfAbsent((String) row[0], (Integer) row[1]);
             }
         }
 
@@ -159,6 +159,7 @@ public class MiTopicTrackerService {
                 Long topicId = row[idx] != null ? ((Number) row[idx]).longValue() : null;
                 idx++;
                 String providerName = (String) row[idx++];
+                String goodsId = (String) row[idx++];
                 String summaryStr = (String) row[idx++];
                 String title = (String) row[idx++];
                 String briefSummary = (String) row[idx++];
@@ -174,7 +175,7 @@ public class MiTopicTrackerService {
                 String publishDate = firstCreated != null ? firstCreated.format(dateFormatter) : null;
                 String publishTime = firstCreated != null ? firstCreated.format(timeFormatter) : null;
 
-                Integer goodsNo = providerName != null ? goodsNoByProviderId.get(providerName) : null;
+                Integer goodsNo = goodsId != null ? goodsNoByGoodsId.get(goodsId) : null;
                 boolean isViewable = newsSummaryId != null && goodsNo != null
                     && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
 
@@ -247,21 +248,21 @@ public class MiTopicTrackerService {
             filterByTopic
         );
 
-        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        LinkedHashSet<String> goodsIds = new LinkedHashSet<>();
         for (Object[] row : results) {
-            String providerId = (String) row[10];
-            if (providerId != null && !providerId.isBlank()) {
-                providerIds.add(providerId);
+            String goodsId = (String) row[11];
+            if (goodsId != null && !goodsId.isBlank()) {
+                goodsIds.add(goodsId);
             }
         }
 
-        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
-        if (!providerIds.isEmpty()) {
+        Map<String, Integer> goodsNoByGoodsId = new HashMap<>();
+        if (!goodsIds.isEmpty()) {
             List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
-                new ArrayList<>(providerIds)
+                new ArrayList<>(goodsIds)
             );
             for (Object[] row : goodsRows) {
-                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+                goodsNoByGoodsId.putIfAbsent((String) row[0], (Integer) row[1]);
             }
         }
 
@@ -271,7 +272,7 @@ public class MiTopicTrackerService {
         );
 
         List<NewsTopicListRes> response = results.stream()
-            .map(row -> convertToNewsTopicListRes(row, goodsNoByProviderId, goodsViewableMap))
+            .map(row -> convertToNewsTopicListRes(row, goodsNoByGoodsId, goodsViewableMap))
             .toList();
 
         log.debug("뉴스 토픽 {} 건 조회 완료", response.size());
@@ -300,12 +301,12 @@ public class MiTopicTrackerService {
      *
      * @param row [newsTopicRelationshipId, crtrDt, newsTopicId, newsTopicName,
      *             newsSummaryId, dataRegistrationSn, firstCreated, briefSummary,
-     *             summary, title, providerId, regions]
+     *             summary, title, providerId, goodsId, regions]
      * @return NewsTopicListRes
      */
     private NewsTopicListRes convertToNewsTopicListRes(
         Object[] row,
-        Map<String, Integer> goodsNoByProviderId,
+        Map<String, Integer> goodsNoByGoodsId,
         Map<Integer, Boolean> goodsViewableMap) {
         int idx = 0;
 
@@ -339,10 +340,12 @@ public class MiTopicTrackerService {
 
         String provider = (String) row[idx++];
 
+        String goodsId = (String) row[idx++];
+
         String regionsStr = (String) row[idx];
         List<String> regions = parseRegions(regionsStr);
 
-        Integer goodsNo = provider != null ? goodsNoByProviderId.get(provider) : null;
+        Integer goodsNo = goodsId != null ? goodsNoByGoodsId.get(goodsId) : null;
         boolean isViewable = newsSummaryId != null && goodsNo != null
             && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
 

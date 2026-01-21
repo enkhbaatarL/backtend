@@ -54,6 +54,7 @@ public interface NewsEventRepository extends JpaRepository<NewsEvent, Long> {
             ns.smry,
             rnd.title,
             ns.prvd_id,
+            ns.gds_id,
             ne.scre,
             GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
         FROM tmd_nws_evnt ne
@@ -75,6 +76,7 @@ public interface NewsEventRepository extends JpaRepository<NewsEvent, Long> {
             ns.smry,
             rnd.title,
             ns.prvd_id,
+            ns.gds_id,
             ne.scre
         ORDER BY ns.first_created ASC
         LIMIT 10

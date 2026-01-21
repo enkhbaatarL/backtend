@@ -27,10 +27,11 @@ import org.hibernate.annotations.Comment;
     indexes = {
         @Index(name = "tmd_nws_smry_ix01", columnList = "prvd_id, data_reg_sn, first_created"),
         @Index(name = "tmd_nws_smry_ix02", columnList = "prvd_id, data_reg_sn, first_created, crtr_dt"),
-        @Index(name = "tmd_nws_smry_ix03", columnList = "crtr_dt, simlr_grp_stat_cd")
+        @Index(name = "tmd_nws_smry_ix03", columnList = "crtr_dt, simlr_grp_stat_cd"),
+        @Index(name = "tmd_nws_smry_ix04", columnList = "gds_id")
     },
     uniqueConstraints = {
-        @UniqueConstraint(name = "tmd_nws_smry_ux01", columnNames = {"prvd_id", "data_reg_sn", "first_created"})
+        @UniqueConstraint(name = "tmd_nws_smry_ux01", columnNames = {"gds_id", "data_reg_sn", "first_created"})
     })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NewsSummary extends BaseEntity {
@@ -48,6 +49,10 @@ public class NewsSummary extends BaseEntity {
     @Column(name = "prvd_id", nullable = false, length = 20)
     @Comment("프로바이더ID")
     private String providerId;
+
+    @Column(name = "gds_id", nullable = false, length = 20)
+    @Comment("상품ID")
+    private String goodsId;
 
     @Column(name = "first_created", nullable = false)
     @Comment("NEWS최초생성일시")
@@ -89,13 +94,14 @@ public class NewsSummary extends BaseEntity {
     @Builder
     public NewsSummary(LocalDateTime createDt, LocalDateTime modifyDt,
         String createUserId, String modifyUserId, Boolean isDeleted,
-        Long newsSummaryId, Integer dataRegistrationSn, String providerId, LocalDateTime firstCreated,
+        Long newsSummaryId, Integer dataRegistrationSn, String providerId, String goodsId, LocalDateTime firstCreated,
         RefinitivNewsData refinitivNewsData, String crtrDt, String briefSummary, String summary,
         String briefSummaryEn, String summaryEn, String similarGroupStatusCode) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.newsSummaryId = newsSummaryId;
         this.dataRegistrationSn = dataRegistrationSn;
         this.providerId = providerId;
+        this.goodsId = goodsId;
         this.firstCreated = firstCreated;
         this.refinitivNewsData = refinitivNewsData;
         this.crtrDt = crtrDt;

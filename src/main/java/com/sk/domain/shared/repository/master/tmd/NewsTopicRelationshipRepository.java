@@ -18,7 +18,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
      * @param filterByTopic 토픽 필터링 여부
      * @return [newsTopicRelationshipId, crtrDt, newsTopicId, newsTopicName,
      *          newsSummaryId, dataRegistrationSn, firstCreated, briefSummary,
-     *          summary, title, providerId, regions]
+     *          summary, title, providerId, goodsId, regions]
      */
     @Query(value = """
         SELECT
@@ -33,6 +33,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
             nsum.smry,
             rnd.title,
             nsum.prvd_id,
+            nsum.gds_id,
             GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions
         FROM tmd_nwstopreld ntr
         INNER JOIN tmd_nwstopm nt ON ntr.nws_top_id = nt.nws_top_id
@@ -58,7 +59,8 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
             nsum.brf_smry,
             nsum.smry,
             rnd.title,
-            nsum.prvd_id
+            nsum.prvd_id,
+            nsum.gds_id
         ORDER BY nsum.first_created DESC
         """, nativeQuery = true)
     List<Object[]> findNewsTopicRelationshipsWithRegions(
@@ -71,7 +73,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
      * 토픽 트래커 목록 조회
      *
      * @return [newsTopicRelationshipId, criteriaDate, newsSummaryId, firstCreated, topicName, topicId, providerId,
-     *         summary, briefSummary, briefSummaryEn, regions]
+     *         goodsId, summary, briefSummary, briefSummaryEn, regions]
      */
     @Query(value = """
         SELECT
@@ -82,6 +84,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
             nt.nws_top_nm,
             nt.nws_top_id,
             nsum.prvd_id,
+            nsum.gds_id,
             nsum.smry,
             rnd.title,
             nsum.brf_smry,
@@ -119,6 +122,7 @@ public interface NewsTopicRelationshipRepository extends JpaRepository<NewsTopic
             nt.nws_top_nm,
             nt.nws_top_id,
             nsum.prvd_id,
+            nsum.gds_id,
             nsum.smry,
             rnd.title,
             nsum.brf_smry,

@@ -29,6 +29,8 @@ public interface NewsfeedListRowProjection {
 
     String getProvider();
 
+    String getGoodsId();
+
     String getTitle();
 
     String getRegions();

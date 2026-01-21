@@ -54,8 +54,8 @@ public class GoodsNestedEntityResolver {
                 Long newsSummaryId = toLong(id);
                 NewsSummary newsSummary = newsSummaryRepository.findById(newsSummaryId)
                     .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "It doesn't exist in the [news-summary]. newsSummaryId: %s".formatted(newsSummaryId)));
-                yield goodsRepository.queryGoodsNoByGoodsId(newsSummary.getProviderId())
-                    .orElseThrow(() -> CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsId: %s)".formatted(newsSummary.getProviderId())));
+                yield goodsRepository.queryGoodsNoByGoodsId(newsSummary.getGoodsId())
+                    .orElseThrow(() -> CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsId: %s)".formatted(newsSummary.getGoodsId())));
             }
 
             default -> throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Unsupported resourceIdParam: " + paramName);
@@ -95,4 +95,3 @@ public class GoodsNestedEntityResolver {
         throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "Unsupported resourceIdParam type: " + value.getClass().getSimpleName());
     }
 }
-

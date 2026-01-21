@@ -33,6 +33,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.brf_smry AS briefSummary,
             nsum.smry AS summary,
             nsum.prvd_id AS provider,
+            nsum.gds_id AS goodsId,
             rnd.title AS title,
             GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') AS regions
         FROM tmd_sgt_nws sn
@@ -77,6 +78,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.brf_smry,
             nsum.smry,
             nsum.prvd_id,
+            nsum.gds_id,
             rnd.title
         ORDER BY
             CASE WHEN :sortField = 'firstCreated' AND :sortDirection = 'ASC' THEN nsum.first_created END ASC,
@@ -104,7 +106,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
      * 특정 HEAD 뉴스의 유사 뉴스(INCL) 목록 조회
      *
      * @param headNewsSummaryIds HEAD 뉴스들의 nws_smry_id 목록
-     * @return [simlr_nws_grp_id, head_nws_smry_id, incl_nws_smry_id, title, first_created, data_reg_sn, provider_id]
+     * @return [simlr_nws_grp_id, head_nws_smry_id, incl_nws_smry_id, title, first_created, data_reg_sn, provider_id, goods_id]
      */
     @Query(value = """
         SELECT
@@ -114,7 +116,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             rnd.title,
             nsum.first_created,
             nsum.data_reg_sn,
-            nsum.prvd_id
+            nsum.prvd_id,
+            nsum.gds_id
         FROM tmd_simlr_nws_grp sng
         INNER JOIN tmd_simlr_nws_grp_rel sngr ON sng.simlr_nws_grp_id = sngr.simlr_nws_grp_id
         INNER JOIN tmd_nws_smry nsum ON sngr.nws_smry_id = nsum.nws_smry_id
@@ -138,6 +141,7 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.first_created,
             rnd.title,
             nsum.prvd_id,
+            nsum.gds_id,
             GROUP_CONCAT(DISTINCT ns.nws_mrkt_ctgr_cd SEPARATOR ',') as categories,
             GROUP_CONCAT(DISTINCT nrc.nws_rgn_spt_cd SEPARATOR ',') as regions,
             GROUP_CONCAT(DISTINCT nic.nws_ind_sctr_cd SEPARATOR ',') as industries
@@ -173,7 +177,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
             nsum.data_reg_sn,
             nsum.first_created,
             rnd.title,
-            nsum.prvd_id
+            nsum.prvd_id,
+            nsum.gds_id
         ORDER BY
             CASE WHEN :sortDirection = 'ASC' THEN nsum.first_created END ASC,
             CASE WHEN :sortDirection = 'DESC' THEN nsum.first_created END DESC,
