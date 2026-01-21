@@ -20,6 +20,9 @@ public record MarketNewsListRes(
     @Schema(description = "프로바이더", example = "reuters")
     String provider,
 
+    @Schema(description = "보기 권한 여부", example = "true")
+    boolean isViewable,
+
     @Schema(description = "카테고리", example = "[CROIL, BTRY]")
     List<String> categories,
 

@@ -188,6 +188,29 @@ public class MiMarketNewsService {
             filterByRegion ? regionList : null, filterByRegion,
             filterByIndustry ? industryList : null, filterByIndustry);
 
+        LinkedHashSet<String> providerIds = new LinkedHashSet<>();
+        for (Object[] result : results) {
+            String providerId = (String) result[4];
+            if (providerId != null && !providerId.isBlank()) {
+                providerIds.add(providerId);
+            }
+        }
+
+        Map<String, Integer> goodsNoByProviderId = new HashMap<>();
+        if (!providerIds.isEmpty()) {
+            List<Object[]> goodsRows = goodsRepository.findGoodsNoByGoodsIdIn(
+                new ArrayList<>(providerIds)
+            );
+            for (Object[] row : goodsRows) {
+                goodsNoByProviderId.putIfAbsent((String) row[0], (Integer) row[1]);
+            }
+        }
+
+        PermissionRes permissions = authorizationService.getPermissions();
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(
+            authorizationService.getCompanyNoWithPriority()
+        );
+
         List<MarketNewsListRes> content = results.stream()
             .map(result -> {
                 Integer newsSummaryId = result[0] != null
@@ -209,12 +232,17 @@ public class MiMarketNewsService {
                 List<String> rList = parseGroupConcatResult(regionsStr);
                 List<String> iList = parseGroupConcatResult(industriesStr);
 
+                Integer goodsNo = providerId != null ? goodsNoByProviderId.get(providerId) : null;
+                boolean isViewable = newsSummaryId != null && goodsNo != null
+                    && goodsViewableMap.getOrDefault(goodsNo, Boolean.FALSE);
+
                 return new MarketNewsListRes(
                     newsSummaryId,
                     dataRegistrationSn,
                     firstCreated,
                     title,
                     providerId,  // provider → providerId
+                    isViewable,
                     cList,
                     rList,
                     iList
