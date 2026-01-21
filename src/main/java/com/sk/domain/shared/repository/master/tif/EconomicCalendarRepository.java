@@ -36,6 +36,8 @@ public interface EconomicCalendarRepository extends JpaRepository<EconomicCalend
             WHERE ec.ecnmc_indcr_prsnttn_day >= :startDate
               AND ec.ecnmc_indcr_prsnttn_day <= :endDate
               AND ec.del_yn = 'N'
+              AND ec.ecnmc_indcr_prsnttn_tm IS NOT NULL
+              AND ec.ecnmc_indcr_prsnttn_tm <> ''
               AND (:keyword IS NULL OR :keyword = ''
                    OR UPPER(ec.ecnmc_indcr_nm) LIKE UPPER(CONCAT('%', :keyword, '%')))
               AND (:filterByCategory = FALSE OR rec.type IN :categories)
@@ -63,6 +65,8 @@ public interface EconomicCalendarRepository extends JpaRepository<EconomicCalend
             WHERE ec.nxt_ecnmc_indcr_prsnttn_day >= :startDate
               AND ec.nxt_ecnmc_indcr_prsnttn_day <= :endDate
               AND ec.del_yn = 'N'
+              AND ec.ecnmc_indcr_prsnttn_tm IS NOT NULL
+              AND ec.ecnmc_indcr_prsnttn_tm <> ''
               AND NOT EXISTS (
                   SELECT 1
                   FROM tif_ecnmc_cal announced
