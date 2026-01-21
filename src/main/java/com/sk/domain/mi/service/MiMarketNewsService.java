@@ -670,6 +670,7 @@ public class MiMarketNewsService {
 
         List<Object[]> results = newsEventRepository.findNewsTimelineData(
             criteriaDate, category);
+        Map<String, Boolean> viewableByProviderId = new HashMap<>();
 
         return results.stream()
             .map(row -> {
@@ -693,6 +694,14 @@ public class MiMarketNewsService {
                     ? Arrays.asList(summaryStr.split("\n"))
                     : Collections.emptyList();
 
+                boolean isViewable = newsSummaryId != null && providerId != null
+                    && viewableByProviderId.computeIfAbsent(
+                        providerId,
+                        key -> goodsRepository.queryGoodsNoByGoodsId(key)
+                            .map(authorizationService::hasGoodsViewPermission)
+                            .orElse(false)
+                    );
+
                 // directionality 계산
                 String directionality = calculateEventDirectionality(score);
                 List<String> rList = parseGroupConcatResult(regionsStr);
@@ -708,6 +717,7 @@ public class MiMarketNewsService {
                     summary,
                     title,
                     providerId,
+                    isViewable,
                     score,
                     directionality,
                     rList

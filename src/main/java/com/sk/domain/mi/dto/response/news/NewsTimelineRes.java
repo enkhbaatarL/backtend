@@ -42,6 +42,9 @@ public record NewsTimelineRes(
     @Schema(description = "프로바이더", example = "reuters")
     String provider,
 
+    @Schema(description = "보기 권한 여부", example = "true")
+    boolean isViewable,
+
     @Schema(description = "이벤트 점수", example = "9.1")
     BigDecimal score,
 
