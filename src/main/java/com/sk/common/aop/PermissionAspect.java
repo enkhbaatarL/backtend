@@ -8,6 +8,8 @@ import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.GoodsNestedEntityResolver;
 import com.sk.domain.shared.service.permissions.PermissionStrategyFactory;
 import com.sk.domain.shared.service.permissions.strategy.PermissionStrategy;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -17,9 +19,6 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Slf4j
 @Aspect
@@ -57,8 +56,8 @@ public class PermissionAspect {
         // 2-1. 상품 권한이 필요한 경우 (상품 하위 엔티티 식별자를 통해 접근)
         if (StringUtils.hasText(requiredPermission.goodsNestedParam())) {
 
-            Integer goodsNestedNo = extractParameterValue(joinPoint, requiredPermission.goodsNestedParam());
-            Integer goodsNo = goodsNestedEntityResolver.resolve(requiredPermission.goodsNestedParam(), goodsNestedNo);
+            Object goodsNestedValue = extractParameterValue(joinPoint, requiredPermission.goodsNestedParam());
+            Integer goodsNo = goodsNestedEntityResolver.resolve(requiredPermission.goodsNestedParam(), goodsNestedValue);
 
             if (goodsNo != null) {
                 checkViewOrDownload(strategy, goodsNo, requiredPermission);
@@ -69,7 +68,8 @@ public class PermissionAspect {
         // 2-2. 상품 권한이 필요한 경우 (상품 엔티티 식별자를 통해 접근)
         if (StringUtils.hasText(requiredPermission.goodsParam())) {
 
-            Integer goodsNo = extractParameterValue(joinPoint, requiredPermission.goodsParam());
+            Object goodsNoValue = extractParameterValue(joinPoint, requiredPermission.goodsParam());
+            Integer goodsNo = toInt(goodsNoValue);
 
             if (goodsNo != null) {
                 checkViewOrDownload(strategy, goodsNo, requiredPermission);
@@ -104,16 +104,31 @@ public class PermissionAspect {
      * @param <T>       반환값의 타입입니다.
      * @return 주어진 paramName에 해당하는 매개변수 값. 값이 없으면 null을 반환합니다.
      */
-    @SuppressWarnings("unchecked")
-    private <T> T extractParameterValue(JoinPoint joinPoint, String paramName) {
+    private Object extractParameterValue(JoinPoint joinPoint, String paramName) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         String[] parameterNames = signature.getParameterNames();
         Object[] args = joinPoint.getArgs();
 
         for (int i = 0; i < parameterNames.length; i++) {
             if (parameterNames[i].equals(paramName)) {
-                return (T) args[i];
+                return args[i];
             }
+        }
+        return null;
+    }
+
+    private Integer toInt(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer intValue) {
+            return intValue;
+        }
+        if (value instanceof Number numberValue) {
+            return Math.toIntExact(numberValue.longValue());
+        }
+        if (value instanceof String stringValue) {
+            return Integer.valueOf(stringValue);
         }
         return null;
     }

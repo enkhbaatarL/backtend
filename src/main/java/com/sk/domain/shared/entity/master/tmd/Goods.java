@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -27,7 +28,15 @@ import org.hibernate.annotations.Comment;
 @Getter
 @Entity
 @Comment("TMD_상품기본")
-@Table(name = "tmd_gdsm")
+@Table(
+    name = "tmd_gdsm",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "tmd_gdsm_ux01", // 요청하신 명칭으로 변경
+            columnNames = {"gds_id"}
+        )
+    }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(GoodsListener.class)
 public class Goods extends BaseEntity {
@@ -98,29 +107,20 @@ public class Goods extends BaseEntity {
     }
 
     public void update(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic) {
-
         if (StringUtils.isNotEmpty(goodsNm)) {
             this.goodsNm = goodsNm;
         }
-
         if (StringUtils.isNotEmpty(goodsId)) {
             this.goodsId = goodsId;
         }
-
         if (StringUtils.isNotEmpty(goodsExpn)) {
             this.goodsExpn = goodsExpn;
         }
-
         if (ObjectUtils.isNotEmpty(isUsed)) {
             this.isUsed = isUsed;
         }
-
         if (ObjectUtils.isNotEmpty(isPublic)) {
             this.isPublic = isPublic;
         }
-    }
-
-    public void softDelete() {
-        super.softDelete();
     }
 }

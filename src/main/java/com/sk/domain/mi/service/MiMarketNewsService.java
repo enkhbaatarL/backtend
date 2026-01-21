@@ -464,8 +464,8 @@ public class MiMarketNewsService {
     /**
      * Market News 상세 조회
      */
-    public MarketNewsDetailRes getMarketNewsDetail(String newsSummaryId) {
-        Long id = Long.parseLong(newsSummaryId);
+    public MarketNewsDetailRes getMarketNewsDetail(Long newsSummaryId) {
+        Long id = Long.valueOf(newsSummaryId);
 
         NewsSummary newsData = newsSummaryRepository.findById(id)
             .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,

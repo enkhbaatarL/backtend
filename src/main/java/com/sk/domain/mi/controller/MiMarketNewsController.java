@@ -93,9 +93,10 @@ public class MiMarketNewsController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{newsSummaryId}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
+        goodsNestedParam = "newsSummaryId", requireViewPermission = true)
     public BaseResponse<MarketNewsDetailRes> getMarketNewsDetail(
-        @PathVariable("newsSummaryId") String newsSummaryId) {
+        @PathVariable("newsSummaryId") Long newsSummaryId) {
 
         log.debug("시장 뉴스 상세 조회 요청 - newsSummaryId: {}", newsSummaryId);
 
