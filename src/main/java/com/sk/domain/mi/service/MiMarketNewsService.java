@@ -87,6 +87,45 @@ public class MiMarketNewsService {
     private final GoodsRepository goodsRepository;
     private final AuthorizationService authorizationService;
 
+    private static LocalDate resolveStartDate(DateRangeOption dateRangeOption, LocalDate endDate) {
+        int businessDays = switch (dateRangeOption) {
+            case LAST_7_DAYS -> 7;
+            case LAST_14_DAYS -> 14;
+            case LAST_30_DAYS -> 30;
+            case LAST_60_DAYS -> 60;
+            default -> -1;
+        };
+
+        if (businessDays > 0) {
+            return subtractWeekdays(endDate, businessDays - 1);
+        }
+        return dateRangeOption.getStartDate(endDate);
+    }
+
+    private static LocalDate adjustToPreviousWeekday(LocalDate date) {
+        LocalDate adjusted = date;
+        while (isWeekend(adjusted)) {
+            adjusted = adjusted.minusDays(1);
+        }
+        return adjusted;
+    }
+
+    private static LocalDate subtractWeekdays(LocalDate date, int weekdaysToSubtract) {
+        LocalDate current = date;
+        int remaining = weekdaysToSubtract;
+        while (remaining > 0) {
+            current = current.minusDays(1);
+            if (!isWeekend(current)) {
+                remaining--;
+            }
+        }
+        return current;
+    }
+
+    private static boolean isWeekend(LocalDate date) {
+        return date.getDayOfWeek() == DayOfWeek.SATURDAY
+            || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+    }
 
     private boolean isMonday(String dateStr) {
         if (dateStr == null || dateStr.isBlank()) {
@@ -813,10 +852,8 @@ public class MiMarketNewsService {
         String categoryCode = marketCategory.getNwsMrktCtgrCd().getCode();
         String criteriaItemName = buildCriteriaItemName(categoryCode);
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = dateRangeOption == DateRangeOption.ALL_TIME
-            ? dateRangeOption.getStartDate(endDate)
-            : dateRangeOption.getStartDate(endDate);
+        LocalDate endDate = adjustToPreviousWeekday(LocalDate.now());
+        LocalDate startDate = resolveStartDate(dateRangeOption, endDate);
 
         String startDateStr = DateUtil.toYmd(startDate);
         String endDateStr = DateUtil.toYmd(endDate);
@@ -840,6 +877,9 @@ public class MiMarketNewsService {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         List<NewsTrendDailyItemRes> data = new ArrayList<>();
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            if (isWeekend(date)) {
+                continue;
+            }
             String dateKey = DateUtil.toYmd(date);
             SentimentCount count = sentimentMap.getOrDefault(dateKey, new SentimentCount(0, 0, 0));
             data.add(new NewsTrendDailyItemRes(

@@ -17,6 +17,7 @@ import com.sk.domain.mi.service.MiMarketNewsService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.news.DateRangeOption;
+import com.sk.domain.shared.enums.news.NewsTrendRangeOption;
 import com.sk.domain.shared.enums.news.SortType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -200,10 +201,10 @@ public class MiMarketNewsController {
 
     @ApiOrder(7)
     @Parameter(name = "companyNo", description = "고객사 번호", required = true)
-    @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = DateRangeOption.class))
+    @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = NewsTrendRangeOption.class))
     @Operation(
         summary = "일별 뉴스 트렌드 조회",
-        description = "고객사의 시장 카테고리 기준으로 일별 뉴스 트렌드 데이터를 조회합니다."
+        description = "고객사의 시장 카테고리 기준으로 일별 뉴스 트렌드 데이터를 조회합니다. 주말을 제외한 평일 7/14개만 반환합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/daily-trend")
@@ -211,14 +212,14 @@ public class MiMarketNewsController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsTrendDailyRes> getDailyNewsTrend(
         @RequestParam(value = "companyNo") Integer companyNo,
-        @RequestParam(value = "dateRangeOption", defaultValue = "LAST_30_DAYS") DateRangeOption dateRangeOption
+        @RequestParam(value = "dateRangeOption", defaultValue = "LAST_14_DAYS") NewsTrendRangeOption dateRangeOption
     ) {
 
         log.debug("일별 뉴스 트렌드 조회 요청 - companyNo: {}, dateRangeOption: {}",
             companyNo, dateRangeOption);
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getDailyTrend(companyNo, dateRangeOption)
+            miMarketNewsService.getDailyTrend(companyNo, dateRangeOption.toDateRangeOption())
         );
     }
 
