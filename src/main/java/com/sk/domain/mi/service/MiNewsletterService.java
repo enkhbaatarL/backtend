@@ -43,6 +43,7 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -57,10 +58,13 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -141,38 +145,6 @@ public class MiNewsletterService {
             publishHistory.getNewsletterTitle(),                          // title
             publishHistory.getPublishStatusCode().name()                  // status
         );
-    }
-
-    /**
-     * 키워드 필터 적용
-     */
-    private boolean applyKeywordFilter(NewsletterListRes newsletter, String keyword) {
-        if (StringUtils.isBlank(keyword)) {
-            return true;
-        }
-        String lowerKeyword = keyword.toLowerCase();
-        return newsletter.title().toLowerCase().contains(lowerKeyword) ||
-            newsletter.name().toLowerCase().contains(lowerKeyword);
-    }
-
-    /**
-     * 상태 필터 적용
-     */
-    private boolean applyStatusFilter(NewsletterListRes newsletter, String status) {
-        if (StringUtils.isBlank(status)) {
-            return true;
-        }
-        return newsletter.status().equals(status);
-    }
-
-    /**
-     * 발행번호 필터 적용
-     */
-    private boolean applyIssueNoFilter(NewsletterListRes newsletter, String issueNo) {
-        if (StringUtils.isBlank(issueNo)) {
-            return true;
-        }
-        return newsletter.issueNo().contains(issueNo);
     }
 
     /**
@@ -716,7 +688,7 @@ public class MiNewsletterService {
                     () -> new IllegalArgumentException("NewsletterCollectionChart not found"));
 
 
-            NewsletterDetailRes.ChartData chartData = getCltnChartData(dataCode,
+            NewsletterDetailRes.ChartData chartData = getCollectionChartData(dataCode,
                 newsletterCollectionChart);
             return Reference.ofChart(title, description, chartData);
         } catch (Exception e) {
@@ -874,7 +846,7 @@ public class MiNewsletterService {
         }
     }
 
-    private NewsletterDetailRes.ChartData getCltnChartData(
+    private NewsletterDetailRes.ChartData getCollectionChartData(
         String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
 
         List<NewsletterTemplateCollectionChart> cltnChartConfigs =
@@ -886,9 +858,10 @@ public class MiNewsletterService {
             return null;
         }
 
-        // 1. 모든 데이터를 timestamp 기준으로 수집
-        Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
+        // 1. 설정 기준으로 time axis 구성 및 데이터 수집
         List<Series> allSeries = new ArrayList<>();
+        List<CollectionSeriesData> seriesDataList = new ArrayList<>();
+        Set<Long> unionTimestamps = new TreeSet<>();
         DateTimeFormatter f3 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
@@ -915,39 +888,62 @@ public class MiNewsletterService {
                 if (dataQuery.isEmpty()) {
                     log.warn("No chart data found for collection chart type: {}",
                         config.getCollectionChartType());
-                    continue;
                 }
 
-                // timestamp별로 데이터 정리
+                Map<Long, BigDecimal> valuesByTimestamp = new HashMap<>();
                 for (Map<String, Object> data : dataQuery) {
                     LocalDateTime dateTime = convertToLocalDateTime(data.get(col1));
                     BigDecimal value = (BigDecimal) data.get(col2);
 
                     if (dateTime != null && value != null) {
-                        String timestamp = String.valueOf(
-                            Timestamp.valueOf(dateTime).getTime());
-
-                        timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
-                            .put(config.getColor(), value);
+                        long timestamp = Timestamp.valueOf(dateTime).getTime();
+                        valuesByTimestamp.put(timestamp, value);
                     }
                 }
+
+                boolean hasInterval =
+                    config.getTimeAxisIntervalValue() != null
+                        && StringUtils.isNotBlank(config.getTimeAxisIntervalUnit());
+                List<Long> seriesTimestamps = hasInterval
+                    ? buildTimeAxisTimestamps(
+                        newsletterCollectionChart.getStartDate(),
+                        newsletterCollectionChart.getEndDate(),
+                        config.getTimeAxisIntervalValue(),
+                        config.getTimeAxisIntervalUnit()
+                    )
+                    : Collections.emptyList();
+
+                if (seriesTimestamps.isEmpty()) {
+                    seriesTimestamps = valuesByTimestamp.keySet().stream()
+                        .sorted()
+                        .toList();
+                }
+
+                unionTimestamps.addAll(seriesTimestamps);
+                unionTimestamps.addAll(valuesByTimestamp.keySet());
+                seriesDataList.add(new CollectionSeriesData(config, seriesTimestamps,
+                    valuesByTimestamp));
 
             } catch (Exception e) {
                 log.error("Error processing chart config - color: {}", config.getColor(), e);
             }
         }
 
-        if (timeSeriesData.isEmpty()) {
+        if (unionTimestamps.isEmpty()) {
             log.warn("No valid time series data found for dataCode: {}", dataCode);
             return null;
         }
 
-        // 2. 정렬된 timestamp로 Series 생성
-        List<String> timestamps = new ArrayList<>(timeSeriesData.keySet());
+        // 2. 합쳐진 timestamp로 Series 생성
+        List<Long> timestampList = new ArrayList<>(unionTimestamps);
+        List<String> timestamps = timestampList.stream()
+            .map(String::valueOf)
+            .toList();
 
-        for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
-            List<BigDecimal> values = timestamps.stream()
-                .map(ts -> timeSeriesData.get(ts).get(config.getColor()))
+        for (CollectionSeriesData seriesData : seriesDataList) {
+            NewsletterTemplateCollectionChart config = seriesData.config();
+            List<BigDecimal> values = timestampList.stream()
+                .map(ts -> seriesData.valuesByTimestamp().get(ts))
                 .toList();
 
             if (!values.isEmpty()) {
@@ -982,6 +978,111 @@ public class MiNewsletterService {
         }
 
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
+    }
+
+    private List<Long> buildTimeAxisTimestamps(
+        LocalDateTime startDate,
+        LocalDateTime endDate,
+        BigDecimal intervalValue,
+        String intervalUnit
+    ) {
+        if (startDate == null || endDate == null || intervalValue == null
+            || intervalUnit == null || intervalUnit.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        if (intervalValue.compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("Invalid time axis interval value: {}", intervalValue);
+            return Collections.emptyList();
+        }
+
+        String normalizedUnit = intervalUnit.trim().toUpperCase(Locale.ROOT);
+        if ("WEEEK".equals(normalizedUnit)) {
+            normalizedUnit = "WEEK";
+        }
+
+        if (startDate.isAfter(endDate)) {
+            return Collections.emptyList();
+        }
+
+        switch (normalizedUnit) {
+            case "MINUTE", "HOUR", "DAY", "WEEK" -> {
+                long intervalMillis = toIntervalMillis(intervalValue, normalizedUnit);
+                if (intervalMillis <= 0) {
+                    return Collections.emptyList();
+                }
+
+                long currentMillis = Timestamp.valueOf(startDate).getTime();
+                long endMillis = Timestamp.valueOf(endDate).getTime();
+                List<Long> timestamps = new ArrayList<>();
+
+                while (currentMillis <= endMillis) {
+                    timestamps.add(currentMillis);
+                    currentMillis += intervalMillis;
+                }
+                return timestamps;
+            }
+            case "MONTH", "YEAR" -> {
+                LocalDateTime current = startDate;
+                List<Long> timestamps = new ArrayList<>();
+                while (!current.isAfter(endDate)) {
+                    timestamps.add(Timestamp.valueOf(current).getTime());
+                    LocalDateTime next = addMonthYearInterval(current, intervalValue,
+                        normalizedUnit);
+
+                    if (!next.isAfter(current)) {
+                        log.warn("Time axis interval step does not advance time: {} {}",
+                            intervalValue, intervalUnit);
+                        break;
+                    }
+                    current = next;
+                }
+                return timestamps;
+            }
+            default -> {
+                log.warn("Unsupported time axis interval unit: {}", intervalUnit);
+                return Collections.emptyList();
+            }
+        }
+    }
+
+    private long toIntervalMillis(BigDecimal intervalValue, String intervalUnit) {
+        long unitMillis = switch (intervalUnit) {
+            case "MINUTE" -> 60_000L;
+            case "HOUR" -> 3_600_000L;
+            case "DAY" -> 86_400_000L;
+            case "WEEK" -> 604_800_000L;
+            default -> 0L;
+        };
+        if (unitMillis == 0L) {
+            return 0L;
+        }
+        return intervalValue.multiply(BigDecimal.valueOf(unitMillis))
+            .setScale(0, RoundingMode.HALF_UP)
+            .longValue();
+    }
+
+    private LocalDateTime addMonthYearInterval(LocalDateTime base, BigDecimal intervalValue,
+        String intervalUnit) {
+        int whole = intervalValue.intValue();
+        BigDecimal fractional = intervalValue.subtract(BigDecimal.valueOf(whole));
+        LocalDateTime adjusted = "MONTH".equals(intervalUnit)
+            ? base.plusMonths(whole)
+            : base.plusYears(whole);
+
+        if (fractional.compareTo(BigDecimal.ZERO) <= 0) {
+            return adjusted;
+        }
+
+        int daysInPeriod = "MONTH".equals(intervalUnit)
+            ? adjusted.toLocalDate().lengthOfMonth()
+            : adjusted.toLocalDate().lengthOfYear();
+
+        int daysToAdd = fractional.multiply(BigDecimal.valueOf(daysInPeriod))
+            .setScale(0, RoundingMode.HALF_UP)
+            .intValue();
+
+        return adjusted.plusDays(daysToAdd);
     }
 
     private String[] calculateMarketTimes(LocalDateTime publishDateTime) {
@@ -1058,5 +1159,12 @@ public class MiNewsletterService {
                 obj, obj.getClass().getName());
             return null;
         }
+    }
+
+    private record CollectionSeriesData(
+        NewsletterTemplateCollectionChart config,
+        List<Long> timestamps,
+        Map<Long, BigDecimal> valuesByTimestamp
+    ) {
     }
 }
