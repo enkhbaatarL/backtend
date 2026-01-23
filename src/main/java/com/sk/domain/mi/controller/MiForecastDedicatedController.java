@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "18. AI Forecast API", description = "AI Forecast API 입니다.")
@@ -41,13 +42,15 @@ public class MiForecastDedicatedController {
 
 	@ApiOrder(5)
 	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호(선택)")
 	@Operation(summary = "Forecast summary 목록 조회", description = "Forecast summary 목록을 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/summaries")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
 			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
 	public BaseResponse<List<ForecastSummaryRes>> getForecastSummaries(
-			@PathVariable Integer companyNo) {
-		return BaseResponseFactory.create(miForecastService.getForecastSummaries(companyNo));
+			@PathVariable Integer companyNo,
+			@RequestParam(required = false) Integer goodsDataSourceNo) {
+		return BaseResponseFactory.create(miForecastService.getForecastSummaries(companyNo, goodsDataSourceNo));
 	}
 }

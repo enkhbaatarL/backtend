@@ -78,6 +78,7 @@ public class MiForecastService {
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
+        // 차트선예측값여부 chrt_line_prdc_val_yn = N, 선물여부 futr_yn = N
         List<ForecastTargetRes> targetList = chartPredictSettingDetails.stream()
                 .filter(detail -> Boolean.FALSE.equals(detail.getIsChartLinePredictVal()))
                 .filter(detail -> Boolean.FALSE.equals(detail.getIsFuture()))
@@ -101,7 +102,7 @@ public class MiForecastService {
 
                     return DateUtil.parseDate(lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                 })
-                .filter(date -> date != null)
+                .filter(Objects::nonNull)
                 .toList();
 
         LocalDate lastUpdateDt = lastUpdatedList.stream()
@@ -115,9 +116,10 @@ public class MiForecastService {
      * Forecast 요약 목록 조회
      *
      * @param companyNo 회사 번호
+     * @param goodsDataSourceNo 데이터 소스 번호(선택)
      * @return List<ForecastSummaryRes>
      */
-    public List<ForecastSummaryRes> getForecastSummaries(int companyNo) {
+    public List<ForecastSummaryRes> getForecastSummaries(int companyNo, Integer goodsDataSourceNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
@@ -128,6 +130,12 @@ public class MiForecastService {
         }
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+        if (goodsDataSourceNo != null) {
+            chartPredictSettingDetails = chartPredictSettingDetails.stream()
+                    .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                    .filter(detail -> goodsDataSourceNo.equals(detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                    .toList();
+        }
         List<String> availableDates = getAvailableDates(chartPredictSettingDetails);
 
         List<ForecastSummaryRes> results = new ArrayList<>();
