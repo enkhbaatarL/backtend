@@ -220,8 +220,11 @@ public class AdminGoodsDataService {
 
         List<StructuredDataRes> structuredDataList = goodsDataSourceDetailRepository.findGoodsDataSourceStructuredDatasByConditions(goodsData);
 
+        GoodsDataExtension goodsDataExtension = goodsDataExtensionRepository.findById(goodsData.getGoodsDataNo()).orElse(null);
+
         return GoodsDataDetailRes.of(
-                goodsData, docCategoryList, langCategoryList, structuredDataList, unstructuredDataList);
+                goodsData, docCategoryList, langCategoryList, structuredDataList,
+            unstructuredDataList, goodsData.getPublishedDate(), goodsData.getStringOfAuthors(), goodsDataExtension);
     }
 
     private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {

@@ -4,28 +4,21 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.admin.dto.request.provider.CategoryDataReq;
 import com.sk.domain.admin.dto.request.provider.Recommendation;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataLinkReq;
+import com.sk.domain.admin.dto.response.provider.GoodsDataExtensionPayloadRes;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -99,5 +92,48 @@ public class GoodsDataExtension extends BaseEntity {
       }
     }
     return GoodsDataExtension.builder().goodsDataNo(goodsDataNo).payload(objectNode).build();
+  }
+
+  public GoodsDataExtensionPayloadRes generatePayloadRes() {
+    JsonNode payload = this.payload;
+    String providerContentId = payload.has("providerContentId") ? payload.get("providerContentId").asText() : null;
+    String url = payload.has("url") ? payload.get("url").asText() : null;
+
+    List<Recommendation> recommendations = new java.util.ArrayList<>();
+    if (payload.has("recommendations") && payload.get("recommendations").isArray()) {
+      for (JsonNode recNode : payload.get("recommendations")) {
+        List<CategoryDataReq> docCategoryList = new java.util.ArrayList<>();
+        if (recNode.has("docCategoryList") && recNode.get("docCategoryList").isArray()) {
+          for (JsonNode catNode : recNode.get("docCategoryList")) {
+            docCategoryList.add(new CategoryDataReq(catNode.asText()));
+          }
+        }
+        recommendations.add(new Recommendation(
+            recNode.has("goodsDataNm") ? recNode.get("goodsDataNm").asText() : null,
+            recNode.has("goodsDataSummaryCntt") ? recNode.get("goodsDataSummaryCntt").asText() : null,
+            recNode.has("publishedDate") ? recNode.get("publishedDate").asText() : null,
+            docCategoryList,
+            recNode.has("authors") ? recNode.get("authors").asText() : null
+        ));
+      }
+    }
+
+    List<UnstructuredDataLinkReq> unstructuredDataLinkList = new java.util.ArrayList<>();
+    if (payload.has("unstructuredDataLinkList") && payload.get("unstructuredDataLinkList").isArray()) {
+      for (JsonNode linkNode : payload.get("unstructuredDataLinkList")) {
+        unstructuredDataLinkList.add(new UnstructuredDataLinkReq(
+            linkNode.has("name") ? linkNode.get("name").asText() : null,
+            linkNode.has("url") ? linkNode.get("url").asText() : null
+        ));
+      }
+    }
+
+    return GoodsDataExtensionPayloadRes.builder()
+        .goodsDataNo(this.goodsDataNo)
+        .providerContentId(providerContentId)
+        .url(url)
+        .recommendations(recommendations)
+        .unstructuredDataLinkList(unstructuredDataLinkList)
+        .build();
   }
 }

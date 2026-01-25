@@ -179,4 +179,8 @@ public class GoodsData extends BaseEntity {
         }
         return Arrays.stream(this.authors.trim().split(",")).map(String::trim).toList();
     }
+
+    public String getStringOfAuthors(){
+        return this.authors;
+    }
 }
