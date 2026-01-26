@@ -1,9 +1,7 @@
 package com.sk.domain.shared.client.dto;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Builder;
@@ -38,12 +36,14 @@ public record AXMetaFileDto(
     String language,
 
     @JsonProperty("Countries")
-    List<String> countries)
+    List<String> countries,
+    @JsonProperty("Tags")
+    List<String> tags)
 {
 
     @Builder
     public AXMetaFileDto(Integer gdsNo, String documentId, String documentReleaseDate, String headline, String synopsis,
-            String contributor, List<String> authors, List<String> documentFileName, String language, List<String> countries) {
+            String contributor, List<String> authors, List<String> documentFileName, String language, List<String> countries, List<String> tags) {
         this.gdsNo = gdsNo;
         this.documentId = documentId;
         this.documentReleaseDate = documentReleaseDate;
@@ -54,7 +54,7 @@ public record AXMetaFileDto(
         this.documentFileName = documentFileName;
         this.language = language;
         this.countries = countries;
-
-    } 
+        this.tags = tags;
+    }
 }
 // @formatter:on

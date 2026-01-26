@@ -27,7 +27,7 @@ public interface AxPlatformApi {
     AXMetaRegisterRes register(@PathVariable String datasourceId,
             @RequestBody AXMetaRegisterReq req);
 
-    @GetExchange("/api/v1/datasources/{datasourceId}/files")
+    @GetExchange("/api/v1/datasources/{datasourceId}/files/queries/name")
     AXMetaLookUpRes lookup(@PathVariable String datasourceId,
             @RequestParam(name = "file_name") String fileName);
 }
