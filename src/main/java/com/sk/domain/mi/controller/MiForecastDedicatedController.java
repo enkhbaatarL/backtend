@@ -5,7 +5,8 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
-import com.sk.domain.mi.dto.response.forecast.summary.ForecastSummaryRes;
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
 import com.sk.domain.mi.service.MiForecastService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -43,14 +44,35 @@ public class MiForecastDedicatedController {
 	@ApiOrder(5)
 	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
 	@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호(선택)")
-	@Operation(summary = "Forecast summary 목록 조회", description = "Forecast summary 목록을 조회합니다.")
+	@Operation(summary = "Forecast report 목록 조회", description = "Forecast report 목록을 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-	@GetMapping("/companies/{companyNo}/summaries")
+	@GetMapping("/companies/{companyNo}/reports")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
 			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-	public BaseResponse<List<ForecastSummaryRes>> getForecastSummaries(
+	public BaseResponse<List<ForecastReportRes>> getForecastSummaries(
 			@PathVariable Integer companyNo,
 			@RequestParam(required = false) Integer goodsDataSourceNo) {
-		return BaseResponseFactory.create(miForecastService.getForecastSummaries(companyNo, goodsDataSourceNo));
+		return BaseResponseFactory.create(miForecastService.getForecastReports(companyNo, goodsDataSourceNo));
+	}
+
+	@ApiOrder(6)
+	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	@Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드")
+	@Parameter(name = "predictionFulfillDt", description = "예측수행일자")
+	@Parameter(name = "mnemonicCd", description = "MNEMONIC코드")
+	@Parameter(name = "predictionCriteriaDt", description = "예측기준일자")
+	@Operation(summary = "Forecast report 상세 조회", description = "Forecast report 상세 정보를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/reports/detail")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+	public BaseResponse<ForecastReportDetailRes> getForecastReportDetail(
+			@PathVariable Integer companyNo,
+			@RequestParam String marketIndexAnalysisTargetCd,
+			@RequestParam String predictionFulfillDt,
+			@RequestParam String mnemonicCd,
+			@RequestParam String predictionCriteriaDt) {
+		return BaseResponseFactory.create(miForecastService.getForecastReportDetail(companyNo, marketIndexAnalysisTargetCd,
+				predictionFulfillDt, mnemonicCd, predictionCriteriaDt));
 	}
 }
