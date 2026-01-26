@@ -16,6 +16,7 @@ import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.forecast.MnemonicCode;
 import com.sk.domain.shared.mapper.dynamic.ForecastMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
@@ -212,12 +213,17 @@ public class MiForecastService {
             }
 
             DashboardChartSummaryMap decodedSummary = decodeSummaryPath(matchedSummary);
+            String predictChartDetailExpn = null;
+            MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
+            if (mnemonicCode != null) {
+                predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+            }
             AvailableForecastKey forecastKey = new AvailableForecastKey(
                     predictionFulfillDt,
                     predictionCriteriaDt,
                     mnemonicCd,
                     marketIndexAnalysisTargetCd,
-                    detail.getPredictChartDetailExpn(),
+                    predictChartDetailExpn,
                     detail.getAssociatedGoodsDataSourceDetail() != null
                             ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                             : null);
@@ -296,14 +302,6 @@ public class MiForecastService {
                     Integer associatedGoodsDataSourceNo = detail.getAssociatedGoodsDataSourceDetail() != null
                             ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                             : null;
-                    String predictChartDetailExpn = chartPredictSettingDetails.stream()
-                            .filter(associatedDetail -> associatedGoodsDataSourceNo != null
-                                    && associatedDetail.getGoodsDataSourceDetail() != null
-                                    && associatedGoodsDataSourceNo.equals(
-                                            associatedDetail.getGoodsDataSourceDetail().getGoodsDataSourceNo()))
-                            .map(ChartPredictSettingDetail::getPredictChartDetailExpn)
-                            .findFirst()
-                            .orElse(null);
                     List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource);
                     return rawData.stream()
                             .map(row -> {
@@ -317,6 +315,13 @@ public class MiForecastService {
                                 String mnemonicCd = getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
                                 String marketIndexAnalysisTargetCd =
                                         getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
+                                String predictChartDetailExpn = null;
+                                if (mnemonicCd != null) {
+                                    MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
+                                    if (mnemonicCode != null) {
+                                        predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+                                    }
+                                }
                                 return new AvailableForecastKey(fulfillDate, criteriaDate, mnemonicCd, marketIndexAnalysisTargetCd,
                                         predictChartDetailExpn, associatedGoodsDataSourceNo);
                             })
