@@ -1,5 +1,6 @@
 package com.sk.domain.admin.dto.request.provider;
 
+import com.sk.domain.admin.util.GoodsUtil;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -66,16 +67,7 @@ public record GoodsDataCreateReq(
     }
 
     public String getLanguage(){
-        if(this.langCategoryList == null || this.langCategoryList.isEmpty()){
-            return "English";
-        }
-        for(CategoryDataReq code : this.langCategoryList){
-            if(code == null || code.codeId() == null) continue;
-            if("A_ENG".equals(code.codeId().trim())) return "English";
-            if("A_KOR".equals(code.codeId().trim())) return "Korean";
-            if("A_OTHERS".equals(code.codeId().trim())) return "Other";
-        }
-        return "English";
+        return GoodsUtil.getLanguage(this.langCategoryList);
     }
 
 

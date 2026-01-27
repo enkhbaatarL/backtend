@@ -118,7 +118,6 @@ api:
     url: https://devadxp.adotbiz.ai
     connection-timeout: 1s
     read-timeout: 20s
-    datasource-id: b6578dac-c777-403a-885c-c76c39d091c4
 
 mail:
   smtp:

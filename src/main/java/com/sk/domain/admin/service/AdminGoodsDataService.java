@@ -3,14 +3,11 @@ package com.sk.domain.admin.service;
 import com.sk.domain.admin.dto.request.provider.Recommendation;
 import com.sk.domain.admin.dto.request.provider.StructuredDataJsonReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataLinkReq;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import java.io.IOException;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.sk.common.properties.ProviderDefaultProperties;
 import com.sk.domain.admin.dto.response.provider.*;
@@ -20,7 +17,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,7 +35,6 @@ import com.sk.domain.admin.dto.request.provider.StructuredDataReq;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataReq;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
-import com.sk.domain.shared.client.dto.AXMetaFileDto;
 import com.sk.domain.shared.entity.master.tcm.ComponentInfo;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
@@ -64,7 +59,6 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataUnitConvertRepository
 import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.ProviderRepository;
 import com.sk.domain.shared.repository.master.tmd.UnitConvertRepository;
-import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.FileService;
 
 import lombok.RequiredArgsConstructor;
@@ -321,7 +315,7 @@ public class AdminGoodsDataService {
                 dto.goodsDataExpn(),
                 dto.goodsDataSummaryCntt(),
                 PageRequest.of(0, 1));
-        if (goodsDatas.size() > 0) {
+        if (!goodsDatas.isEmpty()) {
             GoodsData goodsData = goodsDatas.get(0);
 
             updateGoodsDataExtension(goodsData, dto);
@@ -330,7 +324,7 @@ public class AdminGoodsDataService {
             if (dto.unstructuredDataList() != null) {
                 List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
                         .stream()
-                        .map(file -> file.getFileNo())
+                        .map(UploadedFile::getFileNo)
                         .toList();
 
                 List<Long> newFileNos = dto.unstructuredDataList()
@@ -362,31 +356,8 @@ public class AdminGoodsDataService {
                                     GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                             GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
                 }
-
-                // A.X Platform 에 파일 업로드 연동
-                List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-                        .stream()
-                        .map(file -> file.getOriginalFileNm())
-                        .toList();
-
-                String documentId = goodsData.getGoodsDataDistinguishId();
-
-                AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
-                        .gdsNo(goodsData.getGoods().getGoodsNo())
-                        .documentId(documentId)
-                        .documentReleaseDate(nowOffsetDateTime())
-                        .headline(goodsData.getGoodsDataNm())
-                        .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
-                                : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
-                        .contributor(goodsData.getDataContributorNm())
-                        .authors(dto.getAuthors())
-                        .documentFileName(fileNameList)
-                        .language(dto.getLanguage())
-                        .countries(List.of(""))
-                        .build();
-
                 goodsData.updateMetaDataUploadStatus(false);
-                publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
+                publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
             } else {
                 return;
             }
@@ -525,33 +496,8 @@ public class AdminGoodsDataService {
                     goodsDataCategoryRepository.save(GoodsDataCategory.of(savedGoodsData, "PUBDATE", unstructuredData.criteriaDt(),
                             GoodsDataManagementSeparateCode.GUDAT.getCode(), unstructuredData.fileNo()));
                 }
-
-                // A.X Platform 에 파일 업로드 연동
-                List<String> fileNameList = fileService.getFiles(savedGoodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-                        .stream()
-                        .map(file -> file.getOriginalFileNm())
-                        .toList();
-
-                String documentId = UUID.randomUUID().toString();
-
-                AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
-                        .gdsNo(goods.getGoodsNo())
-                        .documentId(documentId)
-                        .documentReleaseDate(nowOffsetDateTime())
-                        .headline(savedGoodsData.getGoodsDataNm())
-                        .synopsis(savedGoodsData.getGoodsDataExpn() != null ? savedGoodsData.getGoodsDataExpn()
-                                : "" + savedGoodsData.getGoodsDataSummaryCntt() != null ? savedGoodsData.getGoodsDataSummaryCntt() : "")
-                        .contributor(savedGoodsData.getDataContributorNm())
-                        .authors(dto.getAuthors())
-                        .documentFileName(fileNameList)
-                        .language(dto.getLanguage())
-                        .countries(List.of(""))
-                        .build();
-
                 savedGoodsData.updateMetaDataUploadStatus(false);
-                publisher.publishEvent(new AXUploadFileEvent(savedGoodsData.getGoodsDataNo(), axMetaFileDto, true));
-
-                savedGoodsData.updateGoodsDataDistinguishId(documentId);
+                publisher.publishEvent(new AXUploadFileEvent(savedGoodsData.getGoodsDataNo(), true));
             }
         }
 
@@ -782,37 +728,14 @@ public class AdminGoodsDataService {
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
             }
 
-            // A.X Platform 에 파일 업로드 연동
-            List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-                    .stream()
-                    .map(file -> file.getOriginalFileNm())
-                    .toList();
-
-            String documentId = goodsData.getGoodsDataDistinguishId();
-
-            AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
-                    .gdsNo(goodsData.getGoods().getGoodsNo())
-                    .documentId(documentId)
-                    .documentReleaseDate(nowOffsetDateTime())
-                    .headline(goodsData.getGoodsDataNm())
-                    .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
-                            : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
-                    .contributor(goodsData.getDataContributorNm())
-                    .authors(dto.getAuthors())
-                    .documentFileName(fileNameList)
-                    .language(dto.getLanguage())
-                    .countries(List.of(""))
-                    .build();
-
             goodsData.updateMetaDataUploadStatus(false);
-            publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
+            publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
         }
     }
 
     /**
      * 정형 데이타 파일 업로드 (엑셀 파일 업로드와 함께 엑셀 파싱하여 DB에 데이터 저장)
      *
-     * @param userNo
      * @param companyCd
      * @param role
      * @param file
@@ -851,62 +774,23 @@ public class AdminGoodsDataService {
             jsonService.uploadStructuredData(componentInfo, structuredDataJsonReq.metadata().criteriaDt(), structuredDataJsonReq.metadata().category(), structuredDataJsonReq.data()));
     }
 
-    private String nowOffsetDateTime() {
-        return ZonedDateTime.now(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
-    }
-
     public List<GoodsData> getGoodsData(String goodsDataNm) {
         return goodsDataRepository.findByGoodsDataNm(goodsDataNm);
     }
 
     public void uploadMetaFile(int goodsDataNo) {
-        log.info("uploadMetaFile: " + goodsDataNo);
+        log.info("uploadMetaFile: {}", goodsDataNo);
 
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo).orElseThrow(
                 () -> AppErrorException.of(
                         Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
-        // A.X Platform 에 파일 업로드 연동
-        List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-                .stream()
-                .map(file -> file.getOriginalFileNm())
-                .toList();
-
         String documentId = UUID.randomUUID().toString();
-
-        List<CategoryDataRes> categoryDataResList = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
-
-        AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
-                .gdsNo(goodsData.getGoods().getGoodsNo())
-                .documentId(documentId)
-                .documentReleaseDate(nowOffsetDateTime())
-                .headline(goodsData.getGoodsDataNm())
-                .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
-                        : "" + goodsData.getGoodsDataSummaryCntt() != null ? goodsData.getGoodsDataSummaryCntt() : "")
-                .contributor(goodsData.getDataContributorNm())
-                .authors(goodsData.getAuthors())
-                .documentFileName(fileNameList)
-                .language(getLanguage(categoryDataResList))
-                .countries(List.of(""))
-                .build();
 
         goodsData.updateMetaDataUploadStatus(false);
         goodsData.updateGoodsDataDistinguishId(documentId);
 
-        publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), axMetaFileDto, false));
-    }
-    private static String getLanguage(List<CategoryDataRes> categoryDataResList){
-        if(categoryDataResList == null || categoryDataResList.isEmpty()){
-            return "English";
-        }
-        for(CategoryDataRes code : categoryDataResList){
-            if(code == null || code.codeId() == null) continue;
-            if("A_ENG".equals(code.codeId().trim())) return "English";
-            if("A_KOR".equals(code.codeId().trim())) return "Korean";
-            if("A_OTHERS".equals(code.codeId().trim())) return "Other";
-        }
-        return "English";
+        publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
     }
 
 }

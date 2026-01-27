@@ -69,7 +69,9 @@ public class ResultCode {
         // SYS: 서버 및 시스템 관련 오류
         SYS_INTERNAL_ERROR("SYS-001", "An internal server error has occurred."),
         SYS_MAINTENANCE("SYS-002", "The system is currently under maintenance."),
+        SYS_INVALID_CONFIG("SYS-003", "The configuration is invalid."),
         SYS_UNKNOWN("SYS-999", "An unknown error has occurred. Please try again later."),
+
 
         // FILE: 파일 관련 오류
         FILE_INVALID("FILE-001", "The file is invalid."),

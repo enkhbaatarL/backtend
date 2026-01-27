@@ -119,7 +119,6 @@ api:
     url: https://aip.sktai.io
     connection-timeout: 1s
     read-timeout: 20s
-    datasource-id: b6578dac-c777-403a-885c-c76c39d091c4
 
 mail:
   except-company-no: 2020

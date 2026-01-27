@@ -9,7 +9,5 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AXUploadFileEvent {
     private final Integer goodsDataNo;
-    private final AXMetaFileDto axMetaFileDto;
     private final Boolean isNew;
-
 }
