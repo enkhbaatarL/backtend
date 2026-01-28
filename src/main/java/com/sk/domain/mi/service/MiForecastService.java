@@ -8,6 +8,7 @@ import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
 import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
+import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastTargetRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
@@ -25,7 +26,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -125,6 +128,35 @@ public class MiForecastService {
                 .orElse(null);
 
         return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt);
+    }
+
+    /**
+     * Forecast 차트 기간 조회 (임시)
+     *
+     * @param customerCompanyNo 고객사 번호
+     * @param xAxisUnit x축 단위 (1D, 1W, 1M, 1Q, 1Y)
+     * @param period 전체기간 (1W, 1M, 3M, 6M, YTD, 1Y, ALL)
+     * @return ForecastChartRes
+     */
+    public ForecastChartRes getChart(Integer customerCompanyNo, String xAxisUnit, String period) {
+        AxisUnit axisUnit = AxisUnit.from(xAxisUnit);
+        TotalPeriod totalPeriod = TotalPeriod.from(period);
+
+        LocalDate today = LocalDate.now();
+        LocalDate endDate = today;
+        LocalDate startDate = calculateStartDate(today, totalPeriod);
+
+        validatePeriodLength(startDate, endDate, axisUnit);
+
+        List<ForecastChartRes.ForecastChartDateItem> dateList = buildDateList(startDate, endDate, axisUnit);
+
+        return ForecastChartRes.builder()
+                .xAxisUnit(axisUnit.label)
+                .period(totalPeriod.label)
+                .startDate(DateUtil.toYmd(startDate))
+                .endDate(DateUtil.toYmd(endDate))
+                .dateList(dateList)
+                .build();
     }
 
     /**
@@ -382,6 +414,7 @@ public class MiForecastService {
                     .predictionCriteriaVal(predictionCriteriaVal)
                     .predictionResultDiffVal(diffResult.diffValue())
                     .predictionResultDiffRate(diffResult.diffRate())
+                    .predictionResultList(toPredictionResultPoints(resultValue.predictionResults()))
                     .build());
             })
             .toList();
@@ -431,39 +464,92 @@ public class MiForecastService {
 
         String whereClause = buildForecastResultWhereClause(goodsDataSourceDetail.getQueryConditionCntt(),
                 forecastKey.predictionFulfillDt(), forecastKey.predictionCriteriaDt());
-                String columns = String.join(", ",
-                String.format("MAX(%s) as %s", MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
-                        MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME),
-                String.format("MIN(%s) as %s", MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
-                        MARKET_DATA_PREDICT_RESULT_START_DATE_COLUMN_NAME),
-                String.format("MAX(%s) as %s", MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                        MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME),
-                String.format("AVG(%s) as %s", MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME,
-                        MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME),
-                String.format("MAX(%s) as %s", MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME,
-                        MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME));
+        String columns = String.join(", ",
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME);
 
         List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
-                DynamicDataDetailReq.of(
-                        goodsDataSourceDetail.getTargetDbNm(),
-                        goodsDataSourceDetail.getTargetTableNm(),
-                        columns,
-                        whereClause));
+                DynamicDataDetailReq.builder()
+                        .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
+                        .tableName(goodsDataSourceDetail.getTargetTableNm())
+                        .columns(columns)
+                        .whereClause(whereClause)
+                        .orderByColumns(String.format("%s ASC", MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME))
+                        .build());
 
         if (rows.isEmpty()) {
             return null;
         }
 
-        Map<String, Object> row = rows.get(0);
-        if (row == null) {
-            return null;
+        List<ForecastResultPoint> predictionResults = new ArrayList<>();
+        String startPredictionResultDt = null;
+        String endPredictionResultDt = null;
+        String predictionCriteriaDt = null;
+        BigDecimal predictionCriteriaVal = null;
+        BigDecimal predictionResultSum = BigDecimal.ZERO;
+        int predictionResultCount = 0;
+
+        for (Map<String, Object> row : rows) {
+            if (row == null) {
+                continue;
+            }
+            String resultDt = getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
+            String resultVal = getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME));
+            String criteriaDt = getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+            String criteriaVal = getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME));
+
+            if (resultDt != null) {
+                if (startPredictionResultDt == null) {
+                    startPredictionResultDt = resultDt;
+                }
+                endPredictionResultDt = resultDt;
+            }
+
+            if (criteriaDt != null) {
+                if (predictionCriteriaDt == null || criteriaDt.compareTo(predictionCriteriaDt) > 0) {
+                    predictionCriteriaDt = criteriaDt;
+                }
+            }
+
+            if (criteriaVal != null) {
+                try {
+                    BigDecimal criteria = new BigDecimal(criteriaVal);
+                    if (predictionCriteriaVal == null || criteria.compareTo(predictionCriteriaVal) > 0) {
+                        predictionCriteriaVal = criteria;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // ignore invalid numeric data
+                }
+            }
+
+            if (resultVal != null) {
+                try {
+                    predictionResultSum = predictionResultSum.add(new BigDecimal(resultVal));
+                    predictionResultCount++;
+                } catch (NumberFormatException ignored) {
+                    // ignore invalid numeric data
+                }
+            }
+
+            predictionResults.add(new ForecastResultPoint(resultDt, resultVal));
         }
+
+        String avgPredictionResultVal = null;
+        if (predictionResultCount > 0) {
+            avgPredictionResultVal = predictionResultSum
+                    .divide(BigDecimal.valueOf(predictionResultCount), 6, RoundingMode.HALF_UP)
+                    .toPlainString();
+        }
+
         return new ForecastResultValue(
-                getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME)),
-                getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_START_DATE_COLUMN_NAME)),
-                getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME)),
-                getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME)),
-                getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME)));
+                endPredictionResultDt,
+                startPredictionResultDt,
+                predictionCriteriaDt,
+                avgPredictionResultVal,
+                predictionCriteriaVal != null ? predictionCriteriaVal.toPlainString() : null,
+                predictionResults);
     }
 
     private String buildForecastResultWhereClause(String baseWhereClause, String fulfillDate, String criteriaDate) {
@@ -481,6 +567,127 @@ public class MiForecastService {
             return null;
         }
         return String.valueOf(value);
+    }
+
+    private LocalDate calculateStartDate(LocalDate today, TotalPeriod totalPeriod) {
+        return switch (totalPeriod) {
+            case ONE_WEEK -> today.minusWeeks(1).plusDays(1);
+            case ONE_MONTH -> today.minusMonths(1).plusDays(1);
+            case THREE_MONTHS -> today.minusMonths(3).plusDays(1);
+            case SIX_MONTHS -> today.minusMonths(6).plusDays(1);
+            case YEAR_TO_DATE -> LocalDate.of(today.getYear(), 1, 1);
+            case ONE_YEAR -> today.minusYears(1).plusDays(1);
+            case ALL -> today.minusYears(10).plusDays(1);
+        };
+    }
+
+    private void validatePeriodLength(LocalDate startDate, LocalDate endDate, AxisUnit axisUnit) {
+        long periodDays = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        long unitDays = getUnitDays(endDate, axisUnit);
+        if (periodDays <= unitDays) {
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER,
+                    String.format("전체기간(%d일)은 x축 단위(%d일)보다 길어야 합니다.", periodDays, unitDays));
+        }
+    }
+
+    private long getUnitDays(LocalDate endDate, AxisUnit axisUnit) {
+        return switch (axisUnit) {
+            case ONE_DAY -> 1;
+            case ONE_WEEK -> 7;
+            case ONE_MONTH -> endDate.lengthOfMonth();
+            case ONE_QUARTER -> {
+                int startMonth = ((endDate.getMonthValue() - 1) / 3) * 3 + 1;
+                LocalDate quarterStart = LocalDate.of(endDate.getYear(), startMonth, 1);
+                LocalDate quarterEnd = LocalDate.of(endDate.getYear(), startMonth + 2, 1)
+                        .with(TemporalAdjusters.lastDayOfMonth());
+                yield java.time.temporal.ChronoUnit.DAYS.between(quarterStart, quarterEnd) + 1;
+            }
+            case ONE_YEAR -> endDate.lengthOfYear();
+        };
+    }
+
+    private List<ForecastChartRes.ForecastChartDateItem> buildDateList(LocalDate startDate, LocalDate endDate,
+            AxisUnit axisUnit) {
+        List<ForecastChartRes.ForecastChartDateItem> dates = new ArrayList<>();
+        if (axisUnit == AxisUnit.ONE_DAY) {
+            LocalDate cursor = startDate;
+            while (!cursor.isAfter(endDate)) {
+                dates.add(ForecastChartRes.ForecastChartDateItem.builder()
+                        .label(DateUtil.toYmd(cursor))
+                        .unit(axisUnit.label)
+                        .build());
+                cursor = cursor.plusDays(1);
+            }
+            return dates;
+        }
+
+        LocalDate cursorEnd = endDate;
+        while (!cursorEnd.isBefore(startDate)) {
+            LocalDate periodStart = getPeriodStart(cursorEnd, axisUnit);
+            LocalDate actualStart = periodStart.isBefore(startDate) ? startDate : periodStart;
+            LocalDate actualEnd = cursorEnd;
+            String label = formatAxisLabel(actualEnd, axisUnit);
+
+            dates.add(ForecastChartRes.ForecastChartDateItem.builder()
+                    .label(label)
+                    .startDate(DateUtil.toYmd(actualStart))
+                    .endDate(DateUtil.toYmd(actualEnd))
+                    .unit(axisUnit.label)
+                    .build());
+
+            cursorEnd = periodStart.minusDays(1);
+        }
+
+        Collections.reverse(dates);
+        return dates;
+    }
+
+    private LocalDate getPeriodStart(LocalDate date, AxisUnit axisUnit) {
+        return switch (axisUnit) {
+            case ONE_WEEK -> date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case ONE_MONTH -> date.withDayOfMonth(1);
+            case ONE_QUARTER -> {
+                int startMonth = ((date.getMonthValue() - 1) / 3) * 3 + 1;
+                yield LocalDate.of(date.getYear(), startMonth, 1);
+            }
+            case ONE_YEAR -> LocalDate.of(date.getYear(), 1, 1);
+            case ONE_DAY -> date;
+        };
+    }
+
+    private String formatAxisLabel(LocalDate date, AxisUnit axisUnit) {
+        return switch (axisUnit) {
+            case ONE_DAY -> DateUtil.toYmd(date);
+            case ONE_WEEK -> {
+                java.time.temporal.WeekFields weekFields = java.time.temporal.WeekFields.ISO;
+                int week = date.get(weekFields.weekOfWeekBasedYear());
+                int year = date.get(weekFields.weekBasedYear());
+                yield String.format("W%d %d", week, year);
+            }
+            case ONE_MONTH -> {
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MMM ''yy");
+                yield formatter.format(date);
+            }
+            case ONE_QUARTER -> {
+                int quarter = (date.getMonthValue() - 1) / 3 + 1;
+                int year = date.getYear() % 100;
+                yield String.format("Q%d '%02d", quarter, year);
+            }
+            case ONE_YEAR -> String.valueOf(date.getYear());
+        };
+    }
+
+    private List<ForecastReportRes.PredictionResultPoint> toPredictionResultPoints(
+            List<ForecastResultPoint> predictionResults) {
+        if (predictionResults == null || predictionResults.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return predictionResults.stream()
+                .map(point -> ForecastReportRes.PredictionResultPoint.builder()
+                        .predictionResultDt(point.predictionResultDt())
+                        .predictionResultVal(toScaledDouble(point.predictionResultVal()))
+                        .build())
+                .toList();
     }
 
     private DiffResult calculateDiffResult(String criteriaValue, String resultValue) {
@@ -535,6 +742,54 @@ public class MiForecastService {
         }
     }
 
+    private enum AxisUnit {
+        ONE_DAY("1D"),
+        ONE_WEEK("1W"),
+        ONE_MONTH("1M"),
+        ONE_QUARTER("1Q"),
+        ONE_YEAR("1Y");
+
+        private final String label;
+
+        AxisUnit(String label) {
+            this.label = label;
+        }
+
+        private static AxisUnit from(String value) {
+            for (AxisUnit unit : values()) {
+                if (unit.label.equalsIgnoreCase(value)) {
+                    return unit;
+                }
+            }
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "x축 단위가 올바르지 않습니다.");
+        }
+    }
+
+    private enum TotalPeriod {
+        ONE_WEEK("1W"),
+        ONE_MONTH("1M"),
+        THREE_MONTHS("3M"),
+        SIX_MONTHS("6M"),
+        YEAR_TO_DATE("YTD"),
+        ONE_YEAR("1Y"),
+        ALL("ALL");
+
+        private final String label;
+
+        TotalPeriod(String label) {
+            this.label = label;
+        }
+
+        private static TotalPeriod from(String value) {
+            for (TotalPeriod period : values()) {
+                if (period.label.equalsIgnoreCase(value)) {
+                    return period;
+                }
+            }
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "전체기간 값이 올바르지 않습니다.");
+        }
+    }
+
     private record AvailableForecastKey(String predictionFulfillDt, String predictionCriteriaDt, String mnemonicCd,
             String marketIndexAnalysisTargetCd, String predictChartDetailExpn, Integer associatedGoodsDataSourceNo) {
     }
@@ -546,6 +801,10 @@ public class MiForecastService {
     }
 
     private record ForecastResultValue(String endPredictionResultDt, String startPredictionResultDt,
-            String predictionCriteriaDt, String predictionResultVal, String predictionCriteriaVal) {
+            String predictionCriteriaDt, String predictionResultVal, String predictionCriteriaVal,
+            List<ForecastResultPoint> predictionResults) {
+    }
+
+    private record ForecastResultPoint(String predictionResultDt, String predictionResultVal) {
     }
 }

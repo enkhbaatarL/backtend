@@ -1,10 +1,14 @@
 package com.sk.domain.shared.enums.forecast;
 
+import lombok.Getter;
+
+@Getter
 public enum MnemonicCode {
 
     BRENT_CRUDE("LLCC.01", "Brent Crude"),
     DUBAI_CRUDE("D-PCAAT00", "Dubai Crude");
 
+    // Getter 메소드
     private final String code;
     private final String predictChartDetailExpression;
 
@@ -26,12 +30,4 @@ public enum MnemonicCode {
         return null; // 또는 예외 처리
     }
 
-    // Getter 메소드
-    public String getCode() {
-        return code;
-    }
-
-    public String getPredictChartDetailExpression() {
-        return predictChartDetailExpression;
-    }
 }

@@ -4,6 +4,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
@@ -39,6 +40,22 @@ public class MiForecastDedicatedController {
 	public BaseResponse<ForecastInfoRes> getForecastInfo(
         @PathVariable Integer companyNo) {
 		return BaseResponseFactory.create(miForecastService.getForecastInfo(companyNo));
+	}
+
+	@ApiOrder(4)
+	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	@Parameter(name = "xAxisUnit", description = "x축 단위(1D, 1W, 1M, 1Q, 1Y)")
+	@Parameter(name = "period", description = "전체기간(1W, 1M, 3M, 6M, YTD, 1Y, ALL)")
+	@Operation(summary = "Forecast 차트 기간 조회", description = "Forecast 차트 기간을 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/chart")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+	public BaseResponse<ForecastChartRes> getChart(
+			@PathVariable Integer companyNo,
+			@RequestParam String xAxisUnit,
+			@RequestParam String period) {
+		return BaseResponseFactory.create(miForecastService.getChart(companyNo, xAxisUnit, period));
 	}
 
 	@ApiOrder(5)

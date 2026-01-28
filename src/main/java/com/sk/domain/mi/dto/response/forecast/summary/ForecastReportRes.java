@@ -1,7 +1,9 @@
 package com.sk.domain.mi.dto.response.forecast.summary;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.Builder;
 
 @Schema(description = "Forecast report 응답")
@@ -18,14 +20,16 @@ public record ForecastReportRes(
         @Schema(description = "예측기준값") Double predictionCriteriaVal,
         @Schema(description = "예측기준값-예측결과값") Double predictionResultDiffVal,
         @Schema(description = "예측결과변화율(%)") Double predictionResultDiffRate,
-        @Schema(description = "정기예측여부") Boolean isScheduled) {
+        @Schema(description = "정기예측여부") Boolean isScheduled,
+        @Schema(description = "신규여부") Boolean isNew,
+        @Schema(description = "예측결과 리스트") List<PredictionResultPoint> predictionResultList) {
 
     @Builder
     public ForecastReportRes(String marketIndexAnalysisTargetCd, String predictionFulfillDt, String mnemonicCd,
             String predictChartDetailExpn, Integer associatedGoodsDataSourceNo, String endPredictionResultDt,
             String startPredictionResultDt, String predictionCriteriaDt, Double predictionResultVal,
             Double predictionCriteriaVal, Double predictionResultDiffVal, Double predictionResultDiffRate,
-            Boolean isScheduled) {
+            Boolean isScheduled, Boolean isNew, List<PredictionResultPoint> predictionResultList) {
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
         this.predictionFulfillDt = predictionFulfillDt;
         this.mnemonicCd = mnemonicCd;
@@ -39,6 +43,8 @@ public record ForecastReportRes(
         this.predictionResultDiffVal = predictionResultDiffVal;
         this.predictionResultDiffRate = predictionResultDiffRate;
         this.isScheduled = isScheduled;
+        this.isNew = isNew;
+        this.predictionResultList = predictionResultList;
     }
 
     public static ForecastReportRes of(DashboardChartSummaryMap summary) {
@@ -50,5 +56,11 @@ public record ForecastReportRes(
                 .associatedGoodsDataSourceNo(null)
                 .endPredictionResultDt(summary.getPredictionResultDt())
                 .build();
+    }
+
+    @Builder
+    public record PredictionResultPoint(
+            @Schema(description = "예측결과일자") @JsonProperty("date") String predictionResultDt,
+            @Schema(description = "예측결과값") @JsonProperty("value") Double predictionResultVal) {
     }
 }
