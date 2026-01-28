@@ -701,13 +701,16 @@ public class AdminGoodsDataService {
 
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
+            List<UploadedFile> deletedFiles = new ArrayList<>(filesToDelete.size());
             for (Long fileNo : filesToDelete) {
-                fileService.deleteFile(fileNo);
+                UploadedFile uploadedFile = fileService.deleteFile(fileNo);
 
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
                         goodsData.getGoodsDataNo(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
                         .ifPresent(category -> category.softDelete());
+
+                deletedFiles.add(uploadedFile);
             }
 
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
@@ -729,7 +732,7 @@ public class AdminGoodsDataService {
             }
 
             goodsData.updateMetaDataUploadStatus(false);
-            publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
+            publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false, deletedFiles));
         }
     }
 

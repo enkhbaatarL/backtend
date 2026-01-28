@@ -347,10 +347,10 @@ public class FileService {
     * 파일을 삭제 한다.
     *
     * @param fileNo 파일번호
-    * @return
+    * @return UploadedFile
     */
     @Transactional
-    public void deleteFile(Long fileNo) {
+    public UploadedFile deleteFile(Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
@@ -364,6 +364,8 @@ public class FileService {
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
         }
+
+        return uploadedFile;
     }
 
     /**
