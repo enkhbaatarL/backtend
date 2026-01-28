@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
+import com.sk.domain.mi.dto.response.forecast.table.ForecastTableRes;
 import com.sk.domain.mi.service.MiForecastService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -46,7 +47,7 @@ public class MiForecastDedicatedController {
 	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
 	@Parameter(name = "xAxisUnit", description = "x축 단위(1D, 1W, 1M, 1Q, 1Y)")
 	@Parameter(name = "period", description = "전체기간(1W, 1M, 3M, 6M, YTD, 1Y, ALL)")
-	@Operation(summary = "Forecast 차트 기간 조회", description = "Forecast 차트 기간을 조회합니다.")
+	@Operation(summary = "Forecast 차트 데이터 조회", description = "Forecast 차트 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/chart")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
@@ -66,7 +67,7 @@ public class MiForecastDedicatedController {
 	@GetMapping("/companies/{companyNo}/reports")
 	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
 			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-	public BaseResponse<List<ForecastReportRes>> getForecastSummaries(
+	public BaseResponse<List<ForecastReportRes>> getForecastReports(
 			@PathVariable Integer companyNo,
 			@RequestParam(required = false) Integer goodsDataSourceNo) {
 		return BaseResponseFactory.create(miForecastService.getForecastReports(companyNo, goodsDataSourceNo));
@@ -91,5 +92,26 @@ public class MiForecastDedicatedController {
 			@RequestParam String predictionCriteriaDt) {
 		return BaseResponseFactory.create(miForecastService.getForecastReportDetail(companyNo, marketIndexAnalysisTargetCd,
 				predictionFulfillDt, mnemonicCd, predictionCriteriaDt));
+	}
+
+	@ApiOrder(7)
+	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호(선택)")
+	@Parameter(name = "startDate", description = "조회 시작일자(YYYYMMDD)")
+	@Parameter(name = "endDate", description = "조회 종료일자(YYYYMMDD)")
+	@Parameter(name = "order", description = "정렬 순서(NEWEST/OLDEST)")
+	@Operation(summary = "Forecast 테이블 조회", description = "Forecast 테이블 데이터를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/table")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+	public BaseResponse<ForecastTableRes> getForecastTable(
+			@PathVariable Integer companyNo,
+			@RequestParam(required = false) Integer goodsDataSourceNo,
+			@RequestParam String startDate,
+			@RequestParam String endDate,
+			@RequestParam(defaultValue = "NEWEST") String order) {
+		return BaseResponseFactory.create(
+				miForecastService.getForecastTable(companyNo, goodsDataSourceNo, startDate, endDate, order));
 	}
 }
