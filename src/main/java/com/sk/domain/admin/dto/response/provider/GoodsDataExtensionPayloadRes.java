@@ -11,6 +11,9 @@ public record GoodsDataExtensionPayloadRes(
     @Schema(description = "상품데이터번호")
     Integer goodsDataNo,
 
+    @Schema(description = "작성자")
+    String authors,
+
     @Schema(description = "추천 리스트")
     List<Recommendation> recommendations,
 

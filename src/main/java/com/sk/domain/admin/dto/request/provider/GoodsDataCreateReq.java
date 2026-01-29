@@ -42,9 +42,6 @@ public record GoodsDataCreateReq(
     @Schema(description = "발행일", example = "2025-12-31")
     String publishedDate,  // DB 컬럼추가
 
-    @Schema(description = "저자 리스트", example = "Jane, John Doe")
-    String authors, // DB 컬럼 추가
-
     // OMDIA 부가 정보로 저장
     @Schema(description = "추천 자료", example = "")
     List<Recommendation> recommendations,
@@ -56,20 +53,11 @@ public record GoodsDataCreateReq(
     String providerContentId,
 
     @Schema(description = "비정형 데이타 링크 리스트", example = "")
-    List<UnstructuredDataLinkReq> unstructuredDataLinkList
+    List<UnstructuredDataLinkReq> unstructuredDataLinkList,
+
+    @Schema(description = "저자 리스트", example = "Jane, John Doe")
+    String authors
 ){
-
-    public List<String> getAuthors(){
-        if(this.authors == null || this.authors.trim().isEmpty()){
-            return List.of("");
-        }
-        return Arrays.stream(this.authors.trim().split(",")).map(String::trim).toList();
-    }
-
-    public String getLanguage(){
-        return GoodsUtil.getLanguage(this.langCategoryList);
-    }
-
 
 }
 // @formatter:on

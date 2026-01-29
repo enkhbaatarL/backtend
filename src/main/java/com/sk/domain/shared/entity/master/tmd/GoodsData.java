@@ -92,14 +92,10 @@ public class GoodsData extends BaseEntity {
     @Comment("발행일")
     private LocalDate publishedDate;
 
-    @Column(name = "authors", length = 200)
-    @Comment("저자 리스트")
-    private String authors;
-
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
-            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate, String authors) {
+            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
@@ -112,7 +108,6 @@ public class GoodsData extends BaseEntity {
         this.isMetaDataUploaded = isMetaDataUploaded;
         this.isGoodsDataMarked = isGoodsDataMarked;
         this.publishedDate = publishedDate;
-        this.authors = authors;
     }
 
     public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt,
@@ -127,7 +122,6 @@ public class GoodsData extends BaseEntity {
                 .isMetaDataUploaded(isMetaDataUploaded)
                 .isGoodsDataMarked(isGoodsDataMarked)
                 .publishedDate(publishedDate)
-                .authors(authors)
                 .build();
     }
 
@@ -145,9 +139,6 @@ public class GoodsData extends BaseEntity {
         }
         if (publishedDate != null) {
             this.publishedDate = publishedDate;
-        }
-        if (StringUtils.isNotEmpty(authors)) {
-            this.authors = authors;
         }
 
         this.modifyDt = LocalDateTime.now();
@@ -171,16 +162,5 @@ public class GoodsData extends BaseEntity {
 
     public void softDelete() {
         super.softDelete();
-    }
-
-    public List<String> getAuthors(){
-        if(this.authors == null || this.authors.trim().isEmpty()){
-            return List.of("");
-        }
-        return Arrays.stream(this.authors.trim().split(",")).map(String::trim).toList();
-    }
-
-    public String getStringOfAuthors(){
-        return this.authors;
     }
 }

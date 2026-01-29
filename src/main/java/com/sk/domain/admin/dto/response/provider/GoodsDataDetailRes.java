@@ -78,19 +78,20 @@ public record GoodsDataDetailRes(
       List<StructuredDataRes> structuredDataList,
       List<UnstructuredDataRes> unstructuredDataList,
       LocalDate publishedDate,
-      String authors,
       GoodsDataExtension goodsDataExtension) {
 
       List<Recommendation> recommendations = null;
       String url = null;
       String providerContentId = null;
       List<UnstructuredDataLinkReq> unstructuredDataLinkList = null;
+      String authors = null;
       if(goodsDataExtension != null){
           GoodsDataExtensionPayloadRes goodsDataExtensionPayloadRes = goodsDataExtension.generatePayloadRes();
           recommendations = goodsDataExtensionPayloadRes.recommendations();
           url = goodsDataExtensionPayloadRes.url();
           providerContentId = goodsDataExtensionPayloadRes.providerContentId();
           unstructuredDataLinkList = goodsDataExtensionPayloadRes.unstructuredDataLinkList();
+          authors = goodsDataExtensionPayloadRes.authors();
       }
 
     return GoodsDataDetailRes.builder()

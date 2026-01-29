@@ -218,7 +218,7 @@ public class AdminGoodsDataService {
 
         return GoodsDataDetailRes.of(
                 goodsData, docCategoryList, langCategoryList, structuredDataList,
-            unstructuredDataList, goodsData.getPublishedDate(), goodsData.getStringOfAuthors(), goodsDataExtension);
+            unstructuredDataList, goodsData.getPublishedDate(), goodsDataExtension);
     }
 
     private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {
@@ -288,17 +288,17 @@ public class AdminGoodsDataService {
     }
 
     private void updateGoodsDataExtension(GoodsData goodsData, GoodsDataUpdateReq dto){
-        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
+        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.authors(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
     }
 
     private void updateGoodsDataExtension(GoodsData goodsData, GoodsDataCreateReq dto){
-        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
+        updateGoodsDataExtension(goodsData.getGoodsDataNo(), dto.authors(), dto.recommendations(), dto.url(), dto.providerContentId(), dto.unstructuredDataLinkList());
     }
 
-    private void updateGoodsDataExtension(Integer goodsDataNo, List<Recommendation> recommendations, String url, String providerContentId, List<UnstructuredDataLinkReq> unstructuredDataLinkList){
+    private void updateGoodsDataExtension(Integer goodsDataNo, String authors, List<Recommendation> recommendations, String url, String providerContentId, List<UnstructuredDataLinkReq> unstructuredDataLinkList){
         goodsDataExtensionRepository.deleteById(goodsDataNo);
         if(recommendations == null && url == null && providerContentId == null && unstructuredDataLinkList == null) return;
-        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, recommendations, url, providerContentId, unstructuredDataLinkList));
+        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, authors, recommendations, url, providerContentId, unstructuredDataLinkList));
     }
 
     /**

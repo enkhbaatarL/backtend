@@ -14,9 +14,11 @@ import com.sk.domain.shared.client.dto.response.AXMetaRegisterRes;
 import com.sk.domain.shared.client.dto.response.AXMetaUploadRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import com.sk.domain.shared.enums.AxpKnowledgeRegisterComponentType;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.service.FileService;
 import java.io.File;
@@ -25,6 +27,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,7 @@ public class MetaAxpKnowledgeRegister implements AxpKnowledgeRegister{
 
     private final FileService fileService;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
+    private final GoodsDataExtensionRepository goodsDataExtensionRepository;
     private final GoodsDataRepository goodsDataRepository;
     private final AxPlatformApi axPlatformApi;
     private final JsonFileWriter jsonFileWriter;
@@ -63,6 +67,7 @@ public class MetaAxpKnowledgeRegister implements AxpKnowledgeRegister{
             .toList();
 
         List<CategoryDataRes> categoryDataResList = goodsDataCategoryRepository.findLangCategoryDataByGoodsDataNo(goodsData.getGoodsDataNo());
+        Optional<GoodsDataExtension> goodsDataExtension = goodsDataExtensionRepository.findById(goodsData.getGoodsDataNo());
 
         AXMetaFileDto axMetaFileDto = AXMetaFileDto.builder()
             .gdsNo(goodsData.getGoods().getGoodsNo())
@@ -72,7 +77,7 @@ public class MetaAxpKnowledgeRegister implements AxpKnowledgeRegister{
             .synopsis(goodsData.getGoodsDataExpn() != null ? goodsData.getGoodsDataExpn()
                 : goodsData.getGoodsDataSummaryCntt())
             .contributor(goodsData.getDataContributorNm())
-            .authors(goodsData.getAuthors())
+            .authors(goodsDataExtension.map(GoodsDataExtension::getAuthors).orElse(null))
             .documentFileName(fileNameList)
             .language(GoodsUtil.getLanguage(categoryDataResList))
             .countries(List.of(""))
