@@ -29,11 +29,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,9 +95,6 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     @Override
     public MiMarketDataRes getDashboardChart(Integer companyNo, PermissionRes permissionRes) {
 
-        final LocalDate START_DATE = LocalDate.of(LocalDate.now().getYear(), 1, 1);
-        final LocalDate END_DATE = LocalDate.of(LocalDate.now().getYear(), 12, 31);
-
         ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
         GoodsDataSourceDetail mainGoodsDataSource = validationResult.data();
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
@@ -113,6 +106,15 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
                 .getOrDefault(mainGoods.getGoodsNo(), false);
 
         String cacheKey = String.format(CUSTOM_DATA_CACHE_KEY, goodsDataSourceNo);
+
+        LocalDate lastCurrentDate = getLastGieEuCurrent();
+        if(lastCurrentDate == null){
+            return emptyMarketData(mainGoodsData, mainGoodsDataSource, isPermitted, cacheKey);
+        }
+
+        final LocalDate START_DATE = LocalDate.of(lastCurrentDate.getYear(), 1, 1);
+        final LocalDate END_DATE = LocalDate.of(lastCurrentDate.getYear(), 12, 31);
+
         // 캐시 조회
         String cachedData = redisTemplate.opsForValue().get(cacheKey);
         if (cachedData != null) {
@@ -164,22 +166,7 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
         // 원시 데이터가 없는 경우 권한이 없는 것으로 처리
         if (rawData.isEmpty()) {
-            MarketMetaData marketMetaData =
-                MarketMetaData.of(
-                    cardIndex,
-                    mainGoodsData,
-                    mainGoodsDataSource,
-                    null,
-                    null,
-                    null);
-            MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
-            List<MarketDataChart> compareCharts = Collections.emptyList();
 
-            MiMarketDataCache miMarketDataCache =
-                MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
-            saveToMarketDataCache(cacheKey, miMarketDataCache);
-
-            return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
         }
 
         // 월별 데이터로 변환
@@ -267,7 +254,7 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
     @Override
     public Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series,
-        List<String> finalizedIndicators) {
+                                             List<String> finalizedIndicators) {
         List<Series> bollingerBandsIndicator = createBollingerBandsIndicator(getMinMaxAvg5Years(timestamps), finalizedIndicators);
         return Indicator.of(IndicatorType.BOLLINGER_BANDS, timestamps, bollingerBandsIndicator);
     }
@@ -318,9 +305,9 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     }
 
     private static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
-        String dateColumnName,
-        String defaultDataColumnName,
-        LocalDate start, LocalDate end) {
+                                                                       String dateColumnName,
+                                                                       String defaultDataColumnName,
+                                                                       LocalDate start, LocalDate end) {
         if (rawData == null || rawData.isEmpty()) {
             return Collections.emptyList();
         }
@@ -340,5 +327,32 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
                 return date.isAfter(start.minusDays(1)) && date.isBefore(end.plusDays(1));
             })
             .toList();
+    }
+
+    private LocalDate getLastGieEuCurrent(){
+        Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(Arrays.asList(
+            GieEu.GIE_EU_CODE_CURRENT
+        ));
+        return lastGieEuOptional.map(gieEu -> gieEu.getDate().toLocalDate()).orElse(null);
+    }
+
+    private MiMarketDataRes emptyMarketData(GoodsData mainGoodsData, GoodsDataSourceDetail mainGoodsDataSource,
+                                            Boolean isPermitted, String cacheKey){
+        MarketMetaData marketMetaData =
+            MarketMetaData.of(
+                cardIndex,
+                mainGoodsData,
+                mainGoodsDataSource,
+                null,
+                null,
+                null);
+        MarketDataChart mainChart = MarketDataChart.of(Collections.emptyList());
+        List<MarketDataChart> compareCharts = Collections.emptyList();
+
+        MiMarketDataCache miMarketDataCache =
+            MiMarketDataCache.of(marketMetaData, mainChart, compareCharts);
+        saveToMarketDataCache(cacheKey, miMarketDataCache);
+
+        return MiMarketDataRes.of(true, marketMetaData, mainChart, compareCharts);
     }
 }
