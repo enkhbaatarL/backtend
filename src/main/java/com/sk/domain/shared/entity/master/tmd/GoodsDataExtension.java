@@ -98,6 +98,56 @@ public class GoodsDataExtension extends BaseEntity {
     return GoodsDataExtension.builder().goodsDataNo(goodsDataNo).payload(objectNode).build();
   }
 
+  public void updatePayload(
+      String authors,
+      List<Recommendation> recommendations,
+      String url,
+      String providerContentId,
+      List<UnstructuredDataLinkReq> unstructuredDataLinkList) {
+
+    ObjectNode objectNode;
+    if (this.payload instanceof ObjectNode) {
+      objectNode = (ObjectNode) this.payload;
+    } else {
+      objectNode = OBJECT_MAPPER.createObjectNode();
+      this.payload = objectNode;
+    }
+
+    if (providerContentId != null) objectNode.put("providerContentId", providerContentId);
+    if (authors != null) objectNode.put("authors", authors);
+    if (url != null) objectNode.put("url", url);
+
+    if (recommendations != null) {
+      ArrayNode recommendationsNode = objectNode.putArray("recommendations");
+      for (Recommendation recommendation : recommendations) {
+        ObjectNode recommendationNode = OBJECT_MAPPER.createObjectNode();
+        recommendationNode.put("goodsDataNm", recommendation.goodsDataNm());
+        recommendationNode.put("authors", recommendation.authors());
+        recommendationNode.put("goodsDataSummaryCntt", recommendation.goodsDataSummaryCntt());
+        recommendationNode.put("publishedDate", recommendation.publishedDate());
+        ArrayNode docCategoryArray = recommendationNode.putArray("docCategoryList");
+        if (recommendation.docCategoryList() != null
+            && !recommendation.docCategoryList().isEmpty()) {
+          for (CategoryDataReq categoryDataReq : recommendation.docCategoryList()) {
+            docCategoryArray.add(categoryDataReq.codeId());
+          }
+        }
+        recommendationsNode.add(recommendationNode);
+      }
+    }
+
+    if (unstructuredDataLinkList != null) {
+      ArrayNode unstructuredDataLinkNodes = objectNode.putArray("unstructuredDataLinkList");
+      for (UnstructuredDataLinkReq unstructuredDataLinkReq : unstructuredDataLinkList) {
+        ObjectNode unstructuredDataLinkNode = OBJECT_MAPPER.createObjectNode();
+        if (unstructuredDataLinkReq.name() != null)
+          unstructuredDataLinkNode.put("name", unstructuredDataLinkReq.name());
+        unstructuredDataLinkNode.put("url", unstructuredDataLinkReq.url());
+        unstructuredDataLinkNodes.add(unstructuredDataLinkNode);
+      }
+    }
+  }
+
   public GoodsDataExtensionPayloadRes generatePayloadRes() {
     JsonNode payload = this.payload;
     String providerContentId =

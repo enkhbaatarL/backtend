@@ -296,9 +296,15 @@ public class AdminGoodsDataService {
     }
 
     private void updateGoodsDataExtension(Integer goodsDataNo, String authors, List<Recommendation> recommendations, String url, String providerContentId, List<UnstructuredDataLinkReq> unstructuredDataLinkList){
-        goodsDataExtensionRepository.deleteById(goodsDataNo);
-        if(recommendations == null && url == null && providerContentId == null && unstructuredDataLinkList == null) return;
-        goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, authors, recommendations, url, providerContentId, unstructuredDataLinkList));
+        Optional<GoodsDataExtension> goodsDataExtensionOptional = goodsDataExtensionRepository.findById(goodsDataNo);
+        if (goodsDataExtensionOptional.isPresent()) {
+            GoodsDataExtension goodsDataExtension = goodsDataExtensionOptional.get();
+            goodsDataExtension.updatePayload(authors, recommendations, url, providerContentId, unstructuredDataLinkList);
+            goodsDataExtensionRepository.save(goodsDataExtension);
+        } else {
+            if(recommendations == null && url == null && providerContentId == null && unstructuredDataLinkList == null && authors == null) return;
+            goodsDataExtensionRepository.save(GoodsDataExtension.of(goodsDataNo, authors, recommendations, url, providerContentId, unstructuredDataLinkList));
+        }
     }
 
     /**
