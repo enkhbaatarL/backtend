@@ -5,6 +5,7 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
+import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
@@ -159,6 +160,35 @@ public class MiForecastDedicatedController {
 		headers.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 
 		return new ResponseEntity<>(fileData, headers, HttpStatus.OK);
+	}
+
+	@ApiOrder(9)
+	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	@Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "4158")
+	@Parameter(name = "predictDate", description = "예측 날짜", example = "20250825")
+	@Parameter(name = "date", description = "조회할 년월(YYYYMM)", example = "202509")
+	@Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "COMMODITIES")
+	@Parameter(name = "predictionInputMnemonicCd", description = "예측 입력 명칭 코드", example = "CLc1")
+	@Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드", example = "EN_CROIL")
+	@Parameter(name = "predictionInputMnemonicDetailCd", description = "예측 입력 명칭 상세코드", example = "CLc1")
+	@Operation(summary = "Forecast 차트 주요 요인 분석 라인 그래프",
+			description = "Forecast 차트 주요 요인 분석 라인 그래프를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/chart/factor/graph")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+	public BaseResponse<ForecastChartFactorGraphRes> getChartFactorGraph(
+			@PathVariable("companyNo") Integer companyNo,
+			@RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
+			@RequestParam(value = "predictDate", required = true) String predictDate,
+			@RequestParam(value = "date", required = false) String date,
+			@RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm,
+			@RequestParam(value = "predictionInputMnemonicCd", required = true) String predictionInputMnemonicCd,
+			@RequestParam(value = "marketIndexAnalysisTargetCd", required = true) String marketIndexAnalysisTargetCd,
+			@RequestParam(value = "predictionInputMnemonicDetailCd", required = true) String predictionInputMnemonicDetailCd) {
+		return BaseResponseFactory.create(miForecastService.getChartFactorGraph(companyNo, goodsDataSourceNo,
+				predictDate, date, explanatoryLevelNm, predictionInputMnemonicCd, marketIndexAnalysisTargetCd,
+				predictionInputMnemonicDetailCd));
 	}
 
 }

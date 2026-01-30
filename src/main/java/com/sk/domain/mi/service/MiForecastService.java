@@ -14,12 +14,15 @@ import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.dashboard.charts.ChartSettingAndDetails;
 import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
+import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphDatasource;
+import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastTargetRes;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactor;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorCategoryRes;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorExplanatoryMap;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorGraphMap;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorMap;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorRes;
 import com.sk.domain.mi.dto.response.forecast.charts.ForecastChartData;
@@ -28,6 +31,7 @@ import com.sk.domain.mi.dto.response.forecast.charts.ForecastDataSource;
 import com.sk.domain.mi.dto.response.forecast.charts.graph.ForecastChart;
 import com.sk.domain.mi.dto.response.forecast.charts.graph.ForecastChartLine;
 import com.sk.domain.mi.dto.response.forecast.charts.graph.ForecastChartRawData;
+import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastChartFactorGraphMetadata;
 import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastMetadata;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
@@ -60,6 +64,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +75,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -97,6 +103,7 @@ public class MiForecastService {
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1;
+    private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int FORECAST_CHART_CACHE_TTL = 10;
     private static final String FORECAST_CHART_CACHE_KEY = "forecast_chart:%d:%s:%s:%s";
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt";
@@ -110,6 +117,7 @@ public class MiForecastService {
     private static final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
     private static final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
     private static final String CHART_EXPLANATORY_MINUS_DIRECTION = "-";
+    private static final int DASHBOARD_CHART_START_DATE_FROM_MONTH = 11;
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
@@ -795,6 +803,97 @@ public class MiForecastService {
         return periodAverages;
     }
 
+    private List<LocalDate> generateGraphDates(LocalDate startDate, LocalDate endDate,
+        ChartPredictSetting chartPredictSetting) {
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate current = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+            case W -> {
+                int diff = DayOfWeek.WEDNESDAY.getValue() - startDate.getDayOfWeek().getValue();
+                yield startDate.plusDays(diff);
+            }
+            case D -> startDate;
+            default -> startDate.withDayOfMonth(1);
+        };
+
+        while (!current.isAfter(endDate)) {
+            dates.add(current);
+            current = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                case W -> current.plusWeeks(1);
+                case D -> current.plusDays(1);
+                default -> current.plusMonths(1).withDayOfMonth(1);
+            };
+        }
+        return dates;
+    }
+
+    private List<ForecastChartRawData> calculateGraphAverages(List<LocalDate> periodDates,
+        List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
+        ChartPredictSetting chartPredictSetting) {
+        List<ForecastChartRawData> periodAverages = new ArrayList<>();
+
+        DateTimeFormatter yyyyMMFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+        Map<String, List<Double>> periodValues = new TreeMap<>();
+        for (Map<String, Object> row : rawData) {
+            LocalDate localDate = DateUtil.parseDate(row.get(dateColumnName));
+            if (localDate == null) {
+                continue;
+            }
+            String period = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                case W -> {
+                    int diff = DayOfWeek.WEDNESDAY.getValue() - localDate.getDayOfWeek().getValue();
+                    yield DateUtil.toYmdHyphen(localDate.plusDays(diff));
+                }
+                case D -> DateUtil.toYmdHyphen(localDate);
+                default -> DateUtil.toYyyyMm(localDate);
+            };
+
+            Object val = row.get(defaultDataColumnName);
+            Double valueData;
+            if (val == null) {
+                valueData = null;
+            } else if (val instanceof Double) {
+                valueData = (Double) val;
+            } else if (val instanceof BigDecimal) {
+                valueData = ((BigDecimal) val).doubleValue();
+            } else {
+                try {
+                    valueData = Double.parseDouble(val.toString());
+                } catch (NumberFormatException e) {
+                    valueData = null;
+                }
+            }
+
+            periodValues.computeIfAbsent(period, k -> new ArrayList<>()).add(valueData);
+        }
+
+        for (LocalDate periodDate : periodDates) {
+            String periodStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                case W -> {
+                    int diff = DayOfWeek.WEDNESDAY.getValue() - periodDate.getDayOfWeek().getValue();
+                    yield DateUtil.toYmdHyphen(periodDate.plusDays(diff));
+                }
+                case D -> DateUtil.toYmdHyphen(periodDate);
+                default -> periodDate.format(yyyyMMFormatter);
+            };
+            List<Double> values = periodValues.getOrDefault(periodStr, Collections.emptyList());
+
+            ForecastChartRawData chartRawData;
+            if (values.isEmpty()) {
+                chartRawData = ForecastChartRawData.ofActual(periodStr, null);
+            } else {
+                double average = values.stream()
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+                BigDecimal bd = BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP);
+                chartRawData = ForecastChartRawData.ofActual(periodStr, bd.doubleValue());
+            }
+            periodAverages.add(chartRawData);
+        }
+        return periodAverages;
+    }
+
     private List<Map<String, Object>> getForecastDataRows(
         GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
         LocalDate startDate, LocalDate endDate) {
@@ -1095,6 +1194,99 @@ public class MiForecastService {
         String summary = chartFactorExplanatory != null ? chartFactorExplanatory.getExplanatoryDetailCntt() : null;
 
         return ForecastChartFactorRes.of(explanatoryLevelNm, summary, chartPlusFactors, chartMinusFactors);
+    }
+
+    /**
+     * Forecast 차트 주요 요인 분석 라인 그래프 조회
+     *
+     * @param companyNo 회사 번호
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
+     * @param date 조회할 년월(선택)
+     * @param explanatoryLevelNm 주요 요인 레벨명
+     * @param predictionInputMnemonicCd 예측 입력 MNEMONIC코드
+     * @param marketIndexAnalysisTargetCd 시장지수분석대상코드
+     * @param predictionInputMnemonicDetailCd 예측 입력 명칭 상세코드
+     * @return ForecastChartFactorGraphRes
+     */
+    public ForecastChartFactorGraphRes getChartFactorGraph(int companyNo, int goodsDataSourceNo,
+            String predictDate, String date, String explanatoryLevelNm,
+            String predictionInputMnemonicCd, String marketIndexAnalysisTargetCd,
+            String predictionInputMnemonicDetailCd) {
+        LocalDate baseDate = date == null || date.isEmpty() ? LocalDate.now() : DateUtil.fromYearMonth(date);
+
+        ChartPredictSetting chartPredictSetting = chartPredictSettingRepository
+            .findByCustomerCompany_CustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND, "차트 예측 설정 조회 실패"));
+
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        PermissionRes permissionRes = authorizationService.getPermissions();
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+            .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND, "GoodsDataSourceDetail not found"));
+
+        DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+
+        ForecastChartFactorExplanatoryMap chartFactorGraphExplanatory = forecastMapper
+            .chartFactorGraphExplanatory(queryWhere, explanatoryLevelNm, predictDate, predictionInputMnemonicCd)
+            .orElse(null);
+
+        String summary = chartFactorGraphExplanatory != null ? chartFactorGraphExplanatory.getExplanatoryDetailCntt() : null;
+
+        ForecastChartFactorGraphMap chartFactorGraph = forecastMapper
+            .chartFactorGraph(marketIndexAnalysisTargetCd, predictionInputMnemonicDetailCd)
+            .orElse(null);
+
+        Integer actualGoodsDataSourceNo = chartFactorGraph != null ? chartFactorGraph.getGoodsDataSourceNo() : null;
+
+        GoodsDataSourceDetail actualGoodsDataSourceDetail = goodsDataSourceDetailRepository
+            .findByGoodsDataSourceNoAndIsDeletedFalse(actualGoodsDataSourceNo)
+            .orElse(null);
+
+        if (actualGoodsDataSourceDetail != null) {
+            GoodsData actualGoodsData = actualGoodsDataSourceDetail.getGoodsData();
+            Goods actualGoods = actualGoodsData.getGoods();
+
+            boolean isPermitted = permissionRes.getGoodsViewableMap(companyNo)
+                .getOrDefault(actualGoods.getGoodsNo(), false);
+
+            String[] actualTableColumnList = actualGoodsDataSourceDetail.getTableColumnListNm().split(",");
+            String actualDateColumnName = actualTableColumnList[MARKET_DATA_DATE_COLUMN_INDEX];
+            String actualDefaultDataColumnName = actualTableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+
+            LocalDate endDate = baseDate
+                .plus(
+                    chartPredictSetting.getPredictPeriodMonthsCnt(),
+                    chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit())
+                .with(TemporalAdjusters.lastDayOfMonth());
+
+            LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH).withDayOfMonth(1);
+
+            List<Map<String, Object>> graphRawData = getActualDataRows(actualGoodsDataSourceDetail, actualDateColumnName,
+                startDate, endDate);
+
+            List<LocalDate> periodDates = generateGraphDates(startDate, endDate, chartPredictSetting);
+            List<ForecastChartRawData> periodAverages = isPermitted
+                ? calculateGraphAverages(periodDates, graphRawData, actualDateColumnName,
+                    actualDefaultDataColumnName, chartPredictSetting)
+                : null;
+
+            ForecastChartFactorGraphMetadata graphMetadata =
+                ForecastChartFactorGraphMetadata.of(actualGoodsDataSourceDetail, chartPredictSetting);
+            ForecastChartFactorGraphDatasource graphDatasource =
+                ForecastChartFactorGraphDatasource.of(actualGoodsDataSourceDetail, isPermitted);
+
+            return ForecastChartFactorGraphRes.of(summary, graphMetadata, periodAverages, graphDatasource);
+        }
+
+        ForecastChartFactorGraphMetadata graphMetadata = ForecastChartFactorGraphMetadata.of(chartPredictSetting);
+        return ForecastChartFactorGraphRes.of(summary, graphMetadata);
     }
 
     private String getStringValue(Object value) {
