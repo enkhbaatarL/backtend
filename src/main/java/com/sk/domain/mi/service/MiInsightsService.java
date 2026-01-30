@@ -13,18 +13,13 @@ import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.mi.dto.response.insights.ProviderCategoryRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
-import com.sk.domain.shared.entity.master.tmd.Goods;
-import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
 import com.sk.domain.shared.entity.master.tmd.User;
-import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
-import com.sk.domain.shared.repository.master.tmd.GoodsRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.persistence.EntityManager;
@@ -33,7 +28,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -111,10 +105,7 @@ public class MiInsightsService {
             }
         }
 
-        /*
-         SQL 에 LNG와 Oil 검색 추가
-         */
-        List<FocusedDataDto> dataList = goodsDataRepository.findFocusedData(companyNo, focusedThresholdDay, exceptProviderNoList);
+        List<FocusedDataDto> dataList = goodsDataRepository.findFocusedData(companyNo, focusedThresholdDay/*, exceptProviderNoList*/);
 
         List<FocusedDataRes> result = new ArrayList<>();
         List<FocusedDataRes> mutableList = dataList.stream()
@@ -135,6 +126,8 @@ public class MiInsightsService {
                 quotas.put(documentType.codeId(), 2);
             } else if(documentType.codeId().equals("A_ASST_RPT")){
                 quotas.put(documentType.codeId(), 0);
+            } else if(documentType.codeId().equals("A_DATA")){
+                quotas.put(documentType.codeId(), 3);
             } else {
                 quotas.put(documentType.codeId(), 1);
             }

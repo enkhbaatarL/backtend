@@ -100,7 +100,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                     GROUP_CONCAT(tgdc.gds_data_ctgr_cd) as goodsDataCategoryCd
                 FROM midb.tam_custcpnyprvdmappl tcp
                 JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
-                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y' AND tp.prvd_no not in :exceptProviderNoList
+                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y' -- AND tp.prvd_no not in :exceptProviderNoList
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
                 JOIN midb.tmd_gdsdatactgrl tgdc ON tgdc.gds_data_no = tgd.gds_data_no AND tgdc.del_yn = 'N' AND tgdc.gds_data_mnagt_spt_cd = 'GDAT'
@@ -108,6 +108,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 WHERE tcp.del_yn = 'N'
                     AND tcp.use_yn = 'Y'
                     AND tcp.cust_cpny_no = :customerCompanyNo
+                    AND tcp.defl_ustrc_yn = 'Y'
                     AND tgc.gds_data_keywd_nm < now()
                     AND tgc.gds_data_keywd_nm > DATE_SUB(now(), INTERVAL :threshold DAY)
                     -- AND MATCH(tgd.gds_data_nm) AGAINST(lower('LNG Oil Gas Upstream') IN BOOLEAN MODE)
@@ -119,7 +120,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 GROUP BY tp.prvd_no, tg.gds_no, tgd.gds_data_no
                 ORDER BY tgc.gds_data_keywd_nm DESC
                         """, nativeQuery = true)
-    List<FocusedDataDto> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") int threshold, @Param("exceptProviderNoList") List<Integer> exceptProviderNoList);
+    List<FocusedDataDto> findFocusedData(@Param("customerCompanyNo") int customerCompanyNo, @Param("threshold") int threshold /*, @Param("exceptProviderNoList") List<Integer> exceptProviderNoList*/);
 
     Optional<GoodsData> findByGoodsDataNoAndGoods_GoodsNoAndIsDeletedFalse(Integer goodsDataNo, Integer goodsNo);
 
