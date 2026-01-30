@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.sk.domain.shared.mapper.dynamic.ForecastMapper">
-    <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap">
+    <resultMap id="dashboardChartFactorMap" type="com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorMap">
         <result column="mrkt_idx_anly_tgt_cd" property="marketIndexAnalysisTargetCd"/>
         <result column="prdc_fulf_dt" property="predictionFulfillDt"/>
         <result column="prdc_inpt_mnmnc_dtl_cd" property="predictionInputMnemonicDetailCd"/>
@@ -15,7 +15,7 @@
         <result column="dir_rank" property="dirRank"/>
     </resultMap>
 
-    <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap">
+    <resultMap id="dashboardChartFactorExplanatoryMap" type="com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorExplanatoryMap">
         <result column="mrkt_idx_anly_tgt_cd" property="marketIndexAnalysisTargetCd"/>
         <result column="prdc_fulf_dt" property="predictionFulfillDt"/>
         <result column="mnmnc_cd" property="mnemonicCd"/>
@@ -24,7 +24,7 @@
         <result column="expp_dtl_cntt" property="explanatoryDetailCntt"/>
         <result column="expp_lvl_dtl_nm" property="explanatoryLevelDetailNm"/>
     </resultMap>
-    <resultMap id="dashboardChartFactorGraphMap" type="com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorGraphMap">
+    <resultMap id="dashboardChartFactorGraphMap" type="com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorGraphMap">
         <result column="mrkt_idx_data_no" property="marketIndexDataNo"/>
         <result column="ric_cd" property="ricCd"/>
         <result column="mnmnc_cd" property="mnemonicCd"/>
@@ -47,7 +47,6 @@
           FROM tmm_bztgtprdcexppinfom tb
          WHERE ${queryWhere}
            AND tb.prdc_fulf_dt = #{predictDate}
-           AND SUBSTR(tb.prdc_rslt_dt, 1, 6) = #{date}
            AND tb.del_yn = 'N'
          ORDER BY tb.expp_lvl_nm
     </select>
@@ -108,7 +107,6 @@
                   and a.expp_scre != 0
                   and a.expp_dir_symb_nm != '0'
                   and a.prdc_fulf_dt = #{predictDate}
-                  and SUBSTR(a.prdc_rslt_dt, 1, 6) = #{date}
                 ) OA
                 GROUP BY OA.mrkt_idx_anly_tgt_cd, OA.mnmnc_cd, OA.prdc_fulf_dt, OA.prdc_rslt_ym, OA.prdc_inpt_mnmnc_cd
           ) OOA

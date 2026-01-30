@@ -1,9 +1,9 @@
 package com.sk.domain.shared.mapper.dynamic;
 
-import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorExplanatoryMap;
-import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorGraphMap;
-import com.sk.domain.mi.dto.response.dashboard.chartFactor.DashboardChartFactorMap;
 import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorExplanatoryMap;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorGraphMap;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorMap;
 import java.util.List;
 import java.util.Optional;
 import org.apache.ibatis.annotations.Mapper;
@@ -29,7 +29,7 @@ public interface ForecastMapper {
      * @param limit 제한 개수
      * @return List<DashboardChartFactorMap>
      */
-    List<DashboardChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm, String predictDate, String date, String direction, int limit);
+    List<ForecastChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm, String predictDate, String date, String direction, int limit);
 
     /**
      * 차트 주요 요인 분석 설명력 조회(Drill Down #2)
@@ -39,7 +39,7 @@ public interface ForecastMapper {
      * @param predictDate 예측 날짜
      * @return DashboardChartFactorExplanatoryMap
      */
-    Optional<DashboardChartFactorExplanatoryMap> chartFactorExplanatory(String queryWhere, String explanatoryLevelNm, String predictDate);
+    Optional<ForecastChartFactorExplanatoryMap> chartFactorExplanatory(String queryWhere, String explanatoryLevelNm, String predictDate);
 
     /**
      * 차트 주요 요인 분석 영향 데이터 설명력 조회(Drill Down #3)
@@ -50,7 +50,7 @@ public interface ForecastMapper {
      * @param predictionInputMnemonicCd 예측 입력 MNEMONIC코드
      * @return DashboardChartFactorExplanatoryMap
      */
-    Optional<DashboardChartFactorExplanatoryMap> chartFactorGraphExplanatory(String queryWhere, String explanatoryLevelNm, String predictDate, String predictionInputMnemonicCd);
+    Optional<ForecastChartFactorExplanatoryMap> chartFactorGraphExplanatory(String queryWhere, String explanatoryLevelNm, String predictDate, String predictionInputMnemonicCd);
 
     /**
      * 차트 주요 요인 분석 영향 데이터 테이블 조회(Drill Down #3)
@@ -59,7 +59,7 @@ public interface ForecastMapper {
      * @param predictionInputMnemonicDetailCd 예측 입력 명칭 상세코드
      * @return DashboardChartFactorGraphMap
      */
-    Optional<DashboardChartFactorGraphMap> chartFactorGraph(String marketIndexAnalysisTargetCd, String predictionInputMnemonicDetailCd);
+    Optional<ForecastChartFactorGraphMap> chartFactorGraph(String marketIndexAnalysisTargetCd, String predictionInputMnemonicDetailCd);
 
     /**
      * 차트 요약 조회

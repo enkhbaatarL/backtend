@@ -17,6 +17,11 @@ import com.sk.domain.mi.dto.response.dashboard.summary.DashboardChartSummaryMap;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastTargetRes;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactor;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorCategoryRes;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorExplanatoryMap;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorMap;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorRes;
 import com.sk.domain.mi.dto.response.forecast.charts.ForecastChartData;
 import com.sk.domain.mi.dto.response.forecast.charts.ForecastDataCache;
 import com.sk.domain.mi.dto.response.forecast.charts.ForecastDataSource;
@@ -43,7 +48,9 @@ import com.sk.domain.shared.mapper.dynamic.ForecastMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import jakarta.persistence.EntityNotFoundException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -100,11 +107,15 @@ public class MiForecastService {
     private static final String MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME = "mnmnc_cd";
     private static final String MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME = "mrkt_idx_anly_tgt_cd";
     private static final String ERR_CHART_NOT_CONFIGURED = "설정된 차트가 없습니다.";
+    private static final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
+    private static final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
+    private static final String CHART_EXPLANATORY_MINUS_DIRECTION = "-";
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final ForecastMapper forecastMapper;
+    private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final AuthorizationService authorizationService;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -1012,6 +1023,78 @@ public class MiForecastService {
         }
 
         throw AppErrorException.of(Error.RSC_NOT_FOUND, "Forecast report 상세 조회 실패");
+    }
+
+    /**
+     * Forecast 차트 주요 요인 분석 카테고리 조회
+     *
+     * @param companyNo         회사 번호
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate       예측 날짜
+     * @return ForecastChartFactorCategoryRes
+     */
+    public ForecastChartFactorCategoryRes getChartFactorCategory(int companyNo, int goodsDataSourceNo, String predictDate) {
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+            .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+            .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+        DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
+        return ForecastChartFactorCategoryRes.of(
+            forecastMapper.chartFactorCategory(queryWhere, predictDate, null));
+    }
+
+    /**
+     * Forecast 차트 주요 요인 분석 조회
+     *
+     * @param companyNo 회사 번호
+     * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
+     * @param explanatoryLevelNm 주요 요인 레벨명
+     * @return ForecastChartFactorRes
+     */
+    public ForecastChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo, String predictDate,
+            String explanatoryLevelNm) {
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        GoodsDataSourceDetail goodsDataSourceDetail = goodsDataSourceDetailRepository
+            .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
+            .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
+
+        DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+
+        List<ForecastChartFactorMap> chartPlusFactorsMap = forecastMapper.chartFactors(
+            queryWhere, explanatoryLevelNm, predictDate, null, CHART_EXPLANATORY_PLUS_DIRECTION,
+            CHART_EXPLANATORY_TOP_RANK_LIMIT);
+
+        List<ForecastChartFactorMap> chartMinusFactorsMap = forecastMapper.chartFactors(
+            queryWhere, explanatoryLevelNm, predictDate, null, CHART_EXPLANATORY_MINUS_DIRECTION,
+            CHART_EXPLANATORY_TOP_RANK_LIMIT);
+
+        List<ForecastChartFactor> chartPlusFactors = chartPlusFactorsMap.stream()
+            .map(ForecastChartFactor::of)
+            .toList();
+
+        List<ForecastChartFactor> chartMinusFactors = chartMinusFactorsMap.stream()
+            .map(ForecastChartFactor::of)
+            .toList();
+
+        ForecastChartFactorExplanatoryMap chartFactorExplanatory = forecastMapper
+            .chartFactorExplanatory(queryWhere, explanatoryLevelNm, predictDate)
+            .orElse(null);
+
+        String summary = chartFactorExplanatory != null ? chartFactorExplanatory.getExplanatoryDetailCntt() : null;
+
+        return ForecastChartFactorRes.of(explanatoryLevelNm, summary, chartPlusFactors, chartMinusFactors);
     }
 
     private String getStringValue(Object value) {
