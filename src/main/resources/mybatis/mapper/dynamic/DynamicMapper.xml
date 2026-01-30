@@ -161,6 +161,12 @@
         <if test="innerJoin != null and innerJoin != ''">
             ${innerJoin}
         </if>
+        <if test="whereClause != null and whereClause != ''">
+            WHERE ${whereClause}
+        </if>
+        <if test="additionalWhereClause != null and additionalWhereClause != ''">
+            AND ${additionalWhereClause}
+        </if>
         <if test="orderByColumns != null and orderByColumns != ''">
             ORDER BY ${orderByColumns}
         </if>

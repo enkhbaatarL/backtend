@@ -4,6 +4,7 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
@@ -16,8 +17,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Min;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -100,6 +108,8 @@ public class MiForecastDedicatedController {
 	@Parameter(name = "startDate", description = "조회 시작일자(YYYYMMDD)")
 	@Parameter(name = "endDate", description = "조회 종료일자(YYYYMMDD)")
 	@Parameter(name = "order", description = "정렬 순서(NEWEST/OLDEST)")
+	@Parameter(name = "page", description = "페이지번호 (기본값: 1)")
+	@Parameter(name = "size", description = "페이지당항목수 (기본값: 20)")
 	@Operation(summary = "Forecast 테이블 조회", description = "Forecast 테이블 데이터를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
 	@GetMapping("/companies/{companyNo}/table")
@@ -110,8 +120,44 @@ public class MiForecastDedicatedController {
 			@RequestParam(required = false) Integer goodsDataSourceNo,
 			@RequestParam String startDate,
 			@RequestParam String endDate,
-			@RequestParam(defaultValue = "NEWEST") String order) {
+			@RequestParam(defaultValue = "NEWEST") String order,
+			@RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+			@RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 20) int size) {
 		return BaseResponseFactory.create(
-				miForecastService.getForecastTable(companyNo, goodsDataSourceNo, startDate, endDate, order));
+				miForecastService.getForecastTable(companyNo, goodsDataSourceNo, startDate, endDate, order, page, size));
+	}
+
+	@ApiOrder(8)
+	@Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+	@Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호(선택)")
+	@Parameter(name = "startDate", description = "조회 시작일자(YYYYMMDD)")
+	@Parameter(name = "endDate", description = "조회 종료일자(YYYYMMDD)")
+	@Parameter(name = "order", description = "정렬 순서(NEWEST/OLDEST)")
+	@Operation(summary = "Forecast 테이블 다운로드", description = "Forecast 테이블 데이터를 엑셀로 다운로드합니다.")
+	@ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+	@GetMapping("/companies/{companyNo}/table/file-download")
+	@RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+			Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+	public ResponseEntity<byte[]> getForecastTableFileDownload(
+			@PathVariable Integer companyNo,
+			@RequestParam(required = false) Integer goodsDataSourceNo,
+			@RequestParam String startDate,
+			@RequestParam String endDate,
+			@RequestParam(defaultValue = "NEWEST") String order) throws IOException {
+		byte[] fileData = miForecastService.getForecastTableFileDownload(
+				companyNo, goodsDataSourceNo, startDate, endDate, order);
+
+		String filePrefix = "forecast_table";
+		String encodedFileName = URLEncoder.encode(
+				filePrefix.concat("_").concat(startDate).concat("_").concat(endDate)
+						.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".xlsx"),
+            StandardCharsets.UTF_8);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentLength(fileData.length);
+		headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+		headers.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+
+		return new ResponseEntity<>(fileData, headers, HttpStatus.OK);
 	}
 }

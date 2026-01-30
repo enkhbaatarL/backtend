@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode.Error;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
@@ -43,6 +44,8 @@ import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepos
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
@@ -65,13 +68,24 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MiForecastService {
+
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1";
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
@@ -85,6 +99,7 @@ public class MiForecastService {
     private static final String MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME = "prdc_crtr_val";
     private static final String MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME = "mnmnc_cd";
     private static final String MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME = "mrkt_idx_anly_tgt_cd";
+    private static final String ERR_CHART_NOT_CONFIGURED = "설정된 차트가 없습니다.";
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
@@ -102,9 +117,10 @@ public class MiForecastService {
      */
     public boolean getDataExists(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(
-                    Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
     }
@@ -117,15 +133,18 @@ public class MiForecastService {
      */
     public ForecastInfoRes getForecastInfo(int companyNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(
-                    Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
 
         // 차트 설정 조회
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
+            customerCompany);
 
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
         }
 
         ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
@@ -134,34 +153,34 @@ public class MiForecastService {
 
         // 차트선예측값여부 chrt_line_prdc_val_yn = N, 선물여부 futr_yn = N
         List<ForecastTargetRes> targetList = chartPredictSettingDetails.stream()
-                .filter(detail -> Boolean.FALSE.equals(detail.getIsChartLinePredictVal()))
-                .filter(detail -> Boolean.FALSE.equals(detail.getIsFuture()))
-                .map(ForecastTargetRes::of)
-                .toList();
+            .filter(detail -> Boolean.FALSE.equals(detail.getIsChartLinePredictVal()))
+            .filter(detail -> Boolean.FALSE.equals(detail.getIsFuture()))
+            .map(ForecastTargetRes::of)
+            .toList();
 
         // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
         List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
-                .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
-                .map(chartPredictSettingDetail -> {
-                    GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .map(chartPredictSettingDetail -> {
+                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
 
-                    // 날짜 칼럼
-                    String dateColumnName = MARKET_DATA_PREDICT_DATE_COLUMN_NAME;
+                List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(
+                    goodsDataSource,
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
-                    List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(goodsDataSource, dateColumnName);
+                if (lastUpdateDateData.isEmpty()) {
+                    return null;
+                }
 
-                    if (lastUpdateDateData.isEmpty()) {
-                        return null;
-                    }
-
-                    return DateUtil.parseDate(lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
-                })
-                .filter(Objects::nonNull)
-                .toList();
+                return DateUtil.parseDate(
+                    lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+            })
+            .filter(Objects::nonNull)
+            .toList();
 
         LocalDate lastUpdateDt = lastUpdatedList.stream()
-                .max(LocalDate::compareTo)
-                .orElse(null);
+            .max(LocalDate::compareTo)
+            .orElse(null);
 
         return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt);
     }
@@ -170,22 +189,25 @@ public class MiForecastService {
      * Forecast 차트 기간 조회
      *
      * @param customerCompanyNo 고객사 번호
-     * @param xAxisUnit x축 단위 (1D, 1W, 1M, 1Q, 1Y)
-     * @param period 전체기간 (1W, 1M, 3M, 6M, YTD, 1Y, ALL)
+     * @param xAxisUnit         x축 단위 (1D, 1W, 1M, 1Q, 1Y)
+     * @param period            전체기간 (1W, 1M, 3M, 6M, YTD, 1Y, ALL)
      * @return ForecastChartRes
      */
     public ForecastChartRes getChart(Integer customerCompanyNo, String xAxisUnit, String period) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(
-                    Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                customerCompanyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
+            customerCompany);
 
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
         }
 
         ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
@@ -194,12 +216,15 @@ public class MiForecastService {
         TotalPeriod totalPeriod = TotalPeriod.from(period);
 
         LocalDate today = LocalDate.now();
-        LocalDate baseDate = calculateBaseDate(today, chartPredictSetting.getPredictPeriodMonthsCnt(), chartPredictSetting.getPredictPeriodUnitSeparateCd());
+        LocalDate baseDate = calculateBaseDate(today,
+            chartPredictSetting.getPredictPeriodMonthsCnt(),
+            chartPredictSetting.getPredictPeriodUnitSeparateCd());
         LocalDate startDate = calculateStartDate(today, totalPeriod);
 
         validatePeriodLength(startDate, baseDate, axisUnit);
 
-        List<ForecastChartRes.ForecastChartDateItem> dateList = buildDateList(startDate, baseDate, axisUnit);
+        List<ForecastChartRes.ForecastChartDateItem> dateList = buildDateList(startDate, baseDate,
+            axisUnit);
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
 
@@ -207,121 +232,189 @@ public class MiForecastService {
         Map<Integer, ForecastChart> chartMap = new HashMap<>();
 
         List<ForecastChartData> chartDataResults = processChartData(
-                chartPredictSettingDetails,
-                permissionRes,
-                customerCompanyNo,
-                startDate,
-                baseDate,
-                dateList,
-                chartPredictSetting,
-                actualGoodsDataSourceDetail,
-                chartMap,
-                axisUnit.label,
-                totalPeriod.label,
-                baseDate);
+            chartPredictSettingDetails,
+            permissionRes,
+            customerCompanyNo,
+            startDate,
+            baseDate,
+            dateList,
+            chartPredictSetting,
+            actualGoodsDataSourceDetail,
+            chartMap,
+            axisUnit.label,
+            totalPeriod.label,
+            baseDate);
 
         List<Map<Integer, ForecastChart>> associatedCharts = chartMap.entrySet().stream()
-                .collect(Collectors.groupingBy(
-                        Map.Entry::getKey,
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                .values().stream()
-                .map(HashMap::new)
-                .collect(Collectors.toList());
+            .collect(Collectors.groupingBy(
+                Map.Entry::getKey,
+                Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+            .values().stream()
+            .map(HashMap::new)
+            .collect(Collectors.toList());
 
         LocalDate lastUpdated = chartDataResults.stream()
-                .map(ForecastChartData::lastUpdated)
-                .filter(Objects::nonNull)
-                .max(LocalDate::compareTo)
-                .orElse(null);
+            .map(ForecastChartData::lastUpdated)
+            .filter(Objects::nonNull)
+            .max(LocalDate::compareTo)
+            .orElse(null);
 
-        DashboardChartDataTableType dataTableType = calculateDashboardChartDataTableType(chartPredictSettingDetails);
+        DashboardChartDataTableType dataTableType = calculateDashboardChartDataTableType(
+            chartPredictSettingDetails);
 
         ForecastMetadata dashboardMetadata = ForecastMetadata.of(
-                customerCompany.getMarketIndexAnalysisTargetCd(),
-                lastUpdated,
-                chartDataResults.stream()
-                        .map(ForecastChartData::forecastGoodsDataSourceDetail)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null),
-                DateUtil.toYearMonth(baseDate),
-                dataTableType,
-                chartPredictSetting.getPredictTargetRepresentSpecNm());
+            customerCompany.getMarketIndexAnalysisTargetCd(),
+            lastUpdated,
+            chartDataResults.stream()
+                .map(ForecastChartData::forecastGoodsDataSourceDetail)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null),
+            DateUtil.toYearMonth(baseDate),
+            dataTableType,
+            chartPredictSetting.getPredictTargetRepresentSpecNm());
 
         List<ForecastChart> finalCharts = associatedCharts.stream()
-                .flatMap(map -> map.values().stream())
-                .map(chart -> {
-                    ForecastChartLine actualLines = chart.actualChartLines() != null
-                            ? chart.actualChartLines()
-                            : ForecastChartLine.of(null, null, null, null, null);
-                    ForecastChartLine forecastLines = chart.forecastChartLines() != null
-                            ? chart.forecastChartLines()
-                            : ForecastChartLine.of(null, null, null, null, null);
-                    return new ForecastChart(
-                            chart.chartLineDescription(),
-                            chart.chartLineType(),
-                            actualLines,
-                            forecastLines);
-                })
-                .sorted(Comparator
-                        .comparing(
-                                ForecastChart::chartLineType,
-                                Comparator.nullsLast(
-                                        Comparator.comparing(ChartPredictLineType::getCode, Comparator.nullsLast(Comparator.naturalOrder()))))
-                        .thenComparing(c -> c.actualChartLines().goodsDataSourceNo() == null,
-                                Comparator.nullsLast(Comparator.comparing(b -> !b)))
-                        .thenComparing(
-                                ForecastChart::chartLineDescription,
-                                Comparator.nullsLast(Comparator.naturalOrder())))
-                .toList();
+            .flatMap(map -> map.values().stream())
+            .map(chart -> {
+                ForecastChartLine actualLines = chart.actualChartLines() != null
+                    ? chart.actualChartLines()
+                    : ForecastChartLine.of(null, null, null, null, null);
+                ForecastChartLine forecastLines = chart.forecastChartLines() != null
+                    ? chart.forecastChartLines()
+                    : ForecastChartLine.of(null, null, null, null, null);
+                return new ForecastChart(
+                    chart.chartLineDescription(),
+                    chart.chartLineType(),
+                    actualLines,
+                    forecastLines);
+            })
+            .sorted(Comparator
+                .comparing(
+                    ForecastChart::chartLineType,
+                    Comparator.nullsLast(
+                        Comparator.comparing(ChartPredictLineType::getCode,
+                            Comparator.nullsLast(Comparator.naturalOrder()))))
+                .thenComparing(c -> c.actualChartLines().goodsDataSourceNo() == null,
+                    Comparator.nullsLast(Comparator.comparing(b -> !b)))
+                .thenComparing(
+                    ForecastChart::chartLineDescription,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
 
         List<ForecastDataSource> dashboardDataSources = chartDataResults.stream()
-                .map(ForecastChartData::dashboardDataSource)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+            .map(ForecastChartData::dashboardDataSource)
+            .filter(Objects::nonNull)
+            .toList();
 
         boolean finalIsFileDownload = chartDataResults.stream()
-                .map(ForecastChartData::dashboardChart)
-                .filter(Objects::nonNull)
-                .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines()))
-                .filter(Objects::nonNull)
-                .map(ForecastChartLine::isPermitted)
-                .anyMatch(permission -> permission != null && permission);
+            .map(ForecastChartData::dashboardChart)
+            .filter(Objects::nonNull)
+            .flatMap(chart -> Stream.of(chart.actualChartLines(), chart.forecastChartLines()))
+            .filter(Objects::nonNull)
+            .map(ForecastChartLine::isPermitted)
+            .anyMatch(permission -> permission != null && permission);
 
         return ForecastChartRes.builder()
-                .xAxisUnit(axisUnit.label)
-                .period(totalPeriod.label)
-                .startDate(DateUtil.toYmd(startDate))
-                .endDate(DateUtil.toYmd(baseDate))
-                .dateList(dateList)
-                .charts(finalCharts)
-                .chartsDataSource(dashboardDataSources)
-                .isFileDownload(finalIsFileDownload)
-                .metadata(dashboardMetadata)
-                .build();
+            .xAxisUnit(axisUnit.label)
+            .period(totalPeriod.label)
+            .startDate(DateUtil.toYmd(startDate))
+            .endDate(DateUtil.toYmd(baseDate))
+            .dateList(dateList)
+            .charts(finalCharts)
+            .chartsDataSource(dashboardDataSources)
+            .isFileDownload(finalIsFileDownload)
+            .metadata(dashboardMetadata)
+            .build();
     }
 
-    public ForecastTableRes getForecastTable(int customerCompanyNo, Integer goodsDataSourceNo, String startDate,
-            String endDate, String order) {
+    public ForecastTableRes getForecastTable(int customerCompanyNo, Integer goodsDataSourceNo,
+        String startDate,
+        String endDate, String order, int page, int size) {
+        ForecastTableData tableData = buildForecastTableData(customerCompanyNo, goodsDataSourceNo,
+            startDate, endDate, order);
+        List<List<Object>> rows = tableData.rows();
+        int totalElements = rows.size();
+        Pageable pageable = PageRequest.of(page - 1, size);
+        int fromIndex = Math.min((page - 1) * size, totalElements);
+        int toIndex = Math.min(fromIndex + size, totalElements);
+        List<List<Object>> pagedRows = rows.subList(fromIndex, toIndex);
+        PaginationRes<List<Object>> pagedTableDataList =
+            PaginationRes.toRes(new PageImpl<>(pagedRows, pageable, totalElements));
+
+        return ForecastTableRes.builder()
+            .startDate(startDate)
+            .endDate(endDate)
+            .goodsDataSourceNo(goodsDataSourceNo)
+            .order(tableData.sortOrder().name())
+            .tableHeaderList(tableData.headerList())
+            .tableDataList(pagedTableDataList)
+            .build();
+    }
+
+    public byte[] getForecastTableFileDownload(int customerCompanyNo, Integer goodsDataSourceNo,
+        String startDate,
+        String endDate, String order) throws IOException {
+        ForecastTableData tableData = buildForecastTableData(customerCompanyNo, goodsDataSourceNo,
+            startDate, endDate, order);
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("forecast_table");
+
+            int rowIndex = 0;
+            Row headerRow = sheet.createRow(rowIndex++);
+            for (int col = 0; col < tableData.headerList().size(); col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(tableData.headerList().get(col));
+            }
+
+            for (List<Object> rowData : tableData.rows()) {
+                Row row = sheet.createRow(rowIndex++);
+                for (int col = 0; col < rowData.size(); col++) {
+                    Cell cell = row.createCell(col);
+                    Object value = rowData.get(col);
+                    if (value == null) {
+                        continue;
+                    }
+                    if (value instanceof Number number) {
+                        cell.setCellValue(number.doubleValue());
+                    } else {
+                        cell.setCellValue(String.valueOf(value));
+                    }
+                }
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    private ForecastTableData buildForecastTableData(int customerCompanyNo,
+        Integer goodsDataSourceNo, String startDate,
+        String endDate, String order) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(customerCompanyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(
-                        Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                customerCompanyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
+            customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
         }
 
         ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                    .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                    .filter(detail -> goodsDataSourceNo.equals(detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
-                    .toList();
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .filter(detail -> goodsDataSourceNo.equals(
+                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .toList();
         }
 
         LocalDate start = DateUtil.parseDate(startDate);
@@ -336,54 +429,55 @@ public class MiForecastService {
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, ForecastChart> chartMap = new HashMap<>();
 
-        List<ForecastChartData> chartDataResults = processChartData(
-                chartPredictSettingDetails,
-                permissionRes,
-                customerCompanyNo,
-                start,
-                end,
-                dateList,
-                chartPredictSetting,
-                actualGoodsDataSourceDetail,
-                chartMap,
-                axisUnit.label,
-                String.format("%s_%s", startDate, endDate),
-                end);
+        processChartData(
+            chartPredictSettingDetails,
+            permissionRes,
+            customerCompanyNo,
+            start,
+            end,
+            dateList,
+            chartPredictSetting,
+            actualGoodsDataSourceDetail,
+            chartMap,
+            axisUnit.label,
+            String.format("%s_%s", startDate, endDate),
+            end);
 
         List<Map<Integer, ForecastChart>> associatedCharts = chartMap.entrySet().stream()
-                .collect(Collectors.groupingBy(
-                        Map.Entry::getKey,
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                .values().stream()
-                .map(HashMap::new)
-                .collect(Collectors.toList());
+            .collect(Collectors.groupingBy(
+                Map.Entry::getKey,
+                Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+            .values().stream()
+            .map(HashMap::new)
+            .collect(Collectors.toList());
 
         List<ForecastChart> finalCharts = associatedCharts.stream()
-                .flatMap(map -> map.values().stream())
-                .map(chart -> {
-                    ForecastChartLine actualLines = chart.actualChartLines() != null
-                            ? chart.actualChartLines()
-                            : ForecastChartLine.of(null, null, null, null, null);
-                    ForecastChartLine forecastLines = chart.forecastChartLines() != null
-                            ? chart.forecastChartLines()
-                            : ForecastChartLine.of(null, null, null, null, null);
-                    return new ForecastChart(
-                            chart.chartLineDescription(),
-                            chart.chartLineType(),
-                            actualLines,
-                            forecastLines);
-                })
-                .sorted(Comparator
-                        .comparing(
-                                ForecastChart::chartLineType,
-                                Comparator.nullsLast(
-                                        Comparator.comparing(ChartPredictLineType::getCode, Comparator.nullsLast(Comparator.naturalOrder()))))
-                        .thenComparing(c -> c.actualChartLines().goodsDataSourceNo() == null,
-                                Comparator.nullsLast(Comparator.comparing(b -> !b)))
-                        .thenComparing(
-                                ForecastChart::chartLineDescription,
-                                Comparator.nullsLast(Comparator.naturalOrder())))
-                .toList();
+            .flatMap(map -> map.values().stream())
+            .map(chart -> {
+                ForecastChartLine actualLines = chart.actualChartLines() != null
+                    ? chart.actualChartLines()
+                    : ForecastChartLine.of(null, null, null, null, null);
+                ForecastChartLine forecastLines = chart.forecastChartLines() != null
+                    ? chart.forecastChartLines()
+                    : ForecastChartLine.of(null, null, null, null, null);
+                return new ForecastChart(
+                    chart.chartLineDescription(),
+                    chart.chartLineType(),
+                    actualLines,
+                    forecastLines);
+            })
+            .sorted(Comparator
+                .comparing(
+                    ForecastChart::chartLineType,
+                    Comparator.nullsLast(
+                        Comparator.comparing(ChartPredictLineType::getCode,
+                            Comparator.nullsLast(Comparator.naturalOrder()))))
+                .thenComparing(c -> c.actualChartLines().goodsDataSourceNo() == null,
+                    Comparator.nullsLast(Comparator.comparing(b -> !b)))
+                .thenComparing(
+                    ForecastChart::chartLineDescription,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
 
         List<String> headerList = new ArrayList<>();
         headerList.add("예측결과기간");
@@ -392,7 +486,8 @@ public class MiForecastService {
             String name = chart.chartLineDescription() != null ? chart.chartLineDescription() : "값";
             headerList.add(String.format("%s 실제값", name));
             headerList.add(String.format("%s 예측값", name));
-            columns.add(new ForecastTableColumn(chart.actualChartLines(), chart.forecastChartLines()));
+            columns.add(
+                new ForecastTableColumn(chart.actualChartLines(), chart.forecastChartLines()));
         }
 
         Map<ForecastChartLine, Map<String, Double>> lineValueMap = new LinkedHashMap<>();
@@ -405,17 +500,15 @@ public class MiForecastService {
             }
         }
 
-        List<ForecastTableRes.ForecastTableRow> rows = new ArrayList<>();
+        List<List<Object>> rows = new ArrayList<>();
         for (ForecastChartRes.ForecastChartDateItem item : dateList) {
-            List<Double> values = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
+            values.add(item.label());
             for (ForecastTableColumn column : columns) {
                 values.add(getValue(column.actualLine, item.label(), lineValueMap));
                 values.add(getValue(column.forecastLine, item.label(), lineValueMap));
             }
-            rows.add(ForecastTableRes.ForecastTableRow.builder()
-                    .periodLabel(item.label())
-                    .values(values)
-                    .build());
+            rows.add(values);
         }
 
         TableSortOrder sortOrder = TableSortOrder.from(order);
@@ -423,33 +516,29 @@ public class MiForecastService {
             Collections.reverse(rows);
         }
 
-        return ForecastTableRes.builder()
-                .startDate(startDate)
-                .endDate(endDate)
-                .goodsDataSourceNo(goodsDataSourceNo)
-                .order(sortOrder.name())
-                .tableHeaderList(headerList)
-                .tableDataList(rows)
-                .build();
+        return new ForecastTableData(headerList, rows, sortOrder);
     }
 
-    private DashboardChartDataTableType calculateDashboardChartDataTableType(List<ChartPredictSettingDetail> chartPredictSettingDetails) {
+    private DashboardChartDataTableType calculateDashboardChartDataTableType(
+        List<ChartPredictSettingDetail> chartPredictSettingDetails) {
         DashboardChartDataTableType dataTableType = DashboardChartDataTableType.FORECAST_SINGLE_LAYER;
         List<ChartPredictSettingDetail> chartPredictSettingDetailPredictList = chartPredictSettingDetails.stream()
-                .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
-                .toList();
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .toList();
         if (chartPredictSettingDetailPredictList.size() >= 2) {
             Integer associateDataSource = null;
             for (ChartPredictSettingDetail predict : chartPredictSettingDetailPredictList) {
                 if (predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
-                        .equals(predict.getGoodsDataSourceDetail().getGoodsDataSourceNo())) {
+                    .equals(predict.getGoodsDataSourceDetail().getGoodsDataSourceNo())) {
                     continue;
                 }
                 if (associateDataSource == null) {
-                    associateDataSource = predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
+                    associateDataSource = predict.getAssociatedGoodsDataSourceDetail()
+                        .getGoodsDataSourceNo();
                     continue;
                 }
-                if (!associateDataSource.equals(predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo())) {
+                if (!associateDataSource.equals(
+                    predict.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo())) {
                     dataTableType = DashboardChartDataTableType.FORECAST_DUAL_LAYER;
                 }
             }
@@ -458,150 +547,162 @@ public class MiForecastService {
     }
 
     private List<ForecastChartData> processChartData(
-            List<ChartPredictSettingDetail> chartPredictSettingDetails,
-            PermissionRes permissionRes,
-            Integer customerCompanyNo,
-            LocalDate startDate,
-            LocalDate endDate,
-            List<ForecastChartRes.ForecastChartDateItem> dateList,
-            ChartPredictSetting chartPredictSetting,
-            GoodsDataSourceDetail[] actualGoodsDataSourceDetail,
-            Map<Integer, ForecastChart> chartMap,
-            String xAxisUnit,
-            String period,
-            LocalDate baseDate) {
+        List<ChartPredictSettingDetail> chartPredictSettingDetails,
+        PermissionRes permissionRes,
+        Integer customerCompanyNo,
+        LocalDate startDate,
+        LocalDate endDate,
+        List<ForecastChartRes.ForecastChartDateItem> dateList,
+        ChartPredictSetting chartPredictSetting,
+        GoodsDataSourceDetail[] actualGoodsDataSourceDetail,
+        Map<Integer, ForecastChart> chartMap,
+        String xAxisUnit,
+        String period,
+        LocalDate baseDate) {
         return chartPredictSettingDetails.stream()
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(ChartPredictSettingDetail::getIsChartLinePredictVal))
-                .map(chartPredictSettingDetail -> {
-                    GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
-                    GoodsData goodsData = goodsDataSource.getGoodsData();
-                    Goods goods = goodsData.getGoods();
+            .filter(Objects::nonNull)
+            .sorted(Comparator.comparing(ChartPredictSettingDetail::getIsChartLinePredictVal))
+            .map(chartPredictSettingDetail -> {
+                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+                GoodsData goodsData = goodsDataSource.getGoodsData();
+                Goods goods = goodsData.getGoods();
 
-                    boolean isPermitted = permissionRes.getGoodsDownloadableMap(customerCompanyNo)
-                            .getOrDefault(goods.getGoodsNo(), false);
+                boolean isPermitted = permissionRes.getGoodsDownloadableMap(customerCompanyNo)
+                    .getOrDefault(goods.getGoodsNo(), false);
 
-                    ChartPredictDataType chartPredictDataType;
-                    if (chartPredictSettingDetail.getIsFuture()) {
-                        chartPredictDataType = ChartPredictDataType.FUTURE;
-                    } else if (chartPredictSettingDetail.getIsChartLinePredictVal()) {
-                        chartPredictDataType = ChartPredictDataType.FORECAST;
-                        isPermitted = true;
-                    } else {
-                        chartPredictDataType = ChartPredictDataType.ACTUAL;
-                        if (actualGoodsDataSourceDetail[0] == null) {
-                            actualGoodsDataSourceDetail[0] = goodsDataSource;
+                ChartPredictDataType chartPredictDataType;
+                boolean isPredict = Boolean.TRUE.equals(chartPredictSettingDetail.getIsChartLinePredictVal());
+                boolean isFuture = Boolean.TRUE.equals(chartPredictSettingDetail.getIsFuture());
+                if (isFuture) {
+                    chartPredictDataType = ChartPredictDataType.FUTURE;
+                } else if (isPredict) {
+                    chartPredictDataType = ChartPredictDataType.FORECAST;
+                    isPermitted = true;
+                } else {
+                    chartPredictDataType = ChartPredictDataType.ACTUAL;
+                    if (actualGoodsDataSourceDetail[0] == null) {
+                        actualGoodsDataSourceDetail[0] = goodsDataSource;
+                    }
+                }
+
+                String[] tableColumnList = Arrays.stream(
+                        goodsDataSource.getTableColumnListNm().split(","))
+                    .map(String::trim)
+                    .toArray(String[]::new);
+                String dateColumnName = tableColumnList[MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX];
+                String defaultDataColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+
+                LocalDate alignedEndDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                    case W -> endDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+                    case D -> endDate;
+                    default -> endDate.with(TemporalAdjusters.lastDayOfMonth());
+                };
+                LocalDate alignedStartDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
+                    case W -> startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    case D -> startDate;
+                    default -> startDate.withDayOfMonth(1);
+                };
+
+                String cacheKey = getForecastChartCacheKey(
+                    chartPredictSettingDetail.getChartPredictSettingDetailNo(),
+                    xAxisUnit,
+                    period,
+                    DateUtil.toYmd(baseDate));
+
+                List<ForecastChartRawData> periodAverages = null;
+                LocalDate lastUpdated = null;
+                ForecastDataSource dashboardDataSource = null;
+                String cachedData = redisTemplate.opsForValue().get(cacheKey);
+                if (cachedData != null) {
+                    try {
+                        ForecastDataCache dashboardDataCache = objectMapper.readValue(cachedData,
+                            ForecastDataCache.class);
+                        periodAverages = dashboardDataCache.periodAverages();
+                        lastUpdated = dashboardDataCache.lastUpdated();
+                        dashboardDataSource = dashboardDataCache.dataSource();
+                    } catch (Exception e) {
+                        redisTemplate.delete(cacheKey);
+                    }
+                }
+
+                if (periodAverages == null) {
+                    List<Map<String, Object>> rawData =
+                        isPredict
+                            ? getForecastDataRows(goodsDataSource, dateColumnName, alignedStartDate,
+                            alignedEndDate)
+                            : getActualDataRows(goodsDataSource, dateColumnName, alignedStartDate,
+                                alignedEndDate);
+
+                    if (isPredict && !rawData.isEmpty()) {
+                        String latestPredictDate = rawData.stream()
+                            .map(row -> (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME))
+                            .filter(Objects::nonNull)
+                            .max(String::compareTo)
+                            .orElse(null);
+                        if (latestPredictDate != null) {
+                            lastUpdated = DateUtil.parseDate(latestPredictDate);
                         }
+                        dashboardDataSource = ForecastDataSource.of(goodsDataSource,
+                            chartPredictSettingDetail);
                     }
 
-                    String[] tableColumnList = Arrays.stream(goodsDataSource.getTableColumnListNm().split(","))
-                            .map(String::trim)
-                            .toArray(String[]::new);
-                    String dateColumnName = tableColumnList[MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX];
-                    String defaultDataColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+                    periodAverages = calculatePeriodAverages(
+                        dateList,
+                        rawData,
+                        dateColumnName,
+                        defaultDataColumnName,
+                        isPredict);
 
-                    LocalDate alignedEndDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
-                        case W -> endDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-                        case D -> endDate;
-                        default -> endDate.with(TemporalAdjusters.lastDayOfMonth());
-                    };
-                    LocalDate alignedStartDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
-                        case W -> startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                        case D -> startDate;
-                        default -> startDate.withDayOfMonth(1);
-                    };
+                    ForecastDataCache dashboardDataCache = ForecastDataCache.of(periodAverages,
+                        lastUpdated, dashboardDataSource);
+                    saveForecastChartCache(cacheKey, dashboardDataCache);
+                }
 
-                    String cacheKey = getForecastChartCacheKey(
-                            chartPredictSettingDetail.getChartPredictSettingDetailNo(),
-                            xAxisUnit,
-                            period,
-                            DateUtil.toYmd(baseDate));
+                ForecastChartLine dashboardChartLine = ForecastChartLine.of(isPermitted,
+                    chartPredictDataType,
+                    goodsDataSource.getGoodsDataSourceNo(), periodAverages,
+                    chartPredictSettingDetail.getPredictChartDetailExpn());
 
-                    List<ForecastChartRawData> monthlyAverages = null;
-                    LocalDate lastUpdated = null;
-                    ForecastDataSource dashboardDataSource = null;
-                    String cachedData = redisTemplate.opsForValue().get(cacheKey);
-                    if (cachedData != null) {
-                        try {
-                            ForecastDataCache dashboardDataCache = objectMapper.readValue(cachedData, ForecastDataCache.class);
-                            monthlyAverages = dashboardDataCache.monthlyAverages();
-                            lastUpdated = dashboardDataCache.lastUpdated();
-                            dashboardDataSource = dashboardDataCache.dataSource();
-                        } catch (Exception e) {
-                            redisTemplate.delete(cacheKey);
-                        }
-                    }
-
-                    if (monthlyAverages == null) {
-                        List<Map<String, Object>> rawData = chartPredictSettingDetail.getIsChartLinePredictVal()
-                                ? getForecastDataRows(goodsDataSource, dateColumnName, defaultDataColumnName, alignedStartDate, alignedEndDate)
-                                : getActualDataRows(goodsDataSource, dateColumnName, alignedStartDate, alignedEndDate);
-
-                        if (chartPredictSettingDetail.getIsChartLinePredictVal() && !rawData.isEmpty()) {
-                            String latestPredictDate = rawData.stream()
-                                    .map(row -> (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME))
-                                    .filter(Objects::nonNull)
-                                    .max(String::compareTo)
-                                    .orElse(null);
-                            if (latestPredictDate != null) {
-                                lastUpdated = DateUtil.parseDate(latestPredictDate);
-                                rawData = rawData.stream()
-                                        .filter(row -> latestPredictDate.equals(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)))
-                                        .toList();
-                            }
-                            dashboardDataSource = ForecastDataSource.of(goodsDataSource, chartPredictSettingDetail);
-                        }
-
-                        monthlyAverages = calculateAverages(
-                                dateList,
-                                rawData,
-                                dateColumnName,
-                                defaultDataColumnName,
-                                chartPredictSettingDetail.getIsChartLinePredictVal(),
-                                lastUpdated);
-
-                        ForecastDataCache dashboardDataCache = ForecastDataCache.of(monthlyAverages, lastUpdated, dashboardDataSource);
-                        saveForecastChartCache(cacheKey, dashboardDataCache);
-                    }
-
-                    ForecastChartLine dashboardChartLine = ForecastChartLine.of(isPermitted, chartPredictDataType,
-                            goodsDataSource.getGoodsDataSourceNo(), monthlyAverages, chartPredictSettingDetail.getPredictChartDetailExpn());
-
-                    Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo();
-                    ForecastChart dashboardChart = chartMap.compute(goodsDataSourceNo, (key, existingChart) -> {
+                Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail()
+                    .getGoodsDataSourceNo();
+                ForecastChart dashboardChart = chartMap.compute(goodsDataSourceNo,
+                    (key, existingChart) -> {
                         if (existingChart == null) {
                             return ForecastChart.of(
-                                    chartPredictSettingDetail,
-                                    chartPredictSettingDetail.getIsChartLinePredictVal() ? null : dashboardChartLine,
-                                    chartPredictSettingDetail.getIsChartLinePredictVal() ? dashboardChartLine : null);
+                                chartPredictSettingDetail,
+                                isPredict ? null
+                                    : dashboardChartLine,
+                                isPredict
+                                    ? dashboardChartLine : null);
                         }
                         return ForecastChart.builder()
-                                .chartLineDescription(existingChart.chartLineDescription() != null
-                                        ? existingChart.chartLineDescription()
-                                        : chartPredictSettingDetail.getPredictChartDetailExpn())
-                                .chartLineType(existingChart.chartLineType() != null
-                                        ? existingChart.chartLineType()
-                                        : chartPredictSettingDetail.getChartPredictLineSeparateCd())
-                                .actualChartLines(chartPredictSettingDetail.getIsChartLinePredictVal()
-                                        ? existingChart.actualChartLines()
-                                        : dashboardChartLine)
-                                .forecastChartLines(chartPredictSettingDetail.getIsChartLinePredictVal()
-                                        ? dashboardChartLine
-                                        : existingChart.forecastChartLines())
-                                .build();
+                            .chartLineDescription(existingChart.chartLineDescription() != null
+                                ? existingChart.chartLineDescription()
+                                : chartPredictSettingDetail.getPredictChartDetailExpn())
+                            .chartLineType(existingChart.chartLineType() != null
+                                ? existingChart.chartLineType()
+                                : chartPredictSettingDetail.getChartPredictLineSeparateCd())
+                            .actualChartLines(isPredict
+                                ? existingChart.actualChartLines()
+                                : dashboardChartLine)
+                            .forecastChartLines(isPredict
+                                ? dashboardChartLine
+                                : existingChart.forecastChartLines())
+                            .build();
                     });
 
-                    return ForecastChartData.of(lastUpdated, dashboardDataSource, actualGoodsDataSourceDetail[0], dashboardChart);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                return ForecastChartData.of(lastUpdated, dashboardDataSource,
+                    actualGoodsDataSourceDetail[0], dashboardChart);
+            })
+            .filter(Objects::nonNull)
+            .toList();
     }
 
-    public List<ForecastChartRawData> calculateAverages(List<ForecastChartRes.ForecastChartDateItem> dateList,
-            List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
-            boolean isPredict, LocalDate lastUpdated) {
+    public List<ForecastChartRawData> calculatePeriodAverages(
+        List<ForecastChartRes.ForecastChartDateItem> dateList,
+        List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
+        boolean isPredict) {
         List<ForecastChartRawData> periodAverages = new ArrayList<>();
-        String predictDate = isPredict && lastUpdated != null ? DateUtil.toYmd(lastUpdated) : null;
 
         for (ForecastChartRes.ForecastChartDateItem item : dateList) {
             LocalDate rangeStart;
@@ -616,19 +717,29 @@ public class MiForecastService {
             }
 
             List<Double> values = new ArrayList<>();
+            String latestPredictDate = null;
+            int matchedRows = 0;
             for (Map<String, Object> row : rawData) {
                 LocalDate rowDate = DateUtil.parseDate(row.get(dateColumnName));
                 if (rowDate == null || rowDate.isBefore(rangeStart) || rowDate.isAfter(rangeEnd)) {
                     continue;
                 }
+                matchedRows++;
+                if (isPredict) {
+                    String rowPredictDate = getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                    if (rowPredictDate != null && (latestPredictDate == null
+                        || rowPredictDate.compareTo(latestPredictDate) > 0)) {
+                        latestPredictDate = rowPredictDate;
+                    }
+                }
                 Object val = row.get(defaultDataColumnName);
                 Double valueData;
                 if (val == null) {
                     valueData = null;
-                } else if (val instanceof Double) {
-                    valueData = (Double) val;
-                } else if (val instanceof BigDecimal) {
-                    valueData = ((BigDecimal) val).doubleValue();
+                } else if (val instanceof Double d) {
+                    valueData = d;
+                } else if (val instanceof BigDecimal bd) {
+                    valueData = bd.doubleValue();
                 } else {
                     try {
                         valueData = Double.parseDouble(val.toString());
@@ -640,23 +751,30 @@ public class MiForecastService {
             }
 
             String label = item.label();
+            if (isPredict) {
+                log.debug("Forecast predictDate by range. label={}, rangeStart={}, rangeEnd={}, matchedRows={}, latestPredictDate={}",
+                    item.label(), rangeStart, rangeEnd, matchedRows, latestPredictDate);
+            }
+            String predictDate = isPredict ? latestPredictDate : null;
             ForecastChartRawData dashboardChartRawData;
             if (values.isEmpty()) {
                 if (isPredict) {
-                    dashboardChartRawData = ForecastChartRawData.ofForecast(label, predictDate, null);
+                    dashboardChartRawData = ForecastChartRawData.ofForecast(label, predictDate,
+                        null);
                 } else {
                     dashboardChartRawData = ForecastChartRawData.ofActual(label, null);
                 }
             } else {
                 double average = values.stream()
-                        .filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue)
-                        .average()
-                        .orElse(0.0);
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
                 BigDecimal bd = BigDecimal.valueOf(average)
-                        .setScale(2, RoundingMode.HALF_UP);
+                    .setScale(2, RoundingMode.HALF_UP);
                 if (isPredict) {
-                    dashboardChartRawData = ForecastChartRawData.ofForecast(label, predictDate, bd.doubleValue());
+                    dashboardChartRawData = ForecastChartRawData.ofForecast(label, predictDate,
+                        bd.doubleValue());
                 } else {
                     dashboardChartRawData = ForecastChartRawData.ofActual(label, bd.doubleValue());
                 }
@@ -666,9 +784,11 @@ public class MiForecastService {
         return periodAverages;
     }
 
-    private List<Map<String, Object>> getForecastDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
-            String valueColumnName, LocalDate startDate, LocalDate endDate) {
-        if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
+    private List<Map<String, Object>> getForecastDataRows(
+        GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
+        LocalDate startDate, LocalDate endDate) {
+        if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null
+            || endDate == null) {
             return Collections.emptyList();
         }
 
@@ -682,10 +802,10 @@ public class MiForecastService {
         Pattern regex = Pattern.compile(pattern);
         Matcher matcher = regex.matcher(dbQueryConditionCntt);
 
-        String key1 = null;
-        String value1 = null;
-        String key2 = null;
-        String value2 = null;
+        String key1;
+        String value1;
+        String key2;
+        String value2;
 
         if (matcher.find()) {
             key1 = matcher.group(1);
@@ -696,63 +816,51 @@ public class MiForecastService {
             throw new IllegalArgumentException("Invalid condition format: " + dbQueryConditionCntt);
         }
 
-        String columns = String.format("%s, %s", dbColumnList, MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
-        String tableName = String.format("%s AS t1", goodsDataSourceDetail.getTargetTableNm());
-        String innerJoin = String.format(
-                """
-                            INNER JOIN
-                            (
-                                SELECT
-                                    SUBSTRING(%s, 1, 6) AS yyyymm,
-                                    MAX(%s) AS max_date
-                                FROM %s
-                                WHERE
-                                    %s BETWEEN '%s' AND '%s'
-                                    AND %s = '%s'
-                                    AND %s = '%s'
-                                GROUP BY SUBSTRING(%s, 1, 6)
-                            ) AS l
-                            ON t1.%s = l.max_date
-                            AND t1.%s = '%s'
-                            AND t1.%s = '%s'
-                        """,
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                goodsDataSourceDetail.getTargetTableNm(),
-                dateColumnName, startDateValue, endDateValue,
-                key1, value1,
-                key2, value2,
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                key1, value1,
-                key2, value2);
-        String orderByColumns = String.format("%s", MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        String columns = String.format("%s, %s", dbColumnList,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        String tableName = goodsDataSourceDetail.getTargetTableNm();
+        String whereClause = String.format(
+            "%s BETWEEN '%s' AND '%s' AND %s = '%s' AND %s = '%s'",
+            dateColumnName, startDateValue, endDateValue,
+            key1, value1,
+            key2, value2);
+        String orderByColumns = String.format("%s, %s", dateColumnName,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
         return mybatisDynamicQueryService.getDynamicForecast(
-                DynamicDataDetailReq.ofInnerJoin(goodsDataSourceDetail.getTargetDbNm(), tableName, columns, innerJoin, orderByColumns));
+            DynamicDataDetailReq.ofOrderBy(goodsDataSourceDetail.getTargetDbNm(), tableName,
+                columns, whereClause, orderByColumns));
     }
 
-    private List<Map<String, Object>> getActualDataRows(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
-            LocalDate startDate, LocalDate endDate) {
-        if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null || endDate == null) {
+    private List<Map<String, Object>> getActualDataRows(GoodsDataSourceDetail goodsDataSourceDetail,
+        String dateColumnName,
+        LocalDate startDate, LocalDate endDate) {
+        if (goodsDataSourceDetail == null || dateColumnName == null || startDate == null
+            || endDate == null) {
             return Collections.emptyList();
         }
 
-        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
+        SchemaMetadata meta = mybatisDynamicQueryService.getMeta(
+            DynamicDataReq.ofMetaQuery(goodsDataSourceDetail));
         Pair<String, String> range = DateBindingUtil.range(meta, startDate, endDate);
-        String whereClause = CombineUtil.createBetweenClause(dateColumnName, range.getLeft(), range.getRight());
+        String whereClause = CombineUtil.createBetweenClause(dateColumnName, range.getLeft(),
+            range.getRight());
 
-        return mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
+        return mybatisDynamicQueryService.getDynamicData(
+            DynamicDataReq.of(goodsDataSourceDetail, whereClause, dateColumnName));
     }
 
-    private String getForecastChartCacheKey(Integer chartPredictSettingDetailNo, String xAxisUnit, String period, String baseDate) {
-        return String.format(FORECAST_CHART_CACHE_KEY, chartPredictSettingDetailNo, xAxisUnit, period, baseDate);
+    private String getForecastChartCacheKey(Integer chartPredictSettingDetailNo, String xAxisUnit,
+        String period, String baseDate) {
+        return String.format(FORECAST_CHART_CACHE_KEY, chartPredictSettingDetailNo, xAxisUnit,
+            period, baseDate);
     }
 
     private void saveForecastChartCache(String key, ForecastDataCache cache) {
         try {
             String json = objectMapper.writeValueAsString(cache);
-            redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(FORECAST_CHART_CACHE_TTL));
+            redisTemplate.opsForValue()
+                .set(key, json, Duration.ofSeconds(FORECAST_CHART_CACHE_TTL));
         } catch (Exception e) {
             // ignore serialization failure for cache
         }
@@ -781,7 +889,8 @@ public class MiForecastService {
         return map;
     }
 
-    private Double getValue(ForecastChartLine line, String label, Map<ForecastChartLine, Map<String, Double>> lineValueMap) {
+    private Double getValue(ForecastChartLine line, String label,
+        Map<ForecastChartLine, Map<String, Double>> lineValueMap) {
         if (line == null) {
             return null;
         }
@@ -792,23 +901,27 @@ public class MiForecastService {
     /**
      * Forecast report 상세 조회
      *
-     * @param companyNo 회사 번호
+     * @param companyNo                   회사 번호
      * @param marketIndexAnalysisTargetCd 시장지수분석대상코드
-     * @param predictionFulfillDt 예측수행일자
-     * @param mnemonicCd MNEMONIC코드
-     * @param predictionCriteriaDt 예측기준일자
+     * @param predictionFulfillDt         예측수행일자
+     * @param mnemonicCd                  MNEMONIC코드
+     * @param predictionCriteriaDt        예측기준일자
      * @return ForecastReportDetailRes
      */
-    public ForecastReportDetailRes getForecastReportDetail(int companyNo, String marketIndexAnalysisTargetCd,
-            String predictionFulfillDt, String mnemonicCd, String predictionCriteriaDt) {
+    public ForecastReportDetailRes getForecastReportDetail(int companyNo,
+        String marketIndexAnalysisTargetCd,
+        String predictionFulfillDt, String mnemonicCd, String predictionCriteriaDt) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(
-                    Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
+            customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
         }
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
@@ -817,7 +930,8 @@ public class MiForecastService {
                 continue;
             }
             GoodsDataSourceDetail goodsDataSourceDetail = detail.getGoodsDataSourceDetail();
-            if (goodsDataSourceDetail == null || goodsDataSourceDetail.getQueryConditionCntt() == null) {
+            if (goodsDataSourceDetail == null
+                || goodsDataSourceDetail.getQueryConditionCntt() == null) {
                 continue;
             }
             if (!goodsDataSourceDetail.getQueryConditionCntt().contains(mnemonicCd)) {
@@ -828,14 +942,15 @@ public class MiForecastService {
 
             String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
             List<DashboardChartSummaryMap> chartSummaries =
-                    forecastMapper.chartSummary(queryWhere, predictionFulfillDt, null, null);
+                forecastMapper.chartSummary(queryWhere, predictionFulfillDt, null, null);
             DashboardChartSummaryMap decodedSummary = null;
             if (chartSummaries != null && !chartSummaries.isEmpty()) {
                 DashboardChartSummaryMap matchedSummary = chartSummaries.stream()
-                        .filter(summary -> marketIndexAnalysisTargetCd.equals(summary.getMarketIndexAnalysisTargetCd()))
-                        .filter(summary -> mnemonicCd.equals(summary.getMnemonicCd()))
-                        .findFirst()
-                        .orElse(null);
+                    .filter(summary -> marketIndexAnalysisTargetCd.equals(
+                        summary.getMarketIndexAnalysisTargetCd()))
+                    .filter(summary -> mnemonicCd.equals(summary.getMnemonicCd()))
+                    .findFirst()
+                    .orElse(null);
                 if (matchedSummary == null) {
                     continue;
                 }
@@ -847,49 +962,53 @@ public class MiForecastService {
                 predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
             }
             AvailableForecastKey forecastKey = new AvailableForecastKey(
-                    predictionFulfillDt,
-                    predictionCriteriaDt,
-                    mnemonicCd,
-                    marketIndexAnalysisTargetCd,
-                    predictChartDetailExpn,
-                    detail.getAssociatedGoodsDataSourceDetail() != null
-                            ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
-                            : null);
-            ForecastResultValue resultValue = getForecastResultValue(goodsDataSourceDetail, forecastKey);
+                predictionFulfillDt,
+                predictionCriteriaDt,
+                mnemonicCd,
+                marketIndexAnalysisTargetCd,
+                predictChartDetailExpn,
+                detail.getAssociatedGoodsDataSourceDetail() != null
+                    ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
+                    : null);
+            ForecastResultValue resultValue = getForecastResultValue(goodsDataSourceDetail,
+                forecastKey);
             if (resultValue == null) {
                 continue;
             }
 
             DiffResult diffResult = calculateDiffResult(resultValue.predictionCriteriaVal(),
-                    resultValue.predictionResultVal());
+                resultValue.predictionResultVal());
             Double avgPredictionResultVal = toScaledDouble(resultValue.predictionResultVal());
             Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal());
             String endPredictionResultDt = resultValue.endPredictionResultDt();
             if (endPredictionResultDt == null && decodedSummary != null) {
                 endPredictionResultDt = decodedSummary.getPredictionResultDt();
             }
-            String explanatoryTitleContent = decodedSummary != null ? decodedSummary.getExplanatoryTitleContent() : null;
-            String explanatorySummaryContent = decodedSummary != null ? decodedSummary.getExplanatorySummaryContent() : null;
-            String explanatoryFilePath = decodedSummary != null ? decodedSummary.getExplanatoryFilePath() : null;
+            String explanatoryTitleContent =
+                decodedSummary != null ? decodedSummary.getExplanatoryTitleContent() : null;
+            String explanatorySummaryContent =
+                decodedSummary != null ? decodedSummary.getExplanatorySummaryContent() : null;
+            String explanatoryFilePath =
+                decodedSummary != null ? decodedSummary.getExplanatoryFilePath() : null;
 
             return ForecastReportDetailRes.builder()
-                    .marketIndexAnalysisTargetCd(marketIndexAnalysisTargetCd)
-                    .predictionFulfillDt(predictionFulfillDt)
-                    .mnemonicCd(mnemonicCd)
-                    .predictChartDetailExpn(forecastKey.predictChartDetailExpn())
-                    .associatedGoodsDataSourceNo(forecastKey.associatedGoodsDataSourceNo())
-                    .endPredictionResultDt(endPredictionResultDt)
-                    .startPredictionResultDt(resultValue.startPredictionResultDt())
-                    .predictionCriteriaDt(resultValue.predictionCriteriaDt())
-                    .avgPredictionResultVal(avgPredictionResultVal)
-                    .predictionCriteriaVal(predictionCriteriaVal)
-                    .predictionResultDiffVal(diffResult.diffValue())
-                    .predictionResultDiffRate(diffResult.diffRate())
-                    .isScheduled(null)
-                    .explanatoryTitleContent(explanatoryTitleContent)
-                    .explanatorySummaryContent(explanatorySummaryContent)
-                    .explanatoryFilePath(explanatoryFilePath)
-                    .build();
+                .marketIndexAnalysisTargetCd(marketIndexAnalysisTargetCd)
+                .predictionFulfillDt(predictionFulfillDt)
+                .mnemonicCd(mnemonicCd)
+                .predictChartDetailExpn(forecastKey.predictChartDetailExpn())
+                .associatedGoodsDataSourceNo(forecastKey.associatedGoodsDataSourceNo())
+                .endPredictionResultDt(endPredictionResultDt)
+                .startPredictionResultDt(resultValue.startPredictionResultDt())
+                .predictionCriteriaDt(resultValue.predictionCriteriaDt())
+                .avgPredictionResultVal(avgPredictionResultVal)
+                .predictionCriteriaVal(predictionCriteriaVal)
+                .predictionResultDiffVal(diffResult.diffValue())
+                .predictionResultDiffRate(diffResult.diffRate())
+                .isScheduled(null)
+                .explanatoryTitleContent(explanatoryTitleContent)
+                .explanatorySummaryContent(explanatorySummaryContent)
+                .explanatoryFilePath(explanatoryFilePath)
+                .build();
         }
 
         throw AppErrorException.of(Error.RSC_NOT_FOUND, "Forecast report 상세 조회 실패");
@@ -905,27 +1024,31 @@ public class MiForecastService {
     /**
      * Forecast 리포트 목록 조회
      *
-     * @param companyNo 회사 번호
+     * @param companyNo         회사 번호
      * @param goodsDataSourceNo 데이터 소스 번호(선택)
      * @return List<ForecastReportRes>
      */
     public List<ForecastReportRes> getForecastReports(int companyNo, Integer goodsDataSourceNo) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
-                .orElseThrow(() -> AppErrorException.of(
-                    Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-        if (chartPredictSettingDetailRes == null || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, "설정된 차트가 없습니다.");
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
+            customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
         }
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                    .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                    .filter(detail -> goodsDataSourceNo.equals(detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
-                    .toList();
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .filter(detail -> goodsDataSourceNo.equals(
+                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .toList();
         }
         List<AvailableForecastKey> availableDates = getAvailableDates(chartPredictSettingDetails);
 
@@ -937,7 +1060,8 @@ public class MiForecastService {
         return results;
     }
 
-    private LocalDate calculateBaseDate(LocalDate today, Integer periodCount, PeriodUnitSeparateCd periodUnit) {
+    private LocalDate calculateBaseDate(LocalDate today, Integer periodCount,
+        PeriodUnitSeparateCd periodUnit) {
         if (today == null) {
             return null;
         }
@@ -954,7 +1078,8 @@ public class MiForecastService {
      * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
      */
-    private List<Map<String, Object>> getLastUpdateDateData(GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+    private List<Map<String, Object>> getLastUpdateDateData(
+        GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
 
         if (goodsDataSourceDetail == null || dateColumnName == null) {
             return Collections.emptyList();
@@ -962,8 +1087,10 @@ public class MiForecastService {
 
         String orderByColumns = String.format("%s DESC", dateColumnName);
 
-        return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.ofLimitAndOrderBy(goodsDataSourceDetail.getTargetDbNm(),
-                goodsDataSourceDetail.getTargetTableNm(), dateColumnName, goodsDataSourceDetail.getQueryConditionCntt(),
+        return mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.ofLimitAndOrderBy(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), dateColumnName,
+                goodsDataSourceDetail.getQueryConditionCntt(),
                 DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT, orderByColumns));
     }
 
@@ -973,54 +1100,62 @@ public class MiForecastService {
      * @param chartPredictSettingDetails 차트 설정 상세 목록
      * @return List<AvailableForecastKey>
      */
-    private List<AvailableForecastKey> getAvailableDates(List<ChartPredictSettingDetail> chartPredictSettingDetails) {
+    private List<AvailableForecastKey> getAvailableDates(
+        List<ChartPredictSettingDetail> chartPredictSettingDetails) {
         return chartPredictSettingDetails.stream()
-                .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
-                .flatMap(detail -> {
-                    GoodsDataSourceDetail goodsDataSource = detail.getGoodsDataSourceDetail();
-                    if (goodsDataSource == null) {
-                        return Stream.empty();
-                    }
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .flatMap(detail -> {
+                GoodsDataSourceDetail goodsDataSource = detail.getGoodsDataSourceDetail();
+                if (goodsDataSource == null) {
+                    return Stream.empty();
+                }
 
-                    Integer associatedGoodsDataSourceNo = detail.getAssociatedGoodsDataSourceDetail() != null
-                            ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
-                            : null;
-                    List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource);
-                    return rawData.stream()
-                            .map(row -> {
-                                Object fulfillDateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
-                                Object criteriaDateValue = row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
-                                if (fulfillDateValue == null || criteriaDateValue == null) {
-                                    return null;
-                                }
-                                String fulfillDate = String.valueOf(fulfillDateValue);
-                                String criteriaDate = String.valueOf(criteriaDateValue);
-                                String mnemonicCd = getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
-                                String marketIndexAnalysisTargetCd =
-                                        getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
-                                String predictChartDetailExpn = null;
-                                if (mnemonicCd != null) {
-                                    MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
-                                    if (mnemonicCode != null) {
-                                        predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
-                                    }
-                                }
-                                return new AvailableForecastKey(fulfillDate, criteriaDate, mnemonicCd, marketIndexAnalysisTargetCd,
-                                        predictChartDetailExpn, associatedGoodsDataSourceNo);
-                            })
-                            .filter(Objects::nonNull);
-                })
-                .sorted(Comparator
-                        .comparing(AvailableForecastKey::predictionFulfillDt, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(AvailableForecastKey::associatedGoodsDataSourceNo, Comparator.nullsLast(Comparator.reverseOrder())))
-                .toList();
+                Integer associatedGoodsDataSourceNo =
+                    detail.getAssociatedGoodsDataSourceDetail() != null
+                        ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
+                        : null;
+                List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource);
+                return rawData.stream()
+                    .map(row -> {
+                        Object fulfillDateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+                        Object criteriaDateValue = row.get(
+                            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+                        if (fulfillDateValue == null || criteriaDateValue == null) {
+                            return null;
+                        }
+                        String fulfillDate = String.valueOf(fulfillDateValue);
+                        String criteriaDate = String.valueOf(criteriaDateValue);
+                        String mnemonicCd = getStringValue(
+                            row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
+                        String marketIndexAnalysisTargetCd =
+                            getStringValue(
+                                row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
+                        String predictChartDetailExpn = null;
+                        if (mnemonicCd != null) {
+                            MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
+                            if (mnemonicCode != null) {
+                                predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+                            }
+                        }
+                        return new AvailableForecastKey(fulfillDate, criteriaDate, mnemonicCd,
+                            marketIndexAnalysisTargetCd,
+                            predictChartDetailExpn, associatedGoodsDataSourceNo);
+                    })
+                    .filter(Objects::nonNull);
+            })
+            .sorted(Comparator
+                .comparing(AvailableForecastKey::predictionFulfillDt,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AvailableForecastKey::associatedGoodsDataSourceNo,
+                    Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
     }
 
     /**
      * Forecast 리포트 데이터 조회
      *
      * @param chartPredictSettingDetails 차트 설정 상세 목록
-     * @param forecastKey 조회 날짜 정보
+     * @param forecastKey                조회 날짜 정보
      * @return List<ForecastReportRes>
      */
     private List<ForecastReportRes> getForecastReportByDate(
@@ -1049,7 +1184,7 @@ public class MiForecastService {
                 }
 
                 DiffResult diffResult = calculateDiffResult(resultValue.predictionCriteriaVal(),
-                        resultValue.predictionResultVal());
+                    resultValue.predictionResultVal());
                 Double predictionResultVal = toScaledDouble(resultValue.predictionResultVal());
                 Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal());
                 return Stream.of(ForecastReportRes.builder()
@@ -1072,9 +1207,8 @@ public class MiForecastService {
     }
 
     /**
-     * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다.
-     * 데이터소스 상세 정보와 날짜 컬럼명, 기준일 컬럼명을 기반으로 데이터를 필터링하여 조회한다.
-     * 조건에 맞는 데이터가 없는 경우 빈 리스트를 반환한다.
+     * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다. 데이터소스 상세 정보와 날짜 컬럼명, 기준일 컬럼명을 기반으로 데이터를 필터링하여 조회한다. 조건에 맞는
+     * 데이터가 없는 경우 빈 리스트를 반환한다.
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @return 조건에 맞는 데이터 행 목록
@@ -1086,49 +1220,57 @@ public class MiForecastService {
 
         int startDateLength = 1;
         int endDateLength = 6;
-        String dateColumn = String.format("MAX(%s) as %s, MAX(%s) as %s, MAX(%s) as %s, MAX(%s) as %s",
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
-                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME, MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME);
-        String groupBy = "SUBSTRING(%s, %d, %d)".formatted(MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDateLength, endDateLength);
+        String dateColumn = String.format(
+            "MAX(%s) as %s, MAX(%s) as %s, MAX(%s) as %s, MAX(%s) as %s",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME);
+        String groupBy = "SUBSTRING(%s, %d, %d)".formatted(MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            startDateLength, endDateLength);
         String orderBy = String.format("%s DESC", groupBy);
 
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.builder()
-                .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
-                .tableName(goodsDataSourceDetail.getTargetTableNm())
-                .columns(dateColumn)
-                .whereClause(goodsDataSourceDetail.getQueryConditionCntt())
-                .groupByColumns(groupBy)
-                .orderByColumns(orderBy)
-                .limit(FORECAST_AVAILABLE_DATE_LIMIT)
-                .build());
+            .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
+            .tableName(goodsDataSourceDetail.getTargetTableNm())
+            .columns(dateColumn)
+            .whereClause(goodsDataSourceDetail.getQueryConditionCntt())
+            .groupByColumns(groupBy)
+            .orderByColumns(orderBy)
+            .limit(FORECAST_AVAILABLE_DATE_LIMIT)
+            .build());
     }
 
-    private ForecastResultValue getForecastResultValue(GoodsDataSourceDetail goodsDataSourceDetail, AvailableForecastKey forecastKey) {
+    private ForecastResultValue getForecastResultValue(GoodsDataSourceDetail goodsDataSourceDetail,
+        AvailableForecastKey forecastKey) {
         if (goodsDataSourceDetail == null || forecastKey == null) {
             return null;
         }
-        if (forecastKey.predictionFulfillDt() == null || forecastKey.predictionCriteriaDt() == null) {
+        if (forecastKey.predictionFulfillDt() == null
+            || forecastKey.predictionCriteriaDt() == null) {
             return null;
         }
 
-        String whereClause = buildForecastResultWhereClause(goodsDataSourceDetail.getQueryConditionCntt(),
-                forecastKey.predictionFulfillDt(), forecastKey.predictionCriteriaDt());
+        String whereClause = buildForecastResultWhereClause(
+            goodsDataSourceDetail.getQueryConditionCntt(),
+            forecastKey.predictionFulfillDt(), forecastKey.predictionCriteriaDt());
         String columns = String.join(", ",
-                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME);
+            MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME);
 
         List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
-                DynamicDataDetailReq.builder()
-                        .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
-                        .tableName(goodsDataSourceDetail.getTargetTableNm())
-                        .columns(columns)
-                        .whereClause(whereClause)
-                        .orderByColumns(String.format("%s ASC", MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME))
-                        .build());
+            DynamicDataDetailReq.builder()
+                .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
+                .tableName(goodsDataSourceDetail.getTargetTableNm())
+                .columns(columns)
+                .whereClause(whereClause)
+                .orderByColumns(
+                    String.format("%s ASC", MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME))
+                .build());
 
         if (rows.isEmpty()) {
             return null;
@@ -1147,9 +1289,12 @@ public class MiForecastService {
                 continue;
             }
             String resultDt = getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
-            String resultVal = getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME));
-            String criteriaDt = getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
-            String criteriaVal = getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME));
+            String resultVal = getStringValue(
+                row.get(MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME));
+            String criteriaDt = getStringValue(
+                row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+            String criteriaVal = getStringValue(
+                row.get(MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME));
 
             if (resultDt != null) {
                 if (startPredictionResultDt == null) {
@@ -1158,16 +1303,17 @@ public class MiForecastService {
                 endPredictionResultDt = resultDt;
             }
 
-            if (criteriaDt != null) {
-                if (predictionCriteriaDt == null || criteriaDt.compareTo(predictionCriteriaDt) > 0) {
-                    predictionCriteriaDt = criteriaDt;
-                }
+            if (criteriaDt != null
+                && (predictionCriteriaDt == null
+                    || criteriaDt.compareTo(predictionCriteriaDt) > 0)) {
+                predictionCriteriaDt = criteriaDt;
             }
 
             if (criteriaVal != null) {
                 try {
                     BigDecimal criteria = new BigDecimal(criteriaVal);
-                    if (predictionCriteriaVal == null || criteria.compareTo(predictionCriteriaVal) > 0) {
+                    if (predictionCriteriaVal == null
+                        || criteria.compareTo(predictionCriteriaVal) > 0) {
                         predictionCriteriaVal = criteria;
                     }
                 } catch (NumberFormatException ignored) {
@@ -1190,26 +1336,28 @@ public class MiForecastService {
         String avgPredictionResultVal = null;
         if (predictionResultCount > 0) {
             avgPredictionResultVal = predictionResultSum
-                    .divide(BigDecimal.valueOf(predictionResultCount), 6, RoundingMode.HALF_UP)
-                    .toPlainString();
+                .divide(BigDecimal.valueOf(predictionResultCount), 6, RoundingMode.HALF_UP)
+                .toPlainString();
         }
 
         return new ForecastResultValue(
-                endPredictionResultDt,
-                startPredictionResultDt,
-                predictionCriteriaDt,
-                avgPredictionResultVal,
-                predictionCriteriaVal != null ? predictionCriteriaVal.toPlainString() : null,
-                predictionResults);
+            endPredictionResultDt,
+            startPredictionResultDt,
+            predictionCriteriaDt,
+            avgPredictionResultVal,
+            predictionCriteriaVal != null ? predictionCriteriaVal.toPlainString() : null,
+            predictionResults);
     }
 
-    private String buildForecastResultWhereClause(String baseWhereClause, String fulfillDate, String criteriaDate) {
+    private String buildForecastResultWhereClause(String baseWhereClause, String fulfillDate,
+        String criteriaDate) {
         List<String> clauses = new ArrayList<>();
         if (baseWhereClause != null && !baseWhereClause.isBlank()) {
             clauses.add(baseWhereClause);
         }
         clauses.add(String.format("%s = '%s'", MARKET_DATA_PREDICT_DATE_COLUMN_NAME, fulfillDate));
-        clauses.add(String.format("%s = '%s'", MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, criteriaDate));
+        clauses.add(String.format("%s = '%s'", MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            criteriaDate));
         return String.join(" AND ", clauses);
     }
 
@@ -1230,7 +1378,7 @@ public class MiForecastService {
         long unitDays = getUnitDays(endDate, axisUnit);
         if (periodDays <= unitDays) {
             throw AppErrorException.of(Error.REQ_INVALID_PARAMETER,
-                    String.format("전체기간(%d일)은 x축 단위(%d일)보다 길어야 합니다.", periodDays, unitDays));
+                String.format("전체기간(%d일)은 x축 단위(%d일)보다 길어야 합니다.", periodDays, unitDays));
         }
     }
 
@@ -1243,23 +1391,24 @@ public class MiForecastService {
                 int startMonth = ((endDate.getMonthValue() - 1) / 3) * 3 + 1;
                 LocalDate quarterStart = LocalDate.of(endDate.getYear(), startMonth, 1);
                 LocalDate quarterEnd = LocalDate.of(endDate.getYear(), startMonth + 2, 1)
-                        .with(TemporalAdjusters.lastDayOfMonth());
+                    .with(TemporalAdjusters.lastDayOfMonth());
                 yield java.time.temporal.ChronoUnit.DAYS.between(quarterStart, quarterEnd) + 1;
             }
             case ONE_YEAR -> endDate.lengthOfYear();
         };
     }
 
-    private List<ForecastChartRes.ForecastChartDateItem> buildDateList(LocalDate startDate, LocalDate endDate,
-            AxisUnit axisUnit) {
+    private List<ForecastChartRes.ForecastChartDateItem> buildDateList(LocalDate startDate,
+        LocalDate endDate,
+        AxisUnit axisUnit) {
         List<ForecastChartRes.ForecastChartDateItem> dates = new ArrayList<>();
         if (axisUnit == AxisUnit.ONE_DAY) {
             LocalDate cursor = startDate;
             while (!cursor.isAfter(endDate)) {
                 dates.add(ForecastChartRes.ForecastChartDateItem.builder()
-                        .label(DateUtil.toYmd(cursor))
-                        .unit(axisUnit.label)
-                        .build());
+                    .label(DateUtil.toYmd(cursor))
+                    .unit(axisUnit.label)
+                    .build());
                 cursor = cursor.plusDays(1);
             }
             return dates;
@@ -1273,11 +1422,11 @@ public class MiForecastService {
             String label = formatAxisLabel(actualEnd, axisUnit);
 
             dates.add(ForecastChartRes.ForecastChartDateItem.builder()
-                    .label(label)
-                    .startDate(DateUtil.toYmd(actualStart))
-                    .endDate(DateUtil.toYmd(actualEnd))
-                    .unit(axisUnit.label)
-                    .build());
+                .label(label)
+                .startDate(DateUtil.toYmd(actualStart))
+                .endDate(DateUtil.toYmd(actualEnd))
+                .unit(axisUnit.label)
+                .build());
 
             cursorEnd = periodStart.minusDays(1);
         }
@@ -1309,7 +1458,8 @@ public class MiForecastService {
                 yield String.format("W%d %d", week, year);
             }
             case ONE_MONTH -> {
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MMM ''yy");
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(
+                    "MMM ''yy");
                 yield formatter.format(date);
             }
             case ONE_QUARTER -> {
@@ -1322,16 +1472,16 @@ public class MiForecastService {
     }
 
     private List<ForecastReportRes.PredictionResultPoint> toPredictionResultPoints(
-            List<ForecastResultPoint> predictionResults) {
+        List<ForecastResultPoint> predictionResults) {
         if (predictionResults == null || predictionResults.isEmpty()) {
             return Collections.emptyList();
         }
         return predictionResults.stream()
-                .map(point -> ForecastReportRes.PredictionResultPoint.builder()
-                        .predictionResultDt(point.predictionResultDt())
-                        .predictionResultVal(toScaledDouble(point.predictionResultVal()))
-                        .build())
-                .toList();
+            .map(point -> ForecastReportRes.PredictionResultPoint.builder()
+                .predictionResultDt(point.predictionResultDt())
+                .predictionResultVal(toScaledDouble(point.predictionResultVal()))
+                .build())
+            .toList();
     }
 
     private DiffResult calculateDiffResult(String criteriaValue, String resultValue) {
@@ -1346,8 +1496,8 @@ public class MiForecastService {
             }
             BigDecimal diff = criteria.subtract(result);
             BigDecimal rate = diff.divide(criteria, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .setScale(2, RoundingMode.HALF_UP);
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
             BigDecimal scaledDiff = diff.setScale(2, RoundingMode.HALF_UP);
             return new DiffResult(scaledDiff.doubleValue(), rate.doubleValue());
         } catch (NumberFormatException e) {
@@ -1371,16 +1521,17 @@ public class MiForecastService {
             return summary;
         }
         try {
-            String decodedPath = URLDecoder.decode(summary.getExplanatoryFilePath(), StandardCharsets.UTF_8);
+            String decodedPath = URLDecoder.decode(summary.getExplanatoryFilePath(),
+                StandardCharsets.UTF_8);
             return DashboardChartSummaryMap.builder()
-                    .marketIndexAnalysisTargetCd(summary.getMarketIndexAnalysisTargetCd())
-                    .predictionFulfillDt(summary.getPredictionFulfillDt())
-                    .mnemonicCd(summary.getMnemonicCd())
-                    .predictionResultDt(summary.getPredictionResultDt())
-                    .explanatoryTitleContent(summary.getExplanatoryTitleContent())
-                    .explanatorySummaryContent(summary.getExplanatorySummaryContent())
-                    .explanatoryFilePath(decodedPath)
-                    .build();
+                .marketIndexAnalysisTargetCd(summary.getMarketIndexAnalysisTargetCd())
+                .predictionFulfillDt(summary.getPredictionFulfillDt())
+                .mnemonicCd(summary.getMnemonicCd())
+                .predictionResultDt(summary.getPredictionResultDt())
+                .explanatoryTitleContent(summary.getExplanatoryTitleContent())
+                .explanatorySummaryContent(summary.getExplanatorySummaryContent())
+                .explanatoryFilePath(decodedPath)
+                .build();
         } catch (IllegalArgumentException e) {
             return summary;
         }
@@ -1451,24 +1602,39 @@ public class MiForecastService {
         }
     }
 
-    private record ForecastTableColumn(ForecastChartLine actualLine, ForecastChartLine forecastLine) {
+    private record ForecastTableColumn(ForecastChartLine actualLine,
+                                       ForecastChartLine forecastLine) {
+
     }
 
-    private record AvailableForecastKey(String predictionFulfillDt, String predictionCriteriaDt, String mnemonicCd,
-            String marketIndexAnalysisTargetCd, String predictChartDetailExpn, Integer associatedGoodsDataSourceNo) {
+    private record ForecastTableData(List<String> headerList, List<List<Object>> rows,
+                                     TableSortOrder sortOrder) {
+
+    }
+
+    private record AvailableForecastKey(String predictionFulfillDt, String predictionCriteriaDt,
+                                        String mnemonicCd,
+                                        String marketIndexAnalysisTargetCd,
+                                        String predictChartDetailExpn,
+                                        Integer associatedGoodsDataSourceNo) {
+
     }
 
     private record DiffResult(Double diffValue, Double diffRate) {
+
         private static DiffResult empty() {
             return new DiffResult(null, null);
         }
     }
 
     private record ForecastResultValue(String endPredictionResultDt, String startPredictionResultDt,
-            String predictionCriteriaDt, String predictionResultVal, String predictionCriteriaVal,
-            List<ForecastResultPoint> predictionResults) {
+                                       String predictionCriteriaDt, String predictionResultVal,
+                                       String predictionCriteriaVal,
+                                       List<ForecastResultPoint> predictionResults) {
+
     }
 
     private record ForecastResultPoint(String predictionResultDt, String predictionResultVal) {
+
     }
 }

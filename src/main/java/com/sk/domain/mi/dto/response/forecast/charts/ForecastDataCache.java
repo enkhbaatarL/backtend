@@ -7,21 +7,21 @@ import java.util.List;
 import lombok.Builder;
 
 public record ForecastDataCache(
-        List<ForecastChartRawData> monthlyAverages,
+        List<ForecastChartRawData> periodAverages,
         LocalDate lastUpdated,
         ForecastDataSource dataSource) {
 
     @Builder
     @JsonCreator
-    public ForecastDataCache(List<ForecastChartRawData> monthlyAverages, LocalDate lastUpdated, ForecastDataSource dataSource) {
-        this.monthlyAverages = monthlyAverages;
+    public ForecastDataCache(List<ForecastChartRawData> periodAverages, LocalDate lastUpdated, ForecastDataSource dataSource) {
+        this.periodAverages = periodAverages;
         this.lastUpdated = lastUpdated;
         this.dataSource = dataSource;
     }
 
-    public static ForecastDataCache of(List<ForecastChartRawData> monthlyAverages, LocalDate lastUpdated, ForecastDataSource dataSource) {
+    public static ForecastDataCache of(List<ForecastChartRawData> periodAverages, LocalDate lastUpdated, ForecastDataSource dataSource) {
         return ForecastDataCache.builder()
-                .monthlyAverages(monthlyAverages)
+                .periodAverages(periodAverages)
                 .lastUpdated(lastUpdated)
                 .dataSource(dataSource)
                 .build();
