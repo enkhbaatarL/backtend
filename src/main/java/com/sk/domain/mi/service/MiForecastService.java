@@ -33,6 +33,7 @@ import com.sk.domain.mi.dto.response.forecast.charts.graph.ForecastChartLine;
 import com.sk.domain.mi.dto.response.forecast.charts.graph.ForecastChartRawData;
 import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastChartFactorGraphMetadata;
 import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastMetadata;
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
 import com.sk.domain.mi.dto.response.forecast.table.ForecastTableRes;
@@ -651,6 +652,10 @@ public class MiForecastService {
                             alignedEndDate)
                             : getActualDataRows(goodsDataSource, dateColumnName, alignedStartDate,
                                 alignedEndDate);
+                    List<ForecastChartRes.ForecastChartDateItem> effectiveDateList = dateList;
+                    if (AxisUnit.ONE_DAY.label.equalsIgnoreCase(xAxisUnit)) {
+                        effectiveDateList = buildDateListFromRawData(rawData, dateColumnName);
+                    }
 
                     if (isPredict && !rawData.isEmpty()) {
                         String latestPredictDate = rawData.stream()
@@ -666,7 +671,7 @@ public class MiForecastService {
                     }
 
                     periodAverages = calculatePeriodAverages(
-                        dateList,
+                        effectiveDateList,
                         rawData,
                         dateColumnName,
                         defaultDataColumnName,
@@ -714,6 +719,23 @@ public class MiForecastService {
                     actualGoodsDataSourceDetail[0], dashboardChart);
             })
             .filter(Objects::nonNull)
+            .toList();
+    }
+
+    private List<ForecastChartRes.ForecastChartDateItem> buildDateListFromRawData(
+        List<Map<String, Object>> rawData, String dateColumnName) {
+        if (rawData == null || rawData.isEmpty() || dateColumnName == null) {
+            return List.of();
+        }
+        return rawData.stream()
+            .map(row -> DateUtil.parseDate(row.get(dateColumnName)))
+            .filter(Objects::nonNull)
+            .distinct()
+            .sorted()
+            .map(date -> ForecastChartRes.ForecastChartDateItem.builder()
+                .label(DateUtil.toYmd(date))
+                .unit(AxisUnit.ONE_DAY.label)
+                .build())
             .toList();
     }
 
@@ -1505,6 +1527,181 @@ public class MiForecastService {
         return results;
     }
 
+    /**
+     * Forecast record 목록 조회
+     *
+     * @param companyNo         회사 번호
+     * @param goodsDataSourceNo 데이터 소스 번호(선택)
+     * @param startDate         조회 시작일자(YYYYMMDD)
+     * @param endDate           조회 종료일자(YYYYMMDD)
+     * @param order             정렬 순서(NEWEST/OLDEST)
+     * @param page              페이지번호
+     * @param size              페이지당항목수
+     * @return PaginationRes<ForecastRecordRes>
+     */
+    public PaginationRes<ForecastRecordRes> getForecastRecords(int companyNo,
+        Integer goodsDataSourceNo, String startDate, String endDate, String order, int page,
+        int size) {
+        LocalDate start = DateUtil.parseDate(startDate);
+        LocalDate end = DateUtil.parseDate(endDate);
+        if (start == null || end == null || start.isAfter(end)) {
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "조회기간이 올바르지 않습니다.");
+        }
+
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        ChartSettingAndDetails chartPredictSettingDetailRes =
+            chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails =
+            chartPredictSettingDetailRes.chartPredictSettingDetails();
+        if (goodsDataSourceNo != null) {
+            chartPredictSettingDetails = chartPredictSettingDetails.stream()
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .filter(detail -> goodsDataSourceNo.equals(
+                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .toList();
+        }
+
+        if (chartPredictSettingDetails.isEmpty()) {
+            return PaginationRes.toRes(new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
+        }
+
+        GoodsDataSourceDetail goodsDataSourceDetail =
+            chartPredictSettingDetails.get(0).getGoodsDataSourceDetail();
+        if (goodsDataSourceDetail == null
+            || goodsDataSourceDetail.getQueryConditionCntt() == null) {
+            return PaginationRes.toRes(new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
+        }
+
+        String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
+        String baseWhere = goodsDataSourceDetail.getQueryConditionCntt();
+        String whereClause = (baseWhere == null || baseWhere.isBlank())
+            ? dateRangeWhere
+            : baseWhere + " AND " + dateRangeWhere;
+
+        String groupByColumns = String.join(", ",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        String orderByDirection =
+            "OLDEST".equalsIgnoreCase(order) ? "ASC" : "DESC";
+        String orderByColumns = String.format("%s %s, %s DESC",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        String columns = String.join(", ",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            "MIN(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as startPredictionResultDt",
+            "MAX(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as endPredictionResultDt",
+            "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal",
+            "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME + ") as predictionCriteriaVal");
+
+        int offset = Math.max(0, (page - 1) * size);
+        String limitClause = String.format("%d, %d", offset, size);
+
+        List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.builder()
+                .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
+                .tableName(goodsDataSourceDetail.getTargetTableNm())
+                .columns(columns)
+                .whereClause(whereClause)
+                .groupByColumns(groupByColumns)
+                .orderByColumns(orderByColumns)
+                .limit(limitClause)
+                .build());
+
+        String countSubQuery = String.format(
+            "(SELECT %s FROM %s WHERE %s GROUP BY %s) t",
+            groupByColumns,
+            goodsDataSourceDetail.getTargetTableNm(),
+            whereClause,
+            groupByColumns);
+        List<Map<String, Object>> countRows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.builder()
+                .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
+                .tableName(countSubQuery)
+                .columns("count(*) as cnt")
+                .build());
+        int totalElements = 0;
+        if (!countRows.isEmpty()) {
+            String countValue = getStringValue(countRows.get(0).get("cnt"));
+            if (countValue != null) {
+                try {
+                    totalElements = Integer.parseInt(countValue);
+                } catch (NumberFormatException ignored) {
+                    totalElements = 0;
+                }
+            }
+        }
+
+        List<ForecastRecordRes> results = rows.stream()
+            .map(row -> {
+                String marketIndexAnalysisTargetCd =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
+                String predictionFulfillDt =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                String mnemonicCd =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
+                String predictionCriteriaDt =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+                String startPredictionResultDt =
+                    getStringValue(row.get("startPredictionResultDt"));
+                String endPredictionResultDt =
+                    getStringValue(row.get("endPredictionResultDt"));
+                String avgPredictionResultValStr =
+                    getStringValue(row.get("avgPredictionResultVal"));
+                String predictionCriteriaValStr =
+                    getStringValue(row.get("predictionCriteriaVal"));
+
+                Double predictionResultVal = toScaledDouble(avgPredictionResultValStr);
+                Double predictionCriteriaVal = toScaledDouble(predictionCriteriaValStr);
+                DiffResult diffResult =
+                    calculateDiffResult(predictionCriteriaValStr, avgPredictionResultValStr);
+
+                String predictChartDetailExpn = null;
+                if (mnemonicCd != null) {
+                    MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
+                    if (mnemonicCode != null) {
+                        predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+                    }
+                }
+
+                return ForecastRecordRes.builder()
+                    .marketIndexAnalysisTargetCd(marketIndexAnalysisTargetCd)
+                    .predictionFulfillDt(predictionFulfillDt)
+                    .mnemonicCd(mnemonicCd)
+                    .predictChartDetailExpn(predictChartDetailExpn)
+                    .associatedGoodsDataSourceNo(goodsDataSourceNo)
+                    .endPredictionResultDt(endPredictionResultDt)
+                    .startPredictionResultDt(startPredictionResultDt)
+                    .predictionCriteriaDt(predictionCriteriaDt)
+                    .predictionResultVal(predictionResultVal)
+                    .predictionCriteriaVal(predictionCriteriaVal)
+                    .predictionResultDiffVal(diffResult.diffValue())
+                    .predictionResultDiffRate(diffResult.diffRate())
+                    .build();
+            })
+            .toList();
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
+    }
+
     private LocalDate calculateBaseDate(LocalDate today, Integer periodCount,
         PeriodUnitSeparateCd periodUnit) {
         if (today == null) {
@@ -1651,6 +1848,7 @@ public class MiForecastService {
             })
             .toList();
     }
+
 
     /**
      * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다. 데이터소스 상세 정보와 날짜 컬럼명, 기준일 컬럼명을 기반으로 데이터를 필터링하여 조회한다. 조건에 맞는
@@ -1905,13 +2103,13 @@ public class MiForecastService {
             }
             case ONE_MONTH -> {
                 java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(
-                    "MMM ''yy");
+                    "yy/MM");
                 yield formatter.format(date);
             }
             case ONE_QUARTER -> {
                 int quarter = (date.getMonthValue() - 1) / 3 + 1;
                 int year = date.getYear() % 100;
-                yield String.format("Q%d '%02d", quarter, year);
+                yield String.format("%02d-%dQ", year, quarter);
             }
             case ONE_YEAR -> String.valueOf(date.getYear());
         };
