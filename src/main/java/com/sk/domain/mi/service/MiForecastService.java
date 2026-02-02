@@ -184,8 +184,8 @@ public class MiForecastService {
                 GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
 
                 List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(
-                    goodsDataSource,
-                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+                    goodsDataSource
+                );
 
                 if (lastUpdateDateData.isEmpty()) {
                     return null;
@@ -284,11 +284,11 @@ public class MiForecastService {
         ForecastMetadata dashboardMetadata = ForecastMetadata.of(
             customerCompany.getMarketIndexAnalysisTargetCd(),
             lastUpdated,
-            chartDataResults.stream()
+            Objects.requireNonNull(chartDataResults.stream()
                 .map(ForecastChartData::forecastGoodsDataSourceDetail)
                 .filter(Objects::nonNull)
                 .findFirst()
-                .orElse(null),
+                .orElse(null)),
             DateUtil.toYearMonth(baseDate),
             dataTableType,
             chartPredictSetting.getPredictTargetRepresentSpecNm());
@@ -1134,7 +1134,7 @@ public class MiForecastService {
      */
     public ForecastChartFactorCategoryRes getChartFactorCategory(int companyNo, int goodsDataSourceNo, String predictDate) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
-        customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
             .orElseThrow(() -> AppErrorException.of(
                 Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
 
@@ -1142,10 +1142,179 @@ public class MiForecastService {
             .findByGoodsDataSourceNoAndIsDeletedFalse(goodsDataSourceNo)
             .orElseThrow(() -> new EntityNotFoundException("GoodsDataSourceDetail not found"));
 
-        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
         DataSourceContextHolder.setDataSourceKey(goodsDataSourceDetail.getTargetDbNm());
-        return ForecastChartFactorCategoryRes.of(
-            forecastMapper.chartFactorCategory(queryWhere, predictDate, null));
+        String queryWhere = goodsDataSourceDetail.getQueryConditionCntt();
+        List<String> explanatoryLevelNms = forecastMapper.chartFactorCategory(queryWhere, predictDate, null);
+
+        Integer associatedGoodsDataSourceNo = findAssociatedGoodsDataSourceNo(customerCompany, goodsDataSourceNo);
+        ForecastChartFactorCategoryRes detailRes =
+            buildChartFactorCategoryDetailRes(goodsDataSourceDetail, queryWhere, predictDate,
+                associatedGoodsDataSourceNo);
+
+        if (detailRes == null) {
+            return ForecastChartFactorCategoryRes.of(explanatoryLevelNms);
+        }
+
+        return ForecastChartFactorCategoryRes.builder()
+            .explanatoryLevelNms(explanatoryLevelNms)
+            .marketIndexAnalysisTargetCd(detailRes.marketIndexAnalysisTargetCd())
+            .predictionFulfillDt(detailRes.predictionFulfillDt())
+            .mnemonicCd(detailRes.mnemonicCd())
+            .predictChartDetailExpn(detailRes.predictChartDetailExpn())
+            .associatedGoodsDataSourceNo(detailRes.associatedGoodsDataSourceNo())
+            .endPredictionResultDt(detailRes.endPredictionResultDt())
+            .startPredictionResultDt(detailRes.startPredictionResultDt())
+            .predictionCriteriaDt(detailRes.predictionCriteriaDt())
+            .avgPredictionResultVal(detailRes.avgPredictionResultVal())
+            .predictionCriteriaVal(detailRes.predictionCriteriaVal())
+            .predictionResultDiffVal(detailRes.predictionResultDiffVal())
+            .predictionResultDiffRate(detailRes.predictionResultDiffRate())
+            .isScheduled(detailRes.isScheduled())
+            .build();
+    }
+
+    private Integer findAssociatedGoodsDataSourceNo(CustomerCompany customerCompany,
+        int goodsDataSourceNo) {
+        if (customerCompany == null) {
+            return null;
+        }
+
+        ChartSettingAndDetails chartPredictSettingDetailRes =
+            chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            return null;
+        }
+
+        return chartPredictSettingDetailRes.chartPredictSettingDetails().stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
+            .filter(detail -> goodsDataSourceNo
+                == detail.getGoodsDataSourceDetail().getGoodsDataSourceNo())
+            .map(detail -> detail.getAssociatedGoodsDataSourceDetail() != null
+                ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
+                : null)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private ForecastChartFactorCategoryRes buildChartFactorCategoryDetailRes(
+        GoodsDataSourceDetail goodsDataSourceDetail, String queryWhere, String predictDate,
+        Integer associatedGoodsDataSourceNo) {
+        AvailableForecastKey forecastKey = getForecastKeyForChartFactorCategory(
+            goodsDataSourceDetail, predictDate, associatedGoodsDataSourceNo);
+        if (forecastKey == null) {
+            return null;
+        }
+
+        ForecastResultValue resultValue = getForecastResultValue(goodsDataSourceDetail, forecastKey);
+        DiffResult diffResult = resultValue != null
+            ? calculateDiffResult(resultValue.predictionCriteriaVal(),
+                resultValue.predictionResultVal())
+            : DiffResult.empty();
+        Double avgPredictionResultVal = resultValue != null
+            ? toScaledDouble(resultValue.predictionResultVal())
+            : null;
+        Double predictionCriteriaVal = resultValue != null
+            ? toScaledDouble(resultValue.predictionCriteriaVal())
+            : null;
+        String endPredictionResultDt = resultValue != null ? resultValue.endPredictionResultDt() : null;
+        String startPredictionResultDt = resultValue != null ? resultValue.startPredictionResultDt() : null;
+
+        if (endPredictionResultDt == null) {
+            DashboardChartSummaryMap summary = findChartSummary(queryWhere, predictDate,
+                forecastKey.marketIndexAnalysisTargetCd(), forecastKey.mnemonicCd());
+            if (summary != null) {
+                endPredictionResultDt = summary.getPredictionResultDt();
+            }
+        }
+
+        return ForecastChartFactorCategoryRes.builder()
+            .marketIndexAnalysisTargetCd(forecastKey.marketIndexAnalysisTargetCd())
+            .predictionFulfillDt(forecastKey.predictionFulfillDt())
+            .mnemonicCd(forecastKey.mnemonicCd())
+            .predictChartDetailExpn(forecastKey.predictChartDetailExpn())
+            .associatedGoodsDataSourceNo(forecastKey.associatedGoodsDataSourceNo())
+            .endPredictionResultDt(endPredictionResultDt)
+            .startPredictionResultDt(startPredictionResultDt)
+            .predictionCriteriaDt(
+                resultValue != null ? resultValue.predictionCriteriaDt() : forecastKey.predictionCriteriaDt())
+            .avgPredictionResultVal(avgPredictionResultVal)
+            .predictionCriteriaVal(predictionCriteriaVal)
+            .predictionResultDiffVal(diffResult.diffValue())
+            .predictionResultDiffRate(diffResult.diffRate())
+            .isScheduled(null)
+            .build();
+    }
+
+    private AvailableForecastKey getForecastKeyForChartFactorCategory(
+        GoodsDataSourceDetail goodsDataSourceDetail, String predictDate,
+        Integer associatedGoodsDataSourceNo) {
+        if (goodsDataSourceDetail == null || predictDate == null) {
+            return null;
+        }
+
+        String whereClause = buildForecastBaseWhereClause(
+            goodsDataSourceDetail.getQueryConditionCntt(), predictDate);
+        String columns = String.join(", ",
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME);
+        String orderBy = String.format("%s DESC", MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.ofLimitAndOrderBy(goodsDataSourceDetail.getTargetDbNm(),
+                goodsDataSourceDetail.getTargetTableNm(), columns, whereClause, "1", orderBy));
+
+        if (rows.isEmpty()) {
+            return null;
+        }
+
+        Map<String, Object> row = rows.get(0);
+        String predictionCriteriaDt = getStringValue(
+            row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+        String mnemonicCd = getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
+        String marketIndexAnalysisTargetCd = getStringValue(
+            row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
+
+        String predictChartDetailExpn = null;
+        if (mnemonicCd != null) {
+            MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
+            if (mnemonicCode != null) {
+                predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+            }
+        }
+
+        return new AvailableForecastKey(predictDate, predictionCriteriaDt, mnemonicCd,
+            marketIndexAnalysisTargetCd, predictChartDetailExpn, associatedGoodsDataSourceNo);
+    }
+
+    private String buildForecastBaseWhereClause(String baseWhereClause, String fulfillDate) {
+        List<String> clauses = new ArrayList<>();
+        if (baseWhereClause != null && !baseWhereClause.isBlank()) {
+            clauses.add(baseWhereClause);
+        }
+        clauses.add(String.format("%s = '%s'", MARKET_DATA_PREDICT_DATE_COLUMN_NAME, fulfillDate));
+        return String.join(" AND ", clauses);
+    }
+
+    private DashboardChartSummaryMap findChartSummary(String queryWhere, String predictDate,
+        String marketIndexAnalysisTargetCd, String mnemonicCd) {
+        if (queryWhere == null || predictDate == null) {
+            return null;
+        }
+        List<DashboardChartSummaryMap> chartSummaries =
+            forecastMapper.chartSummary(queryWhere, predictDate, null, null);
+        if (chartSummaries == null || chartSummaries.isEmpty()) {
+            return null;
+        }
+        DashboardChartSummaryMap matchedSummary = chartSummaries.stream()
+            .filter(summary -> Objects.equals(marketIndexAnalysisTargetCd,
+                summary.getMarketIndexAnalysisTargetCd()))
+            .filter(summary -> Objects.equals(mnemonicCd, summary.getMnemonicCd()))
+            .findFirst()
+            .orElse(null);
+        return decodeSummaryPath(matchedSummary);
     }
 
     /**
@@ -1350,21 +1519,22 @@ public class MiForecastService {
      * 마지막 Update Date 데이터 조회
      *
      * @param goodsDataSourceDetail 데이터소스 상세 정보
-     * @param dateColumnName        날짜 컬럼명
      * @return 조건에 맞는 데이터 행 목록
      */
     private List<Map<String, Object>> getLastUpdateDateData(
-        GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName) {
+        GoodsDataSourceDetail goodsDataSourceDetail) {
 
-        if (goodsDataSourceDetail == null || dateColumnName == null) {
+        if (goodsDataSourceDetail == null) {
             return Collections.emptyList();
         }
 
-        String orderByColumns = String.format("%s DESC", dateColumnName);
+        String orderByColumns = String.format("%s DESC",
+            MiForecastService.MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
         return mybatisDynamicQueryService.getDynamicRawQuery(
             DynamicDataDetailReq.ofLimitAndOrderBy(goodsDataSourceDetail.getTargetDbNm(),
-                goodsDataSourceDetail.getTargetTableNm(), dateColumnName,
+                goodsDataSourceDetail.getTargetTableNm(),
+                MiForecastService.MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
                 goodsDataSourceDetail.getQueryConditionCntt(),
                 DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT, orderByColumns));
     }
