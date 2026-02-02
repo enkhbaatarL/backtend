@@ -18,6 +18,7 @@ public enum PeriodUnitSeparateCd {
     D("D", "일", ChronoUnit.DAYS),
     W("W", "주", ChronoUnit.WEEKS),
     M("M", "월", ChronoUnit.MONTHS),
+    Q("Q", "분기", ChronoUnit.MONTHS),
     Y("Y", "년", ChronoUnit.YEARS);
 
     private final String code;
@@ -29,6 +30,7 @@ public enum PeriodUnitSeparateCd {
             case D -> Interval.ONE_DAY;
             case W -> Interval.ONE_WEEK;
             case M -> Interval.ONE_MONTH;
+            case Q -> Interval.THREE_MONTH;
             case Y -> Interval.ONE_YEAR;
         };
     }
@@ -38,6 +40,7 @@ public enum PeriodUnitSeparateCd {
             case D -> Range.SIX_MONTHS;
             case W -> Range.ONE_YEAR;
             case M -> Range.ONE_YEAR;
+            case Q -> Range.TWO_YEARS;
             case Y -> Range.TWO_YEARS;
         };
     }

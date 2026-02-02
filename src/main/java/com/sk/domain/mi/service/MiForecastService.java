@@ -984,6 +984,7 @@ public class MiForecastService {
             case D -> AxisUnit.ONE_DAY;
             case W -> AxisUnit.ONE_WEEK;
             case M -> AxisUnit.ONE_MONTH;
+            case Q -> AxisUnit.ONE_QUARTER;
             case Y -> AxisUnit.ONE_YEAR;
         };
     }
