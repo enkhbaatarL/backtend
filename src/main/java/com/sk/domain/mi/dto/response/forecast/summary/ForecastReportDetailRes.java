@@ -14,6 +14,8 @@ public record ForecastReportDetailRes(
         @Schema(description = "예측결과시작일자") String startPredictionResultDt,
         @Schema(description = "예측기준일자") String predictionCriteriaDt,
         @Schema(description = "예측결과값(평균)") Double avgPredictionResultVal,
+        @Schema(description = "예측결과값(최소값)") Double minPredictionResultVal,
+        @Schema(description = "예측결과값(최대값)") Double maxPredictionResultVal,
         @Schema(description = "예측기준값") Double predictionCriteriaVal,
         @Schema(description = "예측기준값-예측결과값") Double predictionResultDiffVal,
         @Schema(description = "예측결과변화율(%)") Double predictionResultDiffRate,
@@ -26,6 +28,7 @@ public record ForecastReportDetailRes(
     public ForecastReportDetailRes(String marketIndexAnalysisTargetCd, String predictionFulfillDt, String mnemonicCd,
             String predictChartDetailExpn, Integer associatedGoodsDataSourceNo, String endPredictionResultDt,
             String startPredictionResultDt, String predictionCriteriaDt, Double avgPredictionResultVal,
+            Double minPredictionResultVal, Double maxPredictionResultVal,
             Double predictionCriteriaVal, Double predictionResultDiffVal, Double predictionResultDiffRate,
             Boolean isScheduled, String explanatoryTitleContent, String explanatorySummaryContent, String explanatoryFilePath) {
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
@@ -37,6 +40,8 @@ public record ForecastReportDetailRes(
         this.startPredictionResultDt = startPredictionResultDt;
         this.predictionCriteriaDt = predictionCriteriaDt;
         this.avgPredictionResultVal = avgPredictionResultVal;
+        this.minPredictionResultVal = minPredictionResultVal;
+        this.maxPredictionResultVal = maxPredictionResultVal;
         this.predictionCriteriaVal = predictionCriteriaVal;
         this.predictionResultDiffVal = predictionResultDiffVal;
         this.predictionResultDiffRate = predictionResultDiffRate;

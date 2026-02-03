@@ -1136,6 +1136,30 @@ public class MiForecastService {
                 resultValue.predictionResultVal());
             Double avgPredictionResultVal = toScaledDouble(resultValue.predictionResultVal());
             Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal());
+            Double minPredictionResultVal = null;
+            Double maxPredictionResultVal = null;
+            if (resultValue.predictionResults() != null) {
+                for (ForecastResultPoint point : resultValue.predictionResults()) {
+                    if (point == null || point.predictionResultVal() == null) {
+                        continue;
+                    }
+                    try {
+                        BigDecimal value = new BigDecimal(point.predictionResultVal());
+                        if (minPredictionResultVal == null
+                            || value.compareTo(BigDecimal.valueOf(minPredictionResultVal)) < 0) {
+                            minPredictionResultVal =
+                                value.setScale(2, RoundingMode.HALF_UP).doubleValue();
+                        }
+                        if (maxPredictionResultVal == null
+                            || value.compareTo(BigDecimal.valueOf(maxPredictionResultVal)) > 0) {
+                            maxPredictionResultVal =
+                                value.setScale(2, RoundingMode.HALF_UP).doubleValue();
+                        }
+                    } catch (NumberFormatException ignored) {
+                        // ignore invalid numeric data
+                    }
+                }
+            }
             String endPredictionResultDt = resultValue.endPredictionResultDt();
             if (endPredictionResultDt == null && decodedSummary != null) {
                 endPredictionResultDt = decodedSummary.getPredictionResultDt();
@@ -1157,6 +1181,8 @@ public class MiForecastService {
                 .startPredictionResultDt(resultValue.startPredictionResultDt())
                 .predictionCriteriaDt(resultValue.predictionCriteriaDt())
                 .avgPredictionResultVal(avgPredictionResultVal)
+                .minPredictionResultVal(minPredictionResultVal)
+                .maxPredictionResultVal(maxPredictionResultVal)
                 .predictionCriteriaVal(predictionCriteriaVal)
                 .predictionResultDiffVal(diffResult.diffValue())
                 .predictionResultDiffRate(diffResult.diffRate())

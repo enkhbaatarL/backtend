@@ -9,7 +9,13 @@ public enum MnemonicCode {
     DUBAI_CRUDE("D-PCAAT00", "Dubai Crude"),
     DRAM_ASP("DRAMASP", "DRAM ASP"),
     HH_PRC("HHPRC", "Henry Hub"),
-    BRENT_CRUDE_ACTUAL("LCOc1", "Brent Crude");
+    BRENT_CRUDE_ACTUAL("LCOc1", "Brent Crude"),
+    HH_PRC_ACTUAL("IGBBL21", "Henry Hub"),
+    HH_PRC2("HHPRC2", "Henry Hub"),
+    HH_PRC_ACTUAL1("NGc1", "Henry Hub"),
+    HH_PRC_ACTUAL2("NGc2", "Henry Hub"),
+    HH_PRC_ACTUAL3("NGc3", "Henry Hub"),
+    HH_PRC_ACTUAL4("NGc4", "Henry Hub");
 
     // Getter 메소드
     private final String code;
