@@ -34,7 +34,7 @@ public class MiForecastController {
     private final MiForecastService miForecastService;
 
     @ApiOrder(1)
-    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Operation(summary = "Forecast 데이터 존재 여부 조회", description = "Forecast 데이터 존재 여부를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/data/exists")
@@ -50,7 +50,7 @@ public class MiForecastController {
     }
 
     @ApiOrder(9)
-    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "4158")
     @Parameter(name = "predictDate", description = "예측 날짜", example = "20250825")
     @Operation(summary = "Forecast 차트 주요 요인 분석 카테고리 조회",
@@ -68,10 +68,10 @@ public class MiForecastController {
     }
 
     @ApiOrder(10)
-    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호")
+    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Parameter(name = "predictDate", description = "예측 날짜", example = "20250825")
     @Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "4158")
-    @Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "BOND")
+    @Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "COMMODITIES")
     @Operation(summary = "Forecast 차트 주요 요인 분석 조회",
         description = "Forecast 차트 주요 요인 분석 데이터를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
