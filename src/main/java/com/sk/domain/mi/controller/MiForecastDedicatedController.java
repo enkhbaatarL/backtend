@@ -6,7 +6,6 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
@@ -27,10 +26,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -229,35 +226,4 @@ public class MiForecastDedicatedController {
             miForecastService.getForecastReports(companyNo, goodsDataSourceNo));
     }
 
-    @ApiOrder(12)
-    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
-    @Parameter(name = "predictDate", description = "예측 날짜(YYYYMMDD)", example = "20250511")
-    @Operation(summary = "Forecast report 파일 다운로드", description = "Forecast report 파일을 다운로드합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/companies/{companyNo}/report/file-download")
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public ResponseEntity<byte[]> getForecastReportFileDownload(
-        @PathVariable Integer companyNo,
-        @RequestParam(value = "predictDate") String predictDate) {
-
-        String filePrefix = "forecast_report";
-        String encodedFileName = URLEncoder.encode(
-            filePrefix.concat("_").concat(predictDate).concat("_")
-                .concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
-            StandardCharsets.UTF_8);
-        FileDownloadRes fileDownloadRes = miForecastService.getForecastReportFileDownload(
-            companyNo, predictDate, encodedFileName);
-
-        ContentDisposition contentDisposition = ContentDisposition.attachment()
-            .filename(fileDownloadRes.fileNm(), StandardCharsets.UTF_8)
-            .build();
-
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        httpHeaders.setContentLength(fileDownloadRes.fileSize());
-        httpHeaders.add(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString());
-
-        return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
-    }
 }
