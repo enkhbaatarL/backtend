@@ -308,6 +308,7 @@ public class MiForecastService {
                     ? chart.forecastChartLines()
                     : ForecastChartLine.of(null, null, null, null, null);
                 return new ForecastChart(
+                    chart.chartName(),
                     chart.chartLineDescription(),
                     chart.chartLineType(),
                     actualLines,
@@ -485,6 +486,7 @@ public class MiForecastService {
                     ? chart.forecastChartLines()
                     : ForecastChartLine.of(null, null, null, null, null);
                 return new ForecastChart(
+                    chart.chartName(),
                     chart.chartLineDescription(),
                     chart.chartLineType(),
                     actualLines,
@@ -504,14 +506,14 @@ public class MiForecastService {
             .toList();
 
         List<String> headerList = new ArrayList<>();
-        headerList.add("예측결과기간");
+        headerList.add("Date");
         List<ForecastTableColumn> columns = new ArrayList<>();
         for (ForecastChart chart : finalCharts) {
-            String name = chart.chartLineDescription() != null ? chart.chartLineDescription() : "값";
-            headerList.add(String.format("%s 실제값", name));
-            headerList.add(String.format("%s 예측값", name));
+            String name = chart.chartName() != null ? chart.chartName() : chart.chartLineDescription();
+            headerList.add(String.format("%s Forecast", name));
+            headerList.add(String.format("%s Actual", name));
             columns.add(
-                new ForecastTableColumn(chart.actualChartLines(), chart.forecastChartLines()));
+                new ForecastTableColumn(chart.forecastChartLines(), chart.actualChartLines()));
         }
 
         Map<ForecastChartLine, Map<String, Double>> lineValueMap = new LinkedHashMap<>();
@@ -693,17 +695,24 @@ public class MiForecastService {
 
                 Integer goodsDataSourceNo = chartPredictSettingDetail.getAssociatedGoodsDataSourceDetail()
                     .getGoodsDataSourceNo();
+                String mnemonicName = MnemonicCode.findByCode(extractMnemonicCode(
+                    chartPredictSettingDetail.getGoodsDataSourceDetail().getQueryConditionCntt(),
+                    Boolean.TRUE.equals(chartPredictSettingDetail.getIsChartLinePredictVal()))).getPredictChartDetailExpression();
                 ForecastChart dashboardChart = chartMap.compute(goodsDataSourceNo,
                     (key, existingChart) -> {
                         if (existingChart == null) {
-                            return ForecastChart.of(
-                                chartPredictSettingDetail,
-                                isPredict ? null
-                                    : dashboardChartLine,
-                                isPredict
-                                    ? dashboardChartLine : null);
+                            return ForecastChart.builder()
+                                .chartName(mnemonicName)
+                                .chartLineDescription(chartPredictSettingDetail.getPredictChartDetailExpn())
+                                .chartLineType(chartPredictSettingDetail.getChartPredictLineSeparateCd())
+                                .actualChartLines(isPredict ? null : dashboardChartLine)
+                                .forecastChartLines(isPredict ? dashboardChartLine : null)
+                                .build();
                         }
                         return ForecastChart.builder()
+                            .chartName(existingChart.chartName() != null
+                                ? existingChart.chartName()
+                                : mnemonicName)
                             .chartLineDescription(existingChart.chartLineDescription() != null
                                 ? existingChart.chartLineDescription()
                                 : chartPredictSettingDetail.getPredictChartDetailExpn())
@@ -1934,6 +1943,23 @@ public class MiForecastService {
             return null;
         }
         return marketIndexAnalysisTargetCd + "|" + mnemonicCd;
+    }
+
+    private String extractMnemonicCode(String queryConditionCntt, boolean isPredictDetail) {
+        if (queryConditionCntt == null || queryConditionCntt.isBlank()) {
+            return null;
+        }
+        String columnName = isPredictDetail
+            ? MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME
+            : "code";
+        Pattern mnemonicPattern = Pattern.compile(
+            columnName + "\\s*=\\s*'([^']+)'",
+            Pattern.CASE_INSENSITIVE);
+        Matcher matcher = mnemonicPattern.matcher(queryConditionCntt);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
     private List<ForecastReport> getForecastReportsForDownload(

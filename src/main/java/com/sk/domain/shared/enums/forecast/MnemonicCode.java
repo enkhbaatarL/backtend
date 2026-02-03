@@ -6,7 +6,10 @@ import lombok.Getter;
 public enum MnemonicCode {
 
     BRENT_CRUDE("LLCC.01", "Brent Crude"),
-    DUBAI_CRUDE("D-PCAAT00", "Dubai Crude");
+    DUBAI_CRUDE("D-PCAAT00", "Dubai Crude"),
+    DRAM_ASP("DRAMASP", "DRAM ASP"),
+    HH_PRC("HHPRC", "Henry Hub"),
+    BRENT_CRUDE_ACTUAL("LCOc1", "Brent Crude");
 
     // Getter 메소드
     private final String code;
