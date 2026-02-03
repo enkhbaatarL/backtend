@@ -17,6 +17,9 @@ public record ForecastRecordRes(
         @Schema(description = "예측기준값") Double predictionCriteriaVal,
         @Schema(description = "예측기준값-예측결과값") Double predictionResultDiffVal,
         @Schema(description = "예측결과변화율(%)") Double predictionResultDiffRate,
+        @Schema(description = "실제값(평균)") Double actualVal,
+        @Schema(description = "예측결과방향") String directionVal,
+        @Schema(description = "예측적중여부") Boolean isHit,
         @Schema(description = "정기예측여부") Boolean isScheduled,
         @Schema(description = "신규여부") Boolean isNew) {
 
@@ -25,7 +28,7 @@ public record ForecastRecordRes(
             String predictChartDetailExpn, Integer associatedGoodsDataSourceNo, String endPredictionResultDt,
             String startPredictionResultDt, String predictionCriteriaDt, Double predictionResultVal,
             Double predictionCriteriaVal, Double predictionResultDiffVal, Double predictionResultDiffRate,
-            Boolean isScheduled, Boolean isNew) {
+            Double actualVal, String directionVal, Boolean isHit, Boolean isScheduled, Boolean isNew) {
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
         this.predictionFulfillDt = predictionFulfillDt;
         this.mnemonicCd = mnemonicCd;
@@ -38,6 +41,9 @@ public record ForecastRecordRes(
         this.predictionCriteriaVal = predictionCriteriaVal;
         this.predictionResultDiffVal = predictionResultDiffVal;
         this.predictionResultDiffRate = predictionResultDiffRate;
+        this.actualVal = actualVal;
+        this.directionVal = directionVal;
+        this.isHit = isHit;
         this.isScheduled = isScheduled;
         this.isNew = isNew;
     }

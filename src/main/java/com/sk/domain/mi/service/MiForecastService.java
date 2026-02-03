@@ -1638,25 +1638,23 @@ public class MiForecastService {
             chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
                 .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
                 .filter(detail -> goodsDataSourceNo.equals(
                     detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
-
                 .toList();
         }
 
-        chartPredictSettingDetails = chartPredictSettingDetails.stream()
+        List<ChartPredictSettingDetail> predictDetails = chartPredictSettingDetails.stream()
             .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
             .toList();
 
-        if (chartPredictSettingDetails.isEmpty()) {
+        if (predictDetails.isEmpty()) {
             return PaginationRes.toRes(new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
         }
 
         String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
             MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
-        List<String> conditionList = chartPredictSettingDetails.stream()
+        List<String> conditionList = predictDetails.stream()
             .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
             .filter(Objects::nonNull)
             .map(GoodsDataSourceDetail::getQueryConditionCntt)
@@ -1733,6 +1731,22 @@ public class MiForecastService {
             }
         }
 
+        Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
+            chartPredictSettingDetails.stream()
+                .filter(detail -> !detail.getIsChartLinePredictVal())
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .collect(Collectors.toMap(
+                    detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
+                    ChartPredictSettingDetail::getGoodsDataSourceDetail,
+                    (existing, replacement) -> existing));
+        Map<String, Integer> associatedNoByPredictKey = predictDetails.stream()
+            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
+            .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+            .collect(Collectors.toMap(
+                detail -> buildPredictKey(detail.getGoodsDataSourceDetail().getQueryConditionCntt()),
+                detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
+                (existing, replacement) -> existing));
+
         List<ForecastRecordRes> results = rows.stream()
             .map(row -> {
                 String marketIndexAnalysisTargetCd =
@@ -1757,6 +1771,46 @@ public class MiForecastService {
                 DiffResult diffResult =
                     calculateDiffResult(predictionCriteriaValStr, avgPredictionResultValStr);
 
+                Double actualVal = null;
+                Integer associatedNo = goodsDataSourceNo;
+                if (associatedNo == null) {
+                    associatedNo = associatedNoByPredictKey.get(
+                        buildPredictKey(marketIndexAnalysisTargetCd, mnemonicCd));
+                }
+                GoodsDataSourceDetail actualDetail =
+                    associatedNo != null ? actualDetailByAssociatedNo.get(associatedNo) : null;
+                if (actualDetail != null) {
+                    actualVal = getActualAverageValue(actualDetail, startPredictionResultDt,
+                        endPredictionResultDt);
+                }
+
+                String directionVal = null;
+                if (predictionResultVal != null && predictionCriteriaVal != null) {
+                    int comparison = predictionResultVal.compareTo(predictionCriteriaVal);
+                    if (comparison > 0) {
+                        directionVal = "UPWARD";
+                    } else if (comparison == 0) {
+                        directionVal = "NEUTRAL";
+                    } else {
+                        directionVal = "DOWNWARD";
+                    }
+                }
+
+                Boolean isHit = null;
+                if (actualVal != null && predictionResultVal != null && predictionCriteriaVal != null) {
+                    boolean predictionUp = predictionResultVal.compareTo(predictionCriteriaVal) > 0;
+                    boolean predictionEqual = predictionResultVal.compareTo(predictionCriteriaVal) == 0;
+                    boolean predictionDown = predictionResultVal.compareTo(predictionCriteriaVal) < 0;
+
+                    boolean actualUp = actualVal.compareTo(predictionCriteriaVal) > 0;
+                    boolean actualEqual = actualVal.compareTo(predictionCriteriaVal) == 0;
+                    boolean actualDown = actualVal.compareTo(predictionCriteriaVal) < 0;
+
+                    isHit = (predictionUp && actualUp)
+                        || (predictionEqual && actualEqual)
+                        || (predictionDown && actualDown);
+                }
+
                 String predictChartDetailExpn = null;
                 if (mnemonicCd != null) {
                     MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
@@ -1778,6 +1832,9 @@ public class MiForecastService {
                     .predictionCriteriaVal(predictionCriteriaVal)
                     .predictionResultDiffVal(diffResult.diffValue())
                     .predictionResultDiffRate(diffResult.diffRate())
+                    .actualVal(actualVal)
+                    .directionVal(directionVal)
+                    .isHit(isHit)
                     .build();
             })
             .toList();
@@ -1795,6 +1852,88 @@ public class MiForecastService {
             return today;
         }
         return today.plus(periodCount, periodUnit.getTemporalUnit());
+    }
+
+    private Double getActualAverageValue(GoodsDataSourceDetail actualDetail,
+        String startPredictionResultDt, String endPredictionResultDt) {
+        if (actualDetail == null || startPredictionResultDt == null || endPredictionResultDt == null) {
+            return null;
+        }
+
+        String[] tableColumnList = Arrays.stream(actualDetail.getTableColumnListNm().split(","))
+            .map(String::trim)
+            .toArray(String[]::new);
+        if (tableColumnList.length <= MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX) {
+            return null;
+        }
+
+        String dateColumnName = tableColumnList[MARKET_DATA_DATE_COLUMN_INDEX];
+        String defaultDataColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+
+        DataSourceContextHolder.setDataSourceKey(actualDetail.getTargetDbNm());
+
+        String baseWhere = actualDetail.getQueryConditionCntt();
+        String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'", dateColumnName,
+            startPredictionResultDt, endPredictionResultDt);
+        String whereClause = (baseWhere == null || baseWhere.isBlank())
+            ? dateRangeWhere
+            : baseWhere + " AND " + dateRangeWhere;
+
+        String columns = "AVG(" + defaultDataColumnName + ") as actualVal";
+
+        List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.builder()
+                .targetDataSource(actualDetail.getTargetDbNm())
+                .tableName(actualDetail.getTargetTableNm())
+                .columns(columns)
+                .whereClause(whereClause)
+                .build());
+
+        if (rows.isEmpty()) {
+            return null;
+        }
+        Map<String, Object> firstRow = rows.get(0);
+        if (firstRow == null) {
+            return null;
+        }
+        String avgValue = getStringValue(firstRow.get("actualVal"));
+        return toScaledDouble(avgValue);
+    }
+
+    private String buildPredictKey(String queryConditionCntt) {
+        if (queryConditionCntt == null || queryConditionCntt.isBlank()) {
+            return null;
+        }
+        String marketIndexAnalysisTargetCd = null;
+        String mnemonicCd = null;
+
+        Pattern marketPattern = Pattern.compile(
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME + "\\s*=\\s*'([^']+)'",
+            Pattern.CASE_INSENSITIVE);
+        Matcher marketMatcher = marketPattern.matcher(queryConditionCntt);
+        if (marketMatcher.find()) {
+            marketIndexAnalysisTargetCd = marketMatcher.group(1);
+        }
+
+        Pattern mnemonicPattern = Pattern.compile(
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME + "\\s*=\\s*'([^']+)'",
+            Pattern.CASE_INSENSITIVE);
+        Matcher mnemonicMatcher = mnemonicPattern.matcher(queryConditionCntt);
+        if (mnemonicMatcher.find()) {
+            mnemonicCd = mnemonicMatcher.group(1);
+        }
+
+        if (marketIndexAnalysisTargetCd == null || mnemonicCd == null) {
+            return null;
+        }
+        return buildPredictKey(marketIndexAnalysisTargetCd, mnemonicCd);
+    }
+
+    private String buildPredictKey(String marketIndexAnalysisTargetCd, String mnemonicCd) {
+        if (marketIndexAnalysisTargetCd == null || mnemonicCd == null) {
+            return null;
+        }
+        return marketIndexAnalysisTargetCd + "|" + mnemonicCd;
     }
 
     private List<ForecastReport> getForecastReportsForDownload(
