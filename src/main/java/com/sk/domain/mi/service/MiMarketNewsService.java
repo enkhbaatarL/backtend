@@ -481,9 +481,9 @@ public class MiMarketNewsService {
      * 점수 기반 방향성 계산 (significantNewsScore)
      */
     private String calculateDirectionality(BigDecimal score) {
-        // 0.3 <= Upward <= 1.0
-        // -1.0 <= Downward <= -0.3
-        // -0.3 < Neutral < 0.3
+        // 3.0 <= Upward <= 10.0
+        // -10.0 <= Downward <= -3.0
+        // -3.0 < Neutral < 3.0
         // 그 외: Out of Range (규격 외 값)
 
         if (score == null) {
@@ -491,15 +491,15 @@ public class MiMarketNewsService {
         }
 
         // 1. 규격 외 값 체크 (절대값이 1.0을 초과하는 경우)
-        if (score.compareTo(new BigDecimal("1.0")) > 0 ||
-            score.compareTo(new BigDecimal("-1.0")) < 0) {
+        if (score.compareTo(new BigDecimal("10.0")) > 0 ||
+            score.compareTo(new BigDecimal("-10.0")) < 0) {
             return "OUTOFRANGE";
         }
 
         // 2. 방향성 판단
-        if (score.compareTo(new BigDecimal("0.3")) >= 0) {
+        if (score.compareTo(new BigDecimal("3.0")) >= 0) {
             return "UPWARD";
-        } else if (score.compareTo(new BigDecimal("-0.3")) <= 0) {
+        } else if (score.compareTo(new BigDecimal("-3.0")) <= 0) {
             return "DOWNWARD";
         } else {
             return "NEUTRAL";
@@ -668,7 +668,7 @@ public class MiMarketNewsService {
                 hrList.addAll(relatedNewsList);
 
                 // momentum 계산 (score 기반)
-                String momentum = calculateEventDirectionality(highlightEvent.getScore());
+                String momentum = calculateDirectionality(highlightEvent.getScore());
 
                 return new MarketRecapRes.HighlightEventRes(
                     highlightEvent.getMrktRcapHlEvntId(),
@@ -814,7 +814,7 @@ public class MiMarketNewsService {
                     );
 
                 // directionality 계산
-                String directionality = calculateEventDirectionality(score);
+                String directionality = calculateDirectionality(score);
                 List<String> rList = parseGroupConcatResult(regionsStr);
                 return new NewsTimelineRes(
                     newsEventId,

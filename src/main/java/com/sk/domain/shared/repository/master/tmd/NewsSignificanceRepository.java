@@ -48,12 +48,12 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
           AND nsum.del_yn = 'N'
           AND (:minScore IS NULL OR ns.scre >= :minScore)
           AND (:filterBySentiment = FALSE OR (
-                                     /* UPWARD: 0.3 <= score <= 1.0 */
-                                     ('upward' IN (:sentimentList) AND sn.scre >= 0.3 AND sn.scre <= 1.0)
-                                  OR /* NEUTRAL: -0.3 < score < 0.3 */
-                                     ('neutral' IN (:sentimentList) AND sn.scre > -0.3 AND sn.scre < 0.3)
-                                  OR /* DOWNWARD: -1.0 <= score <= -0.3 */
-                                     ('downward' IN (:sentimentList) AND sn.scre >= -1.0 AND sn.scre <= -0.3)
+                                     /* UPWARD: 3.0 <= score <= 10.0 */
+                                     ('upward' IN (:sentimentList) AND sn.scre >= 3.0 AND sn.scre <= 10.0)
+                                  OR /* NEUTRAL: -3.0 < score < 3.0 */
+                                     ('neutral' IN (:sentimentList) AND sn.scre > -3.0 AND sn.scre < 3.0)
+                                  OR /* DOWNWARD: -10.0 <= score <= -3.0 */
+                                     ('downward' IN (:sentimentList) AND sn.scre >= -10.0 AND sn.scre <= -3.0)
                               ))
           AND (:filterByImpactScore = FALSE OR (
               ('HIGH' IN (:impactScoreList) AND ns.scre >= 9.0)

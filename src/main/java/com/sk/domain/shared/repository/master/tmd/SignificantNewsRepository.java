@@ -22,9 +22,9 @@ public interface SignificantNewsRepository extends JpaRepository<SignificantNews
     @Query(value = """
         SELECT
             sn.crtr_dt as date,
-            SUM(CASE WHEN sn.scre >= 0.3 AND sn.scre <= 1.0 THEN 1 ELSE 0 END) as upward,
-            SUM(CASE WHEN sn.scre > -0.3 AND sn.scre < 0.3 THEN 1 ELSE 0 END) as neutral,
-            SUM(CASE WHEN sn.scre >= -1.0 AND sn.scre <= -0.3 THEN 1 ELSE 0 END) as downward
+            SUM(CASE WHEN sn.scre >= 3.0 AND sn.scre <= 10.0 THEN 1 ELSE 0 END) as upward,
+            SUM(CASE WHEN sn.scre > -3.0 AND sn.scre < 3.0 THEN 1 ELSE 0 END) as neutral,
+            SUM(CASE WHEN sn.scre >= -10.0 AND sn.scre <= -3.0 THEN 1 ELSE 0 END) as downward
         FROM tmd_sgt_nws sn
         INNER JOIN tmd_nws_sig ns ON sn.nws_sig_id = ns.nws_sig_id
         WHERE ns.nws_mrkt_ctgr_cd = :categoryCode
