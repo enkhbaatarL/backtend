@@ -4,12 +4,11 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
-import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordRes;
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordTableRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
 import com.sk.domain.mi.dto.response.forecast.table.ForecastTableRes;
@@ -84,7 +83,7 @@ public class MiForecastDedicatedController {
     @GetMapping("/companies/{companyNo}/records")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<PaginationRes<ForecastRecordRes>> getForecastRecords(
+    public BaseResponse<ForecastRecordTableRes> getForecastRecords(
         @PathVariable Integer companyNo,
         @RequestParam(required = false) Integer goodsDataSourceNo,
         @RequestParam String startDate,

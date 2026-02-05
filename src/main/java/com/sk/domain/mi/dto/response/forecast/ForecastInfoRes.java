@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.forecast;
 
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordHeaderRes;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
@@ -17,19 +18,23 @@ public record ForecastInfoRes(
     List<ForecastTargetRes> targetList,
 
     @Schema(description = "최근 업데이트 일시", example = "2025-05-11")
-    LocalDate lastUpdateDt
+    LocalDate lastUpdateDt,
+
+    @Schema(description = "Record탭 헤더 목록")
+    List<ForecastRecordHeaderRes> recordHeaders
 ) {
     @Builder
     public ForecastInfoRes(String chartPredictSettingNm, String reportPeriodUnitCd, List<ForecastTargetRes> targetList,
-            LocalDate lastUpdateDt) {
+            LocalDate lastUpdateDt, List<ForecastRecordHeaderRes> recordHeaders) {
         this.chartPredictSettingNm = chartPredictSettingNm;
         this.reportPeriodUnitCd = reportPeriodUnitCd;
         this.targetList = targetList;
         this.lastUpdateDt = lastUpdateDt;
+        this.recordHeaders = recordHeaders;
     }
 
     public static ForecastInfoRes of(ChartPredictSetting chartPredictSetting, List<ForecastTargetRes> targetList,
-            LocalDate lastUpdateDt) {
+            LocalDate lastUpdateDt, List<ForecastRecordHeaderRes> recordHeaders) {
         return ForecastInfoRes.builder()
             .chartPredictSettingNm(chartPredictSetting.getPredictTargetSettingNm())
             .reportPeriodUnitCd(chartPredictSetting.getScopePeriodUnitSeparateCd() != null
@@ -37,6 +42,7 @@ public record ForecastInfoRes(
                     : null)
             .targetList(targetList)
             .lastUpdateDt(lastUpdateDt)
+            .recordHeaders(recordHeaders)
             .build();
     }
 }
