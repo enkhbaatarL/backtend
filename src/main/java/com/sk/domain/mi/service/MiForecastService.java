@@ -35,12 +35,15 @@ import com.sk.domain.mi.dto.response.forecast.charts.graph.ForecastChartRawData;
 import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastChartFactorGraphMetadata;
 import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastMetadata;
 import com.sk.domain.mi.dto.response.forecast.report.ForecastReport;
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordHeaderRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordRes;
+import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordTableRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
 import com.sk.domain.mi.dto.response.forecast.table.ForecastTableRes;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
+import com.sk.domain.shared.entity.master.tcm.UiComponentSetting;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -54,6 +57,7 @@ import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.mapper.dynamic.ForecastMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
+import com.sk.domain.shared.repository.master.tcm.UiComponentSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.FileService;
@@ -117,6 +121,9 @@ public class MiForecastService {
     private static final String MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME = "prdc_crtr_val";
     private static final String MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME = "mnmnc_cd";
     private static final String MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME = "mrkt_idx_anly_tgt_cd";
+    private static final String FORECAST_RECORD_SCREEN_CODE = "MI_FORECAST";
+    private static final String FORECAST_RECORD_COMPONENT_TYPE = "TABLE";
+    private static final String FORECAST_RECORD_COMPONENT_CODE = "RECORDS";
     private static final String ERR_CHART_NOT_CONFIGURED = "설정된 차트가 없습니다.";
     private static final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
     private static final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
@@ -125,6 +132,7 @@ public class MiForecastService {
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
+    private final UiComponentSettingRepository uiComponentSettingRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final ForecastMapper forecastMapper;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
@@ -206,7 +214,8 @@ public class MiForecastService {
             .max(LocalDate::compareTo)
             .orElse(null);
 
-        return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt);
+        List<ForecastRecordHeaderRes> recordHeaders = buildForecastRecordHeaders(companyNo);
+        return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders);
     }
 
     /**
@@ -1662,7 +1671,7 @@ public class MiForecastService {
      * @param size              페이지당항목수
      * @return PaginationRes<ForecastRecordRes>
      */
-    public PaginationRes<ForecastRecordRes> getForecastRecords(int companyNo,
+    public ForecastRecordTableRes getForecastRecords(int companyNo,
         Integer goodsDataSourceNo, String startDate, String endDate, String order, int page,
         int size) {
         LocalDate start = DateUtil.parseDate(startDate);
@@ -1699,7 +1708,9 @@ public class MiForecastService {
             .toList();
 
         if (predictDetails.isEmpty()) {
-            return PaginationRes.toRes(new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
+            PaginationRes<ForecastRecordRes> emptyPage = PaginationRes.toRes(
+                new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
+            return new ForecastRecordTableRes(emptyPage, buildForecastRecordHeaders(companyNo));
         }
 
         String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
@@ -1890,7 +1901,34 @@ public class MiForecastService {
             .toList();
 
         Pageable pageable = PageRequest.of(page - 1, size);
-        return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
+        PaginationRes<ForecastRecordRes> pageRes =
+            PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
+        return new ForecastRecordTableRes(pageRes, buildForecastRecordHeaders(companyNo));
+    }
+
+    private List<ForecastRecordHeaderRes> buildForecastRecordHeaders(int companyNo) {
+
+        List<UiComponentSetting> uiComponentSettingList =
+            uiComponentSettingRepository
+                .findVisibleOrdered(
+                    companyNo, FORECAST_RECORD_SCREEN_CODE, FORECAST_RECORD_COMPONENT_TYPE,
+                    FORECAST_RECORD_COMPONENT_CODE);
+        if (uiComponentSettingList.isEmpty() && companyNo != 0) {
+            uiComponentSettingList =
+                uiComponentSettingRepository
+                    .findVisibleOrdered(
+                        0, FORECAST_RECORD_SCREEN_CODE, FORECAST_RECORD_COMPONENT_TYPE,
+                        FORECAST_RECORD_COMPONENT_CODE);
+        }
+
+        return uiComponentSettingList.stream()
+            .map(setting -> new ForecastRecordHeaderRes(
+                setting.getItemKey(),
+                setting.getLabelText(),
+                setting.getIsVisible(),
+                setting.getOrderNo()
+            ))
+            .toList();
     }
 
     private LocalDate calculateBaseDate(LocalDate today, Integer periodCount,
@@ -2195,7 +2233,6 @@ public class MiForecastService {
             })
             .toList();
     }
-
 
     /**
      * 날짜 범위를 기준으로 데이터베이스에서 데이터 행을 조회한다. 데이터소스 상세 정보와 날짜 컬럼명, 기준일 컬럼명을 기반으로 데이터를 필터링하여 조회한다. 조건에 맞는
@@ -2595,6 +2632,9 @@ public class MiForecastService {
             }
             throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "전체기간 값이 올바르지 않습니다.");
         }
+    }
+
+    private record ForecastRecordHeaderDefault(String columnKey, String headerText, int orderNo) {
     }
 
     private record ForecastTableColumn(ForecastChartLine actualLine,
