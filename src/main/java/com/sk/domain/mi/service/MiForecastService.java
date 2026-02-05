@@ -808,6 +808,17 @@ public class MiForecastService {
 
             String label = item.label();
             String resultDateLabel = label;
+            String resultStartDate = switch (item.unit()) {
+                case "1M" -> DateUtil.toYmd(rangeEnd.withDayOfMonth(1));
+                case "1Q" -> {
+                    int startMonth = ((rangeEnd.getMonthValue() - 1) / 3) * 3 + 1;
+                    yield DateUtil.toYmd(LocalDate.of(rangeEnd.getYear(), startMonth, 1));
+                }
+                case "1Y" -> DateUtil.toYmd(LocalDate.of(rangeEnd.getYear(), 1, 1));
+                case "1W" -> DateUtil.toYmd(
+                    rangeEnd.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+                default -> DateUtil.toYmd(rangeStart);
+            };
             if (AxisUnit.ONE_DAY.label.equals(item.unit())) {
                 LocalDate labelDate = DateUtil.parseDate(label);
                 if (labelDate != null) {
@@ -823,10 +834,12 @@ public class MiForecastService {
             ForecastChartRawData dashboardChartRawData;
             if (values.isEmpty()) {
                 if (isPredict) {
-                    dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel, predictDate,
+                    dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
+                        resultStartDate, predictDate,
                         null);
                 } else {
-                    dashboardChartRawData = ForecastChartRawData.ofActual(resultDateLabel, null);
+                    dashboardChartRawData = ForecastChartRawData.ofActual(resultDateLabel,
+                        resultStartDate, null);
                 }
             } else {
                 double average = values.stream()
@@ -837,10 +850,12 @@ public class MiForecastService {
                 BigDecimal bd = BigDecimal.valueOf(average)
                     .setScale(2, RoundingMode.HALF_UP);
                 if (isPredict) {
-                    dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel, predictDate,
+                    dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
+                        resultStartDate, predictDate,
                         bd.doubleValue());
                 } else {
-                    dashboardChartRawData = ForecastChartRawData.ofActual(resultDateLabel, bd.doubleValue());
+                    dashboardChartRawData = ForecastChartRawData.ofActual(resultDateLabel,
+                        resultStartDate, bd.doubleValue());
                 }
             }
             periodAverages.add(dashboardChartRawData);
