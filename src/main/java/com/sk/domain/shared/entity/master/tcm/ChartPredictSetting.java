@@ -1,8 +1,11 @@
 package com.sk.domain.shared.entity.master.tcm;
 
+import org.hibernate.annotations.Comment;
+
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,7 +20,6 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
@@ -67,5 +69,4 @@ public class ChartPredictSetting extends BaseEntity {
     @Column(name = "prdc_tgt_repr_spt_nm", length = 255)
     @Comment("예측대상대표품명")
     private String predictTargetRepresentSpecNm;
-
 }
