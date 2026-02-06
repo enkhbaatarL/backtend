@@ -3,15 +3,19 @@ package com.sk.domain.shared.service;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
+import com.sk.domain.shared.dto.response.common.UiComponentSettingRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
+import com.sk.domain.shared.entity.master.tcm.UiComponentSetting;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserAccessPageType;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeRepository;
+import com.sk.domain.shared.repository.master.tcm.UiComponentSettingRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -27,6 +31,8 @@ public class CommonService {
 
     private final AdminPermissionRepository adminPermissionRepository;
     private final UserRepository userRepository;
+    private final UiComponentSettingRepository uiComponentSettingRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
     private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
     private final CommonCodeRepository commonCodeRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
@@ -167,5 +173,30 @@ public class CommonService {
                         detail.getCodeExpn()
                 ))
                 .toList();
+    }
+
+    /**
+     * UI 설정 목록 조회
+     *
+     * @param companyNo 고객회사번호
+     * @param screenCode 화면코드
+     * @param componentTypeCode 컴포넌트타입코드
+     * @param componentCode 컴포넌트코드
+     * @return UI 설정 목록
+     */
+    public List<UiComponentSettingRes> getUiComponentSettings(Integer companyNo, String screenCode,
+        String componentTypeCode, String componentCode) {
+        customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "customer company no: %d".formatted(companyNo)));
+
+        List<UiComponentSetting> settings =
+            uiComponentSettingRepository.findByCompanyAndOptionalFilters(
+                companyNo, screenCode, componentTypeCode, componentCode);
+
+        return settings.stream()
+            .map(UiComponentSettingRes::from)
+            .toList();
     }
 }

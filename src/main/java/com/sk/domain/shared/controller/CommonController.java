@@ -6,6 +6,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
+import com.sk.domain.shared.dto.response.common.UiComponentSettingRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.CommonService;
@@ -27,6 +28,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
@@ -81,5 +83,23 @@ public class CommonController {
     public BaseResponse<List<CommonCodeDetailRes>> getCommonCodeDetails(
             @PathVariable("codeGroupId") String codeGroupId) {
         return BaseResponseFactory.create(commonService.getCommonCodeDetails(codeGroupId));
+    }
+
+    @ApiOrder(5)
+    @Operation(summary = "UI 설정 목록 조회 API", description = "고객회사번호와 선택 파라미터로 UI 설정 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @Parameter(name = "companyNo", description = "고객회사번호", required = true, example = "2020")
+    @Parameter(name = "screenCode", description = "화면코드", example = "MI_FORECAST")
+    @Parameter(name = "componentTypeCode", description = "컴포넌트타입코드", example = "TABLE")
+    @Parameter(name = "componentCode", description = "컴포넌트코드", example = "RECORDS")
+    @GetMapping("/ui-component-settings")
+    public BaseResponse<List<UiComponentSettingRes>> getUiComponentSettings(
+        @RequestParam Integer companyNo,
+        @RequestParam(required = false) String screenCode,
+        @RequestParam(required = false) String componentTypeCode,
+        @RequestParam(required = false) String componentCode) {
+        return BaseResponseFactory.create(
+            commonService.getUiComponentSettings(companyNo, screenCode, componentTypeCode,
+                componentCode));
     }
 }

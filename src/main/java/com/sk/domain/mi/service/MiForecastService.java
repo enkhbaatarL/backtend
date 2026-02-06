@@ -37,7 +37,6 @@ import com.sk.domain.mi.dto.response.forecast.charts.metaData.ForecastMetadata;
 import com.sk.domain.mi.dto.response.forecast.report.ForecastReport;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordHeaderRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordRes;
-import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordTableRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
 import com.sk.domain.mi.dto.response.forecast.table.ForecastTableRes;
@@ -83,6 +82,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,6 +124,11 @@ public class MiForecastService {
     private static final String FORECAST_RECORD_SCREEN_CODE = "MI_FORECAST";
     private static final String FORECAST_RECORD_COMPONENT_TYPE = "TABLE";
     private static final String FORECAST_RECORD_COMPONENT_CODE = "RECORDS";
+    private static final String FORECAST_CHART_SCREEN_CODE = "MI_FORECAST";
+    private static final String FORECAST_CHART_COMPONENT_TYPE = "CHART";
+    private static final String FORECAST_CHART_COMPONENT_CODE = "MODEL_CHART_LINE";
+    private static final String FORECAST_CHART_LINE_STRATEGY_KEY = "lineValueStrategy";
+    private static final String LINE_STRATEGY_PAST_ACTUAL_FUTURE_PREDICT = "PAST_ACTUAL_FUTURE_PREDICT";
     private static final String ERR_CHART_NOT_CONFIGURED = "설정된 차트가 없습니다.";
     private static final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
     private static final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
@@ -141,81 +146,109 @@ public class MiForecastService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 데이터 존재 여부 조회
-     *
-     * @param companyNo 회사 번호
-     * @return boolean
-     */
-    public boolean getDataExists(int companyNo) {
-        String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
-                companyNo, currentDate)
-            .orElseThrow(() -> AppErrorException.of(
-                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
-
-        return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
+    private static <T> T visibleValue(boolean applyFilter, Map<String, Boolean> visibilityByKey,
+        String key, T value) {
+        if (!applyFilter) {
+            return value;
+        }
+        Boolean isVisible = visibilityByKey.get(key);
+        if (isVisible == null || isVisible) {
+            return value;
+        }
+        return null;
     }
 
-    /**
-     * Forecast 기본 정보 조회
-     *
-     * @param companyNo 회사 번호
-     * @return ForecastInfoRes
-     */
-    public ForecastInfoRes getForecastInfo(int companyNo) {
-        String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
-                companyNo, currentDate)
-            .orElseThrow(() -> AppErrorException.of(
-                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
-
-        // 차트 설정 조회
-        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
-            customerCompany);
-
-        if (chartPredictSettingDetailRes == null
-            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
+    private LineValueStrategy getLineValueStrategy(Integer companyNo) {
+        Optional<UiComponentSetting> setting =
+            uiComponentSettingRepository
+                .findFirstByCustomerCompany_CustomerCompanyNoAndScreenCodeAndComponentTypeCodeAndComponentCodeAndItemKeyAndIsDeletedFalse(
+                    companyNo,
+                    FORECAST_CHART_SCREEN_CODE,
+                    FORECAST_CHART_COMPONENT_TYPE,
+                    FORECAST_CHART_COMPONENT_CODE,
+                    FORECAST_CHART_LINE_STRATEGY_KEY);
+        if (setting.isEmpty() && companyNo != 0) {
+            setting =
+                uiComponentSettingRepository
+                    .findFirstByCustomerCompany_CustomerCompanyNoAndScreenCodeAndComponentTypeCodeAndComponentCodeAndItemKeyAndIsDeletedFalse(
+                        0,
+                        FORECAST_CHART_SCREEN_CODE,
+                        FORECAST_CHART_COMPONENT_TYPE,
+                        FORECAST_CHART_COMPONENT_CODE,
+                        FORECAST_CHART_LINE_STRATEGY_KEY);
         }
 
-        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
+        if (setting.isEmpty() || setting.get().getSettingValue() == null
+            || setting.get().getSettingValue().isBlank()) {
+            return LineValueStrategy.defaultStrategy();
+        }
 
-        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+        try {
+            LineValueStrategy parsed = objectMapper.readValue(
+                setting.get().getSettingValue(),
+                LineValueStrategy.class);
+            return parsed != null ? parsed : LineValueStrategy.defaultStrategy();
+        } catch (Exception e) {
+            return LineValueStrategy.defaultStrategy();
+        }
+    }
 
-        // 차트선예측값여부 chrt_line_prdc_val_yn = N, 선물여부 futr_yn = N
-        List<ForecastTargetRes> targetList = chartPredictSettingDetails.stream()
-            .filter(detail -> Boolean.FALSE.equals(detail.getIsChartLinePredictVal()))
-            .filter(detail -> Boolean.FALSE.equals(detail.getIsFuture()))
-            .map(ForecastTargetRes::of)
+    private List<ForecastChart> applyLineValueStrategy(List<ForecastChart> charts, LocalDate today) {
+        return charts.stream()
+            .map(chart -> {
+                ForecastChartLine actual = chart.actualChartLines();
+                ForecastChartLine forecast = chart.forecastChartLines();
+
+                ForecastChartLine maskedActual = maskChartLineByCutoff(actual, today, true);
+                ForecastChartLine maskedForecast = maskChartLineByCutoff(forecast, today, false);
+
+                return new ForecastChart(
+                    chart.chartName(),
+                    chart.chartLineDescription(),
+                    chart.chartLineType(),
+                    maskedActual,
+                    maskedForecast);
+            })
             .toList();
+    }
 
-        // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
-        List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
-            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
-            .map(chartPredictSettingDetail -> {
-                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+    private ForecastChartLine maskChartLineByCutoff(ForecastChartLine line, LocalDate today,
+        boolean keepPastOrToday) {
+        if (line == null || line.rawData() == null) {
+            return line;
+        }
 
-                List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(
-                    goodsDataSource
-                );
-
-                if (lastUpdateDateData.isEmpty()) {
-                    return null;
+        List<ForecastChartRawData> masked = line.rawData().stream()
+            .map(data -> {
+                LocalDate rangeStart = DateUtil.parseDate(data.startDate());
+                if (rangeStart == null) {
+                    rangeStart = DateUtil.parseDate(data.resultDate());
+                }
+                if (rangeStart == null) {
+                    return data;
                 }
 
-                return DateUtil.parseDate(
-                    lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                boolean isPastOrToday = !rangeStart.isAfter(today);
+                boolean keepValue = keepPastOrToday ? isPastOrToday : !isPastOrToday;
+                if (keepValue) {
+                    return data;
+                }
+                return new ForecastChartRawData(
+                    data.resultDate(),
+                    data.startDate(),
+                    data.predictDate(),
+                    null
+                );
             })
-            .filter(Objects::nonNull)
             .toList();
 
-        LocalDate lastUpdateDt = lastUpdatedList.stream()
-            .max(LocalDate::compareTo)
-            .orElse(null);
-
-        List<ForecastRecordHeaderRes> recordHeaders = buildForecastRecordHeaders(companyNo);
-        return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders);
+        return ForecastChartLine.of(
+            line.isPermitted(),
+            line.dataType(),
+            line.goodsDataSourceNo(),
+            masked,
+            line.dataExplanation()
+        );
     }
 
     /**
@@ -336,6 +369,11 @@ public class MiForecastService {
                     Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
+        LineValueStrategy lineValueStrategy = getLineValueStrategy(customerCompanyNo);
+        if (lineValueStrategy.isPastActualFuturePredict()) {
+            finalCharts = applyLineValueStrategy(finalCharts, today);
+        }
+
         List<ForecastDataSource> dashboardDataSources = chartDataResults.stream()
             .map(ForecastChartData::dashboardDataSource)
             .filter(Objects::nonNull)
@@ -360,6 +398,355 @@ public class MiForecastService {
             .isFileDownload(finalIsFileDownload)
             .metadata(dashboardMetadata)
             .build();
+    }
+
+    /**
+     * 데이터 존재 여부 조회
+     *
+     * @param companyNo 회사 번호
+     * @return boolean
+     */
+    public boolean getDataExists(int companyNo) {
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+
+        return chartPredictSettingRepository.existsByCustomerCompany(customerCompany);
+    }
+
+    /**
+     * Forecast 기본 정보 조회
+     *
+     * @param companyNo 회사 번호
+     * @return ForecastInfoRes
+     */
+    public ForecastInfoRes getForecastInfo(int companyNo) {
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패 : %s", companyNo)));
+
+        // 차트 설정 조회
+        ChartSettingAndDetails chartPredictSettingDetailRes = chartPredictSettingDetailRepository.findByCustomerCompany(
+            customerCompany);
+
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
+        }
+
+        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+
+        // 차트선예측값여부 chrt_line_prdc_val_yn = N, 선물여부 futr_yn = N
+        List<ForecastTargetRes> targetList = chartPredictSettingDetails.stream()
+            .filter(detail -> Boolean.FALSE.equals(detail.getIsChartLinePredictVal()))
+            .filter(detail -> Boolean.FALSE.equals(detail.getIsFuture()))
+            .map(ForecastTargetRes::of)
+            .toList();
+
+        // 최근 업데이트 일시(예측 데이터중 가장 최근 업데이트 날짜)
+        List<LocalDate> lastUpdatedList = chartPredictSettingDetails.stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .map(chartPredictSettingDetail -> {
+                GoodsDataSourceDetail goodsDataSource = chartPredictSettingDetail.getGoodsDataSourceDetail();
+
+                List<Map<String, Object>> lastUpdateDateData = getLastUpdateDateData(
+                    goodsDataSource
+                );
+
+                if (lastUpdateDateData.isEmpty()) {
+                    return null;
+                }
+
+                return DateUtil.parseDate(
+                    lastUpdateDateData.get(0).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+            })
+            .filter(Objects::nonNull)
+            .toList();
+
+        LocalDate lastUpdateDt = lastUpdatedList.stream()
+            .max(LocalDate::compareTo)
+            .orElse(null);
+
+        List<ForecastRecordHeaderRes> recordHeaders = buildForecastRecordHeaders(companyNo);
+        return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders);
+    }
+
+    /**
+     * Forecast record 목록 조회
+     *
+     * @param companyNo         회사 번호
+     * @param goodsDataSourceNo 데이터 소스 번호(선택)
+     * @param startDate         조회 시작일자(YYYYMMDD)
+     * @param endDate           조회 종료일자(YYYYMMDD)
+     * @param order             정렬 순서(NEWEST/OLDEST)
+     * @param page              페이지번호
+     * @param size              페이지당항목수
+     * @return PaginationRes<ForecastRecordRes>
+     */
+    public PaginationRes<ForecastRecordRes> getForecastRecords(int companyNo,
+        Integer goodsDataSourceNo, String startDate, String endDate, String order, int page,
+        int size) {
+        LocalDate start = DateUtil.parseDate(startDate);
+        LocalDate end = DateUtil.parseDate(endDate);
+        if (start == null || end == null || start.isAfter(end)) {
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "조회기간이 올바르지 않습니다.");
+        }
+
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        ChartSettingAndDetails chartPredictSettingDetailRes =
+            chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails =
+            chartPredictSettingDetailRes.chartPredictSettingDetails();
+        if (goodsDataSourceNo != null) {
+            chartPredictSettingDetails = chartPredictSettingDetails.stream()
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .filter(detail -> goodsDataSourceNo.equals(
+                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .toList();
+        }
+
+        List<ChartPredictSettingDetail> predictDetails = chartPredictSettingDetails.stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .toList();
+
+        if (predictDetails.isEmpty()) {
+            return PaginationRes.toRes(new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
+        }
+
+        String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
+        List<String> conditionList = predictDetails.stream()
+            .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
+            .filter(Objects::nonNull)
+            .map(GoodsDataSourceDetail::getQueryConditionCntt)
+            .filter(Objects::nonNull)
+            .filter(condition -> !condition.isBlank())
+            .distinct()
+            .toList();
+        String combinedBaseWhere = conditionList.isEmpty()
+            ? ""
+            : conditionList.stream()
+                .map(condition -> "(" + condition + ")")
+                .collect(java.util.stream.Collectors.joining(" OR "));
+        String whereClause = combinedBaseWhere.isBlank()
+            ? dateRangeWhere
+            : combinedBaseWhere + " AND " + dateRangeWhere;
+
+        String groupByColumns = String.join(", ",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        String orderByDirection =
+            "OLDEST".equalsIgnoreCase(order) ? "ASC" : "DESC";
+        String orderByColumns = String.format("%s %s, %s DESC",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        String columns = String.join(", ",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            "MIN(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as startPredictionResultDt",
+            "MAX(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as endPredictionResultDt",
+            "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal",
+            "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME + ") as predictionCriteriaVal");
+
+        int offset = Math.max(0, (page - 1) * size);
+        String limitClause = String.format("%d, %d", offset, size);
+
+        List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.builder()
+                .targetDataSource("midb")
+                .tableName("tmm_bztgtprdcrsltdatam")
+                .columns(columns)
+                .whereClause(whereClause)
+                .groupByColumns(groupByColumns)
+                .orderByColumns(orderByColumns)
+                .limit(limitClause)
+                .build());
+
+        String countSubQuery = String.format(
+            "(SELECT %s FROM %s WHERE %s GROUP BY %s) t",
+            groupByColumns,
+            "tmm_bztgtprdcrsltdatam",
+            whereClause,
+            groupByColumns);
+        List<Map<String, Object>> countRows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.builder()
+                .targetDataSource("midb")
+                .tableName(countSubQuery)
+                .columns("count(*) as cnt")
+                .build());
+        int totalElements = 0;
+        if (!countRows.isEmpty()) {
+            String countValue = getStringValue(countRows.get(0).get("cnt"));
+            if (countValue != null) {
+                try {
+                    totalElements = Integer.parseInt(countValue);
+                } catch (NumberFormatException ignored) {
+                    totalElements = 0;
+                }
+            }
+        }
+
+        Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
+            chartPredictSettingDetails.stream()
+                .filter(detail -> !detail.getIsChartLinePredictVal())
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .collect(Collectors.toMap(
+                    detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
+                    ChartPredictSettingDetail::getGoodsDataSourceDetail,
+                    (existing, replacement) -> existing));
+        Map<String, Integer> associatedNoByPredictKey = predictDetails.stream()
+            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
+            .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+            .collect(Collectors.toMap(
+                detail -> buildPredictKey(detail.getGoodsDataSourceDetail().getQueryConditionCntt()),
+                detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
+                (existing, replacement) -> existing));
+
+        Map<String, Boolean> visibilityByKey = buildForecastRecordVisibilityMap(companyNo);
+        boolean applyVisibilityFilter = !visibilityByKey.isEmpty();
+
+        List<ForecastRecordRes> results = rows.stream()
+            .map(row -> {
+                String marketIndexAnalysisTargetCd =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
+                String predictionFulfillDt =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                String mnemonicCd =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
+                String predictionCriteriaDt =
+                    getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+                String startPredictionResultDt =
+                    getStringValue(row.get("startPredictionResultDt"));
+                String endPredictionResultDt =
+                    getStringValue(row.get("endPredictionResultDt"));
+                String avgPredictionResultValStr =
+                    getStringValue(row.get("avgPredictionResultVal"));
+                String predictionCriteriaValStr =
+                    getStringValue(row.get("predictionCriteriaVal"));
+
+                Double predictionResultVal = toScaledDouble(avgPredictionResultValStr);
+                Double predictionCriteriaVal = toScaledDouble(predictionCriteriaValStr);
+                DiffResult diffResult =
+                    calculateDiffResult(predictionCriteriaValStr, avgPredictionResultValStr);
+
+                Double actualVal = null;
+                Integer associatedNo = goodsDataSourceNo;
+                if (associatedNo == null) {
+                    associatedNo = associatedNoByPredictKey.get(
+                        buildPredictKey(marketIndexAnalysisTargetCd, mnemonicCd));
+                }
+                GoodsDataSourceDetail actualDetail =
+                    associatedNo != null ? actualDetailByAssociatedNo.get(associatedNo) : null;
+                if (actualDetail != null) {
+                    actualVal = getActualAverageValue(actualDetail, startPredictionResultDt,
+                        endPredictionResultDt);
+                }
+
+                String directionVal = null;
+                if (predictionResultVal != null && predictionCriteriaVal != null) {
+                    int comparison = predictionResultVal.compareTo(predictionCriteriaVal);
+                    if (comparison > 0) {
+                        directionVal = "UPWARD";
+                    } else if (comparison == 0) {
+                        directionVal = "NEUTRAL";
+                    } else {
+                        directionVal = "DOWNWARD";
+                    }
+                }
+
+                Boolean isHit = null;
+                if (actualVal != null && predictionResultVal != null && predictionCriteriaVal != null) {
+                    boolean predictionUp = predictionResultVal.compareTo(predictionCriteriaVal) > 0;
+                    boolean predictionEqual = predictionResultVal.compareTo(predictionCriteriaVal) == 0;
+                    boolean predictionDown = predictionResultVal.compareTo(predictionCriteriaVal) < 0;
+
+                    boolean actualUp = actualVal.compareTo(predictionCriteriaVal) > 0;
+                    boolean actualEqual = actualVal.compareTo(predictionCriteriaVal) == 0;
+                    boolean actualDown = actualVal.compareTo(predictionCriteriaVal) < 0;
+
+                    isHit = (predictionUp && actualUp)
+                        || (predictionEqual && actualEqual)
+                        || (predictionDown && actualDown);
+                }
+
+                String predictChartDetailExpn = null;
+                if (mnemonicCd != null) {
+                    MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
+                    if (mnemonicCode != null) {
+                        predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+                    }
+                }
+
+                return ForecastRecordRes.builder()
+                    .marketIndexAnalysisTargetCd(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "marketIndexAnalysisTargetCd",
+                        marketIndexAnalysisTargetCd))
+                    .predictionFulfillDt(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionFulfillDt",
+                        predictionFulfillDt))
+                    .mnemonicCd(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "mnemonicCd", mnemonicCd))
+                    .predictChartDetailExpn(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictChartDetailExpn",
+                        predictChartDetailExpn))
+                    .associatedGoodsDataSourceNo(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "associatedGoodsDataSourceNo",
+                        goodsDataSourceNo))
+                    .endPredictionResultDt(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "endPredictionResultDt",
+                        endPredictionResultDt))
+                    .startPredictionResultDt(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "startPredictionResultDt",
+                        startPredictionResultDt))
+                    .predictionCriteriaDt(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionCriteriaDt",
+                        predictionCriteriaDt))
+                    .predictionResultVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionResultVal",
+                        predictionResultVal))
+                    .predictionCriteriaVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionCriteriaVal",
+                        predictionCriteriaVal))
+                    .predictionResultDiffVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionResultDiffVal",
+                        diffResult.diffValue()))
+                    .predictionResultDiffRate(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionResultDiffRate",
+                        diffResult.diffRate()))
+                    .actualVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "actualVal", actualVal))
+                    .directionVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "directionVal", directionVal))
+                    .isHit(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "isHit", isHit))
+                    .build();
+            })
+            .toList();
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
     }
 
     public ForecastTableRes getForecastTable(int customerCompanyNo, Integer goodsDataSourceNo,
@@ -1659,269 +2046,13 @@ public class MiForecastService {
         return fileService.directDownloadFiles(filePaths, zipFileName);
     }
 
-    /**
-     * Forecast record 목록 조회
-     *
-     * @param companyNo         회사 번호
-     * @param goodsDataSourceNo 데이터 소스 번호(선택)
-     * @param startDate         조회 시작일자(YYYYMMDD)
-     * @param endDate           조회 종료일자(YYYYMMDD)
-     * @param order             정렬 순서(NEWEST/OLDEST)
-     * @param page              페이지번호
-     * @param size              페이지당항목수
-     * @return PaginationRes<ForecastRecordRes>
-     */
-    public ForecastRecordTableRes getForecastRecords(int companyNo,
-        Integer goodsDataSourceNo, String startDate, String endDate, String order, int page,
-        int size) {
-        LocalDate start = DateUtil.parseDate(startDate);
-        LocalDate end = DateUtil.parseDate(endDate);
-        if (start == null || end == null || start.isAfter(end)) {
-            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "조회기간이 올바르지 않습니다.");
-        }
-
-        String currentDate = DateUtil.toYmd(LocalDate.now());
-        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
-                companyNo, currentDate)
-            .orElseThrow(() -> AppErrorException.of(
-                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
-
-        ChartSettingAndDetails chartPredictSettingDetailRes =
-            chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
-        if (chartPredictSettingDetailRes == null
-            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
-            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
-        }
-
-        List<ChartPredictSettingDetail> chartPredictSettingDetails =
-            chartPredictSettingDetailRes.chartPredictSettingDetails();
-        if (goodsDataSourceNo != null) {
-            chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                .filter(detail -> goodsDataSourceNo.equals(
-                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
-                .toList();
-        }
-
-        List<ChartPredictSettingDetail> predictDetails = chartPredictSettingDetails.stream()
-            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
-            .toList();
-
-        if (predictDetails.isEmpty()) {
-            PaginationRes<ForecastRecordRes> emptyPage = PaginationRes.toRes(
-                new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
-            return new ForecastRecordTableRes(emptyPage, buildForecastRecordHeaders(companyNo));
-        }
-
-        String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
-        List<String> conditionList = predictDetails.stream()
-            .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
-            .filter(Objects::nonNull)
-            .map(GoodsDataSourceDetail::getQueryConditionCntt)
-            .filter(Objects::nonNull)
-            .filter(condition -> !condition.isBlank())
-            .distinct()
-            .toList();
-        String combinedBaseWhere = conditionList.isEmpty()
-            ? ""
-            : conditionList.stream()
-                .map(condition -> "(" + condition + ")")
-                .collect(java.util.stream.Collectors.joining(" OR "));
-        String whereClause = combinedBaseWhere.isBlank()
-            ? dateRangeWhere
-            : combinedBaseWhere + " AND " + dateRangeWhere;
-
-        String groupByColumns = String.join(", ",
-            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
-            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
-
-        String orderByDirection =
-            "OLDEST".equalsIgnoreCase(order) ? "ASC" : "DESC";
-        String orderByColumns = String.format("%s %s, %s DESC",
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
-            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
-
-        String columns = String.join(", ",
-            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
-            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-            "MIN(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as startPredictionResultDt",
-            "MAX(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as endPredictionResultDt",
-            "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal",
-            "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME + ") as predictionCriteriaVal");
-
-        int offset = Math.max(0, (page - 1) * size);
-        String limitClause = String.format("%d, %d", offset, size);
-
-        List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
-            DynamicDataDetailReq.builder()
-                .targetDataSource("midb")
-                .tableName("tmm_bztgtprdcrsltdatam")
-                .columns(columns)
-                .whereClause(whereClause)
-                .groupByColumns(groupByColumns)
-                .orderByColumns(orderByColumns)
-                .limit(limitClause)
-                .build());
-
-        String countSubQuery = String.format(
-            "(SELECT %s FROM %s WHERE %s GROUP BY %s) t",
-            groupByColumns,
-            "tmm_bztgtprdcrsltdatam",
-            whereClause,
-            groupByColumns);
-        List<Map<String, Object>> countRows = mybatisDynamicQueryService.getDynamicRawQuery(
-            DynamicDataDetailReq.builder()
-                .targetDataSource("midb")
-                .tableName(countSubQuery)
-                .columns("count(*) as cnt")
-                .build());
-        int totalElements = 0;
-        if (!countRows.isEmpty()) {
-            String countValue = getStringValue(countRows.get(0).get("cnt"));
-            if (countValue != null) {
-                try {
-                    totalElements = Integer.parseInt(countValue);
-                } catch (NumberFormatException ignored) {
-                    totalElements = 0;
-                }
-            }
-        }
-
-        Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
-            chartPredictSettingDetails.stream()
-                .filter(detail -> !detail.getIsChartLinePredictVal())
-                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                .collect(Collectors.toMap(
-                    detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
-                    ChartPredictSettingDetail::getGoodsDataSourceDetail,
-                    (existing, replacement) -> existing));
-        Map<String, Integer> associatedNoByPredictKey = predictDetails.stream()
-            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
-            .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-            .collect(Collectors.toMap(
-                detail -> buildPredictKey(detail.getGoodsDataSourceDetail().getQueryConditionCntt()),
-                detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
-                (existing, replacement) -> existing));
-
-        List<ForecastRecordRes> results = rows.stream()
-            .map(row -> {
-                String marketIndexAnalysisTargetCd =
-                    getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
-                String predictionFulfillDt =
-                    getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
-                String mnemonicCd =
-                    getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME));
-                String predictionCriteriaDt =
-                    getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
-                String startPredictionResultDt =
-                    getStringValue(row.get("startPredictionResultDt"));
-                String endPredictionResultDt =
-                    getStringValue(row.get("endPredictionResultDt"));
-                String avgPredictionResultValStr =
-                    getStringValue(row.get("avgPredictionResultVal"));
-                String predictionCriteriaValStr =
-                    getStringValue(row.get("predictionCriteriaVal"));
-
-                Double predictionResultVal = toScaledDouble(avgPredictionResultValStr);
-                Double predictionCriteriaVal = toScaledDouble(predictionCriteriaValStr);
-                DiffResult diffResult =
-                    calculateDiffResult(predictionCriteriaValStr, avgPredictionResultValStr);
-
-                Double actualVal = null;
-                Integer associatedNo = goodsDataSourceNo;
-                if (associatedNo == null) {
-                    associatedNo = associatedNoByPredictKey.get(
-                        buildPredictKey(marketIndexAnalysisTargetCd, mnemonicCd));
-                }
-                GoodsDataSourceDetail actualDetail =
-                    associatedNo != null ? actualDetailByAssociatedNo.get(associatedNo) : null;
-                if (actualDetail != null) {
-                    actualVal = getActualAverageValue(actualDetail, startPredictionResultDt,
-                        endPredictionResultDt);
-                }
-
-                String directionVal = null;
-                if (predictionResultVal != null && predictionCriteriaVal != null) {
-                    int comparison = predictionResultVal.compareTo(predictionCriteriaVal);
-                    if (comparison > 0) {
-                        directionVal = "UPWARD";
-                    } else if (comparison == 0) {
-                        directionVal = "NEUTRAL";
-                    } else {
-                        directionVal = "DOWNWARD";
-                    }
-                }
-
-                Boolean isHit = null;
-                if (actualVal != null && predictionResultVal != null && predictionCriteriaVal != null) {
-                    boolean predictionUp = predictionResultVal.compareTo(predictionCriteriaVal) > 0;
-                    boolean predictionEqual = predictionResultVal.compareTo(predictionCriteriaVal) == 0;
-                    boolean predictionDown = predictionResultVal.compareTo(predictionCriteriaVal) < 0;
-
-                    boolean actualUp = actualVal.compareTo(predictionCriteriaVal) > 0;
-                    boolean actualEqual = actualVal.compareTo(predictionCriteriaVal) == 0;
-                    boolean actualDown = actualVal.compareTo(predictionCriteriaVal) < 0;
-
-                    isHit = (predictionUp && actualUp)
-                        || (predictionEqual && actualEqual)
-                        || (predictionDown && actualDown);
-                }
-
-                String predictChartDetailExpn = null;
-                if (mnemonicCd != null) {
-                    MnemonicCode mnemonicCode = MnemonicCode.findByCode(mnemonicCd);
-                    if (mnemonicCode != null) {
-                        predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
-                    }
-                }
-
-                return ForecastRecordRes.builder()
-                    .marketIndexAnalysisTargetCd(marketIndexAnalysisTargetCd)
-                    .predictionFulfillDt(predictionFulfillDt)
-                    .mnemonicCd(mnemonicCd)
-                    .predictChartDetailExpn(predictChartDetailExpn)
-                    .associatedGoodsDataSourceNo(goodsDataSourceNo)
-                    .endPredictionResultDt(endPredictionResultDt)
-                    .startPredictionResultDt(startPredictionResultDt)
-                    .predictionCriteriaDt(predictionCriteriaDt)
-                    .predictionResultVal(predictionResultVal)
-                    .predictionCriteriaVal(predictionCriteriaVal)
-                    .predictionResultDiffVal(diffResult.diffValue())
-                    .predictionResultDiffRate(diffResult.diffRate())
-                    .actualVal(actualVal)
-                    .directionVal(directionVal)
-                    .isHit(isHit)
-                    .build();
-            })
-            .toList();
-
-        Pageable pageable = PageRequest.of(page - 1, size);
-        PaginationRes<ForecastRecordRes> pageRes =
-            PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
-        return new ForecastRecordTableRes(pageRes, buildForecastRecordHeaders(companyNo));
-    }
-
     private List<ForecastRecordHeaderRes> buildForecastRecordHeaders(int companyNo) {
+        List<UiComponentSetting> overrideSettings = mergeForecastRecordSettings(companyNo);
 
-        List<UiComponentSetting> uiComponentSettingList =
-            uiComponentSettingRepository
-                .findVisibleOrdered(
-                    companyNo, FORECAST_RECORD_SCREEN_CODE, FORECAST_RECORD_COMPONENT_TYPE,
-                    FORECAST_RECORD_COMPONENT_CODE);
-        if (uiComponentSettingList.isEmpty() && companyNo != 0) {
-            uiComponentSettingList =
-                uiComponentSettingRepository
-                    .findVisibleOrdered(
-                        0, FORECAST_RECORD_SCREEN_CODE, FORECAST_RECORD_COMPONENT_TYPE,
-                        FORECAST_RECORD_COMPONENT_CODE);
-        }
-
-        return uiComponentSettingList.stream()
+        return overrideSettings.stream()
+            .sorted(Comparator
+                .comparing((UiComponentSetting setting) -> setting.getOrderNo() == null)
+                .thenComparing(UiComponentSetting::getOrderNo, Comparator.nullsLast(Integer::compareTo)))
             .map(setting -> new ForecastRecordHeaderRes(
                 setting.getItemKey(),
                 setting.getLabelText(),
@@ -1929,6 +2060,44 @@ public class MiForecastService {
                 setting.getOrderNo()
             ))
             .toList();
+    }
+
+    private Map<String, Boolean> buildForecastRecordVisibilityMap(int companyNo) {
+        List<UiComponentSetting> mergedSettings = mergeForecastRecordSettings(companyNo);
+        return mergedSettings.stream()
+            .collect(Collectors.toMap(
+                UiComponentSetting::getItemKey,
+                UiComponentSetting::getIsVisible,
+                (existing, replacement) -> existing
+            ));
+    }
+
+    private List<UiComponentSetting> mergeForecastRecordSettings(int companyNo) {
+        List<UiComponentSetting> defaultSettings =
+            uiComponentSettingRepository
+                .findOrdered(
+                    0, FORECAST_RECORD_SCREEN_CODE, FORECAST_RECORD_COMPONENT_TYPE,
+                    FORECAST_RECORD_COMPONENT_CODE);
+        List<UiComponentSetting> companySettings =
+            companyNo == 0
+                ? List.of()
+                : uiComponentSettingRepository
+                    .findOrdered(
+                        companyNo, FORECAST_RECORD_SCREEN_CODE, FORECAST_RECORD_COMPONENT_TYPE,
+                        FORECAST_RECORD_COMPONENT_CODE);
+
+        Map<String, UiComponentSetting> mergedByKey = new HashMap<>();
+        for (UiComponentSetting setting : defaultSettings) {
+            mergedByKey.put(setting.getItemKey(), setting);
+        }
+        for (UiComponentSetting setting : companySettings) {
+            mergedByKey.put(setting.getItemKey(), setting);
+        }
+        return new ArrayList<>(mergedByKey.values());
+    }
+
+    private boolean isVisibleOrNull(Boolean isVisible) {
+        return isVisible == null || isVisible;
     }
 
     private LocalDate calculateBaseDate(LocalDate today, Integer periodCount,
@@ -2631,6 +2800,17 @@ public class MiForecastService {
                 }
             }
             throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "전체기간 값이 올바르지 않습니다.");
+        }
+    }
+
+    private record LineValueStrategy(String mode, String cutoff) {
+
+        private static LineValueStrategy defaultStrategy() {
+            return new LineValueStrategy("DEFAULT", "TODAY");
+        }
+
+        private boolean isPastActualFuturePredict() {
+            return LINE_STRATEGY_PAST_ACTUAL_FUTURE_PREDICT.equalsIgnoreCase(mode);
         }
     }
 
