@@ -608,6 +608,125 @@ public class MiForecastService {
             }
         }
 
+        List<ForecastRecordRes> results = buildForecastRecordResults(rows,
+            chartPredictSettingDetails, predictDetails, companyNo, goodsDataSourceNo);
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
+    }
+
+    /**
+     * Forecast record 엑셀 다운로드
+     *
+     * @param companyNo         회사 번호
+     * @param goodsDataSourceNo 데이터 소스 번호(선택)
+     * @param startDate         조회 시작일자(YYYYMMDD)
+     * @param endDate           조회 종료일자(YYYYMMDD)
+     * @param order             정렬 순서(NEWEST/OLDEST)
+     * @return byte[] 엑셀 파일 데이터
+     */
+    public byte[] getForecastRecordsFileDownload(int companyNo, Integer goodsDataSourceNo,
+        String startDate, String endDate, String order) throws IOException {
+        LocalDate start = DateUtil.parseDate(startDate);
+        LocalDate end = DateUtil.parseDate(endDate);
+        if (start == null || end == null || start.isAfter(end)) {
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "조회기간이 올바르지 않습니다.");
+        }
+
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                companyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
+
+        ChartSettingAndDetails chartPredictSettingDetailRes =
+            chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails =
+            chartPredictSettingDetailRes.chartPredictSettingDetails();
+        if (goodsDataSourceNo != null) {
+            chartPredictSettingDetails = chartPredictSettingDetails.stream()
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .filter(detail -> goodsDataSourceNo.equals(
+                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .toList();
+        }
+
+        List<ChartPredictSettingDetail> predictDetails = chartPredictSettingDetails.stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .toList();
+
+        if (predictDetails.isEmpty()) {
+            return createEmptyForecastRecordExcel(companyNo);
+        }
+
+        String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
+        List<String> conditionList = predictDetails.stream()
+            .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
+            .filter(Objects::nonNull)
+            .map(GoodsDataSourceDetail::getQueryConditionCntt)
+            .filter(Objects::nonNull)
+            .filter(condition -> !condition.isBlank())
+            .distinct()
+            .toList();
+        String combinedBaseWhere = conditionList.isEmpty()
+            ? ""
+            : conditionList.stream()
+                .map(condition -> "(" + condition + ")")
+                .collect(java.util.stream.Collectors.joining(" OR "));
+        String whereClause = combinedBaseWhere.isBlank()
+            ? dateRangeWhere
+            : combinedBaseWhere + " AND " + dateRangeWhere;
+
+        String groupByColumns = String.join(", ",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        String orderByDirection =
+            "OLDEST".equalsIgnoreCase(order) ? "ASC" : "DESC";
+        String orderByColumns = String.format("%s %s, %s DESC",
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+        String columns = String.join(", ",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            "MIN(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as startPredictionResultDt",
+            "MAX(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME + ") as endPredictionResultDt",
+            "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal",
+            "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME + ") as predictionCriteriaVal");
+
+        List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+            DynamicDataDetailReq.builder()
+                .targetDataSource("midb")
+                .tableName("tmm_bztgtprdcrsltdatam")
+                .columns(columns)
+                .whereClause(whereClause)
+                .groupByColumns(groupByColumns)
+                .orderByColumns(orderByColumns)
+                .build());
+
+        List<ForecastRecordRes> results = buildForecastRecordResults(rows,
+            chartPredictSettingDetails, predictDetails, companyNo, goodsDataSourceNo);
+
+        return createForecastRecordExcel(companyNo, results);
+    }
+
+    private List<ForecastRecordRes> buildForecastRecordResults(
+        List<Map<String, Object>> rows,
+        List<ChartPredictSettingDetail> chartPredictSettingDetails,
+        List<ChartPredictSettingDetail> predictDetails,
+        int companyNo, Integer goodsDataSourceNo) {
+
         Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
             chartPredictSettingDetails.stream()
                 .filter(detail -> !detail.getIsChartLinePredictVal())
@@ -627,7 +746,7 @@ public class MiForecastService {
         Map<String, Boolean> visibilityByKey = buildForecastRecordVisibilityMap(companyNo);
         boolean applyVisibilityFilter = !visibilityByKey.isEmpty();
 
-        List<ForecastRecordRes> results = rows.stream()
+        return rows.stream()
             .map(row -> {
                 String marketIndexAnalysisTargetCd =
                     getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME));
@@ -744,9 +863,75 @@ public class MiForecastService {
                     .build();
             })
             .toList();
+    }
 
-        Pageable pageable = PageRequest.of(page - 1, size);
-        return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
+    private byte[] createForecastRecordExcel(int companyNo,
+        List<ForecastRecordRes> records) throws IOException {
+        List<ForecastRecordHeaderRes> headers = buildForecastRecordHeaders(companyNo);
+        List<ForecastRecordHeaderRes> visibleHeaders = headers.stream()
+            .filter(h -> h.isVisible() == null || h.isVisible())
+            .toList();
+
+        try (Workbook workbook = new XSSFWorkbook();
+            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("forecast_records");
+
+            int rowIndex = 0;
+            Row headerRow = sheet.createRow(rowIndex++);
+            for (int col = 0; col < visibleHeaders.size(); col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(visibleHeaders.get(col).headerText());
+            }
+
+            for (ForecastRecordRes record : records) {
+                Row row = sheet.createRow(rowIndex++);
+                int col = 0;
+                for (ForecastRecordHeaderRes header : visibleHeaders) {
+                    Cell cell = row.createCell(col++);
+                    Object value = getForecastRecordFieldValue(record, header.columnKey());
+                    if (value == null) {
+                        continue;
+                    }
+                    if (value instanceof Number number) {
+                        cell.setCellValue(number.doubleValue());
+                    } else if (value instanceof Boolean bool) {
+                        cell.setCellValue(bool.toString());
+                    } else {
+                        cell.setCellValue(String.valueOf(value));
+                    }
+                }
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    private byte[] createEmptyForecastRecordExcel(int companyNo) throws IOException {
+        return createForecastRecordExcel(companyNo, List.of());
+    }
+
+    private Object getForecastRecordFieldValue(ForecastRecordRes record, String columnKey) {
+        return switch (columnKey) {
+            case "marketIndexAnalysisTargetCd" -> record.marketIndexAnalysisTargetCd();
+            case "predictionFulfillDt" -> record.predictionFulfillDt();
+            case "mnemonicCd" -> record.mnemonicCd();
+            case "predictChartDetailExpn" -> record.predictChartDetailExpn();
+            case "associatedGoodsDataSourceNo" -> record.associatedGoodsDataSourceNo();
+            case "endPredictionResultDt" -> record.endPredictionResultDt();
+            case "startPredictionResultDt" -> record.startPredictionResultDt();
+            case "predictionCriteriaDt" -> record.predictionCriteriaDt();
+            case "predictionResultVal" -> record.predictionResultVal();
+            case "predictionCriteriaVal" -> record.predictionCriteriaVal();
+            case "predictionResultDiffVal" -> record.predictionResultDiffVal();
+            case "predictionResultDiffRate" -> record.predictionResultDiffRate();
+            case "actualVal" -> record.actualVal();
+            case "directionVal" -> record.directionVal();
+            case "isHit" -> record.isHit();
+            case "isScheduled" -> record.isScheduled();
+            case "isNew" -> record.isNew();
+            default -> null;
+        };
     }
 
     public ForecastTableRes getForecastTable(int customerCompanyNo, Integer goodsDataSourceNo,

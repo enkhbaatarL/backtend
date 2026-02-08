@@ -97,6 +97,41 @@ public class MiForecastDedicatedController {
                 order, page, size));
     }
 
+    @ApiOrder(12)
+    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
+    @Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호(선택)", example = "934")
+    @Parameter(name = "startDate", description = "조회 시작일자(YYYYMMDD)", example = "20250301")
+    @Parameter(name = "endDate", description = "조회 종료일자(YYYYMMDD)", example = "20260201")
+    @Parameter(name = "order", description = "정렬 순서(NEWEST/OLDEST)")
+    @Operation(summary = "Forecast record 다운로드", description = "Forecast record 목록을 엑셀로 다운로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/records/file-download")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public ResponseEntity<byte[]> getForecastRecordsFileDownload(
+        @PathVariable Integer companyNo,
+        @RequestParam(required = false) Integer goodsDataSourceNo,
+        @RequestParam String startDate,
+        @RequestParam String endDate,
+        @RequestParam(defaultValue = "NEWEST") String order) throws IOException {
+        byte[] fileData = miForecastService.getForecastRecordsFileDownload(
+            companyNo, goodsDataSourceNo, startDate, endDate, order);
+
+        String filePrefix = "forecast_records";
+        String encodedFileName = URLEncoder.encode(
+            filePrefix.concat("_").concat(startDate).concat("_").concat(endDate)
+                .concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".xlsx"),
+            StandardCharsets.UTF_8);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentLength(fileData.length);
+        headers.add("Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        headers.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return new ResponseEntity<>(fileData, headers, HttpStatus.OK);
+    }
+
     @ApiOrder(6)
     @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드", example = "EN_CROIL")
