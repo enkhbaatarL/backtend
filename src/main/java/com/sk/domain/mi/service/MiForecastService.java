@@ -551,7 +551,7 @@ public class MiForecastService {
                 .collect(java.util.stream.Collectors.joining(" OR "));
         String whereClause = combinedBaseWhere.isBlank()
             ? dateRangeWhere
-            : combinedBaseWhere + " AND " + dateRangeWhere;
+            : "(" + combinedBaseWhere + ") AND " + dateRangeWhere;
 
         String groupByColumns = String.join(", ",
             MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
@@ -686,7 +686,7 @@ public class MiForecastService {
                 .collect(java.util.stream.Collectors.joining(" OR "));
         String whereClause = combinedBaseWhere.isBlank()
             ? dateRangeWhere
-            : combinedBaseWhere + " AND " + dateRangeWhere;
+            : "(" + combinedBaseWhere + ") AND " + dateRangeWhere;
 
         String groupByColumns = String.join(", ",
             MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
@@ -925,6 +925,8 @@ public class MiForecastService {
             case "associatedGoodsDataSourceNo" -> record.associatedGoodsDataSourceNo();
             case "endPredictionResultDt" -> record.endPredictionResultDt();
             case "startPredictionResultDt" -> record.startPredictionResultDt();
+            case "predictionResultDt" -> toPredictionResultRange(record.startPredictionResultDt(),
+                record.endPredictionResultDt());
             case "predictionCriteriaDt" -> record.predictionCriteriaDt();
             case "predictionResultVal" -> record.predictionResultVal();
             case "predictionCriteriaVal" -> record.predictionCriteriaVal();
@@ -937,6 +939,18 @@ public class MiForecastService {
             case "isNew" -> record.isNew();
             default -> null;
         };
+    }
+
+    private String toPredictionResultRange(String start, String end) {
+        boolean hasStart = start != null && !start.isBlank();
+        boolean hasEnd = end != null && !end.isBlank();
+        if (!hasStart && !hasEnd) {
+            return null;
+        }
+        if (hasStart && hasEnd) {
+            return start + " ~ " + end;
+        }
+        return hasStart ? start : end;
     }
 
     public ForecastTableRes getForecastTable(int customerCompanyNo, Integer goodsDataSourceNo,

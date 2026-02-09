@@ -21,20 +21,26 @@ public record ForecastInfoRes(
     LocalDate lastUpdateDt,
 
     @Schema(description = "Record탭 헤더 목록")
-    List<ForecastRecordHeaderRes> recordHeaders
+    List<ForecastRecordHeaderRes> recordHeaders,
+
+    @Schema(description = "모델 정확도 카드 표시 여부", example = "true")
+    Boolean modelAccuracyVisible
 ) {
     @Builder
     public ForecastInfoRes(String chartPredictSettingNm, String reportPeriodUnitCd, List<ForecastTargetRes> targetList,
-            LocalDate lastUpdateDt, List<ForecastRecordHeaderRes> recordHeaders) {
+            LocalDate lastUpdateDt, List<ForecastRecordHeaderRes> recordHeaders,
+            Boolean modelAccuracyVisible) {
         this.chartPredictSettingNm = chartPredictSettingNm;
         this.reportPeriodUnitCd = reportPeriodUnitCd;
         this.targetList = targetList;
         this.lastUpdateDt = lastUpdateDt;
         this.recordHeaders = recordHeaders;
+        this.modelAccuracyVisible = modelAccuracyVisible;
     }
 
     public static ForecastInfoRes of(ChartPredictSetting chartPredictSetting, List<ForecastTargetRes> targetList,
-            LocalDate lastUpdateDt, List<ForecastRecordHeaderRes> recordHeaders) {
+            LocalDate lastUpdateDt, List<ForecastRecordHeaderRes> recordHeaders,
+            Boolean modelAccuracyVisible) {
         return ForecastInfoRes.builder()
             .chartPredictSettingNm(chartPredictSetting.getPredictTargetSettingNm())
             .reportPeriodUnitCd(chartPredictSetting.getScopePeriodUnitSeparateCd() != null
@@ -43,6 +49,7 @@ public record ForecastInfoRes(
             .targetList(targetList)
             .lastUpdateDt(lastUpdateDt)
             .recordHeaders(recordHeaders)
+            .modelAccuracyVisible(modelAccuracyVisible)
             .build();
     }
 }
