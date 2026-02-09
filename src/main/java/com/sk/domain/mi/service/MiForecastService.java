@@ -124,6 +124,9 @@ public class MiForecastService {
     private static final String FORECAST_RECORD_SCREEN_CODE = "MI_FORECAST";
     private static final String FORECAST_RECORD_COMPONENT_TYPE = "TABLE";
     private static final String FORECAST_RECORD_COMPONENT_CODE = "RECORDS";
+    private static final String FORECAST_MODEL_ACCURACY_COMPONENT_TYPE = "CARD";
+    private static final String FORECAST_MODEL_ACCURACY_COMPONENT_CODE = "MODEL_ACCURACY";
+    private static final String FORECAST_MODEL_ACCURACY_ITEM_KEY = "cumulativeHitRate";
     private static final String FORECAST_CHART_SCREEN_CODE = "MI_FORECAST";
     private static final String FORECAST_CHART_COMPONENT_TYPE = "CHART";
     private static final String FORECAST_CHART_COMPONENT_CODE = "MODEL_CHART_LINE";
@@ -474,7 +477,9 @@ public class MiForecastService {
             .orElse(null);
 
         List<ForecastRecordHeaderRes> recordHeaders = buildForecastRecordHeaders(companyNo);
-        return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders);
+        Boolean modelAccuracyVisible = getModelAccuracyVisible(companyNo);
+        return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders,
+            modelAccuracyVisible);
     }
 
     /**
@@ -2283,6 +2288,19 @@ public class MiForecastService {
 
     private boolean isVisibleOrNull(Boolean isVisible) {
         return isVisible == null || isVisible;
+    }
+
+    private Boolean getModelAccuracyVisible(int companyNo) {
+        Optional<UiComponentSetting> setting =
+            uiComponentSettingRepository
+                .findFirstByCustomerCompany_CustomerCompanyNoAndScreenCodeAndComponentTypeCodeAndComponentCodeAndItemKeyAndIsDeletedFalse(
+                    companyNo,
+                    FORECAST_RECORD_SCREEN_CODE,
+                    FORECAST_MODEL_ACCURACY_COMPONENT_TYPE,
+                    FORECAST_MODEL_ACCURACY_COMPONENT_CODE,
+                    FORECAST_MODEL_ACCURACY_ITEM_KEY);
+        return setting.filter(
+            uiComponentSetting -> isVisibleOrNull(uiComponentSetting.getIsVisible())).isPresent();
     }
 
     private LocalDate calculateBaseDate(LocalDate today, Integer periodCount,
