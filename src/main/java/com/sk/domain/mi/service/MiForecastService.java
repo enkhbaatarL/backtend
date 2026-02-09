@@ -221,37 +221,52 @@ public class MiForecastService {
             return line;
         }
 
-        List<ForecastChartRawData> masked = line.rawData().stream()
-            .map(data -> {
-                LocalDate rangeStart = DateUtil.parseDate(data.startDate());
-                if (rangeStart == null) {
-                    rangeStart = DateUtil.parseDate(data.resultDate());
-                }
-                if (rangeStart == null) {
-                    return data;
-                }
-
-                boolean isPastOrToday = !rangeStart.isAfter(today);
-                boolean keepValue = keepPastOrToday ? isPastOrToday : !isPastOrToday;
-                if (keepValue) {
-                    return data;
-                }
-                return new ForecastChartRawData(
-                    data.resultDate(),
-                    data.startDate(),
-                    data.predictDate(),
-                    null
-                );
-            })
-            .toList();
+        List<ForecastChartRawData> rawData = line.rawData();
+        int todayIndex = findTodayIndex(rawData, today);
+        List<ForecastChartRawData> masked;
+        if (todayIndex < 0) {
+            masked = keepPastOrToday ? List.of() : rawData;
+        } else {
+            masked = keepPastOrToday
+                ? rawData.subList(0, todayIndex)
+                : rawData.subList(todayIndex, rawData.size());
+        }
 
         return ForecastChartLine.of(
             line.isPermitted(),
             line.dataType(),
             line.goodsDataSourceNo(),
-            masked,
+            masked.isEmpty() ? List.of() : new ArrayList<>(masked),
             line.dataExplanation()
         );
+    }
+
+    private int findTodayIndex(List<ForecastChartRawData> rawData, LocalDate today) {
+        int low = 0;
+        int high = rawData.size() - 1;
+        int result = -1;
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            LocalDate start = parseRangeStart(rawData.get(mid));
+            if (start == null) {
+                return 0;
+            }
+            if (start.isAfter(today)) {
+                high = mid - 1;
+            } else {
+                result = mid;
+                low = mid + 1;
+            }
+        }
+        return result;
+    }
+
+    private LocalDate parseRangeStart(ForecastChartRawData data) {
+        LocalDate rangeStart = DateUtil.parseDate(data.startDate());
+        if (rangeStart == null) {
+            rangeStart = DateUtil.parseDate(data.resultDate());
+        }
+        return rangeStart;
     }
 
     /**
