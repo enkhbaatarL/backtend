@@ -623,7 +623,9 @@ public class MiForecastService {
         if (records == null || records.isEmpty()) {
             return null;
         }
-        long total = records.size();
+        long total = records.stream()
+            .filter(record -> record.isHit() != null)
+            .count();
         if (total == 0) {
             return null;
         }
@@ -1363,16 +1365,7 @@ public class MiForecastService {
     }
 
     private Boolean toScheduledYn(String value) {
-        if (value == null) {
-            return null;
-        }
-        if ("Y".equalsIgnoreCase(value)) {
-            return Boolean.TRUE;
-        }
-        if ("N".equalsIgnoreCase(value)) {
-            return Boolean.FALSE;
-        }
-        return null;
+        return "Y".equalsIgnoreCase(value);
     }
 
     private String appendAdHocLabel(String value) {
@@ -2429,7 +2422,7 @@ public class MiForecastService {
                 continue;
             }
 
-            Boolean isScheduled = null;
+            Boolean isScheduled = Boolean.FALSE;
             if (marketIndexAnalysisTargetCd != null && predictionFulfillDt != null
                 && mnemonicCd != null && predictionCriteriaDt != null) {
                 String whereClause = String.format(
@@ -3279,7 +3272,8 @@ public class MiForecastService {
                                 predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                             }
                         }
-                        Boolean rowScheduled = toScheduledYn(getStringValue(row.get("rglr_yn")));
+                        Boolean rowScheduled =
+                            "Y".equalsIgnoreCase(getStringValue(row.get("rglr_yn")));
                         return new AvailableForecastKey(fulfillDate, criteriaDate, mnemonicCd,
                             marketIndexAnalysisTargetCd,
                             predictChartDetailExpn, associatedGoodsDataSourceNo, rowScheduled);
@@ -3391,19 +3385,29 @@ public class MiForecastService {
 
         String whereClause = goodsDataSourceDetail.getQueryConditionCntt();
         if (isScheduled != null) {
-            String scheduledValue = Boolean.TRUE.equals(isScheduled) ? "Y" : "N";
-            String scheduledFilter = String.format(
-                "EXISTS (SELECT 1 FROM tmm_bztgtprdcrsltdatad d WHERE "
-                    + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.rglr_yn = '%s')",
-                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
-                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                scheduledValue);
+            String scheduledFilter = Boolean.TRUE.equals(isScheduled)
+                ? String.format(
+                    "EXISTS (SELECT 1 FROM tmm_bztgtprdcrsltdatad d WHERE "
+                        + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.rglr_yn = 'Y')",
+                    MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME)
+                : String.format(
+                    "NOT EXISTS (SELECT 1 FROM tmm_bztgtprdcrsltdatad d WHERE "
+                        + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.rglr_yn = 'Y')",
+                    MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                    MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
             whereClause = (whereClause == null || whereClause.isBlank())
                 ? scheduledFilter
                 : "(" + whereClause + ") AND " + scheduledFilter;
