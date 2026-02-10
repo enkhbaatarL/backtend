@@ -271,6 +271,45 @@ public class MiForecastService {
         return rangeStart;
     }
 
+    private ForecastChartLine alignRawDataToDateList(ForecastChartLine line,
+        List<ForecastChartRes.ForecastChartDateItem> dateList) {
+        if (line == null || dateList == null || dateList.isEmpty()) {
+            return line;
+        }
+        List<ForecastChartRawData> rawData = line.rawData();
+        Map<String, ForecastChartRawData> byStartDate = new HashMap<>();
+        if (rawData != null) {
+            for (ForecastChartRawData raw : rawData) {
+                if (raw == null || raw.startDate() == null) {
+                    continue;
+                }
+                byStartDate.put(raw.startDate(), raw);
+            }
+        }
+        List<ForecastChartRawData> aligned = new ArrayList<>(dateList.size());
+        for (ForecastChartRes.ForecastChartDateItem item : dateList) {
+            String key = item.startDate();
+            ForecastChartRawData matched = key != null ? byStartDate.get(key) : null;
+            if (matched != null) {
+                aligned.add(matched);
+                continue;
+            }
+            aligned.add(ForecastChartRawData.builder()
+                .resultDate(item.label())
+                .startDate(item.startDate())
+                .predictDate(null)
+                .value(null)
+                .build());
+        }
+        return ForecastChartLine.builder()
+            .isPermitted(line.isPermitted())
+            .dataType(line.dataType())
+            .goodsDataSourceNo(line.goodsDataSourceNo())
+            .rawData(aligned)
+            .dataExplanation(line.dataExplanation())
+            .build();
+    }
+
     /**
      * Forecast 차트 기간 조회
      *
@@ -369,12 +408,14 @@ public class MiForecastService {
                 ForecastChartLine forecastLines = chart.forecastChartLines() != null
                     ? chart.forecastChartLines()
                     : ForecastChartLine.of(null, null, null, null, null);
+                ForecastChartLine alignedActual = alignRawDataToDateList(actualLines, dateList);
+                ForecastChartLine alignedForecast = alignRawDataToDateList(forecastLines, dateList);
                 return new ForecastChart(
                     chart.chartName(),
                     chart.chartLineDescription(),
                     chart.chartLineType(),
-                    actualLines,
-                    forecastLines);
+                    alignedActual,
+                    alignedForecast);
             })
             .sorted(Comparator
                 .comparing(
@@ -3636,6 +3677,11 @@ public class MiForecastService {
             java.time.format.DateTimeFormatter formatter =
                 java.time.format.DateTimeFormatter.ofPattern("MM/dd");
             while (!cursor.isAfter(endDate)) {
+                DayOfWeek dayOfWeek = cursor.getDayOfWeek();
+                if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+                    cursor = cursor.plusDays(1);
+                    continue;
+                }
                 dates.add(ForecastChartRes.ForecastChartDateItem.builder()
                     .label(formatter.format(cursor))
                     .startDate(DateUtil.toYmd(cursor))
