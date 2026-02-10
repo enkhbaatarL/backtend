@@ -551,6 +551,10 @@ public class MiForecastService {
                 if (whereClause == null) {
                     return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
                 }
+                String chartFilter = "chrt_yn = 'Y'";
+                whereClause = whereClause.isBlank()
+                    ? chartFilter
+                    : "(" + whereClause + ") AND " + chartFilter;
 
                 String groupByColumns = isTwoPeriodCompany
                     ? String.join(", ",
@@ -707,6 +711,8 @@ public class MiForecastService {
         String whereClause = combinedBaseWhere.isBlank()
             ? dateRangeWhere
             : "(" + combinedBaseWhere + ") AND " + dateRangeWhere;
+        String chartFilter = "chrt_yn = 'Y'";
+        whereClause = "(" + whereClause + ") AND " + chartFilter;
 
         boolean isTwoPeriodCompany = companyNo == 2015 || companyNo == 2013;
         String groupByColumns = isTwoPeriodCompany
@@ -879,6 +885,8 @@ public class MiForecastService {
         String whereClause = combinedBaseWhere.isBlank()
             ? dateRangeWhere
             : "(" + combinedBaseWhere + ") AND " + dateRangeWhere;
+        String chartFilter = "chrt_yn = 'Y'";
+        whereClause = "(" + whereClause + ") AND " + chartFilter;
 
         boolean isTwoPeriodCompany = companyNo == 2015 || companyNo == 2013;
         String groupByColumns = isTwoPeriodCompany
@@ -2268,6 +2276,8 @@ public class MiForecastService {
             dateColumnName, startDateValue, endDateValue,
             key1, value1,
             key2, value2);
+        String chartFilter = "chrt_yn = 'Y'";
+        whereClause = "(" + whereClause + ") AND " + chartFilter;
         String orderByColumns = String.format("%s, %s", dateColumnName,
             MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
 
@@ -2881,8 +2891,9 @@ public class MiForecastService {
                     detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
                 .toList();
         }
+        boolean isTwoPeriodCompany = companyNo == 2015 || companyNo == 2013;
         List<AvailableForecastKey> availableDates =
-            getAvailableDates(chartPredictSettingDetails, isScheduled);
+            getAvailableDates(chartPredictSettingDetails, isScheduled, isTwoPeriodCompany);
 
         List<ForecastReportRes> results = new ArrayList<>();
         for (AvailableForecastKey forecastKey : availableDates) {
@@ -3236,7 +3247,8 @@ public class MiForecastService {
      * @return List<AvailableForecastKey>
      */
     private List<AvailableForecastKey> getAvailableDates(
-        List<ChartPredictSettingDetail> chartPredictSettingDetails, Boolean isScheduled) {
+        List<ChartPredictSettingDetail> chartPredictSettingDetails, Boolean isScheduled,
+        boolean isTwoPeriodCompany) {
         return chartPredictSettingDetails.stream()
             .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
             .flatMap(detail -> {
@@ -3249,7 +3261,8 @@ public class MiForecastService {
                     detail.getAssociatedGoodsDataSourceDetail() != null
                         ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                         : null;
-                List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource, isScheduled);
+                List<Map<String, Object>> rawData =
+                    getDateDataRows(goodsDataSource, isScheduled, isTwoPeriodCompany);
                 return rawData.stream()
                     .map(row -> {
                         Object fulfillDateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
@@ -3352,13 +3365,11 @@ public class MiForecastService {
      * @return 조건에 맞는 데이터 행 목록
      */
     private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail,
-        Boolean isScheduled) {
+        Boolean isScheduled, boolean isTwoPeriodCompany) {
         if (goodsDataSourceDetail == null) {
             return Collections.emptyList();
         }
 
-        int startDateLength = 1;
-        int endDateLength = 6;
         String scheduledSubQuery = String.format(
             "MAX((SELECT rglr_yn FROM tmm_bztgtprdcrsltdatad d WHERE "
                 + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s)) as rglr_yn",
@@ -3370,18 +3381,47 @@ public class MiForecastService {
             MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
             MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
             MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
-        String dateColumn = String.format(
-            "MAX(m.%s) as %s, MAX(m.%s) as %s, MAX(m.%s) as %s, MAX(m.%s) as %s, %s",
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
-            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-            scheduledSubQuery);
-        String groupBy = "SUBSTRING(m.%s, %d, %d)".formatted(MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
-            startDateLength, endDateLength);
-        String orderBy = String.format("%s DESC", groupBy);
+        String dateColumn = isTwoPeriodCompany
+            ? String.format(
+                "m.%s as %s, m.%s as %s, m.%s as %s, m.%s as %s, m.%s as %s, %s",
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
+                scheduledSubQuery)
+            : String.format(
+                "m.%s as %s, m.%s as %s, m.%s as %s, m.%s as %s, %s",
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                scheduledSubQuery);
+        String groupBy = isTwoPeriodCompany
+            ? String.format("m.%s, m.%s, m.%s, m.%s, m.%s",
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME)
+            : String.format("m.%s, m.%s, m.%s, m.%s",
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME);
+        String orderBy = isTwoPeriodCompany
+            ? String.format("m.%s DESC, m.%s DESC, m.%s ASC",
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME)
+            : String.format("m.%s DESC, m.%s DESC",
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
 
         String whereClause = goodsDataSourceDetail.getQueryConditionCntt();
         if (isScheduled != null) {
@@ -3411,6 +3451,12 @@ public class MiForecastService {
             whereClause = (whereClause == null || whereClause.isBlank())
                 ? scheduledFilter
                 : "(" + whereClause + ") AND " + scheduledFilter;
+        }
+        if ("tmm_bztgtprdcrsltdatam".equalsIgnoreCase(goodsDataSourceDetail.getTargetTableNm())) {
+            String chartFilter = "m.chrt_yn = 'Y'";
+            whereClause = (whereClause == null || whereClause.isBlank())
+                ? chartFilter
+                : "(" + whereClause + ") AND " + chartFilter;
         }
 
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.builder()
