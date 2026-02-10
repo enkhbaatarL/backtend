@@ -27,6 +27,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplatePreferenceTable;
+import com.sk.domain.shared.entity.master.tmd.NewsletterText;
 import com.sk.domain.shared.enums.chart.RenderAs;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tif.NewsletterChartRepository;
@@ -38,6 +39,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateCollectionCh
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTextRepository;
 import com.sk.domain.shared.repository.master.tmd.PreferenceTableRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.io.IOException;
@@ -87,6 +89,7 @@ public class MiNewsletterService {
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
     private final NewsletterTemplateRepository newsletterTemplateRepository;
+    private final NewsletterTextRepository newsletterTextRepository;
     private final NewsletterEventRepository newsletterEventRepository;
     private final NewsletterChartRepository newsletterChartRepository;
     private final PreferenceTableRepository preferenceTableRepository;
@@ -361,6 +364,17 @@ public class MiNewsletterService {
                 .filter(reference -> !"UNKNOWN".equals(reference.type())) // 알 수 없는 타입 제외
                 .toList();
 
+            String subInfo = null;
+            boolean hasSubInfoTxt = templates.stream()
+                .anyMatch(t -> "SUB_INFO_TXT".equals(t.getElementType()));
+
+            if (hasSubInfoTxt) {
+                subInfo = newsletterTextRepository.findByNewsletterPublishHistoryAndNewsletterTextType(nph,
+                        "SUB_INFO_TXT")
+                    .map(NewsletterText::getNewsletterTextValue)
+                    .orElse(null);
+            }
+
             // 2. 관련 뉴스
             List<NewsEventItem> newsEventItems = events.stream()
                 .map(event -> new NewsEventItem(
@@ -383,6 +397,7 @@ public class MiNewsletterService {
 
             IssueDetail issueDetail = new IssueDetail(
                 nph.getNewsletterTitle(),
+                subInfo,
                 nph.getPublishDateTime().format(f1),
                 nph.getAiSummary(),
                 marketTimes[0], // marketOpenTime

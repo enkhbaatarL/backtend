@@ -35,6 +35,9 @@ public record NewsletterDetailRes(
             @Schema(description = "발행본 제목", example = "Oil Prices Surge Amid Middle East Tensions")
             String title,
 
+            @Schema(description = "발행본 부가 정보", example = "부가적인 정보")
+            String subInfo,
+
             @Schema(description = "발행일자", example = "2025년 9월 12일")
             String date,
 
