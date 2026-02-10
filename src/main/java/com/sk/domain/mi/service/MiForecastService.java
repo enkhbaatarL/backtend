@@ -799,7 +799,8 @@ public class MiForecastService {
      * @return byte[] 엑셀 파일 데이터
      */
     public byte[] getForecastDailyRecordsFileDownload(String predictionFulfillDt,
-        String predictionCriteriaDt) throws IOException {
+        String predictionCriteriaDt, String marketIndexAnalysisTargetCd, String mnemonicCd)
+        throws IOException {
         LocalDate fulfillDate = DateUtil.parseDate(predictionFulfillDt);
         LocalDate criteriaDate = DateUtil.parseDate(predictionCriteriaDt);
         if (fulfillDate == null || criteriaDate == null) {
@@ -807,8 +808,8 @@ public class MiForecastService {
         }
 
         String whereClause = String.join(" AND ",
-            "mrkt_idx_anly_tgt_cd = 'EN_CROIL'",
-            "mnmnc_cd = 'D-PCAAT00'",
+            "mrkt_idx_anly_tgt_cd = '" + marketIndexAnalysisTargetCd + "'",
+            "mnmnc_cd = '" + mnemonicCd + "'",
             "prdc_fulf_dt = '" + predictionFulfillDt + "'",
             "prdc_crtr_dt = '" + predictionCriteriaDt + "'");
 
@@ -1311,7 +1312,7 @@ public class MiForecastService {
 
             int rowIndex = 0;
             Row headerRow = sheet.createRow(rowIndex++);
-            String[] headers = {"예측 차수", "주차", "기준일자", "예측일자", "예측 가격", "적요"};
+            String[] headers = {"주차", "기준일자", "예측일자", "예측 가격", "적요"};
             for (int col = 0; col < headers.length; col++) {
                 Cell cell = headerRow.createCell(col);
                 cell.setCellValue(headers[col]);
@@ -1342,7 +1343,6 @@ public class MiForecastService {
 
                 Row dataRow = sheet.createRow(rowIndex++);
                 int col = 0;
-                dataRow.createCell(col++).setCellValue("");
                 dataRow.createCell(col++).setCellValue(weekLabel != null ? weekLabel : "");
                 dataRow.createCell(col++).setCellValue(criteriaFormatted != null ? criteriaFormatted : "");
                 dataRow.createCell(col++).setCellValue(resultFormatted != null ? resultFormatted : "");

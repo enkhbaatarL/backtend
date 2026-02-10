@@ -136,6 +136,9 @@ public class MiForecastDedicatedController {
     @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Parameter(name = "predictionFulfillDt", description = "예측수행일자(YYYYMMDD)", example = "20260126")
     @Parameter(name = "predictionCriteriaDt", description = "예측기준일자(YYYYMMDD)", example = "20260124")
+    @Parameter(name = "marketIndexAnalysisTargetCd", description = "시장지수분석대상코드",
+        example = "EN_CROIL")
+    @Parameter(name = "mnemonicCd", description = "MNEMONIC코드", example = "D-PCAAT00")
     @Operation(summary = "Forecast daily record 다운로드",
         description = "Forecast daily record 목록을 엑셀로 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -145,9 +148,11 @@ public class MiForecastDedicatedController {
     public ResponseEntity<byte[]> getForecastDailyRecordsFileDownload(
         @PathVariable Integer companyNo,
         @RequestParam String predictionFulfillDt,
-        @RequestParam String predictionCriteriaDt) throws IOException {
+        @RequestParam String predictionCriteriaDt,
+        @RequestParam String marketIndexAnalysisTargetCd,
+        @RequestParam String mnemonicCd) throws IOException {
         byte[] fileData = miForecastService.getForecastDailyRecordsFileDownload(
-            predictionFulfillDt, predictionCriteriaDt);
+            predictionFulfillDt, predictionCriteriaDt, marketIndexAnalysisTargetCd, mnemonicCd);
 
         String fileName = "SKT_유가전망_AI모델_예측결과_" + predictionCriteriaDt + ".xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
