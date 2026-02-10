@@ -1098,8 +1098,18 @@ public class MiMarketNewsService {
         SortType sort,
         String keyword,
         DateRangeOption dateRangeOption,
-        String recapCategories
+        String recapCategories,
+        int companyNo
     ) {
+
+        CustomerCompanyMarketCategory customerCompanyMarketCategory =
+            customerCompanyMarketCategoryRepository
+                .findFirstByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElse(null);
+        String marketCategoryCode = customerCompanyMarketCategory != null
+            ? customerCompanyMarketCategory.getNwsMrktCtgrCd().getCode()
+            : null;
+
         // 날짜 범위 계산
         LocalDate endDate = LocalDate.now();
         String endDateStr = DateUtil.toYmd(endDate);
@@ -1130,6 +1140,7 @@ public class MiMarketNewsService {
                     keyword,
                     includeHighlight,
                     includeCheckpoint,
+                    marketCategoryCode,
                     pageable
                 )
                 : marketRecapRepository.findMarketRecapRowsOldest(
@@ -1138,6 +1149,7 @@ public class MiMarketNewsService {
                     keyword,
                     includeHighlight,
                     includeCheckpoint,
+                    marketCategoryCode,
                     pageable
                 );
         } else {
@@ -1147,6 +1159,7 @@ public class MiMarketNewsService {
                     endDateStr,
                     includeHighlight,
                     includeCheckpoint,
+                    marketCategoryCode,
                     pageable
                 )
                 : marketRecapRepository.findMarketRecapRowsOldestWithoutKeyword(
@@ -1154,6 +1167,7 @@ public class MiMarketNewsService {
                     endDateStr,
                     includeHighlight,
                     includeCheckpoint,
+                    marketCategoryCode,
                     pageable
                 );
         }

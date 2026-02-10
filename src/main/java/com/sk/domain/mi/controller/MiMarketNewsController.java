@@ -19,6 +19,7 @@ import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.news.DateRangeOption;
 import com.sk.domain.shared.enums.news.NewsTrendRangeOption;
 import com.sk.domain.shared.enums.news.SortType;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -46,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MiMarketNewsController {
 
     private final MiMarketNewsService miMarketNewsService;
+    private final AuthorizationService authorizationService;
 
     @ApiOrder(1)
     @Parameter(name = "page", description = "페이지 번호 (기본값: 1)")
@@ -250,8 +252,10 @@ public class MiMarketNewsController {
         log.debug("마켓 리캡 목록 조회 요청 - page: {}, size: {}, sort: {}, keyword: {}, dateRangeOption: {}, recapCategories: {}",
             page, size, sort, keyword, dateRangeOption, recapCategories);
 
+        int companyNo = authorizationService.getCompanyNo();
+
         return BaseResponseFactory.create(
-            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategories)
+            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategories, companyNo)
         );
     }
 

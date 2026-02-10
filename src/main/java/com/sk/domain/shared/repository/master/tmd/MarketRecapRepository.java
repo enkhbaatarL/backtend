@@ -26,6 +26,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
         FROM MarketRecap mr
         WHERE (:startDate IS NULL OR mr.crtrDt >= :startDate)
           AND (:endDate IS NULL OR mr.crtrDt <= :endDate)
+          AND (:marketCategoryCode IS NULL OR mr.nwsMrktCtgrCd = :marketCategoryCode)
           AND (:keyword IS NULL OR :keyword = ''
                OR mr.ckptTitl LIKE %:keyword%
                OR mr.hlEvntTitl LIKE %:keyword%)
@@ -35,6 +36,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
         @Param("startDate") String startDate,
         @Param("endDate") String endDate,
         @Param("keyword") String keyword,
+        @Param("marketCategoryCode") String marketCategoryCode,
         Pageable pageable
     );
 
@@ -54,6 +56,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                   AND (
@@ -75,6 +78,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
                   AND (
@@ -100,6 +104,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                   AND (
@@ -117,6 +122,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
                   AND (
@@ -139,6 +145,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
         @Param("keyword") String keyword,
         @Param("includeHighlight") boolean includeHighlight,
         @Param("includeCheckpoint") boolean includeCheckpoint,
+        @Param("marketCategoryCode") String marketCategoryCode,
         Pageable pageable
     );
 
@@ -158,6 +165,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                   AND (
@@ -179,6 +187,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
                   AND (
@@ -204,6 +213,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                   AND (
@@ -234,6 +244,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
                   AND (
@@ -256,6 +267,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
         @Param("keyword") String keyword,
         @Param("includeHighlight") boolean includeHighlight,
         @Param("includeCheckpoint") boolean includeCheckpoint,
+        @Param("marketCategoryCode") String marketCategoryCode,
         Pageable pageable
     );
 
@@ -275,6 +287,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                 UNION ALL
@@ -286,6 +299,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
             ) recap
@@ -301,6 +315,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                 UNION ALL
@@ -308,6 +323,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
             ) recap
@@ -319,6 +335,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
         @Param("endDate") String endDate,
         @Param("includeHighlight") boolean includeHighlight,
         @Param("includeCheckpoint") boolean includeCheckpoint,
+        @Param("marketCategoryCode") String marketCategoryCode,
         Pageable pageable
     );
 
@@ -382,6 +399,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
         @Param("endDate") String endDate,
         @Param("includeHighlight") boolean includeHighlight,
         @Param("includeCheckpoint") boolean includeCheckpoint,
+        @Param("marketCategoryCode") String marketCategoryCode,
         Pageable pageable
     );
 
