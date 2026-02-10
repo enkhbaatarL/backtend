@@ -616,11 +616,24 @@ public class MiForecastService {
         int offset = Math.max(0, (page - 1) * size);
         String limitClause = String.format("%d, %d", offset, size);
 
+        String scheduledSubQuery = String.format(
+            "(SELECT rglr_yn FROM tmm_bztgtprdcrsltdatad d WHERE "
+                + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s) as rglr_yn",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+        String columnsWithScheduled = columns + ", " + scheduledSubQuery;
+
         List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
             DynamicDataDetailReq.builder()
                 .targetDataSource("midb")
-                .tableName("tmm_bztgtprdcrsltdatam")
-                .columns(columns)
+                .tableName("tmm_bztgtprdcrsltdatam m")
+                .columns(columnsWithScheduled)
                 .whereClause(whereClause)
                 .groupByColumns(groupByColumns)
                 .orderByColumns(orderByColumns)
@@ -772,11 +785,24 @@ public class MiForecastService {
                 "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal",
                 "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME + ") as predictionCriteriaVal");
 
+        String scheduledSubQuery = String.format(
+            "(SELECT rglr_yn FROM tmm_bztgtprdcrsltdatad d WHERE "
+                + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s) as rglr_yn",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+        String columnsWithScheduled = columns + ", " + scheduledSubQuery;
+
         List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
             DynamicDataDetailReq.builder()
                 .targetDataSource("midb")
-                .tableName("tmm_bztgtprdcrsltdatam")
-                .columns(columns)
+                .tableName("tmm_bztgtprdcrsltdatam m")
+                .columns(columnsWithScheduled)
                 .whereClause(whereClause)
                 .groupByColumns(groupByColumns)
                 .orderByColumns(orderByColumns)
@@ -873,6 +899,7 @@ public class MiForecastService {
                     getStringValue(row.get("avgPredictionResultVal"));
                 String predictionCriteriaValStr =
                     getStringValue(row.get("predictionCriteriaVal"));
+                Boolean isScheduled = toScheduledYn(getStringValue(row.get("rglr_yn")));
 
                 Double predictionResultVal = toScaledDouble(avgPredictionResultValStr);
                 Double predictionCriteriaVal = toScaledDouble(predictionCriteriaValStr);
@@ -925,6 +952,9 @@ public class MiForecastService {
                     if (mnemonicCode != null) {
                         predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                     }
+                }
+                if (Boolean.FALSE.equals(isScheduled)) {
+                    predictChartDetailExpn = appendAdHocLabel(predictChartDetailExpn);
                 }
                 ForecastSummary report = resolveForecastSummary(
                     summaryCache,
@@ -986,6 +1016,8 @@ public class MiForecastService {
                         applyVisibilityFilter, visibilityByKey, "directionVal", directionVal))
                     .isHit(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "isHit", isHit))
+                    .isScheduled(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "isScheduled", isScheduled))
                     .build();
             })
             .toList();
@@ -1053,6 +1085,9 @@ public class MiForecastService {
                 Double predictionResultVal2 = groupRows.size() < 2
                     ? null
                     : toScaledDouble(getStringValue(groupRows.get(1).get("avgPredictionResultVal")));
+                Boolean isScheduled = groupRows.isEmpty()
+                    ? null
+                    : toScheduledYn(getStringValue(groupRows.get(0).get("rglr_yn")));
 
                 Integer associatedNo = goodsDataSourceNo;
                 if (associatedNo == null) {
@@ -1102,6 +1137,17 @@ public class MiForecastService {
                     key.fulfillDt(),
                     key.mnemonic());
 
+                String predictChartDetailExpn = null;
+                if (key.mnemonic() != null) {
+                    MnemonicCode mnemonicCode = MnemonicCode.findByCode(key.mnemonic());
+                    if (mnemonicCode != null) {
+                        predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
+                    }
+                }
+                if (Boolean.FALSE.equals(isScheduled)) {
+                    predictChartDetailExpn = appendAdHocLabel(predictChartDetailExpn);
+                }
+
                 return ForecastRecordRes.builder()
                     .marketIndexAnalysisTargetCd(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "marketIndexAnalysisTargetCd",
@@ -1111,7 +1157,9 @@ public class MiForecastService {
                         key.fulfillDt()))
                     .mnemonicCd(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "mnemonicCd", key.mnemonic()))
-                    .predictChartDetailExpn(null)
+                    .predictChartDetailExpn(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictChartDetailExpn",
+                        predictChartDetailExpn))
                     .associatedGoodsDataSourceNo(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "associatedGoodsDataSourceNo",
                         goodsDataSourceNo))
@@ -1142,11 +1190,32 @@ public class MiForecastService {
                     .report(report)
                     .directionVal(null)
                     .isHit(null)
-                    .isScheduled(null)
+                    .isScheduled(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "isScheduled", isScheduled))
                     .isNew(null)
                     .build();
             })
             .toList();
+    }
+
+    private Boolean toScheduledYn(String value) {
+        if (value == null) {
+            return null;
+        }
+        if ("Y".equalsIgnoreCase(value)) {
+            return Boolean.TRUE;
+        }
+        if ("N".equalsIgnoreCase(value)) {
+            return Boolean.FALSE;
+        }
+        return null;
+    }
+
+    private String appendAdHocLabel(String value) {
+        if (value == null || value.isBlank()) {
+            return "Ad hoc";
+        }
+        return value + " Ad hoc";
     }
 
     private ForecastSummary resolveForecastSummary(
@@ -2188,11 +2257,35 @@ public class MiForecastService {
                 predictChartDetailExpn,
                 detail.getAssociatedGoodsDataSourceDetail() != null
                     ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
-                    : null);
+                    : null,
+                null);
             ForecastResultValue resultValue = getForecastResultValue(goodsDataSourceDetail,
                 forecastKey);
             if (resultValue == null) {
                 continue;
+            }
+
+            Boolean isScheduled = null;
+            if (marketIndexAnalysisTargetCd != null && predictionFulfillDt != null
+                && mnemonicCd != null && predictionCriteriaDt != null) {
+                String whereClause = String.format(
+                    "%s = '%s' AND %s = '%s' AND %s = '%s' AND %s = '%s'",
+                    MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME, marketIndexAnalysisTargetCd,
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME, predictionFulfillDt,
+                    MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, mnemonicCd,
+                    MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, predictionCriteriaDt);
+                List<Map<String, Object>> scheduledRows = mybatisDynamicQueryService.getDynamicRawQuery(
+                    DynamicDataDetailReq.builder()
+                        .targetDataSource("midb")
+                        .tableName("tmm_bztgtprdcrsltdatad")
+                        .columns("rglr_yn")
+                        .whereClause(whereClause)
+                        .limit("1")
+                        .build());
+                if (!scheduledRows.isEmpty()) {
+                    isScheduled =
+                        toScheduledYn(getStringValue(scheduledRows.get(0).get("rglr_yn")));
+                }
             }
 
             DiffResult diffResult = calculateDiffResult(resultValue.predictionCriteriaVal(),
@@ -2249,7 +2342,7 @@ public class MiForecastService {
                 .predictionCriteriaVal(predictionCriteriaVal)
                 .predictionResultDiffVal(diffResult.diffValue())
                 .predictionResultDiffRate(diffResult.diffRate())
-                .isScheduled(null)
+                .isScheduled(isScheduled)
                 .explanatoryTitleContent(explanatoryTitleContent)
                 .explanatorySummaryContent(explanatorySummaryContent)
                 .explanatoryFilePath(explanatoryFilePath)
@@ -2421,7 +2514,7 @@ public class MiForecastService {
         }
 
         return new AvailableForecastKey(predictDate, predictionCriteriaDt, mnemonicCd,
-            marketIndexAnalysisTargetCd, predictChartDetailExpn, associatedGoodsDataSourceNo);
+            marketIndexAnalysisTargetCd, predictChartDetailExpn, associatedGoodsDataSourceNo, null);
     }
 
     private String buildForecastBaseWhereClause(String baseWhereClause, String fulfillDate) {
@@ -3019,9 +3112,10 @@ public class MiForecastService {
                                 predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                             }
                         }
+                        Boolean isScheduled = toScheduledYn(getStringValue(row.get("rglr_yn")));
                         return new AvailableForecastKey(fulfillDate, criteriaDate, mnemonicCd,
                             marketIndexAnalysisTargetCd,
-                            predictChartDetailExpn, associatedGoodsDataSourceNo);
+                            predictChartDetailExpn, associatedGoodsDataSourceNo, isScheduled);
                     })
                     .filter(Objects::nonNull);
             })
@@ -3082,6 +3176,7 @@ public class MiForecastService {
                     .predictionCriteriaVal(predictionCriteriaVal)
                     .predictionResultDiffVal(diffResult.diffValue())
                     .predictionResultDiffRate(diffResult.diffRate())
+                    .isScheduled(forecastKey.isScheduled())
                     .predictionResultList(toPredictionResultPoints(resultValue.predictionResults()))
                     .build());
             })
@@ -3102,21 +3197,33 @@ public class MiForecastService {
 
         int startDateLength = 1;
         int endDateLength = 6;
+        String scheduledSubQuery = String.format(
+            "MAX((SELECT rglr_yn FROM tmm_bztgtprdcrsltdatad d WHERE "
+                + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s)) as rglr_yn",
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
         String dateColumn = String.format(
-            "MAX(%s) as %s, MAX(%s) as %s, MAX(%s) as %s, MAX(%s) as %s",
+            "MAX(m.%s) as %s, MAX(m.%s) as %s, MAX(m.%s) as %s, MAX(m.%s) as %s, %s",
             MARKET_DATA_PREDICT_DATE_COLUMN_NAME, MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
             MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
             MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
             MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME, MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
             MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
-            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME);
-        String groupBy = "SUBSTRING(%s, %d, %d)".formatted(MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+            MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+            scheduledSubQuery);
+        String groupBy = "SUBSTRING(m.%s, %d, %d)".formatted(MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
             startDateLength, endDateLength);
         String orderBy = String.format("%s DESC", groupBy);
 
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.builder()
             .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
-            .tableName(goodsDataSourceDetail.getTargetTableNm())
+            .tableName(goodsDataSourceDetail.getTargetTableNm() + " m")
             .columns(dateColumn)
             .whereClause(goodsDataSourceDetail.getQueryConditionCntt())
             .groupByColumns(groupBy)
@@ -3518,7 +3625,8 @@ public class MiForecastService {
                                         String mnemonicCd,
                                         String marketIndexAnalysisTargetCd,
                                         String predictChartDetailExpn,
-                                        Integer associatedGoodsDataSourceNo) {
+                                        Integer associatedGoodsDataSourceNo,
+                                        Boolean isScheduled) {
 
     }
 
