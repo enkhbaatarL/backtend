@@ -3251,6 +3251,7 @@ public class MiForecastService {
             case SIX_MONTHS -> today.minusMonths(6).plusDays(1);
             case YEAR_TO_DATE -> LocalDate.of(today.getYear(), 1, 1);
             case ONE_YEAR -> today.minusYears(1).plusDays(1);
+            case TWO_YEARS -> today.minusYears(2).plusDays(1);
             case ALL -> today.minusYears(10).plusDays(1);
         };
     }
@@ -3470,6 +3471,7 @@ public class MiForecastService {
         SIX_MONTHS("6M"),
         YEAR_TO_DATE("YTD"),
         ONE_YEAR("1Y"),
+        TWO_YEARS("2Y"),
         ALL("ALL");
 
         private final String label;
