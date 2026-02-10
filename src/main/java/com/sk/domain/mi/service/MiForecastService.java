@@ -3293,11 +3293,6 @@ public class MiForecastService {
                     })
                     .filter(Objects::nonNull);
             })
-            .sorted(Comparator
-                .comparing(AvailableForecastKey::predictionFulfillDt,
-                    Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(AvailableForecastKey::associatedGoodsDataSourceNo,
-                    Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
     }
 
