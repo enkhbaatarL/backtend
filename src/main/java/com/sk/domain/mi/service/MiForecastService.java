@@ -3582,6 +3582,7 @@ public class MiForecastService {
         if (baseWhereClause != null && !baseWhereClause.isBlank()) {
             clauses.add(baseWhereClause);
         }
+        clauses.add("chrt_yn = 'Y'");
         clauses.add(String.format("%s = '%s'", MARKET_DATA_PREDICT_DATE_COLUMN_NAME, fulfillDate));
         clauses.add(String.format("%s = '%s'", MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
             criteriaDate));
