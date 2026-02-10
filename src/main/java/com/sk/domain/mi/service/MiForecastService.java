@@ -3057,7 +3057,7 @@ public class MiForecastService {
         if (periodCount == null || periodUnit == null || periodCount <= 0) {
             return today;
         }
-        return today.plus(periodCount, periodUnit.getTemporalUnit());
+        return today.plus(periodCount * 3L, periodUnit.getTemporalUnit());
     }
 
     private Double getActualAverageValue(GoodsDataSourceDetail actualDetail,
