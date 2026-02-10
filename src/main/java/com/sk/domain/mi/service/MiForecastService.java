@@ -19,6 +19,7 @@ import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphDatasource
 import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
+import com.sk.domain.mi.dto.response.forecast.ForecastTargetAccuracyRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastTargetRes;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactor;
 import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorCategoryRes;
@@ -495,8 +496,143 @@ public class MiForecastService {
         List<ForecastRecordHeaderRes> recordHeaders =
             buildForecastRecordHeadersForCompany(companyNo);
         Boolean modelAccuracyVisible = getModelAccuracyVisible(companyNo);
+        List<ForecastTargetAccuracyRes> targetAccuracyList =
+            Boolean.TRUE.equals(modelAccuracyVisible)
+                ? buildTargetAccuracyList(companyNo, targetList, chartPredictSettingDetails)
+                : null;
         return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders,
-            modelAccuracyVisible);
+            modelAccuracyVisible, targetAccuracyList);
+    }
+
+    private List<ForecastTargetAccuracyRes> buildTargetAccuracyList(int companyNo,
+        List<ForecastTargetRes> targetList,
+        List<ChartPredictSettingDetail> chartPredictSettingDetails) {
+        if (targetList == null || targetList.isEmpty()) {
+            return List.of();
+        }
+
+        boolean isTwoPeriodCompany = companyNo == 2015 || companyNo == 2013;
+        List<ChartPredictSettingDetail> predictDetailsAll = chartPredictSettingDetails.stream()
+            .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
+            .toList();
+
+        return targetList.stream()
+            .map(target -> {
+                Integer goodsDataSourceNo = target.goodsDataSourceNo();
+                if (goodsDataSourceNo == null) {
+                    return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
+                }
+
+                List<ChartPredictSettingDetail> predictDetails = predictDetailsAll.stream()
+                    .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                    .filter(detail -> goodsDataSourceNo.equals(
+                        detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                    .toList();
+                if (predictDetails.isEmpty()) {
+                    return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
+                }
+
+                List<String> conditionList = predictDetails.stream()
+                    .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
+                    .filter(Objects::nonNull)
+                    .map(GoodsDataSourceDetail::getQueryConditionCntt)
+                    .filter(Objects::nonNull)
+                    .filter(condition -> !condition.isBlank())
+                    .distinct()
+                    .toList();
+                if (conditionList.isEmpty()) {
+                    return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
+                }
+
+                String combinedBaseWhere = conditionList.stream()
+                    .map(condition -> "(" + condition + ")")
+                    .collect(Collectors.joining(" OR "));
+                String whereClause = combinedBaseWhere.isBlank() ? null : combinedBaseWhere;
+                if (whereClause == null) {
+                    return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
+                }
+
+                String groupByColumns = isTwoPeriodCompany
+                    ? String.join(", ",
+                        MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME)
+                    : String.join(", ",
+                        MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+
+                String columns = isTwoPeriodCompany
+                    ? String.join(", ",
+                        MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
+                        "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal")
+                    : String.join(", ",
+                        MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                        MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                        "MIN(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME
+                            + ") as startPredictionResultDt",
+                        "MAX(" + MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME
+                            + ") as endPredictionResultDt",
+                        "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME
+                            + ") as avgPredictionResultVal",
+                        "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME
+                            + ") as predictionCriteriaVal");
+
+                List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+                    DynamicDataDetailReq.builder()
+                        .targetDataSource("midb")
+                        .tableName("tmm_bztgtprdcrsltdatam")
+                        .columns(columns)
+                        .whereClause(whereClause)
+                        .groupByColumns(groupByColumns)
+                        .build());
+                if (rows.isEmpty()) {
+                    return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
+                }
+
+                List<ForecastRecordRes> records = companyNo == 2020
+                    ? buildForecastRecordResultsInternal(rows, chartPredictSettingDetails,
+                        predictDetails, companyNo, goodsDataSourceNo, false)
+                    : buildForecastRecordResultsForTwoPeriodCompanyInternal(rows,
+                        chartPredictSettingDetails, predictDetails, companyNo, goodsDataSourceNo,
+                        false);
+                LocalDate asOfDate = records.stream()
+                    .map(ForecastRecordRes::predictionFulfillDt)
+                    .map(DateUtil::parseDate)
+                    .filter(Objects::nonNull)
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
+                Double cumulativeHitRate = calculateCumulativeHitRate(records);
+
+                return ForecastTargetAccuracyRes.of(cumulativeHitRate, target.predictChartDetailExpn(),
+                    asOfDate);
+            })
+            .toList();
+    }
+
+    private Double calculateCumulativeHitRate(List<ForecastRecordRes> records) {
+        if (records == null || records.isEmpty()) {
+            return null;
+        }
+        long total = records.size();
+        if (total == 0) {
+            return null;
+        }
+        long hits = records.stream()
+            .filter(record -> Boolean.TRUE.equals(record.isHit()))
+            .count();
+        BigDecimal rate = BigDecimal.valueOf((double) hits * 100d / (double) total)
+            .setScale(2, RoundingMode.HALF_UP);
+        return rate.doubleValue();
     }
 
     /**
@@ -666,9 +802,9 @@ public class MiForecastService {
 
         List<ForecastRecordRes> results = companyNo == 2020
             ? buildForecastRecordResults(rows, chartPredictSettingDetails, predictDetails, companyNo,
-                goodsDataSourceNo)
+                goodsDataSourceNo, false)
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
-                predictDetails, companyNo, goodsDataSourceNo);
+                predictDetails, companyNo, goodsDataSourceNo, false);
 
         Pageable pageable = PageRequest.of(page - 1, size);
         return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
@@ -810,9 +946,9 @@ public class MiForecastService {
 
         List<ForecastRecordRes> results = companyNo == 2020
             ? buildForecastRecordResults(rows, chartPredictSettingDetails, predictDetails, companyNo,
-                goodsDataSourceNo)
+                goodsDataSourceNo, true)
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
-                predictDetails, companyNo, goodsDataSourceNo);
+                predictDetails, companyNo, goodsDataSourceNo, true);
 
         return createForecastRecordExcel(companyNo, results);
     }
@@ -858,7 +994,19 @@ public class MiForecastService {
         List<Map<String, Object>> rows,
         List<ChartPredictSettingDetail> chartPredictSettingDetails,
         List<ChartPredictSettingDetail> predictDetails,
-        int companyNo, Integer goodsDataSourceNo) {
+        int companyNo, Integer goodsDataSourceNo,
+        boolean appendAdHocLabel) {
+        return buildForecastRecordResultsInternal(rows, chartPredictSettingDetails, predictDetails,
+            companyNo, goodsDataSourceNo, true, appendAdHocLabel);
+    }
+
+    private List<ForecastRecordRes> buildForecastRecordResultsInternal(
+        List<Map<String, Object>> rows,
+        List<ChartPredictSettingDetail> chartPredictSettingDetails,
+        List<ChartPredictSettingDetail> predictDetails,
+        int companyNo, Integer goodsDataSourceNo,
+        boolean applyVisibilityFilterOverride,
+        boolean appendAdHocLabel) {
 
         Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
             chartPredictSettingDetails.stream()
@@ -876,8 +1024,10 @@ public class MiForecastService {
                 detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
                 (existing, replacement) -> existing));
 
-        Map<String, Boolean> visibilityByKey = buildForecastRecordVisibilityMap(companyNo);
-        boolean applyVisibilityFilter = !visibilityByKey.isEmpty();
+        Map<String, Boolean> visibilityByKey = applyVisibilityFilterOverride
+            ? buildForecastRecordVisibilityMap(companyNo)
+            : Map.of();
+        boolean applyVisibilityFilter = applyVisibilityFilterOverride && !visibilityByKey.isEmpty();
 
         Map<String, ForecastSummary> summaryCache = new HashMap<>();
 
@@ -953,7 +1103,7 @@ public class MiForecastService {
                         predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                     }
                 }
-                if (Boolean.FALSE.equals(isScheduled)) {
+                if (appendAdHocLabel && Boolean.FALSE.equals(isScheduled)) {
                     predictChartDetailExpn = appendAdHocLabel(predictChartDetailExpn);
                 }
                 ForecastSummary report = resolveForecastSummary(
@@ -1027,7 +1177,19 @@ public class MiForecastService {
         List<Map<String, Object>> rows,
         List<ChartPredictSettingDetail> chartPredictSettingDetails,
         List<ChartPredictSettingDetail> predictDetails,
-        int companyNo, Integer goodsDataSourceNo) {
+        int companyNo, Integer goodsDataSourceNo,
+        boolean appendAdHocLabel) {
+        return buildForecastRecordResultsForTwoPeriodCompanyInternal(rows, chartPredictSettingDetails,
+            predictDetails, companyNo, goodsDataSourceNo, true, appendAdHocLabel);
+    }
+
+    private List<ForecastRecordRes> buildForecastRecordResultsForTwoPeriodCompanyInternal(
+        List<Map<String, Object>> rows,
+        List<ChartPredictSettingDetail> chartPredictSettingDetails,
+        List<ChartPredictSettingDetail> predictDetails,
+        int companyNo, Integer goodsDataSourceNo,
+        boolean applyVisibilityFilterOverride,
+        boolean appendAdHocLabel) {
 
         Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
             chartPredictSettingDetails.stream()
@@ -1045,8 +1207,10 @@ public class MiForecastService {
                 detail -> detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo(),
                 (existing, replacement) -> existing));
 
-        Map<String, Boolean> visibilityByKey = buildForecastRecordVisibilityMap(companyNo);
-        boolean applyVisibilityFilter = !visibilityByKey.isEmpty();
+        Map<String, Boolean> visibilityByKey = applyVisibilityFilterOverride
+            ? buildForecastRecordVisibilityMap(companyNo)
+            : Map.of();
+        boolean applyVisibilityFilter = applyVisibilityFilterOverride && !visibilityByKey.isEmpty();
 
         record ForecastKey(String target, String fulfillDt, String mnemonic, String criteriaDt) {}
 
@@ -1144,7 +1308,7 @@ public class MiForecastService {
                         predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                     }
                 }
-                if (Boolean.FALSE.equals(isScheduled)) {
+                if (appendAdHocLabel && Boolean.FALSE.equals(isScheduled)) {
                     predictChartDetailExpn = appendAdHocLabel(predictChartDetailExpn);
                 }
 
