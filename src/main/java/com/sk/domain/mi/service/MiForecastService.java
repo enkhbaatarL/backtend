@@ -601,10 +601,10 @@ public class MiForecastService {
 
                 List<ForecastRecordRes> records = companyNo == 2020
                     ? buildForecastRecordResultsInternal(rows, chartPredictSettingDetails,
-                        predictDetails, companyNo, goodsDataSourceNo, false)
+                        predictDetails, companyNo, goodsDataSourceNo, false, false)
                     : buildForecastRecordResultsForTwoPeriodCompanyInternal(rows,
                         chartPredictSettingDetails, predictDetails, companyNo, goodsDataSourceNo,
-                        false);
+                        false, false);
                 LocalDate asOfDate = records.stream()
                     .map(ForecastRecordRes::predictionFulfillDt)
                     .map(DateUtil::parseDate)
