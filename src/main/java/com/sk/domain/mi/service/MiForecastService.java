@@ -2862,9 +2862,11 @@ public class MiForecastService {
      *
      * @param companyNo         회사 번호
      * @param goodsDataSourceNo 데이터 소스 번호(선택)
+     * @param isScheduled       정기 여부(선택)
      * @return List<ForecastReportRes>
      */
-    public List<ForecastReportRes> getForecastReports(int companyNo, Integer goodsDataSourceNo) {
+    public List<ForecastReportRes> getForecastReports(int companyNo, Integer goodsDataSourceNo,
+        Boolean isScheduled) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
                 companyNo, currentDate)
@@ -2886,7 +2888,8 @@ public class MiForecastService {
                     detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
                 .toList();
         }
-        List<AvailableForecastKey> availableDates = getAvailableDates(chartPredictSettingDetails);
+        List<AvailableForecastKey> availableDates =
+            getAvailableDates(chartPredictSettingDetails, isScheduled);
 
         List<ForecastReportRes> results = new ArrayList<>();
         for (AvailableForecastKey forecastKey : availableDates) {
@@ -3240,7 +3243,7 @@ public class MiForecastService {
      * @return List<AvailableForecastKey>
      */
     private List<AvailableForecastKey> getAvailableDates(
-        List<ChartPredictSettingDetail> chartPredictSettingDetails) {
+        List<ChartPredictSettingDetail> chartPredictSettingDetails, Boolean isScheduled) {
         return chartPredictSettingDetails.stream()
             .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
             .flatMap(detail -> {
@@ -3253,7 +3256,7 @@ public class MiForecastService {
                     detail.getAssociatedGoodsDataSourceDetail() != null
                         ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                         : null;
-                List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource);
+                List<Map<String, Object>> rawData = getDateDataRows(goodsDataSource, isScheduled);
                 return rawData.stream()
                     .map(row -> {
                         Object fulfillDateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
@@ -3276,10 +3279,10 @@ public class MiForecastService {
                                 predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                             }
                         }
-                        Boolean isScheduled = toScheduledYn(getStringValue(row.get("rglr_yn")));
+                        Boolean rowScheduled = toScheduledYn(getStringValue(row.get("rglr_yn")));
                         return new AvailableForecastKey(fulfillDate, criteriaDate, mnemonicCd,
                             marketIndexAnalysisTargetCd,
-                            predictChartDetailExpn, associatedGoodsDataSourceNo, isScheduled);
+                            predictChartDetailExpn, associatedGoodsDataSourceNo, rowScheduled);
                     })
                     .filter(Objects::nonNull);
             })
@@ -3354,7 +3357,8 @@ public class MiForecastService {
      * @param goodsDataSourceDetail 데이터소스 상세 정보
      * @return 조건에 맞는 데이터 행 목록
      */
-    private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail) {
+    private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail,
+        Boolean isScheduled) {
         if (goodsDataSourceDetail == null) {
             return Collections.emptyList();
         }
@@ -3385,11 +3389,31 @@ public class MiForecastService {
             startDateLength, endDateLength);
         String orderBy = String.format("%s DESC", groupBy);
 
+        String whereClause = goodsDataSourceDetail.getQueryConditionCntt();
+        if (isScheduled != null) {
+            String scheduledValue = Boolean.TRUE.equals(isScheduled) ? "Y" : "N";
+            String scheduledFilter = String.format(
+                "EXISTS (SELECT 1 FROM tmm_bztgtprdcrsltdatad d WHERE "
+                    + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.rglr_yn = '%s')",
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+                scheduledValue);
+            whereClause = (whereClause == null || whereClause.isBlank())
+                ? scheduledFilter
+                : "(" + whereClause + ") AND " + scheduledFilter;
+        }
+
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.builder()
             .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
             .tableName(goodsDataSourceDetail.getTargetTableNm() + " m")
             .columns(dateColumn)
-            .whereClause(goodsDataSourceDetail.getQueryConditionCntt())
+            .whereClause(whereClause)
             .groupByColumns(groupBy)
             .orderByColumns(orderBy)
             .limit(FORECAST_AVAILABLE_DATE_LIMIT)

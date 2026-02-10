@@ -281,6 +281,7 @@ public class MiForecastDedicatedController {
     @ApiOrder(11)
     @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Parameter(name = "goodsDataSourceNo", description = "데이터 소스 번호(선택)", example = "934")
+    @Parameter(name = "isScheduled", description = "정기 여부(true/false)", example = "true")
     @Operation(summary = "Forecast report 목록 조회", description = "Forecast report 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/companies/{companyNo}/reports")
@@ -288,9 +289,10 @@ public class MiForecastDedicatedController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<List<ForecastReportRes>> getForecastReports(
         @PathVariable Integer companyNo,
-        @RequestParam(required = false) Integer goodsDataSourceNo) {
+        @RequestParam(required = false) Integer goodsDataSourceNo,
+        @RequestParam(required = false) Boolean isScheduled) {
         return BaseResponseFactory.create(
-            miForecastService.getForecastReports(companyNo, goodsDataSourceNo));
+            miForecastService.getForecastReports(companyNo, goodsDataSourceNo, isScheduled));
     }
 
 }
