@@ -3,7 +3,6 @@ package com.sk.domain.shared.enums;
 import com.sk.common.utils.DateUtil;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -50,7 +49,6 @@ public enum EconomicCalendarDateRange {
      */
     public Pair<String, String> getDateRange() {
         LocalDate today = LocalDate.now();
-        today = LocalDate.parse("20251028", DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         return switch (this) {
             case TODAY -> {
