@@ -1033,7 +1033,12 @@ public class MiMarketDataService {
             """;
 
         if (StringUtils.hasText(keyword)) {
-            where += " AND MATCH(tgd.gds_data_nm) AGAINST(lower(:keyword) IN BOOLEAN MODE)";
+            where += """
+                 AND (
+                  MATCH(tgd.gds_data_nm) AGAINST(:keyword IN BOOLEAN MODE)
+                  OR MATCH(tgsrc.gds_data_src_nm) AGAINST(:keyword IN BOOLEAN MODE)
+                )
+                """;
         }
 
         String contentSql = """
@@ -1070,10 +1075,9 @@ public class MiMarketDataService {
             .setParameter("companyNo", companyNo);
 
         if (StringUtils.hasText(keyword)) {
-            contentQuery.setParameter("keyword",
-                String.format("+(%s)", keyword.replaceAll("(\\S+)", "$1*")));
-            countQuery.setParameter("keyword",
-                String.format("+(%s)", keyword.replaceAll("(\\S+)", "$1*")));
+            String processedKeyword = keyword.replaceAll("(\\S+)", "$1*");
+            contentQuery.setParameter("keyword", processedKeyword);
+            countQuery.setParameter("keyword", processedKeyword);
         }
 
         @SuppressWarnings("unchecked")

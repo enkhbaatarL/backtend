@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://mi-skhynix.sk.com/saml/metadata">
+   <md:SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+      <md:KeyDescriptor use="signing">
+         <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+            <ds:X509Data>
+               <ds:X509Certificate>MIIDbTCCAlWgAwIBAgIULkH6VXEbWfAo8uPdc0vIKxH8fy4wDQYJKoZIhvcNAQELBQAwXzELMAkGA1UEBhMCS1IxDjAMBgNVBAgMBVNlb3VsMQ4wDAYDVQQHDAVTZW91bDELMAkGA1UECgwCU0sxCzAJBgNVBAsMAk1JMRYwFAYDVQQDDA1kZXYtbWkuc2suY29tMB4XDTI1MDQyMzAxNDUyNloXDTM1MDQyMTAxNDUyNlowXzELMAkGA1UEBhMCS1IxDjAMBgNVBAgMBVNlb3VsMQ4wDAYDVQQHDAVTZW91bDELMAkGA1UECgwCU0sxCzAJBgNVBAsMAk1JMRYwFAYDVQQDDA1kZXYtbWkuc2suY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnQYMZEc8brZQ2xoESV2h7o5/BOMoWukZGCwHp0r5HvXHXwuHgXdGWRZn4zf2FgNgNvW4Xiiy5yNu+JKOzhe14pZaKLDPf9er+kFbgNBACYEf+EVPd0XIezj6b9NGAXxCSrfORzLyVYoMOtYsJcEtiKJSIC/kA0HKmHyNP6yyLjD+l7i9MYoRwpCslQ6fBEb95ImaV0mWB0x6YlbCGypDIoiWIX+1U40+PMGjiAAIcJOl/5Y/U3elPCHXGqVnxnCJi/K+e7zxqgTMnjWJUZvgLKh+U78emAm0JctMyBP2nBj7zOuJUwYyVgNskqyMDMjX86rm2DeAPAg16j2kXPKMEQIDAQABoyEwHzAdBgNVHQ4EFgQUR6i3QsB7WyqVzgo2iZrOEf3TeKQwDQYJKoZIhvcNAQELBQADggEBABwaACDC10UlCu7z/zXC38BTYYkTYPZgkxwRbyK0syEWCyLFa+ogyr3akfL0i1x0wIv5z5not4Nrg3JWY4jvKIvlDgOxe6SQjDNVbzlC1OvCKwudTRSiiuOYOpTfbdgD7f/ptnerPvW3oR/lwbJimpqNhbwy9I5pndqBvKsuWoE6deQKVs8+LeogH8mT4ldDNKVPhFtWJmCP4mVetKW/qnH4A4nDQ7a5aBE2hM+Zx4awwpb7U4Uusmi9EiGMjhDx19I5FY/66g7ReoHsC/W/Bd0vgH+XK6RBROZpalkglbI27l1ZNBc6v6Kh+hC6YFW2aSHkaTPyfmDMeuM1yDWMTvA=</ds:X509Certificate>
+            </ds:X509Data>
+         </ds:KeyInfo>
+      </md:KeyDescriptor>
+      <md:KeyDescriptor use="encryption">
+         <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+            <ds:X509Data>
+               <ds:X509Certificate>MIIDbTCCAlWgAwIBAgIULkH6VXEbWfAo8uPdc0vIKxH8fy4wDQYJKoZIhvcNAQELBQAwXzELMAkGA1UEBhMCS1IxDjAMBgNVBAgMBVNlb3VsMQ4wDAYDVQQHDAVTZW91bDELMAkGA1UECgwCU0sxCzAJBgNVBAsMAk1JMRYwFAYDVQQDDA1kZXYtbWkuc2suY29tMB4XDTI1MDQyMzAxNDUyNloXDTM1MDQyMTAxNDUyNlowXzELMAkGA1UEBhMCS1IxDjAMBgNVBAgMBVNlb3VsMQ4wDAYDVQQHDAVTZW91bDELMAkGA1UECgwCU0sxCzAJBgNVBAsMAk1JMRYwFAYDVQQDDA1kZXYtbWkuc2suY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnQYMZEc8brZQ2xoESV2h7o5/BOMoWukZGCwHp0r5HvXHXwuHgXdGWRZn4zf2FgNgNvW4Xiiy5yNu+JKOzhe14pZaKLDPf9er+kFbgNBACYEf+EVPd0XIezj6b9NGAXxCSrfORzLyVYoMOtYsJcEtiKJSIC/kA0HKmHyNP6yyLjD+l7i9MYoRwpCslQ6fBEb95ImaV0mWB0x6YlbCGypDIoiWIX+1U40+PMGjiAAIcJOl/5Y/U3elPCHXGqVnxnCJi/K+e7zxqgTMnjWJUZvgLKh+U78emAm0JctMyBP2nBj7zOuJUwYyVgNskqyMDMjX86rm2DeAPAg16j2kXPKMEQIDAQABoyEwHzAdBgNVHQ4EFgQUR6i3QsB7WyqVzgo2iZrOEf3TeKQwDQYJKoZIhvcNAQELBQADggEBABwaACDC10UlCu7z/zXC38BTYYkTYPZgkxwRbyK0syEWCyLFa+ogyr3akfL0i1x0wIv5z5not4Nrg3JWY4jvKIvlDgOxe6SQjDNVbzlC1OvCKwudTRSiiuOYOpTfbdgD7f/ptnerPvW3oR/lwbJimpqNhbwy9I5pndqBvKsuWoE6deQKVs8+LeogH8mT4ldDNKVPhFtWJmCP4mVetKW/qnH4A4nDQ7a5aBE2hM+Zx4awwpb7U4Uusmi9EiGMjhDx19I5FY/66g7ReoHsC/W/Bd0vgH+XK6RBROZpalkglbI27l1ZNBc6v6Kh+hC6YFW2aSHkaTPyfmDMeuM1yDWMTvA=</ds:X509Certificate>
+            </ds:X509Data>
+         </ds:KeyInfo>
+      </md:KeyDescriptor>
+      <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://mi-skhynix.sk.com/saml2/SingleLogout" />
+      <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://mi-skhynix.sk.com/login/saml2/sso/mi" index="0" isDefault="true" />
+      <md:Organization>
+         <md:OrganizationName xml:lang="en">SK</md:OrganizationName>
+         <md:OrganizationDisplayName xml:lang="en">SK</md:OrganizationDisplayName>
+         <md:OrganizationURL xml:lang="en">https://www.sk.com/</md:OrganizationURL>
+      </md:Organization>
+   </md:SPSSODescriptor>
+</md:EntityDescriptor>
