@@ -210,6 +210,47 @@ public class MiForecastService {
         }
     }
 
+    private LocalDate resolveMaskingBaseDate(List<ChartPredictSettingDetail> details) {
+        if (details == null || details.isEmpty()) {
+            return LocalDate.now();
+        }
+        LocalDate maxCriteriaDate = null;
+        for (ChartPredictSettingDetail detail : details) {
+            if (!Boolean.TRUE.equals(detail.getIsChartLinePredictVal())) {
+                continue;
+            }
+            GoodsDataSourceDetail goodsDataSource = detail.getGoodsDataSourceDetail();
+            if (goodsDataSource == null) {
+                continue;
+            }
+            String whereClause = goodsDataSource.getQueryConditionCntt();
+            if (whereClause == null || whereClause.isBlank()) {
+                continue;
+            }
+            String chartFilter = "chrt_yn = 'Y'";
+            whereClause = "(" + whereClause + ") AND " + chartFilter;
+            List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicRawQuery(
+                DynamicDataDetailReq.builder()
+                    .targetDataSource(goodsDataSource.getTargetDbNm())
+                    .tableName(goodsDataSource.getTargetTableNm())
+                    .columns("MAX(" + MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME + ") as maxCriteria")
+                    .whereClause(whereClause)
+                    .build());
+            if (rows.isEmpty()) {
+                continue;
+            }
+            String criteriaYmd = getStringValue(rows.get(0).get("maxCriteria"));
+            LocalDate criteriaDate = DateUtil.parseDate(criteriaYmd);
+            if (criteriaDate == null) {
+                continue;
+            }
+            if (maxCriteriaDate == null || criteriaDate.isAfter(maxCriteriaDate)) {
+                maxCriteriaDate = criteriaDate;
+            }
+        }
+        return maxCriteriaDate != null ? maxCriteriaDate : LocalDate.now();
+    }
+
     private List<ForecastChart> applyLineValueStrategy(List<ForecastChart> charts, LocalDate today) {
         return charts.stream()
             .map(chart -> {
@@ -303,7 +344,7 @@ public class MiForecastService {
                 shouldNull = keepPastOrToday;
             } else if (keepPastOrToday) {
                 // 기존 로직과 동일하게 todayIndex 포함 이후는 마스킹
-                shouldNull = i >= todayIndex;
+                shouldNull = i > todayIndex;
             } else {
                 // forecast는 오늘 이전만 마스킹 (오늘 포함 이후 유지)
                 shouldNull = i < todayIndex;
@@ -453,6 +494,7 @@ public class MiForecastService {
             axisUnit);
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
+        today = resolveMaskingBaseDate(chartPredictSettingDetails);
 
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, ForecastChart> chartMap = new HashMap<>();
@@ -2696,7 +2738,8 @@ public class MiForecastService {
                 }
                 matchedRows++;
                 if (isPredict) {
-                    String rowPredictDate = getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                    String rowPredictDate = getStringValue(
+                        row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
                     if (rowPredictDate != null && (latestPredictDate == null
                         || rowPredictDate.compareTo(latestPredictDate) > 0)) {
                         latestPredictDate = rowPredictDate;
@@ -2900,8 +2943,14 @@ public class MiForecastService {
             throw new IllegalArgumentException("Invalid condition format: " + dbQueryConditionCntt);
         }
 
-        String columns = String.format("%s, %s", dbColumnList,
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        List<String> selectColumns = new ArrayList<>(CombineUtil.getSelectColumnList(dbColumnList));
+        if (!selectColumns.contains(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)) {
+            selectColumns.add(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        }
+        if (!selectColumns.contains(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME)) {
+            selectColumns.add(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+        }
+        String columns = String.join(", ", selectColumns);
         String tableName = "tmm_bztgtprdcrsltdatam";
         String whereClause = String.format(
             "%s BETWEEN '%s' AND '%s' AND %s = '%s' AND %s = '%s'",
