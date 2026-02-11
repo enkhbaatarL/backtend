@@ -73,6 +73,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -80,11 +81,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -113,6 +116,15 @@ public class MiForecastService {
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1;
+    private static final String FORECAST_Q_PLUS_1 = "Forecast Q+1";
+    private static final String FORECAST_Q_PLUS_2 = "Forecast Q+2";
+    private static final int COMPANY_NO_2013 = 2013;
+    private static final int COMPANY_NO_2015 = 2015;
+    private static final String FORECAST_M_PLUS_1 = "Forecast M+1";
+    private static final String FORECAST_M_PLUS_2 = "Forecast M+2";
+    private static final String FUTURE_M_PLUS_1 = "Future M+1";
+    private static final String FUTURE_M_PLUS_2 = "Future M+2";
+    private static final String ACTUAL_LABEL = "Actual";
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int FORECAST_CHART_CACHE_TTL = 10;
     private static final String FORECAST_CHART_CACHE_KEY = "forecast_chart:%d:%s:%s:%s";
@@ -222,25 +234,105 @@ public class MiForecastService {
         if (line == null || line.rawData() == null) {
             return line;
         }
+        if (line.dataType() == null) {
+            return ForecastChartLine.of(
+                line.isPermitted(),
+                null,
+                line.goodsDataSourceNo(),
+                null,
+                line.dataExplanation()
+            );
+        }
 
         List<ForecastChartRawData> rawData = line.rawData();
+        if (!keepPastOrToday && today != null && line.dataExplanation() != null) {
+            String explanation = line.dataExplanation().trim();
+            if (FORECAST_Q_PLUS_1.equalsIgnoreCase(explanation)
+                || FORECAST_Q_PLUS_2.equalsIgnoreCase(explanation)) {
+                int currentQuarterIndex = toQuarterIndex(today);
+                int keepStart = FORECAST_Q_PLUS_1.equalsIgnoreCase(explanation)
+                    ? currentQuarterIndex
+                    : currentQuarterIndex + 1;
+                int keepEnd = FORECAST_Q_PLUS_1.equalsIgnoreCase(explanation)
+                    ? currentQuarterIndex + 1
+                    : currentQuarterIndex + 2;
+                List<ForecastChartRawData> masked = new ArrayList<>(rawData.size());
+                for (ForecastChartRawData raw : rawData) {
+                    if (raw == null) {
+                        masked.add(null);
+                        continue;
+                    }
+                    LocalDate rangeStart = parseRangeStart(raw);
+                    if (rangeStart == null) {
+                        masked.add(raw);
+                        continue;
+                    }
+                    int quarterIndex = toQuarterIndex(rangeStart);
+                    if (quarterIndex >= keepStart && quarterIndex <= keepEnd) {
+                        masked.add(raw);
+                    } else {
+                        masked.add(ForecastChartRawData.builder()
+                            .resultDate(raw.resultDate())
+                            .startDate(raw.startDate())
+                            .predictDate(null)
+                            .value(null)
+                            .build());
+                    }
+                }
+                return ForecastChartLine.of(
+                    line.isPermitted(),
+                    line.dataType(),
+                    line.goodsDataSourceNo(),
+                    masked,
+                    line.dataExplanation()
+                );
+            }
+        }
+
         int todayIndex = findTodayIndex(rawData, today);
-        List<ForecastChartRawData> masked;
-        if (todayIndex < 0) {
-            masked = keepPastOrToday ? List.of() : rawData;
-        } else {
-            masked = keepPastOrToday
-                ? rawData.subList(0, todayIndex)
-                : rawData.subList(todayIndex, rawData.size());
+        List<ForecastChartRawData> masked = new ArrayList<>(rawData.size());
+        for (int i = 0; i < rawData.size(); i++) {
+            ForecastChartRawData raw = rawData.get(i);
+            if (raw == null) {
+                masked.add(null);
+                continue;
+            }
+
+            boolean shouldNull;
+            if (todayIndex < 0) {
+                shouldNull = keepPastOrToday;
+            } else if (keepPastOrToday) {
+                // 기존 로직과 동일하게 todayIndex 포함 이후는 마스킹
+                shouldNull = i >= todayIndex;
+            } else {
+                // forecast는 오늘 이전만 마스킹 (오늘 포함 이후 유지)
+                shouldNull = i < todayIndex;
+            }
+
+            if (shouldNull) {
+                masked.add(ForecastChartRawData.builder()
+                    .resultDate(raw.resultDate())
+                    .startDate(raw.startDate())
+                    .predictDate(null)
+                    .value(null)
+                    .build());
+            } else {
+                masked.add(raw);
+            }
         }
 
         return ForecastChartLine.of(
             line.isPermitted(),
             line.dataType(),
             line.goodsDataSourceNo(),
-            masked.isEmpty() ? List.of() : new ArrayList<>(masked),
+            masked,
             line.dataExplanation()
         );
+    }
+
+    private int toQuarterIndex(LocalDate date) {
+        int quarter = ((date.getMonthValue() - 1) / 3) + 1;
+        return (date.getYear() * 4) + quarter;
     }
 
     private int findTodayIndex(List<ForecastChartRawData> rawData, LocalDate today) {
@@ -275,6 +367,15 @@ public class MiForecastService {
         List<ForecastChartRes.ForecastChartDateItem> dateList) {
         if (line == null || dateList == null || dateList.isEmpty()) {
             return line;
+        }
+        if (line.dataType() == null) {
+            return ForecastChartLine.builder()
+                .isPermitted(line.isPermitted())
+                .dataType(null)
+                .goodsDataSourceNo(line.goodsDataSourceNo())
+                .rawData(null)
+                .dataExplanation(line.dataExplanation())
+                .build();
         }
         List<ForecastChartRawData> rawData = line.rawData();
         Map<String, ForecastChartRawData> byStartDate = new HashMap<>();
@@ -787,7 +888,8 @@ public class MiForecastService {
                 MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME,
                 MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
                 MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME,
-                "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal")
+                "AVG(" + MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME + ") as avgPredictionResultVal",
+                "MAX(" + MARKET_DATA_PREDICT_CRITERIA_VALUE_COLUMN_NAME + ") as predictionCriteriaVal")
             : String.join(", ",
                 MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME,
                 MARKET_DATA_PREDICT_DATE_COLUMN_NAME,
@@ -1283,23 +1385,74 @@ public class MiForecastService {
                         Comparator.nullsLast(String::compareTo)))
                     .toList();
 
-                String predictionResultDt1 =
-                    groupRows.isEmpty()
-                        ? null
-                        : getStringValue(groupRows.get(0).get(
-                            MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
-                String predictionResultDt2 =
-                    groupRows.size() < 2
-                        ? null
-                        : getStringValue(groupRows.get(1).get(
-                            MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
+                String predictionResultDt1 = null;
+                String predictionResultDt2 = null;
+                Double predictionResultVal1 = null;
+                Double predictionResultVal2 = null;
+                Double predictionCriteriaVal = null;
+                if (companyNo == COMPANY_NO_2015) {
+                    Map<String, Object> qPlus1Row = null;
+                    Map<String, Object> qPlus2Row = null;
+                    LocalDate criteriaDate = DateUtil.parseDate(key.criteriaDt());
+                    if (criteriaDate != null) {
+                        for (Map<String, Object> row : groupRows) {
+                            String resultDt =
+                                getStringValue(row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
+                            LocalDate resultDate = DateUtil.parseDate(resultDt);
+                            if (resultDate == null) {
+                                continue;
+                            }
+                            int diff = toQuarterIndex(resultDate) - toQuarterIndex(criteriaDate);
+                            if (diff == 1 && qPlus1Row == null) {
+                                qPlus1Row = row;
+                            } else if (diff == 2 && qPlus2Row == null) {
+                                qPlus2Row = row;
+                            }
+                        }
+                    }
+                    if (qPlus1Row != null) {
+                        predictionResultDt1 = getStringValue(
+                            qPlus1Row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
+                        predictionResultVal1 =
+                            toScaledDouble(getStringValue(qPlus1Row.get("avgPredictionResultVal")));
+                        predictionCriteriaVal =
+                            toScaledDouble(getStringValue(qPlus1Row.get("predictionCriteriaVal")));
+                    }
+                    if (qPlus2Row != null) {
+                        predictionResultDt2 = getStringValue(
+                            qPlus2Row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
+                        predictionResultVal2 =
+                            toScaledDouble(getStringValue(qPlus2Row.get("avgPredictionResultVal")));
+                        if (predictionCriteriaVal == null) {
+                            predictionCriteriaVal =
+                                toScaledDouble(getStringValue(qPlus2Row.get("predictionCriteriaVal")));
+                        }
+                    }
+                } else {
+                    predictionResultDt1 =
+                        groupRows.isEmpty()
+                            ? null
+                            : getStringValue(groupRows.get(0).get(
+                                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
+                    predictionResultDt2 =
+                        groupRows.size() < 2
+                            ? null
+                            : getStringValue(groupRows.get(1).get(
+                                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
 
-                Double predictionResultVal1 = groupRows.isEmpty()
-                    ? null
-                    : toScaledDouble(getStringValue(groupRows.get(0).get("avgPredictionResultVal")));
-                Double predictionResultVal2 = groupRows.size() < 2
-                    ? null
-                    : toScaledDouble(getStringValue(groupRows.get(1).get("avgPredictionResultVal")));
+                    predictionResultVal1 = groupRows.isEmpty()
+                        ? null
+                        : toScaledDouble(
+                            getStringValue(groupRows.get(0).get("avgPredictionResultVal")));
+                    predictionResultVal2 = groupRows.size() < 2
+                        ? null
+                        : toScaledDouble(
+                            getStringValue(groupRows.get(1).get("avgPredictionResultVal")));
+                    predictionCriteriaVal = groupRows.isEmpty()
+                        ? null
+                        : toScaledDouble(
+                            getStringValue(groupRows.get(0).get("predictionCriteriaVal")));
+                }
                 Boolean isScheduled = groupRows.isEmpty()
                     ? null
                     : toScheduledYn(getStringValue(groupRows.get(0).get("rglr_yn")));
@@ -1334,6 +1487,35 @@ public class MiForecastService {
                                 DateUtil.toYmd(second),
                                 DateUtil.toYmd(endOfSecond));
                         }
+                    }
+                }
+
+                String directionVal = null;
+                Boolean isHit = null;
+                if (companyNo == COMPANY_NO_2015
+                    && predictionResultVal2 != null
+                    && predictionCriteriaVal != null) {
+                    int comparison = predictionResultVal2.compareTo(predictionCriteriaVal);
+                    if (comparison > 0) {
+                        directionVal = "UPWARD";
+                    } else if (comparison == 0) {
+                        directionVal = "NEUTRAL";
+                    } else {
+                        directionVal = "DOWNWARD";
+                    }
+
+                    if (actualVal2 != null) {
+                        boolean predictionUp = predictionResultVal2.compareTo(predictionCriteriaVal) > 0;
+                        boolean predictionEqual = predictionResultVal2.compareTo(predictionCriteriaVal) == 0;
+                        boolean predictionDown = predictionResultVal2.compareTo(predictionCriteriaVal) < 0;
+
+                        boolean actualUp = actualVal2.compareTo(predictionCriteriaVal) > 0;
+                        boolean actualEqual = actualVal2.compareTo(predictionCriteriaVal) == 0;
+                        boolean actualDown = actualVal2.compareTo(predictionCriteriaVal) < 0;
+
+                        isHit = (predictionUp && actualUp)
+                            || (predictionEqual && actualEqual)
+                            || (predictionDown && actualDown);
                     }
                 }
 
@@ -1395,7 +1577,9 @@ public class MiForecastService {
                     .predictionResultVal2(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "predictionResultVal2",
                         predictionResultVal2))
-                    .predictionCriteriaVal(null)
+                    .predictionCriteriaVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionCriteriaVal",
+                        predictionCriteriaVal))
                     .predictionResultDiffVal(null)
                     .predictionResultDiffRate(null)
                     .actualVal(visibleValue(
@@ -1403,8 +1587,10 @@ public class MiForecastService {
                     .actualVal2(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "actualVal2", actualVal2))
                     .report(report)
-                    .directionVal(null)
-                    .isHit(null)
+                    .directionVal(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "directionVal", directionVal))
+                    .isHit(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "isHit", isHit))
                     .isScheduled(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "isScheduled", isScheduled))
                     .isNew(null)
@@ -1679,6 +1865,10 @@ public class MiForecastService {
     public ForecastTableRes getForecastTable(int customerCompanyNo, Integer goodsDataSourceNo,
         String startDate,
         String endDate, String order, int page, int size) {
+        if (isSpecialTableCompany(customerCompanyNo)) {
+            return getForecastTableForSpecialCompany(customerCompanyNo, goodsDataSourceNo, startDate,
+                endDate, order, page, size);
+        }
         ForecastTableData tableData = buildForecastTableData(customerCompanyNo, goodsDataSourceNo,
             startDate, endDate, order);
         List<List<Object>> rows = tableData.rows();
@@ -1696,6 +1886,36 @@ public class MiForecastService {
             .goodsDataSourceNo(goodsDataSourceNo)
             .order(tableData.sortOrder().name())
             .tableHeaderList(tableData.headerList())
+            .tableHeaderPermissionList(tableData.headerPermissionList())
+            .tableDataList(pagedTableDataList)
+            .build();
+    }
+
+    private boolean isSpecialTableCompany(int companyNo) {
+        return companyNo == COMPANY_NO_2013 || companyNo == COMPANY_NO_2015;
+    }
+
+    private ForecastTableRes getForecastTableForSpecialCompany(int customerCompanyNo,
+        Integer goodsDataSourceNo, String startDate, String endDate, String order, int page,
+        int size) {
+        ForecastTableData tableData = buildForecastTableDataForSpecialCompany(customerCompanyNo,
+            goodsDataSourceNo, startDate, endDate, order);
+        List<List<Object>> rows = tableData.rows();
+        int totalElements = rows.size();
+        Pageable pageable = PageRequest.of(page - 1, size);
+        int fromIndex = Math.min((page - 1) * size, totalElements);
+        int toIndex = Math.min(fromIndex + size, totalElements);
+        List<List<Object>> pagedRows = rows.subList(fromIndex, toIndex);
+        PaginationRes<List<Object>> pagedTableDataList =
+            PaginationRes.toRes(new PageImpl<>(pagedRows, pageable, totalElements));
+
+        return ForecastTableRes.builder()
+            .startDate(startDate)
+            .endDate(endDate)
+            .goodsDataSourceNo(goodsDataSourceNo)
+            .order(tableData.sortOrder().name())
+            .tableHeaderList(tableData.headerList())
+            .tableHeaderPermissionList(tableData.headerPermissionList())
             .tableDataList(pagedTableDataList)
             .build();
     }
@@ -1703,8 +1923,11 @@ public class MiForecastService {
     public byte[] getForecastTableFileDownload(int customerCompanyNo, Integer goodsDataSourceNo,
         String startDate,
         String endDate, String order) throws IOException {
-        ForecastTableData tableData = buildForecastTableData(customerCompanyNo, goodsDataSourceNo,
-            startDate, endDate, order);
+        ForecastTableData tableData = isSpecialTableCompany(customerCompanyNo)
+            ? buildForecastTableDataForSpecialCompany(customerCompanyNo, goodsDataSourceNo,
+                startDate, endDate, order)
+            : buildForecastTableData(customerCompanyNo, goodsDataSourceNo, startDate, endDate,
+                order);
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("forecast_table");
@@ -1829,12 +2052,20 @@ public class MiForecastService {
             .toList();
 
         List<String> headerList = new ArrayList<>();
+        List<Boolean> headerPermissionList = new ArrayList<>();
         headerList.add("Date");
+        headerPermissionList.add(true);
         List<ForecastTableColumn> columns = new ArrayList<>();
         for (ForecastChart chart : finalCharts) {
             String name = chart.chartName() != null ? chart.chartName() : chart.chartLineDescription();
             headerList.add(String.format("%s Forecast", name));
             headerList.add(String.format("%s Actual", name));
+            headerPermissionList.add(chart.forecastChartLines() != null
+                ? chart.forecastChartLines().isPermitted()
+                : null);
+            headerPermissionList.add(chart.actualChartLines() != null
+                ? chart.actualChartLines().isPermitted()
+                : null);
             columns.add(
                 new ForecastTableColumn(chart.forecastChartLines(), chart.actualChartLines()));
         }
@@ -1865,7 +2096,367 @@ public class MiForecastService {
             Collections.reverse(rows);
         }
 
-        return new ForecastTableData(headerList, rows, sortOrder);
+        return new ForecastTableData(headerList, headerPermissionList, rows, sortOrder);
+    }
+
+    private ForecastTableData buildForecastTableDataForSpecialCompany(int customerCompanyNo,
+        Integer goodsDataSourceNo, String startDate, String endDate, String order) {
+        String currentDate = DateUtil.toYmd(LocalDate.now());
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(
+                customerCompanyNo, currentDate)
+            .orElseThrow(() -> AppErrorException.of(
+                Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", customerCompanyNo)));
+
+        PermissionRes permissionRes = authorizationService.getPermissions();
+
+        ChartSettingAndDetails chartPredictSettingDetailRes =
+            chartPredictSettingDetailRepository.findByCustomerCompany(customerCompany);
+        if (chartPredictSettingDetailRes == null
+            || chartPredictSettingDetailRes.chartPredictSettingDetails().isEmpty()) {
+            throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
+        }
+
+        List<ChartPredictSettingDetail> chartPredictSettingDetails =
+            chartPredictSettingDetailRes.chartPredictSettingDetails();
+        if (goodsDataSourceNo != null) {
+            chartPredictSettingDetails = chartPredictSettingDetails.stream()
+                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
+                .filter(detail -> goodsDataSourceNo.equals(
+                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                .toList();
+        }
+
+        LocalDate start = DateUtil.parseDate(startDate);
+        LocalDate end = DateUtil.parseDate(endDate);
+        if (start == null || end == null || start.isAfter(end)) {
+            throw AppErrorException.of(Error.REQ_INVALID_PARAMETER, "조회기간이 올바르지 않습니다.");
+        }
+
+        Map<String, ColumnData> columnDataMap = new HashMap<>();
+        boolean isCompany2015 = customerCompanyNo == COMPANY_NO_2015;
+        Set<Integer> processedForecastDataSources = new HashSet<>();
+        for (ChartPredictSettingDetail detail : chartPredictSettingDetails) {
+            GoodsDataSourceDetail goodsDataSource = detail.getGoodsDataSourceDetail();
+            if (goodsDataSource == null) {
+                continue;
+            }
+            String explanation = detail.getPredictChartDetailExpn();
+            if (explanation == null || explanation.isBlank()) {
+                continue;
+            }
+
+            GoodsData goodsData = goodsDataSource.getGoodsData();
+            Goods goods = goodsData.getGoods();
+            boolean isPermitted = permissionRes.getGoodsViewableMap(customerCompanyNo)
+                .getOrDefault(goods.getGoodsNo(), false);
+
+            boolean isPredict = Boolean.TRUE.equals(detail.getIsChartLinePredictVal());
+            if (isPredict) {
+                isPermitted = true;
+            }
+
+            if (isCompany2015 && isPredict && isForecastQPlusExplanation(explanation)) {
+                Integer dataSourceNo = goodsDataSource.getGoodsDataSourceNo();
+                if (dataSourceNo != null && processedForecastDataSources.add(dataSourceNo)) {
+                    ForecastQPlusMaps qPlusMaps = buildForecastQPlusMapsFor2015(goodsDataSource,
+                        start, end);
+                    columnDataMap.putIfAbsent(FORECAST_Q_PLUS_1.toLowerCase(),
+                        new ColumnData(qPlusMaps.qPlus1(), true));
+                    columnDataMap.putIfAbsent(FORECAST_Q_PLUS_2.toLowerCase(),
+                        new ColumnData(qPlusMaps.qPlus2(), true));
+                }
+                continue;
+            }
+
+            String[] tableColumnList = Arrays.stream(
+                    goodsDataSource.getTableColumnListNm().split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
+            if (tableColumnList.length <= MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX) {
+                continue;
+            }
+            String dateColumnName = tableColumnList[MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX];
+            String defaultDataColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+
+            List<Map<String, Object>> rawData = isPredict
+                ? getForecastDataRows(goodsDataSource, dateColumnName, start, end)
+                : getActualDataRows(goodsDataSource, dateColumnName, start, end);
+
+            Map<String, Double> yearMonthValues = buildYearMonthAverageMap(rawData, dateColumnName,
+                defaultDataColumnName);
+            columnDataMap.putIfAbsent(explanation.trim().toLowerCase(),
+                new ColumnData(yearMonthValues, isPermitted));
+        }
+
+        List<SpecialTableColumn> columns = buildSpecialColumns(customerCompanyNo);
+        List<String> headerList = new ArrayList<>();
+        List<Boolean> headerPermissionList = new ArrayList<>();
+        headerList.add("Date");
+        headerPermissionList.add(true);
+        for (SpecialTableColumn column : columns) {
+            headerList.add(column.headerText());
+            ColumnData columnData = columnDataMap.get(column.explanationKey());
+            headerPermissionList.add(columnData != null ? columnData.isPermitted() : null);
+        }
+
+        ColumnData baseColumnData = columnDataMap.get(getSpecialPagingKey(customerCompanyNo));
+        List<YearMonth> rowMonths = baseColumnData != null
+            ? toSortedYearMonths(baseColumnData.yearMonthValues().keySet())
+            : List.of();
+
+        List<List<Object>> rows = new ArrayList<>();
+        for (YearMonth yearMonth : rowMonths) {
+            List<Object> values = new ArrayList<>();
+            values.add(formatYearMonthLabel(yearMonth));
+            for (SpecialTableColumn column : columns) {
+                ColumnData columnData = columnDataMap.get(column.explanationKey());
+                if (columnData == null) {
+                    values.add(null);
+                    continue;
+                }
+                YearMonth targetMonth = column.shiftMonths() == 0
+                    ? yearMonth
+                    : yearMonth.plusMonths(column.shiftMonths());
+                values.add(columnData.yearMonthValues()
+                    .get(toYearMonthKey(targetMonth)));
+            }
+            rows.add(values);
+        }
+
+        TableSortOrder sortOrder = TableSortOrder.from(order);
+        if (sortOrder == TableSortOrder.NEWEST) {
+            Collections.reverse(rows);
+        }
+
+        return new ForecastTableData(headerList, headerPermissionList, rows, sortOrder);
+    }
+
+    private boolean isForecastQPlusExplanation(String explanation) {
+        String key = explanation.trim();
+        return FORECAST_Q_PLUS_1.equalsIgnoreCase(key) || FORECAST_Q_PLUS_2.equalsIgnoreCase(key);
+    }
+
+    private ForecastQPlusMaps buildForecastQPlusMapsFor2015(GoodsDataSourceDetail goodsDataSource,
+        LocalDate start, LocalDate end) {
+        String[] tableColumnList = Arrays.stream(
+                goodsDataSource.getTableColumnListNm().split(","))
+            .map(String::trim)
+            .toArray(String[]::new);
+        if (tableColumnList.length <= MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX) {
+            return new ForecastQPlusMaps(Collections.emptyMap(), Collections.emptyMap());
+        }
+        String dateColumnName = tableColumnList[MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX];
+        String valueColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+
+        List<Map<String, Object>> rawData = getForecastDataRowsWithCriteriaDate(goodsDataSource,
+            dateColumnName, valueColumnName, start, end);
+
+        Map<String, List<Double>> qPlus1Bucket = new HashMap<>();
+        Map<String, List<Double>> qPlus2Bucket = new HashMap<>();
+
+        for (Map<String, Object> row : rawData) {
+            LocalDate resultDate = DateUtil.parseDate(row.get(dateColumnName));
+            LocalDate fulfillDate = DateUtil.parseDate(
+                row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+            LocalDate criteriaDate = DateUtil.parseDate(
+                row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+            if (resultDate == null || fulfillDate == null) {
+                continue;
+            }
+            if (criteriaDate == null) {
+                continue;
+            }
+            int diff = toQuarterIndex(resultDate) - toQuarterIndex(criteriaDate);
+            String key = toYearMonthKey(YearMonth.from(resultDate));
+            Double valueData = toDoubleValue(row.get(valueColumnName));
+            if (diff == 1) {
+                qPlus1Bucket.computeIfAbsent(key, k -> new ArrayList<>()).add(valueData);
+            } else if (diff == 2) {
+                qPlus2Bucket.computeIfAbsent(key, k -> new ArrayList<>()).add(valueData);
+            }
+        }
+
+        return new ForecastQPlusMaps(
+            averageByYearMonth(qPlus1Bucket),
+            averageByYearMonth(qPlus2Bucket)
+        );
+    }
+
+    private List<Map<String, Object>> getForecastDataRowsWithCriteriaDate(
+        GoodsDataSourceDetail goodsDataSourceDetail, String dateColumnName,
+        String valueColumnName, LocalDate startDate, LocalDate endDate) {
+        if (goodsDataSourceDetail == null || dateColumnName == null || valueColumnName == null
+            || startDate == null || endDate == null) {
+            return Collections.emptyList();
+        }
+
+        String endDateValue = DateUtil.toYmd(endDate);
+        String startDateValue = DateUtil.toYmd(startDate);
+
+        String dbQueryConditionCntt = goodsDataSourceDetail.getQueryConditionCntt();
+
+        String pattern = "([a-zA-Z_]+)\\s*=\\s*'([^']*)'\\s*and\\s*([a-zA-Z_]+)\\s*=\\s*'([^']*)'";
+        Pattern regex = Pattern.compile(pattern);
+        Matcher matcher = regex.matcher(dbQueryConditionCntt);
+
+        String key1;
+        String value1;
+        String key2;
+        String value2;
+
+        if (matcher.find()) {
+            key1 = matcher.group(1);
+            value1 = matcher.group(2);
+            key2 = matcher.group(3);
+            value2 = matcher.group(4);
+        } else {
+            return Collections.emptyList();
+        }
+
+        String dbColumnList = goodsDataSourceDetail.getTableColumnListNm();
+        List<String> selectColumns = new ArrayList<>(CombineUtil.getSelectColumnList(dbColumnList));
+        if (!selectColumns.contains(dateColumnName)) {
+            selectColumns.add(dateColumnName);
+        }
+        if (!selectColumns.contains(valueColumnName)) {
+            selectColumns.add(valueColumnName);
+        }
+        if (!selectColumns.contains(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)) {
+            selectColumns.add(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        }
+        if (!selectColumns.contains(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME)) {
+            selectColumns.add(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+        }
+        String columns = String.join(", ", selectColumns);
+        String tableName = "tmm_bztgtprdcrsltdatam";
+        String whereClause = String.format(
+            "%s BETWEEN '%s' AND '%s' AND %s = '%s' AND %s = '%s'",
+            dateColumnName, startDateValue, endDateValue,
+            key1, value1,
+            key2, value2);
+        String chartFilter = "chrt_yn = 'Y'";
+        whereClause = "(" + whereClause + ") AND " + chartFilter;
+        String orderByColumns = String.format("%s, %s", dateColumnName,
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+
+        return mybatisDynamicQueryService.getDynamicForecast(
+            DynamicDataDetailReq.ofOrderBy(goodsDataSourceDetail.getTargetDbNm(), tableName,
+                columns, whereClause, orderByColumns));
+    }
+
+    private Map<String, Double> buildYearMonthAverageMap(List<Map<String, Object>> rawData,
+        String dateColumnName, String valueColumnName) {
+        if (rawData == null || rawData.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, List<Double>> bucket = new HashMap<>();
+        for (Map<String, Object> row : rawData) {
+            LocalDate rowDate = DateUtil.parseDate(row.get(dateColumnName));
+            if (rowDate == null) {
+                continue;
+            }
+            String key = toYearMonthKey(YearMonth.from(rowDate));
+            Double valueData = toDoubleValue(row.get(valueColumnName));
+            bucket.computeIfAbsent(key, k -> new ArrayList<>()).add(valueData);
+        }
+
+        return averageByYearMonth(bucket);
+    }
+
+    private Map<String, Double> averageByYearMonth(Map<String, List<Double>> bucket) {
+        if (bucket == null || bucket.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Double> result = new HashMap<>();
+        for (Map.Entry<String, List<Double>> entry : bucket.entrySet()) {
+            List<Double> values = entry.getValue();
+            double average = values.stream()
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+            if (values.isEmpty() || values.stream().allMatch(Objects::isNull)) {
+                result.put(entry.getKey(), null);
+            } else {
+                BigDecimal bd = BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP);
+                result.put(entry.getKey(), bd.doubleValue());
+            }
+        }
+        return result;
+    }
+
+    private Double toDoubleValue(Object val) {
+        if (val == null) {
+            return null;
+        }
+        if (val instanceof Double d) {
+            return d;
+        }
+        if (val instanceof BigDecimal bd) {
+            return bd.doubleValue();
+        }
+        try {
+            return Double.parseDouble(val.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private List<SpecialTableColumn> buildSpecialColumns(int companyNo) {
+        if (companyNo == COMPANY_NO_2013) {
+            return List.of(
+                new SpecialTableColumn("Forecast M+1", FORECAST_M_PLUS_1.toLowerCase(), 0),
+                new SpecialTableColumn("Forecast M+2", FORECAST_M_PLUS_2.toLowerCase(), 0),
+                new SpecialTableColumn("Henry Hub Actual", ACTUAL_LABEL.toLowerCase(), 0),
+                new SpecialTableColumn("Future M+1", FUTURE_M_PLUS_1.toLowerCase(), 0),
+                new SpecialTableColumn("Future M+2", FUTURE_M_PLUS_2.toLowerCase(), 0)
+            );
+        }
+        if (companyNo == COMPANY_NO_2015) {
+            return List.of(
+                new SpecialTableColumn("Forecast Q+1 Price", FORECAST_Q_PLUS_1.toLowerCase(), 0),
+                new SpecialTableColumn("Forecast Q+2 Price", FORECAST_Q_PLUS_2.toLowerCase(), 0),
+                new SpecialTableColumn("Actual Price Q+2", ACTUAL_LABEL.toLowerCase(), 6)
+            );
+        }
+        return List.of();
+    }
+
+    private String getSpecialPagingKey(int companyNo) {
+        if (companyNo == COMPANY_NO_2013) {
+            return FORECAST_M_PLUS_1.toLowerCase();
+        }
+        if (companyNo == COMPANY_NO_2015) {
+            return FORECAST_Q_PLUS_1.toLowerCase();
+        }
+        return null;
+    }
+
+    private List<YearMonth> toSortedYearMonths(Set<String> yearMonthKeys) {
+        if (yearMonthKeys == null || yearMonthKeys.isEmpty()) {
+            return List.of();
+        }
+        return yearMonthKeys.stream()
+            .map(this::parseYearMonthKey)
+            .filter(Objects::nonNull)
+            .sorted()
+            .toList();
+    }
+
+    private String toYearMonthKey(YearMonth yearMonth) {
+        return yearMonth.format(DateTimeFormatter.ofPattern("yyyyMM"));
+    }
+
+    private YearMonth parseYearMonthKey(String key) {
+        try {
+            return YearMonth.parse(key, DateTimeFormatter.ofPattern("yyyyMM"));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String formatYearMonthLabel(YearMonth yearMonth) {
+        return yearMonth.format(DateTimeFormatter.ofPattern("yy/MM"));
     }
 
     private DashboardChartDataTableType calculateDashboardChartDataTableType(
@@ -3901,8 +4492,20 @@ public class MiForecastService {
 
     }
 
-    private record ForecastTableData(List<String> headerList, List<List<Object>> rows,
-                                     TableSortOrder sortOrder) {
+    private record ForecastTableData(List<String> headerList, List<Boolean> headerPermissionList,
+                                     List<List<Object>> rows, TableSortOrder sortOrder) {
+
+    }
+
+    private record ColumnData(Map<String, Double> yearMonthValues, Boolean isPermitted) {
+
+    }
+
+    private record SpecialTableColumn(String headerText, String explanationKey, int shiftMonths) {
+
+    }
+
+    private record ForecastQPlusMaps(Map<String, Double> qPlus1, Map<String, Double> qPlus2) {
 
     }
 
