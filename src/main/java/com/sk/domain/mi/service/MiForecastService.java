@@ -113,6 +113,8 @@ public class MiForecastService {
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1;
+    private static final String FORECAST_Q_PLUS_1 = "Forecast Q+1";
+    private static final String FORECAST_Q_PLUS_2 = "Forecast Q+2";
     private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     private static final int FORECAST_CHART_CACHE_TTL = 10;
     private static final String FORECAST_CHART_CACHE_KEY = "forecast_chart:%d:%s:%s:%s";
@@ -222,25 +224,105 @@ public class MiForecastService {
         if (line == null || line.rawData() == null) {
             return line;
         }
+        if (line.dataType() == null) {
+            return ForecastChartLine.of(
+                line.isPermitted(),
+                null,
+                line.goodsDataSourceNo(),
+                null,
+                line.dataExplanation()
+            );
+        }
 
         List<ForecastChartRawData> rawData = line.rawData();
+        if (!keepPastOrToday && today != null && line.dataExplanation() != null) {
+            String explanation = line.dataExplanation().trim();
+            if (FORECAST_Q_PLUS_1.equalsIgnoreCase(explanation)
+                || FORECAST_Q_PLUS_2.equalsIgnoreCase(explanation)) {
+                int currentQuarterIndex = toQuarterIndex(today);
+                int keepStart = FORECAST_Q_PLUS_1.equalsIgnoreCase(explanation)
+                    ? currentQuarterIndex
+                    : currentQuarterIndex + 1;
+                int keepEnd = FORECAST_Q_PLUS_1.equalsIgnoreCase(explanation)
+                    ? currentQuarterIndex + 1
+                    : currentQuarterIndex + 2;
+                List<ForecastChartRawData> masked = new ArrayList<>(rawData.size());
+                for (ForecastChartRawData raw : rawData) {
+                    if (raw == null) {
+                        masked.add(null);
+                        continue;
+                    }
+                    LocalDate rangeStart = parseRangeStart(raw);
+                    if (rangeStart == null) {
+                        masked.add(raw);
+                        continue;
+                    }
+                    int quarterIndex = toQuarterIndex(rangeStart);
+                    if (quarterIndex >= keepStart && quarterIndex <= keepEnd) {
+                        masked.add(raw);
+                    } else {
+                        masked.add(ForecastChartRawData.builder()
+                            .resultDate(raw.resultDate())
+                            .startDate(raw.startDate())
+                            .predictDate(null)
+                            .value(null)
+                            .build());
+                    }
+                }
+                return ForecastChartLine.of(
+                    line.isPermitted(),
+                    line.dataType(),
+                    line.goodsDataSourceNo(),
+                    masked,
+                    line.dataExplanation()
+                );
+            }
+        }
+
         int todayIndex = findTodayIndex(rawData, today);
-        List<ForecastChartRawData> masked;
-        if (todayIndex < 0) {
-            masked = keepPastOrToday ? List.of() : rawData;
-        } else {
-            masked = keepPastOrToday
-                ? rawData.subList(0, todayIndex)
-                : rawData.subList(todayIndex, rawData.size());
+        List<ForecastChartRawData> masked = new ArrayList<>(rawData.size());
+        for (int i = 0; i < rawData.size(); i++) {
+            ForecastChartRawData raw = rawData.get(i);
+            if (raw == null) {
+                masked.add(null);
+                continue;
+            }
+
+            boolean shouldNull;
+            if (todayIndex < 0) {
+                shouldNull = keepPastOrToday;
+            } else if (keepPastOrToday) {
+                // 기존 로직과 동일하게 todayIndex 포함 이후는 마스킹
+                shouldNull = i >= todayIndex;
+            } else {
+                // forecast는 오늘 이전만 마스킹 (오늘 포함 이후 유지)
+                shouldNull = i < todayIndex;
+            }
+
+            if (shouldNull) {
+                masked.add(ForecastChartRawData.builder()
+                    .resultDate(raw.resultDate())
+                    .startDate(raw.startDate())
+                    .predictDate(null)
+                    .value(null)
+                    .build());
+            } else {
+                masked.add(raw);
+            }
         }
 
         return ForecastChartLine.of(
             line.isPermitted(),
             line.dataType(),
             line.goodsDataSourceNo(),
-            masked.isEmpty() ? List.of() : new ArrayList<>(masked),
+            masked,
             line.dataExplanation()
         );
+    }
+
+    private int toQuarterIndex(LocalDate date) {
+        int quarter = ((date.getMonthValue() - 1) / 3) + 1;
+        return (date.getYear() * 4) + quarter;
     }
 
     private int findTodayIndex(List<ForecastChartRawData> rawData, LocalDate today) {
@@ -275,6 +357,15 @@ public class MiForecastService {
         List<ForecastChartRes.ForecastChartDateItem> dateList) {
         if (line == null || dateList == null || dateList.isEmpty()) {
             return line;
+        }
+        if (line.dataType() == null) {
+            return ForecastChartLine.builder()
+                .isPermitted(line.isPermitted())
+                .dataType(null)
+                .goodsDataSourceNo(line.goodsDataSourceNo())
+                .rawData(null)
+                .dataExplanation(line.dataExplanation())
+                .build();
         }
         List<ForecastChartRawData> rawData = line.rawData();
         Map<String, ForecastChartRawData> byStartDate = new HashMap<>();
