@@ -2373,7 +2373,7 @@ public class MiForecastService {
         String tableName = "tmm_bztgtprdcrsltdatam";
         String whereClause = String.format(
             "%s BETWEEN '%s' AND '%s' AND %s = '%s' AND %s = '%s'",
-            dateColumnName, startDateValue, endDateValue,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, startDateValue, endDateValue,
             key1, value1,
             key2, value2);
         String chartFilter = "chrt_yn = 'Y'";
