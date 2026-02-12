@@ -2739,7 +2739,7 @@ public class MiForecastService {
                 matchedRows++;
                 if (isPredict) {
                     String rowPredictDate = getStringValue(
-                        row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+                        row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                     if (rowPredictDate != null && (latestPredictDate == null
                         || rowPredictDate.compareTo(latestPredictDate) > 0)) {
                         latestPredictDate = rowPredictDate;
