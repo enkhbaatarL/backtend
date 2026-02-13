@@ -14,6 +14,7 @@ public record ForecastRecordRes(
         @Schema(description = "예측결과시작일자") String startPredictionResultDt,
         @Schema(description = "예측결과일자(표시용)") String predictionResultDt,
         @Schema(description = "예측기준일자") String predictionCriteriaDt,
+        @Schema(description = "예측기준일자(표시용)") String predictionCriteriaDtLabel,
         @Schema(description = "예측결과값") Double predictionResultVal,
         @Schema(description = "예측결과값1") Double predictionResultVal1,
         @Schema(description = "예측결과값2") Double predictionResultVal2,
@@ -32,6 +33,7 @@ public record ForecastRecordRes(
     public ForecastRecordRes(String marketIndexAnalysisTargetCd, String predictionFulfillDt, String mnemonicCd,
             String predictChartDetailExpn, Integer associatedGoodsDataSourceNo, String endPredictionResultDt,
             String startPredictionResultDt, String predictionResultDt, String predictionCriteriaDt,
+            String predictionCriteriaDtLabel,
             Double predictionResultVal, Double predictionResultVal1, Double predictionResultVal2,
             Double predictionCriteriaVal, Double predictionResultDiffVal,
             Double predictionResultDiffRate, Double actualVal, Double actualVal2,
@@ -46,6 +48,7 @@ public record ForecastRecordRes(
         this.startPredictionResultDt = startPredictionResultDt;
         this.predictionResultDt = predictionResultDt;
         this.predictionCriteriaDt = predictionCriteriaDt;
+        this.predictionCriteriaDtLabel = predictionCriteriaDtLabel;
         this.predictionResultVal = predictionResultVal;
         this.predictionResultVal1 = predictionResultVal1;
         this.predictionResultVal2 = predictionResultVal2;

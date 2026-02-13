@@ -941,7 +941,7 @@ public class MiForecastService {
                         predictDetails, companyNo, goodsDataSourceNo, false, false)
                     : buildForecastRecordResultsForTwoPeriodCompanyInternal(rows,
                         chartPredictSettingDetails, predictDetails, companyNo, goodsDataSourceNo,
-                        false, false);
+                        false, false, false);
                 LocalDate asOfDate = records.stream()
                     .map(ForecastRecordRes::predictionFulfillDt)
                     .map(DateUtil::parseDate)
@@ -1063,14 +1063,17 @@ public class MiForecastService {
 
         String orderByDirection =
             "OLDEST".equalsIgnoreCase(order) ? "ASC" : "DESC";
-        String orderByColumns = isTwoPeriodCompany
-            ? String.format("%s %s, %s DESC, %s ASC",
+        String orderByColumns;
+        if (isTwoPeriodCompany) {
+            orderByColumns = String.format("%s %s, %s %s, %s %s",
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, orderByDirection,
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME, orderByDirection,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection);
+        } else {
+            orderByColumns = String.format("%s %s, %s %s",
                 MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME)
-            : String.format("%s %s, %s DESC",
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, orderByDirection);
+        }
 
         String columns = isTwoPeriodCompany
             ? String.join(", ",
@@ -1146,7 +1149,7 @@ public class MiForecastService {
             ? buildForecastRecordResults(rows, chartPredictSettingDetails, predictDetails, companyNo,
                 goodsDataSourceNo, false)
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
-                predictDetails, companyNo, goodsDataSourceNo, false);
+                predictDetails, companyNo, goodsDataSourceNo, false, false);
 
         Pageable pageable = PageRequest.of(page - 1, size);
         return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
@@ -1238,14 +1241,17 @@ public class MiForecastService {
 
         String orderByDirection =
             "OLDEST".equalsIgnoreCase(order) ? "ASC" : "DESC";
-        String orderByColumns = isTwoPeriodCompany
-            ? String.format("%s %s, %s DESC, %s ASC",
+        String orderByColumns;
+        if (isTwoPeriodCompany) {
+            orderByColumns = String.format("%s %s, %s %s, %s %s",
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, orderByDirection,
+                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME, orderByDirection,
+                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection);
+        } else {
+            orderByColumns = String.format("%s %s, %s %s",
                 MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
-                MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME)
-            : String.format("%s %s, %s DESC",
-                MARKET_DATA_PREDICT_DATE_COLUMN_NAME, orderByDirection,
-                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+                MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME, orderByDirection);
+        }
 
         String columns = isTwoPeriodCompany
             ? String.join(", ",
@@ -1292,7 +1298,7 @@ public class MiForecastService {
             ? buildForecastRecordResults(rows, chartPredictSettingDetails, predictDetails, companyNo,
                 goodsDataSourceNo, true)
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
-                predictDetails, companyNo, goodsDataSourceNo, true);
+                predictDetails, companyNo, goodsDataSourceNo, true, false);
 
         return createForecastRecordExcel(companyNo, results);
     }
@@ -1488,6 +1494,9 @@ public class MiForecastService {
                     .predictionCriteriaDt(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "predictionCriteriaDt",
                         predictionCriteriaDt))
+                    .predictionCriteriaDtLabel(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionCriteriaDtLabel",
+                        formatQuarterShort(predictionCriteriaDt)))
                     .predictionResultVal(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "predictionResultVal",
                         predictionResultVal))
@@ -1522,9 +1531,11 @@ public class MiForecastService {
         List<ChartPredictSettingDetail> chartPredictSettingDetails,
         List<ChartPredictSettingDetail> predictDetails,
         int companyNo, Integer goodsDataSourceNo,
-        boolean appendAdHocLabel) {
+        boolean appendAdHocLabel,
+        boolean formatCriteriaAsYearMonthFor2015) {
         return buildForecastRecordResultsForTwoPeriodCompanyInternal(rows, chartPredictSettingDetails,
-            predictDetails, companyNo, goodsDataSourceNo, true, appendAdHocLabel);
+            predictDetails, companyNo, goodsDataSourceNo, true, appendAdHocLabel,
+            formatCriteriaAsYearMonthFor2015);
     }
 
     private List<ForecastRecordRes> buildForecastRecordResultsForTwoPeriodCompanyInternal(
@@ -1533,7 +1544,8 @@ public class MiForecastService {
         List<ChartPredictSettingDetail> predictDetails,
         int companyNo, Integer goodsDataSourceNo,
         boolean applyVisibilityFilterOverride,
-        boolean appendAdHocLabel) {
+        boolean appendAdHocLabel,
+        boolean formatCriteriaAsYearMonthFor2015) {
 
         Map<Integer, GoodsDataSourceDetail> actualDetailByAssociatedNo =
             chartPredictSettingDetails.stream()
@@ -1563,7 +1575,9 @@ public class MiForecastService {
                 getStringValue(row.get(MARKET_DATA_PREDICT_MARKET_INDEX_TARGET_COLUMN_NAME)),
                 getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)),
                 getStringValue(row.get(MARKET_DATA_PREDICT_MNEMONIC_COLUMN_NAME)),
-                getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME)))));
+                getStringValue(row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME))),
+                LinkedHashMap::new,
+                Collectors.toList()));
 
         Map<String, ForecastSummary> summaryCache = new HashMap<>();
 
@@ -1724,6 +1738,9 @@ public class MiForecastService {
                     key.target(),
                     key.fulfillDt(),
                     key.mnemonic());
+                String predictionCriteriaDt = companyNo == COMPANY_NO_2015
+                    ? formatQuarterShort(key.criteriaDt())
+                    : key.criteriaDt();
 
                 String predictChartDetailExpn = null;
                 if (key.mnemonic() != null) {
@@ -1760,7 +1777,10 @@ public class MiForecastService {
                         predictionResultDt))
                     .predictionCriteriaDt(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "predictionCriteriaDt",
-                        key.criteriaDt()))
+                        predictionCriteriaDt))
+                    .predictionCriteriaDtLabel(visibleValue(
+                        applyVisibilityFilter, visibilityByKey, "predictionCriteriaDtLabel",
+                        formatQuarterShort(key.criteriaDt())))
                     .predictionResultVal(null)
                     .predictionResultVal1(visibleValue(
                         applyVisibilityFilter, visibilityByKey, "predictionResultVal1",
@@ -1878,7 +1898,15 @@ public class MiForecastService {
         }
         int quarter = (date.getMonthValue() - 1) / 3 + 1;
         int year = date.getYear() % 100;
-        return String.format("%02d-%dQ", year, quarter);
+        return String.format("%dQ%02d", quarter, year);
+    }
+
+    private String formatYearMonthShort(String ymd) {
+        LocalDate date = DateUtil.parseDate(ymd);
+        if (date == null) {
+            return ymd;
+        }
+        return date.format(DateTimeFormatter.ofPattern("yy/MM"));
     }
 
     private String formatDateRangeShort(String startYmd, String endYmd) {
@@ -2436,7 +2464,7 @@ public class MiForecastService {
         List<List<Object>> rows = new ArrayList<>();
         for (YearMonth yearMonth : rowMonths) {
             List<Object> values = new ArrayList<>();
-            values.add(formatYearMonthLabel(yearMonth));
+            values.add(isCompany2015 ? formatYearMonthAsQuarter(yearMonth) : formatYearMonthLabel(yearMonth));
             for (SpecialTableColumn column : columns) {
                 ColumnData columnData = columnDataMap.get(column.explanationKey());
                 if (columnData == null) {
@@ -2731,6 +2759,12 @@ public class MiForecastService {
 
     private String formatYearMonthLabel(YearMonth yearMonth) {
         return yearMonth.format(DateTimeFormatter.ofPattern("yy/MM"));
+    }
+
+    private String formatYearMonthAsQuarter(YearMonth yearMonth) {
+        int quarter = (yearMonth.getMonthValue() - 1) / 3 + 1;
+        int year = yearMonth.getYear() % 100;
+        return String.format("%dQ%02d", quarter, year);
     }
 
     private DashboardChartDataTableType calculateDashboardChartDataTableType(
