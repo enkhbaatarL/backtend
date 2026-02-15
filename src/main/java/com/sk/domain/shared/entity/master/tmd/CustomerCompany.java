@@ -76,6 +76,61 @@ public class CustomerCompany extends BaseEntity {
     @Comment("고객회사MI플랫폼URL주소")
     private String customerCompanyMipUrl;
 
+    /**
+     * 요청 호스트에 따라 동적인 MIP URL을 반환한다.
+     *
+     * @param requestHost 요청 호스트 (예: dev-mi.sk.com)
+     * @param miDefaultDomain 기본 도메인
+     * @return 결정된 MIP URL
+     */
+    public String getDynamicMipUrl(String requestHost, String miDefaultDomain) {
+        if (this.customerCompanyMipUrl == null || this.customerCompanyMipUrl.isBlank()) {
+            return miDefaultDomain;
+        }
+
+        String[] parts = this.customerCompanyMipUrl.split(",");
+
+        // A=B, C=D 형식인지 확인
+        boolean isKeyValuePairFormat = true;
+        for (String part : parts) {
+            if (!part.contains("=")) {
+                isKeyValuePairFormat = false;
+                break;
+            }
+        }
+
+        if (isKeyValuePairFormat) {
+            for (String part : parts) {
+                String[] kv = part.split("=");
+                if (kv.length == 2) {
+                    String key = kv[0].trim();
+                    String value = kv[1].trim();
+                    if (key.equals(requestHost)) {
+                        return value;
+                    }
+                }
+            }
+            // 매칭되는 호스트가 없으면 첫 번째 쌍의 값을 반환하거나 기존 로직으로 진행할 수 있음.
+            // 사용자 요청에 따라 매칭되는 것이 없으면 기존처럼 진행하도록 함.
+        }
+
+        // 기존 로직: 콤마로 구분된 여러 URL이 있는 경우 처리
+        if (parts.length == 1) {
+            return parts[0].trim();
+        }
+
+        // 호스트가 포함된 URL을 찾음
+        for (String url : parts) {
+            String trimmedUrl = url.trim();
+            if (trimmedUrl.contains(requestHost)) {
+                return trimmedUrl;
+            }
+        }
+
+        // 매칭되는 호스트가 없으면 첫 번째 URL 반환
+        return parts[0].trim();
+    }
+
     @Column(name = "qlttv_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("정성모델 표시여부")
     @ColumnDefault("'N'")

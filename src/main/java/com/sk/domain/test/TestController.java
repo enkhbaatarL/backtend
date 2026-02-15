@@ -1,5 +1,6 @@
 package com.sk.domain.test;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Map;
 
@@ -74,8 +75,8 @@ public class TestController {
     @Operation(summary = "테스트 유저 로그인", description = "테스트 유저 로그인을 진행합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/login/user")
-    public BaseResponse<GenerateTokenRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq, HttpServletResponse response) {
-        return BaseResponseFactory.create(testService.userLogin(testLoginReq, response));
+    public BaseResponse<GenerateTokenRes> userLogin(@RequestBody @Valid TestReq.userLogin testLoginReq, HttpServletRequest request, HttpServletResponse response) {
+        return BaseResponseFactory.create(testService.userLogin(testLoginReq, request, response));
     }
 
     @ApiResponse(responseCode = "200", description = "토큰 갱신 성공", headers = {
@@ -107,8 +108,8 @@ public class TestController {
 
     @GetMapping("/token")
     public BaseResponse<String> getToken(@RequestParam("loginUserId") String loginUserId,
-            @RequestParam("role") UserRoleCd role) {
-        return BaseResponseFactory.create(testService.getToken(loginUserId, role));
+            @RequestParam("role") UserRoleCd role, HttpServletRequest request) {
+        return BaseResponseFactory.create(testService.getToken(loginUserId, role, request));
     }
 
     @GetMapping("/delete/id")

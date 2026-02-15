@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +39,9 @@ public class AuthController {
     public BaseResponse<GenerateTokenRes> generateToken(
             @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = true) String authHeader,
             @Parameter(hidden = true) @CookieValue(value = "X-Refresh-Token", required = true) String refreshToken,
+            HttpServletRequest request,
             HttpServletResponse response) {
         return BaseResponseFactory
-                .create(authService.generateToken(authHeader, refreshToken, response));
+                .create(authService.generateToken(authHeader, refreshToken, request, response));
     }
 }

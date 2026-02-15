@@ -7,6 +7,7 @@ import com.sk.domain.shared.service.AuthService;
 import com.sk.domain.shared.service.ExternalService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.context.annotation.Profile;
@@ -57,8 +58,8 @@ public class ExternalController {
     @ApiResponse(responseCode = "200", description = "외부 로그인 콜백 성공")
     @GetMapping("/callback")
     public BaseResponse<GenerateTokenRes> loginCallback(
-            @RequestParam(value = "sessionId", required = true) String sessionId,
+            @RequestParam(value = "sessionId", required = true) String sessionId, HttpServletRequest request,
             HttpServletResponse response) {
-        return BaseResponseFactory.create(authService.loginCallback(sessionId, response));
+        return BaseResponseFactory.create(authService.loginCallback(sessionId, request, response));
     }
 }

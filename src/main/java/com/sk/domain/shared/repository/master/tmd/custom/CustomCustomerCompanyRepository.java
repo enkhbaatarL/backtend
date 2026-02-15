@@ -24,7 +24,7 @@ public interface CustomCustomerCompanyRepository {
 
     List<CompanyTypeAndCompanyRes> findCompaniesByTypeWithSubCompanies();
 
-    List<MiCompanyRes> findAllMiCompanies();
+    List<MiCompanyRes> findAllMiCompanies(String requestHost);
 
-    MiCompanyDetailRes findMiCompany(Integer companyNo);
+    MiCompanyDetailRes findMiCompany(Integer companyNo, String requestHost);
 }

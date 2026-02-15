@@ -74,14 +74,14 @@ public class JwtUtil {
     }
 
     // 액세스 토큰 생성 (By SAML2 인증 방식)
-    public String generateAccessToken(User user) {
+    public String generateAccessToken(User user, String requestHost) {
         return createTokenBuilder(user.getUserLoginId())
             .claim(Claim.USER_NO.getCode(), user.getUserNo())
             .claim(Claim.COMPANY_NO.getCode(), user.getCustomerCompany().getCustomerCompanyNo())
             .claim(Claim.COMPANY_CD.getCode(), user.getCustomerCompany().getCustomerCompanyCd())
             .claim(Claim.ROLE.getCode(), user.getUserRoleCd().getCode())
             .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
-            .claim(Claim.COMPANY_DOMAIN.getCode(), ObjectUtils.defaultIfNull(user.getCustomerCompany().getCustomerCompanyMipUrl(), miDefaultDomain))
+            .claim(Claim.COMPANY_DOMAIN.getCode(), user.getCustomerCompany().getDynamicMipUrl(requestHost, miDefaultDomain))
             .claim(Claim.AUTH_METHOD.getCode(), Claim.AuthMethodValue.SAML2.getCode()) // 인증 방식 추가
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getSaml2().getAccessTokenExpiry().toMillis())))
             .compact();

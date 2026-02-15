@@ -41,3 +41,27 @@
 # Client 토큰 발급 테스트 예시
 
 curl -X POST "http://localhost:8080/oauth2/token" -H "Content-Type: application/x-www-form-urlencoded" -u "mi-client:secret"  -d "grant_type=client_credentials"
+
+
+# GIT STATUS 에 나온 값을 가지고 temp 에 복사하는 방법
+./copy_modified_to_temp.sh --dest ./temp <<'EOF'
+modified:   README.md
+modified:   src/main/java/com/sk/common/utils/JwtUtil.java
+modified:   src/main/java/com/sk/domain/mi/controller/MiCompanyController.java
+modified:   src/main/java/com/sk/domain/mi/dto/response/MiCompanyDetailRes.java
+modified:   src/main/java/com/sk/domain/mi/dto/response/MiCompanyRes.java
+modified:   src/main/java/com/sk/domain/mi/service/MiCompanyService.java
+modified:   src/main/java/com/sk/domain/shared/controller/AuthController.java
+modified:   src/main/java/com/sk/domain/shared/controller/ExternalController.java
+modified:   src/main/java/com/sk/domain/shared/controller/SamlController.java
+modified:   src/main/java/com/sk/domain/shared/dto/response/common/UserAccessPageRes.java
+modified:   src/main/java/com/sk/domain/shared/entity/master/tmd/CustomerCompany.java
+modified:   src/main/java/com/sk/domain/shared/repository/master/tmd/custom/CustomCustomerCompanyRepository.java
+modified:   src/main/java/com/sk/domain/shared/repository/master/tmd/custom/CustomCustomerCompanyRepositoryImpl.java
+modified:   src/main/java/com/sk/domain/shared/service/AuthService.java
+modified:   src/main/java/com/sk/domain/shared/service/CommonService.java
+modified:   src/main/java/com/sk/domain/shared/service/SamlService.java
+modified:   src/main/java/com/sk/domain/test/TestController.java
+modified:   src/main/java/com/sk/domain/test/TestService.java
+EOF
+

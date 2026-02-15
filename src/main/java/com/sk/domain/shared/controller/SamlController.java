@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,8 +55,9 @@ public class SamlController {
     @GetMapping("/callback")
     public BaseResponse<GenerateTokenRes> samlCallback(
             @RequestParam(value = "sessionId", required = true) String sessionId,
+            HttpServletRequest request,
             HttpServletResponse response) {
-        return BaseResponseFactory.create(samlService.samlCallback(sessionId, response));
+        return BaseResponseFactory.create(samlService.samlCallback(sessionId, request, response));
     }
 
     /**

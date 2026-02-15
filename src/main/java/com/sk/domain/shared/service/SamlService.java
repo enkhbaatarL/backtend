@@ -16,6 +16,7 @@ import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,13 +34,13 @@ public class SamlService {
 
     /**
      * SAML 콜백 API
-     * 
+     *
      * @param sessionId
      * @param response
      * @return
      */
     @Transactional
-    public GenerateTokenRes samlCallback(String sessionId, HttpServletResponse response) {
+    public GenerateTokenRes samlCallback(String sessionId, HttpServletRequest request, HttpServletResponse response) {
         String userLoginId = redisTemplate.opsForValue().get(sessionId);
 
         if (userLoginId == null) {
@@ -63,7 +64,7 @@ public class SamlService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("SAML 사용자 인증 실패: %s", userLoginId)));
 
 
-        GenerateTokenRes generateTokenRes = authService.generateToken(user, response);
+        GenerateTokenRes generateTokenRes = authService.generateToken(user, request, response);
 
         redisTemplate.delete(sessionId);
 

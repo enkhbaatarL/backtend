@@ -25,12 +25,12 @@ public class MiCompanyService {
      *
      * @return 고객사 회사 목록
      */
-    public List<MiCompanyRes> getCompanyList() {
-        return customerCompanyRepository.findAllMiCompanies();
+    public List<MiCompanyRes> getCompanyList(String requestHost) {
+        return customerCompanyRepository.findAllMiCompanies(requestHost);
     }
 
-    public MiCompanyDetailRes getCompanyDetail(Integer companyNo) {
-        MiCompanyDetailRes miCompanyDetailRes = customerCompanyRepository.findMiCompany(companyNo);
+    public MiCompanyDetailRes getCompanyDetail(Integer companyNo, String requestHost) {
+        MiCompanyDetailRes miCompanyDetailRes = customerCompanyRepository.findMiCompany(companyNo, requestHost);
         CustomerCompanyMarketCategory customerCompanyMarketCategory = customerCompanyMarketCategoryRepository.findFirstByCustomerCompanyNoAndIsDeletedFalse(
             companyNo).orElse(null);
 

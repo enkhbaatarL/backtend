@@ -19,6 +19,7 @@ import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 @Profile("!dedicated")
 @Tag(name = "00. Company API", description = "Company API 입니다.")
@@ -33,15 +34,15 @@ public class MiCompanyController {
     @GetMapping("/companies/all")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<List<MiCompanyRes>> getCompanyList() {
-        return BaseResponseFactory.create(miCompanyService.getCompanyList());
+    public BaseResponse<List<MiCompanyRes>> getCompanyList(HttpServletRequest request) {
+        return BaseResponseFactory.create(miCompanyService.getCompanyList(request.getServerName()));
     }
 
     @ApiOrder(2)
     @GetMapping("/companies/{companyNo}/detail")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<MiCompanyDetailRes> getCompanyDetail(@PathVariable("companyNo") int companyNo) {
-        return BaseResponseFactory.create(miCompanyService.getCompanyDetail(companyNo));
+    public BaseResponse<MiCompanyDetailRes> getCompanyDetail(@PathVariable("companyNo") int companyNo, HttpServletRequest request) {
+        return BaseResponseFactory.create(miCompanyService.getCompanyDetail(companyNo, request.getServerName()));
     }
 }

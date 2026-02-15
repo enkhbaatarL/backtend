@@ -82,7 +82,7 @@ public record UserAccessPageRes(
         this.userAccessPageType = userAccessPageType;
     }
 
-    public static UserAccessPageRes of(User entity, UserAccessPageType userAccessPageType, String miDefaultDomain) {
+    public static UserAccessPageRes of(User entity, UserAccessPageType userAccessPageType, String miDefaultDomain, String requestHost) {
         return UserAccessPageRes.builder()
             .userNo(entity.getUserNo())
             .userNm(entity.getUserNm())
@@ -97,7 +97,7 @@ public record UserAccessPageRes(
             .isIndividualInfoAgreement(entity.getIsIndividualInfoAgreement())
             .companyNo(entity.getCustomerCompany().getCustomerCompanyNo())
             .companyNm(entity.getCustomerCompany().getCustomerCompanyNm())
-            .companyMipUrl(entity.getCustomerCompany().getCustomerCompanyMipUrl() == null ? miDefaultDomain : entity.getCustomerCompany().getCustomerCompanyMipUrl())
+            .companyMipUrl(entity.getCustomerCompany().getDynamicMipUrl(requestHost, miDefaultDomain))
             .isUserNotificationSetting(entity.getIsUserNotificationSetting())
             .isExternalLogin(entity.getPassword() != null)
             .userAccessPageType(userAccessPageType)

@@ -53,12 +53,12 @@ public record MiCompanyDetailRes(
         );
     }
 
-    public static MiCompanyDetailRes of(CustomerCompany customerCompany, String miDefaultDomain) {
+    public static MiCompanyDetailRes of(CustomerCompany customerCompany, String miDefaultDomain, String requestHost) {
         return MiCompanyDetailRes.builder()
             .customerCompanyNo(customerCompany.getCustomerCompanyNo())
             .customerCompanyNm(customerCompany.getCustomerCompanyNm())
             .customerCompanyCd(customerCompany.getCustomerCompanyCd())
-            .customerCompanyMipUrl(customerCompany.getCustomerCompanyMipUrl() != null ? customerCompany.getCustomerCompanyMipUrl() : miDefaultDomain)
+            .customerCompanyMipUrl(customerCompany.getDynamicMipUrl(requestHost, miDefaultDomain))
             .isQualitative(customerCompany.getIsQualitative())
             .isMari(customerCompany.getIsMari())
             .isFuture(customerCompany.getIsFuture())

@@ -68,13 +68,13 @@ public class TestService {
      * @return
      */
     @Transactional
-    public GenerateTokenRes userLogin(TestReq.userLogin testLoginReq, HttpServletResponse response) {
+    public GenerateTokenRes userLogin(TestReq.userLogin testLoginReq, HttpServletRequest request, HttpServletResponse response) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(testLoginReq.loginUserId(),
                 UserRoleCd.USER)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "User information could not be found. userLoginId: " + testLoginReq.loginUserId()));
 
-        return authService.generateToken(user, response);
+        return authService.generateToken(user, request, response);
     }
 
     /**
@@ -103,7 +103,7 @@ public class TestService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("The IP address is not allowed: %s", clientIp)));
 
-        return authService.generateToken(user, response);
+        return authService.generateToken(user, request, response);
     }
 
     /**
@@ -117,11 +117,11 @@ public class TestService {
     }
 
     @Transactional
-    public String getToken(String loginUserId, UserRoleCd role) {
+    public String getToken(String loginUserId, UserRoleCd role, HttpServletRequest request) {
         User user = userRepository.findByUserLoginIdAndUserRoleCdAndIsDeletedFalse(loginUserId, role)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
 
-        return jwtUtil.generateAccessToken(user);
+        return jwtUtil.generateAccessToken(user, request.getServerName());
     }
 
     public String delete(Integer id) {

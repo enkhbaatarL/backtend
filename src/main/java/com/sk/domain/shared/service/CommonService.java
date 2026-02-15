@@ -65,7 +65,7 @@ public class CommonService {
         UserAccessPageType userAccessPageType = (miUserCheck && adminUserCheck) ? UserAccessPageType.BOTH
                 : (miUserCheck) ? UserAccessPageType.MI : (adminUserCheck) ? UserAccessPageType.ADMIN : UserAccessPageType.NONE;
 
-        return UserAccessPageRes.of(user, userAccessPageType, miDefaultDomain);
+        return UserAccessPageRes.of(user, userAccessPageType, miDefaultDomain, request.getServerName());
     }
 
     /**

@@ -24,6 +24,7 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class AuthService {
 	 * @return 토큰 생성 결과
 	 */
 	@Transactional
-	public GenerateTokenRes loginCallback(String sessionId, HttpServletResponse response) {
+	public GenerateTokenRes loginCallback(String sessionId, HttpServletRequest request, HttpServletResponse response) {
 		log.info("로그인 콜백 시작: sessionId={}", sessionId);
 
 		// 1. Redis에서 사용자 로그인 ID 조회
@@ -91,7 +92,7 @@ public class AuthService {
 		}
 
 		// 5. 토큰 생성
-		GenerateTokenRes tokenRes = generateToken(user, response);
+		GenerateTokenRes tokenRes = generateToken(user, request, response);
 
 		// 6. Redis 세션 정리
 		redisTemplate.delete(sessionId);
@@ -108,7 +109,7 @@ public class AuthService {
 	 * @return
 	 */
 	@Transactional
-	public GenerateTokenRes generateToken(String authHeader, String refreshToken, HttpServletResponse response) {
+	public GenerateTokenRes generateToken(String authHeader, String refreshToken, HttpServletRequest request, HttpServletResponse response) {
 		String accessToken = authHeader.replace("Bearer ", "");
 
 		// accessToken 검증(만료 상관없이)
@@ -125,18 +126,19 @@ public class AuthService {
 				.orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
 						String.format("User information could not be found. userNo: %s", accessTokenClaims.get("userNo", Integer.class))));
 
-		return generateToken(user, response);
+		return generateToken(user, request, response);
 	}
 
 	/**
 	 * 사용자 기반 토큰 생성 (내부 공통 메서드)
 	 *
 	 * @param user 사용자 정보
+	 * @param request HTTP 요청
 	 * @param response HTTP 응답
 	 * @return 토큰 생성 결과
 	 */
-	public GenerateTokenRes generateToken(User user, HttpServletResponse response) {
-		String renewedAccessToken = jwtUtil.generateAccessToken(user);
+	public GenerateTokenRes generateToken(User user, HttpServletRequest request, HttpServletResponse response) {
+		String renewedAccessToken = jwtUtil.generateAccessToken(user, request.getServerName());
 		String renewedRefreshToken = jwtUtil.generateRefreshToken(user);
 
 		// 리프레시 토큰을 쿠키에 설정

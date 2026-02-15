@@ -303,7 +303,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
     }
 
     @Override
-    public List<MiCompanyRes> findAllMiCompanies() {
+    public List<MiCompanyRes> findAllMiCompanies(String requestHost) {
         List<CustomerCompany> companies = queryFactory
             .selectFrom(customerCompany)
             .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse(), customerCompany.isMipManagementCompany.isFalse(),
@@ -313,12 +313,12 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             .fetch();
 
         return companies.stream()
-            .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain))
+            .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain, requestHost))
             .collect(Collectors.toList());
     }
 
     @Override
-    public MiCompanyDetailRes findMiCompany(Integer companyNo) {
+    public MiCompanyDetailRes findMiCompany(Integer companyNo, String requestHost) {
         CustomerCompany company = queryFactory
             .selectFrom(customerCompany)
             .where(customerCompany.isUsed.isTrue(), customerCompany.isDeleted.isFalse(), customerCompany.isMipManagementCompany.isFalse(),
@@ -331,6 +331,6 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             throw AppErrorException.of(Error.RSC_NOT_FOUND);
         }
 
-        return MiCompanyDetailRes.of(company, miDefaultDomain);
+        return MiCompanyDetailRes.of(company, miDefaultDomain, requestHost);
     }
 }
