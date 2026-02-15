@@ -43,12 +43,12 @@ spring:
       relyingparty:
         registration:
           mi:
-            entity-id: https://mi.sk.com/saml/metadata
+            entity-id: ${MI_DOMAIN:https://mi.sk.com}/saml/metadata
             acs:
-              location: https://mi.sk.com/login/saml2/sso/mi
+              location: ${MI_DOMAIN:https://mi.sk.com}/login/saml2/sso/mi
               binding: POST
             singlelogout:
-              url: https://mi.sk.com/saml2/SingleLogout
+              url: ${MI_DOMAIN:https://mi.sk.com}/saml2/SingleLogout
             assertingparty:
               metadata-uri: classpath:saml/idp/n.gdisso.sk.com.metadata.xml
             signing:
@@ -59,8 +59,8 @@ spring:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
                   certificate-location: classpath:saml/sp/key/sp-cert.crt
-      login-callback-url: https://mi.sk.com/callback
-      login-error-url: https://mi.sk.com/error
+      login-callback-url: ${MI_DOMAIN:https://mi.sk.com}/callback
+      login-error-url: ${MI_DOMAIN:https://mi.sk.com}/error
 
 
   web:
@@ -152,7 +152,7 @@ aes:
   secret-key: ${SKT_MI_AES_SECRET_KEY}
 
 server:
-  domain: https://mi.sk.com
+  domain: ${MI_DOMAIN:https://mi.sk.com}
   insight:
     latest:
       except-provider-no: 5000
