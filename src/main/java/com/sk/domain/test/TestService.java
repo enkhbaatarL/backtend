@@ -5,10 +5,23 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.RedisTemplate;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -56,6 +69,10 @@ public class TestService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final BcryptHashUtil bcryptHashUtil;
+
+    private final GoodsDataRepository goodsDataRepository;
+    private final UploadedFileRepository uploadedFileRepository;
+    private final GoodsDataCategoryRepository goodsDataCategoryRepository;
 
     public TestRes.GetUserInfo getUserInfo(TestReq.getUserInfo testReq) {
         return TestRes.GetUserInfo.of(testReq);
@@ -109,7 +126,7 @@ public class TestService {
     /**
      * 토큰 검증
      *
-     * @param token
+     * @param testVerifyTokenReq
      * @return
      */
     public Boolean checkToken(TestReq.verifyToken testVerifyTokenReq) {
@@ -232,6 +249,70 @@ public class TestService {
             log.error("비밀번호 강도 검증 실패: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * 상품 데이터와 연결된 파일 정보의 일치 여부를 검증합니다.
+     */
+    public void validateGoodsDataFiles() {
+        int pageSize = 1000;
+        int pageNumber = 0;
+        long totalProcessedCount = 0;
+        Page<GoodsData> goodsDataPage;
+
+        log.info("[START_VALIDATION] validateGoodsDataFiles started.");
+
+        do {
+            Pageable pageable = PageRequest.of(pageNumber, pageSize);
+            goodsDataPage = goodsDataRepository.findAll(pageable);
+
+            for (GoodsData goodsData : goodsDataPage.getContent()) {
+                totalProcessedCount++;
+
+                if (totalProcessedCount % 10000 == 0) {
+                    log.info("[VALIDATION_PROGRESS] Processed {} records...", totalProcessedCount);
+                }
+
+                if (Boolean.TRUE.equals(goodsData.getIsDeleted())) {
+                    continue;
+                }
+
+                Integer goodsDataNo = goodsData.getGoodsDataNo();
+
+                // 1. 직접 연결된 파일들 (file_rel_obj_dstg_no = goodsDataNo, file_rel_obj_spt_cd = 'GUDAT')
+                Set<Long> directFileNos = uploadedFileRepository.findByRelationshipObjectInfo(goodsDataNo, "GUDAT")
+                        .stream()
+                        .map(UploadedFile::getFileNo)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+                // 2. 카테고리 내역을 통한 연결들 (gds_data_mnagt_spt_cd = 'GUDAT')
+                Set<Long> categoryFileNos = goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(goodsDataNo)
+                        .stream()
+                        .filter(c -> "GUDAT".equals(c.getGoodsDataManagementSeparateCd()) && !Boolean.TRUE.equals(c.getIsDeleted()))
+                        .map(GoodsDataCategory::getGoodsDataManagementNo)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+                // 검증 로직: 둘다 비어있거나 같으면 성공(스킵), 다르면 로그 출력
+                if (directFileNos.equals(categoryFileNos)) {
+                    continue;
+                }
+
+                // 다르면 로그 출력
+                String providerNm = goodsData.getGoods() != null && goodsData.getGoods().getProvider() != null
+                        ? goodsData.getGoods().getProvider().getProviderNm() : "N/A";
+                String goodsNm = goodsData.getGoods() != null ? goodsData.getGoods().getGoodsNm() : "N/A";
+                String goodsDataNm = goodsData.getGoodsDataNm();
+
+                log.error("[DATA_INCONSISTENCY] GoodsDataNo: {}, DirectFileNos: {}, CategoryFileNos: {}, Provider: {}, Goods: {}, GoodsData: {}",
+                        goodsDataNo, directFileNos, categoryFileNos, providerNm, goodsNm, goodsDataNm);
+            }
+
+            pageNumber++;
+        } while (goodsDataPage.hasNext());
+
+        log.info("[END_VALIDATION] validateGoodsDataFiles completed. Total processed: {}", totalProcessedCount);
     }
     // public Boolean deleteRedisCache(TestReq.deleteRedisCache testReq) {
     //     // redisTemplate.delete(testReq.key());

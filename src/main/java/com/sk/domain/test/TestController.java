@@ -133,6 +133,13 @@ public class TestController {
         return BaseResponseFactory.create("success");
     }
 
+    @Operation(summary = "상품 데이터 파일 연결 검증", description = "tmd_gdsdatam, tcm_filel, tmd_gdsdatactgrl 간의 연관 관계 불일치를 검사합니다.")
+    @GetMapping("/validate-goods-data-files")
+    public BaseResponse<String> validateGoodsDataFiles() {
+        testService.validateGoodsDataFiles();
+        return BaseResponseFactory.create("Validation logic executed. Check logs for results.");
+    }
+
     // [관리자 화면] 오직 관리자만 접근가능한 화면 = 관리자 화면은 95% 이상 이 권한으로 매칭될 것으로 생각함
     @RequiredPermission(roles = {Role.ADMIN})
     @GetMapping("/admin-management/goods/{goodsNo}/graph0")

@@ -84,6 +84,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             @Param("goodsDataNo") int goodsDataNo);
 
     @EntityGraph(attributePaths = {"goods", "goods.provider"})
+    Page<GoodsData> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"goods", "goods.provider"})
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
     @Query(value = """
