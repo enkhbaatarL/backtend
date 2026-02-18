@@ -135,8 +135,10 @@ public class TestController {
 
     @Operation(summary = "상품 데이터 파일 연결 검증", description = "tmd_gdsdatam, tcm_filel, tmd_gdsdatactgrl 간의 연관 관계 불일치를 검사합니다.")
     @GetMapping("/validate-goods-data-files")
-    public BaseResponse<String> validateGoodsDataFiles() {
-        testService.validateGoodsDataFiles();
+    public BaseResponse<String> validateGoodsDataFiles(
+            @RequestParam(value = "file", defaultValue = "false") boolean file,
+            @RequestParam(value = "count", defaultValue = "all") String count) {
+        testService.validateGoodsDataFiles(file, count);
         return BaseResponseFactory.create("Validation logic executed. Check logs for results.");
     }
 

@@ -9,6 +9,13 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.io.FileOutputStream;
+import java.io.File;
+import java.util.HashMap;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -254,19 +261,33 @@ public class TestService {
     /**
      * 상품 데이터와 연결된 파일 정보의 일치 여부를 검증합니다.
      */
-    public void validateGoodsDataFiles() {
+    public void validateGoodsDataFiles(boolean exportToFile, String countStr) {
         int pageSize = 1000;
         int pageNumber = 0;
         long totalProcessedCount = 0;
         Page<GoodsData> goodsDataPage;
+        List<Map<String, Object>> inconsistentDataList = new ArrayList<>();
 
-        log.info("[START_VALIDATION] validateGoodsDataFiles started.");
+        Long limit = null;
+        if (!"all".equalsIgnoreCase(countStr)) {
+            try {
+                limit = Long.parseLong(countStr);
+            } catch (NumberFormatException e) {
+                log.warn("[VALIDATION_PARAM] Invalid count parameter: {}. Falling back to 'all'.", countStr);
+            }
+        }
+
+        log.info("[START_VALIDATION] validateGoodsDataFiles started. Export to file: {}, Limit: {}", exportToFile, limit == null ? "all" : limit);
 
         do {
             Pageable pageable = PageRequest.of(pageNumber, pageSize);
             goodsDataPage = goodsDataRepository.findAll(pageable);
 
             for (GoodsData goodsData : goodsDataPage.getContent()) {
+                if (limit != null && totalProcessedCount >= limit) {
+                    break;
+                }
+
                 totalProcessedCount++;
 
                 if (totalProcessedCount % 10000 == 0) {
@@ -307,12 +328,77 @@ public class TestService {
 
                 log.error("[DATA_INCONSISTENCY] GoodsDataNo: {}, DirectFileNos: {}, CategoryFileNos: {}, Provider: {}, Goods: {}, GoodsData: {}",
                         goodsDataNo, directFileNos, categoryFileNos, providerNm, goodsNm, goodsDataNm);
+
+                if (exportToFile) {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("GoodsDataNo", goodsDataNo);
+                    data.put("DirectFileNos", directFileNos.toString());
+                    data.put("CategoryFileNos", categoryFileNos.toString());
+                    data.put("Provider", providerNm);
+                    data.put("Goods", goodsNm);
+                    data.put("GoodsData", goodsDataNm);
+                    inconsistentDataList.add(data);
+                }
+            }
+
+            if (limit != null && totalProcessedCount >= limit) {
+                break;
             }
 
             pageNumber++;
         } while (goodsDataPage.hasNext());
 
+        if (exportToFile && !inconsistentDataList.isEmpty()) {
+            writeInconsistentDataToExcel(inconsistentDataList);
+        }
+
         log.info("[END_VALIDATION] validateGoodsDataFiles completed. Total processed: {}", totalProcessedCount);
+    }
+
+    private void writeInconsistentDataToExcel(List<Map<String, Object>> dataList) {
+        String logDir = "log";
+        File dir = new File(logDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        String fileName = "inconsistent_goods_data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+        File file = new File(dir, fileName);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Inconsistent Data");
+
+            // Header
+            Row headerRow = sheet.createRow(0);
+            String[] columns = {"GoodsDataNo", "DirectFileNos", "CategoryFileNos", "Provider", "Goods", "GoodsData"};
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+            }
+
+            // Data
+            int rowNum = 1;
+            for (Map<String, Object> data : dataList) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(data.get("GoodsDataNo").toString());
+                row.createCell(1).setCellValue(data.get("DirectFileNos").toString());
+                row.createCell(2).setCellValue(data.get("CategoryFileNos").toString());
+                row.createCell(3).setCellValue(data.get("Provider").toString());
+                row.createCell(4).setCellValue(data.get("Goods").toString());
+                row.createCell(5).setCellValue(data.get("GoodsData").toString());
+            }
+
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                workbook.write(fileOut);
+            }
+            log.info("[VALIDATION_EXPORT] Inconsistent data exported to: {}", file.getAbsolutePath());
+        } catch (Exception e) {
+            log.error("[VALIDATION_EXPORT_ERROR] Failed to write Excel file: {}", e.getMessage(), e);
+        }
     }
     // public Boolean deleteRedisCache(TestReq.deleteRedisCache testReq) {
     //     // redisTemplate.delete(testReq.key());
