@@ -3871,6 +3871,7 @@ public class MiForecastService {
             throw AppErrorException.of(Error.RSC_NOT_FOUND, ERR_CHART_NOT_CONFIGURED);
         }
 
+        ChartPredictSetting chartPredictSetting = chartPredictSettingDetailRes.chartPredictSetting();
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
@@ -3886,7 +3887,13 @@ public class MiForecastService {
 
         List<ForecastReportRes> results = new ArrayList<>();
         for (AvailableForecastKey forecastKey : availableDates) {
-            results.addAll(getForecastReportByDate(chartPredictSettingDetails, forecastKey));
+            results.addAll(getForecastReportByDate(
+                chartPredictSettingDetails,
+                forecastKey,
+                isTwoPeriodCompany,
+                chartPredictSetting != null
+                    ? chartPredictSetting.getPredictPeriodUnitSeparateCd()
+                    : null));
         }
 
         return results;
@@ -4317,7 +4324,9 @@ public class MiForecastService {
      */
     private List<ForecastReportRes> getForecastReportByDate(
         List<ChartPredictSettingDetail> chartPredictSettingDetails,
-        AvailableForecastKey forecastKey) {
+        AvailableForecastKey forecastKey,
+        boolean isTwoPeriodCompany,
+        PeriodUnitSeparateCd predictPeriodUnitSeparateCd) {
         return chartPredictSettingDetails.stream()
             .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
             .filter(detail -> Objects.equals(
@@ -4344,6 +4353,14 @@ public class MiForecastService {
                     resultValue.predictionResultVal());
                 Double predictionResultVal = toScaledDouble(resultValue.predictionResultVal());
                 Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal());
+                String endPredictionResultDt = formatPredictionResultDt(
+                    resultValue.endPredictionResultDt(),
+                    isTwoPeriodCompany,
+                    predictPeriodUnitSeparateCd);
+                String startPredictionResultDt = formatPredictionResultDt(
+                    resultValue.startPredictionResultDt(),
+                    isTwoPeriodCompany,
+                    predictPeriodUnitSeparateCd);
                 return Stream.of(ForecastReportRes.builder()
                     .marketIndexAnalysisTargetCd(forecastKey.marketIndexAnalysisTargetCd())
                     .predictionFulfillDt(forecastKey.predictionFulfillDt())
@@ -4351,8 +4368,8 @@ public class MiForecastService {
                     .predictChartDetailExpn(forecastKey.predictChartDetailExpn())
                     .associatedGoodsDataSourceNo(forecastKey.associatedGoodsDataSourceNo())
                     .predictionCriteriaDt(resultValue.predictionCriteriaDt())
-                    .endPredictionResultDt(resultValue.endPredictionResultDt())
-                    .startPredictionResultDt(resultValue.startPredictionResultDt())
+                    .endPredictionResultDt(endPredictionResultDt)
+                    .startPredictionResultDt(startPredictionResultDt)
                     .predictionResultVal(predictionResultVal)
                     .predictionCriteriaVal(predictionCriteriaVal)
                     .predictionResultDiffVal(diffResult.diffValue())
@@ -4362,6 +4379,26 @@ public class MiForecastService {
                     .build());
             })
             .toList();
+    }
+
+    private String formatPredictionResultDt(String predictionResultDt, boolean isTwoPeriodCompany,
+        PeriodUnitSeparateCd predictPeriodUnitSeparateCd) {
+        if (!isTwoPeriodCompany || predictionResultDt == null
+            || predictPeriodUnitSeparateCd == null) {
+            return predictionResultDt;
+        }
+
+        LocalDate parsedDate = DateUtil.parseDate(predictionResultDt);
+        if (parsedDate == null) {
+            return predictionResultDt;
+        }
+
+        int shortYear = parsedDate.getYear() % 100;
+        return switch (predictPeriodUnitSeparateCd) {
+            case Q -> String.format("%02d-%dQ", shortYear, (parsedDate.getMonthValue() - 1) / 3 + 1);
+            case M -> String.format("%02d-%02d", shortYear, parsedDate.getMonthValue());
+            default -> predictionResultDt;
+        };
     }
 
     /**
