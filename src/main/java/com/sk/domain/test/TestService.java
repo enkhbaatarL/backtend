@@ -261,7 +261,7 @@ public class TestService {
     /**
      * 상품 데이터와 연결된 파일 정보의 일치 여부를 검증합니다.
      */
-    public void validateGoodsDataFiles(boolean exportToFile, String countStr) {
+    public void validateGoodsDataFiles(boolean exportToFile, String countStr, Integer gdsNo) {
         int pageSize = 1000;
         int pageNumber = 0;
         long totalProcessedCount = 0;
@@ -277,11 +277,16 @@ public class TestService {
             }
         }
 
-        log.info("[START_VALIDATION] validateGoodsDataFiles started. Export to file: {}, Limit: {}", exportToFile, limit == null ? "all" : limit);
+        log.info("[START_VALIDATION] validateGoodsDataFiles started. Export to file: {}, Limit: {}, GdsNo: {}",
+                exportToFile, limit == null ? "all" : limit, gdsNo == null ? "all" : gdsNo);
 
         do {
             Pageable pageable = PageRequest.of(pageNumber, pageSize);
-            goodsDataPage = goodsDataRepository.findAll(pageable);
+            if (gdsNo != null) {
+                goodsDataPage = goodsDataRepository.findByGoods_GoodsNoAndIsDeletedFalse(gdsNo, pageable);
+            } else {
+                goodsDataPage = goodsDataRepository.findAll(pageable);
+            }
 
             for (GoodsData goodsData : goodsDataPage.getContent()) {
                 if (limit != null && totalProcessedCount >= limit) {

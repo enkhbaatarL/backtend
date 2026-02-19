@@ -81,4 +81,9 @@ public class GoodsDataCategory extends BaseEntity {
     public void softDelete() {
         super.softDelete();
     }
+
+    public void updateKeywordNm(String goodsDataKeywordNm) {
+        this.goodsDataKeywordNm = goodsDataKeywordNm;
+        this.modifyDt = LocalDateTime.now();
+    }
 }

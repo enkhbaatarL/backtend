@@ -412,11 +412,13 @@ public class FileService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
 
-        if (uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
+        if (uploadedFile.getFileRelationshipObjectSeparateCd() == null || uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
             try {
                 String bucketName = getBucketName(uploadedFile.getStoragePathNm());
                 String oldPath = getFilePath(uploadedFile.getStoragePathNm());
-                String newPath = oldPath.replaceFirst(TEMP_DIR, fileRelationshipObjectSeparateCode);
+                String separateCode = fileRelationshipObjectSeparateCode != null ? fileRelationshipObjectSeparateCode : TEMP_DIR;
+                String oldSeparateCode = uploadedFile.getFileRelationshipObjectSeparateCd() != null ? uploadedFile.getFileRelationshipObjectSeparateCd() : TEMP_DIR;
+                String newPath = oldPath.replaceFirst(oldSeparateCode, separateCode);
                 String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + newPath;
 
                 uploadedFile.update(storagePathNm, fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
@@ -425,6 +427,8 @@ public class FileService {
             } catch (Exception e) {
                 throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
             }
+        } else {
+            uploadedFile.update(uploadedFile.getStoragePathNm(), fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
         }
         return uploadedFile;
     }

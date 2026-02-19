@@ -317,6 +317,7 @@ public class AdminGoodsDataService {
      */
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         List<GoodsData> goodsDatas = goodsDataRepository.findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(
+                goods,
                 dto.goodsDataNm(),
                 dto.goodsDataExpn(),
                 dto.goodsDataSummaryCntt(),
@@ -328,8 +329,8 @@ public class AdminGoodsDataService {
 
             // 비정형 데이타
             if (dto.unstructuredDataList() != null) {
-                List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-                        .stream()
+                List<UploadedFile> currentFiles = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode());
+                List<Long> oldFileNos = currentFiles.stream()
                         .map(UploadedFile::getFileNo)
                         .toList();
 
@@ -341,12 +342,20 @@ public class AdminGoodsDataService {
                 Set<Long> oldFileSet = new HashSet<>(oldFileNos);
                 Set<Long> newFileSet = new HashSet<>(newFileNos);
 
-                Set<Long> filesToAdd = new HashSet<>(newFileSet);
-                filesToAdd.removeAll(oldFileSet);
-                if (filesToAdd.isEmpty()) {
-                    return;
+                // 삭제된 파일 처리
+                Set<Long> filesToDelete = new HashSet<>(oldFileSet);
+                filesToDelete.removeAll(newFileSet);
+                for (Long fileNo : filesToDelete) {
+                    fileService.updateFile(fileNo, null, null, null);
+                    goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
+                            goodsData.getGoodsDataNo(),
+                            GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
+                            .forEach(GoodsDataCategory::softDelete);
                 }
 
+                // 추가된 파일 처리
+                Set<Long> filesToAdd = new HashSet<>(newFileSet);
+                filesToAdd.removeAll(oldFileSet);
                 for (Long fileNo : filesToAdd) {
                     fileService.updateFile(
                             fileNo,
@@ -362,10 +371,41 @@ public class AdminGoodsDataService {
                                     GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                             GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
                 }
+
+                // 기존 파일 업데이트
+                Set<Long> filesToUpdate = new HashSet<>(newFileSet);
+                filesToUpdate.retainAll(oldFileSet);
+                for (Long fileNo : filesToUpdate) {
+                    // UploadedFile 연관 관계 확인 및 업데이트 (혹시라도 fileRelationshipObjectDistinguishNo 가 누락되었을 경우 대비)
+                    fileService.updateFile(
+                            fileNo,
+                            goodsData.getGoodsDataNo(),
+                            FileRelationshipObjectSeparateCode.GUDAT.getCode(),
+                            DateUtil.endYmd());
+
+                    dto.unstructuredDataList()
+                            .stream()
+                            .filter(data -> fileNo.equals(data.fileNo()))
+                            .findFirst()
+                            .ifPresent(data -> {
+                                List<GoodsDataCategory> categories = goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
+                                        goodsData.getGoodsDataNo(),
+                                        GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo);
+                                if (categories.isEmpty()) {
+                                    goodsDataCategoryRepository.save(
+                                            GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
+                                                    GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo()));
+                                } else {
+                                    categories.get(0).updateKeywordNm(data.criteriaDt());
+                                    if (categories.size() > 1) {
+                                        categories.subList(1, categories.size()).forEach(GoodsDataCategory::softDelete);
+                                    }
+                                }
+                            });
+                }
+
                 goodsData.updateMetaDataUploadStatus(false);
                 publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
-            } else {
-                return;
             }
 
             // 카테고리 기존거 삭제 후 새로 등록
@@ -693,9 +733,9 @@ public class AdminGoodsDataService {
 
         // 비정형데이타 수정
         if (dto.unstructuredDataList() != null) {
-            List<Long> oldFileNos = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
-                    .stream()
-                    .map(file -> file.getFileNo())
+            List<UploadedFile> currentFiles = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode());
+            List<Long> oldFileNos = currentFiles.stream()
+                    .map(UploadedFile::getFileNo)
                     .toList();
             List<Long> newFileNos = dto.unstructuredDataList()
                     .stream()
@@ -705,20 +745,27 @@ public class AdminGoodsDataService {
             Set<Long> oldFileSet = new HashSet<>(oldFileNos);
             Set<Long> newFileSet = new HashSet<>(newFileNos);
 
+            // 삭제된 파일 처리
             Set<Long> filesToDelete = new HashSet<>(oldFileSet);
             filesToDelete.removeAll(newFileSet);
             List<UploadedFile> deletedFiles = new ArrayList<>(filesToDelete.size());
             for (Long fileNo : filesToDelete) {
-                UploadedFile uploadedFile = fileService.deleteFile(fileNo);
+                // UploadedFile 연관 관계 해제 (null 처리)
+                fileService.updateFile(fileNo, null, null, null);
 
+                // GoodsDataCategory 에서 삭제
                 goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
                         goodsData.getGoodsDataNo(),
                         GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo)
-                        .ifPresent(category -> category.softDelete());
+                        .forEach(category -> category.softDelete());
 
-                deletedFiles.add(uploadedFile);
+                currentFiles.stream()
+                        .filter(f -> f.getFileNo().equals(fileNo))
+                        .findFirst()
+                        .ifPresent(deletedFiles::add);
             }
 
+            // 추가된 파일 처리
             Set<Long> filesToAdd = new HashSet<>(newFileSet);
             filesToAdd.removeAll(oldFileSet);
             for (Long fileNo : filesToAdd) {
@@ -735,6 +782,38 @@ public class AdminGoodsDataService {
                         .ifPresent(data -> goodsDataCategoryRepository.save(
                                 GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
                                         GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo())));
+            }
+
+            // 기존 파일 중 정보가 변경된 경우 (PUBDATE 등) 업데이트
+            Set<Long> filesToUpdate = new HashSet<>(newFileSet);
+            filesToUpdate.retainAll(oldFileSet);
+            for (Long fileNo : filesToUpdate) {
+                // UploadedFile 연관 관계 확인 및 업데이트 (혹시라도 fileRelationshipObjectDistinguishNo 가 누락되었을 경우 대비)
+                fileService.updateFile(
+                        fileNo,
+                        goodsData.getGoodsDataNo(),
+                        FileRelationshipObjectSeparateCode.GUDAT.getCode(),
+                        DateUtil.endYmd());
+
+                dto.unstructuredDataList()
+                        .stream()
+                        .filter(data -> fileNo.equals(data.fileNo()))
+                        .findFirst()
+                        .ifPresent(data -> {
+                            List<GoodsDataCategory> categories = goodsDataCategoryRepository.findGoodsDataCategoryByGoodsDataNo(
+                                    goodsData.getGoodsDataNo(),
+                                    GoodsDataManagementSeparateCode.GUDAT.getCode(), fileNo);
+                            if (categories.isEmpty()) {
+                                goodsDataCategoryRepository.save(
+                                        GoodsDataCategory.of(goodsData, "PUBDATE", data.criteriaDt(),
+                                                GoodsDataManagementSeparateCode.GUDAT.getCode(), data.fileNo()));
+                            } else {
+                                categories.get(0).updateKeywordNm(data.criteriaDt());
+                                if (categories.size() > 1) {
+                                    categories.subList(1, categories.size()).forEach(GoodsDataCategory::softDelete);
+                                }
+                            }
+                        });
             }
 
             goodsData.updateMetaDataUploadStatus(false);

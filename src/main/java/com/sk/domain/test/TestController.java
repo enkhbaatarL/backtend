@@ -137,8 +137,9 @@ public class TestController {
     @GetMapping("/validate-goods-data-files")
     public BaseResponse<String> validateGoodsDataFiles(
             @RequestParam(value = "file", defaultValue = "false") boolean file,
-            @RequestParam(value = "count", defaultValue = "all") String count) {
-        testService.validateGoodsDataFiles(file, count);
+            @RequestParam(value = "count", defaultValue = "all") String count,
+            @RequestParam(value = "gdsNo", required = false) Integer gdsNo) {
+        testService.validateGoodsDataFiles(file, count, gdsNo);
         return BaseResponseFactory.create("Validation logic executed. Check logs for results.");
     }
 

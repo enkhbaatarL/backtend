@@ -87,6 +87,9 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
     Page<GoodsData> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = {"goods", "goods.provider"})
+    Page<GoodsData> findByGoods_GoodsNoAndIsDeletedFalse(Integer goodsNo, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"goods", "goods.provider"})
     Optional<GoodsData> findByGoodsDataNoAndIsDeletedFalse(@Param("goodsDataNo") int goodsDataNo);
 
     @Query(value = """
@@ -171,12 +174,13 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
             SELECT gd
             FROM GoodsData gd
             WHERE gd.isDeleted = false
+                AND gd.goods = :goods
                 AND gd.goodsDataNm = :goodsDataNm
                 AND (gd.goodsDataExpn IS NULL OR gd.goodsDataExpn = :goodsDataExpn)
                 AND (gd.goodsDataSummaryCntt IS NULL OR gd.goodsDataSummaryCntt = :goodsDataSummaryCntt)
             ORDER BY gd.modifyDt DESC
             """)
-    List<GoodsData> findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(@Param("goodsDataNm") String goodsDataNm,
+    List<GoodsData> findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(@Param("goods") com.sk.domain.shared.entity.master.tmd.Goods goods, @Param("goodsDataNm") String goodsDataNm,
             @Param("goodsDataExpn") String goodsDataExpn, @Param("goodsDataSummaryCntt") String goodsDataSummaryCntt, Pageable pageable);
 
     @Query("""
