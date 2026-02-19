@@ -16,8 +16,8 @@ public record ForecastChartFactorCategoryRes(
     @Schema(description = "예측기준일자") String predictionCriteriaDt,
     @Schema(description = "예측결과값(평균)") Double avgPredictionResultVal,
     @Schema(description = "예측기준값") Double predictionCriteriaVal,
-    @Schema(description = "예측기준값-예측결과값") Double predictionResultDiffVal,
-    @Schema(description = "예측결과변화율(%)") Double predictionResultDiffRate,
+    @Schema(description = "예측결과값-예측기준값") Double predictionResultDiffVal,
+    @Schema(description = "(예측결과값-예측기준값)/예측기준값(%)") Double predictionResultDiffRate,
     @Schema(description = "정기예측여부") Boolean isScheduled
 ) {
     @Builder

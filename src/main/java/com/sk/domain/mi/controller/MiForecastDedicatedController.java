@@ -208,7 +208,7 @@ public class MiForecastDedicatedController {
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 20) int size) {
         return BaseResponseFactory.create(
-            miForecastService.getForecastTable(companyNo, goodsDataSourceNo, startDate, endDate,
+            miForecastService.getForecastTableV2(companyNo, goodsDataSourceNo, startDate, endDate,
                 order, page, size));
     }
 
@@ -229,7 +229,7 @@ public class MiForecastDedicatedController {
         @RequestParam String startDate,
         @RequestParam String endDate,
         @RequestParam(defaultValue = "NEWEST") String order) throws IOException {
-        byte[] fileData = miForecastService.getForecastTableFileDownload(
+        byte[] fileData = miForecastService.getForecastTableFileDownloadV2(
             companyNo, goodsDataSourceNo, startDate, endDate, order);
 
         String filePrefix = "forecast_table";
