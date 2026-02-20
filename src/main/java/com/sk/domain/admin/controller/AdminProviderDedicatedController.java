@@ -19,7 +19,9 @@ import com.sk.domain.admin.service.AdminProviderService;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -53,6 +55,7 @@ public class AdminProviderDedicatedController {
     private final AdminGoodsDataService goodsDataService;
     private final FileService fileService;
     private final CustomerCompanyRepository customerCompanyRepository;
+    private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
 
     private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
 
@@ -130,15 +133,32 @@ public class AdminProviderDedicatedController {
 
         List<FileExistRes> result = new ArrayList<>();
 
+        Role role = authorizationService.getCurrentRole();
+        int companyNo = authorizationService.getCompanyNo();
+
         List<GoodsData> goodsDatas = goodsDataService.getGoodsData(goodsDataNm);
         if (goodsDatas.size() > 0) {
             List<UploadedFile> uploadedFiles = fileService.fileExist(fileName, fileHash);
             if (uploadedFiles.size() > 0) {
                 for (GoodsData goodsData : goodsDatas) {
-                    for (UploadedFile uploadedFile : uploadedFiles) {
-                        if (goodsData.getGoodsDataNo() != null && uploadedFile.getFileRelationshipObjectDistinguishNo() != null
-                            && goodsData.getGoodsDataNo().equals(uploadedFile.getFileRelationshipObjectDistinguishNo())) {
-                            result.add(new FileExistRes(goodsData.getGoodsDataNo(), uploadedFile.getFileNo()));
+                    boolean isTarget = false;
+                    if (role == Role.ADMIN || role == Role.API_SUB_ADMIN) {
+                        if (goodsData.getGoods() != null && Boolean.TRUE.equals(goodsData.getGoods().getIsPublic())) {
+                            isTarget = true;
+                        }
+                    } else if (role == Role.OPERATOR || role == Role.API_PLUS_OPERATOR) {
+                        if (goodsData.getGoods() != null && Boolean.FALSE.equals(goodsData.getGoods().getIsPublic())
+                            && customerCompanyGoodsMappingRepository.findById_CustomerCompanyNoAndId_GoodsNoAndIsDeletedFalse(companyNo, goodsData.getGoods().getGoodsNo()).isPresent()) {
+                            isTarget = true;
+                        }
+                    }
+
+                    if (isTarget) {
+                        for (UploadedFile uploadedFile : uploadedFiles) {
+                            if (goodsData.getGoodsDataNo() != null && uploadedFile.getFileRelationshipObjectDistinguishNo() != null
+                                && goodsData.getGoodsDataNo().equals(uploadedFile.getFileRelationshipObjectDistinguishNo())) {
+                                result.add(new FileExistRes(goodsData.getGoodsDataNo(), uploadedFile.getFileNo()));
+                            }
                         }
                     }
                 }

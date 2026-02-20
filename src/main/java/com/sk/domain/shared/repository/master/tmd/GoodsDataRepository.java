@@ -160,6 +160,7 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                         """, nativeQuery = true)
     List<LatestInsightsDto> findLatestInsights(@Param("customerCompanyNo") int customerCompanyNo, @Param("exceptProviderNoList") List<Integer> exceptProviderNoList, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"goods", "customerCompany"})
     @Query(value = """
             SELECT gd
             FROM GoodsData gd
