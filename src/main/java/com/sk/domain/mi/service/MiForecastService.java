@@ -114,6 +114,7 @@ public class MiForecastService {
 
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1";
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
+    private static final String FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015 = "3";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1;
     private static final String FORECAST_Q_PLUS_1 = "Forecast Q+1";
@@ -127,6 +128,7 @@ public class MiForecastService {
     private static final int FORECAST_CHART_CACHE_TTL = 10;
     private static final String FORECAST_CHART_CACHE_KEY = "forecast_chart:%d:%s:%s:%s";
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt";
+    private static final String FORECAST_TABLE_FULFILL_DATE_ITEM_KEY = "predictionFulfillDt";
     private static final String MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME = "prdc_crtr_dt";
     private static final String MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME = "prdc_rslt_dt";
     private static final String MARKET_DATA_PREDICT_RESULT_VALUE_COLUMN_NAME = "prdc_rslt_val";
@@ -2480,6 +2482,7 @@ public class MiForecastService {
         }
 
         Map<String, ColumnData> columnDataMap = new HashMap<>();
+        Map<String, String> fulfillDateByYearMonthMap = new HashMap<>();
         boolean isCompany2015 = customerCompanyNo == COMPANY_NO_2015;
         Set<Integer> processedForecastDataSources = new HashSet<>();
         for (ChartPredictSettingDetail detail : chartPredictSettingDetails) {
@@ -2501,6 +2504,10 @@ public class MiForecastService {
             boolean isPredict = Boolean.TRUE.equals(detail.getIsChartLinePredictVal());
             if (isPredict) {
                 isPermitted = true;
+                if (isCompany2015) {
+                    mergeLatestFulfillDateByYearMonth(fulfillDateByYearMonthMap,
+                        buildForecastLatestFulfillDateMapFor2015(goodsDataSource, start, end));
+                }
             }
 
             if (isCompany2015 && isPredict && isForecastQPlusExplanation(explanation)) {
@@ -2553,6 +2560,10 @@ public class MiForecastService {
         headerPermissionList.add(true);
         for (SpecialTableColumn column : columns) {
             headerList.add(column.headerText());
+            if (isForecastTableFulfillDateItemKey(column.explanationKey())) {
+                headerPermissionList.add(true);
+                continue;
+            }
             ColumnData columnData = columnDataMap.get(column.explanationKey());
             headerPermissionList.add(columnData != null ? columnData.isPermitted() : null);
         }
@@ -2568,14 +2579,19 @@ public class MiForecastService {
             List<Object> values = new ArrayList<>();
             values.add(isCompany2015 ? formatYearMonthAsQuarter(yearMonth) : formatYearMonthLabel(yearMonth));
             for (SpecialTableColumn column : columns) {
+                YearMonth targetMonth = column.shiftMonths() == 0
+                    ? yearMonth
+                    : yearMonth.plusMonths(column.shiftMonths());
+                if (isForecastTableFulfillDateItemKey(column.explanationKey())) {
+                    values.add(formatFulfillDateLabel(
+                        fulfillDateByYearMonthMap.get(toYearMonthKey(targetMonth))));
+                    continue;
+                }
                 ColumnData columnData = columnDataMap.get(column.explanationKey());
                 if (columnData == null) {
                     values.add(null);
                     continue;
                 }
-                YearMonth targetMonth = column.shiftMonths() == 0
-                    ? yearMonth
-                    : yearMonth.plusMonths(column.shiftMonths());
                 values.add(columnData.yearMonthValues()
                     .get(toYearMonthKey(targetMonth)));
             }
@@ -2654,6 +2670,7 @@ public class MiForecastService {
         }
 
         Map<String, ColumnData> columnDataMap = new HashMap<>();
+        Map<String, String> fulfillDateByYearMonthMap = new HashMap<>();
         boolean isCompany2013 = customerCompanyNo == COMPANY_NO_2013;
         boolean isCompany2015 = customerCompanyNo == COMPANY_NO_2015;
         Set<Integer> processedForecastDataSources = new HashSet<>();
@@ -2676,6 +2693,10 @@ public class MiForecastService {
             boolean isPredict = Boolean.TRUE.equals(detail.getIsChartLinePredictVal());
             if (isPredict) {
                 isPermitted = true;
+                if (isCompany2015) {
+                    mergeLatestFulfillDateByYearMonth(fulfillDateByYearMonthMap,
+                        buildForecastLatestFulfillDateMapFor2015(goodsDataSource, start, end));
+                }
             }
 
             if (isCompany2015 && isPredict && isForecastQPlusExplanation(explanation)) {
@@ -2740,6 +2761,10 @@ public class MiForecastService {
         headerPermissionList.add(true);
         for (SpecialTableColumn column : columns) {
             headerList.add(column.headerText());
+            if (isForecastTableFulfillDateItemKey(column.explanationKey())) {
+                headerPermissionList.add(true);
+                continue;
+            }
             ColumnData columnData = columnDataMap.get(column.explanationKey());
             headerPermissionList.add(columnData != null ? columnData.isPermitted() : null);
         }
@@ -2755,14 +2780,19 @@ public class MiForecastService {
             List<Object> values = new ArrayList<>();
             values.add(formatSpecialTableDateLabelV2(yearMonth, groupingUnit));
             for (SpecialTableColumn column : columns) {
+                YearMonth targetMonth = column.shiftMonths() == 0
+                    ? yearMonth
+                    : yearMonth.plusMonths(column.shiftMonths());
+                if (isForecastTableFulfillDateItemKey(column.explanationKey())) {
+                    values.add(formatFulfillDateLabel(
+                        fulfillDateByYearMonthMap.get(toYearMonthKey(targetMonth))));
+                    continue;
+                }
                 ColumnData columnData = columnDataMap.get(column.explanationKey());
                 if (columnData == null) {
                     values.add(null);
                     continue;
                 }
-                YearMonth targetMonth = column.shiftMonths() == 0
-                    ? yearMonth
-                    : yearMonth.plusMonths(column.shiftMonths());
                 values.add(columnData.yearMonthValues()
                     .get(toYearMonthKey(targetMonth)));
             }
@@ -3005,6 +3035,36 @@ public class MiForecastService {
         return averageByYearMonth(bucket);
     }
 
+    private Map<String, String> buildYearMonthLatestFulfillDateMap(
+        List<Map<String, Object>> rawData, String keyDateColumnName) {
+        if (rawData == null || rawData.isEmpty() || keyDateColumnName == null
+            || keyDateColumnName.isBlank()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, LocalDate> latestFulfillDateMap = new HashMap<>();
+        for (Map<String, Object> row : rawData) {
+            LocalDate keyDate = DateUtil.parseDate(row.get(keyDateColumnName));
+            LocalDate fulfillDate = DateUtil.parseDate(
+                row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+            if (keyDate == null || fulfillDate == null) {
+                continue;
+            }
+
+            String key = toYearMonthKey(YearMonth.from(keyDate));
+            LocalDate existing = latestFulfillDateMap.get(key);
+            if (existing == null || fulfillDate.isAfter(existing)) {
+                latestFulfillDateMap.put(key, fulfillDate);
+            }
+        }
+
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, LocalDate> entry : latestFulfillDateMap.entrySet()) {
+            result.put(entry.getKey(), DateUtil.toYmd(entry.getValue()));
+        }
+        return result;
+    }
+
     private Map<String, Double> averageByYearMonth(Map<String, List<Double>> bucket) {
         if (bucket == null || bucket.isEmpty()) {
             return Collections.emptyMap();
@@ -3051,6 +3111,7 @@ public class MiForecastService {
         return settings.stream()
             .filter(setting -> setting.getItemKey() != null)
             .filter(setting -> !"date".equalsIgnoreCase(setting.getItemKey()))
+            .filter(setting -> !isForecastTableFulfillDateItemKey(setting.getItemKey()))
             .sorted(Comparator
                 .comparing((UiComponentSetting setting) -> setting.getOrderNo() == null)
                 .thenComparing(UiComponentSetting::getOrderNo,
@@ -3058,6 +3119,64 @@ public class MiForecastService {
             .map(UiComponentSetting::getItemKey)
             .findFirst()
             .orElse(null);
+    }
+
+    private boolean isForecastTableFulfillDateItemKey(String itemKey) {
+        if (itemKey == null || itemKey.isBlank()) {
+            return false;
+        }
+        return FORECAST_TABLE_FULFILL_DATE_ITEM_KEY.equalsIgnoreCase(itemKey.trim());
+    }
+
+    private Map<String, String> buildForecastLatestFulfillDateMapFor2015(
+        GoodsDataSourceDetail goodsDataSource, LocalDate start, LocalDate end) {
+        if (goodsDataSource == null || start == null || end == null) {
+            return Collections.emptyMap();
+        }
+
+        String[] tableColumnList = Arrays.stream(
+                goodsDataSource.getTableColumnListNm().split(","))
+            .map(String::trim)
+            .toArray(String[]::new);
+        if (tableColumnList.length <= MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX) {
+            return Collections.emptyMap();
+        }
+
+        String resultDateColumnName = tableColumnList[MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX];
+        String valueColumnName = tableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
+        List<Map<String, Object>> rawData = getForecastDataRowsWithCriteriaDate(goodsDataSource,
+            resultDateColumnName, valueColumnName, start, end);
+        return buildYearMonthLatestFulfillDateMap(rawData,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+    }
+
+    private void mergeLatestFulfillDateByYearMonth(Map<String, String> target,
+        Map<String, String> source) {
+        if (target == null || source == null || source.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : source.entrySet()) {
+            String yearMonth = entry.getKey();
+            String fulfillDate = entry.getValue();
+            if (yearMonth == null || fulfillDate == null || fulfillDate.isBlank()) {
+                continue;
+            }
+            String existing = target.get(yearMonth);
+            if (existing == null || fulfillDate.compareTo(existing) > 0) {
+                target.put(yearMonth, fulfillDate);
+            }
+        }
+    }
+
+    private String formatFulfillDateLabel(String ymd) {
+        if (ymd == null || ymd.isBlank()) {
+            return null;
+        }
+        LocalDate parsed = DateUtil.parseDate(ymd);
+        if (parsed == null) {
+            return ymd;
+        }
+        return parsed.format(DateTimeFormatter.ofPattern("yy/MM/dd"));
     }
 
     private List<YearMonth> toSortedYearMonths(Set<String> yearMonthKeys) {
@@ -4706,7 +4825,7 @@ public class MiForecastService {
                         ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                         : null;
                 List<Map<String, Object>> rawData =
-                    getDateDataRows(goodsDataSource, isScheduled, isTwoPeriodCompany);
+                    getDateDataRows(goodsDataSource, isScheduled, isTwoPeriodCompany, companyNo);
                 return rawData.stream()
                     .map(row -> {
                         Object fulfillDateValue = row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
@@ -4834,7 +4953,7 @@ public class MiForecastService {
      * @return 조건에 맞는 데이터 행 목록
      */
     private List<Map<String, Object>> getDateDataRows(GoodsDataSourceDetail goodsDataSourceDetail,
-        Boolean isScheduled, boolean isTwoPeriodCompany) {
+        Boolean isScheduled, boolean isTwoPeriodCompany, int companyNo) {
         if (goodsDataSourceDetail == null) {
             return Collections.emptyList();
         }
@@ -4904,6 +5023,10 @@ public class MiForecastService {
                 : "(" + whereClause + ") AND " + chartFilter;
         }
 
+        String dateLimit = companyNo == COMPANY_NO_2015
+            ? FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015
+            : FORECAST_AVAILABLE_DATE_LIMIT;
+
         return mybatisDynamicQueryService.getDynamicRawQuery(DynamicDataDetailReq.builder()
             .targetDataSource(goodsDataSourceDetail.getTargetDbNm())
             .tableName(goodsDataSourceDetail.getTargetTableNm() + " m")
@@ -4911,7 +5034,7 @@ public class MiForecastService {
             .whereClause(whereClause)
             .groupByColumns(groupBy)
             .orderByColumns(orderBy)
-            .limit(FORECAST_AVAILABLE_DATE_LIMIT)
+            .limit(dateLimit)
             .build());
     }
 
