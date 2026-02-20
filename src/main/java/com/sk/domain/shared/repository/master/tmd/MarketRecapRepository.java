@@ -355,6 +355,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                 UNION ALL
@@ -366,6 +367,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
             ) recap
@@ -381,6 +383,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeHighlight = true
                 UNION ALL
@@ -388,6 +391,7 @@ public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> 
                 FROM tmd_mrkt_rcap mr
                 WHERE (:startDate IS NULL OR mr.crtr_dt >= :startDate)
                   AND (:endDate IS NULL OR mr.crtr_dt <= :endDate)
+                  AND (:marketCategoryCode IS NULL OR mr.nws_mrkt_ctgr_cd = :marketCategoryCode)
                   AND mr.del_yn = 'N'
                   AND :includeCheckpoint = true
             ) recap
