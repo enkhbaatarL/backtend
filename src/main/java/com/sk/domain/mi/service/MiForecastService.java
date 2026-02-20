@@ -643,7 +643,13 @@ public class MiForecastService {
             axisUnit);
 
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
-        today = resolveMaskingBaseDate(chartPredictSettingDetails);
+        LineValueStrategy lineValueStrategy = getLineValueStrategy(customerCompanyNo);
+        LocalDate maskingBaseDate = null;
+        LocalDate forecastCutoffStartDate = null;
+        if (lineValueStrategy.isPastActualFuturePredict()) {
+            maskingBaseDate = resolveMaskingBaseDate(chartPredictSettingDetails);
+            forecastCutoffStartDate = resolvePeriodStartDateContaining(dateList, maskingBaseDate);
+        }
 
         GoodsDataSourceDetail[] actualGoodsDataSourceDetail = {null};
         Map<Integer, ForecastChart> chartMap = new HashMap<>();
@@ -661,7 +667,8 @@ public class MiForecastService {
             axisUnit.label,
             totalPeriod.label,
             baseDate,
-            null);
+            null,
+            forecastCutoffStartDate);
 
         List<Map<Integer, ForecastChart>> associatedCharts = chartMap.entrySet().stream()
             .collect(Collectors.groupingBy(
@@ -723,9 +730,8 @@ public class MiForecastService {
                     Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
-        LineValueStrategy lineValueStrategy = getLineValueStrategy(customerCompanyNo);
         if (lineValueStrategy.isPastActualFuturePredict()) {
-            finalCharts = applyLineValueStrategy(finalCharts, today, axisUnit);
+            finalCharts = applyLineValueStrategy(finalCharts, maskingBaseDate, axisUnit);
         }
 
         List<ForecastDataSource> dashboardDataSources = chartDataResults.stream()
@@ -2326,7 +2332,8 @@ public class MiForecastService {
             axisUnit.label,
             String.format("%s_%s", startDate, endDate),
             end,
-            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME,
+            null);
 
         List<Map<Integer, ForecastChart>> associatedCharts = chartMap.entrySet().stream()
             .collect(Collectors.groupingBy(
@@ -3153,7 +3160,8 @@ public class MiForecastService {
         String xAxisUnit,
         String period,
         LocalDate baseDate,
-        String predictAggregationDateColumnName) {
+        String predictAggregationDateColumnName,
+        LocalDate forecastCutoffStartDate) {
         return chartPredictSettingDetails.stream()
             .filter(Objects::nonNull)
             .sorted(Comparator.comparing(ChartPredictSettingDetail::getIsChartLinePredictVal))
@@ -3198,71 +3206,47 @@ public class MiForecastService {
                     default -> startDate.withDayOfMonth(1);
                 };
 
-                String cacheKey = getForecastChartCacheKey(
-                    chartPredictSettingDetail.getChartPredictSettingDetailNo(),
-                    xAxisUnit,
-                    appendAggregationKey(period, isPredict
-                        ? predictAggregationDateColumnName
-                        : null),
-                    DateUtil.toYmd(baseDate));
-
-                List<ForecastChartRawData> periodAverages = null;
+                List<ForecastChartRawData> periodAverages;
                 LocalDate lastUpdated = null;
                 ForecastDataSource dashboardDataSource = null;
-                String cachedData = redisTemplate.opsForValue().get(cacheKey);
-                if (cachedData != null) {
-                    try {
-                        ForecastDataCache dashboardDataCache = objectMapper.readValue(cachedData,
-                            ForecastDataCache.class);
-                        periodAverages = dashboardDataCache.periodAverages();
-                        lastUpdated = dashboardDataCache.lastUpdated();
-                        dashboardDataSource = dashboardDataCache.dataSource();
-                    } catch (Exception e) {
-                        redisTemplate.delete(cacheKey);
-                    }
+                List<Map<String, Object>> rawData =
+                    isPredict
+                        ? getForecastDataRows(goodsDataSource, dateColumnName, alignedStartDate,
+                        alignedEndDate)
+                        : getActualDataRows(goodsDataSource, dateColumnName, alignedStartDate,
+                            alignedEndDate);
+                if (isPredict && forecastCutoffStartDate != null) {
+                    rawData = filterForecastRowsByCriteriaDate(rawData, forecastCutoffStartDate);
+                }
+                String aggregationDateColumnName = resolveAggregationDateColumnName(
+                    rawData,
+                    isPredict ? predictAggregationDateColumnName : null,
+                    dateColumnName);
+                List<ForecastChartRes.ForecastChartDateItem> effectiveDateList = dateList;
+                if (AxisUnit.ONE_DAY.label.equalsIgnoreCase(xAxisUnit)) {
+                    effectiveDateList = buildDateListFromRawData(rawData,
+                        aggregationDateColumnName);
                 }
 
-                if (periodAverages == null) {
-                    List<Map<String, Object>> rawData =
-                        isPredict
-                            ? getForecastDataRows(goodsDataSource, dateColumnName, alignedStartDate,
-                            alignedEndDate)
-                            : getActualDataRows(goodsDataSource, dateColumnName, alignedStartDate,
-                                alignedEndDate);
-                    String aggregationDateColumnName = resolveAggregationDateColumnName(
-                        rawData,
-                        isPredict ? predictAggregationDateColumnName : null,
-                        dateColumnName);
-                    List<ForecastChartRes.ForecastChartDateItem> effectiveDateList = dateList;
-                    if (AxisUnit.ONE_DAY.label.equalsIgnoreCase(xAxisUnit)) {
-                        effectiveDateList = buildDateListFromRawData(rawData,
-                            aggregationDateColumnName);
+                if (isPredict && !rawData.isEmpty()) {
+                    String latestPredictDate = rawData.stream()
+                        .map(row -> (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME))
+                        .filter(Objects::nonNull)
+                        .max(String::compareTo)
+                        .orElse(null);
+                    if (latestPredictDate != null) {
+                        lastUpdated = DateUtil.parseDate(latestPredictDate);
                     }
-
-                    if (isPredict && !rawData.isEmpty()) {
-                        String latestPredictDate = rawData.stream()
-                            .map(row -> (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME))
-                            .filter(Objects::nonNull)
-                            .max(String::compareTo)
-                            .orElse(null);
-                        if (latestPredictDate != null) {
-                            lastUpdated = DateUtil.parseDate(latestPredictDate);
-                        }
-                        dashboardDataSource = ForecastDataSource.of(goodsDataSource,
-                            chartPredictSettingDetail);
-                    }
-
-                    periodAverages = calculatePeriodAverages(
-                        effectiveDateList,
-                        rawData,
-                        aggregationDateColumnName,
-                        defaultDataColumnName,
-                        isPredict);
-
-                    ForecastDataCache dashboardDataCache = ForecastDataCache.of(periodAverages,
-                        lastUpdated, dashboardDataSource);
-                    saveForecastChartCache(cacheKey, dashboardDataCache);
+                    dashboardDataSource = ForecastDataSource.of(goodsDataSource,
+                        chartPredictSettingDetail);
                 }
+
+                periodAverages = calculatePeriodAverages(
+                    effectiveDateList,
+                    rawData,
+                    aggregationDateColumnName,
+                    defaultDataColumnName,
+                    isPredict);
 
                 ForecastChartLine dashboardChartLine = ForecastChartLine.of(isPermitted,
                     chartPredictDataType,
@@ -3308,6 +3292,49 @@ public class MiForecastService {
                     actualGoodsDataSourceDetail[0], dashboardChart);
             })
             .filter(Objects::nonNull)
+            .toList();
+    }
+
+    private LocalDate resolvePeriodStartDateContaining(
+        List<ForecastChartRes.ForecastChartDateItem> dateList, LocalDate targetDate) {
+        if (dateList == null || dateList.isEmpty() || targetDate == null) {
+            return null;
+        }
+        for (ForecastChartRes.ForecastChartDateItem item : dateList) {
+            if (item == null) {
+                continue;
+            }
+            LocalDate itemStart = DateUtil.parseDate(item.startDate());
+            LocalDate itemEnd = DateUtil.parseDate(item.endDate());
+            if (itemStart == null && itemEnd == null) {
+                continue;
+            }
+            if (itemStart == null) {
+                itemStart = itemEnd;
+            }
+            if (itemEnd == null) {
+                itemEnd = itemStart;
+            }
+            if ((targetDate.isEqual(itemStart) || targetDate.isAfter(itemStart))
+                && (targetDate.isEqual(itemEnd) || targetDate.isBefore(itemEnd))) {
+                return itemStart;
+            }
+        }
+        return null;
+    }
+
+    private List<Map<String, Object>> filterForecastRowsByCriteriaDate(
+        List<Map<String, Object>> rawData, LocalDate cutoffStartDate) {
+        if (rawData == null || rawData.isEmpty() || cutoffStartDate == null) {
+            return rawData;
+        }
+        return rawData.stream()
+            .filter(Objects::nonNull)
+            .filter(row -> {
+                LocalDate criteriaDate = DateUtil.parseDate(
+                    row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
+                return criteriaDate != null && !criteriaDate.isBefore(cutoffStartDate);
+            })
             .toList();
     }
 
