@@ -30,6 +30,7 @@ import com.sk.domain.shared.entity.master.tmd.Goods;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import com.sk.domain.shared.repository.master.tcm.MarketDataChartSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
@@ -83,6 +84,7 @@ public class MiMarketDataService {
     public static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
     public static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
     public static final int MAIN_MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
+    public static final int MAIN_MARKET_QUARTER_DATA_START_DATE_MONTH = 36; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     public static final int MARKET_DATA_MONTHLY_START_DATE_MONTH = 11; // 마켓데이터 월별 데이터 시작 날짜 (N달 전)
     private static final int MARKET_DATA_START_DATE_MONTH = 13; // 마켓데이터 원시 데이터 조회 기준 날짜 (N달 전)
     private static final String MARKET_DATA_INDEX_START_DATE_LIMIT = "1"; // 원시데이터 시작 날짜 계산을 위한 LIMIT 조건
@@ -138,6 +140,7 @@ public class MiMarketDataService {
     @Transactional
     public List<MiMarketDataRes> getMarketDatas(Integer companyNo) {
         LocalDate START_DATE = LocalDate.now().minusMonths(MAIN_MARKET_DATA_START_DATE_MONTH);
+        LocalDate START_DATE_QUARTER = LocalDate.now().minusMonths(MAIN_MARKET_QUARTER_DATA_START_DATE_MONTH);
         LocalDate END_DATE = LocalDate.now();
 
         // 고객사 조회
@@ -230,9 +233,13 @@ public class MiMarketDataService {
                         tableColumnListNm[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
                     // 원시 데이터 조회
+                    LocalDate startDate = START_DATE;
+                    if(mainGoodsDataSource.getPeriodUnitSeparateCd() == PeriodUnitSeparateCd.Q || mainGoodsDataSource.getPeriodUnitSeparateCd() == PeriodUnitSeparateCd.Y) {
+                        startDate = START_DATE_QUARTER;
+                    }
                     List<Map<String, Object>> rawData =
                         miMarketDynamicQueryService.getMarketDataRows(
-                            mainGoodsDataSource, dateColumnName, START_DATE, END_DATE);
+                            mainGoodsDataSource, dateColumnName, startDate, END_DATE);
 
                     // Index Start date 데이터 조회
                     LocalDate indexStartDate = null;
