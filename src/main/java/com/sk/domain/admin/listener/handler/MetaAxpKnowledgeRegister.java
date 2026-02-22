@@ -54,12 +54,13 @@ public class MetaAxpKnowledgeRegister implements AxpKnowledgeRegister{
     public void process(AXUploadFileEvent event, String datasourceId, GoodsData goodsData){
 
         String documentId = null;
-        if(event.getIsNew()){
-            documentId = UUID.randomUUID().toString();
-            goodsData.updateGoodsDataDistinguishId(documentId);
-        }else{
+        if(!event.getIsNew()){
             documentId = goodsData.getGoodsDataDistinguishId();
         }
+        if(documentId != null && !documentId.isEmpty()){
+            documentId = UUID.randomUUID().toString();
+        }
+        goodsData.updateGoodsDataDistinguishId(documentId);
 
         List<String> fileNameList = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode())
             .stream()

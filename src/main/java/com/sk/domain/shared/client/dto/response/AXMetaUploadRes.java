@@ -1,5 +1,6 @@
 package com.sk.domain.shared.client.dto.response;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,12 +19,12 @@ public record AXMetaUploadRes(
             String tempFilePath,
 
             @JsonProperty("file_meta_data")
-            String fileMetaData,
+            ObjectNode fileMetaData,
 
             @JsonProperty("knowledge_config")
-            String knowledgeConfig
+            ObjectNode knowledgeConfig
         ) {
 
-        } 
+        }
 }
 // @formatter:on

@@ -1,5 +1,6 @@
 package com.sk.domain.shared.client.dto.request;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,15 +22,15 @@ public class AXMetaRegisterReq {
         String tempFilePath;
 
         @JsonProperty("file_meta_data")
-        String fileMetaData;
+        ObjectNode fileMetaData;
 
         @JsonProperty("knowledge_config")
-        String knowledgeConfig;
+        ObjectNode knowledgeConfig;
 
         @JsonProperty("status")
         String status;
 
-        public ModifiedFile(String fileName, String fileId, String tempFilePath, String fileMetaData, String knowledgeConfig, String status) {
+        public ModifiedFile(String fileName, String fileId, String tempFilePath, ObjectNode fileMetaData, ObjectNode knowledgeConfig, String status) {
             this.fileName = fileName;
             this.fileId = fileId;
             this.tempFilePath = tempFilePath;

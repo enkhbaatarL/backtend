@@ -1,11 +1,7 @@
 package com.sk.domain.admin.listener;
 
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.listener.handler.AxpKnowledgeRegister;
 import com.sk.domain.admin.listener.handler.AxpKnowledgeRegisterStrategyResolver;
-import com.sk.domain.shared.entity.master.tcm.AxpRepository;
-import com.sk.domain.shared.repository.master.tcm.AxpRepositoryRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -24,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AXEventListener {
     private final GoodsDataRepository goodsDataRepository;
-    private final AxpRepositoryRepository axpRepositoryRepository;
     private final AxpKnowledgeRegisterStrategyResolver axpKnowledgeRegisterStrategyResolver;
 
     @Async
@@ -39,17 +34,18 @@ public class AXEventListener {
             return;
         }
 
-        String vectorRepositoryId = goodsData.getGoods().getVectorRepositoryId();
-        if(vectorRepositoryId == null || vectorRepositoryId.isEmpty()){
+        String axpDataSourceId = goodsData.getGoods().getAxpDataSourceId();
+        if(axpDataSourceId == null || axpDataSourceId.isEmpty()){
             log.warn("[AX Platform] AXP Repository Id is Empty. GoodsNo={}, GoodsDataNo={}", goodsData.getGoods().getGoodsNo(), goodsDataNo);
             return;
         }
+        String axpUploadComponentId = goodsData.getGoods().getAxpUploadComponentId();
+        if(axpUploadComponentId == null || axpUploadComponentId.isEmpty()){
+            log.warn("[AX Platform] AXP Upload Component Id is Empty. GoodsNo={}, GoodsDataNo={}", goodsData.getGoods().getGoodsNo(), goodsDataNo);
+            return;
+        }
 
-        AxpRepository axpRepository = axpRepositoryRepository.findById(vectorRepositoryId).orElseThrow(()-> AppErrorException.of(
-            ResultCode.Error.SYS_INVALID_CONFIG,
-            "AXP Repository not found. vectorRepositoryId=" + vectorRepositoryId));
-
-        AxpKnowledgeRegister axpKnowledgeRegister = axpKnowledgeRegisterStrategyResolver.resolve(axpRepository.getComponentTypeId());
-        axpKnowledgeRegister.process(event, axpRepository.getDataSourceId(), goodsData);
+        AxpKnowledgeRegister axpKnowledgeRegister = axpKnowledgeRegisterStrategyResolver.resolve(axpUploadComponentId);
+        axpKnowledgeRegister.process(event, axpDataSourceId, goodsData);
     }
 }

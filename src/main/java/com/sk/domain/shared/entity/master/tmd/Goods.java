@@ -80,10 +80,18 @@ public class Goods extends BaseEntity {
     @Comment("비정형 벡터 DB 레포지토리 ID")
     private String vectorRepositoryId;
 
+    @Column(name = "axp_datasrc_id", length = 50)
+    @Comment("AXP 데이터소스 ID")
+    private String axpDataSourceId;
+
+    @Column(name = "axp_upload_cmpnt_id", length = 100)
+    @Comment("AXP 업로드 컴포넌트 ID")
+    private String axpUploadComponentId;
+
     @Builder
     public Goods(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer goodsNo, String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic,
-            Provider provider, String vectorRepositoryId) {
+            Provider provider, String vectorRepositoryId, String axpDataSourceId, String axpUploadComponentId) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsNo = goodsNo;
         this.goodsNm = goodsNm;
@@ -93,6 +101,8 @@ public class Goods extends BaseEntity {
         this.isPublic = isPublic;
         this.provider = provider;
         this.vectorRepositoryId = vectorRepositoryId;
+        this.axpDataSourceId = axpDataSourceId;
+        this.axpUploadComponentId = axpUploadComponentId;
     }
 
     public static Goods of(String goodsNm, String goodsId, String goodsExpn, Boolean isUsed, Boolean isPublic, Provider provider) {

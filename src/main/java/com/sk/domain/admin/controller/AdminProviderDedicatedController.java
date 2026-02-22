@@ -14,12 +14,9 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
 import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.admin.service.AdminGoodsDataService;
-import com.sk.domain.admin.service.AdminGoodsService;
-import com.sk.domain.admin.service.AdminProviderService;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
-import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.CustomerCompanyGoodsMappingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
@@ -322,9 +319,16 @@ public class AdminProviderDedicatedController {
     @PostMapping("/axplatform/upload")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<String> uploadMetaFile(
-        @RequestParam(value = "goodsDataNo", required = true, defaultValue = "") Integer goodsDataNo) {
+        @RequestParam(value = "goodsDataNo", required = false) Integer goodsDataNo,
+        @RequestParam(value = "goodsNo", required = false) Integer goodsNo) {
 
-        goodsDataService.uploadMetaFile(goodsDataNo);
+        if (goodsDataNo != null) {
+            goodsDataService.uploadUnstructuredDataToVector(goodsDataNo);
+        } else if (goodsNo != null) {
+            goodsDataService.uploadUnstructuredDataToVectorByGoodsNo(goodsNo);
+        } else {
+            throw AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER, "goodsDataNo or goodsNo is required");
+        }
 
         return BaseResponseFactory.create("success");
     }

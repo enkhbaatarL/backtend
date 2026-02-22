@@ -6,6 +6,7 @@ import com.sk.domain.admin.dto.request.provider.UnstructuredDataLinkReq;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
+import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import java.io.IOException;
 import java.util.*;
 
@@ -86,6 +87,7 @@ public class AdminGoodsDataService {
     private final UnitConvertRepository unitConvertRepository;
     private final GoodsDataUnitConvertRepository goodsDataUnitConvertRepository;
     private final GoodsDataExtensionRepository goodsDataExtensionRepository;
+    private final UploadedFileRepository uploadedFileRepository;
     private final ApplicationEventPublisher publisher;
     private final ProviderDefaultProperties providerDefaultProperties;
 
@@ -866,19 +868,33 @@ public class AdminGoodsDataService {
         return goodsDataRepository.findByGoodsDataNm(goodsDataNm);
     }
 
-    public void uploadMetaFile(int goodsDataNo) {
-        log.info("uploadMetaFile: {}", goodsDataNo);
+    public void uploadUnstructuredDataToVector(int goodsDataNo) {
+        log.info("uploadUnstructuredDataToVector: {}", goodsDataNo);
 
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo).orElseThrow(
                 () -> AppErrorException.of(
                         Error.RSC_NOT_FOUND, "goodsdata no: %d".formatted(goodsDataNo)));
 
-        String documentId = UUID.randomUUID().toString();
-
         goodsData.updateMetaDataUploadStatus(false);
-        goodsData.updateGoodsDataDistinguishId(documentId);
 
         publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
+    }
+
+    public void uploadUnstructuredDataToVectorByGoodsNo(int goodsNo) {
+        log.info("uploadUnstructuredDataToVectorByGoodsNo: {}", goodsNo);
+
+        List<GoodsData> goodsDataList = goodsDataRepository.findByGoods_GoodsNoAndIsDeletedFalse(goodsNo, Pageable.unpaged()).getContent();
+
+        for (GoodsData goodsData : goodsDataList) {
+            if (Boolean.FALSE.equals(goodsData.getIsMetaDataUploaded())) {
+                List<UploadedFile> files = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(
+                        goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode());
+
+                if (!files.isEmpty()) {
+                    publisher.publishEvent(new AXUploadFileEvent(goodsData.getGoodsDataNo(), false));
+                }
+            }
+        }
     }
 
 }
