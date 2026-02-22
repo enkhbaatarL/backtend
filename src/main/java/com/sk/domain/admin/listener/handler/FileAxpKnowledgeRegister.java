@@ -76,7 +76,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
 
         // 모두 수행이 끝나면 goodsData.updateMetaDataUploadStatus(true); 를 실행
         goodsData.updateMetaDataUploadStatus(true);
-        goodsDataRepository.save(goodsData)
+        goodsDataRepository.save(goodsData);
     }
 
     private void handleDeletedFiles(AXUploadFileEvent event, String datasourceId, List<UploadedFile> files, AXMetaRegisterReq registerReq) {
