@@ -22,6 +22,7 @@ import com.sk.domain.shared.enums.AxpKnowledgeRegisterComponentType;
 import com.sk.domain.shared.enums.CategorySeparateHighCd;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.service.FileService;
 import java.time.LocalDate;
 import java.util.Optional;
@@ -45,6 +46,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
     private final AxPlatformApi axPlatformApi;
     private final ObjectMapper objectMapper;
     private final GoodsDataExtensionRepository goodsDataExtensionRepository;
+    private final GoodsDataRepository goodsDataRepository;
     private final MiDataDetailService miDataDetailService;
 
     @Override
@@ -74,6 +76,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
 
         // 모두 수행이 끝나면 goodsData.updateMetaDataUploadStatus(true); 를 실행
         goodsData.updateMetaDataUploadStatus(true);
+        goodsDataRepository.save(goodsData)
     }
 
     private void handleDeletedFiles(AXUploadFileEvent event, String datasourceId, List<UploadedFile> files, AXMetaRegisterReq registerReq) {
