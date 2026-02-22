@@ -21,7 +21,7 @@ public class AXMetaRegisterReq {
         @JsonProperty("temp_file_path")
         String tempFilePath;
 
-        @JsonProperty("file_meta_data")
+        @JsonProperty("file_metadata")
         ObjectNode fileMetaData;
 
         @JsonProperty("knowledge_config")

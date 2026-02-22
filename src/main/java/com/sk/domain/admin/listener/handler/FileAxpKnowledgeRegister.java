@@ -84,11 +84,11 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
         Set<String> fileNamesToLookup = new HashSet<>();
         if (event.getDeletedFiles() != null) {
             for (UploadedFile deletedFile : event.getDeletedFiles()) {
-                fileNamesToLookup.add(deletedFile.getOriginalFileNm());
+                fileNamesToLookup.add(deletedFile.getStorageFileNm());
             }
         }
         for (UploadedFile uploadedFile : files) {
-            fileNamesToLookup.add(uploadedFile.getOriginalFileNm());
+            fileNamesToLookup.add(uploadedFile.getStorageFileNm());
         }
 
         for (String fileName : fileNamesToLookup) {

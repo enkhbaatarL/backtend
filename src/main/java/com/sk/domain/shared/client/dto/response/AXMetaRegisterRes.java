@@ -4,37 +4,38 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 // @formatter:off
 public record AXMetaRegisterRes(
-        @JsonProperty("project_id")    
+        @JsonProperty("project_id")
         String projectId,
 
-        @JsonProperty("name")          
+        @JsonProperty("name")
         String name,
 
-        @JsonProperty("type")          
+        @JsonProperty("type")
         String type,
 
-        @JsonProperty("created_by")    
+        @JsonProperty("created_by")
         String createdBy,
 
-        @JsonProperty("updated_by")    
+        @JsonProperty("updated_by")
         String updatedBy,
 
-        @JsonProperty("description")   
+        @JsonProperty("description")
         String description,
 
-        @JsonProperty("s3_config")   
+        @JsonProperty("s3_config")
         String s3Config,
 
-        @JsonProperty("is_deleted")    
+        @JsonProperty("is_deleted")
         boolean isDeleted,
 
-        @JsonProperty("scope")         
+        @JsonProperty("scope")
         String scope,
 
-        @JsonProperty("id")            
+        @JsonProperty("id")
         String id,
 
         @JsonProperty("created_at")
@@ -45,13 +46,13 @@ public record AXMetaRegisterRes(
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
         LocalDateTime updatedAt,
 
-        @JsonProperty("status")        
+        @JsonProperty("status")
         String status,
 
-        @JsonProperty("bucket_name")   
+        @JsonProperty("bucket_name")
         String bucketName,
 
-        @JsonProperty("files")         
+        @JsonProperty("files")
         List<FileDetail> files
     ){
 
@@ -69,10 +70,10 @@ public record AXMetaRegisterRes(
             long fileSize,
 
             @JsonProperty("file_metadata")
-            String fileMetadata,
+            ObjectNode fileMetadata,
 
             @JsonProperty("knowledge_config")
-            String knowledgeConfig,
+            ObjectNode knowledgeConfig,
 
             @JsonProperty("created_by")
             String createdBy,
@@ -97,7 +98,7 @@ public record AXMetaRegisterRes(
             @JsonProperty("s3_etag")
             String s3Etag
         ) {
-            
-        } 
+
+        }
 }
 // @formatter:on
