@@ -1159,6 +1159,11 @@ public class MiForecastService {
                 goodsDataSourceNo, false)
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
                 predictDetails, companyNo, goodsDataSourceNo, false, false);
+        results = limitListFor2015(companyNo, results);
+        if (companyNo == COMPANY_NO_2015) {
+            totalElements = Math.min(totalElements,
+                Integer.parseInt(FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015));
+        }
 
         Pageable pageable = PageRequest.of(page - 1, size);
         return PaginationRes.toRes(new PageImpl<>(results, pageable, totalElements));
@@ -1308,6 +1313,7 @@ public class MiForecastService {
                 goodsDataSourceNo, true)
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
                 predictDetails, companyNo, goodsDataSourceNo, true, false);
+        results = limitListFor2015(companyNo, results);
 
         return createForecastRecordExcel(companyNo, results);
     }
@@ -1947,6 +1953,14 @@ public class MiForecastService {
         return date.format(DateTimeFormatter.ofPattern("yyyy-MM"));
     }
 
+    private <T> List<T> limitListFor2015(int companyNo, List<T> source) {
+        if (companyNo != COMPANY_NO_2015 || source == null || source.isEmpty()) {
+            return source;
+        }
+        int limit = Integer.parseInt(FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015);
+        return source.subList(0, Math.min(limit, source.size()));
+    }
+
     private byte[] createForecastRecordExcel(int companyNo,
         List<ForecastRecordRes> records) throws IOException {
         List<ForecastRecordHeaderRes> headers = buildForecastRecordHeaders(companyNo);
@@ -2157,6 +2171,10 @@ public class MiForecastService {
         ForecastTableData tableData = buildForecastTableDataForSpecialCompany(customerCompanyNo,
             goodsDataSourceNo, startDate, endDate, order);
         List<List<Object>> rows = tableData.rows();
+        if (customerCompanyNo == COMPANY_NO_2015) {
+            int limit = Integer.parseInt(FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015);
+            rows = rows.subList(0, Math.min(limit, rows.size()));
+        }
         int totalElements = rows.size();
         Pageable pageable = PageRequest.of(page - 1, size);
         int fromIndex = Math.min((page - 1) * size, totalElements);
@@ -2182,6 +2200,10 @@ public class MiForecastService {
         ForecastTableData tableData = buildForecastTableDataForSpecialCompanyV2(customerCompanyNo,
             goodsDataSourceNo, startDate, endDate, order);
         List<List<Object>> rows = tableData.rows();
+        if (customerCompanyNo == COMPANY_NO_2015) {
+            int limit = Integer.parseInt(FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015);
+            rows = rows.subList(0, Math.min(limit, rows.size()));
+        }
         int totalElements = rows.size();
         Pageable pageable = PageRequest.of(page - 1, size);
         int fromIndex = Math.min((page - 1) * size, totalElements);
@@ -2209,6 +2231,7 @@ public class MiForecastService {
                 startDate, endDate, order)
             : buildForecastTableData(customerCompanyNo, goodsDataSourceNo, startDate, endDate,
                 order);
+        List<List<Object>> rowDataList = limitListFor2015(customerCompanyNo, tableData.rows());
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("forecast_table");
@@ -2220,7 +2243,7 @@ public class MiForecastService {
                 cell.setCellValue(tableData.headerList().get(col));
             }
 
-            for (List<Object> rowData : tableData.rows()) {
+            for (List<Object> rowData : rowDataList) {
                 Row row = sheet.createRow(rowIndex++);
                 for (int col = 0; col < rowData.size(); col++) {
                     Cell cell = row.createCell(col);
@@ -2249,6 +2272,7 @@ public class MiForecastService {
             startDate, endDate, order)
             : buildForecastTableData(customerCompanyNo, goodsDataSourceNo, startDate, endDate,
                 order);
+        List<List<Object>> rowDataList = limitListFor2015(customerCompanyNo, tableData.rows());
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("forecast_table");
@@ -2260,7 +2284,7 @@ public class MiForecastService {
                 cell.setCellValue(tableData.headerList().get(col));
             }
 
-            for (List<Object> rowData : tableData.rows()) {
+            for (List<Object> rowData : rowDataList) {
                 Row row = sheet.createRow(rowIndex++);
                 for (int col = 0; col < rowData.size(); col++) {
                     Cell cell = row.createCell(col);
