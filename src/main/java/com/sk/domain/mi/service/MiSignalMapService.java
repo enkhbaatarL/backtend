@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -33,6 +34,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MiSignalMapService {
     private static final int DATA_CACHE_TTL = 1; // todo: 캐시 유효기간 1시간 설정, 기본값: 3600
+    private static final int DEFAULT_SIGNAL_MAP_LIMIT = 20;
+    private static final int SPECIAL_COMPANY_NO = 2015;
+    private static final int SPECIAL_COMPANY_SIGNAL_MAP_LIMIT = 25;
+    private static final int SPECIAL_COMPANY_TOP_IMPACT_LIMIT = 150;
 
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final ChartPredictSettingDetailRepository chartPredictSettingDetailRepository;
@@ -78,6 +83,9 @@ public class MiSignalMapService {
      * @return List<ScreenCategoryDto>
      */
     public ScreenCategoryAndTopDto getSignalMap(int companyNo, String period, String filter) {
+        int signalMapLimit = companyNo == SPECIAL_COMPANY_NO
+                ? SPECIAL_COMPANY_SIGNAL_MAP_LIMIT
+                : DEFAULT_SIGNAL_MAP_LIMIT;
 
         // 캐시에서 데이터 조회
         String cacheKey = "signalMapData::companyNo:" + companyNo + "::period:" + period + "::filter:" + filter;
@@ -116,10 +124,9 @@ public class MiSignalMapService {
                                         proj.getCorrCalcVal(), null))
                                 .collect(Collectors.toList());
 
-                        // 20개 초과 시 잘라냄
-/*                        if (itemDtoList.size() > 20) {
-                            itemDtoList.subList(20, itemDtoList.size()).clear();
-                        }*/
+                        if (itemDtoList.size() > signalMapLimit) {
+                            itemDtoList.subList(signalMapLimit, itemDtoList.size()).clear();
+                        }
 
                         return new ScreenDetailCategoryDto(screenDetailCategoryName, itemDtoList);
                     })
@@ -148,13 +155,17 @@ public class MiSignalMapService {
                       });
             });
 
-        List<SignalMapDataDto> topImpactVariables = tempTopImpactVariables.stream()
+        Stream<SignalMapDataDto> topImpactVariableStream = tempTopImpactVariables.stream()
             .sorted(Comparator.comparing(
                     (SignalMapDataDto dto) -> dto.correlationCalculationVal().abs()
                 ).reversed()
-            )
-/*            .limit(20)*/
-            .toList();
+            );
+        int topImpactLimit = companyNo == SPECIAL_COMPANY_NO
+                ? SPECIAL_COMPANY_TOP_IMPACT_LIMIT
+                : DEFAULT_SIGNAL_MAP_LIMIT;
+        topImpactVariableStream = topImpactVariableStream.limit(topImpactLimit);
+
+        List<SignalMapDataDto> topImpactVariables = topImpactVariableStream.toList();
 
         ScreenCategoryAndTopDto screenCategoryAndTopDto = new ScreenCategoryAndTopDto(topImpactVariables, result);
 
