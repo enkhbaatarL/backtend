@@ -15,6 +15,8 @@ public record ForecastReportRes(
         @Schema(description = "연관상품데이터소스번호") Integer associatedGoodsDataSourceNo,
         @Schema(description = "예측결과종료일자") String endPredictionResultDt,
         @Schema(description = "예측결과시작일자") String startPredictionResultDt,
+        @Schema(description = "예측대상일자(표시용)") String predictionTargetDt,
+        @Schema(description = "예측대상기간(표시용)") String predictionTargetPeriod,
         @Schema(description = "예측기준일자") String predictionCriteriaDt,
         @Schema(description = "예측결과값") Double predictionResultVal,
         @Schema(description = "예측기준값") Double predictionCriteriaVal,
@@ -27,7 +29,8 @@ public record ForecastReportRes(
     @Builder
     public ForecastReportRes(String marketIndexAnalysisTargetCd, String predictionFulfillDt, String mnemonicCd,
             String predictChartDetailExpn, Integer associatedGoodsDataSourceNo, String endPredictionResultDt,
-            String startPredictionResultDt, String predictionCriteriaDt, Double predictionResultVal,
+            String startPredictionResultDt, String predictionTargetDt, String predictionTargetPeriod,
+            String predictionCriteriaDt, Double predictionResultVal,
             Double predictionCriteriaVal, Double predictionResultDiffVal, Double predictionResultDiffRate,
             Boolean isScheduled, Boolean isNew, List<PredictionResultPoint> predictionResultList) {
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
@@ -37,6 +40,8 @@ public record ForecastReportRes(
         this.associatedGoodsDataSourceNo = associatedGoodsDataSourceNo;
         this.endPredictionResultDt = endPredictionResultDt;
         this.startPredictionResultDt = startPredictionResultDt;
+        this.predictionTargetDt = predictionTargetDt;
+        this.predictionTargetPeriod = predictionTargetPeriod;
         this.predictionCriteriaDt = predictionCriteriaDt;
         this.predictionResultVal = predictionResultVal;
         this.predictionCriteriaVal = predictionCriteriaVal;

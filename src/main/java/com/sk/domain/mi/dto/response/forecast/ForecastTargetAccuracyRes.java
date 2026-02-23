@@ -9,8 +9,8 @@ import lombok.Builder;
 public record ForecastTargetAccuracyRes(
         @Schema(description = "누적 적중률(%)", example = "78.25") Double cumulativeHitRate,
         @Schema(description = "예측 차트 상세 설명") String predictChartDetailExpn,
-        @Schema(description = "누적 기준일(예측날짜중 가장 작은 값)", example = "24/01/01")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yy/MM/dd")
+        @Schema(description = "누적 기준일(예측날짜중 가장 작은 값)", example = "24-01-01")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yy-MM-dd")
         LocalDate asOfDate
 ) {
     @Builder
