@@ -49,11 +49,11 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
           AND (:minScore IS NULL OR ns.scre >= :minScore)
           AND (:filterBySentiment = FALSE OR (
                                      /* UPWARD: 3.0 <= score <= 10.0 */
-                                     ('upward' IN (:sentimentList) AND sn.scre >= 3.0 AND sn.scre <= 10.0)
+                                     ('upward' IN (:sentimentList) AND sn.scre >= 2.0 AND sn.scre <= 10.0)
                                   OR /* NEUTRAL: -3.0 < score < 3.0 */
-                                     ('neutral' IN (:sentimentList) AND sn.scre > -3.0 AND sn.scre < 3.0)
+                                     ('neutral' IN (:sentimentList) AND sn.scre > -2.0 AND sn.scre < 2.0)
                                   OR /* DOWNWARD: -10.0 <= score <= -3.0 */
-                                     ('downward' IN (:sentimentList) AND sn.scre >= -10.0 AND sn.scre <= -3.0)
+                                     ('downward' IN (:sentimentList) AND sn.scre >= -10.0 AND sn.scre <= -2.0)
                               ))
           AND (:filterByImpactScore = FALSE OR (
               ('HIGH' IN (:impactScoreList) AND ns.scre >= 9.0)
@@ -168,9 +168,9 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
               JOIN tmd_sgt_nws sn2 ON sn2.nws_sig_id = ns2.nws_sig_id
               WHERE ns2.nws_smry_id = nsum.nws_smry_id
                 AND (
-                    ('upward' IN (:sentiments) AND sn2.scre >= 3.0 AND sn2.scre <= 10.0)
-                    OR ('neutral' IN (:sentiments) AND sn2.scre > -3.0 AND sn2.scre < 3.0)
-                    OR ('downward' IN (:sentiments) AND sn2.scre >= -10.0 AND sn2.scre <= -3.0)
+                    ('upward' IN (:sentiments) AND sn2.scre >= 2.0 AND sn2.scre <= 10.0)
+                    OR ('neutral' IN (:sentiments) AND sn2.scre > -2.0 AND sn2.scre < 2.0)
+                    OR ('downward' IN (:sentiments) AND sn2.scre >= -10.0 AND sn2.scre <= -2.0)
                 )
           ))
           AND (:filterByRegion = FALSE OR EXISTS (
@@ -238,9 +238,9 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
               JOIN tmd_sgt_nws sn2 ON sn2.nws_sig_id = ns2.nws_sig_id
               WHERE ns2.nws_smry_id = nsum.nws_smry_id
                 AND (
-                    ('upward' IN (:sentiments) AND sn2.scre >= 3.0 AND sn2.scre <= 10.0)
-                    OR ('neutral' IN (:sentiments) AND sn2.scre > -3.0 AND sn2.scre < 3.0)
-                    OR ('downward' IN (:sentiments) AND sn2.scre >= -10.0 AND sn2.scre <= -3.0)
+                    ('upward' IN (:sentiments) AND sn2.scre >= 2.0 AND sn2.scre <= 10.0)
+                    OR ('neutral' IN (:sentiments) AND sn2.scre > -2.0 AND sn2.scre < 2.0)
+                    OR ('downward' IN (:sentiments) AND sn2.scre >= -10.0 AND sn2.scre <= -2.0)
                 )
           ))
           AND (:filterByRegion = FALSE OR EXISTS (

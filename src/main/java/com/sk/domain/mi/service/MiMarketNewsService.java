@@ -506,9 +506,9 @@ public class MiMarketNewsService {
         }
 
         // 2. 방향성 판단
-        if (score.compareTo(new BigDecimal("3.0")) >= 0) {
+        if (score.compareTo(new BigDecimal("2.0")) >= 0) {
             return "UPWARD";
-        } else if (score.compareTo(new BigDecimal("-3.0")) <= 0) {
+        } else if (score.compareTo(new BigDecimal("-2.0")) <= 0) {
             return "DOWNWARD";
         } else {
             return "NEUTRAL";
@@ -537,9 +537,9 @@ public class MiMarketNewsService {
         }
 
         // 2. 방향성 판단
-        if (score.compareTo(new BigDecimal("3.0")) >= 0) {
+        if (score.compareTo(new BigDecimal("2.0")) >= 0) {
             return "UPWARD";
-        } else if (score.compareTo(new BigDecimal("-3.0")) <= 0) {
+        } else if (score.compareTo(new BigDecimal("-2.0")) <= 0) {
             return "DOWNWARD";
         } else {
             return "NEUTRAL";
