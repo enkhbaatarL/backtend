@@ -5,6 +5,7 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
+import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.news.MarketNewsDetailRes;
 import com.sk.domain.mi.dto.response.news.MarketNewsListRes;
 import com.sk.domain.mi.dto.response.news.MarketRecapListRes;
@@ -232,15 +233,17 @@ public class MiMarketNewsController {
     @Parameter(name = "keyword", description = "검색 키워드 (선택사항)")
     @Parameter(name = "dateRangeOption", description = "날짜 범위 옵션", schema = @Schema(implementation = DateRangeOption.class))
     @Parameter(name = "recapCategories", description = "리캡 카테고리")
+    @Parameter(name = "companyNo", description = "고객사 번호", required = true)
     @Operation(
         summary = "마켓 리캡 목록 조회",
         description = "마켓 리캡 목록을 페이징하여 조회합니다. recapCategories 따라 HIGHLIGHT 또는 CHECKPOINT 아이템이 반환됩니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/recaps")
+    @GetMapping("/companies/{companyNo}/recaps")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<PaginationRes<MarketRecapListRes>> getMarketRecaps(
+        @PathVariable Integer companyNo,
         @RequestParam(value = "page", defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다") int page,
         @RequestParam(value = "size", defaultValue = "20") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다") int size,
         @RequestParam(value = "sort", defaultValue = "NEWEST") SortType sort,
@@ -249,13 +252,13 @@ public class MiMarketNewsController {
         @RequestParam(value = "recapCategories", required = false) String recapCategories
     ) {
 
-        log.debug("마켓 리캡 목록 조회 요청 - page: {}, size: {}, sort: {}, keyword: {}, dateRangeOption: {}, recapCategories: {}",
-            page, size, sort, keyword, dateRangeOption, recapCategories);
-
-        int companyNo = authorizationService.getCompanyNo();
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
+        log.debug("마켓 리캡 목록 조회 요청 - companyNo(path): {}, companyNo(applied): {}, page: {}, size: {}, sort: {}, keyword: {}, dateRangeOption: {}, recapCategories: {}",
+            companyNo, cNo, page, size, sort, keyword, dateRangeOption, recapCategories);
 
         return BaseResponseFactory.create(
-            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategories, companyNo)
+            miMarketNewsService.getMarketRecaps(page, size, sort, keyword, dateRangeOption, recapCategories, cNo)
         );
     }
 
