@@ -254,7 +254,7 @@ public class MiForecastService {
     }
 
     private List<ForecastChart> applyLineValueStrategy(List<ForecastChart> charts, LocalDate today,
-        AxisUnit axisUnit) {
+        AxisUnit axisUnit, int companyNo) {
         List<ForecastChart> masked = charts.stream()
             .map(chart -> {
                 ForecastChartLine actual = chart.actualChartLines();
@@ -271,6 +271,9 @@ public class MiForecastService {
                     maskedForecast);
             })
             .toList();
+        if (companyNo == COMPANY_NO_2015 && axisUnit == AxisUnit.ONE_YEAR) {
+            return masked;
+        }
         return applyQPlusCopy(masked, today, axisUnit);
     }
 
@@ -555,6 +558,165 @@ public class MiForecastService {
         return rangeStart;
     }
 
+    private List<ForecastChart> applyYearlyMaskFor2015QPlus(List<ForecastChart> charts,
+        int currentYear) {
+        if (charts == null || charts.isEmpty()) {
+            return charts;
+        }
+        Double fallbackPreviousYearActual = charts.stream()
+            .map(ForecastChart::actualChartLines)
+            .map(line -> findYearValue(line, currentYear - 1))
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+        return charts.stream()
+            .map(chart -> {
+                ForecastChartLine actual = maskYearlyActualUntilPreviousYear(
+                    chart.actualChartLines(), currentYear);
+                ForecastChartLine forecast = maskYearlyQPlusOnlyCurrentYear(
+                    chart.forecastChartLines(), currentYear);
+                Double previousYearActual = findYearValue(actual, currentYear - 1);
+                if (previousYearActual == null) {
+                    previousYearActual = fallbackPreviousYearActual;
+                }
+                ForecastChartLine copiedForecast = copyValueToYearForQPlus(
+                    forecast, currentYear - 1, previousYearActual);
+                return new ForecastChart(
+                    chart.chartName(),
+                    chart.chartLineDescription(),
+                    chart.chartLineType(),
+                    actual,
+                    copiedForecast);
+            })
+            .toList();
+    }
+
+    private ForecastChartLine maskYearlyActualUntilPreviousYear(ForecastChartLine line,
+        int currentYear) {
+        if (line == null || line.rawData() == null) {
+            return line;
+        }
+        List<ForecastChartRawData> masked = new ArrayList<>(line.rawData().size());
+        boolean changed = false;
+        for (ForecastChartRawData raw : line.rawData()) {
+            if (raw == null) {
+                masked.add(null);
+                continue;
+            }
+            LocalDate start = parseRangeStart(raw);
+            boolean keep = start != null && start.getYear() <= currentYear - 1;
+            if (keep) {
+                masked.add(raw);
+                continue;
+            }
+            changed = true;
+            masked.add(ForecastChartRawData.builder()
+                .resultDate(raw.resultDate())
+                .startDate(raw.startDate())
+                .predictDate(null)
+                .value(null)
+                .build());
+        }
+        if (!changed) {
+            return line;
+        }
+        return ForecastChartLine.of(
+            line.isPermitted(),
+            line.dataType(),
+            line.goodsDataSourceNo(),
+            masked,
+            line.dataExplanation());
+    }
+
+    private ForecastChartLine maskYearlyQPlusOnlyCurrentYear(ForecastChartLine line,
+        int currentYear) {
+        if (line == null || line.rawData() == null || (!isQPlus1Line(line) && !isQPlus2Line(line))) {
+            return line;
+        }
+        List<ForecastChartRawData> masked = new ArrayList<>(line.rawData().size());
+        boolean changed = false;
+        for (ForecastChartRawData raw : line.rawData()) {
+            if (raw == null) {
+                masked.add(null);
+                continue;
+            }
+            LocalDate start = parseRangeStart(raw);
+            boolean keep = start != null && start.getYear() == currentYear;
+            if (keep) {
+                masked.add(raw);
+                continue;
+            }
+            changed = true;
+            masked.add(ForecastChartRawData.builder()
+                .resultDate(raw.resultDate())
+                .startDate(raw.startDate())
+                .predictDate(null)
+                .value(null)
+                .build());
+        }
+        if (!changed) {
+            return line;
+        }
+        return ForecastChartLine.of(
+            line.isPermitted(),
+            line.dataType(),
+            line.goodsDataSourceNo(),
+            masked,
+            line.dataExplanation());
+    }
+
+    private Double findYearValue(ForecastChartLine line, int year) {
+        if (line == null || line.rawData() == null) {
+            return null;
+        }
+        for (ForecastChartRawData raw : line.rawData()) {
+            if (raw == null) {
+                continue;
+            }
+            LocalDate start = parseRangeStart(raw);
+            if (start != null && start.getYear() == year) {
+                return raw.value();
+            }
+        }
+        return null;
+    }
+
+    private ForecastChartLine copyValueToYearForQPlus(ForecastChartLine line, int year, Double value) {
+        if (line == null || line.rawData() == null || value == null
+            || (!isQPlus1Line(line) && !isQPlus2Line(line))) {
+            return line;
+        }
+        List<ForecastChartRawData> copied = new ArrayList<>(line.rawData().size());
+        boolean changed = false;
+        for (ForecastChartRawData raw : line.rawData()) {
+            if (raw == null) {
+                copied.add(null);
+                continue;
+            }
+            LocalDate start = parseRangeStart(raw);
+            if (start != null && start.getYear() == year) {
+                copied.add(ForecastChartRawData.builder()
+                    .resultDate(raw.resultDate())
+                    .startDate(raw.startDate())
+                    .predictDate(raw.predictDate())
+                    .value(value)
+                    .build());
+                changed = true;
+            } else {
+                copied.add(raw);
+            }
+        }
+        if (!changed) {
+            return line;
+        }
+        return ForecastChartLine.of(
+            line.isPermitted(),
+            line.dataType(),
+            line.goodsDataSourceNo(),
+            copied,
+            line.dataExplanation());
+    }
+
     private ForecastChartLine alignRawDataToDateList(ForecastChartLine line,
         List<ForecastChartRes.ForecastChartDateItem> dateList) {
         if (line == null || dateList == null || dateList.isEmpty()) {
@@ -732,8 +894,16 @@ public class MiForecastService {
                     Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
-        if (lineValueStrategy.isPastActualFuturePredict()) {
-            finalCharts = applyLineValueStrategy(finalCharts, maskingBaseDate, axisUnit);
+        boolean skipMaskingForYearlyQPlusAggregation =
+            lineValueStrategy.isPastActualFuturePredict()
+                && customerCompanyNo == COMPANY_NO_2015
+                && axisUnit == AxisUnit.ONE_YEAR;
+
+        if (lineValueStrategy.isPastActualFuturePredict() && !skipMaskingForYearlyQPlusAggregation) {
+            finalCharts = applyLineValueStrategy(finalCharts, maskingBaseDate, axisUnit,
+                customerCompanyNo);
+        } else if (skipMaskingForYearlyQPlusAggregation) {
+            finalCharts = applyYearlyMaskFor2015QPlus(finalCharts, LocalDate.now().getYear());
         }
 
         List<ForecastDataSource> dashboardDataSources = chartDataResults.stream()
@@ -3401,6 +3571,16 @@ public class MiForecastService {
                 if (isPredict && forecastCutoffStartDate != null) {
                     rawData = filterForecastRowsByCriteriaDate(rawData, forecastCutoffStartDate);
                 }
+                Integer qPlusQuarterDiff = resolveQPlusQuarterDiffForYearlyStrategy(
+                    customerCompanyNo,
+                    xAxisUnit,
+                    isPredict,
+                    forecastCutoffStartDate,
+                    chartPredictSettingDetail.getPredictChartDetailExpn());
+                if (qPlusQuarterDiff != null) {
+                    rawData = filterForecastRowsByQuarterDiff(rawData, dateColumnName,
+                        qPlusQuarterDiff);
+                }
                 String aggregationDateColumnName = resolveAggregationDateColumnName(
                     rawData,
                     isPredict ? predictAggregationDateColumnName : null,
@@ -3517,6 +3697,63 @@ public class MiForecastService {
                 LocalDate criteriaDate = DateUtil.parseDate(
                     row.get(MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME));
                 return criteriaDate != null && !criteriaDate.isBefore(cutoffStartDate);
+            })
+            .toList();
+    }
+
+    private Integer resolveQPlusQuarterDiffForYearlyStrategy(int companyNo, String xAxisUnit,
+        boolean isPredict, LocalDate cutoffStartDate, String explanation) {
+        if (companyNo != COMPANY_NO_2015
+            || !isPredict
+            || cutoffStartDate == null
+            || !AxisUnit.ONE_YEAR.label.equalsIgnoreCase(xAxisUnit)
+            || explanation == null) {
+            return null;
+        }
+        String normalized = explanation.trim();
+        if (FORECAST_Q_PLUS_1.equalsIgnoreCase(normalized)) {
+            return 1;
+        }
+        if (FORECAST_Q_PLUS_2.equalsIgnoreCase(normalized)) {
+            return 2;
+        }
+        return null;
+    }
+
+    private List<Map<String, Object>> filterForecastRowsByQuarterDiff(
+        List<Map<String, Object>> rawData, String fallbackResultDateColumnName, int quarterDiff) {
+        if (rawData == null || rawData.isEmpty()) {
+            return rawData;
+        }
+        Map<String, Object> firstRow = rawData.stream()
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+        if (firstRow == null) {
+            return rawData;
+        }
+        String resultDateColumnName = resolveExistingColumnKey(firstRow,
+            MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME);
+        if (resultDateColumnName == null && fallbackResultDateColumnName != null) {
+            resultDateColumnName = resolveExistingColumnKey(firstRow, fallbackResultDateColumnName);
+        }
+        String criteriaDateColumnName = resolveExistingColumnKey(firstRow,
+            MARKET_DATA_PREDICT_CRITERIA_DATE_COLUMN_NAME);
+        if (resultDateColumnName == null || criteriaDateColumnName == null) {
+            return rawData;
+        }
+
+        final String resultKey = resultDateColumnName;
+        final String criteriaKey = criteriaDateColumnName;
+        return rawData.stream()
+            .filter(Objects::nonNull)
+            .filter(row -> {
+                LocalDate resultDate = DateUtil.parseDate(row.get(resultKey));
+                LocalDate criteriaDate = DateUtil.parseDate(row.get(criteriaKey));
+                if (resultDate == null || criteriaDate == null) {
+                    return false;
+                }
+                return toQuarterIndex(resultDate) - toQuarterIndex(criteriaDate) == quarterDiff;
             })
             .toList();
     }
