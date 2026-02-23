@@ -9,6 +9,8 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
+import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
+import com.sk.domain.mi.dto.response.insights.ProviderCategoryRes;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataCache;
@@ -31,6 +33,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsData;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
+import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.MarketDataChartSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.DataSourceGroupMappingRepository;
@@ -96,6 +99,7 @@ public class MiMarketDataService {
     private final EntityManager entityManager;
     private final MiGoodsDataInquiryUserService miGoodsDataInquiryUserService;
     private final MarketDataChartSettingRepository marketDataChartSettingRepository;
+    private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final DataSourceGroupMappingRepository dataSourceGroupMappingRepository;
@@ -520,6 +524,12 @@ public class MiMarketDataService {
                     return rankA.compareTo(rankB);
                 })
             .collect(Collectors.toList());
+    }
+
+    public GoodsDataFilterRes getAdvancedFilter(int companyNo) {
+        List<ProviderCategoryRes> providers =
+            commonCodeDetailRepository.findMarketDataProviderTypeCategory(companyNo);
+        return GoodsDataFilterRes.of(Collections.emptyList(), providers, Collections.emptyList());
     }
 
     public Object getMarketDataCustom(Integer companyNo, String customId) {

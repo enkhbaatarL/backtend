@@ -6,6 +6,7 @@ import com.sk.common.enums.ResultCode.Success;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.RoleUtil;
+import com.sk.domain.mi.dto.response.insights.GoodsDataFilterRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -32,6 +33,22 @@ public class MiMarketDataController {
 
     private final AuthorizationService authorizationService;
     private final MiMarketDataService miMarketDataService;
+
+    @ApiOrder(2)
+    @Operation(summary = "Market Data 검색에서 사용할 고급필터", description = "Market Data 검색에서 사용할 providers 고급필터 데이타를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/advanced-filter")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<GoodsDataFilterRes> getAdvancedFilter(
+        @PathVariable("companyNo") Integer companyNo) {
+
+        Role role = authorizationService.getCurrentRole();
+        int cNo = RoleUtil.isAdmin(role) ? companyNo : authorizationService.getCompanyNo();
+
+        return BaseResponseFactory.create(miMarketDataService.getAdvancedFilter(cNo));
+    }
 
     @ApiOrder(3)
     @Operation(summary = "Recent Viewed 목록 조회", description = "Recent Viewed 목록을 조회합니다.")
