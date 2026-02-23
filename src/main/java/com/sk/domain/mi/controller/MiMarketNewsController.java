@@ -58,6 +58,7 @@ public class MiMarketNewsController {
     @Parameter(name = "startDate", description = "조회 시작일 (선택사항)")
     @Parameter(name = "endDate", description = "조회 종료일 (선택사항)")
     @Parameter(name = "categories", description = "카테고리 (선택사항)")
+    @Parameter(name = "sentiments", description = "방향성 (복수 선택 가능)")
     @Parameter(name = "regions", description = "지역 (선택사항)")
     @Parameter(name = "industries", description = "산업 (선택사항)")
     @Operation(
@@ -76,6 +77,7 @@ public class MiMarketNewsController {
         @RequestParam(value = "startDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate startDate,
         @RequestParam(value = "endDate", required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate endDate,
         @RequestParam(value = "categories", required = false) String categories,
+        @RequestParam(value = "sentiments", required = false) String sentiments,
         @RequestParam(value = "regions", required = false) String regions,
         @RequestParam(value = "industries", required = false) String industries
     ) {
@@ -84,7 +86,7 @@ public class MiMarketNewsController {
 
         return BaseResponseFactory.create(
             miMarketNewsService.getMarketNewsList(page, size, sort, keyword, startDate, endDate,
-                categories, regions, industries)
+                categories, sentiments, regions, industries)
         );
     }
 

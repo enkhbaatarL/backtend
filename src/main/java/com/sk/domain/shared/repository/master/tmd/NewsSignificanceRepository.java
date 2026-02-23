@@ -162,6 +162,17 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
               WHERE ns2.nws_smry_id = nsum.nws_smry_id
               AND ns2.nws_mrkt_ctgr_cd IN (:categories)
           ))
+          AND (:filterBySentiment = FALSE OR EXISTS (
+              SELECT 1
+              FROM tmd_nws_sig ns2
+              JOIN tmd_sgt_nws sn2 ON sn2.nws_sig_id = ns2.nws_sig_id
+              WHERE ns2.nws_smry_id = nsum.nws_smry_id
+                AND (
+                    ('upward' IN (:sentiments) AND sn2.scre >= 3.0 AND sn2.scre <= 10.0)
+                    OR ('neutral' IN (:sentiments) AND sn2.scre > -3.0 AND sn2.scre < 3.0)
+                    OR ('downward' IN (:sentiments) AND sn2.scre >= -10.0 AND sn2.scre <= -3.0)
+                )
+          ))
           AND (:filterByRegion = FALSE OR EXISTS (
               SELECT 1 FROM tmd_nws_rgn_cls nrc2
               WHERE nrc2.nws_smry_id = nsum.nws_smry_id
@@ -191,6 +202,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         @Param("endDateTime") LocalDateTime endDateTime,
         @Param("categories") List<String> categories,
         @Param("filterByCategory") boolean filterByCategory,
+        @Param("sentiments") List<String> sentiments,
+        @Param("filterBySentiment") boolean filterBySentiment,
         @Param("regions") List<String> regions,
         @Param("filterByRegion") boolean filterByRegion,
         @Param("industries") List<String> industries,
@@ -219,6 +232,17 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
               WHERE ns2.nws_smry_id = nsum.nws_smry_id
               AND ns2.nws_mrkt_ctgr_cd IN (:categories)
           ))
+          AND (:filterBySentiment = FALSE OR EXISTS (
+              SELECT 1
+              FROM tmd_nws_sig ns2
+              JOIN tmd_sgt_nws sn2 ON sn2.nws_sig_id = ns2.nws_sig_id
+              WHERE ns2.nws_smry_id = nsum.nws_smry_id
+                AND (
+                    ('upward' IN (:sentiments) AND sn2.scre >= 3.0 AND sn2.scre <= 10.0)
+                    OR ('neutral' IN (:sentiments) AND sn2.scre > -3.0 AND sn2.scre < 3.0)
+                    OR ('downward' IN (:sentiments) AND sn2.scre >= -10.0 AND sn2.scre <= -3.0)
+                )
+          ))
           AND (:filterByRegion = FALSE OR EXISTS (
               SELECT 1 FROM tmd_nws_rgn_cls nrc
               WHERE nrc.nws_smry_id = nsum.nws_smry_id
@@ -236,6 +260,8 @@ public interface NewsSignificanceRepository extends JpaRepository<NewsSignifican
         @Param("endDateTime") LocalDateTime endDateTime,
         @Param("categories") List<String> categories,
         @Param("filterByCategory") boolean filterByCategory,
+        @Param("sentiments") List<String> sentiments,
+        @Param("filterBySentiment") boolean filterBySentiment,
         @Param("regions") List<String> regions,
         @Param("filterByRegion") boolean filterByRegion,
         @Param("industries") List<String> industries,
