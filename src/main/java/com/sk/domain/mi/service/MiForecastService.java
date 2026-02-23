@@ -1699,13 +1699,13 @@ public class MiForecastService {
                                 DateUtil.toYmd(endOfSecond));
                         }
                     } else if (companyNo == 2015) {
-                        LocalDate second = DateUtil.parseDate(predictionResultDt2);
-                        if (second != null) {
-                            LocalDate endOfSecond =
-                                second.plusMonths(3).minusDays(1);
+                        LocalDate criteriaDate = DateUtil.parseDate(key.criteriaDt());
+                        if (criteriaDate != null) {
+                            LocalDate q2Start = quarterStart(criteriaDate).plusMonths(6);
+                            LocalDate q2End = q2Start.plusMonths(3).minusDays(1);
                             actualVal2 = getActualAverageValue(actualDetail,
-                                DateUtil.toYmd(second),
-                                DateUtil.toYmd(endOfSecond));
+                                DateUtil.toYmd(q2Start),
+                                DateUtil.toYmd(q2End));
                         }
                     }
                 }
@@ -2616,8 +2616,11 @@ public class MiForecastService {
                     values.add(null);
                     continue;
                 }
-                values.add(columnData.yearMonthValues()
-                    .get(toYearMonthKey(targetMonth)));
+                values.add(resolveSpecialTableValue(
+                    columnData.yearMonthValues(),
+                    targetMonth,
+                    column.shiftMonths(),
+                    isCompany2015));
             }
             rows.add(values);
         }
@@ -2817,8 +2820,11 @@ public class MiForecastService {
                     values.add(null);
                     continue;
                 }
-                values.add(columnData.yearMonthValues()
-                    .get(toYearMonthKey(targetMonth)));
+                values.add(resolveSpecialTableValue(
+                    columnData.yearMonthValues(),
+                    targetMonth,
+                    column.shiftMonths(),
+                    groupingUnit == PeriodUnitSeparateCd.Q));
             }
             rows.add(values);
         }
@@ -3126,6 +3132,40 @@ public class MiForecastService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private Double resolveSpecialTableValue(Map<String, Double> yearMonthValues,
+        YearMonth targetMonth, int shiftMonths, boolean quarterMode) {
+        if (yearMonthValues == null || targetMonth == null) {
+            return null;
+        }
+        if (!quarterMode || shiftMonths == 0) {
+            return yearMonthValues.get(toYearMonthKey(targetMonth));
+        }
+
+        YearMonth quarterStart = getQuarterStart(targetMonth);
+        List<Double> quarterValues = new ArrayList<>(3);
+        for (int i = 0; i < 3; i++) {
+            Double value = yearMonthValues.get(toYearMonthKey(quarterStart.plusMonths(i)));
+            if (value != null) {
+                quarterValues.add(value);
+            }
+        }
+
+        if (quarterValues.isEmpty()) {
+            return yearMonthValues.get(toYearMonthKey(targetMonth));
+        }
+
+        double average = quarterValues.stream()
+            .mapToDouble(Double::doubleValue)
+            .average()
+            .orElse(0.0);
+        return BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private YearMonth getQuarterStart(YearMonth yearMonth) {
+        int quarterStartMonth = ((yearMonth.getMonthValue() - 1) / 3) * 3 + 1;
+        return YearMonth.of(yearMonth.getYear(), quarterStartMonth);
     }
 
     private String getSpecialPagingKey(List<UiComponentSetting> settings) {
@@ -4670,6 +4710,14 @@ public class MiForecastService {
             return today;
         }
         return today.plus(periodCount * 3L, periodUnit.getTemporalUnit());
+    }
+
+    private LocalDate quarterStart(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        int startMonth = ((date.getMonthValue() - 1) / 3) * 3 + 1;
+        return LocalDate.of(date.getYear(), startMonth, 1);
     }
 
     private Double getActualAverageValue(GoodsDataSourceDetail actualDetail,
