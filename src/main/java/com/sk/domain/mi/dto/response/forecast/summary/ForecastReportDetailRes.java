@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.response.forecast.summary;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.Builder;
 
 @Schema(description = "Forecast report 상세 응답")
@@ -12,6 +13,8 @@ public record ForecastReportDetailRes(
         @Schema(description = "연관상품데이터소스번호") Integer associatedGoodsDataSourceNo,
         @Schema(description = "예측결과종료일자") String endPredictionResultDt,
         @Schema(description = "예측결과시작일자") String startPredictionResultDt,
+        @Schema(description = "예측대상일자(표시용)") String predictionTargetDt,
+        @Schema(description = "예측대상기간(표시용)") String predictionTargetPeriod,
         @Schema(description = "예측기준일자") String predictionCriteriaDt,
         @Schema(description = "예측결과값(평균)") Double avgPredictionResultVal,
         @Schema(description = "예측결과값(최소값)") Double minPredictionResultVal,
@@ -19,6 +22,7 @@ public record ForecastReportDetailRes(
         @Schema(description = "예측기준값") Double predictionCriteriaVal,
         @Schema(description = "예측결과값-예측기준값") Double predictionResultDiffVal,
         @Schema(description = "(예측결과값-예측기준값)/예측기준값(%)") Double predictionResultDiffRate,
+        @Schema(description = "가격 범위값(표시용)") List<String> priceRangeVal,
         @Schema(description = "정기예측여부") Boolean isScheduled,
         @Schema(description = "설명력제목내용") String explanatoryTitleContent,
         @Schema(description = "설명력요약내용") String explanatorySummaryContent,
@@ -27,9 +31,11 @@ public record ForecastReportDetailRes(
     @Builder
     public ForecastReportDetailRes(String marketIndexAnalysisTargetCd, String predictionFulfillDt, String mnemonicCd,
             String predictChartDetailExpn, Integer associatedGoodsDataSourceNo, String endPredictionResultDt,
-            String startPredictionResultDt, String predictionCriteriaDt, Double avgPredictionResultVal,
+            String startPredictionResultDt, String predictionTargetDt, String predictionTargetPeriod,
+            String predictionCriteriaDt, Double avgPredictionResultVal,
             Double minPredictionResultVal, Double maxPredictionResultVal,
             Double predictionCriteriaVal, Double predictionResultDiffVal, Double predictionResultDiffRate,
+            List<String> priceRangeVal,
             Boolean isScheduled, String explanatoryTitleContent, String explanatorySummaryContent, String explanatoryFilePath) {
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
         this.predictionFulfillDt = predictionFulfillDt;
@@ -38,6 +44,8 @@ public record ForecastReportDetailRes(
         this.associatedGoodsDataSourceNo = associatedGoodsDataSourceNo;
         this.endPredictionResultDt = endPredictionResultDt;
         this.startPredictionResultDt = startPredictionResultDt;
+        this.predictionTargetDt = predictionTargetDt;
+        this.predictionTargetPeriod = predictionTargetPeriod;
         this.predictionCriteriaDt = predictionCriteriaDt;
         this.avgPredictionResultVal = avgPredictionResultVal;
         this.minPredictionResultVal = minPredictionResultVal;
@@ -45,6 +53,7 @@ public record ForecastReportDetailRes(
         this.predictionCriteriaVal = predictionCriteriaVal;
         this.predictionResultDiffVal = predictionResultDiffVal;
         this.predictionResultDiffRate = predictionResultDiffRate;
+        this.priceRangeVal = priceRangeVal;
         this.isScheduled = isScheduled;
         this.explanatoryTitleContent = explanatoryTitleContent;
         this.explanatorySummaryContent = explanatorySummaryContent;
