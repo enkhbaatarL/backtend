@@ -184,6 +184,7 @@ public class MiMarketNewsService {
         LocalDate startDate,
         LocalDate endDate,
         String categories,
+        String sentiments,
         String regions,
         String industries) {
 
@@ -204,6 +205,11 @@ public class MiMarketNewsService {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList() : null;
+        List<String> sentimentList =
+            (sentiments != null && !sentiments.isBlank()) ? Arrays.stream(sentiments.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList() : null;
         List<String> industryList =
             (industries != null && !industries.isBlank()) ? Arrays.stream(industries.split(","))
                 .map(String::trim)
@@ -211,12 +217,14 @@ public class MiMarketNewsService {
                 .toList() : null;
 
         boolean filterByCategory = categories != null && !categoryList.isEmpty();
+        boolean filterBySentiment = sentimentList != null && !sentimentList.isEmpty();
         boolean filterByRegion = regionList != null && !regionList.isEmpty();
         boolean filterByIndustry = industries != null && !industryList.isEmpty();
 
         List<Object[]> results = newsSignificanceRepository.findMarketNewsListWithGroupConcat(
             keyword, startDateTime, endDateTime,
             filterByCategory ? categoryList : null, filterByCategory,
+            filterBySentiment ? sentimentList : null, filterBySentiment,
             filterByRegion ? regionList : null, filterByRegion,
             filterByIndustry ? industryList : null, filterByIndustry,
             sortDirection, size, offset);
@@ -224,6 +232,7 @@ public class MiMarketNewsService {
         long totalCount = newsSignificanceRepository.countMarketNewsList(
             keyword, startDateTime, endDateTime,
             filterByCategory ? categoryList : null, filterByCategory,
+            filterBySentiment ? sentimentList : null, filterBySentiment,
             filterByRegion ? regionList : null, filterByRegion,
             filterByIndustry ? industryList : null, filterByIndustry);
 

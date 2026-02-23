@@ -1,20 +1,9 @@
 package com.sk.domain.mi.service;
 
-import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryAndTopDto;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryAndTopDto;
 import com.sk.domain.mi.dto.response.signalMap.ScreenCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.ScreenDetailCategoryDto;
 import com.sk.domain.mi.dto.response.signalMap.SignalMapDataCache;
@@ -26,9 +15,17 @@ import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
 import com.sk.domain.shared.repository.master.tmm.CorrelationAnalysisResultRepository;
-
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -120,9 +117,9 @@ public class MiSignalMapService {
                                 .collect(Collectors.toList());
 
                         // 20개 초과 시 잘라냄
-                        if (itemDtoList.size() > 20) {
+/*                        if (itemDtoList.size() > 20) {
                             itemDtoList.subList(20, itemDtoList.size()).clear();
-                        }
+                        }*/
 
                         return new ScreenDetailCategoryDto(screenDetailCategoryName, itemDtoList);
                     })
@@ -156,7 +153,7 @@ public class MiSignalMapService {
                     (SignalMapDataDto dto) -> dto.correlationCalculationVal().abs()
                 ).reversed()
             )
-            .limit(20)
+/*            .limit(20)*/
             .toList();
 
         ScreenCategoryAndTopDto screenCategoryAndTopDto = new ScreenCategoryAndTopDto(topImpactVariables, result);

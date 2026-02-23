@@ -16,7 +16,7 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             ccd.id.codeId,
             ccd.codeNm,
             ccd.codeExpn,
-            ccpm.isDefaultUnstructured
+            false
             )
             FROM CommonCodeDetail ccd
             JOIN Provider p ON CONCAT('A_', p.providerId) = ccd.id.codeId
@@ -36,6 +36,45 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             ORDER BY ccd.codeRnk
             """)
     List<ProviderCategoryRes> findProviderTypeCategory(@Param("companyNo") int companyNo);
+
+    @Query(value = """
+            SELECT new com.sk.domain.mi.dto.response.insights.ProviderCategoryRes(
+            ccd.id.codeId,
+            ccd.codeNm,
+            ccd.codeExpn,
+            false
+            )
+            FROM CommonCodeDetail ccd
+            JOIN Provider p ON CONCAT('A_', p.providerId) = ccd.id.codeId
+            JOIN CustomerCompanyProviderMapping ccpm ON ccpm.provider.providerNo = p.providerNo
+            WHERE ccd.isDeleted = false
+                AND ccd.isUsed = true
+                AND ccd.useBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND ccd.useEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+                AND ccd.id.codeGroupId = 'gds_data_ctgr_cd'
+                AND ccd.highCodeId = 'A_PROVIDERS'
+                AND ccpm.customerCompany.customerCompanyNo = :companyNo
+                AND p.isUsed = true
+                AND p.isDeleted = false
+                AND ccpm.isUsed = true
+                AND ccpm.isDeleted = false
+                AND EXISTS (
+                    SELECT 1
+                    FROM CustomerCompanyGoodsMapping ccgm
+                    JOIN GoodsData gd ON gd.goods.goodsNo = ccgm.goods.goodsNo
+                    JOIN GoodsDataSourceDetail gdsd ON gdsd.goodsData.goodsDataNo = gd.goodsDataNo
+                    WHERE ccgm.customerCompany.customerCompanyNo = :companyNo
+                        AND ccgm.goods.provider.providerNo = p.providerNo
+                        AND ccgm.isUsed = true
+                        AND ccgm.isDeleted = false
+                        AND gd.isDeleted = false
+                        AND gd.isGoodsDataMarked = true
+                        AND gdsd.isDeleted = false
+                        AND gdsd.goodsDataUseManagementCd = 'backend'
+                )
+            ORDER BY ccd.codeRnk
+            """)
+    List<ProviderCategoryRes> findMarketDataProviderTypeCategory(@Param("companyNo") int companyNo);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataCategoryRes(

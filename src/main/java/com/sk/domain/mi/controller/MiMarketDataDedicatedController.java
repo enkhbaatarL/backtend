@@ -7,7 +7,6 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.mi.dto.response.marketData.DataCatalogRes;
-import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.mi.dto.response.marketData.charts.MiMarketDataRes;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -19,10 +18,13 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "03. 시장 데이터 API", description = "시장 데이터 API 입니다.")
 @RestController
