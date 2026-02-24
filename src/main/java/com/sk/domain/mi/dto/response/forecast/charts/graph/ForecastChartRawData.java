@@ -1,7 +1,7 @@
 package com.sk.domain.mi.dto.response.forecast.charts.graph;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.sk.common.converter.DoubleTwoScaleSerializer;
+import com.sk.common.converter.ForecastChartValueScaleSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -10,7 +10,7 @@ public record ForecastChartRawData(
         @Schema(description = "결과 기간 시작일자(yyyyMMdd)", example = "20240501") String startDate,
         @Schema(description = "예측 수행 일자(yyyyMMdd)", example = "20240501") String predictDate,
         @Schema(description = "기간 평균 데이터 값", example = "123.45")
-        @JsonSerialize(using = DoubleTwoScaleSerializer.class)
+        @JsonSerialize(using = ForecastChartValueScaleSerializer.class)
         Double value) {
     @Builder
     public ForecastChartRawData(String resultDate, String startDate, String predictDate,
