@@ -17,7 +17,8 @@ public interface ForecastMapper {
      * @param predictDate 예측 날짜
      * @return List<String>
      */
-    List<String> chartFactorCategory(String queryWhere, String predictDate, String date);
+    List<String> chartFactorCategory(String queryWhere, String predictDate, String startDate,
+        String endDate);
 
     /**
      * 차트 주요 요인 분석 조회(Drill Down #2)
@@ -25,11 +26,14 @@ public interface ForecastMapper {
      * @param queryWhere 조회 조건
      * @param explanatoryLevelNm 주요 요인 레벨명
      * @param predictDate 예측 날짜
+     * @param startDate 예측결과 시작일자
+     * @param endDate 예측결과 종료일자
      * @param direction 방향
      * @param limit 제한 개수
      * @return List<DashboardChartFactorMap>
      */
-    List<ForecastChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm, String predictDate, String date, String direction, int limit);
+    List<ForecastChartFactorMap> chartFactors(String queryWhere, String explanatoryLevelNm,
+        String predictDate, String startDate, String endDate, String direction, int limit);
 
     /**
      * 차트 주요 요인 분석 설명력 조회(Drill Down #2)

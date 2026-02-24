@@ -47,6 +47,9 @@
           FROM tmm_bztgtprdcexppinfom tb
          WHERE ${queryWhere}
            AND tb.prdc_fulf_dt = #{predictDate}
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+           AND tb.prdc_rslt_dt BETWEEN #{startDate} AND #{endDate}
+        </if>
            AND tb.del_yn = 'N'
          ORDER BY tb.expp_lvl_nm
     </select>
@@ -106,7 +109,12 @@
                   and a.del_yn = 'N'
                   and a.expp_scre != 0
                   and a.expp_dir_symb_nm != '0'
+                <if test="predictDate != null and predictDate != ''">
                   and a.prdc_fulf_dt = #{predictDate}
+                </if>
+                <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+                  and a.prdc_rslt_dt BETWEEN #{startDate} AND #{endDate}
+                </if>
                 ) OA
                 GROUP BY OA.mrkt_idx_anly_tgt_cd, OA.mnmnc_cd, OA.prdc_fulf_dt, OA.prdc_rslt_ym, OA.prdc_inpt_mnmnc_cd
           ) OOA
@@ -129,7 +137,9 @@
            AND tb.del_yn = 'N'
            AND tb.expp_lvl_nm = expp_lvl_dtl_nm
            AND tb.expp_lvl_nm = #{explanatoryLevelNm}
+        <if test="predictDate != null and predictDate != ''">
            AND tb.prdc_fulf_dt = #{predictDate}
+        </if>
          LIMIT 1
     </select>
     <select id="chartFactorGraphExplanatory" resultMap="dashboardChartFactorExplanatoryMap">

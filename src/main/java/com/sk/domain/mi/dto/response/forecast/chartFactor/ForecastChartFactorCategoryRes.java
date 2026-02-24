@@ -13,11 +13,14 @@ public record ForecastChartFactorCategoryRes(
     @Schema(description = "연관상품데이터소스번호") Integer associatedGoodsDataSourceNo,
     @Schema(description = "예측결과종료일자") String endPredictionResultDt,
     @Schema(description = "예측결과시작일자") String startPredictionResultDt,
+    @Schema(description = "예측대상일자(표시용)") String predictionTargetDt,
+    @Schema(description = "예측대상기간(표시용)") String predictionTargetPeriod,
     @Schema(description = "예측기준일자") String predictionCriteriaDt,
     @Schema(description = "예측결과값(평균)") Double avgPredictionResultVal,
     @Schema(description = "예측기준값") Double predictionCriteriaVal,
     @Schema(description = "예측결과값-예측기준값") Double predictionResultDiffVal,
     @Schema(description = "(예측결과값-예측기준값)/예측기준값(%)") Double predictionResultDiffRate,
+    @Schema(description = "가격 범위값(표시용)") List<String> priceRangeVal,
     @Schema(description = "정기예측여부") Boolean isScheduled
 ) {
     @Builder
@@ -29,11 +32,14 @@ public record ForecastChartFactorCategoryRes(
         Integer associatedGoodsDataSourceNo,
         String endPredictionResultDt,
         String startPredictionResultDt,
+        String predictionTargetDt,
+        String predictionTargetPeriod,
         String predictionCriteriaDt,
         Double avgPredictionResultVal,
         Double predictionCriteriaVal,
         Double predictionResultDiffVal,
         Double predictionResultDiffRate,
+        List<String> priceRangeVal,
         Boolean isScheduled) {
         this.explanatoryLevelNms = explanatoryLevelNms;
         this.marketIndexAnalysisTargetCd = marketIndexAnalysisTargetCd;
@@ -43,11 +49,14 @@ public record ForecastChartFactorCategoryRes(
         this.associatedGoodsDataSourceNo = associatedGoodsDataSourceNo;
         this.endPredictionResultDt = endPredictionResultDt;
         this.startPredictionResultDt = startPredictionResultDt;
+        this.predictionTargetDt = predictionTargetDt;
+        this.predictionTargetPeriod = predictionTargetPeriod;
         this.predictionCriteriaDt = predictionCriteriaDt;
         this.avgPredictionResultVal = avgPredictionResultVal;
         this.predictionCriteriaVal = predictionCriteriaVal;
         this.predictionResultDiffVal = predictionResultDiffVal;
         this.predictionResultDiffRate = predictionResultDiffRate;
+        this.priceRangeVal = priceRangeVal;
         this.isScheduled = isScheduled;
     }
 

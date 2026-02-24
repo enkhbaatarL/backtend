@@ -9,6 +9,7 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartFactorGraphRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastChartRes;
 import com.sk.domain.mi.dto.response.forecast.ForecastInfoRes;
+import com.sk.domain.mi.dto.response.forecast.chartFactor.ForecastChartFactorCategoryRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastRecordRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
@@ -248,6 +249,27 @@ public class MiForecastDedicatedController {
     }
 
     @ApiOrder(9)
+    @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
+    @Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "4158")
+    @Parameter(name = "predictDate", description = "예측 날짜", example = "20250825")
+    @Parameter(name = "startDate", description = "조회 시작일자(YYYYMMDD, 선택)", example = "20250901")
+    @Operation(summary = "Forecast 차트 주요 요인 분석 카테고리 조회",
+        description = "Forecast 차트 주요 요인 분석 카테고리를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/companies/{companyNo}/chart/factor/category")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<ForecastChartFactorCategoryRes> getChartFactorCategory(
+        @PathVariable Integer companyNo,
+        @RequestParam(value = "goodsDataSourceNo") int goodsDataSourceNo,
+        @RequestParam(value = "predictDate") String predictDate,
+        @RequestParam(value = "startDate", required = false) String startDate) {
+        return BaseResponseFactory.create(
+            miForecastService.getChartFactorCategory(companyNo, goodsDataSourceNo, predictDate,
+                startDate));
+    }
+
+    @ApiOrder(10)
     @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
     @Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "4158")
     @Parameter(name = "predictDate", description = "예측 날짜", example = "20250825")
