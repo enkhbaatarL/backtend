@@ -114,7 +114,7 @@ public class MiForecastService {
 
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1";
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
-    private static final String FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015 = "20";
+    private static final String FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015 = "3";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1;
     private static final String FORECAST_Q_PLUS_1 = "Forecast Q+1";
@@ -5539,14 +5539,29 @@ public class MiForecastService {
             && predictionCriteriaVal != null) {
             Double criteriaVal = toScaledDouble(predictionCriteriaVal);
             if (criteriaVal != null) {
+                String criteriaPointDate =
+                    toQuarterEndMonthFirstDay(predictionCriteriaDt);
                 points.add(0, ForecastReportRes.PredictionResultPoint.builder()
-                    .predictionResultDt(predictionCriteriaDt)
+                    .predictionResultDt(criteriaPointDate != null
+                        ? criteriaPointDate : predictionCriteriaDt)
                     .predictionResultVal(criteriaVal)
                     .build());
             }
         }
 
         return points;
+    }
+
+    private String toQuarterEndMonthFirstDay(String ymd) {
+        LocalDate criteriaDate = DateUtil.parseDate(ymd);
+        if (criteriaDate == null) {
+            return null;
+        }
+
+        int quarterEndMonth = ((criteriaDate.getMonthValue() - 1) / 3) * 3 + 3;
+        LocalDate quarterEndMonthFirstDay = LocalDate.of(criteriaDate.getYear(),
+            quarterEndMonth, 1);
+        return DateUtil.toYmd(quarterEndMonthFirstDay);
     }
 
     private String buildPredictionTargetDt(String startPredictionResultDt,
