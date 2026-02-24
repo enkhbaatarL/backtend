@@ -909,7 +909,7 @@ public class MiMarketNewsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         // 몇 시 기준으로 날짜를 변경할지는 DB 조회로 변경예정
-        LocalTime cutoff = LocalTime.of(10, 0);
+        LocalTime cutoff = LocalTime.of(9, 0);
         DayOfWeek dayOfWeek = today.getDayOfWeek();
 
         LocalDate criteriaDate;
@@ -947,14 +947,14 @@ public class MiMarketNewsService {
             case MONDAY -> referenceDate;
             default -> referenceDate;
         };
-        return monday.atTime(10, 0);
+        return monday.atTime(9, 0);
     }
 
     private LocalDateTime getNextUpdateAfterCutoff(LocalDate today) {
         if (today.getDayOfWeek() == DayOfWeek.FRIDAY) {
-            return today.plusDays(3).atTime(10, 0);
+            return today.plusDays(3).atTime(9, 0);
         }
-        return today.plusDays(1).atTime(10, 0);
+        return today.plusDays(1).atTime(9, 0);
     }
 
     private String buildCriteriaItemName(String categoryCode) {
