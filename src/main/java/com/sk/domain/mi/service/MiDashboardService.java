@@ -1,54 +1,7 @@
 package com.sk.domain.mi.service;
 
-import com.sk.domain.admin.dto.response.file.FileDownloadRes;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.sk.common.config.database.DataSourceContextHolder;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.ss.util.RegionUtil;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.CombineUtil;
@@ -56,6 +9,7 @@ import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataDetailReq;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
+import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.dto.response.dashboard.DashboardChartFactorGraphDatasource;
@@ -101,16 +55,69 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-
 import jakarta.persistence.EntityNotFoundException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.RegionUtil;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MiDashboardService {
+    // TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
+    // private static final int DASHBOARD_CHART_CACHE_TTL = 3600; // 대시보드 차트 캐시 유효 기간 (1시간)
+    private static final int DASHBOARD_CHART_CACHE_TTL = 1; // 대시보드 차트 캐시 유효 기간 (1초)
+    private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0; // 예측 결과 날짜 컬럼 인덱스
+    private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
+    private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
+    private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
+    private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
+    private static final String DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT = "Unit"; // 차트 데이터 테이블 헤더 단위 컬럼명
+    private static final String EXCEL_SHEET_NAME = "dashboard_chart";
     private final GoodsDataRepository goodsDataRepository;
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
@@ -120,31 +127,46 @@ public class MiDashboardService {
     private final DashboardMapper dashboardMapper;
     private final FileService fileService;
     private final AuthorizationService authorizationService;
-
     private final int CHART_EXPLANATORY_TOP_RANK_LIMIT = 5;
     private final String CHART_EXPLANATORY_PLUS_DIRECTION = "+";
     private final String CHART_EXPLANATORY_MINUS_DIRECTION = "-";
-
     private final String DASHBOARD_CHART_CACHE_KEY = "dashboard_chart:%d_based_on_date:%s";
-    // TODO: 캐시 유효 기간 수정 필요(테스트를 위해 임시로 1초로 설정)
-    // private static final int DASHBOARD_CHART_CACHE_TTL = 3600; // 대시보드 차트 캐시 유효 기간 (1시간)
-    private static final int DASHBOARD_CHART_CACHE_TTL = 1; // 대시보드 차트 캐시 유효 기간 (1초)
-
     private final int DASHBOARD_CHART_START_DATE_FROM_MONTH = 11; // 차트 데이터 조회 기준 날짜 (N달 전)
-    private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0; // 예측 결과 날짜 컬럼 인덱스
-    private static final int MARKET_DATA_DATE_COLUMN_INDEX = 0; // 날짜 컬럼 인덱스
-    private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1; // 그래프에 그려줄 기본 데이터 컬럼 인덱스
-    private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1"; // 마지막 Update Date 조회 하기 위한 LIMIT
-    private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
-    private static final String DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT = "Unit"; // 차트 데이터 테이블 헤더 단위 컬럼명
-
-    private static final String EXCEL_SHEET_NAME = "dashboard_chart";
-
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
     @Value("#{'${server.insight.latest.except-provider-no}'.split(',')}")
     private List<Integer> exceptProviderNoList;
 
-    private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper;
+    private static int getWeekOfMonth(LocalDate date) {
+        // 1. 해당 월의 1일
+        LocalDate firstDayOfMonth = date.withDayOfMonth(1);
+
+        // 2. 1일이 속한 주의 월요일
+        LocalDate firstWeekMonday =
+            firstDayOfMonth.with(DayOfWeek.MONDAY);
+
+        // 3. 해당 주에 목요일이 있는지 확인
+        LocalDate firstWeekThursday =
+            firstWeekMonday.with(DayOfWeek.THURSDAY);
+
+        // 4. 월 1주차 시작 주 결정
+        LocalDate firstWeekStart;
+        if (firstWeekThursday.getMonth() == firstDayOfMonth.getMonth()) {
+            // 목요일이 같은 달 → 이 주가 1주차
+            firstWeekStart = firstWeekMonday;
+        } else {
+            // 아니면 다음 주가 1주차
+            firstWeekStart = firstWeekMonday.plusWeeks(1);
+        }
+
+        // 5. 대상 날짜가 속한 주의 월요일
+        LocalDate targetWeekMonday =
+            date.with(DayOfWeek.MONDAY);
+
+        // 6. 주차 계산
+        return (int) ChronoUnit.WEEKS
+            .between(firstWeekStart, targetWeekMonday) + 1;
+    }
 
     /**
      * 데이터 존재 여부 조회
@@ -677,10 +699,7 @@ public class MiDashboardService {
                         default -> endDate.with(TemporalAdjusters.lastDayOfMonth());
                     };
 
-                    LocalDate startDate = endDate.minus(
-                        DASHBOARD_CHART_START_DATE_FROM_MONTH,
-                        chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit()
-                    );
+                    LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH);
 
                     startDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
                         case W -> startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -795,6 +814,10 @@ public class MiDashboardService {
             yield startDate.plusDays(diff);
           }
           case D -> startDate;
+          case Q -> {
+            int startMonth = ((startDate.getMonthValue() - 1) / 3) * 3 + 1;
+            yield LocalDate.of(startDate.getYear(), startMonth, 1);
+          }
           default -> startDate.withDayOfMonth(1); // 월의 첫 번째 날
         };
 
@@ -803,6 +826,7 @@ public class MiDashboardService {
           current = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
             case W -> current.plusWeeks(1);
             case D -> current.plusDays(1);
+            case Q -> current.plusMonths(3).withDayOfMonth(1);
             default -> current.plusMonths(1).withDayOfMonth(1);
           };
         }
@@ -837,6 +861,10 @@ public class MiDashboardService {
                   yield DateUtil.toYmdHyphen(localDate.plusDays(diff));
                 }
                 case D -> DateUtil.toYmdHyphen(localDate);
+                case Q -> {
+                    int startMonth = ((localDate.getMonthValue() - 1) / 3) * 3 + 1;
+                    yield DateUtil.toYmdHyphen(LocalDate.of(localDate.getYear(), startMonth, 1));
+                }
                 default -> DateUtil.toYyyyMm(localDate);
             };
 
@@ -886,6 +914,10 @@ public class MiDashboardService {
                     yield DateUtil.toYmdHyphen(periodDate.plusDays(diff));
                 }
                 case D -> DateUtil.toYmdHyphen(periodDate);
+                case Q -> {
+                    int startMonth = ((periodDate.getMonthValue() - 1) / 3) * 3 + 1;
+                    yield DateUtil.toYmdHyphen(LocalDate.of(periodDate.getYear(), startMonth, 1));
+                }
                 default -> periodDate.format(yyyyMMFormatter);
             };
             List<Double> values = periodValues.getOrDefault(periodStr, Collections.emptyList());
@@ -1215,10 +1247,7 @@ public class MiDashboardService {
             default -> endDate.with(TemporalAdjusters.lastDayOfMonth());
         };
 
-        LocalDate startDate = endDate.minus(
-            DASHBOARD_CHART_START_DATE_FROM_MONTH,
-            chartPredictSetting.getPredictPeriodUnitSeparateCd().getTemporalUnit()
-        );
+        LocalDate startDate = endDate.minusMonths(DASHBOARD_CHART_START_DATE_FROM_MONTH);
 
         startDate = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
             case W -> startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -1448,37 +1477,6 @@ public class MiDashboardService {
         } catch (IOException e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, String.format("엑셀 파일 생성 실패 : %s", e.getMessage()));
         }
-    }
-
-    private static int getWeekOfMonth(LocalDate date) {
-        // 1. 해당 월의 1일
-        LocalDate firstDayOfMonth = date.withDayOfMonth(1);
-
-        // 2. 1일이 속한 주의 월요일
-        LocalDate firstWeekMonday =
-            firstDayOfMonth.with(DayOfWeek.MONDAY);
-
-        // 3. 해당 주에 목요일이 있는지 확인
-        LocalDate firstWeekThursday =
-            firstWeekMonday.with(DayOfWeek.THURSDAY);
-
-        // 4. 월 1주차 시작 주 결정
-        LocalDate firstWeekStart;
-        if (firstWeekThursday.getMonth() == firstDayOfMonth.getMonth()) {
-            // 목요일이 같은 달 → 이 주가 1주차
-            firstWeekStart = firstWeekMonday;
-        } else {
-            // 아니면 다음 주가 1주차
-            firstWeekStart = firstWeekMonday.plusWeeks(1);
-        }
-
-        // 5. 대상 날짜가 속한 주의 월요일
-        LocalDate targetWeekMonday =
-            date.with(DayOfWeek.MONDAY);
-
-        // 6. 주차 계산
-        return (int) ChronoUnit.WEEKS
-            .between(firstWeekStart, targetWeekMonday) + 1;
     }
 
     /**

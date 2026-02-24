@@ -2,14 +2,11 @@ package com.sk.domain.shared.enums;
 
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalUnit;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.TemporalUnit;
 
 @Getter
 @AllArgsConstructor
@@ -18,7 +15,7 @@ public enum PeriodUnitSeparateCd {
     D("D", "일", ChronoUnit.DAYS),
     W("W", "주", ChronoUnit.WEEKS),
     M("M", "월", ChronoUnit.MONTHS),
-    Q("Q", "분기", ChronoUnit.MONTHS),
+    Q("Q", "분기", IsoFields.QUARTER_YEARS),
     Y("Y", "년", ChronoUnit.YEARS);
 
     private final String code;
