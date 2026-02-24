@@ -114,7 +114,7 @@ public class MiForecastService {
 
     private static final String DASHBOARD_CHART_LAST_UPDATE_DATE_LIMIT = "1";
     private static final String FORECAST_AVAILABLE_DATE_LIMIT = "10";
-    private static final String FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015 = "3";
+    private static final String FORECAST_AVAILABLE_DATE_LIMIT_FOR_2015 = "20";
     private static final int MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_INDEX = 0;
     private static final int MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX = 1;
     private static final String FORECAST_Q_PLUS_1 = "Forecast Q+1";
@@ -3604,7 +3604,7 @@ public class MiForecastService {
                         chartPredictSettingDetail);
                 }
 
-                periodAverages = calculatePeriodAverages(
+                periodAverages = calculatePeriodLatestValues(
                     effectiveDateList,
                     rawData,
                     aggregationDateColumnName,
@@ -3932,6 +3932,142 @@ public class MiForecastService {
             periodAverages.add(dashboardChartRawData);
         }
         return periodAverages;
+    }
+
+    public List<ForecastChartRawData> calculatePeriodLatestValues(
+        List<ForecastChartRes.ForecastChartDateItem> dateList,
+        List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
+        boolean isPredict) {
+        List<ForecastChartRawData> periodLatestValues = new ArrayList<>();
+
+        for (ForecastChartRes.ForecastChartDateItem item : dateList) {
+            LocalDate rangeStart;
+            LocalDate rangeEnd;
+            if (item.startDate() == null || item.endDate() == null) {
+                LocalDate day = DateUtil.parseDate(item.label());
+                rangeStart = day;
+                rangeEnd = day;
+            } else {
+                rangeStart = DateUtil.parseDate(item.startDate());
+                rangeEnd = DateUtil.parseDate(item.endDate());
+            }
+
+            LocalDate selectedRowDate = null;
+            String selectedPredictDate = null;
+            Double selectedValue = null;
+            boolean hasMatchedRows = false;
+            String latestPredictDate = null;
+            int matchedRows = 0;
+
+            for (Map<String, Object> row : rawData) {
+                LocalDate rowDate = DateUtil.parseDate(row.get(dateColumnName));
+                if (rowDate == null || rowDate.isBefore(rangeStart) || rowDate.isAfter(rangeEnd)) {
+                    continue;
+                }
+                matchedRows++;
+                hasMatchedRows = true;
+
+                String rowPredictDate = null;
+                if (isPredict) {
+                    rowPredictDate = getStringValue(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                    if (rowPredictDate != null && (latestPredictDate == null
+                        || rowPredictDate.compareTo(latestPredictDate) > 0)) {
+                        latestPredictDate = rowPredictDate;
+                    }
+                }
+
+                Object val = row.get(defaultDataColumnName);
+                Double valueData;
+                if (val == null) {
+                    valueData = null;
+                } else if (val instanceof Double d) {
+                    valueData = d;
+                } else if (val instanceof BigDecimal bd) {
+                    valueData = bd.doubleValue();
+                } else {
+                    try {
+                        valueData = Double.parseDouble(val.toString());
+                    } catch (NumberFormatException e) {
+                        valueData = null;
+                    }
+                }
+
+                boolean isMoreRecentDate = selectedRowDate == null || rowDate.isAfter(selectedRowDate);
+                boolean isSameDateButNewerPredict = false;
+                if (!isMoreRecentDate && selectedRowDate != null && rowDate.isEqual(selectedRowDate)) {
+                    if (rowPredictDate != null && selectedPredictDate != null) {
+                        isSameDateButNewerPredict =
+                            rowPredictDate.compareTo(selectedPredictDate) > 0;
+                    } else if (rowPredictDate != null) {
+                        isSameDateButNewerPredict = true;
+                    } else if (selectedPredictDate == null && selectedValue == null
+                        && valueData != null) {
+                        isSameDateButNewerPredict = true;
+                    }
+                }
+
+                if (isMoreRecentDate || isSameDateButNewerPredict) {
+                    selectedRowDate = rowDate;
+                    selectedPredictDate = rowPredictDate;
+                    selectedValue = valueData;
+                }
+            }
+
+            String label = item.label();
+            String resultDateLabel = label;
+            String resultStartDate = item.startDate();
+            if (resultStartDate == null) {
+                resultStartDate = switch (item.unit()) {
+                    case "1M" -> DateUtil.toYmd(rangeEnd.withDayOfMonth(1));
+                    case "1Q" -> {
+                        int startMonth = ((rangeEnd.getMonthValue() - 1) / 3) * 3 + 1;
+                        yield DateUtil.toYmd(LocalDate.of(rangeEnd.getYear(), startMonth, 1));
+                    }
+                    case "1Y" -> DateUtil.toYmd(LocalDate.of(rangeEnd.getYear(), 1, 1));
+                    case "1W" -> DateUtil.toYmd(
+                        rangeEnd.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+                    default -> DateUtil.toYmd(rangeStart);
+                };
+            }
+            if (AxisUnit.ONE_DAY.label.equals(item.unit())) {
+                LocalDate labelDate = DateUtil.parseDate(label);
+                if (labelDate != null) {
+                    resultDateLabel = java.time.format.DateTimeFormatter.ofPattern("MM/dd")
+                        .format(labelDate);
+                }
+            }
+
+            if (isPredict) {
+                log.debug("Forecast predictDate by range(latest-value). label={}, rangeStart={}, rangeEnd={}, matchedRows={}, latestPredictDate={}",
+                    item.label(), rangeStart, rangeEnd, matchedRows, latestPredictDate);
+            }
+            String predictDate = isPredict ? latestPredictDate : null;
+            ForecastChartRawData dashboardChartRawData;
+            if (!hasMatchedRows) {
+                if (isPredict) {
+                    dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
+                        resultStartDate, predictDate, null);
+                } else {
+                    dashboardChartRawData = ForecastChartRawData.ofActual(resultDateLabel,
+                        resultStartDate, null);
+                }
+            } else {
+                Double scaledValue = selectedValue == null
+                    ? null
+                    : BigDecimal.valueOf(selectedValue)
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .doubleValue();
+                if (isPredict) {
+                    dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
+                        resultStartDate, predictDate, scaledValue);
+                } else {
+                    dashboardChartRawData = ForecastChartRawData.ofActual(resultDateLabel,
+                        resultStartDate, scaledValue);
+                }
+            }
+            periodLatestValues.add(dashboardChartRawData);
+        }
+        return periodLatestValues;
     }
 
     private List<LocalDate> generateGraphDates(LocalDate startDate, LocalDate endDate,
