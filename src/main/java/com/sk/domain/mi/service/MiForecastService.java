@@ -178,6 +178,10 @@ public class MiForecastService {
         return null;
     }
 
+    private int decimalScale(int companyNo) {
+        return companyNo == COMPANY_NO_2015 ? 3 : 2;
+    }
+
     private LineValueStrategy getLineValueStrategy(Integer companyNo) {
         Optional<UiComponentSetting> setting =
             uiComponentSettingRepository
@@ -1128,7 +1132,7 @@ public class MiForecastService {
                     .filter(Objects::nonNull)
                     .min(LocalDate::compareTo)
                     .orElse(null);
-                Double cumulativeHitRate = calculateCumulativeHitRate(records);
+                Double cumulativeHitRate = calculateCumulativeHitRate(records, companyNo);
 
                 return ForecastTargetAccuracyRes.of(cumulativeHitRate, target.predictChartDetailExpn(),
                     asOfDate);
@@ -1136,7 +1140,7 @@ public class MiForecastService {
             .toList();
     }
 
-    private Double calculateCumulativeHitRate(List<ForecastRecordRes> records) {
+    private Double calculateCumulativeHitRate(List<ForecastRecordRes> records, int companyNo) {
         if (records == null || records.isEmpty()) {
             return null;
         }
@@ -1150,7 +1154,7 @@ public class MiForecastService {
             .filter(record -> Boolean.TRUE.equals(record.isHit()))
             .count();
         BigDecimal rate = BigDecimal.valueOf((double) hits * 100d / (double) total)
-            .setScale(2, RoundingMode.HALF_UP);
+            .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
         return rate.doubleValue();
     }
 
@@ -1587,10 +1591,11 @@ public class MiForecastService {
                     getStringValue(row.get("predictionCriteriaVal"));
                 Boolean isScheduled = toScheduledYn(getStringValue(row.get("rglr_yn")));
 
-                Double predictionResultVal = toScaledDouble(avgPredictionResultValStr);
-                Double predictionCriteriaVal = toScaledDouble(predictionCriteriaValStr);
+                Double predictionResultVal = toScaledDouble(avgPredictionResultValStr, companyNo);
+                Double predictionCriteriaVal = toScaledDouble(predictionCriteriaValStr, companyNo);
                 DiffResult diffResult =
-                    calculateDiffResult(predictionCriteriaValStr, avgPredictionResultValStr);
+                    calculateDiffResult(predictionCriteriaValStr, avgPredictionResultValStr,
+                        companyNo);
 
                 Double actualVal = null;
                 Integer associatedNo = goodsDataSourceNo;
@@ -1602,7 +1607,7 @@ public class MiForecastService {
                     associatedNo != null ? actualDetailByAssociatedNo.get(associatedNo) : null;
                 if (actualDetail != null) {
                     actualVal = getActualAverageValue(actualDetail, startPredictionResultDt,
-                        endPredictionResultDt);
+                        endPredictionResultDt, companyNo);
                 }
 
                 String directionVal = null;
@@ -1805,18 +1810,23 @@ public class MiForecastService {
                         predictionResultDt1 = getStringValue(
                             qPlus1Row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
                         predictionResultVal1 =
-                            toScaledDouble(getStringValue(qPlus1Row.get("avgPredictionResultVal")));
+                            toScaledDouble(getStringValue(qPlus1Row.get("avgPredictionResultVal")),
+                                companyNo);
                         predictionCriteriaVal =
-                            toScaledDouble(getStringValue(qPlus1Row.get("predictionCriteriaVal")));
+                            toScaledDouble(getStringValue(qPlus1Row.get("predictionCriteriaVal")),
+                                companyNo);
                     }
                     if (qPlus2Row != null) {
                         predictionResultDt2 = getStringValue(
                             qPlus2Row.get(MARKET_DATA_PREDICT_RESULT_DATE_COLUMN_NAME));
                         predictionResultVal2 =
-                            toScaledDouble(getStringValue(qPlus2Row.get("avgPredictionResultVal")));
+                            toScaledDouble(getStringValue(qPlus2Row.get("avgPredictionResultVal")),
+                                companyNo);
                         if (predictionCriteriaVal == null) {
                             predictionCriteriaVal =
-                                toScaledDouble(getStringValue(qPlus2Row.get("predictionCriteriaVal")));
+                                toScaledDouble(
+                                    getStringValue(qPlus2Row.get("predictionCriteriaVal")),
+                                    companyNo);
                         }
                     }
                 } else {
@@ -1834,15 +1844,18 @@ public class MiForecastService {
                     predictionResultVal1 = groupRows.isEmpty()
                         ? null
                         : toScaledDouble(
-                            getStringValue(groupRows.get(0).get("avgPredictionResultVal")));
+                            getStringValue(groupRows.get(0).get("avgPredictionResultVal")),
+                            companyNo);
                     predictionResultVal2 = groupRows.size() < 2
                         ? null
                         : toScaledDouble(
-                            getStringValue(groupRows.get(1).get("avgPredictionResultVal")));
+                            getStringValue(groupRows.get(1).get("avgPredictionResultVal")),
+                            companyNo);
                     predictionCriteriaVal = groupRows.isEmpty()
                         ? null
                         : toScaledDouble(
-                            getStringValue(groupRows.get(0).get("predictionCriteriaVal")));
+                            getStringValue(groupRows.get(0).get("predictionCriteriaVal")),
+                            companyNo);
                 }
                 Boolean isScheduled = groupRows.isEmpty()
                     ? null
@@ -1867,7 +1880,8 @@ public class MiForecastService {
                                 end.plusMonths(1).minusDays(1);
                             actualVal = getActualAverageValue(actualDetail,
                                 DateUtil.toYmd(start),
-                                DateUtil.toYmd(endOfSecond));
+                                DateUtil.toYmd(endOfSecond),
+                                companyNo);
                         }
                     } else if (companyNo == 2015) {
                         LocalDate criteriaDate = DateUtil.parseDate(key.criteriaDt());
@@ -1876,7 +1890,8 @@ public class MiForecastService {
                             LocalDate q2End = q2Start.plusMonths(3).minusDays(1);
                             actualVal2 = getActualAverageValue(actualDetail,
                                 DateUtil.toYmd(q2Start),
-                                DateUtil.toYmd(q2End));
+                                DateUtil.toYmd(q2End),
+                                companyNo);
                         }
                     }
                 }
@@ -2234,6 +2249,7 @@ public class MiForecastService {
 
     private Object getForecastRecordFieldValue(ForecastRecordRes record, String columnKey) {
         return switch (columnKey) {
+            case "date" -> resolveForecastRecordDateValue(record);
             case "marketIndexAnalysisTargetCd" -> record.marketIndexAnalysisTargetCd();
             case "predictionFulfillDt" -> record.predictionFulfillDt();
             case "mnemonicCd" -> record.mnemonicCd();
@@ -2246,6 +2262,7 @@ public class MiForecastService {
                 : toPredictionResultRange(record.startPredictionResultDt(),
                     record.endPredictionResultDt());
             case "predictionCriteriaDt" -> record.predictionCriteriaDt();
+            case "predictionCriteriaDtLabel" -> record.predictionCriteriaDtLabel();
             case "predictionResultVal" -> record.predictionResultVal();
             case "predictionResultVal1" -> record.predictionResultVal1();
             case "predictionResultVal2" -> record.predictionResultVal2();
@@ -2260,6 +2277,22 @@ public class MiForecastService {
             case "isNew" -> record.isNew();
             default -> null;
         };
+    }
+
+    private String resolveForecastRecordDateValue(ForecastRecordRes record) {
+        if (record == null) {
+            return null;
+        }
+        if (record.predictionResultDt() != null && !record.predictionResultDt().isBlank()) {
+            return record.predictionResultDt();
+        }
+        if (record.predictionCriteriaDtLabel() != null && !record.predictionCriteriaDtLabel().isBlank()) {
+            return record.predictionCriteriaDtLabel();
+        }
+        if (record.predictionCriteriaDt() != null && !record.predictionCriteriaDt().isBlank()) {
+            return record.predictionCriteriaDt();
+        }
+        return toPredictionResultRange(record.startPredictionResultDt(), record.endPredictionResultDt());
     }
 
     private String toPredictionResultRange(String start, String end) {
@@ -2601,7 +2634,11 @@ public class MiForecastService {
         List<List<Object>> rows = new ArrayList<>();
         for (ForecastChartRes.ForecastChartDateItem item : dateList) {
             List<Object> values = new ArrayList<>();
-            values.add(item.label());
+            String rowDateLabel = item.label();
+            if (rowDateLabel == null || rowDateLabel.isBlank()) {
+                rowDateLabel = toPredictionResultRange(item.startDate(), item.endDate());
+            }
+            values.add(rowDateLabel);
             for (ForecastTableColumn column : columns) {
                 values.add(getValue(column.actualLine, item.label(), lineValueMap));
                 values.add(getValue(column.forecastLine, item.label(), lineValueMap));
@@ -2741,7 +2778,7 @@ public class MiForecastService {
                 : getActualDataRows(goodsDataSource, dateColumnName, start, end);
 
             Map<String, Double> yearMonthValues = buildYearMonthAverageMap(rawData, dateColumnName,
-                defaultDataColumnName);
+                defaultDataColumnName, customerCompanyNo);
             if (itemKey != null) {
                 columnDataMap.putIfAbsent(itemKey,
                     new ColumnData(yearMonthValues, isPermitted));
@@ -2791,7 +2828,8 @@ public class MiForecastService {
                     columnData.yearMonthValues(),
                     targetMonth,
                     column.shiftMonths(),
-                    isCompany2015));
+                    isCompany2015,
+                    customerCompanyNo));
             }
             rows.add(values);
         }
@@ -2945,7 +2983,7 @@ public class MiForecastService {
                 : getActualDataRows(goodsDataSource, aggregationDateColumnName, start, end);
 
             Map<String, Double> yearMonthValues = buildYearMonthAverageMap(rawData,
-                aggregationDateColumnName, defaultDataColumnName);
+                aggregationDateColumnName, defaultDataColumnName, customerCompanyNo);
             if (itemKey != null) {
                 columnDataMap.putIfAbsent(itemKey,
                     new ColumnData(yearMonthValues, isPermitted));
@@ -2995,7 +3033,8 @@ public class MiForecastService {
                     columnData.yearMonthValues(),
                     targetMonth,
                     column.shiftMonths(),
-                    groupingUnit == PeriodUnitSeparateCd.Q));
+                    groupingUnit == PeriodUnitSeparateCd.Q,
+                    customerCompanyNo));
             }
             rows.add(values);
         }
@@ -3113,8 +3152,8 @@ public class MiForecastService {
         }
 
         return new ForecastQPlusMaps(
-            averageByYearMonth(qPlus1Bucket),
-            averageByYearMonth(qPlus2Bucket)
+            averageByYearMonth(qPlus1Bucket, COMPANY_NO_2015),
+            averageByYearMonth(qPlus2Bucket, COMPANY_NO_2015)
         );
     }
 
@@ -3152,7 +3191,7 @@ public class MiForecastService {
             Double valueData = toDoubleValue(row.get(valueColumnName));
             mPlus1Bucket.computeIfAbsent(key, k -> new ArrayList<>()).add(valueData);
         }
-        return averageByYearMonth(mPlus1Bucket);
+        return averageByYearMonth(mPlus1Bucket, COMPANY_NO_2013);
     }
 
     private List<Map<String, Object>> getForecastDataRowsWithCriteriaDate(
@@ -3218,7 +3257,7 @@ public class MiForecastService {
     }
 
     private Map<String, Double> buildYearMonthAverageMap(List<Map<String, Object>> rawData,
-        String dateColumnName, String valueColumnName) {
+        String dateColumnName, String valueColumnName, int companyNo) {
         if (rawData == null || rawData.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -3233,7 +3272,7 @@ public class MiForecastService {
             bucket.computeIfAbsent(key, k -> new ArrayList<>()).add(valueData);
         }
 
-        return averageByYearMonth(bucket);
+        return averageByYearMonth(bucket, companyNo);
     }
 
     private Map<String, String> buildYearMonthLatestFulfillDateMap(
@@ -3266,7 +3305,7 @@ public class MiForecastService {
         return result;
     }
 
-    private Map<String, Double> averageByYearMonth(Map<String, List<Double>> bucket) {
+    private Map<String, Double> averageByYearMonth(Map<String, List<Double>> bucket, int companyNo) {
         if (bucket == null || bucket.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -3281,7 +3320,8 @@ public class MiForecastService {
             if (values.isEmpty() || values.stream().allMatch(Objects::isNull)) {
                 result.put(entry.getKey(), null);
             } else {
-                BigDecimal bd = BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal bd = BigDecimal.valueOf(average)
+                    .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
                 result.put(entry.getKey(), bd.doubleValue());
             }
         }
@@ -3306,7 +3346,7 @@ public class MiForecastService {
     }
 
     private Double resolveSpecialTableValue(Map<String, Double> yearMonthValues,
-        YearMonth targetMonth, int shiftMonths, boolean quarterMode) {
+        YearMonth targetMonth, int shiftMonths, boolean quarterMode, int companyNo) {
         if (yearMonthValues == null || targetMonth == null) {
             return null;
         }
@@ -3331,7 +3371,9 @@ public class MiForecastService {
             .mapToDouble(Double::doubleValue)
             .average()
             .orElse(0.0);
-        return BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        return BigDecimal.valueOf(average)
+            .setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+            .doubleValue();
     }
 
     private YearMonth getQuarterStart(YearMonth yearMonth) {
@@ -3610,7 +3652,8 @@ public class MiForecastService {
                     rawData,
                     aggregationDateColumnName,
                     defaultDataColumnName,
-                    isPredict);
+                    isPredict,
+                    customerCompanyNo);
 
                 ForecastChartLine dashboardChartLine = ForecastChartLine.of(isPermitted,
                     chartPredictDataType,
@@ -3826,6 +3869,14 @@ public class MiForecastService {
         List<ForecastChartRes.ForecastChartDateItem> dateList,
         List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
         boolean isPredict) {
+        return calculatePeriodAverages(dateList, rawData, dateColumnName, defaultDataColumnName,
+            isPredict, 0);
+    }
+
+    public List<ForecastChartRawData> calculatePeriodAverages(
+        List<ForecastChartRes.ForecastChartDateItem> dateList,
+        List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
+        boolean isPredict, int companyNo) {
         List<ForecastChartRawData> periodAverages = new ArrayList<>();
 
         for (ForecastChartRes.ForecastChartDateItem item : dateList) {
@@ -3920,7 +3971,7 @@ public class MiForecastService {
                     .average()
                     .orElse(0.0);
                 BigDecimal bd = BigDecimal.valueOf(average)
-                    .setScale(2, RoundingMode.HALF_UP);
+                    .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
                 if (isPredict) {
                     dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
                         resultStartDate, predictDate,
@@ -3939,6 +3990,14 @@ public class MiForecastService {
         List<ForecastChartRes.ForecastChartDateItem> dateList,
         List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
         boolean isPredict) {
+        return calculatePeriodLatestValues(dateList, rawData, dateColumnName, defaultDataColumnName,
+            isPredict, 0);
+    }
+
+    public List<ForecastChartRawData> calculatePeriodLatestValues(
+        List<ForecastChartRes.ForecastChartDateItem> dateList,
+        List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
+        boolean isPredict, int companyNo) {
         List<ForecastChartRawData> periodLatestValues = new ArrayList<>();
 
         for (ForecastChartRes.ForecastChartDateItem item : dateList) {
@@ -4056,7 +4115,7 @@ public class MiForecastService {
                 Double scaledValue = selectedValue == null
                     ? null
                     : BigDecimal.valueOf(selectedValue)
-                        .setScale(2, RoundingMode.HALF_UP)
+                        .setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
                         .doubleValue();
                 if (isPredict) {
                     dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
@@ -4096,7 +4155,7 @@ public class MiForecastService {
 
     private List<ForecastChartRawData> calculateGraphAverages(List<LocalDate> periodDates,
         List<Map<String, Object>> rawData, String dateColumnName, String defaultDataColumnName,
-        ChartPredictSetting chartPredictSetting) {
+        ChartPredictSetting chartPredictSetting, int companyNo) {
         List<ForecastChartRawData> periodAverages = new ArrayList<>();
 
         DateTimeFormatter yyyyMMFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -4175,7 +4234,7 @@ public class MiForecastService {
                     chartRawData = ForecastChartRawData.ofActual(periodStr, null);
                 } else {
                     BigDecimal bd = BigDecimal.valueOf(average.getAsDouble())
-                        .setScale(2, RoundingMode.HALF_UP);
+                        .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
                     chartRawData = ForecastChartRawData.ofActual(periodStr, bd.doubleValue());
                 }
             }
@@ -4412,9 +4471,11 @@ public class MiForecastService {
             }
 
             DiffResult diffResult = calculateDiffResult(resultValue.predictionCriteriaVal(),
-                resultValue.predictionResultVal());
-            Double avgPredictionResultVal = toScaledDouble(resultValue.predictionResultVal());
-            Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal());
+                resultValue.predictionResultVal(), companyNo);
+            Double avgPredictionResultVal = toScaledDouble(resultValue.predictionResultVal(),
+                companyNo);
+            Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal(),
+                companyNo);
             Double minPredictionResultVal = null;
             Double maxPredictionResultVal = null;
             if (resultValue.predictionResults() != null) {
@@ -4427,12 +4488,14 @@ public class MiForecastService {
                         if (minPredictionResultVal == null
                             || value.compareTo(BigDecimal.valueOf(minPredictionResultVal)) < 0) {
                             minPredictionResultVal =
-                                value.setScale(2, RoundingMode.HALF_UP).doubleValue();
+                                value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                                    .doubleValue();
                         }
                         if (maxPredictionResultVal == null
                             || value.compareTo(BigDecimal.valueOf(maxPredictionResultVal)) > 0) {
                             maxPredictionResultVal =
-                                value.setScale(2, RoundingMode.HALF_UP).doubleValue();
+                                value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                                    .doubleValue();
                         }
                     } catch (NumberFormatException ignored) {
                         // ignore invalid numeric data
@@ -4602,13 +4665,13 @@ public class MiForecastService {
             goodsDataSourceDetail, forecastKey, resultStartDate, resultEndDate);
         DiffResult diffResult = resultValue != null
             ? calculateDiffResult(resultValue.predictionCriteriaVal(),
-                resultValue.predictionResultVal())
+                resultValue.predictionResultVal(), companyNo)
             : DiffResult.empty();
         Double avgPredictionResultVal = resultValue != null
-            ? toScaledDouble(resultValue.predictionResultVal())
+            ? toScaledDouble(resultValue.predictionResultVal(), companyNo)
             : null;
         Double predictionCriteriaVal = resultValue != null
-            ? toScaledDouble(resultValue.predictionCriteriaVal())
+            ? toScaledDouble(resultValue.predictionCriteriaVal(), companyNo)
             : null;
         String endPredictionResultDt = resultValue != null ? resultValue.endPredictionResultDt() : null;
         String startPredictionResultDt = resultValue != null ? resultValue.startPredictionResultDt() : null;
@@ -4640,12 +4703,14 @@ public class MiForecastService {
                     if (minPredictionResultVal == null
                         || value.compareTo(BigDecimal.valueOf(minPredictionResultVal)) < 0) {
                         minPredictionResultVal =
-                            value.setScale(2, RoundingMode.HALF_UP).doubleValue();
+                            value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                                .doubleValue();
                     }
                     if (maxPredictionResultVal == null
                         || value.compareTo(BigDecimal.valueOf(maxPredictionResultVal)) > 0) {
                         maxPredictionResultVal =
-                            value.setScale(2, RoundingMode.HALF_UP).doubleValue();
+                            value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                                .doubleValue();
                     }
                 } catch (NumberFormatException ignored) {
                     // ignore invalid numeric data
@@ -4938,7 +5003,7 @@ public class MiForecastService {
             List<LocalDate> periodDates = generateGraphDates(startDate, endDate, chartPredictSetting);
             List<ForecastChartRawData> periodAverages = isPermitted
                 ? calculateGraphAverages(periodDates, graphRawData, actualDateColumnName,
-                    actualDefaultDataColumnName, chartPredictSetting)
+                    actualDefaultDataColumnName, chartPredictSetting, companyNo)
                 : null;
 
             ForecastChartFactorGraphMetadata graphMetadata =
@@ -5242,7 +5307,7 @@ public class MiForecastService {
     }
 
     private Double getActualAverageValue(GoodsDataSourceDetail actualDetail,
-        String startPredictionResultDt, String endPredictionResultDt) {
+        String startPredictionResultDt, String endPredictionResultDt, int companyNo) {
         if (actualDetail == null || startPredictionResultDt == null || endPredictionResultDt == null) {
             return null;
         }
@@ -5284,7 +5349,7 @@ public class MiForecastService {
             return null;
         }
         String avgValue = getStringValue(firstRow.get("actualVal"));
-        return toScaledDouble(avgValue);
+        return toScaledDouble(avgValue, companyNo);
     }
 
     private String buildPredictKey(String queryConditionCntt) {
@@ -5513,9 +5578,11 @@ public class MiForecastService {
                 }
 
                 DiffResult diffResult = calculateDiffResult(resultValue.predictionCriteriaVal(),
-                    resultValue.predictionResultVal());
-                Double predictionResultVal = toScaledDouble(resultValue.predictionResultVal());
-                Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal());
+                    resultValue.predictionResultVal(), companyNo);
+                Double predictionResultVal = toScaledDouble(resultValue.predictionResultVal(),
+                    companyNo);
+                Double predictionCriteriaVal = toScaledDouble(resultValue.predictionCriteriaVal(),
+                    companyNo);
                 String endPredictionResultDt = resultValue.endPredictionResultDt();
                 String startPredictionResultDt = resultValue.startPredictionResultDt();
                 String predictionTargetDt = buildPredictionTargetDt(
@@ -5558,12 +5625,12 @@ public class MiForecastService {
         String predictionCriteriaDt, String predictionCriteriaVal,
         List<ForecastResultPoint> predictionResults) {
         List<ForecastReportRes.PredictionResultPoint> points =
-            new ArrayList<>(toPredictionResultPoints(predictionResults));
+            new ArrayList<>(toPredictionResultPoints(predictionResults, companyNo));
 
         if (companyNo == COMPANY_NO_2015
             && predictionCriteriaDt != null
             && predictionCriteriaVal != null) {
-            Double criteriaVal = toScaledDouble(predictionCriteriaVal);
+            Double criteriaVal = toScaledDouble(predictionCriteriaVal, companyNo);
             if (criteriaVal != null) {
                 String criteriaPointDate =
                     toQuarterEndMonthFirstDay(predictionCriteriaDt);
@@ -5650,14 +5717,14 @@ public class MiForecastService {
         PeriodUnitSeparateCd predictPeriodUnitSeparateCd, String predictionCriteriaDt) {
         if (companyNo == COMPANY_NO_2015 && predictPeriodUnitSeparateCd == PeriodUnitSeparateCd.Q) {
             List<String> quarterRanges = buildQuarterPriceRangeVal(predictionResults,
-                predictionCriteriaDt);
+                predictionCriteriaDt, companyNo);
             if (!quarterRanges.isEmpty()) {
                 return quarterRanges;
             }
         }
 
-        String minVal = formatScaledNumber(minPredictionResultVal);
-        String maxVal = formatScaledNumber(maxPredictionResultVal);
+        String minVal = formatScaledNumber(minPredictionResultVal, companyNo);
+        String maxVal = formatScaledNumber(maxPredictionResultVal, companyNo);
         if (minVal == null && maxVal == null) {
             return List.of();
         }
@@ -5668,7 +5735,7 @@ public class MiForecastService {
     }
 
     private List<String> buildQuarterPriceRangeVal(List<ForecastResultPoint> predictionResults,
-        String predictionCriteriaDt) {
+        String predictionCriteriaDt, int companyNo) {
         if (predictionResults == null || predictionResults.isEmpty()) {
             return List.of();
         }
@@ -5693,7 +5760,7 @@ public class MiForecastService {
             if (byQuarterDiff.containsKey(diff)) {
                 continue;
             }
-            String value = formatScaledNumber(point.predictionResultVal());
+            String value = formatScaledNumber(point.predictionResultVal(), companyNo);
             String quarter = formatQuarterShort(point.predictionResultDt());
             if (value == null || quarter == null) {
                 continue;
@@ -5712,19 +5779,21 @@ public class MiForecastService {
         return result;
     }
 
-    private String formatScaledNumber(Double value) {
+    private String formatScaledNumber(Double value, int companyNo) {
         if (value == null) {
             return null;
         }
-        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).toPlainString();
+        return BigDecimal.valueOf(value).setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+            .toPlainString();
     }
 
-    private String formatScaledNumber(String value) {
+    private String formatScaledNumber(String value, int companyNo) {
         if (value == null || value.isBlank()) {
             return null;
         }
         try {
-            return new BigDecimal(value).setScale(2, RoundingMode.HALF_UP).toPlainString();
+            return new BigDecimal(value).setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                .toPlainString();
         } catch (NumberFormatException e) {
             return null;
         }
@@ -6138,19 +6207,23 @@ public class MiForecastService {
     }
 
     private List<ForecastReportRes.PredictionResultPoint> toPredictionResultPoints(
-        List<ForecastResultPoint> predictionResults) {
+        List<ForecastResultPoint> predictionResults, int companyNo) {
         if (predictionResults == null || predictionResults.isEmpty()) {
             return Collections.emptyList();
         }
         return predictionResults.stream()
             .map(point -> ForecastReportRes.PredictionResultPoint.builder()
                 .predictionResultDt(point.predictionResultDt())
-                .predictionResultVal(toScaledDouble(point.predictionResultVal()))
+                .predictionResultVal(toScaledDouble(point.predictionResultVal(), companyNo))
                 .build())
             .toList();
     }
 
     private DiffResult calculateDiffResult(String criteriaValue, String resultValue) {
+        return calculateDiffResult(criteriaValue, resultValue, 0);
+    }
+
+    private DiffResult calculateDiffResult(String criteriaValue, String resultValue, int companyNo) {
         if (criteriaValue == null || resultValue == null) {
             return DiffResult.empty();
         }
@@ -6163,8 +6236,8 @@ public class MiForecastService {
             BigDecimal diff = result.subtract(criteria);
             BigDecimal rate = diff.divide(criteria, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
-                .setScale(2, RoundingMode.HALF_UP);
-            BigDecimal scaledDiff = diff.setScale(2, RoundingMode.HALF_UP);
+                .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
+            BigDecimal scaledDiff = diff.setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
             return new DiffResult(scaledDiff.doubleValue(), rate.doubleValue());
         } catch (NumberFormatException e) {
             return DiffResult.empty();
@@ -6172,11 +6245,16 @@ public class MiForecastService {
     }
 
     private Double toScaledDouble(String value) {
+        return toScaledDouble(value, 0);
+    }
+
+    private Double toScaledDouble(String value, int companyNo) {
         if (value == null) {
             return null;
         }
         try {
-            return new BigDecimal(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            return new BigDecimal(value).setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                .doubleValue();
         } catch (NumberFormatException e) {
             return null;
         }
