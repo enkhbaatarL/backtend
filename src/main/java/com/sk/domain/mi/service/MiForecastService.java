@@ -87,6 +87,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -4100,8 +4101,26 @@ public class MiForecastService {
 
         DateTimeFormatter yyyyMMFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
         Map<String, List<Double>> periodValues = new TreeMap<>();
+        String resolvedDateColumnName = dateColumnName;
+        String resolvedDefaultDataColumnName = defaultDataColumnName;
+        if (rawData != null && !rawData.isEmpty()) {
+            Map<String, Object> firstRow = rawData.stream()
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+            if (firstRow != null) {
+                String dateKey = resolveExistingColumnKey(firstRow, dateColumnName);
+                String valueKey = resolveExistingColumnKey(firstRow, defaultDataColumnName);
+                if (dateKey != null) {
+                    resolvedDateColumnName = dateKey;
+                }
+                if (valueKey != null) {
+                    resolvedDefaultDataColumnName = valueKey;
+                }
+            }
+        }
         for (Map<String, Object> row : rawData) {
-            LocalDate localDate = DateUtil.parseDate(row.get(dateColumnName));
+            LocalDate localDate = DateUtil.parseDate(row.get(resolvedDateColumnName));
             if (localDate == null) {
                 continue;
             }
@@ -4114,7 +4133,7 @@ public class MiForecastService {
                 default -> DateUtil.toYyyyMm(localDate);
             };
 
-            Object val = row.get(defaultDataColumnName);
+            Object val = row.get(resolvedDefaultDataColumnName);
             Double valueData;
             if (val == null) {
                 valueData = null;
@@ -4148,13 +4167,17 @@ public class MiForecastService {
             if (values.isEmpty()) {
                 chartRawData = ForecastChartRawData.ofActual(periodStr, null);
             } else {
-                double average = values.stream()
+                OptionalDouble average = values.stream()
                     .filter(Objects::nonNull)
                     .mapToDouble(Double::doubleValue)
-                    .average()
-                    .orElse(0.0);
-                BigDecimal bd = BigDecimal.valueOf(average).setScale(2, RoundingMode.HALF_UP);
-                chartRawData = ForecastChartRawData.ofActual(periodStr, bd.doubleValue());
+                    .average();
+                if (average.isEmpty()) {
+                    chartRawData = ForecastChartRawData.ofActual(periodStr, null);
+                } else {
+                    BigDecimal bd = BigDecimal.valueOf(average.getAsDouble())
+                        .setScale(2, RoundingMode.HALF_UP);
+                    chartRawData = ForecastChartRawData.ofActual(periodStr, bd.doubleValue());
+                }
             }
             periodAverages.add(chartRawData);
         }
@@ -4894,7 +4917,10 @@ public class MiForecastService {
             boolean isPermitted = permissionRes.getGoodsViewableMap(companyNo)
                 .getOrDefault(actualGoods.getGoodsNo(), false);
 
-            String[] actualTableColumnList = actualGoodsDataSourceDetail.getTableColumnListNm().split(",");
+            String[] actualTableColumnList = Arrays.stream(
+                    actualGoodsDataSourceDetail.getTableColumnListNm().split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
             String actualDateColumnName = actualTableColumnList[MARKET_DATA_DATE_COLUMN_INDEX];
             String actualDefaultDataColumnName = actualTableColumnList[MARKET_DATA_DEFAULT_DATA_COLUMN_INDEX];
 
