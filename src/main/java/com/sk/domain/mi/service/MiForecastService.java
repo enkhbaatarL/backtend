@@ -4862,12 +4862,13 @@ public class MiForecastService {
      *
      * @param companyNo 회사 번호
      * @param goodsDataSourceNo 데이터소스 번호
+     * @param predictDate 예측 날짜
      * @param startDate 조회 시작일자
      * @param explanatoryLevelNm 주요 요인 레벨명
      * @return ForecastChartFactorRes
      */
     public ForecastChartFactorRes getChartFactors(int companyNo, int goodsDataSourceNo,
-            String startDate, String explanatoryLevelNm) {
+            String predictDate, String startDate, String explanatoryLevelNm) {
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository
             .findActiveByCustomerCompanyNo(companyNo, currentDate)
@@ -4893,11 +4894,11 @@ public class MiForecastService {
         String resultEndDate = predictResultDateRange.getRight();
 
         List<ForecastChartFactorMap> chartPlusFactorsMap = forecastMapper.chartFactors(
-            queryWhere, explanatoryLevelNm, null, resultStartDate, resultEndDate,
+            queryWhere, explanatoryLevelNm, predictDate, resultStartDate, resultEndDate,
             CHART_EXPLANATORY_PLUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
         List<ForecastChartFactorMap> chartMinusFactorsMap = forecastMapper.chartFactors(
-            queryWhere, explanatoryLevelNm, null, resultStartDate, resultEndDate,
+            queryWhere, explanatoryLevelNm, predictDate, resultStartDate, resultEndDate,
             CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
         List<ForecastChartFactor> chartPlusFactors = chartPlusFactorsMap.stream()

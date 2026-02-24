@@ -59,6 +59,7 @@ public class MiForecastController {
 
     @ApiOrder(10)
     @Parameter(name = "companyNo", description = "관리자: 선택 된 고객사 번호, 사용자: 자신이 속한 고객사 번호", example = "2020")
+    @Parameter(name = "predictDate", description = "예측 날짜", example = "20250825")
     @Parameter(name = "startDate", description = "조회 시작일자(YYYYMMDD, 선택)", example = "20250901")
     @Parameter(name = "goodsDataSourceNo", description = "예측 데이터 소스 번호", example = "4158")
     @Parameter(name = "explanatoryLevelNm", description = "카테고리", example = "COMMODITIES")
@@ -70,11 +71,12 @@ public class MiForecastController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<ForecastChartFactorRes> getChartFactors(
         @PathVariable Integer companyNo,
+        @RequestParam(value = "predictDate", required = true) String predictDate,
         @RequestParam(value = "startDate", required = false) String startDate,
         @RequestParam(value = "goodsDataSourceNo", required = true) int goodsDataSourceNo,
         @RequestParam(value = "explanatoryLevelNm", required = true) String explanatoryLevelNm) {
         return BaseResponseFactory.create(
-            miForecastService.getChartFactors(companyNo, goodsDataSourceNo, startDate,
+            miForecastService.getChartFactors(companyNo, goodsDataSourceNo, predictDate, startDate,
                 explanatoryLevelNm));
     }
 
