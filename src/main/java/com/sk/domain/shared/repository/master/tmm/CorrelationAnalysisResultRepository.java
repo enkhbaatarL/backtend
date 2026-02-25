@@ -75,7 +75,7 @@ public interface CorrelationAnalysisResultRepository extends JpaRepository<Corre
                  AND a.corr_calc_cyc_cd = :period
                  AND a.mnmnc_cd = :filter
              GROUP BY c.instm_scrn_ctgr_nm, c.instm_scrn_dtl_ctgr_nm, a.corr_calc_cyc_cd, a.prdc_inpt_mnmnc_cd
-             ORDER BY c.instm_scrn_ctgr_nm ASC, c.instm_scrn_dtl_ctgr_nm ASC, ABS(SUM(a.corr_calc_val)) DESC
+             ORDER BY c.instm_ctgr_nm ASC, c.instm_scrn_dtl_ctgr_nm ASC, ABS(SUM(a.corr_calc_val)) DESC
             """,
       nativeQuery = true)
   List<SignalMapProjection> findSignalMapData(

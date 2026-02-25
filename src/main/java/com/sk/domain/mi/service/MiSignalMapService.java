@@ -18,6 +18,7 @@ import com.sk.domain.shared.repository.master.tmm.CorrelationAnalysisResultRepos
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -106,7 +107,10 @@ public class MiSignalMapService {
         Map<String, Map<String, List<SignalMapProjection>>> grouped = rawList.stream()
                 .collect(Collectors.groupingBy(
                         SignalMapProjection::getInstmScrnCtgrNm,
-                        Collectors.groupingBy(SignalMapProjection::getInstmScrnDtlCtgrNm)));
+                        LinkedHashMap::new,
+                        Collectors.groupingBy(SignalMapProjection::getInstmScrnDtlCtgrNm,
+                            LinkedHashMap::new,
+                            Collectors.toList())));
 
         List<ScreenCategoryDto> result = new ArrayList<>();
         for (Map.Entry<String, Map<String, List<SignalMapProjection>>> screenCategoryEntry : grouped.entrySet()) {
