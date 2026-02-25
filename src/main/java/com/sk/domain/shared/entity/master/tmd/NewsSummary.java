@@ -75,7 +75,7 @@ public class NewsSummary extends BaseEntity {
     @Comment("간략요약")
     private String briefSummary;
 
-    @Column(name = "smry", length = 1000)
+    @Column(name = "smry", length = 2000)
     @Comment("요약")
     private String summary;
 
@@ -83,7 +83,7 @@ public class NewsSummary extends BaseEntity {
     @Comment("간략 요약 영문")
     private String briefSummaryEn;
 
-    @Column(name = "smry_en", length = 1000)
+    @Column(name = "smry_en", length = 2000)
     @Comment("요약 영문")
     private String summaryEn;
 
