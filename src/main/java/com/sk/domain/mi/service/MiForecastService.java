@@ -42,6 +42,7 @@ import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportDetailRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastReportRes;
 import com.sk.domain.mi.dto.response.forecast.summary.ForecastSummary;
 import com.sk.domain.mi.dto.response.forecast.table.ForecastTableRes;
+import com.sk.domain.mi.service.forecast.ForecastNumberFormatter;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tcm.UiComponentSetting;
@@ -165,6 +166,7 @@ public class MiForecastService {
     private final FileService fileService;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final ForecastNumberFormatter forecastNumberFormatter;
 
     private static <T> T visibleValue(boolean applyFilter, Map<String, Boolean> visibilityByKey,
         String key, T value) {
@@ -176,10 +178,6 @@ public class MiForecastService {
             return value;
         }
         return null;
-    }
-
-    private int decimalScale(int companyNo) {
-        return companyNo == COMPANY_NO_2015 ? 3 : 2;
     }
 
     private LineValueStrategy getLineValueStrategy(Integer companyNo) {
@@ -1154,7 +1152,7 @@ public class MiForecastService {
             .filter(record -> Boolean.TRUE.equals(record.isHit()))
             .count();
         BigDecimal rate = BigDecimal.valueOf((double) hits * 100d / (double) total)
-            .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
+            .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP);
         return rate.doubleValue();
     }
 
@@ -3321,7 +3319,7 @@ public class MiForecastService {
                 result.put(entry.getKey(), null);
             } else {
                 BigDecimal bd = BigDecimal.valueOf(average)
-                    .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
+                    .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP);
                 result.put(entry.getKey(), bd.doubleValue());
             }
         }
@@ -3372,7 +3370,7 @@ public class MiForecastService {
             .average()
             .orElse(0.0);
         return BigDecimal.valueOf(average)
-            .setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+            .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
             .doubleValue();
     }
 
@@ -3971,7 +3969,7 @@ public class MiForecastService {
                     .average()
                     .orElse(0.0);
                 BigDecimal bd = BigDecimal.valueOf(average)
-                    .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
+                    .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP);
                 if (isPredict) {
                     dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
                         resultStartDate, predictDate,
@@ -4115,7 +4113,7 @@ public class MiForecastService {
                 Double scaledValue = selectedValue == null
                     ? null
                     : BigDecimal.valueOf(selectedValue)
-                        .setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                        .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                         .doubleValue();
                 if (isPredict) {
                     dashboardChartRawData = ForecastChartRawData.ofForecast(resultDateLabel,
@@ -4234,7 +4232,7 @@ public class MiForecastService {
                     chartRawData = ForecastChartRawData.ofActual(periodStr, null);
                 } else {
                     BigDecimal bd = BigDecimal.valueOf(average.getAsDouble())
-                        .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
+                        .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP);
                     chartRawData = ForecastChartRawData.ofActual(periodStr, bd.doubleValue());
                 }
             }
@@ -4488,13 +4486,13 @@ public class MiForecastService {
                         if (minPredictionResultVal == null
                             || value.compareTo(BigDecimal.valueOf(minPredictionResultVal)) < 0) {
                             minPredictionResultVal =
-                                value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                                value.setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                                     .doubleValue();
                         }
                         if (maxPredictionResultVal == null
                             || value.compareTo(BigDecimal.valueOf(maxPredictionResultVal)) > 0) {
                             maxPredictionResultVal =
-                                value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                                value.setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                                     .doubleValue();
                         }
                     } catch (NumberFormatException ignored) {
@@ -4703,13 +4701,13 @@ public class MiForecastService {
                     if (minPredictionResultVal == null
                         || value.compareTo(BigDecimal.valueOf(minPredictionResultVal)) < 0) {
                         minPredictionResultVal =
-                            value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                            value.setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                                 .doubleValue();
                     }
                     if (maxPredictionResultVal == null
                         || value.compareTo(BigDecimal.valueOf(maxPredictionResultVal)) > 0) {
                         maxPredictionResultVal =
-                            value.setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+                            value.setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                                 .doubleValue();
                     }
                 } catch (NumberFormatException ignored) {
@@ -4901,12 +4899,16 @@ public class MiForecastService {
             queryWhere, explanatoryLevelNm, predictDate, resultStartDate, resultEndDate,
             CHART_EXPLANATORY_MINUS_DIRECTION, CHART_EXPLANATORY_TOP_RANK_LIMIT);
 
+        int decimalScale = forecastNumberFormatter.resolveScale(companyNo);
+
         List<ForecastChartFactor> chartPlusFactors = chartPlusFactorsMap.stream()
             .map(ForecastChartFactor::of)
+            .map(factor -> scaleExplanatoryScore(factor, decimalScale))
             .toList();
 
         List<ForecastChartFactor> chartMinusFactors = chartMinusFactorsMap.stream()
             .map(ForecastChartFactor::of)
+            .map(factor -> scaleExplanatoryScore(factor, decimalScale))
             .toList();
 
         String latestPredictDate = Stream.concat(chartPlusFactorsMap.stream(), chartMinusFactorsMap.stream())
@@ -4921,6 +4923,24 @@ public class MiForecastService {
         String summary = chartFactorExplanatory != null ? chartFactorExplanatory.getExplanatoryDetailCntt() : null;
 
         return ForecastChartFactorRes.of(explanatoryLevelNm, summary, chartPlusFactors, chartMinusFactors);
+    }
+
+    private ForecastChartFactor scaleExplanatoryScore(ForecastChartFactor factor, int scale) {
+        if (factor == null || factor.explanatoryScore() == null) {
+            return factor;
+        }
+        return ForecastChartFactor.builder()
+            .marketIndexAnalysisTargetCd(factor.marketIndexAnalysisTargetCd())
+            .predictionFulfillDt(factor.predictionFulfillDt())
+            .predictionInputMnemonicDetailCd(factor.predictionInputMnemonicDetailCd())
+            .predictionInputMnemonicCd(factor.predictionInputMnemonicCd())
+            .explanatoryLevelDetailNm(factor.explanatoryLevelDetailNm())
+            .explanatoryScore(factor.explanatoryScore().setScale(scale, RoundingMode.HALF_UP))
+            .explanatoryRnk(factor.explanatoryRnk())
+            .mnemonicCd(factor.mnemonicCd())
+            .explanatoryDirectionSymbolNm(factor.explanatoryDirectionSymbolNm())
+            .dirRank(factor.dirRank())
+            .build();
     }
 
     /**
@@ -5784,8 +5804,7 @@ public class MiForecastService {
         if (value == null) {
             return null;
         }
-        return BigDecimal.valueOf(value).setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
-            .toPlainString();
+        return forecastNumberFormatter.scaleToPlainString(value, companyNo);
     }
 
     private String formatScaledNumber(String value, int companyNo) {
@@ -5793,8 +5812,7 @@ public class MiForecastService {
             return null;
         }
         try {
-            return new BigDecimal(value).setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
-                .toPlainString();
+            return forecastNumberFormatter.scaleToPlainString(value, companyNo);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -6237,8 +6255,9 @@ public class MiForecastService {
             BigDecimal diff = result.subtract(criteria);
             BigDecimal rate = diff.divide(criteria, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
-                .setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
-            BigDecimal scaledDiff = diff.setScale(decimalScale(companyNo), RoundingMode.HALF_UP);
+                .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP);
+            BigDecimal scaledDiff = diff.setScale(
+                forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP);
             return new DiffResult(scaledDiff.doubleValue(), rate.doubleValue());
         } catch (NumberFormatException e) {
             return DiffResult.empty();
@@ -6254,7 +6273,8 @@ public class MiForecastService {
             return null;
         }
         try {
-            return new BigDecimal(value).setScale(decimalScale(companyNo), RoundingMode.HALF_UP)
+            return new BigDecimal(value)
+                .setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                 .doubleValue();
         } catch (NumberFormatException e) {
             return null;
