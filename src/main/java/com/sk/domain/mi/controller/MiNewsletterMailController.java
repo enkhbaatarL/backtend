@@ -5,6 +5,7 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.mi.dto.request.newsletter.NewsletterMailSendReq;
 import com.sk.domain.mi.service.MiNewsletterMailService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -13,15 +14,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,22 +46,17 @@ public class MiNewsletterMailController {
     public BaseResponse<String> sendOriginalIssueMail(
         @PathVariable Integer newsletterId,
         @PathVariable Integer issueNo,
-            @RequestParam("subject") String subject,
-            @RequestParam("htmlBody") String htmlBody,
-            @RequestParam(value = "recipientEmails", required = false) List<String> recipientEmails,
-            @RequestParam(value = "recipientEmails[]", required = false) List<String> recipientEmailsArray,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @UserResolve User actorUser) {
-
-        List<String> mergedRecipientEmails = mergeValues(recipientEmails, recipientEmailsArray);
+        @ModelAttribute NewsletterMailSendReq request,
+        @RequestPart(value = "images", required = false) List<MultipartFile> images,
+        @UserResolve User actorUser) {
 
         miNewsletterMailService.sendOriginalIssueMail(
                 newsletterId,
                 issueNo,
-                subject,
-                htmlBody,
+                request.getSubject(),
+                request.getHtmlBody(),
                 images,
-                mergedRecipientEmails,
+                request.getRecipientEmails(),
                 actorUser);
 
         return BaseResponseFactory.create("success");
@@ -78,38 +73,19 @@ public class MiNewsletterMailController {
     public BaseResponse<String> sendEditionMail(
         @PathVariable Integer newsletterId,
         @PathVariable Integer issueNo,
-            @RequestParam("subject") String subject,
-            @RequestParam("htmlBody") String htmlBody,
-            @RequestParam(value = "recipientEmails", required = false) List<String> recipientEmails,
-            @RequestParam(value = "recipientEmails[]", required = false) List<String> recipientEmailsArray,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @UserResolve User actorUser) {
-
-        List<String> mergedRecipientEmails = mergeValues(recipientEmails, recipientEmailsArray);
+        @ModelAttribute NewsletterMailSendReq request,
+        @RequestPart(value = "images", required = false) List<MultipartFile> images,
+        @UserResolve User actorUser) {
 
         miNewsletterMailService.sendEditionMail(
                 newsletterId,
                 issueNo,
-                subject,
-                htmlBody,
+                request.getSubject(),
+                request.getHtmlBody(),
                 images,
-                mergedRecipientEmails,
+                request.getRecipientEmails(),
                 actorUser);
 
         return BaseResponseFactory.create("success");
-    }
-
-    private List<String> mergeValues(List<String> values, List<String> arrayValues) {
-        if ((values == null || values.isEmpty()) && (arrayValues == null || arrayValues.isEmpty())) {
-            return null;
-        }
-        List<String> merged = new ArrayList<>();
-        if (values != null) {
-            merged.addAll(values);
-        }
-        if (arrayValues != null) {
-            merged.addAll(arrayValues);
-        }
-        return merged;
     }
 }
