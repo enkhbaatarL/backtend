@@ -11,8 +11,10 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
 import jakarta.mail.internet.MimeMessage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -37,8 +39,9 @@ public class MiNewsletterMailService {
     private static final int MAX_RETRY_COUNT = 3;
     private static final int RETRY_DELAY_MILLIS = 1000;
 
-    private static final Pattern CID_REFERENCE_PATTERN = Pattern.compile("cid:([A-Za-z0-9._-]+)");
-    private static final Pattern CID_ALLOWED_PATTERN = Pattern.compile("^[A-Za-z0-9._-]+$");
+    private static final Pattern CID_REFERENCE_PATTERN = Pattern.compile("cid:([A-Za-z0-9._@-]+)");
+    private static final Pattern CID_ALLOWED_PATTERN = Pattern.compile("^[A-Za-z0-9._@-]+$");
+    private static final Pattern NON_CID_ALLOWED_PATTERN = Pattern.compile("[^A-Za-z0-9._@-]");
     private static final Pattern EMAIL_ALLOWED_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final String EDIT_STATUS_SAVED = "EDIT_SAVED";
 
@@ -62,12 +65,11 @@ public class MiNewsletterMailService {
             String subject,
             String htmlBody,
             List<MultipartFile> images,
-            List<String> cids,
             List<String> recipientEmails,
             User actorUser) {
 
         validateSendRequest(subject, htmlBody);
-        validateOriginalIssueState(newsletterId, issueNo, actorUser);
+        // validateOriginalIssueState(newsletterId, issueNo, actorUser);
 
         List<String> recipients = resolveOriginalRecipients(newsletterId, recipientEmails);
         if (recipients.isEmpty()) {
@@ -75,7 +77,7 @@ public class MiNewsletterMailService {
                     "No recipients resolved. Provide recipientEmails or configure newsletter subscriptions.");
         }
 
-        List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images, cids);
+        List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images);
         sendMailWithRetry(recipients, subject, htmlBody, inlineResources);
 
         log.info("Newsletter original mail sent. newsletterId: {}, issueNo: {}, recipients: {}", newsletterId, issueNo, recipients.size());
@@ -95,7 +97,6 @@ public class MiNewsletterMailService {
             String subject,
             String htmlBody,
             List<MultipartFile> images,
-            List<String> cids,
             List<String> recipientEmails,
             User actorUser) {
 
@@ -108,7 +109,7 @@ public class MiNewsletterMailService {
                     "No recipients resolved. Provide recipientEmails or ensure actor email exists.");
         }
 
-        List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images, cids);
+        List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images);
         sendMailWithRetry(recipients, subject, htmlBody, inlineResources);
 
         log.info("Newsletter edition mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
@@ -246,33 +247,31 @@ public class MiNewsletterMailService {
             if (StringUtils.isBlank(email)) {
                 continue;
             }
-
-            String trimmed = email.trim();
-            if (!EMAIL_ALLOWED_PATTERN.matcher(trimmed).matches()) {
-                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                        "Invalid recipient email: " + trimmed);
+            // Support both repeated form-data keys and comma-separated one-field input.
+            String[] tokens = email.split(",");
+            for (String token : tokens) {
+                String trimmed = token.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                if (!EMAIL_ALLOWED_PATTERN.matcher(trimmed).matches()) {
+                    throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                            "Invalid recipient email: " + trimmed);
+                }
+                normalized.add(trimmed);
             }
-            normalized.add(trimmed);
         }
 
         return new ArrayList<>(normalized);
     }
 
-    private List<InlineResource> validateAndBuildInlineResources(String htmlBody, List<MultipartFile> images, List<String> cids) {
+    private List<InlineResource> validateAndBuildInlineResources(String htmlBody, List<MultipartFile> images) {
         List<MultipartFile> normalizedImages = normalizeImages(images);
-        List<String> normalizedCids = normalizeCids(cids);
-
-        boolean hasImages = !normalizedImages.isEmpty();
-        boolean hasCids = !normalizedCids.isEmpty();
-
-        if (hasImages != hasCids) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                    "images and cids should be provided together");
-        }
+        List<String> normalizedCids = deriveCidsFromImages(normalizedImages);
 
         Set<String> htmlCidRefs = extractCidReferences(htmlBody);
 
-        if (!hasImages) {
+        if (normalizedImages.isEmpty()) {
             if (!htmlCidRefs.isEmpty()) {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
                         "htmlBody contains cid references but no inline images were provided");
@@ -320,26 +319,43 @@ public class MiNewsletterMailService {
         return normalized;
     }
 
-    private List<String> normalizeCids(List<String> cids) {
-        if (cids == null || cids.isEmpty()) {
+    private List<String> deriveCidsFromImages(List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
             return List.of();
         }
 
-        List<String> normalized = new ArrayList<>();
-        for (String cid : cids) {
-            if (StringUtils.isBlank(cid)) {
-                continue;
+        List<String> cids = new ArrayList<>(images.size());
+        Map<String, Integer> nameCounter = new HashMap<>();
+
+        for (MultipartFile image : images) {
+            String originalFilename = StringUtils.defaultIfBlank(image.getOriginalFilename(), "image");
+            String base = stripExtension(originalFilename).toLowerCase();
+            base = NON_CID_ALLOWED_PATTERN.matcher(base).replaceAll("-");
+            base = base.replaceAll("^-+|-+$", "");
+            if (base.isBlank()) {
+                base = "image";
             }
 
-            String trimmed = cid.trim();
-            if (!CID_ALLOWED_PATTERN.matcher(trimmed).matches()) {
+            int seq = nameCounter.getOrDefault(base, 0);
+            nameCounter.put(base, seq + 1);
+            String candidate = seq == 0 ? base : base + "-" + seq;
+
+            if (!CID_ALLOWED_PATTERN.matcher(candidate).matches()) {
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                        "Invalid cid format: " + trimmed);
+                        "Invalid cid derived from filename: " + originalFilename);
             }
-            normalized.add(trimmed);
+            cids.add(candidate);
         }
 
-        return normalized;
+        return cids;
+    }
+
+    private String stripExtension(String filename) {
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex <= 0) {
+            return filename;
+        }
+        return filename.substring(0, dotIndex);
     }
 
     private Set<String> extractCidReferences(String htmlBody) {

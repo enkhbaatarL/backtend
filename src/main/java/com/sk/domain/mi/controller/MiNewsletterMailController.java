@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,9 +49,11 @@ public class MiNewsletterMailController {
             @RequestParam("subject") String subject,
             @RequestParam("htmlBody") String htmlBody,
             @RequestParam(value = "recipientEmails", required = false) List<String> recipientEmails,
-            @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestParam(value = "cids", required = false) List<String> cids,
+            @RequestParam(value = "recipientEmails[]", required = false) List<String> recipientEmailsArray,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @UserResolve User actorUser) {
+
+        List<String> mergedRecipientEmails = mergeValues(recipientEmails, recipientEmailsArray);
 
         miNewsletterMailService.sendOriginalIssueMail(
                 newsletterId,
@@ -57,8 +61,7 @@ public class MiNewsletterMailController {
                 subject,
                 htmlBody,
                 images,
-                cids,
-                recipientEmails,
+                mergedRecipientEmails,
                 actorUser);
 
         return BaseResponseFactory.create("success");
@@ -78,9 +81,11 @@ public class MiNewsletterMailController {
             @RequestParam("subject") String subject,
             @RequestParam("htmlBody") String htmlBody,
             @RequestParam(value = "recipientEmails", required = false) List<String> recipientEmails,
-            @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestParam(value = "cids", required = false) List<String> cids,
+            @RequestParam(value = "recipientEmails[]", required = false) List<String> recipientEmailsArray,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @UserResolve User actorUser) {
+
+        List<String> mergedRecipientEmails = mergeValues(recipientEmails, recipientEmailsArray);
 
         miNewsletterMailService.sendEditionMail(
                 newsletterId,
@@ -88,10 +93,23 @@ public class MiNewsletterMailController {
                 subject,
                 htmlBody,
                 images,
-                cids,
-                recipientEmails,
+                mergedRecipientEmails,
                 actorUser);
 
         return BaseResponseFactory.create("success");
+    }
+
+    private List<String> mergeValues(List<String> values, List<String> arrayValues) {
+        if ((values == null || values.isEmpty()) && (arrayValues == null || arrayValues.isEmpty())) {
+            return null;
+        }
+        List<String> merged = new ArrayList<>();
+        if (values != null) {
+            merged.addAll(values);
+        }
+        if (arrayValues != null) {
+            merged.addAll(arrayValues);
+        }
+        return merged;
     }
 }
