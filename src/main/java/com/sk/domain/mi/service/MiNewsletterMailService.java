@@ -90,7 +90,8 @@ public class MiNewsletterMailService {
      */
     @Transactional
     public void sendEditionMail(
-            Integer editionId,
+            Integer newsletterId,
+            Integer issueNo,
             String subject,
             String htmlBody,
             List<MultipartFile> images,
@@ -99,7 +100,7 @@ public class MiNewsletterMailService {
             User actorUser) {
 
         validateSendRequest(subject, htmlBody);
-        // validateEditionOwnershipAndState(editionId, actorUser);
+//        validateEditionOwnershipAndState(newsletterId, issueNo, actorUser);
 
         List<String> recipients = resolveEditionRecipients(recipientEmails, actorUser);
         if (recipients.isEmpty()) {
@@ -110,7 +111,8 @@ public class MiNewsletterMailService {
         List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images, cids);
         sendMailWithRetry(recipients, subject, htmlBody, inlineResources);
 
-        log.info("Newsletter edition mail sent. editionId: {}, recipients: {}", editionId, recipients.size());
+        log.info("Newsletter edition mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
+                newsletterId, issueNo, recipients.size());
     }
 
     private void validateSendRequest(String subject, String htmlBody) {
@@ -150,30 +152,37 @@ public class MiNewsletterMailService {
         }
     }
 
-    private void validateEditionOwnershipAndState(Integer editionId, User actorUser) {
-        if (editionId == null) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "editionId is required");
+    private void validateEditionOwnershipAndState(Integer newsletterId, Integer issueNo, User actorUser) {
+        if (newsletterId == null || issueNo == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "newsletterId and issueNo are required");
         }
         if (actorUser == null || actorUser.getUserNo() == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
         }
 
         String sql = """
-                SELECT owner_user_id, edit_status
-                  FROM newsletter_user_edition
-                 WHERE id = :editionId
+                SELECT e.owner_user_id, e.edit_status
+                  FROM newsletter_user_edition e
+                  JOIN newsletter_issue_original o
+                    ON o.id = e.original_issue_id
+                 WHERE o.newsletter_master_id = :newsletterId
+                   AND o.issue_no = :issueNo
+                   AND e.del_yn = 'N'
                 """;
 
         List<EditionStateRow> rows = namedParameterJdbcTemplate.query(
                 sql,
-                new MapSqlParameterSource("editionId", editionId),
+                new MapSqlParameterSource()
+                        .addValue("newsletterId", newsletterId)
+                        .addValue("issueNo", issueNo),
                 (rs, rowNum) -> new EditionStateRow(
                         rs.getObject("owner_user_id"),
                         rs.getString("edit_status"))
         );
 
         if (rows.isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "editionId not found: " + editionId);
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                    "edition not found. newsletterId: %d, issueNo: %d".formatted(newsletterId, issueNo));
         }
 
         EditionStateRow stateRow = rows.get(0);

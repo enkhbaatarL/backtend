@@ -27,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "13. Newsletter Mail API", description = "뉴스레터 Mail API입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/newsletters")
+@RequestMapping("/api/v1/mi/newsletter")
 @RequiredArgsConstructor
 public class MiNewsletterMailController {
 
@@ -38,7 +38,7 @@ public class MiNewsletterMailController {
     @Parameter(name = "issueNo", description = "회차 번호")
     @Operation(summary = "오리지널 메일 발송", description = "오리지널 회차 메일을 발송합니다. recipientEmails 미입력 시 구독자를 대상으로 발송합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/{newsletterId}/issues/{issueNo}/send-mail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{newsletterId}/{issueNo}/send-mail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<String> sendOriginalIssueMail(
@@ -65,14 +65,16 @@ public class MiNewsletterMailController {
     }
 
     @ApiOrder(2)
-    @Parameter(name = "editionId", description = "사용자 에디션 ID")
+    @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
+    @Parameter(name = "issueNo", description = "회차 번호")
     @Operation(summary = "에디션 메일 발송", description = "에디션 저장본 메일을 발송합니다. recipientEmails 미입력 시 요청 사용자 이메일로 발송합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/editions/{editionId}/send-mail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{newsletterId}/{issueNo}/edition/send-mail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<String> sendEditionMail(
-        @PathVariable Integer editionId,
+        @PathVariable Integer newsletterId,
+        @PathVariable Integer issueNo,
             @RequestParam("subject") String subject,
             @RequestParam("htmlBody") String htmlBody,
             @RequestParam(value = "recipientEmails", required = false) List<String> recipientEmails,
@@ -81,7 +83,8 @@ public class MiNewsletterMailController {
             @UserResolve User actorUser) {
 
         miNewsletterMailService.sendEditionMail(
-                editionId,
+                newsletterId,
+                issueNo,
                 subject,
                 htmlBody,
                 images,
