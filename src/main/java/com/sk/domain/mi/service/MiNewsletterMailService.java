@@ -3,6 +3,7 @@ package com.sk.domain.mi.service;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.properties.MailProperties;
+import com.sk.domain.shared.client.ChartRendererClient;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.User;
@@ -10,7 +11,12 @@ import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
 import jakarta.mail.internet.MimeMessage;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,6 +28,8 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -84,35 +92,75 @@ public class MiNewsletterMailService {
     }
 
     /**
-     * 에디션 메일 발송
+     * 스케줄러 자동 발송 - Playwright로 캡처한 메일 콘텐츠를 구독자에게 개별 발송
+     *
+     * 정책:
+     * - 수신자는 각자 본인만 수신자로 보임 (개별 발송)
+     * - 수신자 목록: 하드코딩 (추후 newsletter_subscription 테이블 조회로 교체)
+     */
+    @Transactional
+    public void sendOriginalIssueMailFromCapture(
+            Integer newsletterId,
+            Integer issueNo,
+            String subject,
+            ChartRendererClient.MailContents mailContents) {
+
+        validateSendRequest(subject, mailContents.htmlBody());
+
+        // TODO: newsletter_subscription 테이블 조회로 교체
+        List<String> recipients = List.of(
+            "jinyi.lee@twolinecloud.com",
+            "jh.park@twolinecloud.com",
+            "hoduhomil@gmail.com"
+        );
+
+        List<InlineResource> inlineResources =
+            buildInlineResourcesFromCaptured(mailContents.htmlBody(), mailContents.images());
+
+        // 수신자 개별 발송 - 각자 본인만 수신자로 보임
+        for (String recipient : recipients) {
+            sendIndividualMailWithRetry(recipient, subject, mailContents.htmlBody(), inlineResources);
+        }
+
+        log.info("Newsletter captured mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
+            newsletterId, issueNo, recipients.size());
+    }
+
+    /**
+     * 리비전 메일 발송
      *
      * 정책:
      * - recipientEmails 입력 시 해당 수신자에게 발송
-     * - recipientEmails 미입력 시 요청 사용자 이메일 1건으로 발송
+     * - recipientEmails 미입력 시 발송 대상 없음으로 처리
      */
     @Transactional
-    public void sendEditionMail(
+    public void sendRevisionMail(
             Integer newsletterId,
             Integer issueNo,
             String subject,
             String htmlBody,
             List<MultipartFile> images,
             List<String> recipientEmails,
+            String scheduledAt,
             User actorUser) {
 
         validateSendRequest(subject, htmlBody);
-//        validateEditionOwnershipAndState(newsletterId, issueNo, actorUser);
+        // validateScheduledAtForNowOnly(scheduledAt);
+//        validateRevisionOwnershipAndState(newsletterId, issueNo, actorUser);
+        if (actorUser == null || actorUser.getUserNo() == null) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
+        }
 
-        List<String> recipients = resolveEditionRecipients(recipientEmails, actorUser);
+        List<String> recipients = resolveRevisionRecipients(recipientEmails);
         if (recipients.isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER,
-                    "No recipients resolved. Provide recipientEmails or ensure actor email exists.");
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                    "No valid recipientEmails provided. Provide at least one valid email.");
         }
 
         List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images);
         sendMailWithRetry(recipients, subject, htmlBody, inlineResources);
 
-        log.info("Newsletter edition mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
+        log.info("Newsletter revision mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
                 newsletterId, issueNo, recipients.size());
     }
 
@@ -153,7 +201,7 @@ public class MiNewsletterMailService {
         }
     }
 
-    private void validateEditionOwnershipAndState(Integer newsletterId, Integer issueNo, User actorUser) {
+    private void validateRevisionOwnershipAndState(Integer newsletterId, Integer issueNo, User actorUser) {
         if (newsletterId == null || issueNo == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "newsletterId and issueNo are required");
         }
@@ -171,29 +219,29 @@ public class MiNewsletterMailService {
                    AND e.del_yn = 'N'
                 """;
 
-        List<EditionStateRow> rows = namedParameterJdbcTemplate.query(
+        List<RevisionStateRow> rows = namedParameterJdbcTemplate.query(
                 sql,
                 new MapSqlParameterSource()
                         .addValue("newsletterId", newsletterId)
                         .addValue("issueNo", issueNo),
-                (rs, rowNum) -> new EditionStateRow(
+                (rs, rowNum) -> new RevisionStateRow(
                         rs.getObject("owner_user_id"),
                         rs.getString("edit_status"))
         );
 
         if (rows.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                    "edition not found. newsletterId: %d, issueNo: %d".formatted(newsletterId, issueNo));
+                    "revision not found. newsletterId: %d, issueNo: %d".formatted(newsletterId, issueNo));
         }
 
-        EditionStateRow stateRow = rows.get(0);
+        RevisionStateRow stateRow = rows.get(0);
         Integer ownerUserId = toInteger(stateRow.ownerUserId());
         if (ownerUserId == null || !ownerUserId.equals(actorUser.getUserNo())) {
-            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "No permission for this edition");
+            throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "No permission for this revision");
         }
 
         if (!EDIT_STATUS_SAVED.equalsIgnoreCase(StringUtils.defaultString(stateRow.editStatus()))) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Edition is not in EDIT_SAVED state");
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "Revision is not in EDIT_SAVED state");
         }
     }
 
@@ -223,18 +271,12 @@ public class MiNewsletterMailService {
         return normalizeRecipients(subscribers);
     }
 
-    private List<String> resolveEditionRecipients(List<String> recipientEmails, User actorUser) {
+    private List<String> resolveRevisionRecipients(List<String> recipientEmails) {
         List<String> explicitRecipients = normalizeRecipients(recipientEmails);
         if (!explicitRecipients.isEmpty()) {
             return explicitRecipients;
         }
-
-        String actorEmail = actorUser.getUserLoginId();
-        if (StringUtils.isBlank(actorEmail)) {
-            return List.of();
-        }
-
-        return List.of(actorEmail.trim());
+        return List.of();
     }
 
     private List<String> normalizeRecipients(List<String> recipientEmails) {
@@ -298,7 +340,7 @@ public class MiNewsletterMailService {
             String cid = normalizedCids.get(i);
 
             String contentType = normalizeImageContentType(file);
-            resources.add(new InlineResource(cid, file, contentType));
+            resources.add(new InlineResource(cid, (InputStreamSource) file, contentType));
         }
 
         return resources;
@@ -395,26 +437,33 @@ public class MiNewsletterMailService {
     }
 
     private void sendMailWithRetry(List<String> recipients, String subject, String htmlBody, List<InlineResource> inlineResources) {
-        for (String recipient : recipients) {
-            sendSingleMailWithRetry(recipient, subject, htmlBody, inlineResources);
-        }
+        sendSingleMailWithRetry(recipients, subject, htmlBody, inlineResources);
     }
 
-    private void sendSingleMailWithRetry(String recipient, String subject, String htmlBody, List<InlineResource> inlineResources) {
+    private void sendSingleMailWithRetry(
+            List<String> recipients,
+            String subject,
+            String htmlBody,
+            List<InlineResource> inlineResources) {
+
+        if (recipients == null || recipients.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "recipientEmails is required");
+        }
+
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
                 helper.setFrom(mailProperties.getFrom());
-                helper.setTo(recipient);
+                helper.setTo(recipients.toArray(String[]::new));
                 helper.setSubject(subject);
 
                 // IMPORTANT: setText를 먼저 호출한 뒤 inline 리소스를 추가해야 메일 클라이언트 호환성이 높다.
                 helper.setText(htmlBody, true);
 
                 for (InlineResource inlineResource : inlineResources) {
-                    helper.addInline(inlineResource.cid(), inlineResource.file(), inlineResource.contentType());
+                    helper.addInline(inlineResource.cid(), inlineResource.source(), inlineResource.contentType());
                 }
 
                 javaMailSender.send(message);
@@ -424,14 +473,14 @@ public class MiNewsletterMailService {
                     throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
                             "Mail sending failed after %d attempts: %s".formatted(MAX_RETRY_COUNT, e.getMessage()));
                 }
-                waitBeforeRetry(attempt, recipient, e);
+                waitBeforeRetry(attempt, recipients, e);
             }
         }
     }
 
-    private void waitBeforeRetry(int attempt, String recipient, Exception e) {
-        log.warn("Mail sending failed on attempt {} for recipient {}. Retrying after {}ms...",
-                attempt, recipient, RETRY_DELAY_MILLIS, e);
+    private void waitBeforeRetry(int attempt, List<String> recipients, Exception e) {
+        log.warn("Mail sending failed on attempt {} for recipients(count={}). Retrying after {}ms...",
+                attempt, recipients.size(), RETRY_DELAY_MILLIS, e);
         try {
             Thread.sleep(RETRY_DELAY_MILLIS);
         } catch (InterruptedException ie) {
@@ -457,9 +506,90 @@ public class MiNewsletterMailService {
         }
     }
 
-    private record EditionStateRow(Object ownerUserId, String editStatus) {
+    private void validateScheduledAtForNowOnly(String scheduledAt) {
+        if (StringUtils.isBlank(scheduledAt)) {
+            return;
+        }
+
+        OffsetDateTime scheduledDateTime = parseScheduledAt(scheduledAt);
+        if (scheduledDateTime.isAfter(OffsetDateTime.now())) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "Scheduled send is not supported by this API. send immediately without future scheduledAt.");
+        }
     }
 
-    private record InlineResource(String cid, MultipartFile file, String contentType) {
+    private OffsetDateTime parseScheduledAt(String scheduledAt) {
+        try {
+            return OffsetDateTime.parse(scheduledAt);
+        } catch (DateTimeException ignored) {
+            try {
+                LocalDateTime localDateTime = LocalDateTime.parse(scheduledAt);
+                return localDateTime.atZone(ZoneId.of("Asia/Seoul")).toOffsetDateTime();
+            } catch (DateTimeException ex) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                        "scheduledAt must be ISO-8601 format (e.g. 2026-03-07T10:30:00+09:00)");
+            }
+        }
     }
+
+    /**
+     * base64 이미지 목록을 InlineResource 로 변환 (Playwright 캡처 경로)
+     * CID는 프론트엔드가 명시적으로 지정하므로 파일명 파생 없이 그대로 사용한다.
+     */
+    private List<InlineResource> buildInlineResourcesFromCaptured(
+            String htmlBody, List<ChartRendererClient.CapturedImage> capturedImages) {
+
+        if (capturedImages == null || capturedImages.isEmpty()) {
+            return List.of();
+        }
+
+        List<InlineResource> resources = new ArrayList<>();
+        for (ChartRendererClient.CapturedImage img : capturedImages) {
+            byte[] bytes = Base64.getDecoder().decode(img.data());
+            resources.add(new InlineResource(img.cid(), new ByteArrayResource(bytes), img.contentType()));
+        }
+        return resources;
+    }
+
+    /**
+     * 수신자 1명에게 개별 발송 (To 필드에 본인만 노출)
+     */
+    private void sendIndividualMailWithRetry(
+            String recipient,
+            String subject,
+            String htmlBody,
+            List<InlineResource> inlineResources) {
+
+        for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
+            try {
+                MimeMessage message = javaMailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+                helper.setFrom(mailProperties.getFrom());
+                helper.setTo(recipient);
+                helper.setSubject(subject);
+                helper.setText(htmlBody, true);
+
+                for (InlineResource inlineResource : inlineResources) {
+                    helper.addInline(inlineResource.cid(), inlineResource.source(), inlineResource.contentType());
+                }
+
+                javaMailSender.send(message);
+                return;
+            } catch (Exception e) {
+                if (attempt == MAX_RETRY_COUNT) {
+                    throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
+                        "Mail sending failed after %d attempts for %s: %s"
+                            .formatted(MAX_RETRY_COUNT, recipient, e.getMessage()));
+                }
+                waitBeforeRetry(attempt, List.of(recipient), e);
+            }
+        }
+    }
+
+    private record RevisionStateRow(Object ownerUserId, String editStatus) {
+    }
+
+    /** cid + InputStreamSource(MultipartFile 또는 ByteArrayResource) + contentType */
+    private record InlineResource(String cid, InputStreamSource source, String contentType) {}
 }

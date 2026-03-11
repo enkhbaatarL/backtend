@@ -18,7 +18,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,52 +37,26 @@ public class MiNewsletterMailController {
     @ApiOrder(1)
     @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
     @Parameter(name = "issueNo", description = "회차 번호")
-    @Operation(summary = "오리지널 메일 발송", description = "오리지널 회차 메일을 발송합니다. recipientEmails 미입력 시 구독자를 대상으로 발송합니다.")
+    @Operation(summary = "편집본 메일 발송",
+            description = "리비전(편집본) 저장본 메일을 발송합니다. scheduledAt 미입력 또는 과거 시각은 즉시 발송으로 처리하고, 미래 시각은 현재 API에서 미지원(검증 에러)합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping(value = "/{newsletterId}/{issueNo}/send-mail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<String> sendOriginalIssueMail(
+    public BaseResponse<String> sendRevisionIssueMail(
         @PathVariable Integer newsletterId,
         @PathVariable Integer issueNo,
-        @ModelAttribute NewsletterMailSendReq request,
+        @RequestPart("request") NewsletterMailSendReq request,
         @RequestPart(value = "images", required = false) List<MultipartFile> images,
         @UserResolve User actorUser) {
-
-        miNewsletterMailService.sendOriginalIssueMail(
+        miNewsletterMailService.sendRevisionMail(
                 newsletterId,
                 issueNo,
-                request.getSubject(),
-                request.getHtmlBody(),
+                request.subject(),
+                request.htmlBody(),
                 images,
-                request.getRecipientEmails(),
-                actorUser);
-
-        return BaseResponseFactory.create("success");
-    }
-
-    @ApiOrder(2)
-    @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
-    @Parameter(name = "issueNo", description = "회차 번호")
-    @Operation(summary = "에디션 메일 발송", description = "에디션 저장본 메일을 발송합니다. recipientEmails 미입력 시 요청 사용자 이메일로 발송합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/{newsletterId}/{issueNo}/edition/send-mail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
-        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-    public BaseResponse<String> sendEditionMail(
-        @PathVariable Integer newsletterId,
-        @PathVariable Integer issueNo,
-        @ModelAttribute NewsletterMailSendReq request,
-        @RequestPart(value = "images", required = false) List<MultipartFile> images,
-        @UserResolve User actorUser) {
-
-        miNewsletterMailService.sendEditionMail(
-                newsletterId,
-                issueNo,
-                request.getSubject(),
-                request.getHtmlBody(),
-                images,
-                request.getRecipientEmails(),
+                request.recipientEmails(),
+                request.scheduledAt(),
                 actorUser);
 
         return BaseResponseFactory.create("success");

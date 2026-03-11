@@ -1,5 +1,6 @@
 package com.sk;
 
+import com.sk.common.properties.ChartCaptureProperties;
 import com.sk.common.properties.JwtProperties;
 import java.util.TimeZone;
 import org.springframework.boot.SpringApplication;
@@ -15,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableJpaAuditing
 @SpringBootApplication
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, ChartCaptureProperties.class})
 public class MiPlatformApplication {
 
     public static void main(String[] args) {
