@@ -10,6 +10,7 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterSubscriptionRepository;
 import jakarta.mail.internet.MimeMessage;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
@@ -57,6 +58,7 @@ public class MiNewsletterMailService {
     private final MailProperties mailProperties;
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
+    private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     /**
@@ -96,7 +98,7 @@ public class MiNewsletterMailService {
      *
      * 정책:
      * - 수신자는 각자 본인만 수신자로 보임 (개별 발송)
-     * - 수신자 목록: 하드코딩 (추후 newsletter_subscription 테이블 조회로 교체)
+     * - 수신자 목록: 구독 테이블 기반 조회
      */
     @Transactional
     public void sendOriginalIssueMailFromCapture(
@@ -107,12 +109,11 @@ public class MiNewsletterMailService {
 
         validateSendRequest(subject, mailContents.htmlBody());
 
-        // TODO: newsletter_subscription 테이블 조회로 교체
-        List<String> recipients = List.of(
-            "jinyi.lee@twolinecloud.com",
-            "jh.park@twolinecloud.com",
-            "hoduhomil@gmail.com"
-        );
+        List<String> recipients = resolveOriginalRecipients(newsletterId, null);
+        if (recipients.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_MISSING_PARAMETER,
+                "No recipients resolved. Configure newsletter subscriptions.");
+        }
 
         List<InlineResource> inlineResources =
             buildInlineResourcesFromCaptured(mailContents.htmlBody(), mailContents.images());
@@ -250,25 +251,7 @@ public class MiNewsletterMailService {
         if (!explicitRecipients.isEmpty()) {
             return explicitRecipients;
         }
-
-        String sql = """
-                SELECT DISTINCT u.usr_logn_id AS email
-                  FROM newsletter_subscription ns
-                  JOIN tmd_usrm u
-                    ON u.usr_no = ns.user_id
-                 WHERE ns.newsletter_master_id = :newsletterId
-                   AND ns.is_subscribed = TRUE
-                   AND u.del_yn = 'N'
-                   AND u.usr_logn_id IS NOT NULL
-                """;
-
-        List<String> subscribers = namedParameterJdbcTemplate.query(
-                sql,
-                new MapSqlParameterSource("newsletterId", newsletterId),
-                (rs, rowNum) -> rs.getString("email")
-        );
-
-        return normalizeRecipients(subscribers);
+        return normalizeRecipients(newsletterSubscriptionRepository.findActiveSubscriberEmails(newsletterId));
     }
 
     private List<String> resolveRevisionRecipients(List<String> recipientEmails) {

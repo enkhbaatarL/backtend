@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.service.MiNewsletterService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MiNewsletterDedicatedController {
 
     private final MiNewsletterService miNewsletterService;
+    private final AuthorizationService authorizationService;
 
     @ApiOrder(4)
     @Parameter(name = "companyNo", description = "고객회사번호")
@@ -41,9 +43,10 @@ public class MiNewsletterDedicatedController {
         @PathVariable("issueNo") String issueNo,
         @RequestParam(value = "companyNo") Integer companyNo
         ) {
+        Integer userNo = authorizationService.getUserNo();
 
         return BaseResponseFactory.create(
-            miNewsletterService.getNewsletterDetail(companyNo, newsletterId, issueNo)
+            miNewsletterService.getNewsletterDetail(companyNo, userNo, newsletterId, issueNo)
         );
     }
 }

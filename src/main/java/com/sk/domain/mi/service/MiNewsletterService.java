@@ -23,6 +23,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
+import com.sk.domain.shared.entity.master.tmd.NewsletterSubscription;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
@@ -35,6 +36,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterCollectionChartRepos
 import com.sk.domain.shared.repository.master.tmd.NewsletterEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterSubscriptionRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateCollectionChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
@@ -88,6 +90,7 @@ public class MiNewsletterService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
+    private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final NewsletterTemplateRepository newsletterTemplateRepository;
     private final NewsletterTextRepository newsletterTextRepository;
     private final NewsletterEventRepository newsletterEventRepository;
@@ -153,9 +156,10 @@ public class MiNewsletterService {
     /**
      * 뉴스레터별 최근호 조회
      */
-    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(Integer companyNo, int page, int size) {
+    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(
+        Integer companyNo, Integer userNo, int page, int size) {
 
-        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters(companyNo);
+        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters(companyNo, userNo);
 
         // 페이징 처리
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -172,12 +176,14 @@ public class MiNewsletterService {
         return PaginationRes.toRes(newsletterPage);
     }
 
-    private List<NewsletterFeaturedListRes> getFeaturedNewsletters(Integer companyNo) {
+    private List<NewsletterFeaturedListRes> getFeaturedNewsletters(Integer companyNo, Integer userNo) {
         List<NewsletterFeaturedListRes> latestNewsletters = new ArrayList<>();
 
         try {
             List<NewsletterMaster> newsletterMasters = newsletterMasterRepository
                 .findByCustomerCompanyNoAndIsDeletedFalse(companyNo);
+
+            Map<Integer, Boolean> subscriptionMap = getSubscriptionMap(userNo, newsletterMasters);
 
             for (NewsletterMaster master : newsletterMasters) {
                 Optional<NewsletterPublishHistory> latestPublished =
@@ -187,7 +193,8 @@ public class MiNewsletterService {
                     );
 
                 NewsletterFeaturedListRes featuredRes = createFeaturedListRes(master,
-                    latestPublished.orElse(null));
+                    latestPublished.orElse(null),
+                    subscriptionMap.getOrDefault(master.getNewsletterMasterId(), false));
                 latestNewsletters.add(featuredRes);
             }
 
@@ -200,13 +207,13 @@ public class MiNewsletterService {
     }
 
     private NewsletterFeaturedListRes createFeaturedListRes(NewsletterMaster master,
-        NewsletterPublishHistory latestHistory) {
+        NewsletterPublishHistory latestHistory, Boolean subscribed) {
         return new NewsletterFeaturedListRes(
             master.getNewsletterMasterId().toString(),                    // newsletterId
             master.getPeriodType().getCode(),                                // frequency
             master.getMasterName(),                                       // name
             master.getExplanation(),                                      // description
-            false,
+            subscribed,
             latestHistory != null ? latestHistory.getIssueNo().toString() : "0",  // issueNo
             encodeImageToBase64(master.getImageUrl(),
                 MIME_TYPE),                                         // image
@@ -290,10 +297,11 @@ public class MiNewsletterService {
         NewsletterMaster master = newsletterMasterRepository.findById(newsletterId)
                 .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
         Integer companyNo = master.getCustomerCompanyNo() != null ? master.getCustomerCompanyNo() : 0;
-        return getNewsletterDetail(companyNo, String.valueOf(newsletterId), String.valueOf(issueNo));
+        return getNewsletterDetail(companyNo, null, String.valueOf(newsletterId), String.valueOf(issueNo));
     }
 
-    public NewsletterDetailRes getNewsletterDetail(Integer companyNo, String newsletterId, String issueNo) {
+    public NewsletterDetailRes getNewsletterDetail(
+        Integer companyNo, Integer userNo, String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
         DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
@@ -426,7 +434,7 @@ public class MiNewsletterService {
                 nm.getPeriodType().getCode(),
                 nm.getMasterName(),
                 nm.getExplanation(),
-                false,
+                resolveSubscribed(userNo, nm),
                 encodeImageToBase64(nm.getImageUrl(), MIME_TYPE),
                 true,
                 issueDetail);
@@ -472,6 +480,32 @@ public class MiNewsletterService {
             null,
             null
         );
+    }
+
+    private Map<Integer, Boolean> getSubscriptionMap(Integer userNo, List<NewsletterMaster> newsletterMasters) {
+        if (userNo == null || newsletterMasters.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Integer> newsletterIds = newsletterMasters.stream()
+            .map(NewsletterMaster::getNewsletterMasterId)
+            .toList();
+
+        return newsletterSubscriptionRepository.findByUserNoAndNewsletterMasterIds(userNo, newsletterIds).stream()
+            .collect(Collectors.toMap(
+                subscription -> subscription.getNewsletterMaster().getNewsletterMasterId(),
+                NewsletterSubscription::getIsSubscribed,
+                (left, right) -> left
+            ));
+    }
+
+    private Boolean resolveSubscribed(Integer userNo, NewsletterMaster newsletterMaster) {
+        if (userNo == null) {
+            return false;
+        }
+        return newsletterSubscriptionRepository
+            .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, userNo)
+            .map(NewsletterSubscription::getIsSubscribed)
+            .orElse(false);
     }
 
     /**

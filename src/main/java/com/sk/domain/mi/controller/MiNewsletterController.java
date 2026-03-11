@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -9,6 +10,7 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
 import com.sk.domain.mi.service.MiNewsletterService;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,8 +70,11 @@ public class MiNewsletterController {
     public BaseResponse<PaginationRes<NewsletterFeaturedListRes>> getLatestNewsletters(
         @RequestParam(value = "companyNo") Integer companyNo,
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
-        @RequestParam(value = "size", required = false, defaultValue = "6") @Min(value = 1) int size) {
-        return BaseResponseFactory.create(miNewsletterService.getLatestNewsletters(companyNo, page, size));
+        @RequestParam(value = "size", required = false, defaultValue = "6") @Min(value = 1) int size,
+        @UserResolve User actorUser) {
+        Integer userNo = actorUser != null ? actorUser.getUserNo() : null;
+        return BaseResponseFactory.create(
+            miNewsletterService.getLatestNewsletters(companyNo, userNo, page, size));
     }
 
     @ApiOrder(3)
