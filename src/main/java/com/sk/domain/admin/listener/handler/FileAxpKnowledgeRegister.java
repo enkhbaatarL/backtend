@@ -49,6 +49,11 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
     private final GoodsDataRepository goodsDataRepository;
     private final MiDataDetailService miDataDetailService;
 
+    private static final Set<String> SUPPORTED_EXT = Set.of(
+        "pdf", "jpg", "jpeg", "png", "bmp", "docx", "pptx", "html"
+    );
+
+
     @Override
     public AxpKnowledgeRegisterComponentType getType() {
         return AxpKnowledgeRegisterComponentType.FILE;
@@ -72,11 +77,14 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
         uploadFiles(files, registerReq, goodsData, goodsDataExtension, goodsDataRes);
 
         // 3. 업로드된 파일들을 datasource에 등록
-        registerToDatasource(datasourceId, registerReq);
+        boolean success = registerToDatasource(datasourceId, registerReq);
 
-        // 모두 수행이 끝나면 goodsData.updateMetaDataUploadStatus(true); 를 실행
-        goodsData.updateMetaDataUploadStatus(true);
-        goodsDataRepository.save(goodsData);
+        if(success){
+            // 모두 수행이 끝나면 goodsData.updateMetaDataUploadStatus(true); 를 실행
+            goodsData.updateMetaDataUploadStatus(true);
+            goodsDataRepository.save(goodsData);
+        }
+
     }
 
     private void handleDeletedFiles(AXUploadFileEvent event, String datasourceId, List<UploadedFile> files, AXMetaRegisterReq registerReq) {
@@ -126,6 +134,10 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
 
         for (UploadedFile uploadedFile : files) {
             try {
+                if(uploadedFile.getFileExtNm() == null || !SUPPORTED_EXT.contains(uploadedFile.getFileExtNm().toLowerCase())){
+                    log.warn("[AX Platform] Unsupported file extension: {}", uploadedFile.getFileExtNm());
+                    continue;
+                }
                 // 2. 파일 다운로드
                 FileDownloadReq downloadReq = new FileDownloadReq(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize());
                 var downloadRes = fileService.downloadFile(downloadReq);
@@ -186,6 +198,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
             }
         }
         // 요구사항에 명시된 fileMetaData 내용 추가
+        fileMetaData.put("gds_no", String.valueOf(goodsData.getGoods().getGoodsNo()));
         fileMetaData.put("content_id", String.valueOf(goodsData.getGoodsDataNo()));
         fileMetaData.put("file_name", uploadedFile.getOriginalFileNm());
         fileMetaData.put("file_extension", uploadedFile.getFileExtNm());
@@ -207,12 +220,18 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
         return fileMetaData;
     }
 
-    private void registerToDatasource(String datasourceId, AXMetaRegisterReq registerReq) {
+    private boolean registerToDatasource(String datasourceId, AXMetaRegisterReq registerReq) {
+        if(!registerReq.hasModifiedFile()){
+            log.info("[AX Platform] No files to register.");
+            return false;
+        }
         try {
             var axMetaRegisterRes = axPlatformApi.register(datasourceId, registerReq);
             log.info("[AX Platform] register result: {}", axMetaRegisterRes);
+            return true;
         } catch (Exception e) {
             log.error("[AX Platform] Failed to register files to datasource: {}", e.getMessage(), e);
+            return false;
         }
     }
 }

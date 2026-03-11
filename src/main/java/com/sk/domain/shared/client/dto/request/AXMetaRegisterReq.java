@@ -51,5 +51,9 @@ public class AXMetaRegisterReq {
         this.modifiedFiles.add(modifiedFile);
     }
 
+    public boolean hasModifiedFile(){
+        return !modifiedFiles.isEmpty();
+    }
+
     // 게터·세터 필요 시 Lombok @Data 등 활용
 }

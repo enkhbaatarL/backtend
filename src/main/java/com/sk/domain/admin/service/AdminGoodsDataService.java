@@ -15,6 +15,7 @@ import com.sk.domain.admin.dto.response.provider.*;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -90,6 +91,12 @@ public class AdminGoodsDataService {
     private final UploadedFileRepository uploadedFileRepository;
     private final ApplicationEventPublisher publisher;
     private final ProviderDefaultProperties providerDefaultProperties;
+    private AdminGoodsDataService self;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setSelf(@org.springframework.context.annotation.Lazy AdminGoodsDataService self) {
+        this.self = self;
+    }
 
     /**
     * 상품 데이타 목록을 페이지네이션 처리하여 조회한다.
@@ -883,9 +890,21 @@ public class AdminGoodsDataService {
     public void uploadUnstructuredDataToVectorByGoodsNo(int goodsNo) {
         log.info("uploadUnstructuredDataToVectorByGoodsNo: {}", goodsNo);
 
-        List<GoodsData> goodsDataList = goodsDataRepository.findByGoods_GoodsNoAndIsDeletedFalse(goodsNo, Pageable.unpaged()).getContent();
+        int pageSize = 100;
+        int pageNumber = 0;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<GoodsData> goodsDataPage;
 
-        for (GoodsData goodsData : goodsDataList) {
+        do {
+            goodsDataPage = goodsDataRepository.findByGoods_GoodsNoAndIsDeletedFalse(goodsNo, pageable);
+            self.processPage(goodsDataPage);
+            pageable = pageable.next();
+        } while (goodsDataPage.hasNext());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void processPage(Page<GoodsData> goodsDataPage) {
+        for (GoodsData goodsData : goodsDataPage.getContent()) {
             if (Boolean.FALSE.equals(goodsData.getIsMetaDataUploaded())) {
                 List<UploadedFile> files = uploadedFileRepository.findByFileRelationshipObjectDistinguishNoAndIsDeletedFalse(
                         goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode());

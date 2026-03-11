@@ -2,7 +2,6 @@ package com.sk.domain.admin.listener;
 
 import com.sk.domain.admin.listener.handler.AxpKnowledgeRegister;
 import com.sk.domain.admin.listener.handler.AxpKnowledgeRegisterStrategyResolver;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -23,7 +22,6 @@ public class AXEventListener {
     private final AxpKnowledgeRegisterStrategyResolver axpKnowledgeRegisterStrategyResolver;
 
     @Async
-    @EventListener
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUploadFileEvent(AXUploadFileEvent event) {
         Integer goodsDataNo = event.getGoodsDataNo();
