@@ -280,6 +280,19 @@ public class MiNewsletterService {
         }
     }
 
+    /**
+     * 시스템 내부 전용 뉴스레터 상세 조회 (Playwright 차트 캡처 경로).
+     *
+     * <p>회사별 접근 제어 없이 newsletterId 단독으로 조회한다.
+     * 호출 주체가 chart-capture JWT로 인증된 내부 시스템이므로 company 필터가 불필요하다.
+     */
+    public NewsletterDetailRes getNewsletterDetailForSystem(Integer newsletterId, Integer issueNo) {
+        NewsletterMaster master = newsletterMasterRepository.findById(newsletterId)
+                .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
+        Integer companyNo = master.getCustomerCompanyNo() != null ? master.getCustomerCompanyNo() : 0;
+        return getNewsletterDetail(companyNo, String.valueOf(newsletterId), String.valueOf(issueNo));
+    }
+
     public NewsletterDetailRes getNewsletterDetail(Integer companyNo, String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
@@ -487,21 +500,14 @@ public class MiNewsletterService {
                 chartMap.put(timestamp, chart);
             }
 
-            long firstTimestamp = chartMap.keySet().iterator().next();
-            long lastTimestamp = chartMap.lastKey();
-
             long startTimestamp = Long.parseLong(marketTimes[2]);
             long endTimestamp = Long.parseLong(marketTimes[3]);
-
-            // 실제 데이터와 설정된 범위를 비교하여 더 넓은 범위 사용
-            long actualStartTimestamp = Math.min(firstTimestamp, startTimestamp);
-            long actualEndTimestamp = Math.max(lastTimestamp, endTimestamp);
 
             // 5분 간격으로 모든 timestamp 생성 (5분 = 300,000 밀리초)
             long interval = 5 * 60 * 1000L;
 
-            for (long currentTimestamp = actualStartTimestamp;
-                currentTimestamp <= actualEndTimestamp;
+            for (long currentTimestamp = startTimestamp;
+                currentTimestamp <= endTimestamp;
                 currentTimestamp += interval) {
 
                 timestamps.add(String.valueOf(currentTimestamp));
@@ -546,14 +552,17 @@ public class MiNewsletterService {
             .min(BigDecimal::compareTo)
             .orElse(BigDecimal.ZERO);
 
-        String range = calculateRange(max, min, "blue");
+        String closeDtick = calculateAutoDtick(max, min, 6);
+        List<Double> closeRangeValues = calculateRangeWithDtick(max, min, closeDtick);
+        String range = String.format("[%s, %s]", closeRangeValues.get(0), closeRangeValues.get(1));
 
         // Series 생성
         List<Series> seriesList = Arrays.asList(
             Series.of("high", "High", RenderAs.HIGH, highValues, true),
             Series.of("low", "Low", RenderAs.LOW, lowValues, true),
             Series.of("open", "Open", RenderAs.OPEN, openValues, true),
-            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, "1",
+            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null,
+                "1",
                 range, false),
             Series.of("volume", "Volume", RenderAs.VOLUME, volumeValues, true)
         );
@@ -702,9 +711,12 @@ public class MiNewsletterService {
                 .orElseThrow(
                     () -> new IllegalArgumentException("NewsletterCollectionChart not found"));
 
+            String[] marketTimes = calculateMarketTimes(nph.getPublishDateTime());
+            long chartStartMillis = Long.parseLong(marketTimes[2]);
+            long chartEndMillis = Long.parseLong(marketTimes[3]);
 
             NewsletterDetailRes.ChartData chartData = getCollectionChartData(dataCode,
-                newsletterCollectionChart);
+                newsletterCollectionChart, chartStartMillis, chartEndMillis);
             return Reference.ofChart(title, description, chartData);
         } catch (Exception e) {
             log.error("CLTN 차트 데이터 조회 중 오류 발생 - code: {}", dataCode, e);
@@ -719,30 +731,64 @@ public class MiNewsletterService {
                 dataCode,
                 false);
 
-        // 1. 모든 데이터를 timestamp 기준으로 수집
-        Map<String, Map<String, BigDecimal>> timeSeriesData = new TreeMap<>();
+        if (dedicatedChartsConfig.isEmpty()) {
+            log.warn("No dedicated chart config found for dataCode: {}", dataCode);
+            return null;
+        }
+
+        // 1. 시리즈별 원본 데이터를 timestamp 기준으로 수집
+        Map<String, Map<Long, BigDecimal>> valuesBySeriesCode = new HashMap<>();
+        Set<Long> observedTimestamps = new TreeSet<>();
         List<Series> allSeries = new ArrayList<>();
 
         for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
             List<NewsletterChart> chartData = newsletterChartRepository
                 .findByNewsletterPublishHistoryAndCode(nph, config.getCode());
 
-            // timestamp별로 데이터 정리
+            Map<Long, BigDecimal> valuesByTimestamp = new HashMap<>();
             for (NewsletterChart chart : chartData) {
-                String timestamp = String.valueOf(Timestamp.valueOf(chart.getTimestamp()).getTime());
+                long timestamp = Timestamp.valueOf(chart.getTimestamp()).getTime();
                 BigDecimal value = chart.getTradePrice1();
 
-                timeSeriesData.computeIfAbsent(timestamp, k -> new HashMap<>())
-                    .put(config.getCode(), value);
+                valuesByTimestamp.put(timestamp, value);
+                observedTimestamps.add(timestamp);
             }
+
+            valuesBySeriesCode.put(config.getCode(), valuesByTimestamp);
         }
 
-        // 2. 정렬된 timestamp로 Series 생성
-        List<String> timestamps = new ArrayList<>(timeSeriesData.keySet());
+        if (observedTimestamps.isEmpty()) {
+            log.warn("No dedicated chart data found for dataCode: {}", dataCode);
+            return null;
+        }
+
+        String[] marketTimes = calculateMarketTimes(nph.getPublishDateTime());
+        long chartStartMillis = Long.parseLong(marketTimes[2]);
+        long chartEndMillis = Long.parseLong(marketTimes[3]);
+
+        // 2. 설정된 간격으로 고정 시간축 생성 (없으면 원본 timestamp 사용)
+        List<Long> axisTimestamps = buildDedicatedTimeAxis(
+            dedicatedChartsConfig,
+            observedTimestamps,
+            chartStartMillis,
+            chartEndMillis
+        );
+        axisTimestamps = mergeWithObservedTimestampsInRange(
+            axisTimestamps,
+            observedTimestamps,
+            chartStartMillis,
+            chartEndMillis
+        );
+        List<String> timestamps = axisTimestamps.stream()
+            .map(String::valueOf)
+            .toList();
 
         for (NewsletterTemplateDedicatedChart config : dedicatedChartsConfig) {
-            List<BigDecimal> values = timestamps.stream()
-                .map(ts -> timeSeriesData.get(ts).get(config.getCode()))
+            Map<Long, BigDecimal> valuesByTimestamp =
+                valuesBySeriesCode.getOrDefault(config.getCode(), Collections.emptyMap());
+
+            List<BigDecimal> values = axisTimestamps.stream()
+                .map(valuesByTimestamp::get)
                 .toList();
 
             BigDecimal max = values.stream()
@@ -774,6 +820,65 @@ public class MiNewsletterService {
         return NewsletterDetailRes.ChartData.of(timestamps, allSeries);
     }
 
+    private List<Long> buildDedicatedTimeAxis(
+        List<NewsletterTemplateDedicatedChart> dedicatedChartsConfig,
+        Set<Long> observedTimestamps,
+        long chartStartMillis,
+        long chartEndMillis
+    ) {
+        Optional<NewsletterTemplateDedicatedChart> axisConfig = dedicatedChartsConfig.stream()
+            .filter(config -> config.getTimeAxisIntervalValue() != null
+                && StringUtils.isNotBlank(config.getTimeAxisIntervalUnit()))
+            .findFirst();
+
+        if (axisConfig.isEmpty()) {
+            return new ArrayList<>(observedTimestamps);
+        }
+
+        long startMillis = chartStartMillis;
+        long endMillis = chartEndMillis;
+        if (startMillis > endMillis) {
+            startMillis = observedTimestamps.iterator().next();
+            endMillis = observedTimestamps.stream()
+                .max(Long::compareTo)
+                .orElse(startMillis);
+        }
+        LocalDateTime startDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(startMillis),
+            ZoneId.systemDefault());
+        LocalDateTime endDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(endMillis),
+            ZoneId.systemDefault());
+
+        List<Long> fixedAxis = buildTimeAxisTimestamps(
+            startDate,
+            endDate,
+            axisConfig.get().getTimeAxisIntervalValue(),
+            axisConfig.get().getTimeAxisIntervalUnit()
+        );
+
+        if (fixedAxis.isEmpty()) {
+            return new ArrayList<>(observedTimestamps);
+        }
+
+        return fixedAxis;
+    }
+
+    private List<Long> mergeWithObservedTimestampsInRange(
+        List<Long> axisTimestamps,
+        Set<Long> observedTimestamps,
+        long rangeStartMillis,
+        long rangeEndMillis
+    ) {
+        long startMillis = Math.min(rangeStartMillis, rangeEndMillis);
+        long endMillis = Math.max(rangeStartMillis, rangeEndMillis);
+
+        Set<Long> merged = new TreeSet<>(axisTimestamps);
+        observedTimestamps.stream()
+            .filter(ts -> ts >= startMillis && ts <= endMillis)
+            .forEach(merged::add);
+
+        return new ArrayList<>(merged);
+    }
+
     private String calculateRange(BigDecimal max, BigDecimal min, String color) {
         BigDecimal difference = max.subtract(min);
         BigDecimal compare = BigDecimal.valueOf(color.equals("blue") ? 4 : 2);
@@ -794,6 +899,48 @@ public class MiNewsletterService {
         }
 
         return String.format("[%s, %s]", resultMax, resultMin);
+    }
+
+    /**
+     * 데이터 범위를 targetSections개로 나눌 수 있도록 "예쁜" dtick 계산
+     * (1, 2, 2.5, 5, 10 배수 기반)
+     */
+    private String calculateAutoDtick(BigDecimal max, BigDecimal min, int targetSections) {
+        if (max == null || min == null || targetSections <= 0) {
+            return "1";
+        }
+
+        double span = max.subtract(min).abs().doubleValue();
+        if (span == 0) {
+            span = Math.max(Math.abs(max.doubleValue()), 1.0d);
+        }
+
+        double rawStep = span / targetSections;
+        double magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        double normalized = rawStep / magnitude;
+
+        double niceNormalized;
+        if (normalized <= 1) {
+            niceNormalized = 1;
+        } else if (normalized <= 2) {
+            niceNormalized = 2;
+        } else if (normalized <= 2.5) {
+            niceNormalized = 2.5;
+        } else if (normalized <= 5) {
+            niceNormalized = 5;
+        } else {
+            niceNormalized = 10;
+        }
+
+        BigDecimal dtick = BigDecimal.valueOf(niceNormalized * magnitude)
+            .setScale(8, RoundingMode.HALF_UP)
+            .stripTrailingZeros();
+
+        if (dtick.compareTo(BigDecimal.ZERO) <= 0) {
+            return "1";
+        }
+
+        return dtick.toPlainString();
     }
 
     /**
@@ -862,7 +1009,8 @@ public class MiNewsletterService {
     }
 
     private NewsletterDetailRes.ChartData getCollectionChartData(
-        String dataCode, NewsletterCollectionChart newsletterCollectionChart) {
+        String dataCode, NewsletterCollectionChart newsletterCollectionChart,
+        long chartStartMillis, long chartEndMillis) {
 
         List<NewsletterTemplateCollectionChart> cltnChartConfigs =
             newsletterTemplateCollectionChartRepository.findByCollectionChartTypeAndIsDeleted(
@@ -878,6 +1026,12 @@ public class MiNewsletterService {
         List<CollectionSeriesData> seriesDataList = new ArrayList<>();
         Set<Long> unionTimestamps = new TreeSet<>();
         DateTimeFormatter f3 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime chartStartDateTime = LocalDateTime.ofInstant(
+            Instant.ofEpochMilli(chartStartMillis), ZoneId.systemDefault());
+        LocalDateTime chartEndDateTime = LocalDateTime.ofInstant(
+            Instant.ofEpochMilli(chartEndMillis), ZoneId.systemDefault());
+        long rangeStartMillis = Math.min(chartStartMillis, chartEndMillis);
+        long rangeEndMillis = Math.max(chartStartMillis, chartEndMillis);
 
         for (NewsletterTemplateCollectionChart config : cltnChartConfigs) {
             try {
@@ -921,8 +1075,8 @@ public class MiNewsletterService {
                         && StringUtils.isNotBlank(config.getTimeAxisIntervalUnit());
                 List<Long> seriesTimestamps = hasInterval
                     ? buildTimeAxisTimestamps(
-                        newsletterCollectionChart.getStartDate(),
-                        newsletterCollectionChart.getEndDate(),
+                        chartStartDateTime,
+                        chartEndDateTime,
                         config.getTimeAxisIntervalValue(),
                         config.getTimeAxisIntervalUnit()
                     )
@@ -935,7 +1089,13 @@ public class MiNewsletterService {
                 }
 
                 unionTimestamps.addAll(seriesTimestamps);
-                unionTimestamps.addAll(valuesByTimestamp.keySet());
+                if (hasInterval) {
+                    valuesByTimestamp.keySet().stream()
+                        .filter(ts -> ts >= rangeStartMillis && ts <= rangeEndMillis)
+                        .forEach(unionTimestamps::add);
+                } else {
+                    unionTimestamps.addAll(valuesByTimestamp.keySet());
+                }
                 seriesDataList.add(new CollectionSeriesData(config, seriesTimestamps,
                     valuesByTimestamp));
 
