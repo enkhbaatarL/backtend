@@ -49,3 +49,7 @@ bin/
 # Temp
 temp/
 test/
+
+#
+AGENTS.md
+.codex/
