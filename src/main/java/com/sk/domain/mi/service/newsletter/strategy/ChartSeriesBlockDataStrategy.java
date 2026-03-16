@@ -3,6 +3,7 @@ package com.sk.domain.mi.service.newsletter.strategy;
 import com.sk.common.utils.CombineUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.service.newsletter.NewsletterChartSupport;
@@ -46,7 +47,11 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
     }
 
     @Override
-    public ResolvedBlockData resolve(TemplateTree.BlockNode block, NewsletterPublishHistory pubHist) {
+    public ResolvedBlockData resolve(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        NewsletterPublishHistory pubHist
+    ) {
         try {
             String ref = block.dataSourceRef();
             if (ref == null || ref.isBlank()) {

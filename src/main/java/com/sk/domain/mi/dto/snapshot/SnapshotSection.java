@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,5 +19,6 @@ public class SnapshotSection {
     private Boolean visibility;
     private String target;
     private Boolean isCollapsed;
+    private Map<String, Object> state;
     private List<SnapshotBlock> blocks;
 }

@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.newsletter.strategy;
 
+import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
@@ -19,7 +20,11 @@ public class StaticBlockDataStrategy implements BlockDataStrategy {
     }
 
     @Override
-    public ResolvedBlockData resolve(TemplateTree.BlockNode block, NewsletterPublishHistory pubHist) {
+    public ResolvedBlockData resolve(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        NewsletterPublishHistory pubHist
+    ) {
         Map<String, Object> content = new LinkedHashMap<>();
         if ("TITLE".equals(block.blockTypeCode())) {
             content.put("text", pubHist.getNewsletterTitle());

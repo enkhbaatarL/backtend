@@ -2,6 +2,7 @@ package com.sk.domain.mi.service.newsletter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.dto.snapshot.SnapshotBlock;
@@ -21,15 +22,25 @@ public class SnapshotAssembler {
 
     private final ObjectMapper objectMapper;
 
-    public String assemble(TemplateTree template, Map<String, ResolvedBlockData> resolvedData, NewsletterPublishHistory pubHist) {
+    public String assemble(
+        TemplateTree template,
+        IssueStateTree issueState,
+        Map<String, ResolvedBlockData> resolvedData,
+        NewsletterPublishHistory pubHist
+    ) {
         try {
-            return assembleNode(template, resolvedData, pubHist).toString();
+            return assembleNode(template, issueState, resolvedData, pubHist).toString();
         } catch (Exception e) {
             throw new IllegalStateException("SNAPSHOT_ASSEMBLY_FAILED", e);
         }
     }
 
-    public JsonNode assembleNode(TemplateTree template, Map<String, ResolvedBlockData> resolvedData, NewsletterPublishHistory pubHist) {
+    public JsonNode assembleNode(
+        TemplateTree template,
+        IssueStateTree issueState,
+        Map<String, ResolvedBlockData> resolvedData,
+        NewsletterPublishHistory pubHist
+    ) {
         SnapshotMeta meta = SnapshotMeta.builder()
             .title(pubHist.getNewsletterTitle())
             .emailSubject(pubHist.getEmailSubject())
@@ -37,20 +48,32 @@ public class SnapshotAssembler {
             .subInfoText(resolveSubInfoText(template, resolvedData))
             .build();
 
+        Map<Long, IssueStateTree.SectionStateNode> sectionStateMap = issueState.sectionMap();
+        Map<Long, IssueStateTree.BlockStateNode> blockStateMap = issueState.blockMap();
         List<SnapshotSection> sections = new ArrayList<>();
         for (TemplateTree.SectionNode sectionNode : template.sections()) {
+            IssueStateTree.SectionStateNode sectionState = sectionStateMap.getOrDefault(
+                sectionNode.id(),
+                IssueStateTree.SectionStateNode.defaultFrom(sectionNode)
+            );
             List<SnapshotBlock> blocks = new ArrayList<>();
             for (TemplateTree.BlockNode blockNode : sectionNode.blocks()) {
+                IssueStateTree.BlockStateNode blockState = blockStateMap.getOrDefault(
+                    blockNode.id(),
+                    IssueStateTree.BlockStateNode.defaultFrom(blockNode)
+                );
                 blocks.add(SnapshotBlock.builder()
                     .id("blk-" + blockNode.blockCode())
                     .type(blockNode.blockTypeCode())
                     .format(blockNode.blockFormatCode())
-                    .order(blockNode.blockOrder())
-                    .visibility("Y".equals(blockNode.visibilityYn()))
-                    .isCollapsed(false)
-                    .title(blockNode.blockName())
-                    .plotOnChart("Y".equals(blockNode.plotOnChartYn()))
-                    .target(resolveTarget(blockNode.targetCompanyNo()))
+                    .order(blockState.order())
+                    .visibility("Y".equals(blockState.visibilityYn()))
+                    .isCollapsed(Boolean.TRUE.equals(blockState.collapsed()))
+                    .title(blockState.title())
+                    .plotOnChart(resolvePlotOnChart(blockNode, blockState))
+                    .target(resolveTarget(blockState.targetCompanyNo()))
+                    .queryParams(blockState.queryParams().isEmpty() ? null : blockState.queryParams())
+                    .state(blockState.extraState().isEmpty() ? null : blockState.extraState())
                     .editableFields(blockNode.fields().stream().filter(field -> "Y".equals(field.isEditableYn())).map(TemplateTree.FieldNode::fieldKey).toList())
                     .content(resolvedData.getOrDefault(blockNode.blockCode(), ResolvedBlockData.of(Map.of())).toContentMap())
                     .build());
@@ -58,11 +81,12 @@ public class SnapshotAssembler {
             sections.add(SnapshotSection.builder()
                 .id("sec-" + sectionNode.sectionCode())
                 .type(sectionNode.sectionTypeCode())
-                .title(sectionNode.sectionName())
-                .order(sectionNode.sectionOrder())
-                .visibility("Y".equals(sectionNode.visibilityYn()))
-                .target(resolveTarget(sectionNode.targetCompanyNo()))
-                .isCollapsed(false)
+                .title(sectionState.title())
+                .order(sectionState.order())
+                .visibility("Y".equals(sectionState.visibilityYn()))
+                .target(resolveTarget(sectionState.targetCompanyNo()))
+                .isCollapsed(Boolean.TRUE.equals(sectionState.collapsed()))
+                .state(sectionState.extraState().isEmpty() ? null : sectionState.extraState())
                 .blocks(blocks)
                 .build());
         }
@@ -91,5 +115,12 @@ public class SnapshotAssembler {
 
     private String resolveTarget(Integer targetCompanyNo) {
         return targetCompanyNo == null ? null : String.valueOf(targetCompanyNo);
+    }
+
+    private Boolean resolvePlotOnChart(TemplateTree.BlockNode blockNode, IssueStateTree.BlockStateNode blockState) {
+        if (!"Y".equals(blockNode.plotOnChartYn())) {
+            return null;
+        }
+        return blockState.plotOnChart() != null ? blockState.plotOnChart() : Boolean.FALSE;
     }
 }

@@ -21,6 +21,8 @@ public class SnapshotBlock {
     private String title;
     private Boolean plotOnChart;
     private String target;
+    private Map<String, Object> queryParams;
+    private Map<String, Object> state;
     private List<String> editableFields;
     private Map<String, Object> content;
 }

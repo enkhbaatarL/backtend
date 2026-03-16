@@ -6,6 +6,7 @@ import com.sk.common.model.TableRes;
 import com.sk.common.utils.CombineUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
@@ -34,7 +35,11 @@ public class DynamicQueryBlockDataStrategy implements BlockDataStrategy {
     }
 
     @Override
-    public ResolvedBlockData resolve(TemplateTree.BlockNode block, NewsletterPublishHistory pubHist) {
+    public ResolvedBlockData resolve(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        NewsletterPublishHistory pubHist
+    ) {
         String ref = block.dataSourceRef();
         if (ref == null || !ref.startsWith("pref_table:")) {
             return ResolvedBlockData.error("INVALID_DYNAMIC_QUERY_REFERENCE");

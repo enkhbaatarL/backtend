@@ -2,6 +2,7 @@ package com.sk.domain.mi.service.newsletter.strategy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.service.newsletter.NewsletterChartSupport;
@@ -32,8 +33,12 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
     }
 
     @Override
-    public ResolvedBlockData resolve(TemplateTree.BlockNode block, NewsletterPublishHistory pubHist) {
-        int maxItems = resolveMaxItems(block);
+    public ResolvedBlockData resolve(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        NewsletterPublishHistory pubHist
+    ) {
+        int maxItems = resolveMaxItems(block, blockState);
         List<Map<String, Object>> items = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(pubHist).stream()
             .limit(maxItems)
             .map(this::toItem)
@@ -46,7 +51,20 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
         return ResolvedBlockData.of(content);
     }
 
-    private int resolveMaxItems(TemplateTree.BlockNode block) {
+    private int resolveMaxItems(TemplateTree.BlockNode block, IssueStateTree.BlockStateNode blockState) {
+        if (blockState != null) {
+            Object maxItems = blockState.queryParams().get("maxItems");
+            if (maxItems instanceof Number number) {
+                return number.intValue();
+            }
+            if (maxItems != null) {
+                try {
+                    return Integer.parseInt(String.valueOf(maxItems));
+                } catch (NumberFormatException ignored) {
+                    return 20;
+                }
+            }
+        }
         return block.fields().stream()
             .filter(field -> field.fieldMeta() != null && !field.fieldMeta().isBlank())
             .findFirst()
