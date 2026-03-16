@@ -227,3 +227,11 @@ dummy:
   enabled: true
   data:
     path: static/json/dummy-data
+
+
+mip:
+  company-urls:
+  # 회사코드별 MIP URL 설정 (로컬 테스트용)
+  # 예시:
+    SKENS: http://localhost:8080
+  # COMPANY_B: http://localhost:4000

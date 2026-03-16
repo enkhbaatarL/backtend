@@ -28,12 +28,12 @@ public record MiCompanyRes(
         this.customerCompanyMipUrl = customerCompanyMipUrl;
     }
 
-    public static MiCompanyRes of(CustomerCompany customerCompany, String miDefaultDomain, String requestHost) {
+    public static MiCompanyRes of(CustomerCompany customerCompany, String miDefaultDomain, String requestHost, String configMipUrl) {
         return MiCompanyRes.builder()
             .customerCompanyNo(customerCompany.getCustomerCompanyNo())
             .customerCompanyNm(customerCompany.getCustomerCompanyNm())
             .customerCompanyCd(customerCompany.getCustomerCompanyCd())
-            .customerCompanyMipUrl(customerCompany.getDynamicMipUrl(requestHost, miDefaultDomain))
+            .customerCompanyMipUrl(customerCompany.getDynamicMipUrl(requestHost, miDefaultDomain, configMipUrl))
             .build();
     }
 }

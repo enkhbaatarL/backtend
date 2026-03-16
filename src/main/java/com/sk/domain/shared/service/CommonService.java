@@ -19,6 +19,7 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import com.sk.common.config.MipConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class CommonService {
     private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
     private final CommonCodeRepository commonCodeRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
+    private final MipConfig mipConfig;
     @Value("${server.domain}")
     private String miDefaultDomain;
 
@@ -65,7 +67,8 @@ public class CommonService {
         UserAccessPageType userAccessPageType = (miUserCheck && adminUserCheck) ? UserAccessPageType.BOTH
                 : (miUserCheck) ? UserAccessPageType.MI : (adminUserCheck) ? UserAccessPageType.ADMIN : UserAccessPageType.NONE;
 
-        return UserAccessPageRes.of(user, userAccessPageType, miDefaultDomain, request.getServerName());
+        return UserAccessPageRes.of(user, userAccessPageType, miDefaultDomain, request.getServerName(),
+            mipConfig.getMipUrlByCompanyCd(user.getCustomerCompany().getCustomerCompanyCd()));
     }
 
     /**

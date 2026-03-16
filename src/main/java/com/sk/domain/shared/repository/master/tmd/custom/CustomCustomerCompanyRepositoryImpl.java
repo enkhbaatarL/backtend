@@ -43,12 +43,14 @@ import com.sk.domain.shared.enums.ActivationStatus;
 import com.sk.domain.shared.enums.CompanyType;
 import com.sk.domain.shared.enums.UserRoleCd;
 
+import com.sk.common.config.MipConfig;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompanyRepository {
     @Value("${server.domain}")
     private String miDefaultDomain;
+    private final MipConfig mipConfig;
 
     private final JPAQueryFactory queryFactory;
 
@@ -313,7 +315,8 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             .fetch();
 
         return companies.stream()
-            .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain, requestHost))
+            .map(customerCompany -> MiCompanyRes.of(customerCompany, miDefaultDomain, requestHost,
+                mipConfig.getMipUrlByCompanyCd(customerCompany.getCustomerCompanyCd())))
             .collect(Collectors.toList());
     }
 
@@ -331,6 +334,7 @@ public class CustomCustomerCompanyRepositoryImpl implements CustomCustomerCompan
             throw AppErrorException.of(Error.RSC_NOT_FOUND);
         }
 
-        return MiCompanyDetailRes.of(company, miDefaultDomain, requestHost);
+        return MiCompanyDetailRes.of(company, miDefaultDomain, requestHost,
+            mipConfig.getMipUrlByCompanyCd(company.getCustomerCompanyCd()));
     }
 }
