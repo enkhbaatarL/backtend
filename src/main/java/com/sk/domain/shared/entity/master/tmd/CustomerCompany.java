@@ -84,6 +84,31 @@ public class CustomerCompany extends BaseEntity {
      * @return 결정된 MIP URL
      */
     public String getDynamicMipUrl(String requestHost, String miDefaultDomain) {
+        return getDynamicMipUrlInternal(requestHost, miDefaultDomain, null);
+    }
+
+    /**
+     * 요청 호스트에 따라 동적인 MIP URL을 반환한다.
+     * 설정값(configMipUrl)이 있으면 설정값을 우선 사용하고, 없으면 DB 값을 사용한다.
+     *
+     * @param requestHost 요청 호스트 (예: dev-mi.sk.com)
+     * @param miDefaultDomain 기본 도메인
+     * @param configMipUrl 설정 파일의 MIP URL (로컬 테스트용, 회사코드로 조회된 URL)
+     * @return 결정된 MIP URL
+     */
+    public String getDynamicMipUrl(String requestHost, String miDefaultDomain, String configMipUrl) {
+        return getDynamicMipUrlInternal(requestHost, miDefaultDomain, configMipUrl);
+    }
+
+    /**
+     * 내부 구현: 동적인 MIP URL을 반환한다.
+     */
+    private String getDynamicMipUrlInternal(String requestHost, String miDefaultDomain, String configMipUrl) {
+        // 설정값이 있으면 설정값을 우선 사용
+        if (configMipUrl != null && !configMipUrl.isBlank()) {
+            return configMipUrl;
+        }
+
         if (this.customerCompanyMipUrl == null || this.customerCompanyMipUrl.isBlank()) {
             return miDefaultDomain;
         }

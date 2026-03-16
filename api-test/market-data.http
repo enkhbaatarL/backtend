@@ -1,0 +1,4 @@
+### Focused
+GET {{baseUrl}}/api/v1/mi/market-data/companies/2015/market-datas
+Authorization: Bearer {{token}}
+Accept: */*

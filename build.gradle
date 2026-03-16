@@ -150,8 +150,18 @@ sourceSets {
 
 tasks.named('test') {
     useJUnitPlatform()
+    maxHeapSize = "1024m"
 }
 
 test {
-    enabled = false  // 테스트 비활성화
+    // -PforceTest 인자가 있을 경우에만 테스트 활성화
+    enabled = project.hasProperty('forceTest')
+
+    // profile 속성이 있을 경우 해당 프로파일을 활성화
+    if (project.hasProperty('profile')) {
+        systemProperty 'spring.profiles.active', project.property('profile')
+    }
+
+    // 시스템 환경 변수를 테스트 JVM에 전달
+    environment System.getenv()
 }
