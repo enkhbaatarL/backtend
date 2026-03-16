@@ -170,7 +170,7 @@ CREATE TABLE tmd_nwsltrtmpltblk
     blk_nm                VARCHAR(200)                          NOT NULL COMMENT '블록명',
     blk_ord               INT UNSIGNED DEFAULT 0                NOT NULL COMMENT '블록순서',
     vsblty_yn             CHAR(1)     DEFAULT 'Y'              NOT NULL COMMENT '노출여부',
-    plot_on_chrt_yn       CHAR(1)     DEFAULT 'N'              NOT NULL COMMENT '차트변곡점표시여부',
+    plot_on_chrt_yn       CHAR(1)     DEFAULT 'N'              NOT NULL COMMENT '차트변곡점표시지원여부',
     tgt_cmpny_no          INT UNSIGNED                          NULL     COMMENT '대상고객사번호(SPECIALIZED일 때)',
     data_src_type_cd      VARCHAR(30)                           NULL     COMMENT '데이터소스타입(STATIC,DYNAMIC_QUERY,CHART_SERIES,NEWS_EVENT)',
     data_src_ref           VARCHAR(500)                          NULL     COMMENT '데이터소스참조(테이블명, 차트코드 등)',
@@ -306,6 +306,13 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
   "content": {/* type별 상이 */}
 }
 ```
+
+- `plotOnChart` 해석 규칙
+  - template의 `plot_on_chrt_yn`은 해당 block이 `plotOnChart` 옵션 구조를 지원하는지 의미한다.
+  - issue state의 `plotOnChart`는 해당 issue에서의 최종 true/false 상태값이다.
+  - template이 해당 옵션을 지원하지 않으면 issue state에 `plotOnChart`를 저장할 수 없다.
+  - published snapshot에는 publish 시점에 계산된 최종 instance 값만 기록한다.
+  - original detail은 snapshot의 `plotOnChart`만 사용하며 template/state를 재평가하지 않는다.
 
 ### 2-4. Block.content — 타입별 구조
 
@@ -498,14 +505,17 @@ public class NewsletterPublishPipelineService {
         // 2. 템플릿 로드 (4테이블 트리)
         TemplateTree template = templateLoader.load(newsletterMasterId);
 
-        // 3. 블록별 데이터 resolve
+        // 3. 이슈별 section/block state 로드
+        IssueStateTree issueState = issueStateLoader.loadOrCreateDefaults(issueNo, template, pubHist);
+
+        // 4. 블록별 데이터 resolve
         Map<String, ResolvedBlockData> resolvedData =
-            blockDataResolver.resolveAll(template, pubHist);
+            blockDataResolver.resolveAll(template, issueState, pubHist);
 
-        // 4. 스냅샷 JSON 조합
-        String snapshotJson = snapshotAssembler.assemble(template, resolvedData, pubHist);
+        // 5. 스냅샷 JSON 조합
+        String snapshotJson = snapshotAssembler.assemble(template, issueState, resolvedData, pubHist);
 
-        // 5. 원본 이슈 저장
+        // 6. 원본 이슈 저장
         NewsletterIssueOriginal issueOriginal = NewsletterIssueOriginal.builder()
             .newsletterMasterId(newsletterMasterId)
             .issueNo(issueNo)

@@ -581,7 +581,7 @@ sequenceDiagram
   - `visibility` (boolean): 노출 여부, 기본값 `true`
   - `isCollapsed` (boolean): UI 접힘 상태 저장값, 기본값 `false`
   - `title` (string): 블록 라벨, 필수(미입력 시 저장 경고)
-  - `plotOnChart` (boolean): `차트 블록`에서만 사용되는 토글, 기본값 `false`
+  - `plotOnChart` (boolean): `차트 블록`에서만 사용되는 issue-level 상태값. template은 지원 여부만 가진다.
   - `target` (string, nullable): `format=SPECIALIZED`일 때 대상 고객사 코드
   - `content` (object): 렌더링 데이터, 형식은 type별로 상이
     - TEXT: `{"text":"..."}`
@@ -593,7 +593,7 @@ sequenceDiagram
 - `Section.type=FIXED`는 `target`을 가질 수 없고, `title`은 시스템 기본 라벨을 사용
 - `Section.type` 또는 `Block.format`이 `SPECIALIZED`면 `target`은 필수
 - 동일 레벨에서 `order` 중복 불가 (`order` 정규화 후 중복 존재 시 충돌 처리 또는 보정)
-- `plotOnChart=true`는 `type`이 `CHART`인 Block에서만 허용
+- `plotOnChart`는 template이 해당 옵션 구조를 지원하는 `CHART` block에서만 허용
 - `visibility=false`인 항목은 상세 응답에 포함되더라도 렌더링에서 숨김
 - 삭제 처리(`DELETE`)는 soft-delete 형태로 리비전 추적을 권장
 

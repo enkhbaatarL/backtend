@@ -186,11 +186,11 @@ public interface BlockDataStrategy {
 
 ---
 
-## Step 4. SnapshotAssembler 구현
+## Step 4. IssueState + SnapshotAssembler 구현
 
 ```
 ## 목표
-TemplateTree + ResolvedBlockData → org_snpsht_json 문자열을 생성하는 SnapshotAssembler를 구현한다.
+TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열을 생성하는 SnapshotAssembler를 구현한다.
 
 ## 입력 문서
 - `docs/newsletter-v2-template-pipeline-design.md` — 섹션 2 (스냅샷 JSON 스키마), 섹션 3-2 D (SnapshotAssembler)
@@ -215,19 +215,33 @@ TemplateTree + ResolvedBlockData → org_snpsht_json 문자열을 생성하는 S
 - Jackson 직렬화 대상이므로 @Getter + @Setter 또는 @Builder 사용
 - content 필드는 `Map<String, Object>` 타입 (블록 타입별 동적 구조)
 
-### 2. SnapshotAssembler 서비스 구현
+### 2. IssueStateTree VO 및 로더 구현
+위치: `src/main/java/com/sk/domain/mi/dto/internal/`, `src/main/java/com/sk/domain/mi/service/newsletter/`
+
+- issue section/block state를 표현하는 `IssueStateTree` 또는 동등한 내부 VO 생성
+- state row가 없는 경우 template 구조 기준 default state를 조립하는 로더 구현
+- `plotOnChart`, `fromDate`, `toDate`, `market`, `maxItems`는 JSON 필드로 유지
+- `plotOnChart` 해석 규칙:
+  - template의 `plot_on_chrt_yn`은 해당 옵션 구조 지원 여부
+  - issue block state의 `plotOnChart`는 최종 instance 값
+  - template이 지원하지 않는 block에는 `plotOnChart` state 저장/반영 금지
+
+### 3. SnapshotAssembler 서비스 구현
 위치: `src/main/java/com/sk/domain/mi/service/newsletter/`
 
 - 설계 문서의 SnapshotAssembler 코드 구현
+- 입력을 `TemplateTree` 단독이 아니라 `TemplateTree + IssueStateTree + ResolvedBlockData`로 변경
 - `editableFields` 배열: BlockField 중 is_editable_yn='Y'인 field_key를 수집
 - `target` 변환: tgt_cmpny_no(Integer) → 고객사 코드(String) 변환 로직 (추후 매핑 테이블 연동 또는 단순 문자열 변환)
 - JSON 직렬화 시 null 필드 제외 (`@JsonInclude(Include.NON_NULL)`)
+- section/block의 `order`, `visibility`, `title`, `plotOnChart` 등 instance-level 값은 issue state 기준으로 스냅샷에 반영
 
-### 3. 단위 테스트
-- 완전한 TemplateTree + ResolvedBlockData 입력 → JSON 출력 검증
+### 4. 단위 테스트
+- 완전한 TemplateTree + IssueStateTree + ResolvedBlockData 입력 → JSON 출력 검증
 - 설계 문서 섹션 2의 예시 JSON 구조와 일치하는지 검증
 - editableFields가 정확히 is_editable 필드만 포함하는지 검증
 - schemaVersion=2 포함 검증
+- template이 `plotOnChart`를 지원하지 않으면 state 값이 반영되지 않거나 예외 처리되는지 검증
 ```
 
 ---
@@ -236,7 +250,7 @@ TemplateTree + ResolvedBlockData → org_snpsht_json 문자열을 생성하는 S
 
 ```
 ## 목표
-Trigger → TemplateLoader → BlockDataResolver → SnapshotAssembler → 저장까지의 전체 파이프라인을 오케스트레이션하는 서비스를 구현한다.
+Trigger → TemplateLoader → IssueStateLoader → BlockDataResolver → SnapshotAssembler → 저장까지의 전체 파이프라인을 오케스트레이션하는 서비스를 구현한다.
 
 ## 입력 문서
 - `docs/newsletter-v2-template-pipeline-design.md` — 섹션 3-2 A (오케스트레이터)
@@ -263,6 +277,8 @@ Trigger → TemplateLoader → BlockDataResolver → SnapshotAssembler → 저�
 - `@Transactional` 단일 트랜잭션으로 스냅샷 생성 + 저장
 - 이미 존재하는 `(nws_ltr_mstr_id, issno)` 조합이면 UPDATE (org_snpsht_json, schm_ver=2)
 - 발행 상태: PUBLISHING → PUBLISHED 전이 포함
+- 기존 template 중심 조립 가정을 제거하고 issue state를 publish 입력으로 포함
+- state row가 없어도 기존 published read path는 깨지지 않도록 preview/write path에서만 state 로드
 
 ### 3. 호출 진입점
 - Airflow HTTP 호출용 내부 API 엔드포인트 (또는 기존 발행 배치 훅에 연동)
