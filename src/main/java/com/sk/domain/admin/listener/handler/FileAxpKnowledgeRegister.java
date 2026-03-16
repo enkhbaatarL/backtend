@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MultipartFileUtil;
 import com.sk.domain.admin.listener.event.AXUploadFileEvent;
-import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
+import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes.CategoryDataInfo;
 import com.sk.domain.mi.service.MiDataDetailService;
 import com.sk.domain.shared.client.AxPlatformApi;
@@ -66,7 +66,8 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
         // 1. goodsData와 연관된 파일 목록 조회
         List<UploadedFile> files = fileService.getFiles(goodsData.getGoodsDataNo(), FileRelationshipObjectSeparateCode.GUDAT.getCode());
         Optional<GoodsDataExtension> goodsDataExtension = goodsDataExtensionRepository.findById(goodsData.getGoodsDataNo());
-        GoodsDataRes goodsDataRes = miDataDetailService.getGoodsData(goodsData.getGoods().getGoodsNo(), goodsData.getGoodsDataNo());
+        List<GoodsDataCategoryProjection> categoryProjections = miDataDetailService.getGoodsDataCategoryProjections(goodsData.getGoodsDataNo());
+        LocalDate pubDate = miDataDetailService.getGoodsDataPubDate(goodsData.getGoodsDataNo());
 
         AXMetaRegisterReq registerReq = new AXMetaRegisterReq();
 
@@ -74,7 +75,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
         handleDeletedFiles(event, datasourceId, files, registerReq);
 
         // 2. 파일 업로드 및 registerReq에 추가
-        uploadFiles(files, registerReq, goodsData, goodsDataExtension, goodsDataRes);
+        uploadFiles(files, registerReq, goodsData, goodsDataExtension, categoryProjections, pubDate);
 
         // 3. 업로드된 파일들을 datasource에 등록
         boolean success = registerToDatasource(datasourceId, registerReq);
@@ -126,7 +127,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
 
     private void uploadFiles(List<UploadedFile> files, AXMetaRegisterReq registerReq, GoodsData goodsData,
         Optional<GoodsDataExtension> goodsDataExtension,
-        GoodsDataRes goodsDataRes) {
+        List<GoodsDataCategoryProjection> categoryProjections, LocalDate pubDate) {
         if (files.isEmpty()) {
             log.info("[AX Platform] No files to upload.");
             return;
@@ -158,7 +159,7 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
                     if (uploadRes.data() != null && !uploadRes.data().isEmpty()) {
                         var data = uploadRes.data().get(0);
                         ObjectNode fileMetaData = createFileMetaData(data.fileMetaData(), goodsData, goodsDataExtension,
-                            uploadedFile, goodsDataRes);
+                            uploadedFile, categoryProjections, pubDate);
 
                         ModifiedFile modifiedFile = new ModifiedFile(
                                 data.fileName(),
@@ -186,11 +187,11 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
 
     private ObjectNode createFileMetaData(ObjectNode existingMetaData, GoodsData goodsData,
         Optional<GoodsDataExtension> goodsDataExtension,
-        UploadedFile uploadedFile, GoodsDataRes goodsDataRes) {
+        UploadedFile uploadedFile, List<GoodsDataCategoryProjection> categoryProjections, LocalDate pubDate) {
         ObjectNode fileMetaData = existingMetaData != null ? existingMetaData : objectMapper.createObjectNode();
 
         String contentType = "Insight";
-        for(CategoryDataInfo categoryDataInfo : goodsDataRes.categories()){
+        for(CategoryDataInfo categoryDataInfo : CategoryDataInfo.ofList(categoryProjections)){
             if(categoryDataInfo.categoryHighCd() == CategorySeparateHighCd.TYPE){
                 if(categoryDataInfo.value() != null && !categoryDataInfo.value().isEmpty()){
                     contentType = categoryDataInfo.value().get(0);
@@ -204,12 +205,9 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
         fileMetaData.put("file_extension", uploadedFile.getFileExtNm());
         fileMetaData.put("title", goodsData.getGoodsDataNm());
         fileMetaData.put("content_type", contentType);
-        LocalDate publishedDate = goodsData.getPublishedDate();
-        if(publishedDate != null){
-            fileMetaData.put("published_date", DateUtil.toYmdHyphen(publishedDate));
-        }else{
-            fileMetaData.put("published_date", DateUtil.toYmdHyphen(goodsDataRes.auditInfo().modifyDt().toLocalDate()));
-        }
+
+        LocalDate publishedDate = pubDate != null ? pubDate : goodsData.getModifyDt().toLocalDate();
+        fileMetaData.put("published_date", DateUtil.toYmdHyphen(publishedDate));
 
         fileMetaData.put("summary", goodsData.getGoodsDataSummaryCntt());
         if(goodsDataExtension.isPresent()){

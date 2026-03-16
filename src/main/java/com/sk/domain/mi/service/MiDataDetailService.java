@@ -66,7 +66,6 @@ public class MiDataDetailService {
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
-    private final MiGoodsPermissionService userService;
     private final ChartGenerationService chartGenerationService;
     private final PersonalizationService personalizationService;
     private final TechnicalIndicatorService technicalIndicatorService;
@@ -76,6 +75,27 @@ public class MiDataDetailService {
 
     private final AuthorizationService authorizationService;
 
+
+    @Transactional
+    public List<GoodsDataCategoryProjection> getGoodsDataCategoryProjections(Integer goodsDataNo) {
+        return goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsDataNo, GoodsDataManagementSeparateCode.GDAT.getCode())
+            .stream()
+            .filter(ca -> StringUtils.isNotEmpty(ca.getHighCodeId()))
+            .toList();
+    }
+
+    /**
+     * 상품 데이터의 게시일(발행일) 정보를 조회합니다.
+     *
+     * @param goodsDataNo 상품 데이터 번호
+     * @return 게시일(발행일) 정보
+     */
+    @Transactional
+    public LocalDate getGoodsDataPubDate(Integer goodsDataNo) {
+        List<GoodsDataCategory> pubDateCategory = goodsDataCategoryRepository.findPubDateByGoodsDataNo(goodsDataNo);
+        return pubDateCategory == null || pubDateCategory.isEmpty()
+            ? null : LocalDate.parse(pubDateCategory.get(0).getGoodsDataKeywordNm(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+    }
 
     /**
      * 상품 데이터 정보를 조회합니다.
@@ -89,10 +109,7 @@ public class MiDataDetailService {
 
         GoodsData goodsData = getValidatedGoodsData(goodsDataNo, goodsNo);
 
-        List<GoodsDataCategoryProjection> categoryProjections = goodsDataCategoryRepository.findGoodsDataAndIsDeleted(goodsData.getGoodsDataNo(), GoodsDataManagementSeparateCode.GDAT.getCode())
-            .stream()
-            .filter(ca -> StringUtils.isNotEmpty(ca.getHighCodeId()))
-            .toList();
+        List<GoodsDataCategoryProjection> categoryProjections = getGoodsDataCategoryProjections(goodsData.getGoodsDataNo());
 
         PermissionRes permissionRes = authorizationService.getPermissions();
 
@@ -109,9 +126,7 @@ public class MiDataDetailService {
             })
             .orElse(null);
 
-        List<GoodsDataCategory> pubDateCategory = goodsDataCategoryRepository.findPubDateByGoodsDataNo(goodsDataNo);
-        LocalDate pubDate = pubDateCategory == null || pubDateCategory.isEmpty()
-            ? null : LocalDate.parse(pubDateCategory.get(0).getGoodsDataKeywordNm(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDate pubDate = getGoodsDataPubDate(goodsDataNo);
         if(recent == null){
             recent = pubDate;
         }else if(pubDate != null){

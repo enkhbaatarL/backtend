@@ -24,6 +24,7 @@ import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.annotation.PostConstruct;
+import com.sk.common.config.MipConfig;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +35,7 @@ public class JwtUtil {
 
     private final RefreshTokenService refreshTokenService;
     private final JwtProperties jwtProperties;
+    private final MipConfig mipConfig;
     @Value("${server.domain}")
     private String miDefaultDomain;
     private PrivateKey privateKey;
@@ -81,7 +83,8 @@ public class JwtUtil {
             .claim(Claim.COMPANY_CD.getCode(), user.getCustomerCompany().getCustomerCompanyCd())
             .claim(Claim.ROLE.getCode(), user.getUserRoleCd().getCode())
             .claim(Claim.OTHER_SERVICE_ACCESS.getCode(), ObjectUtils.defaultIfNull(user.getIsOtherServiceAccessPossible(), false))
-            .claim(Claim.COMPANY_DOMAIN.getCode(), user.getCustomerCompany().getDynamicMipUrl(requestHost, miDefaultDomain))
+            .claim(Claim.COMPANY_DOMAIN.getCode(), user.getCustomerCompany().getDynamicMipUrl(requestHost, miDefaultDomain,
+                mipConfig.getMipUrlByCompanyCd(user.getCustomerCompany().getCustomerCompanyCd())))
             .claim(Claim.AUTH_METHOD.getCode(), Claim.AuthMethodValue.SAML2.getCode()) // 인증 방식 추가
             .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getSaml2().getAccessTokenExpiry().toMillis())))
             .compact();
