@@ -11,6 +11,7 @@ import com.sk.domain.shared.enums.newsletter.PublishStatusCode;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterSubscriptionRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.mail.internet.MimeMessage;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
@@ -59,6 +60,7 @@ public class MiNewsletterMailService {
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
+    private final AuthorizationService authorizationService;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     /**
@@ -206,17 +208,19 @@ public class MiNewsletterMailService {
         if (newsletterId == null || issueNo == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "newsletterId and issueNo are required");
         }
-        if (actorUser == null || actorUser.getUserNo() == null) {
+        if (actorUser == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
         }
+        int userNo = authorizationService.getUserNo();
 
         String sql = """
-                SELECT e.owner_user_id, e.edit_status
-                  FROM newsletter_user_edition e
-                  JOIN newsletter_issue_original o
-                    ON o.id = e.original_issue_id
-                 WHERE o.newsletter_master_id = :newsletterId
-                   AND o.issue_no = :issueNo
+                SELECT e.ownr_usr_no, e.rvsn_stat_cd
+                  FROM tmd_nwsltrusrrvsnm e
+                  JOIN tmd_nwsltrorgissm o
+                    ON o.nws_ltr_org_iss_id = e.nws_ltr_org_iss_id
+                 WHERE o.nws_ltr_mstr_id = :newsletterId
+                   AND o.issno = :issueNo
+                   AND e.ownr_usr_no = :userNo
                    AND e.del_yn = 'N'
                 """;
 
@@ -224,10 +228,11 @@ public class MiNewsletterMailService {
                 sql,
                 new MapSqlParameterSource()
                         .addValue("newsletterId", newsletterId)
-                        .addValue("issueNo", issueNo),
+                        .addValue("issueNo", issueNo)
+                        .addValue("userNo", userNo),
                 (rs, rowNum) -> new RevisionStateRow(
-                        rs.getObject("owner_user_id"),
-                        rs.getString("edit_status"))
+                        rs.getObject("ownr_usr_no"),
+                        rs.getString("rvsn_stat_cd"))
         );
 
         if (rows.isEmpty()) {
@@ -236,8 +241,8 @@ public class MiNewsletterMailService {
         }
 
         RevisionStateRow stateRow = rows.get(0);
-        Integer ownerUserId = toInteger(stateRow.ownerUserId());
-        if (ownerUserId == null || !ownerUserId.equals(actorUser.getUserNo())) {
+        Integer ownerUserNo = toInteger(stateRow.ownerUserNo());
+        if (ownerUserNo == null || !ownerUserNo.equals(userNo)) {
             throw AppErrorException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "No permission for this revision");
         }
 
@@ -570,7 +575,7 @@ public class MiNewsletterMailService {
         }
     }
 
-    private record RevisionStateRow(Object ownerUserId, String editStatus) {
+    private record RevisionStateRow(Object ownerUserNo, String editStatus) {
     }
 
     /** cid + InputStreamSource(MultipartFile 또는 ByteArrayResource) + contentType */

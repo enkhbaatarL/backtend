@@ -300,6 +300,7 @@ public class MiNewsletterService {
         return getNewsletterDetail(companyNo, null, String.valueOf(newsletterId), String.valueOf(issueNo));
     }
 
+    @Deprecated
     public NewsletterDetailRes getNewsletterDetail(
         Integer companyNo, Integer userNo, String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);

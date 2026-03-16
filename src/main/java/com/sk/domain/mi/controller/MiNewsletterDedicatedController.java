@@ -5,7 +5,9 @@ import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res;
 import com.sk.domain.mi.service.MiNewsletterService;
+import com.sk.domain.mi.service.newsletter.NewsletterDetailV2Service;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -29,13 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class MiNewsletterDedicatedController {
 
     private final MiNewsletterService miNewsletterService;
+    private final NewsletterDetailV2Service newsletterDetailV2Service;
     private final AuthorizationService authorizationService;
 
     @ApiOrder(4)
     @Parameter(name = "companyNo", description = "고객회사번호")
     @Operation(summary = "뉴스레터 상세 조회", description = "특정 뉴스레터의 특정 발행호 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/{newsletterId}/{issueNo}")
+    @GetMapping(value = "/{newsletterId}/{issueNo}", params = "companyNo")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterDetailRes> getNewsletterDetail(
@@ -47,6 +50,24 @@ public class MiNewsletterDedicatedController {
 
         return BaseResponseFactory.create(
             miNewsletterService.getNewsletterDetail(companyNo, userNo, newsletterId, issueNo)
+        );
+    }
+
+    @ApiOrder(5)
+    @Parameter(name = "companyNo", description = "고객회사번호")
+    @Operation(summary = "뉴스레터 상세 v2 조회", description = "org_snpsht_json 기반 상세 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping(value = "/{newsletterId}/{issueNo}/v2", params = "companyNo")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<NewsletterDetailV2Res> getNewsletterDetailV2(
+        @PathVariable("newsletterId") Integer newsletterId,
+        @PathVariable("issueNo") Integer issueNo,
+        @RequestParam(value = "companyNo") Integer companyNo
+    ) {
+        Integer userNo = authorizationService.getUserNo();
+        return BaseResponseFactory.create(
+            newsletterDetailV2Service.getNewsletterDetail(companyNo, userNo, newsletterId, issueNo)
         );
     }
 }

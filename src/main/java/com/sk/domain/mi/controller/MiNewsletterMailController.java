@@ -18,6 +18,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,17 +47,17 @@ public class MiNewsletterMailController {
     public BaseResponse<String> sendRevisionIssueMail(
         @PathVariable Integer newsletterId,
         @PathVariable Integer issueNo,
-        @RequestPart("request") NewsletterMailSendReq request,
+        @ModelAttribute NewsletterMailSendReq request,
         @RequestPart(value = "images", required = false) List<MultipartFile> images,
         @UserResolve User actorUser) {
         miNewsletterMailService.sendRevisionMail(
                 newsletterId,
                 issueNo,
-                request.subject(),
-                request.htmlBody(),
+                request.getSubject(),
+                request.getHtmlBody(),
                 images,
-                request.recipientEmails(),
-                request.scheduledAt(),
+                request.getRecipientEmails(),
+                request.getScheduledAt(),
                 actorUser);
 
         return BaseResponseFactory.create("success");
