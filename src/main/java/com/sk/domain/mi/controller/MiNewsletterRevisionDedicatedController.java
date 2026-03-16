@@ -37,7 +37,7 @@ public class MiNewsletterRevisionDedicatedController {
     @Parameter(name = "issueNo", description = "회차 번호")
     @Operation(summary = "원본 or 편집본 상세 조회")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping(value = "/{newsletterId}/{issueNo}/test", params = "!companyNo")
+    @GetMapping(value = "/{newsletterId}/{issueNo}", params = "!companyNo")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<RevisionOrOriginalDetailRes> getRevisionOrOriginalDetail(

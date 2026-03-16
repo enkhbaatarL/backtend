@@ -38,7 +38,7 @@ public class MiNewsletterDedicatedController {
     @Parameter(name = "companyNo", description = "고객회사번호")
     @Operation(summary = "뉴스레터 상세 조회", description = "특정 뉴스레터의 특정 발행호 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping(value = "/{newsletterId}/{issueNo}", params = "companyNo")
+    @GetMapping(value = "/{newsletterId}/{issueNo}/old", params = "companyNo")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterDetailRes> getNewsletterDetail(
