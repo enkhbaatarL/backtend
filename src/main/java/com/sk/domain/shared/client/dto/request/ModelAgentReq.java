@@ -6,11 +6,12 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Builder;
-import org.apache.commons.lang3.ObjectUtils;
 
 @Builder
 public record ModelAgentReq(
@@ -19,61 +20,65 @@ public record ModelAgentReq(
 
 ) {
 
-    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
+    public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
+        Integer companyNo, Integer userNo, Set<ContentProviderAccess> contentProviderAccesses,
+        boolean shouldWebSearch, boolean useMiDataset) {
         return ModelAgentReq.builder()
-            .input(Input.of(talkReq, histories, companyNo, userNo, authGdsList, repositoryIds))
+            .input(Input.of(
+                talkReq, histories, companyNo, userNo,
+                contentProviderAccesses.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(ContentProviderAccess::authGdsList)
+                    .filter(java.util.Objects::nonNull)
+                    .flatMap(Set::stream)
+                    .map(String::valueOf)
+                    .collect(Collectors.toSet()),
+                shouldWebSearch, useMiDataset, null))
             .build();
     }
 
     @Builder
     public record Input(
 
-        @JsonProperty("req_input")
-        ReqInput reqInput
+        @JsonProperty("user_query")
+        String userQuery,
+
+        @JsonProperty("company_code")
+        String companyNo,
+
+        @JsonProperty("user_num")
+        Integer userNo,
+
+        @JsonProperty("authorized_product_nums")
+        Set<String> authGdsList,
+
+//        @JsonProperty("rdb_search_metadata_repo_id")
+//        String rdbSearchMetadataRepoId,
+
+        List<History> histories,
+
+        @JsonProperty("search_sources")
+        Set<String> searchSources
 
     ) {
 
-        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories, Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
-            return Input.builder()
-                .reqInput(ReqInput.of(talkReq, histories, companyNo, userNo, authGdsList, repositoryIds))
-                .build();
-        }
-
-        @Builder
-        public record ReqInput(
-            String query,
-
-            @JsonProperty("company_code")
-            String companyNo,
-
-            @JsonProperty("user_num")
-            Integer userNo,
-
-            @JsonProperty("authorized_product_nums")
-            Set<Integer> authGdsList,
-
-            @JsonProperty("repository_ids")
-            Set<String> repositoryIds,
-
-            List<History> histories,
-
-            @JsonProperty("web_search_enabled")
-            Boolean shouldWebSearch
-        ) {
-
-            public static ReqInput of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
-                Integer companyNo, Integer userNo, Set<Integer> authGdsList, Set<String> repositoryIds) {
-                return ReqInput.builder()
-                    .query(talkReq.question())
-                    .shouldWebSearch(
-                        ObjectUtils.defaultIfNull(talkReq.shouldWebSearch(), Boolean.TRUE))
-                    .histories(History.ofList(histories))
-                    .companyNo(String.valueOf(companyNo))
-                    .userNo(userNo)
-                    .authGdsList(authGdsList)
-                    .repositoryIds(repositoryIds)
-                    .build();
+        public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
+            Integer companyNo, Integer userNo, Set<String> authGdsList, boolean shouldWebSearch, boolean useMiDataset, String rdbSearchMetadataRepoId) {
+            Set<String> searchSources = new HashSet<>();
+            if(shouldWebSearch) searchSources.add("web");
+            if(useMiDataset) {
+                searchSources.add("rdb");
+                searchSources.add("vdb");
             }
+            return Input.builder()
+                .userQuery(talkReq.question())
+                .searchSources(searchSources)
+                .histories(History.ofList(histories))
+                .companyNo(String.valueOf(companyNo))
+                .userNo(userNo)
+                .authGdsList(authGdsList)
+                //.rdbSearchMetadataRepoId(rdbSearchMetadataRepoId)
+                .build();
         }
 
         @Builder

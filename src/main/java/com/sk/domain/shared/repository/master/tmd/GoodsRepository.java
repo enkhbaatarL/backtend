@@ -150,34 +150,37 @@ public interface GoodsRepository extends JpaRepository<Goods, Integer> {
         @Param("userNo") Integer userNo
     );
 
-    /**
-     * 권한이 있는 상품번호와 레포지토리 ID를 함께 조회합니다.
-     *
-     * @param customerCompanyNo 고객회사번호
-     * @param userNo            사용자번호
-     * @return 상품번호와 레포지토리 ID 리스트
-     */
-    @Query(value = """
-        SELECT DISTINCT g.gds_no, g.vctr_rpstry_id
-        FROM tmd_gdsm g
-             INNER JOIN tam_custcpnygdsmappl c ON c.gds_no = g.gds_no
-                                               AND c.cust_cpny_no = :customerCompanyNo
-                                               AND c.use_yn = 'Y'
-                                               AND c.del_yn = 'N'
-             INNER JOIN tam_authmnagtgdsmappl a ON a.cust_cpny_no = c.cust_cpny_no
-                                                AND a.gds_no = c.gds_no
-                                                AND a.gds_auth_mnagt_spt_cd = c.gds_auth_mnagt_spt_cd
-                                                AND a.gds_auth_cd = 'DOWNLOAD'
-                                                AND a.del_yn = 'N'
-                                                AND a.use_bgn_dt <= CURDATE()
-                                                AND a.use_end_dt >= CURDATE()
-                                                AND (c.gds_auth_mnagt_spt_cd = 'COMPANY' OR a.usr_no = :userNo)
-             INNER JOIN tam_custcpnyprvdmappl ccpm ON ccpm.cust_cpny_no = c.cust_cpny_no
-                                                   AND ccpm.use_yn = 'Y'
-                                                   AND ccpm.del_yn = 'N'
-        """, nativeQuery = true)
-    List<Object[]> findGoodsNosAndRepositoryIdsWithPermission(
-        @Param("customerCompanyNo") Integer customerCompanyNo,
-        @Param("userNo") Integer userNo
-    );
+  /**
+   * 권한이 있는 상품번호와 레포지토리 ID를 함께 조회합니다.
+   *
+   * @param customerCompanyNo 고객회사번호
+   * @param userNo            사용자번호
+   * @return 상품번호와 레포지토리 ID 리스트
+   */
+  @Query(
+      value =
+        """
+        SELECT DISTINCT g.gds_no, g.vctr_rpstry_id, p.prvd_id, p.prvd_no
+                FROM tmd_gdsm g
+                     INNER JOIN tam_custcpnygdsmappl c ON c.gds_no = g.gds_no
+                                                       AND c.cust_cpny_no = :customerCompanyNo
+                                                       AND c.use_yn = 'Y'
+                                                       AND c.del_yn = 'N'
+                     INNER JOIN tam_authmnagtgdsmappl a ON a.cust_cpny_no = c.cust_cpny_no
+                                                        AND a.gds_no = c.gds_no
+                                                        AND a.gds_auth_mnagt_spt_cd = c.gds_auth_mnagt_spt_cd
+                                                        AND a.gds_auth_cd = 'DOWNLOAD'
+                                                        AND a.del_yn = 'N'
+                                                        AND a.use_bgn_dt <= CURDATE()
+                                                        AND a.use_end_dt >= CURDATE()
+                                                        AND (c.gds_auth_mnagt_spt_cd = 'COMPANY' OR a.usr_no = :userNo)
+                     INNER JOIN tam_custcpnyprvdmappl ccpm ON ccpm.cust_cpny_no = c.cust_cpny_no
+                                                           AND ccpm.use_yn = 'Y'
+                                                           AND ccpm.del_yn = 'N'
+                     INNER JOIN tmd_prvdm p ON g.prvd_no = p.prvd_no and p.del_yn = 'N' and p.use_yn = 'Y'
+        order by p.prvd_id, p.prvd_no, g.gds_no
+        ;""",
+      nativeQuery = true)
+  List<Object[]> findGoodsNosAndRepositoryIdsWithPermission(
+      @Param("customerCompanyNo") Integer customerCompanyNo, @Param("userNo") Integer userNo);
 }

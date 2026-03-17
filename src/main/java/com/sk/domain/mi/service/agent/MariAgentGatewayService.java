@@ -9,6 +9,7 @@ import com.sk.domain.mi.exception.AgentStreamException;
 import com.sk.domain.mi.service.agent.stream.StreamEventHandler;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.dto.request.ModelAgentHeaders;
+import com.sk.domain.shared.client.dto.request.ContentProviderAccess;
 import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
@@ -77,13 +78,13 @@ public class MariAgentGatewayService {
 
     @Transactional
     protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna,
-        List<ChatbotTalkQna> histories, Set<Integer> goodsNos, Set<String> repositoryIds, int userNo,
+        List<ChatbotTalkQna> histories, Set<ContentProviderAccess> contentProviderAccesses, int userNo,
         int companyNo) {
 
         try {
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo,
                 qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, goodsNos, repositoryIds);
+            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, contentProviderAccesses,true, true);
 
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
 
@@ -132,10 +133,9 @@ public class MariAgentGatewayService {
         QnaReq.Insert talkReq,
         ChatbotTalkQna qna,
         List<ChatbotTalkQna> histories,
-        Set<Integer> goodsNos,
+        Set<ContentProviderAccess> contentProviderAccesses,
         int userNo,
-        int companyNo,
-        Set<String> repositoryIds
+        int companyNo
     ) {
 
         long streamStartTime = System.currentTimeMillis();
@@ -147,7 +147,7 @@ public class MariAgentGatewayService {
         ).toHeaders();
 
         ModelAgentReq body = ModelAgentReq.of(
-            talkReq, histories, companyNo, userNo, goodsNos, repositoryIds
+            talkReq, histories, companyNo, userNo, contentProviderAccesses, true, true
         );
 
         log.info("[PERF] Stream started for qnaNo: {}", qna.getChatbotTalkQnaNo());
