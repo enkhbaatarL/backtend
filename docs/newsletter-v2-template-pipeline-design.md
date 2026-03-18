@@ -81,7 +81,7 @@ tmd_nwsltrtmpltm (Template)
 ```sql
 CREATE TABLE tmd_nwsltrtmpltm
 (
-    nws_ltr_tmplt_v2_id  BIGINT UNSIGNED AUTO_INCREMENT COMMENT '뉴스레터템플릿V2ID'
+    nws_ltr_tmplt_id  BIGINT UNSIGNED AUTO_INCREMENT COMMENT '뉴스레터템플릿V2ID'
         PRIMARY KEY,
     crt_usr_logn_id      VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '생성사용자로그인ID',
     crt_dtm              DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
@@ -122,18 +122,18 @@ CREATE TABLE tmd_nwsltrtmpltsctn
     mod_dtm               DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '수정일시',
     del_yn                CHAR(1)     DEFAULT 'N'               NOT NULL COMMENT '삭제여부',
 
-    nws_ltr_tmplt_v2_id   BIGINT UNSIGNED                      NOT NULL COMMENT '뉴스레터템플릿V2ID',
-    sctn_cd               VARCHAR(50)                           NOT NULL COMMENT '섹션코드(고유식별자, e.g. HEADER, MAIN_CHART, REF_01)',
+    nws_ltr_tmplt_id   BIGINT UNSIGNED                      NOT NULL COMMENT '뉴스레터템플릿V2ID',
+    sctn_cd               VARCHAR(50)                           NOT NULL COMMENT '섹션코드(고유식별자, e.g. COVER, DATE_ISSUE, TITLE)',
     sctn_type_cd          VARCHAR(30)                           NOT NULL COMMENT '섹션유형코드(FIXED,GENERAL,SPECIALIZED)',
     sctn_nm               VARCHAR(200)                          NOT NULL COMMENT '섹션명',
     sctn_ord              INT UNSIGNED DEFAULT 0                NOT NULL COMMENT '섹션순서',
     vsblty_yn             CHAR(1)     DEFAULT 'Y'              NOT NULL COMMENT '노출여부',
     tgt_cmpny_no          INT UNSIGNED                          NULL     COMMENT '대상고객사번호(SPECIALIZED일 때)',
 
-    CONSTRAINT tmd_nwsltrtmpltsctn_ux01 UNIQUE (nws_ltr_tmplt_v2_id, sctn_cd),
+    CONSTRAINT tmd_nwsltrtmpltsctn_ux01 UNIQUE (nws_ltr_tmplt_id, sctn_cd),
 
     CONSTRAINT tmd_nwsltrtmpltsctn_fk01
-        FOREIGN KEY (nws_ltr_tmplt_v2_id) REFERENCES tmd_nwsltrtmpltm (nws_ltr_tmplt_v2_id),
+        FOREIGN KEY (nws_ltr_tmplt_id) REFERENCES tmd_nwsltrtmpltm (nws_ltr_tmplt_id),
 
     CONSTRAINT tmd_nwsltrtmpltsctn_ck01
         CHECK (del_yn IN ('N', 'Y')),
@@ -147,7 +147,7 @@ CREATE TABLE tmd_nwsltrtmpltsctn
     COMMENT 'TMD_뉴스레터템플릿섹션';
 
 CREATE INDEX tmd_nwsltrtmpltsctn_ix01
-    ON tmd_nwsltrtmpltsctn (nws_ltr_tmplt_v2_id, sctn_ord);
+    ON tmd_nwsltrtmpltsctn (nws_ltr_tmplt_id, sctn_ord);
 ```
 
 #### Table 3: `tmd_nwsltrtmpltblk` (뉴스레터템플릿블록)
@@ -259,7 +259,7 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
 ```jsonc
 {
   "schemaVersion": 2,
-  "templateId": 1,                    // tmd_nwsltrtmpltm.nws_ltr_tmplt_v2_id
+  "templateId": 1,                    // tmd_nwsltrtmpltm.nws_ltr_tmplt_id
   "newsletterId": 1,                  // nws_ltr_mstr_id
   "issueNo": 22,
   "publishedAt": "2026-03-16T09:00:00+09:00",
@@ -278,9 +278,9 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
 
 ```jsonc
 {
-  "id": "sec-HEADER",                   // sctn_cd에서 파생
+  "id": "sec-COVER",                    // sctn_cd에서 파생
   "type": "FIXED",                       // FIXED | GENERAL | SPECIALIZED
-  "title": "뉴스레터 헤더",
+  "title": "Cover",
   "order": 0,
   "visibility": true,
   "target": null,                        // SPECIALIZED일 때 고객사 코드 (e.g. "SKE")
@@ -293,13 +293,13 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
 
 ```jsonc
 {
-  "id": "blk-MAIN_CHART",               // blk_cd에서 파생
+  "id": "blk-NEWS_FLOW_CHART-12001",    // blk_cd + issueBlockStateId 조합
   "type": "CHART",                       // TEXT | CHART | TABLE | NEWS_CARD | IMAGE | TITLE
   "format": "GENERAL",                   // GENERAL | SPECIALIZED
   "order": 0,
   "visibility": true,
   "isCollapsed": false,
-  "title": "Brent 유가 추이",
+  "title": "주요 뉴스 Flow 및 Brent 유가 추이",
   "plotOnChart": true,
   "target": null,
   "editableFields": ["title"],           // is_editable=Y인 field_key 목록
@@ -311,8 +311,15 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
   - template의 `plot_on_chrt_yn`은 해당 block이 `plotOnChart` 옵션 구조를 지원하는지 의미한다.
   - issue state의 `plotOnChart`는 해당 issue에서의 최종 true/false 상태값이다.
   - template이 해당 옵션을 지원하지 않으면 issue state에 `plotOnChart`를 저장할 수 없다.
+  - 과거 문서/예시의 `showInChart`는 `plotOnChart`로 통일한다.
   - published snapshot에는 publish 시점에 계산된 최종 instance 값만 기록한다.
   - original detail은 snapshot의 `plotOnChart`만 사용하며 template/state를 재평가하지 않는다.
+
+- 반복 block 조립 규칙
+  - template block은 지원 가능한 block schema를 정의한다.
+  - issue block state row는 실제 렌더링될 block instance 1건이다.
+  - 같은 template block을 참조하는 issue block state row가 여러 건이면 snapshot block도 여러 건 생성된다.
+  - row 식별은 `nws_ltr_org_iss_blk_stat_id`, 렌더 순서는 `blk_ord`를 사용한다.
 
 ### 2-4. Block.content — 타입별 구조
 
@@ -330,11 +337,12 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
 
 ```jsonc
 {
-  "text": "Oil Market Weekly",
-  "publishDate": "2026년 03월 16일",
-  "issueLabel": "#22"
+  "title": "Oil Market Weekly",
+  "subtitle": "Brent, WTI, 달러 흐름 중심 데일리 요약"
 }
 ```
+
+- 날짜와 이슈 번호는 `DATE_ISSUE` section의 별도 block content로 관리한다.
 
 #### CHART (OHLCV 시계열)
 
@@ -470,6 +478,10 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
                                                                       └─────────────────┘
 ```
 
+- preview와 publish는 동일한 `template + issueState + resolvedContent -> snapshot DTO` 조립 규칙을 사용한다.
+- preview는 조립 결과를 응답 payload로만 사용하고 저장하지 않는다.
+- publish는 동일 조립 결과를 `org_snpsht_json`에 저장한다.
+
 ### 3-2. 컴포넌트 상세
 
 #### A. NewsletterPublishPipelineService (오케스트레이터)
@@ -509,7 +521,7 @@ public class NewsletterPublishPipelineService {
         IssueStateTree issueState = issueStateLoader.loadOrCreateDefaults(issueNo, template, pubHist);
 
         // 4. 블록별 데이터 resolve
-        Map<String, ResolvedBlockData> resolvedData =
+        Map<Long, ResolvedBlockData> resolvedData =
             blockDataResolver.resolveAll(template, issueState, pubHist);
 
         // 5. 스냅샷 JSON 조합
@@ -532,6 +544,34 @@ public class NewsletterPublishPipelineService {
     }
 }
 ```
+
+- Cover 이미지 block(`COVER_IMAGE_CARD`)은 `IMAGE` type을 사용한다.
+
+#### STATIC/사용자편집 block 입력 처리
+
+- Cover, Date & Issue, Title, Summary처럼 조회가 아닌 사용자 입력 기반 block은 `blk_stat_json.contentInput`에 입력값을 저장한다.
+- Resolver는 `contentInput`과 template field 정의를 이용해 최종 `content`를 만든다.
+- 따라서 preview와 publish는 모두 `contentInput -> resolved content -> snapshot content`의 동일 경로를 사용한다.
+
+#### A-1. Preview / Publish 공용 조립 원칙
+
+```java
+public class NewsletterPreviewFacade {
+
+    public SnapshotRoot buildPreview(Integer newsletterMasterId, Integer issueNo) {
+        TemplateTree template = templateLoader.load(newsletterMasterId);
+        IssueStateTree issueState = issueStateLoader.loadOrCreateDefaults(issueNo, template, null);
+        Map<Long, ResolvedBlockData> resolvedData =
+            blockDataResolver.resolveAll(template, issueState, null);
+
+        return snapshotAssembler.assembleToDto(template, issueState, resolvedData, null);
+    }
+}
+```
+
+- preview와 publish는 같은 resolver/assembler를 사용한다.
+- 차이는 publish만 최종 JSON을 `tmd_nwsltrorgissm.org_snpsht_json`에 저장한다는 점이다.
+- 따라서 issue state override, 반복 block row, resolved content 해석 규칙은 preview와 publish에서 동일해야 한다.
 
 #### B. TemplateLoader
 
@@ -579,7 +619,7 @@ public class TemplateLoader {
 
 #### C. BlockDataResolver
 
-블록의 `data_src_type_cd`에 따라 데이터를 조회하는 Strategy 패턴.
+issue block state row를 기준으로 블록 데이터를 조회하는 Strategy 패턴.
 
 ```java
 @Service
@@ -588,20 +628,23 @@ public class BlockDataResolver {
 
     private final Map<String, BlockDataStrategy> strategies;
 
-    public Map<String, ResolvedBlockData> resolveAll(
-            TemplateTree template, NewsletterPublishHistory pubHist) {
+    public Map<Long, ResolvedBlockData> resolveAll(
+            TemplateTree template,
+            IssueStateTree issueState,
+            NewsletterPublishHistory pubHist) {
 
-        Map<String, ResolvedBlockData> result = new LinkedHashMap<>();
+        Map<Long, ResolvedBlockData> result = new LinkedHashMap<>();
 
-        for (TemplateTree.SectionNode section : template.getSections()) {
-            for (TemplateTree.BlockNode block : section.getBlocks()) {
+        for (IssueStateTree.SectionStateNode sectionState : issueState.getSections()) {
+            for (IssueStateTree.BlockStateNode blockState : sectionState.getBlocks()) {
+                TemplateTree.BlockNode block = template.findBlock(blockState.getTemplateBlockId());
                 String strategyKey = block.getDataSourceType(); // STATIC, DYNAMIC_QUERY, CHART_SERIES, NEWS_EVENT
                 BlockDataStrategy strategy = strategies.get(strategyKey);
                 if (strategy == null) {
                     strategy = strategies.get("STATIC"); // fallback
                 }
-                ResolvedBlockData data = strategy.resolve(block, pubHist);
-                result.put(block.getBlockCode(), data);
+                ResolvedBlockData data = strategy.resolve(block, blockState, pubHist);
+                result.put(blockState.getIssueBlockStateId(), data);
             }
         }
 
@@ -619,6 +662,11 @@ public class BlockDataResolver {
 | `CHART_SERIES` | `ChartSeriesBlockDataStrategy` | `NewsletterChartRepository` / `NewsletterTemplateDedicatedChartRepository` / `NewsletterCollectionChartRepository` 조회 → CHART content 생성. v1의 `convertNewsletterChartsToChartData()`, `getDediChartData()`, `getCollectionChartData()` 대체 |
 | `NEWS_EVENT` | `NewsEventBlockDataStrategy` | `NewsletterEventRepository` 조회 → NEWS_CARD content 생성. v1의 뉴스 이벤트 매핑 로직 대체 |
 
+반복 block 처리 원칙:
+- Resolver와 Assembler는 template block 기준 단건이 아니라 issue block state row 기준으로 동작한다.
+- `NEWS_ITEM`, `REFERENCE_TEXT`, `REFERENCE_CHART`, `REFERENCE_TABLE`는 같은 `nws_ltr_tmplt_blk_id`를 참조하는 row가 여러 건일 수 있다.
+- published snapshot의 block 배열에는 이 row 수만큼 block이 생성된다.
+
 #### D. SnapshotAssembler
 
 ```java
@@ -629,11 +677,12 @@ public class SnapshotAssembler {
     private final ObjectMapper objectMapper;
 
     /**
-     * 템플릿 트리 + resolve된 데이터 → org_snpsht_json 문자열 생성.
+     * 템플릿 트리 + issue state + resolve된 데이터 → org_snpsht_json 문자열 생성.
      */
     public String assemble(
             TemplateTree template,
-            Map<String, ResolvedBlockData> resolvedData,
+            IssueStateTree issueState,
+            Map<Long, ResolvedBlockData> resolvedData,
             NewsletterPublishHistory pubHist) {
 
         SnapshotRoot root = new SnapshotRoot();
@@ -652,27 +701,29 @@ public class SnapshotAssembler {
 
         // sections
         List<SnapshotSection> sections = new ArrayList<>();
-        for (TemplateTree.SectionNode sectionNode : template.getSections()) {
+        for (IssueStateTree.SectionStateNode sectionState : issueState.getSections()) {
+            TemplateTree.SectionNode sectionNode = template.findSection(sectionState.getTemplateSectionId());
             SnapshotSection section = new SnapshotSection();
             section.setId("sec-" + sectionNode.getSectionCode());
             section.setType(sectionNode.getSectionTypeCode());
-            section.setTitle(sectionNode.getSectionName());
-            section.setOrder(sectionNode.getSectionOrder());
-            section.setVisibility("Y".equals(sectionNode.getVisibilityYn()));
+            section.setTitle(defaultIfBlank(sectionState.getSectionTitle(), sectionNode.getSectionName()));
+            section.setOrder(sectionState.getSectionOrder());
+            section.setVisibility("Y".equals(sectionState.getVisibilityYn()));
             section.setTarget(resolveTarget(sectionNode.getTargetCompanyNo()));
-            section.setIsCollapsed(false);
+            section.setIsCollapsed(sectionState.isCollapsed());
 
             List<SnapshotBlock> blocks = new ArrayList<>();
-            for (TemplateTree.BlockNode blockNode : sectionNode.getBlocks()) {
+            for (IssueStateTree.BlockStateNode blockState : sectionState.getBlocks()) {
+                TemplateTree.BlockNode blockNode = template.findBlock(blockState.getTemplateBlockId());
                 SnapshotBlock block = new SnapshotBlock();
-                block.setId("blk-" + blockNode.getBlockCode());
+                block.setId("blk-" + blockNode.getBlockCode() + "-" + blockState.getIssueBlockStateId());
                 block.setType(blockNode.getBlockTypeCode());
                 block.setFormat(blockNode.getBlockFormatCode());
-                block.setOrder(blockNode.getBlockOrder());
-                block.setVisibility("Y".equals(blockNode.getVisibilityYn()));
-                block.setIsCollapsed(false);
-                block.setTitle(blockNode.getBlockName());
-                block.setPlotOnChart("Y".equals(blockNode.getPlotOnChartYn()));
+                block.setOrder(blockState.getBlockOrder());
+                block.setVisibility("Y".equals(blockState.getVisibilityYn()));
+                block.setIsCollapsed(blockState.isCollapsed());
+                block.setTitle(defaultIfBlank(blockState.getBlockTitle(), blockNode.getBlockName()));
+                block.setPlotOnChart(resolvePlotOnChart(blockNode, blockState));
                 block.setTarget(resolveTarget(blockNode.getTargetCompanyNo()));
 
                 // editableFields: is_editable_yn='Y'인 필드키 목록
@@ -683,7 +734,7 @@ public class SnapshotAssembler {
                 block.setEditableFields(editableFields);
 
                 // content: resolved data
-                ResolvedBlockData data = resolvedData.get(blockNode.getBlockCode());
+                ResolvedBlockData data = resolvedData.get(blockState.getIssueBlockStateId());
                 block.setContent(data != null ? data.toContentMap() : Map.of());
 
                 blocks.add(block);
@@ -722,25 +773,27 @@ public class SnapshotAssembler {
 
 | v2 Section | sctn_cd | sctn_type_cd | 구성 |
 |---|---|---|---|
-| 헤더/타이틀 | `HEADER` | `FIXED` | 제목, 일자, 이슈번호 |
-| 메인 차트 | `MAIN_CHART` | `FIXED` | 뉴스 플로우 차트 |
-| 관련 뉴스 | `NEWS_EVENTS` | `FIXED` | 뉴스 카드 목록 |
-| 참조 영역 #N | `REF_{order}` | `GENERAL` | 테이블/차트 참조 (elementOrder 2+에서 1:1) |
-| AI 요약 | `AI_SUMMARY` | `FIXED` | AI 요약 텍스트 |
-| 보충 정보 | `SUB_INFO` | `GENERAL` | SUB_INFO_TXT |
+| Cover | `COVER` | `FIXED` | 커버 이미지, 발행 주기, 뉴스레터명, 뉴스레터 소개 |
+| Date & Issue | `DATE_ISSUE` | `FIXED` | 발행일, 이슈 번호 |
+| Title | `TITLE` | `FIXED` | 제목, 부제 |
+| Summary | `SUMMARY` | `FIXED` | 핵심 요약 |
+| News Flow | `NEWS_FLOW` | `GENERAL` | 뉴스 플로우 차트, 뉴스 카드 반복 |
+| Reference | `REFERENCE` | `GENERAL` | 참고 헤더, 텍스트/차트/표 반복 |
+| Footer | `FOOTER` | `FIXED` | 푸터 안내 문구 |
 
 #### Block 매핑 (elementType → Block)
 
 | v1 elementType | v2 Block type | v2 Block blk_cd | data_src_type_cd | data_src_ref |
 |---|---|---|---|---|
-| `MAIN_CHRT_NM` + `MAIN_CHRT_CODE` | `CHART` | `MAIN_FLOW_CHART` | `CHART_SERIES` | `{MAIN_CHRT_CODE value}` |
-| (뉴스 이벤트 - 하드코딩) | `NEWS_CARD` | `NEWS_EVENT_LIST` | `NEWS_EVENT` | — |
-| `RERNC_TABLE_NM` + `RERNC_TABLE_CD` | `TABLE` | `REF_TABLE_{order}` | `DYNAMIC_QUERY` | `pref_table:{RERNC_TABLE_CD value}` |
-| `DEDI_CHRT_NM` + `DEDI_CHRT_CD` | `CHART` | `REF_DEDI_CHART_{order}` | `CHART_SERIES` | `dedi:{DEDI_CHRT_CD value}` |
-| `CLTN_CHRT_NM` + `CLTN_CHRT_CD` | `CHART` | `REF_CLTN_CHART_{order}` | `CHART_SERIES` | `cltn:{CLTN_CHRT_CD value}` |
-| `SUB_INFO_TXT` | `TEXT` | `SUB_INFO_TEXT` | `STATIC` | — |
-| (타이틀 - 하드코딩) | `TITLE` | `NEWSLETTER_TITLE` | `STATIC` | — |
-| (AI 요약 - 하드코딩) | `TEXT` | `AI_SUMMARY_TEXT` | `STATIC` | — |
+| `MAIN_CHRT_NM` + `MAIN_CHRT_CODE` | `CHART` | `NEWS_FLOW_CHART` | `CHART_SERIES` | `{MAIN_CHRT_CODE value}` |
+| (뉴스 이벤트 - 하드코딩) | `NEWS_CARD` | `NEWS_ITEM` | `NEWS_EVENT` | `NEWS_EVENT_BY_PERIOD` |
+| `RERNC_TABLE_NM` + `RERNC_TABLE_CD` | `TABLE` | `REFERENCE_TABLE` | `DYNAMIC_QUERY` | `pref_table:{RERNC_TABLE_CD value}` |
+| `DEDI_CHRT_NM` + `DEDI_CHRT_CD` | `CHART` | `REFERENCE_CHART` | `CHART_SERIES` | `dedi:{DEDI_CHRT_CD value}` |
+| `CLTN_CHRT_NM` + `CLTN_CHRT_CD` | `CHART` | `REFERENCE_CHART` | `CHART_SERIES` | `cltn:{CLTN_CHRT_CD value}` |
+| `SUB_INFO_TXT` | `TEXT` | `REFERENCE_TEXT` 또는 `FOOTER_NOTICE` | `STATIC` | — |
+| (타이틀 - 하드코딩) | `TITLE` | `TITLE_MAIN` | `STATIC` | — |
+| (발행일/이슈번호 - 하드코딩) | `TEXT` | `DATE_ISSUE_INFO` | `STATIC` | — |
+| (커버/설명 - 하드코딩) | `TEXT`/`IMAGE` | `COVER_IMAGE_CARD`, `COVER_INFO` | `STATIC` | — |
 
 ### 4-2. `tmd_nws_ltr_tmplt` → v2 4테이블 변환 로직
 
@@ -755,23 +808,26 @@ FOR EACH DISTINCT nws_ltr_tmplt_id IN tmd_nws_ltr_tmplt:
   2. tmd_nwsltrtmpltm INSERT
      - tmplt_nm = "{마스터명} 기본 템플릿"
 
-  3. FIXED 섹션 생성 (HEADER, MAIN_CHART, NEWS_EVENTS, AI_SUMMARY)
-     - 이 섹션들은 v1에서 하드코딩된 영역
+  3. 기본 7개 섹션 생성
+     - COVER / DATE_ISSUE / TITLE / SUMMARY / NEWS_FLOW / REFERENCE / FOOTER
 
-  4. FOR EACH elementOrder IN tmd_nws_ltr_tmplt WHERE order >= 2:
-     - 해당 order의 elementType 그룹 확인 (RERNC_TABLE / DEDI_CHRT / CLTN_CHRT)
-     - tmd_nwsltrtmpltsctn INSERT (GENERAL 섹션, REF_{order})
-     - tmd_nwsltrtmpltblk INSERT (TABLE 또는 CHART)
-     - tmd_nwsltrtmpltblkfld INSERT (필드 목록)
-       - TABLE: columns, rows, description 필드
-       - CHART: timestamps, series.* 필드
+  4. v1 하드코딩 메타를 현재 고정 섹션으로 재배치
+     - cover 관련 메타 -> COVER
+     - 발행일/이슈번호 -> DATE_ISSUE
+     - 제목/부제 -> TITLE
+     - 요약문 -> SUMMARY
 
-  5. SUB_INFO_TXT 존재 시:
-     - SUB_INFO 섹션 + TEXT 블록 생성
+  5. NEWS_FLOW 섹션 블록 생성
+     - NEWS_FLOW_CHART 1건
+     - NEWS_ITEM 템플릿 블록 1건
 
-  6. 블록필드 is_editable_yn 기본값:
+  6. REFERENCE 섹션 블록 생성
+     - REFERENCE_HEADER 1건
+     - REFERENCE_TEXT / REFERENCE_CHART / REFERENCE_TABLE 템플릿 블록 각 1건
+
+  7. 블록필드 is_editable_yn 기본값:
      - TEXT 블록의 text 필드 → 'Y'
-     - TITLE 블록의 title 필드 → 'Y'
+     - TITLE 블록의 title, subtitle 필드 → 'Y'
      - NEWS_CARD 블록의 items.*.title, items.*.content → 'Y'
      - CHART, TABLE 데이터 필드 → 'N'
 ```
@@ -812,7 +868,7 @@ FOR EACH DISTINCT nws_ltr_tmplt_id IN tmd_nws_ltr_tmplt:
 
 ## 5. 발행 시 `nws_ltr_tmplt_id` 매핑
 
-`tmd_nwsltrorgissm`에 `nws_ltr_tmplt_v2_id` 컬럼 추가는 불필요.
+`tmd_nwsltrorgissm`에 `nws_ltr_tmplt_id` 컬럼 추가는 불필요.
 
 - **근거 (확정사항 ⑥)**: 별도 이력 관리 없음. `org_snpsht_json` 내 `templateId`로 발행 시점 템플릿을 역추적 가능.
 - 발행 시점의 전체 구조가 JSON에 동결되므로, 템플릿 PK 참조만으로 충분.

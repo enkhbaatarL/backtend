@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,15 +83,40 @@ public class IssueStateLoader {
             .map(blocksBySectionStateId::get)
             .orElse(List.of());
 
-        Map<Long, NewsletterIssueBlockState> persistedBlockMap = new LinkedHashMap<>();
-        persistedBlocks.forEach(block -> persistedBlockMap.put(block.getTemplateBlockId(), block));
+        validateBlockReferences(templateSection, persistedBlocks, templateBlockMap);
+
+        Map<Long, List<NewsletterIssueBlockState>> persistedBlocksByTemplateBlockId = persistedBlocks.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                NewsletterIssueBlockState::getTemplateBlockId,
+                LinkedHashMap::new,
+                java.util.stream.Collectors.toList()
+            ));
+
+        Set<Long> templateBlockIds = templateSection.blocks().stream()
+            .map(TemplateTree.BlockNode::id)
+            .collect(java.util.stream.Collectors.toSet());
+
+        persistedBlocksByTemplateBlockId.keySet().stream()
+            .filter(templateBlockId -> !templateBlockIds.contains(templateBlockId))
+            .findFirst()
+            .ifPresent(templateBlockId -> {
+                throw new IllegalStateException("ISSUE_BLOCK_STATE_SECTION_MISMATCH: blockId=" + templateBlockId);
+            });
 
         List<IssueStateTree.BlockStateNode> blocks = templateSection.blocks().stream()
-            .map(templateBlock -> buildBlockState(templateSection, templateBlock, persistedBlockMap.get(templateBlock.id()), templateBlockMap))
+            .flatMap(templateBlock -> {
+                List<NewsletterIssueBlockState> matchedPersistedBlocks = persistedBlocksByTemplateBlockId.get(templateBlock.id());
+                if (matchedPersistedBlocks == null || matchedPersistedBlocks.isEmpty()) {
+                    return java.util.stream.Stream.of(IssueStateTree.BlockStateNode.defaultFrom(templateBlock));
+                }
+                return matchedPersistedBlocks.stream()
+                    .map(persistedBlockState -> buildBlockState(templateSection, templateBlock, persistedBlockState, templateBlockMap));
+            })
             .sorted(Comparator.comparingInt(IssueStateTree.BlockStateNode::order))
             .toList();
 
         return new IssueStateTree.SectionStateNode(
+            persistedSectionState != null ? persistedSectionState.getNewsletterIssueSectionStateId() : null,
             templateSection.id(),
             persistedSectionState != null ? persistedSectionState.getSectionOrder() : templateSection.sectionOrder(),
             persistedSectionState != null ? persistedSectionState.getVisibilityYn() : templateSection.visibilityYn(),
@@ -126,6 +152,7 @@ public class IssueStateLoader {
         }
 
         return new IssueStateTree.BlockStateNode(
+            persistedBlockState.getNewsletterIssueBlockStateId(),
             templateBlock.id(),
             persistedBlockState.getBlockOrder(),
             persistedBlockState.getVisibilityYn(),
@@ -135,6 +162,22 @@ public class IssueStateLoader {
             blockStateJson.containsKey("plotOnChart") ? asBoolean(blockStateJson.get("plotOnChart"), null) : null,
             blockStateJson
         );
+    }
+
+    private void validateBlockReferences(
+        TemplateTree.SectionNode templateSection,
+        List<NewsletterIssueBlockState> persistedBlocks,
+        Map<Long, TemplateTree.BlockNode> templateBlockMap
+    ) {
+        persistedBlocks.forEach(persistedBlockState -> {
+            TemplateTree.BlockNode referencedBlock = templateBlockMap.get(persistedBlockState.getTemplateBlockId());
+            if (referencedBlock == null) {
+                throw new IllegalStateException("UNKNOWN_TEMPLATE_BLOCK_STATE_REFERENCE: " + persistedBlockState.getTemplateBlockId());
+            }
+            if (!templateSection.id().equals(referencedBlock.sectionId())) {
+                throw new IllegalStateException("ISSUE_BLOCK_STATE_SECTION_MISMATCH: blockId=" + referencedBlock.id());
+            }
+        });
     }
 
     private void validateSectionReferences(
@@ -154,10 +197,33 @@ public class IssueStateLoader {
             return Map.of();
         }
         try {
-            return objectMapper.readValue(rawJson, MAP_TYPE);
+            return normalizeStateMap(objectMapper.readValue(rawJson, MAP_TYPE));
         } catch (Exception e) {
             throw new IllegalStateException("ISSUE_STATE_JSON_PARSE_FAILED", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> normalizeStateMap(Map<String, Object> source) {
+        if (source == null || source.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        source.forEach((key, value) -> {
+            String normalizedKey = "showInChart".equals(key) ? "plotOnChart" : key;
+            Object normalizedValue = value;
+            if (value instanceof Map<?, ?> nestedMap) {
+                normalizedValue = normalizeStateMap((Map<String, Object>) nestedMap);
+            } else if (value instanceof List<?> listValue) {
+                normalizedValue = listValue.stream()
+                    .map(item -> item instanceof Map<?, ?> nestedItem
+                        ? normalizeStateMap((Map<String, Object>) nestedItem)
+                        : item)
+                    .toList();
+            }
+            normalized.put(normalizedKey, normalizedValue);
+        });
+        return normalized;
     }
 
     private Boolean asBoolean(Object value, Boolean defaultValue) {

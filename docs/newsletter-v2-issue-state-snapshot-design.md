@@ -17,6 +17,7 @@
 - `issue section state / issue block state`: 발행 이슈별 상태값
 - `resolved content`: template의 query policy와 issue state를 반영해 조회/가공한 실제 데이터
 - `original snapshot`: 발행 완료 시점에 동결한 원본 완성본
+- `rendered block instance row`: `tmd_nwsltrorgissblkstat`의 개별 row. preview/publish 조립 시 실제 렌더링 block 1건으로 해석한다.
 
 ## 0-1. Source of Truth / 책임 경계
 - 본 문서는 역할 분리와 책임 경계를 정의하는 설계 기준 문서다.
@@ -29,9 +30,14 @@
 - original detail은 항상 `org_snpsht_json` 우선으로 조회한다.
 - preview는 `template + issue state + resolved content`를 동적으로 조합한다.
 - `plotOnChart`는 template에서 "이 block이 해당 옵션 구조를 지원하는가"를 뜻하고, issue block state에서 최종 true/false 값을 가진다.
+- `plotOnChart`를 차트 연계 표시용 canonical state key로 사용한다.
+  - 과거 문서/예시의 `showInChart`는 `plotOnChart`로 통일한다.
 - field-level state 테이블은 도입하지 않는다.
   - 이유: 현재 요구사항의 가변값은 section/block 단위이며, field는 주로 content schema 또는 editable field 정의에 가깝다.
   - 예외: 향후 field별 order/visibility/override 요구가 독립적으로 생길 때만 별도 검토한다.
+- 반복 block는 별도 `blk_inst_no` 없이 지원한다.
+  - 같은 template block을 참조하는 복수 `issue block state` row를 허용한다.
+  - 각 row는 `nws_ltr_org_iss_blk_stat_id`와 section 내 `blk_ord`로 식별/정렬한다.
 
 ## 0-3. DB 약어 판단
 - `sctn`: 기존 `tmd_nwsltrtmpltsctn` 등에서 이미 사용 중이므로 유지 가능
@@ -65,6 +71,7 @@
   - `order`, `visibility`, title override, `plotOnChart` 등 옵션 값: issue block state 기준
   - template은 block option의 지원 가능 여부만 정의하며, published snapshot에는 issue block state에서 계산된 최종값을 기록한다.
   - `content`: resolved content 기준
+  - 반복 block는 template block 1건에 대해 issue block state row가 여러 건 생성될 수 있으며, snapshot block도 row 수만큼 생성한다.
 - 값 우선순위
   - structure/policy는 template 기준, instance state 값은 issue state 기준
 
@@ -104,6 +111,8 @@
 - field는 기본적으로 별도 state 테이블을 두지 않는다.
   - field는 대부분 content schema 정의에 가깝기 때문이다.
 - block state는 반드시 동일 `issue`의 section state에만 연결되어야 한다.
+- issue block state row 자체를 rendered block instance row로 해석한다.
+- 같은 template block을 참조하는 복수 row를 허용한다.
 - 신규 state 테이블은 null-safe rollout을 위해 기존 read path를 깨지 않는 독립 추가 테이블로 도입한다.
 
 ### 3-2. 관계 개요
@@ -168,8 +177,7 @@ CREATE TABLE tmd_nwsltrorgissblkstat
     tgt_cmpny_no                INT UNSIGNED                           NULL COMMENT '대상고객사번호',
     blk_stat_json               JSON                                   NULL COMMENT '블록상태JSON',
 
-    CONSTRAINT tmd_nwsltrorgissblkstat_ux01 UNIQUE (nws_ltr_org_iss_id, nws_ltr_tmplt_blk_id),
-    CONSTRAINT tmd_nwsltrorgissblkstat_ux02 UNIQUE (nws_ltr_org_iss_sctn_stat_id, blk_ord),
+    CONSTRAINT tmd_nwsltrorgissblkstat_ux01 UNIQUE (nws_ltr_org_iss_sctn_stat_id, blk_ord),
     CONSTRAINT tmd_nwsltrorgissblkstat_fk01 FOREIGN KEY (nws_ltr_org_iss_id) REFERENCES tmd_nwsltrorgissm (nws_ltr_org_iss_id),
     CONSTRAINT tmd_nwsltrorgissblkstat_fk02 FOREIGN KEY (nws_ltr_org_iss_sctn_stat_id, nws_ltr_org_iss_id)
         REFERENCES tmd_nwsltrorgisssctnstat (nws_ltr_org_iss_sctn_stat_id, nws_ltr_org_iss_id),
@@ -187,11 +195,14 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 - `sctn_stat_json`
   - `collapsed`
   - `showDivider`
+  - `removed`
   - 기타 섹션 전용 UI/표시 상태
 - `blk_stat_json`
   - `highlightMode`
   - `collapsed`
+  - `removed`
   - 기간/시장/기준시점 등 block query에 필요한 state 파라미터
+  - `contentInput`: STATIC 또는 사용자 입력 기반 block의 편집 입력값 묶음
 
 ### 3-6. 컬럼 승격 기준
 - 다음 조건에 해당하는 값은 `*_stat_json`에만 두지 않고 컬럼 승격을 검토한다.
@@ -202,20 +213,23 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 - 현재 컬럼 유지:
   - `sctn_ord`, `blk_ord`, `vsblty_yn`, `sctn_titl`, `blk_titl`, `tgt_cmpny_no`
 - 현재 JSON 유지:
-  - `collapsed`, `showDivider`, `highlightMode`
+  - `collapsed`, `showDivider`, `highlightMode`, `removed`
   - `plotOnChart`, `fromDate`, `toDate`, `market`, `maxItems`
+  - `contentInput`
 - 확정 사항:
-  - `plotOnChart`, `fromDate`, `toDate`, `market`, `maxItems`는 현재 설계 범위에서 JSON 유지
+  - `removed`, `plotOnChart`, `fromDate`, `toDate`, `market`, `maxItems`, `contentInput`은 현재 설계 범위에서 JSON 유지
   - 이유: preview/publish 조립 입력값으로 사용되며 현재 DB 정렬/검색/감사 인덱스 요구가 확정되지 않았기 때문
 
 ### 3-7. 무결성 보장 범위
 - DB 레벨에서 보장하는 것
   - issue -> section state
   - issue + section state -> block state
-  - issue 내 template section/block별 state 단일성
+  - section 내 `blk_ord` 단일성
 - 애플리케이션 레벨에서 추가 검증할 것
   - `nws_ltr_tmplt_blk_id`가 참조하는 block이 실제로 해당 `nws_ltr_org_iss_sctn_stat_id`의 template section 하위 block인지 검증
+  - 같은 template block을 참조하는 복수 row가 있어도 각 row가 독립 rendered block instance로 취급되는지 검증
   - `plotOnChart` 같은 state key는 template이 해당 옵션 구조를 지원하는 block에서만 허용되도록 검증
+  - `contentInput`은 block field 정의와 호환되는 입력 key만 허용되도록 검증
   - template default와 issue override 조합 결과가 block type 제약을 위반하지 않는지 검증
 
 ## 4. Template Query Policy / Issue State / Resolved Content 예시 스키마
@@ -248,6 +262,8 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 - 주의
   - published original의 원본 조회는 issue state를 직접 읽지 않는다.
   - issue state는 publish 전 조립 입력값이며, publish 완료 후에는 snapshot으로 책임이 이동한다.
+  - 렌더링 최종 content 그 자체를 직접 저장하는 것이 아니라, resolver가 content를 만들기 위한 입력값을 저장한다.
+  - STATIC/사용자편집 block의 입력값은 `blk_stat_json.contentInput` 아래에 둔다.
 
 예시:
 ```json
@@ -255,13 +271,20 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
   "fromDate": "2026-03-01",
   "toDate": "2026-03-16",
   "market": "OIL",
-  "plotOnChart": true
+  "plotOnChart": true,
+  "contentInput": {
+    "title": "Oil Price Trends",
+    "subtitle": "국제 유가 흐름 요약"
+  }
 }
 ```
 
 ### 4-3. Resolved Content
 - 목적: 실제 렌더링할 최종 데이터
 - 생성 방식: `query policy + issue state`를 바탕으로 resolver가 생성
+- 구분 원칙
+  - `issue state`: 조회 파라미터, UI 상태, 사용자 입력값(`contentInput`)
+  - `resolved content`: 위 입력값을 해석/조회해 renderer가 바로 사용할 수 있게 만든 결과
 
 예시:
 ```json

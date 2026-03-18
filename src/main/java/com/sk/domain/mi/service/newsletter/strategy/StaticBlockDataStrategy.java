@@ -6,6 +6,7 @@ import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -25,16 +26,22 @@ public class StaticBlockDataStrategy implements BlockDataStrategy {
         IssueStateTree.BlockStateNode blockState,
         NewsletterPublishHistory pubHist
     ) {
+        Map<String, Object> contentInput = resolveContentInput(blockState);
+        if (!contentInput.isEmpty()) {
+            return ResolvedBlockData.of(contentInput);
+        }
+
         Map<String, Object> content = new LinkedHashMap<>();
         if ("TITLE".equals(block.blockTypeCode())) {
-            content.put("text", pubHist.getNewsletterTitle());
-            content.put("publishDate", pubHist.getPublishDateTime() == null ? null : pubHist.getPublishDateTime().format(TITLE_DATE_FORMATTER));
-            content.put("issueLabel", "#" + pubHist.getIssueNo());
+            content.put("text", pubHist != null ? pubHist.getNewsletterTitle() : block.blockName());
+            content.put("publishDate", pubHist != null && pubHist.getPublishDateTime() != null
+                ? pubHist.getPublishDateTime().format(TITLE_DATE_FORMATTER) : null);
+            content.put("issueLabel", pubHist != null ? "#" + pubHist.getIssueNo() : null);
             return ResolvedBlockData.of(content);
         }
 
         if ("AI_SUMMARY_TEXT".equals(block.blockCode())) {
-            content.put("text", pubHist.getAiSummary());
+            content.put("text", pubHist != null ? pubHist.getAiSummary() : null);
             return ResolvedBlockData.of(content);
         }
 
@@ -50,5 +57,20 @@ public class StaticBlockDataStrategy implements BlockDataStrategy {
             .orElse(block.blockName());
         content.put("text", text);
         return ResolvedBlockData.of(content);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> resolveContentInput(IssueStateTree.BlockStateNode blockState) {
+        if (blockState == null || blockState.state().isEmpty()) {
+            return Map.of();
+        }
+        Object contentInput = blockState.state().get("contentInput");
+        if (contentInput instanceof Map<?, ?> inputMap) {
+            return new LinkedHashMap<>((Map<String, Object>) inputMap);
+        }
+        if (contentInput instanceof List<?> inputList) {
+            return Map.of("items", inputList);
+        }
+        return Map.of();
     }
 }

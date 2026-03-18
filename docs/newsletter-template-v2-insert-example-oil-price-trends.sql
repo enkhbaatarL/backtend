@@ -1,17 +1,39 @@
 -- Newsletter Template V2 Insert Example
--- Scenario: Figma-based "Oil Price Trends" sample layout
--- Date: 2026-03-16
+-- Scenario: Figma-based "Oil Price Trends" editor structure
+-- Date: 2026-03-17
+-- Cover scope note:
+-- - `COVER` section fields are aligned to the Figma selection `Cover` only.
+-- - Selection-confirmed constraints currently reflected in SQL:
+--   `imageBase64` derived from `tmd_nws_ltr_mstr.img_url` via
+--   `encodeImageToBase64(imageUrl, MIME_TYPE)`, `publishCycle` derived from
+--   `tmd_nws_ltr_mstr.perd_type` via `getPeriodType().getCode()`,
+--   `newsletterName` derived from `tmd_nws_ltr_mstr.mstr_nm`,
+--   `newsletterDescription` derived from `tmd_nws_ltr_mstr.expn`,
+--   `newsletterName.maxLength = 100`, `newsletterDescription.maxLength = 500`
 --
 -- Assumptions
--- 1. newsletter master id = 7
--- 2. main chart code = 'BRENT'
--- 3. reference collection chart type = 'WTI_SRF5000'
--- 4. reference preference table config id = 101
--- 5. target company is not specialized
+-- 1. newsletter master name = 'Oil Price Trends'
+-- 2. newsletter master id fallback = 1
+-- 3. main chart code = 'LCOc1'
+-- 4. reference specialized company no = 2020
+-- 5. reference1 collection chart type = 'WTI_SRF5000'
+-- 6. reference2 collection chart type = 'WTI_SNP500'
+-- 7. reference3 preference table code fallback = 'OIL_PRC_TRND'
+-- 8. reference3 preference table config id fallback = 101
+-- 9. reference4 collection chart type = 'GOV10_2SPRD'
+-- 10. this script assumes data_src_spec_json column already exists
 --
 -- Purpose
--- - Provide a concrete example row set for the 4-table v2 template model
--- - Make section/block/field composition reviewable from the UI layout
+-- - Align template section/block structure with the latest editor screen
+-- - Separate Cover / Date&Issue / Title / Summary / News Flow / Reference / Footer
+-- - Define specialized reference sections:
+--   `REFERENCE1 = HEADER + CHART + CONTENT`
+--   `REFERENCE2 = HEADER + CHART + CONTENT`
+--   `REFERENCE3 = HEADER + TABLE + CONTENT`
+-- - `NEWS_ITEM` is a repeatable template block. One template block definition may render
+--   1..N issue block state rows in the same section.
+-- - Editor-modified values are written through delta/snapshot paths; `overridePolicy.issueState`
+--   should only keep values that are directly owned by issue block state
 
 START TRANSACTION;
 
@@ -19,10 +41,73 @@ START TRANSACTION;
  * 0) INPUT VARIABLES
  * ========================================================= */
 
+SET @newsletter_master_name := 'Oil Price Trends';
 SET @newsletter_master_id := 1;
-SET @main_chart_code := 'BRENT';
-SET @reference_chart_type := 'WTI_SRF5000';
-SET @reference_pref_table_id := 101;
+
+SET @title_specialized_tgt_cmpny_no := 2015;
+SET @main_chart_code := 'LCOc1';
+SET @market_code := 'OIL';
+SET @reference_specialized_tgt_cmpny_no := 2020;
+SET @reference1_chart_type := 'WTI_SRF5000';
+SET @reference2_chart_type := 'WTI_SNP500';
+SET @reference3_pref_table_code := 'OIL_PRC_TRND';
+SET @reference4_chart_type := 'GOV10_2SPRD';
+SET @collection_from_date := '2026-03-10';
+SET @collection_to_date := '2026-03-16';
+SET @news_from_date := '2026-03-10';
+SET @news_to_date := '2026-03-16';
+SET @news_max_items := 20;
+
+SELECT nws_ltr_mstr_id
+INTO @newsletter_master_id
+FROM tmd_nws_ltr_mstr
+WHERE mstr_nm = @newsletter_master_name
+  AND del_yn = 'N'
+LIMIT 1;
+
+SET @newsletter_master_id := COALESCE(@newsletter_master_id, 1);
+
+SELECT data_reg_sn
+INTO @reference3_pref_table_id
+FROM tmd_nws_ltr_tmplt_pref_tbl
+WHERE pref_tbl_cd = @reference3_pref_table_code
+  AND del_yn = 'N'
+LIMIT 1;
+
+SET @reference3_pref_table_id := COALESCE(@reference3_pref_table_id, 101);
+
+/* =========================================================
+ * 0-1) COLLECTION CHART CONFIG
+ * ========================================================= */
+
+UPDATE tmd_nws_ltr_tmplt_cltn_chrt
+SET del_yn = 'Y',
+    mod_usr_logn_id = 'SYSTEM',
+    mod_dtm = CURRENT_TIMESTAMP
+WHERE cltn_chrt_type IN (@reference2_chart_type, @reference4_chart_type)
+  AND del_yn = 'N';
+
+INSERT INTO tmd_nws_ltr_tmplt_cltn_chrt
+(
+    cltn_chrt_type,
+    tgt_db_nm,
+    tgt_tbl_nm,
+    qry_cdtn_cntt,
+    tbl_colm_nm,
+    color,
+    dtick,
+    range,
+    bidir_yn,
+    tm_axis_intvl_val,
+    tm_axis_intvl_unit,
+    crt_usr_logn_id,
+    mod_usr_logn_id
+)
+VALUES
+(@reference2_chart_type, 'midb-ske', 'tif_ske_chrt', 'code=''.SPX''', 'timestamp,trdprc_1', 'grey', NULL, NULL, 'N', NULL, NULL, 'SYSTEM', 'SYSTEM'),
+(@reference2_chart_type, 'midb', 'tif_nws_ltr_chrt', 'code=''CLc1''', 'timestamp,trdprc_1', 'blue', NULL, NULL, 'N', NULL, NULL, 'SYSTEM', 'SYSTEM'),
+(@reference4_chart_type, 'midb', 'tif_interestratesr', 'code=''TRUS10T''', 'date,ry', 'blue', NULL, NULL, 'N', NULL, NULL, 'SYSTEM', 'SYSTEM'),
+(@reference4_chart_type, 'midb', 'tif_interestratesr', 'code=''TRUS10T-TRUS2YT''', 'date,ry', 'grey', NULL, NULL, 'Y', NULL, NULL, 'SYSTEM', 'SYSTEM');
 
 /* =========================================================
  * 1) TEMPLATE ROOT
@@ -40,8 +125,8 @@ INSERT INTO tmd_nwsltrtmpltm
 VALUES
 (
     @newsletter_master_id,
-    'Oil Price Trends 기본 템플릿',
-    '피그마 시안 기준 예시 템플릿. 헤더/요약/메인차트/뉴스리스트/참조차트+표 포함',
+    'Test Template',
+    'v2 Energy 용최신 피그마 편집 화면 기준 템플릿',
     2,
     'SYSTEM',
     'SYSTEM'
@@ -53,7 +138,7 @@ ON DUPLICATE KEY UPDATE
     mod_usr_logn_id = VALUES(mod_usr_logn_id),
     mod_dtm = CURRENT_TIMESTAMP;
 
-SELECT nws_ltr_tmplt_v2_id
+SELECT nws_ltr_tmplt_id
 INTO @tmplt_id
 FROM tmd_nwsltrtmpltm
 WHERE nws_ltr_mstr_id = @newsletter_master_id
@@ -65,7 +150,7 @@ WHERE nws_ltr_mstr_id = @newsletter_master_id
 
 INSERT INTO tmd_nwsltrtmpltsctn
 (
-    nws_ltr_tmplt_v2_id,
+    nws_ltr_tmplt_id,
     sctn_cd,
     sctn_type_cd,
     sctn_nm,
@@ -76,11 +161,16 @@ INSERT INTO tmd_nwsltrtmpltsctn
     mod_usr_logn_id
 )
 VALUES
-(@tmplt_id, 'HEADER',      'FIXED',   '뉴스레터 헤더',                    0, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@tmplt_id, 'AI_SUMMARY',  'FIXED',   '핵심 요약',                        1, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@tmplt_id, 'MAIN_CHART',  'FIXED',   '주요 뉴스 Flow 및 Brent 유가 추이', 2, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@tmplt_id, 'NEWS_EVENTS', 'FIXED',   '관련 뉴스',                        3, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@tmplt_id, 'REF_01',      'GENERAL', 'WTI 및 SRF5000 5분 차트',          4, 'Y', NULL, 'SYSTEM', 'SYSTEM')
+(@tmplt_id, 'COVER',      'FIXED',   'Cover',         0, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'DATE_ISSUE', 'FIXED',   'Date & Issue',  1, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'TITLE_SPECIALIZED', 'SPECIALIZED', 'Title', 2, 'Y', @title_specialized_tgt_cmpny_no, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'SUMMARY',    'FIXED',   'Summary',       3, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'NEWS_FLOW',  'SPECIALIZED', 'News Flow',       4, 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'REFERENCE1',  'SPECIALIZED', 'Reference 1',       5, 'Y', @reference_specialized_tgt_cmpny_no, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'REFERENCE2',  'SPECIALIZED', 'Reference 2',       6, 'Y', @reference_specialized_tgt_cmpny_no, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'REFERENCE3',  'SPECIALIZED', 'Reference 3',       7, 'Y', @reference_specialized_tgt_cmpny_no, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'REFERENCE4',  'SPECIALIZED', 'Reference 4',       8, 'Y', @reference_specialized_tgt_cmpny_no, 'SYSTEM', 'SYSTEM'),
+(@tmplt_id, 'FOOTER',     'FIXED',   'Footer',        9, 'Y', NULL, 'SYSTEM', 'SYSTEM')
 ON DUPLICATE KEY UPDATE
     sctn_nm = VALUES(sctn_nm),
     sctn_type_cd = VALUES(sctn_type_cd),
@@ -89,34 +179,64 @@ ON DUPLICATE KEY UPDATE
     mod_usr_logn_id = VALUES(mod_usr_logn_id),
     mod_dtm = CURRENT_TIMESTAMP;
 
-SELECT nws_ltr_tmplt_sctn_id INTO @sec_header
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_cover
 FROM tmd_nwsltrtmpltsctn
-WHERE nws_ltr_tmplt_v2_id = @tmplt_id
-  AND sctn_cd = 'HEADER'
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'COVER'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_sctn_id INTO @sec_ai_summary
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_date_issue
 FROM tmd_nwsltrtmpltsctn
-WHERE nws_ltr_tmplt_v2_id = @tmplt_id
-  AND sctn_cd = 'AI_SUMMARY'
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'DATE_ISSUE'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_sctn_id INTO @sec_main_chart
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_title_specialized
 FROM tmd_nwsltrtmpltsctn
-WHERE nws_ltr_tmplt_v2_id = @tmplt_id
-  AND sctn_cd = 'MAIN_CHART'
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'TITLE_SPECIALIZED'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_sctn_id INTO @sec_news_events
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_summary
 FROM tmd_nwsltrtmpltsctn
-WHERE nws_ltr_tmplt_v2_id = @tmplt_id
-  AND sctn_cd = 'NEWS_EVENTS'
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'SUMMARY'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_sctn_id INTO @sec_ref_01
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_news_flow
 FROM tmd_nwsltrtmpltsctn
-WHERE nws_ltr_tmplt_v2_id = @tmplt_id
-  AND sctn_cd = 'REF_01'
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'NEWS_FLOW'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_reference1
+FROM tmd_nwsltrtmpltsctn
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'REFERENCE1'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_reference2
+FROM tmd_nwsltrtmpltsctn
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'REFERENCE2'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_reference3
+FROM tmd_nwsltrtmpltsctn
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'REFERENCE3'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_reference4
+FROM tmd_nwsltrtmpltsctn
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'REFERENCE4'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_sctn_id INTO @sec_footer
+FROM tmd_nwsltrtmpltsctn
+WHERE nws_ltr_tmplt_id = @tmplt_id
+  AND sctn_cd = 'FOOTER'
   AND del_yn = 'N';
 
 /* =========================================================
@@ -136,16 +256,332 @@ INSERT INTO tmd_nwsltrtmpltblk
     tgt_cmpny_no,
     data_src_type_cd,
     data_src_ref,
+    data_src_spec_json,
     crt_usr_logn_id,
     mod_usr_logn_id
 )
 VALUES
-(@sec_header,      'NEWSLETTER_TITLE', 'TITLE',     'GENERAL', 'Oil Price Trends',              0, 'Y', 'N', NULL, 'STATIC',        NULL,                                    'SYSTEM', 'SYSTEM'),
-(@sec_ai_summary,  'AI_SUMMARY_TEXT',  'TEXT',      'GENERAL', '핵심 요약',                      0, 'Y', 'N', NULL, 'STATIC',        NULL,                                    'SYSTEM', 'SYSTEM'),
-(@sec_main_chart,  'MAIN_FLOW_CHART',  'CHART',     'GENERAL', '주요 뉴스 Flow 및 Brent 유가 추이', 0, 'Y', 'Y', NULL, 'CHART_SERIES',  @main_chart_code,                         'SYSTEM', 'SYSTEM'),
-(@sec_news_events, 'NEWS_EVENT_LIST',  'NEWS_CARD', 'GENERAL', '관련 뉴스',                      0, 'Y', 'Y', NULL, 'NEWS_EVENT',    NULL,                                    'SYSTEM', 'SYSTEM'),
-(@sec_ref_01,      'REF_CLTN_CHART_1', 'CHART',     'GENERAL', 'WTI 및 SRF5000 5분 차트',        0, 'Y', 'N', NULL, 'CHART_SERIES',  CONCAT('cltn:', @reference_chart_type),  'SYSTEM', 'SYSTEM'),
-(@sec_ref_01,      'REF_TABLE_1',      'TABLE',     'GENERAL', '시장 지표 요약 표',              1, 'Y', 'N', NULL, 'DYNAMIC_QUERY', CONCAT('pref_table:', @reference_pref_table_id), 'SYSTEM', 'SYSTEM')
+(@sec_cover,      'COVER_IMAGE_CARD', 'IMAGE',     'GENERAL', '뉴스레터 커버 이미지',            0, 'Y', 'N', NULL, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'imageBase64', 'sourcePath', 'imageBase64', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'showImage', 'sourcePath', 'showImage', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY('showImage')
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_cover,      'COVER_INFO',       'TEXT',      'GENERAL', '뉴스레터 기본 정보',              1, 'Y', 'N', NULL, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'publishCycle', 'sourcePath', 'publishCycle', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'newsletterName', 'sourcePath', 'newsletterName', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'newsletterDescription', 'sourcePath', 'newsletterDescription', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_date_issue, 'DATE_ISSUE_INFO',  'TEXT',      'GENERAL', '발행일 및 이슈 번호',             0, 'Y', 'N', NULL, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'PUBLISH_CONTEXT'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'publishDate', 'sourcePath', 'publishDate', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'issueNumber', 'sourcePath', 'issueLabel', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(
+         JSON_OBJECT('type', 'FORMAT_DATE', 'sourcePath', 'publishDate', 'format', 'YYYY-MM-DD')
+     ),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_title_specialized, 'TITLE_MAIN_SPECIALIZED', 'TITLE', 'SPECIALIZED', '뉴스레터 제목 및 부제 특화형', 0, 'Y', 'N', @title_specialized_tgt_cmpny_no, 'STATIC', NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'subtitle', 'sourcePath', 'subtitle', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'priceChangeFrom', 'sourcePath', 'priceChangeFrom', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'priceChangeTo', 'sourcePath', 'priceChangeTo', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_summary,    'SUMMARY_BODY',     'TEXT',      'GENERAL', '뉴스레터 핵심 요약',             0, 'Y', 'N', NULL, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'summaryText', 'sourcePath', 'summaryText', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_news_flow,  'NEWS_FLOW_CHART',  'CHART',     'GENERAL', '주요 뉴스 Flow 및 Brent 유가 추이', 0, 'Y', 'Y', NULL, 'CHART_SERIES',  @main_chart_code,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'MAIN_CHART', 'refCode', @main_chart_code),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY('title', 'aggregationTime')
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_news_flow,  'NEWS_ITEM',        'NEWS_CARD', 'GENERAL', '개별 뉴스 카드 (repeatable 1..N)', 1, 'Y', 'N', NULL, 'NEWS_EVENT',    NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'NEWS_EVENT'),
+     'query', JSON_OBJECT(
+         'fromDate', @news_from_date,
+         'toDate', @news_to_date,
+         'market', @market_code,
+         'maxItems', @news_max_items
+     ),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'items', 'sourcePath', 'items', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY('fromDate', 'toDate', 'market', 'maxItems'),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference1, 'REFERENCE_HEADER', 'TEXT',      'GENERAL', '참고 데이터 제목/설명',           0, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'description', 'sourcePath', 'description', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference1, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('cltn:', @reference1_chart_type),
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference1_chart_type),
+     'query', JSON_OBJECT(
+         'fromDate', @collection_from_date,
+         'toDate', @collection_to_date,
+         'market', @market_code
+     ),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY('fromDate', 'toDate', 'market'),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference1, 'REFERENCE_CONTENT', 'TEXT',     'GENERAL', '참고 내용 블록',                 2, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'content', 'sourcePath', 'content', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference2, 'REFERENCE_HEADER', 'TEXT',      'GENERAL', '참고 데이터 제목/설명',           0, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'description', 'sourcePath', 'description', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference2, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('cltn:', @reference2_chart_type),
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference2_chart_type),
+     'query', JSON_OBJECT(
+         'fromDate', @collection_from_date,
+         'toDate', @collection_to_date,
+         'market', @market_code
+     ),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY('fromDate', 'toDate', 'market'),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference2, 'REFERENCE_CONTENT', 'TEXT',     'GENERAL', '참고 내용 블록',                 2, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'content', 'sourcePath', 'content', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference3, 'REFERENCE_HEADER', 'TEXT',      'GENERAL', '참고 데이터 제목/설명',           0, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'description', 'sourcePath', 'description', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference3, 'REFERENCE_TABLE',  'TABLE',     'GENERAL', '참고 테이블 블록',               1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'DYNAMIC_QUERY', CONCAT('pref_table:', @reference3_pref_table_id),
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'PREFERENCE_TABLE', 'refId', @reference3_pref_table_id),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'tableData', 'sourcePath', 'tableData', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference3, 'REFERENCE_CONTENT', 'TEXT',     'GENERAL', '참고 내용 블록',                 2, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'content', 'sourcePath', 'content', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference4, 'REFERENCE_HEADER', 'TEXT',      'GENERAL', '참고 데이터 제목/설명',           0, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'description', 'sourcePath', 'description', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference4, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('cltn:', @reference4_chart_type),
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference4_chart_type),
+     'query', JSON_OBJECT(
+         'fromDate', @collection_from_date,
+         'toDate', @collection_to_date,
+         'market', @market_code
+     ),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY('fromDate', 'toDate', 'market'),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_reference4, 'REFERENCE_CONTENT', 'TEXT',     'GENERAL', '참고 내용 블록',                 2, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'content', 'sourcePath', 'content', 'required', FALSE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
+     ))
+ ), 'SYSTEM', 'SYSTEM'),
+(@sec_footer,     'FOOTER_NOTICE',    'TEXT',      'GENERAL', '푸터 안내 문구',                 0, 'Y', 'N', NULL, 'STATIC',        NULL,
+ JSON_OBJECT(
+     'locator', JSON_OBJECT('kind', 'INLINE'),
+     'query', JSON_OBJECT(),
+     'assign', JSON_OBJECT('fields', JSON_ARRAY(
+         JSON_OBJECT('fieldKey', 'showLogo', 'sourcePath', 'showLogo', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'footerContent', 'sourcePath', 'footerContent', 'required', TRUE)
+     )),
+     'transform', JSON_ARRAY(),
+     'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY('showLogo')
+     ))
+ ), 'SYSTEM', 'SYSTEM')
 ON DUPLICATE KEY UPDATE
     blk_nm = VALUES(blk_nm),
     blk_type_cd = VALUES(blk_type_cd),
@@ -155,47 +591,171 @@ ON DUPLICATE KEY UPDATE
     plot_on_chrt_yn = VALUES(plot_on_chrt_yn),
     data_src_type_cd = VALUES(data_src_type_cd),
     data_src_ref = VALUES(data_src_ref),
+    data_src_spec_json = VALUES(data_src_spec_json),
     mod_usr_logn_id = VALUES(mod_usr_logn_id),
     mod_dtm = CURRENT_TIMESTAMP;
 
-SELECT nws_ltr_tmplt_blk_id INTO @blk_title
+SELECT nws_ltr_tmplt_blk_id INTO @blk_cover_image_card
 FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_header
-  AND blk_cd = 'NEWSLETTER_TITLE'
+WHERE nws_ltr_tmplt_sctn_id = @sec_cover
+  AND blk_cd = 'COVER_IMAGE_CARD'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_blk_id INTO @blk_ai_summary
+SELECT nws_ltr_tmplt_blk_id INTO @blk_cover_info
 FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_ai_summary
-  AND blk_cd = 'AI_SUMMARY_TEXT'
+WHERE nws_ltr_tmplt_sctn_id = @sec_cover
+  AND blk_cd = 'COVER_INFO'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_blk_id INTO @blk_main_chart
+SELECT nws_ltr_tmplt_blk_id INTO @blk_date_issue_info
 FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_main_chart
-  AND blk_cd = 'MAIN_FLOW_CHART'
+WHERE nws_ltr_tmplt_sctn_id = @sec_date_issue
+  AND blk_cd = 'DATE_ISSUE_INFO'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_blk_id INTO @blk_news_events
+SELECT nws_ltr_tmplt_blk_id INTO @blk_title_main_specialized
 FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_news_events
-  AND blk_cd = 'NEWS_EVENT_LIST'
+WHERE nws_ltr_tmplt_sctn_id = @sec_title_specialized
+  AND blk_cd = 'TITLE_MAIN_SPECIALIZED'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_blk_id INTO @blk_ref_chart
+SELECT nws_ltr_tmplt_blk_id INTO @blk_summary_body
 FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_ref_01
-  AND blk_cd = 'REF_CLTN_CHART_1'
+WHERE nws_ltr_tmplt_sctn_id = @sec_summary
+  AND blk_cd = 'SUMMARY_BODY'
   AND del_yn = 'N';
 
-SELECT nws_ltr_tmplt_blk_id INTO @blk_ref_table
+SELECT nws_ltr_tmplt_blk_id INTO @blk_news_flow_chart
 FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_ref_01
-  AND blk_cd = 'REF_TABLE_1'
+WHERE nws_ltr_tmplt_sctn_id = @sec_news_flow
+  AND blk_cd = 'NEWS_FLOW_CHART'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_news_item
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_news_flow
+  AND blk_cd = 'NEWS_ITEM'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference1_header
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference1
+  AND blk_cd = 'REFERENCE_HEADER'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference1_chart
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference1
+  AND blk_cd = 'REFERENCE_CHART'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference1_content
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference1
+  AND blk_cd = 'REFERENCE_CONTENT'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference2_header
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference2
+  AND blk_cd = 'REFERENCE_HEADER'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference2_chart
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference2
+  AND blk_cd = 'REFERENCE_CHART'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference2_content
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference2
+  AND blk_cd = 'REFERENCE_CONTENT'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference3_header
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference3
+  AND blk_cd = 'REFERENCE_HEADER'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference3_table
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference3
+  AND blk_cd = 'REFERENCE_TABLE'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference3_content
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference3
+  AND blk_cd = 'REFERENCE_CONTENT'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference4_header
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference4
+  AND blk_cd = 'REFERENCE_HEADER'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference4_chart
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference4
+  AND blk_cd = 'REFERENCE_CHART'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_reference4_content
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_reference4
+  AND blk_cd = 'REFERENCE_CONTENT'
+  AND del_yn = 'N';
+
+SELECT nws_ltr_tmplt_blk_id INTO @blk_footer_notice
+FROM tmd_nwsltrtmpltblk
+WHERE nws_ltr_tmplt_sctn_id = @sec_footer
+  AND blk_cd = 'FOOTER_NOTICE'
   AND del_yn = 'N';
 
 /* =========================================================
- * 4) BLOCK FIELD INSERT
+ * 4) BLOCK FIELD CLEANUP
+ * ========================================================= */
+
+UPDATE tmd_nwsltrtmpltblk
+SET del_yn = 'Y',
+    mod_usr_logn_id = 'SYSTEM',
+    mod_dtm = CURRENT_TIMESTAMP
+WHERE nws_ltr_tmplt_sctn_id IN (@sec_reference1, @sec_reference2, @sec_reference3, @sec_reference4)
+  AND blk_cd = 'REFERENCE_TEXT'
+  AND del_yn = 'N';
+
+DELETE FROM tmd_nwsltrtmpltblkfld
+WHERE nws_ltr_tmplt_blk_id IN (@blk_news_flow_chart, @blk_news_item, @blk_reference1_chart, @blk_reference2_chart, @blk_reference3_table)
+  AND fld_key IN (
+      'chartTitle',
+      'chartSubTitle',
+      'date',
+      'time',
+      'originalLink',
+      'series.high',
+      'series.low',
+      'series.open',
+      'series.close',
+      'series.volume',
+      'series.left',
+      'series.right',
+      'chartData',
+      'createdDate',
+      'source',
+      'title',
+      'content',
+      'plotOnChart'
+  );
+
+DELETE FROM tmd_nwsltrtmpltblkfld
+WHERE nws_ltr_tmplt_blk_id = @blk_news_item
+  AND fld_key = 'aggregationTime';
+
+/* =========================================================
+ * 5) BLOCK FIELD INSERT
  * ========================================================= */
 
 INSERT INTO tmd_nwsltrtmpltblkfld
@@ -212,35 +772,87 @@ INSERT INTO tmd_nwsltrtmpltblkfld
     mod_usr_logn_id
 )
 VALUES
--- HEADER / TITLE
-(@blk_title, 'text',        '뉴스레터명', 0, 'STATIC:Oil Price Trends', 'Y', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_title, 'publishDate', '발행일',     1, 'STATIC:${publishDate}',   'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_title, 'issueLabel',  '발행호수',   2, 'STATIC:${issueNo}',       'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+-- COVER_IMAGE_CARD
+(@blk_cover_image_card, 'imageBase64',  '커버 이미지 Base64', 0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_IMAGE_URL","transform":"ENCODE_IMAGE_BASE64","format":"base64","stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_image_card, 'showImage',    '커버 이미지 노출',   1, NULL, 'Y', 'N', NULL,                                            'SYSTEM', 'SYSTEM'),
 
--- AI SUMMARY / TEXT
-(@blk_ai_summary, 'text', '요약본문', 0, 'STATIC:${aiSummary}', 'Y', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+-- COVER_INFO
+(@blk_cover_info, 'publishCycle',          '발행 주기',       0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_PERIOD_TYPE","transform":"ENUM_CODE","options":["DAILY","WEEKLY","MONTHLY","QUARTERLY","ON-DEMAND"],"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_info, 'newsletterName',        '뉴스레터명',      1, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_NAME","maxLength":100,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_info, 'newsletterDescription', '뉴스레터 소개',   2, NULL, 'N', 'N', '{"valueSource":"NEWSLETTER_MASTER_EXPLANATION","maxLength":500,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
--- MAIN CHART / CHART_SERIES
-(@blk_main_chart, 'timestamps',    '차트시간축',   0, 'tif_nws_ltr_chrt.timestamp', 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_main_chart, 'series.high',   '고가시리즈',   1, 'tif_nws_ltr_chrt.high_1',    'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_main_chart, 'series.low',    '저가시리즈',   2, 'tif_nws_ltr_chrt.low_1',     'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_main_chart, 'series.open',   '시가시리즈',   3, 'tif_nws_ltr_chrt.open_prc',  'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_main_chart, 'series.close',  '종가시리즈',   4, 'tif_nws_ltr_chrt.trdprc_1',  'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_main_chart, 'series.volume', '거래량시리즈', 5, 'tif_nws_ltr_chrt.num_moves', 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+-- DATE_ISSUE_INFO
+(@blk_date_issue_info, 'publishDate', '날짜',         0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_PUBLISH_DTM","transform":"FORMAT_DATE","format":"YYYY-MM-DD","stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_date_issue_info, 'issueNumber', '이슈 번호',     1, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_ISSUE_NO","stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
--- NEWS EVENTS / NEWS_CARD
-(@blk_news_events, 'items',            '뉴스목록',  0, 'tmd_nws_ltr_evnt.*',         'N', 'Y', '{"maxItems": 6, "orderBy": "evnt_crt_tm DESC"}', 'SYSTEM', 'SYSTEM'),
-(@blk_news_events, 'items.*.title',    '뉴스제목',  1, 'tmd_nws_ltr_evnt.evnt_titl', 'Y', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_news_events, 'items.*.content',  '뉴스본문',  2, 'tmd_nws_ltr_evnt.evnt_cntt', 'Y', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+-- TITLE_MAIN_SPECIALIZED
+(@blk_title_main_specialized, 'title',           '뉴스레터 제목',          0, NULL, 'Y', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_TITLE","maxLength":100,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'subtitle',        '뉴스레터 부제',          1, NULL, 'Y', 'N', '{"maxLength":100,"editorMutable":true,"hasDefaultValue":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'priceChangeFrom', '유가 변동 시작값',      2, NULL, 'Y', 'Y', '{"inputType":"number","unit":"USD/bbl","editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'priceChangeTo',   '유가 변동 종료값',      3, NULL, 'Y', 'Y', '{"inputType":"number","unit":"USD/bbl","editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
--- REFERENCE CHART / COLLECTION CHART
-(@blk_ref_chart, 'timestamps',   '참조차트시간축', 0, 'DYNAMIC_QUERY:timestamp', 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_ref_chart, 'series.close', '참조차트값',     1, 'DYNAMIC_QUERY:value',     'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+-- SUMMARY_BODY
+(@blk_summary_body, 'summaryText', '핵심 요약', 0, NULL, 'Y', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_AI_SUMMARY","maxLength":1000,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
--- REFERENCE TABLE / DYNAMIC QUERY
-(@blk_ref_table, 'description', '표설명',   0, 'STATIC:',              'Y', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_ref_table, 'columns',     '테이블컬럼', 1, 'DYNAMIC_QUERY:header', 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_ref_table, 'rows',        '테이블행',   2, 'DYNAMIC_QUERY:detail', 'Y', 'Y', NULL, 'SYSTEM', 'SYSTEM')
+-- NEWS_FLOW_CHART
+(@blk_news_flow_chart, 'title',           '뉴스 Flow 제목', 0, NULL, 'Y', 'Y', '{"defaultValue":"주요 뉴스 Flow 및 Brent 유가 추이","editorMutable":true,"stateScoped":true,"stateMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_news_flow_chart, 'aggregationTime', '집계 시간 설명', 1, NULL, 'Y', 'Y', '{"defaultValue":"뉴욕시간 전일 20:00부터 당일 17:00까지","editorMutable":true,"stateScoped":true,"stateMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_news_flow_chart, 'timestamps',      '차트 시간축',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_flow_chart, 'series',          '차트 시리즈',    3, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+
+-- NEWS_ITEM (repeatable template block)
+(@blk_news_item, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'items',           '뉴스 목록',     1, NULL, 'N', 'Y', '{"maxItems":20}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE1_HEADER
+(@blk_reference1_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"WTI 및 달러 인덱스 5분 차트","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"WTI: 청색, 좌측\\n달러인덱스: 회색, 우측","maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE1_CHART
+(@blk_reference1_chart, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_chart, 'timestamps',      '참조 차트 시간축', 1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_chart, 'series',          '차트 시리즈',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE1_CONTENT
+(@blk_reference1_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE2_HEADER
+(@blk_reference2_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"maxLength":100,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE2_CHART
+(@blk_reference2_chart, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_chart, 'timestamps',      '참조 차트 시간축', 1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_chart, 'series',          '차트 시리즈',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE2_CONTENT
+(@blk_reference2_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE3_HEADER
+(@blk_reference3_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"유가 추이","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference3_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE3_TABLE
+(@blk_reference3_table, 'tableData', '테이블 데이터', 0, NULL, 'N', 'Y', '{"valueType":"TableRes","sourceDatabase":"midb","sourceTable":"tmd_nws_ltr_pref_tbl","sourceColumn":"json_value","baseCondition":"pref_tbl_cd=''OIL_PRC_TRND''","runtimeCondition":"nws_ltr_pub_id"}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE3_CONTENT
+(@blk_reference3_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE4_HEADER
+(@blk_reference4_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"미국 10년물 국채금리 및 미 10년-2년물 국채 금리 스프레드 추이","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"미국 10년물 국채금리: 청색,좌측\\n미국 10년-2년물 국채금리 스프레드: 회색,우측","maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE4_CHART
+(@blk_reference4_chart, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_chart, 'timestamps',      '참조 차트 시간축', 1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_chart, 'series',          '차트 시리즈',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+
+-- REFERENCE4_CONTENT
+(@blk_reference4_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+
+-- FOOTER_NOTICE
+(@blk_footer_notice, 'showLogo',      '로고 노출 여부', 0, NULL, 'Y', 'N', '{"defaultValue":true,"editorMutable":true,"stateScoped":true,"stateMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_footer_notice, 'footerContent', '푸터 내용',     1, NULL, 'Y', 'Y', '{"defaultValue":"본 메일은 발신전용입니다. 수신거부 또는 문의는 담당자에게 연락해 주세요.","maxLength":1000,"editorMutable":true,"templateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM')
 ON DUPLICATE KEY UPDATE
     fld_nm = VALUES(fld_nm),
     fld_ord = VALUES(fld_ord),
@@ -252,38 +864,47 @@ ON DUPLICATE KEY UPDATE
     mod_dtm = CURRENT_TIMESTAMP;
 
 /* =========================================================
- * 5) POST-CHECK
+ * 6) POST-CHECK
  * ========================================================= */
 
-SELECT t.nws_ltr_tmplt_v2_id, t.nws_ltr_mstr_id, t.tmplt_nm, t.schm_ver
+SELECT t.nws_ltr_tmplt_id, t.nws_ltr_mstr_id, t.tmplt_nm, t.schm_ver
 FROM tmd_nwsltrtmpltm t
-WHERE t.nws_ltr_tmplt_v2_id = @tmplt_id;
+WHERE t.nws_ltr_tmplt_id = @tmplt_id;
 
-SELECT s.sctn_cd, s.sctn_nm, s.sctn_ord
+SELECT s.sctn_cd, s.sctn_nm, s.sctn_ord, b.blk_cd, b.blk_nm, b.blk_ord, b.data_src_type_cd, b.data_src_ref, b.data_src_spec_json
 FROM tmd_nwsltrtmpltsctn s
-WHERE s.nws_ltr_tmplt_v2_id = @tmplt_id
+JOIN tmd_nwsltrtmpltblk b
+  ON b.nws_ltr_tmplt_sctn_id = s.nws_ltr_tmplt_sctn_id
+WHERE s.nws_ltr_tmplt_id = @tmplt_id
   AND s.del_yn = 'N'
-ORDER BY s.sctn_ord;
-
-SELECT b.blk_cd, b.blk_type_cd, b.data_src_type_cd, b.data_src_ref, b.blk_ord
-FROM tmd_nwsltrtmpltblk b
-WHERE b.nws_ltr_tmplt_sctn_id IN (@sec_header, @sec_ai_summary, @sec_main_chart, @sec_news_events, @sec_ref_01)
   AND b.del_yn = 'N'
-ORDER BY b.nws_ltr_tmplt_sctn_id, b.blk_ord;
+ORDER BY s.sctn_ord, b.blk_ord;
 
-SELECT f.fld_key, f.fld_nm, f.fld_ord, f.is_editable_yn
+SELECT f.nws_ltr_tmplt_blk_id, f.fld_key, f.fld_ord, f.col_mapping, f.fld_meta
 FROM tmd_nwsltrtmpltblkfld f
-WHERE f.nws_ltr_tmplt_blk_id IN (@blk_title, @blk_ai_summary, @blk_main_chart, @blk_news_events, @blk_ref_chart, @blk_ref_table)
+WHERE f.nws_ltr_tmplt_blk_id IN (
+    @blk_cover_image_card,
+    @blk_cover_info,
+    @blk_date_issue_info,
+    @blk_title_main_specialized,
+    @blk_summary_body,
+    @blk_news_flow_chart,
+    @blk_news_item,
+    @blk_reference1_header,
+    @blk_reference1_chart,
+    @blk_reference1_content,
+    @blk_reference2_header,
+    @blk_reference2_chart,
+    @blk_reference2_content,
+    @blk_reference3_header,
+    @blk_reference3_table,
+    @blk_reference3_content,
+    @blk_reference4_header,
+    @blk_reference4_chart,
+    @blk_reference4_content,
+    @blk_footer_notice
+)
   AND f.del_yn = 'N'
 ORDER BY f.nws_ltr_tmplt_blk_id, f.fld_ord;
 
 COMMIT;
-
-/* =========================================================
- * 6) ROLLBACK
- * ========================================================= */
-
--- DELETE FROM tmd_nwsltrtmpltblkfld WHERE nws_ltr_tmplt_blk_id IN (@blk_title, @blk_ai_summary, @blk_main_chart, @blk_news_events, @blk_ref_chart, @blk_ref_table);
--- DELETE FROM tmd_nwsltrtmpltblk WHERE nws_ltr_tmplt_blk_id IN (@blk_title, @blk_ai_summary, @blk_main_chart, @blk_news_events, @blk_ref_chart, @blk_ref_table);
--- DELETE FROM tmd_nwsltrtmpltsctn WHERE nws_ltr_tmplt_sctn_id IN (@sec_header, @sec_ai_summary, @sec_main_chart, @sec_news_events, @sec_ref_01);
--- DELETE FROM tmd_nwsltrtmpltm WHERE nws_ltr_tmplt_v2_id = @tmplt_id;

@@ -12,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 @Getter
@@ -79,6 +80,40 @@ public class NewsletterIssueSectionState extends BaseEntity {
         this.sectionOrder = sectionOrder;
         this.visibilityYn = visibilityYn;
         this.sectionTitle = sectionTitle;
+        this.targetCompanyNo = targetCompanyNo;
+        this.sectionStateJson = sectionStateJson;
+    }
+
+    public static NewsletterIssueSectionState create(
+        Long issueOriginalId,
+        Long templateSectionId,
+        Integer sectionOrder,
+        String visibilityYn,
+        String sectionTitle,
+        Integer targetCompanyNo,
+        String sectionStateJson
+    ) {
+        return NewsletterIssueSectionState.builder()
+            .issueOriginalId(issueOriginalId)
+            .templateSectionId(templateSectionId)
+            .sectionOrder(sectionOrder)
+            .visibilityYn(visibilityYn)
+            .sectionTitle(sectionTitle)
+            .targetCompanyNo(targetCompanyNo)
+            .sectionStateJson(sectionStateJson)
+            .build();
+    }
+
+    public void applyState(
+        Integer sectionOrder,
+        String visibilityYn,
+        String sectionTitle,
+        Integer targetCompanyNo,
+        String sectionStateJson
+    ) {
+        this.sectionOrder = sectionOrder;
+        this.visibilityYn = visibilityYn;
+        this.sectionTitle = StringUtils.trimToNull(sectionTitle);
         this.targetCompanyNo = targetCompanyNo;
         this.sectionStateJson = sectionStateJson;
     }

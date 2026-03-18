@@ -507,3 +507,9 @@ No,단어종류,표준단어명,표준영문명,영문의미,설명,참고사항
 505,단일단어,JSON,JSON,JAVASCRIPT OBJECT NOTATION,경량 데이터 교환 형식,,,
 506,복합단어,스키마버전,SCHMVER,SCHEMA VERSION,데이터 스키마 버전 식별자,,,
 507,단일단어,베이스,BASE,BASE,기준이 되는 원본 상태,,,
+508,단일단어,섹션,SCTN,SECTION,문서나 화면을 구성하는 구획 단위,,Codex,등록
+509,단일단어,블록,BLK,BLOCK,섹션 내부에서 독립적으로 렌더링되는 구성 단위,,Codex,등록
+510,단일단어,이슈,ISS,ISSUE,발행 또는 처리 단위로 식별되는 건,,Codex,등록
+511,단일단어,노출,VSBLTY,VISIBILITY,화면이나 결과물에 표시되는 여부,,Codex,등록
+512,단일단어,명세,SPEC,SPECIFICATION,구조나 동작을 정의한 명세,,Codex,등록
+513,단일단어,참조,REF,REFERENCE,다른 데이터나 설정을 가리키는 식별자,,Codex,등록

@@ -12,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Comment;
 
 @Getter
@@ -20,8 +21,7 @@ import org.hibernate.annotations.Comment;
 @Table(
     name = "tmd_nwsltrorgissblkstat",
     uniqueConstraints = {
-        @UniqueConstraint(name = "tmd_nwsltrorgissblkstat_ux01", columnNames = {"nws_ltr_org_iss_id", "nws_ltr_tmplt_blk_id"}),
-        @UniqueConstraint(name = "tmd_nwsltrorgissblkstat_ux02", columnNames = {"nws_ltr_org_iss_sctn_stat_id", "blk_ord"})
+        @UniqueConstraint(name = "tmd_nwsltrorgissblkstat_ux01", columnNames = {"nws_ltr_org_iss_sctn_stat_id", "blk_ord"})
     }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -84,6 +84,44 @@ public class NewsletterIssueBlockState extends BaseEntity {
         this.blockOrder = blockOrder;
         this.visibilityYn = visibilityYn;
         this.blockTitle = blockTitle;
+        this.targetCompanyNo = targetCompanyNo;
+        this.blockStateJson = blockStateJson;
+    }
+
+    public static NewsletterIssueBlockState create(
+        Long issueOriginalId,
+        Long sectionStateId,
+        Long templateBlockId,
+        Integer blockOrder,
+        String visibilityYn,
+        String blockTitle,
+        Integer targetCompanyNo,
+        String blockStateJson
+    ) {
+        return NewsletterIssueBlockState.builder()
+            .issueOriginalId(issueOriginalId)
+            .sectionStateId(sectionStateId)
+            .templateBlockId(templateBlockId)
+            .blockOrder(blockOrder)
+            .visibilityYn(visibilityYn)
+            .blockTitle(blockTitle)
+            .targetCompanyNo(targetCompanyNo)
+            .blockStateJson(blockStateJson)
+            .build();
+    }
+
+    public void applyState(
+        Long sectionStateId,
+        Integer blockOrder,
+        String visibilityYn,
+        String blockTitle,
+        Integer targetCompanyNo,
+        String blockStateJson
+    ) {
+        this.sectionStateId = sectionStateId;
+        this.blockOrder = blockOrder;
+        this.visibilityYn = visibilityYn;
+        this.blockTitle = StringUtils.trimToNull(blockTitle);
         this.targetCompanyNo = targetCompanyNo;
         this.blockStateJson = blockStateJson;
     }

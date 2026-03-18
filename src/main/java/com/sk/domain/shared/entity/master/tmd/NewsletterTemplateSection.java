@@ -26,7 +26,7 @@ public class NewsletterTemplateSection extends BaseEntity {
     @Comment("뉴스레터템플릿섹션ID")
     private Long newsletterTemplateSectionId;
 
-    @Column(name = "nws_ltr_tmplt_v2_id", nullable = false, columnDefinition = "bigint unsigned")
+    @Column(name = "nws_ltr_tmplt_id", nullable = false, columnDefinition = "bigint unsigned")
     @Comment("뉴스레터템플릿V2ID")
     private Long templateV2Id;
 

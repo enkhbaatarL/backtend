@@ -45,6 +45,7 @@ public record IssueStateTree(
     }
 
     public record SectionStateNode(
+        Long issueSectionStateId,
         Long templateSectionId,
         Integer order,
         String visibilityYn,
@@ -60,6 +61,7 @@ public record IssueStateTree(
                 .map(BlockStateNode::defaultFrom)
                 .toList();
             return new SectionStateNode(
+                null,
                 section.id(),
                 section.sectionOrder(),
                 section.visibilityYn(),
@@ -77,6 +79,7 @@ public record IssueStateTree(
     }
 
     public record BlockStateNode(
+        Long issueBlockStateId,
         Long templateBlockId,
         Integer order,
         String visibilityYn,
@@ -89,6 +92,7 @@ public record IssueStateTree(
 
         public static BlockStateNode defaultFrom(TemplateTree.BlockNode block) {
             return new BlockStateNode(
+                null,
                 block.id(),
                 block.blockOrder(),
                 block.visibilityYn(),
@@ -98,6 +102,10 @@ public record IssueStateTree(
                 null,
                 Map.of()
             );
+        }
+
+        public String resolvedDataKey() {
+            return issueBlockStateId != null ? "issue-block-state:" + issueBlockStateId : "template-block:" + templateBlockId;
         }
 
         public Map<String, Object> queryParams() {

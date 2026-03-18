@@ -13,7 +13,6 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplatePreferenceTable;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -64,17 +63,12 @@ public class DynamicQueryBlockDataStrategy implements BlockDataStrategy {
 
             List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicData(dynamicDataReq);
             if (rows.isEmpty()) {
-                return ResolvedBlockData.of(Map.of("description", "데이터를 찾을 수 없습니다", "columns", List.of(), "rows", List.of()));
+                return ResolvedBlockData.of(Map.of("tableData", TableRes.of(List.of(), List.of())));
             }
 
             Object payload = rows.get(0).get(config.getTableColumnName());
             TableRes tableRes = readTableDataFromJsonString(payload == null ? null : payload.toString());
-
-            Map<String, Object> content = new LinkedHashMap<>();
-            content.put("description", "");
-            content.put("columns", tableRes.headers());
-            content.put("rows", tableRes.rows());
-            return ResolvedBlockData.of(content);
+            return ResolvedBlockData.of(Map.of("tableData", tableRes));
         } catch (Exception e) {
             log.error("동적 쿼리 블록 resolve 실패 - blockCode: {}", block.blockCode(), e);
             return ResolvedBlockData.error("DYNAMIC_QUERY_RESOLVE_FAILED");

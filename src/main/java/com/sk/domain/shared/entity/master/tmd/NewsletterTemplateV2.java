@@ -22,7 +22,7 @@ public class NewsletterTemplateV2 extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "nws_ltr_tmplt_v2_id", nullable = false, columnDefinition = "bigint unsigned")
+    @Column(name = "nws_ltr_tmplt_id", nullable = false, columnDefinition = "bigint unsigned")
     @Comment("뉴스레터템플릿V2ID")
     private Long newsletterTemplateV2Id;
 
