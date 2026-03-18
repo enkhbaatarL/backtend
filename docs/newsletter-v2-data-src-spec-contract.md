@@ -55,24 +55,28 @@
   },
   "query": {
     "fromDate": "2026-03-10",
-    "toDate": "2026-03-16",
-    "market": "OIL",
-    "maxItems": 6
+    "toDate": "2026-03-16"
   },
   "assign": {
     "fields": [
-      { "fieldKey": "aggregationTime", "sourcePath": "aggregationTime", "required": false },
-      { "fieldKey": "items", "sourcePath": "items", "required": true }
+      { "fieldKey": "newsId", "sourcePath": "newsId", "required": false },
+      { "fieldKey": "title", "sourcePath": "title", "required": true },
+      { "fieldKey": "content", "sourcePath": "content", "required": true },
+      { "fieldKey": "timestamp", "sourcePath": "timestamp", "required": false },
+      { "fieldKey": "createdDate", "sourcePath": "createdDate", "required": true },
+      { "fieldKey": "createTime", "sourcePath": "createTime", "required": false },
+      { "fieldKey": "source", "sourcePath": "source", "required": false },
+      { "fieldKey": "originalUrl", "sourcePath": "originalUrl", "required": false },
+      { "fieldKey": "showInChart", "sourcePath": "showInChart", "required": false },
+      { "fieldKey": "trend", "sourcePath": "trend", "required": false }
     ]
   },
-  "transform": [
-    { "type": "SPLIT_LINES", "sourcePath": "items.*.content", "dropBlank": true }
-  ],
+  "transform": [],
   "overridePolicy": {
     "issueState": {
-      "query": ["fromDate", "toDate", "market", "maxItems"],
-      "state": [],
-      "contentInput": []
+      "query": ["fromDate", "toDate"],
+      "state": ["plotOnChart"],
+      "contentInput": ["originalUrl"]
     }
   }
 }
@@ -139,15 +143,12 @@ family별 허용 조합:
 |---|---|---|---|
 | `STATIC` | 없음 | - | `query`는 빈 object 또는 생략만 허용 |
 | `DYNAMIC_QUERY` | 없음 | - | 실제 query 정의는 preference table master가 정본 |
-| `CHART_SERIES` | `fromDate`, `toDate`, `market` | string | `COLLECTION_CHART`일 때만 허용 |
-| `NEWS_EVENT` | `fromDate`, `toDate`, `market`, `maxItems`, `newsId` | string/int | mode별 필수 규칙 별도 적용 |
+| `CHART_SERIES` | `fromDate`, `toDate` | string | `COLLECTION_CHART`일 때만 허용 |
+| `NEWS_EVENT` | `fromDate`, `toDate` | string | list mode only |
 
 추가 규칙:
 
 - `fromDate`, `toDate`는 `yyyy-MM-dd` 형식만 허용
-- `market`은 별도 공통코드/enum registry에 존재하는 값만 허용
-- `maxItems`는 양의 정수만 허용하며 1 이상 100 이하로 제한
-- `newsId`와 `maxItems`는 동시에 지정 가능하나 실행 시 `newsId` 우선이다
 - `CHART_SERIES`에서 `MAIN_CHART`, `DEDICATED_CHART` locator에는 `query` 비허용이다
 - 전 family 공통 mandatory query key는 없다
 
@@ -161,14 +162,12 @@ family별 허용 조합:
 | `DYNAMIC_QUERY` | `PREFERENCE_TABLE` | 공통 | 없음 | 없음 | 모든 key |
 | `CHART_SERIES` | `MAIN_CHART` | 공통 | 없음 | 없음 | 모든 key |
 | `CHART_SERIES` | `DEDICATED_CHART` | 공통 | 없음 | 없음 | 모든 key |
-| `CHART_SERIES` | `COLLECTION_CHART` | 공통 | `fromDate`, `toDate` | `market` | `maxItems`, `newsId` |
-| `NEWS_EVENT` | `NEWS_EVENT` | list mode | `fromDate`, `toDate` | `market`, `maxItems` | `newsId` |
-| `NEWS_EVENT` | `NEWS_EVENT` | single-item mode | `newsId` | `fromDate`, `toDate`, `market`, `maxItems` | 없음 |
+| `CHART_SERIES` | `COLLECTION_CHART` | 공통 | `fromDate`, `toDate` | 없음 | 없음 |
+| `NEWS_EVENT` | `NEWS_EVENT` | 공통 | `fromDate`, `toDate` | 없음 | 없음 |
 
 mode 판정 규칙:
 
-- `NEWS_EVENT`에서 `newsId`가 존재하면 `single-item mode`
-- `NEWS_EVENT`에서 `newsId`가 없으면 `list mode`
+- `NEWS_EVENT`는 list mode만 지원한다
 - `CHART_SERIES`는 mode를 두지 않고 `locator.kind`로만 판정한다
 
 requiredness validation 규칙:
@@ -176,7 +175,6 @@ requiredness validation 규칙:
 - required key 누락 시 preview/publish 모두 fail-fast
 - forbidden key 존재 시 preview/publish 모두 fail-fast
 - `fromDate`와 `toDate`가 함께 존재하면 `fromDate <= toDate`를 만족해야 한다
-- `market`은 값이 있을 때만 검증한다. 즉, optional이지만 주어진 경우 enum 검증은 필수다
 
 ### 3-5. `assign`
 
@@ -271,7 +269,7 @@ shape:
 ```json
 {
   "issueState": {
-    "query": ["fromDate", "toDate", "market", "maxItems"],
+    "query": ["fromDate", "toDate"],
     "state": ["plotOnChart"],
     "contentInput": ["text", "title", "items.*.title", "items.*.content"]
   }
@@ -388,24 +386,28 @@ whitelist 규칙:
   "locator": { "kind": "NEWS_EVENT" },
   "query": {
     "fromDate": "2026-03-10",
-    "toDate": "2026-03-16",
-    "market": "OIL",
-    "maxItems": 6
+    "toDate": "2026-03-16"
   },
   "assign": {
     "fields": [
-      { "fieldKey": "aggregationTime", "sourcePath": "aggregationTime", "required": false },
-      { "fieldKey": "items", "sourcePath": "items", "required": true }
+      { "fieldKey": "newsId", "sourcePath": "newsId", "required": false },
+      { "fieldKey": "title", "sourcePath": "title", "required": true },
+      { "fieldKey": "content", "sourcePath": "content", "required": true },
+      { "fieldKey": "timestamp", "sourcePath": "timestamp", "required": false },
+      { "fieldKey": "createdDate", "sourcePath": "createdDate", "required": true },
+      { "fieldKey": "createTime", "sourcePath": "createTime", "required": false },
+      { "fieldKey": "source", "sourcePath": "source", "required": false },
+      { "fieldKey": "originalUrl", "sourcePath": "originalUrl", "required": false },
+      { "fieldKey": "showInChart", "sourcePath": "showInChart", "required": false },
+      { "fieldKey": "trend", "sourcePath": "trend", "required": false }
     ]
   },
-  "transform": [
-    { "type": "SPLIT_LINES", "sourcePath": "items.*.content", "dropBlank": true }
-  ],
+  "transform": [],
   "overridePolicy": {
     "issueState": {
-      "query": ["fromDate", "toDate", "market", "maxItems", "newsId"],
-      "state": [],
-      "contentInput": []
+      "query": ["fromDate", "toDate"],
+      "state": ["plotOnChart"],
+      "contentInput": ["originalUrl"]
     }
   }
 }
@@ -496,7 +498,6 @@ canonical block에서 아래는 모두 fail-fast 대상이다.
 
 - `locator`와 `data_src_ref` translation 결과가 불일치
 - `assign.fields`와 `col_mapping` translation 결과가 불일치
-- `query.maxItems`와 `fld_meta.maxItems`가 불일치
 - `overridePolicy`가 허용하지 않은 issue state key가 저장/전달됨
 - canonical spec이 존재하지만 누락 필드를 legacy 값으로 메우려는 경우
 
@@ -665,7 +666,7 @@ legacy bridge translation 허용 범위:
 - `overridePolicy` 밖의 issue state 입력 존재
 - `assign.fields.fieldKey`와 block field 정의 불일치
 - `plotOnChart` override가 지원되지 않는 block에 들어옴
-- `query.maxItems`, `newsId`, `fromDate`, `toDate` 형식/범위 오류
+- `query.fromDate`, `query.toDate` 형식/범위 오류
 - `query` required/forbidden key matrix 위반
 - transform rule enum/arg 오류
 
@@ -673,7 +674,6 @@ legacy bridge translation 허용 범위:
 
 구현 전 추가로 고정해야 할 항목:
 
-- `market` 허용 enum의 authoritative source
 - `FORMAT_DATE.format` enum을 공통 formatter enum으로 둘지 여부
 - `MAIN_CHART`에서 `refCode` blank 허용을 영구 규칙으로 둘지 여부
 - admin template API에서 `dataSrcSpecJson`을 raw JSON string으로 받을지 typed DTO로 받을지
@@ -683,7 +683,7 @@ legacy bridge translation 허용 범위:
 
 이 contract는 구현 시작 가능한 수준으로 본다. 다만 아래 두 가지는 구현 전 확정이 필요하다.
 
-- enum registry: `market`, `FORMAT_DATE.format`
+- enum registry: `FORMAT_DATE.format`
 - admin API payload 방식: raw JSON vs typed DTO
 
 `erd-change-review`가 확인할 항목:

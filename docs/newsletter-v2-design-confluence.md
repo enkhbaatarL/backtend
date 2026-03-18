@@ -71,8 +71,8 @@
 
 ### 4-4. Section/Block JSON 스키마 핵심(요약)
 - 리비전 콘텐츠 최상위는 `sections` 배열
-- Section: `id`, `type(FIXED|GENERAL|SPECIALIZED)`, `title`, `order`, `visibility`, `isCollapsed`, `blocks`
-- Block: `id`, `type`, `format(GENERAL|SPECIALIZED)`, `title`, `order`, `visibility`, `isCollapsed`, `plotOnChart`, `content`
+- Section: `id`, `type(FIXED|GENERAL|SPECIALIZED)`, `title`, `order`, `visibility`, `blocks`
+- Block: `id`, `type`, `format(GENERAL|SPECIALIZED)`, `title`, `order`, `visibility`, `plotOnChart`, `content`
 - `SPECIALIZED`는 `target` 필수
 - `plotOnChart`는 CHART 블록에서만 유효
 - `EDIT_DRAFT`: 필수값 경고 허용, `EDIT_SAVED`: 필수값 유효성 통과 필요

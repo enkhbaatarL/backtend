@@ -270,7 +270,6 @@ public class NewsletterIssuePreviewWriteService {
                 section.visibility() == null ? Boolean.TRUE : section.visibility(),
                 StringUtils.trimToNull(section.title()),
                 section.targetCompanyNo(),
-                Boolean.TRUE.equals(section.collapsed()),
                 normalizeStateMap(section.state()),
                 section.blocks() == null ? List.of() : section.blocks().stream()
                     .map(block -> new NewsletterIssueStateSaveReq.Block(
@@ -280,7 +279,6 @@ public class NewsletterIssuePreviewWriteService {
                         block.visibility() == null ? Boolean.TRUE : block.visibility(),
                         StringUtils.trimToNull(block.title()),
                         block.targetCompanyNo(),
-                        Boolean.TRUE.equals(block.collapsed()),
                         block.plotOnChart(),
                         normalizeStateMap(block.state())
                     ))
@@ -361,13 +359,16 @@ public class NewsletterIssuePreviewWriteService {
 
     private Map<String, Object> buildSectionStateJson(NewsletterIssueStateSaveReq.Section section) {
         Map<String, Object> state = new LinkedHashMap<>(normalizeStateMap(section.state()));
-        state.put("collapsed", Boolean.TRUE.equals(section.collapsed()));
+        state.remove("collapsed");
+        state.remove("removed");
+        state.remove("showDivider");
         return state;
     }
 
     private Map<String, Object> buildBlockStateJson(NewsletterIssueStateSaveReq.Block block) {
         Map<String, Object> state = new LinkedHashMap<>(normalizeStateMap(block.state()));
-        state.put("collapsed", Boolean.TRUE.equals(block.collapsed()));
+        state.remove("collapsed");
+        state.remove("removed");
         if (block.plotOnChart() != null) {
             state.put("plotOnChart", block.plotOnChart());
         }

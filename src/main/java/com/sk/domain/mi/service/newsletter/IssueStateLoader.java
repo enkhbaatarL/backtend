@@ -77,7 +77,9 @@ public class IssueStateLoader {
         Map<Long, List<NewsletterIssueBlockState>> blocksBySectionStateId,
         Map<Long, TemplateTree.BlockNode> templateBlockMap
     ) {
-        Map<String, Object> sectionStateJson = parseJson(persistedSectionState == null ? null : persistedSectionState.getSectionStateJson());
+        Map<String, Object> sectionStateJson = withoutDeprecatedUiState(
+            parseJson(persistedSectionState == null ? null : persistedSectionState.getSectionStateJson())
+        );
         List<NewsletterIssueBlockState> persistedBlocks = Optional.ofNullable(persistedSectionState)
             .map(NewsletterIssueSectionState::getNewsletterIssueSectionStateId)
             .map(blocksBySectionStateId::get)
@@ -122,7 +124,6 @@ public class IssueStateLoader {
             persistedSectionState != null ? persistedSectionState.getVisibilityYn() : templateSection.visibilityYn(),
             persistedSectionState != null && persistedSectionState.getSectionTitle() != null ? persistedSectionState.getSectionTitle() : templateSection.sectionName(),
             persistedSectionState != null && persistedSectionState.getTargetCompanyNo() != null ? persistedSectionState.getTargetCompanyNo() : templateSection.targetCompanyNo(),
-            asBoolean(sectionStateJson.get("collapsed"), Boolean.FALSE),
             sectionStateJson,
             blocks
         );
@@ -146,7 +147,7 @@ public class IssueStateLoader {
             throw new IllegalStateException("ISSUE_BLOCK_STATE_SECTION_MISMATCH: blockId=" + referencedBlock.id());
         }
 
-        Map<String, Object> blockStateJson = parseJson(persistedBlockState.getBlockStateJson());
+        Map<String, Object> blockStateJson = withoutDeprecatedUiState(parseJson(persistedBlockState.getBlockStateJson()));
         if (blockStateJson.containsKey("plotOnChart") && !"Y".equals(templateBlock.plotOnChartYn())) {
             throw new IllegalStateException("PLOT_ON_CHART_NOT_SUPPORTED: blockId=" + templateBlock.id());
         }
@@ -158,7 +159,6 @@ public class IssueStateLoader {
             persistedBlockState.getVisibilityYn(),
             persistedBlockState.getBlockTitle() != null ? persistedBlockState.getBlockTitle() : templateBlock.blockName(),
             persistedBlockState.getTargetCompanyNo() != null ? persistedBlockState.getTargetCompanyNo() : templateBlock.targetCompanyNo(),
-            asBoolean(blockStateJson.get("collapsed"), Boolean.FALSE),
             blockStateJson.containsKey("plotOnChart") ? asBoolean(blockStateJson.get("plotOnChart"), null) : null,
             blockStateJson
         );
@@ -201,6 +201,17 @@ public class IssueStateLoader {
         } catch (Exception e) {
             throw new IllegalStateException("ISSUE_STATE_JSON_PARSE_FAILED", e);
         }
+    }
+
+    private Map<String, Object> withoutDeprecatedUiState(Map<String, Object> source) {
+        if (source == null || source.isEmpty()) {
+            return source == null ? Map.of() : source;
+        }
+        Map<String, Object> sanitized = new LinkedHashMap<>(source);
+        sanitized.remove("collapsed");
+        sanitized.remove("removed");
+        sanitized.remove("showDivider");
+        return sanitized;
     }
 
     @SuppressWarnings("unchecked")

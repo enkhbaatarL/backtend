@@ -16,7 +16,7 @@
 -- 2. newsletter master id fallback = 1
 -- 3. main chart code = 'LCOc1'
 -- 4. reference specialized company no = 2020
--- 5. reference1 collection chart type = 'WTI_SRF5000'
+-- 5. reference1 dedicated chart type = 'WTI_DI'
 -- 6. reference2 collection chart type = 'WTI_SNP500'
 -- 7. reference3 preference table code fallback = 'OIL_PRC_TRND'
 -- 8. reference3 preference table config id fallback = 101
@@ -46,9 +46,8 @@ SET @newsletter_master_id := 1;
 
 SET @title_specialized_tgt_cmpny_no := 2020;
 SET @main_chart_code := 'LCOc1';
-SET @market_code := 'OIL';
 SET @reference_specialized_tgt_cmpny_no := 2020;
-SET @reference1_chart_type := 'WTI_SRF5000';
+SET @reference1_chart_type := 'WTI_DI';
 SET @reference2_chart_type := 'WTI_SNP500';
 SET @reference3_pref_table_code := 'OIL_PRC_TRND';
 SET @reference4_chart_type := 'GOV10_2SPRD';
@@ -56,7 +55,6 @@ SET @collection_from_date := '2026-03-10';
 SET @collection_to_date := '2026-03-16';
 SET @news_from_date := '2026-03-10';
 SET @news_to_date := '2026-03-16';
-SET @news_max_items := 20;
 
 SELECT nws_ltr_mstr_id
 INTO @newsletter_master_id
@@ -362,19 +360,25 @@ VALUES
      'locator', JSON_OBJECT('kind', 'NEWS_EVENT'),
      'query', JSON_OBJECT(
          'fromDate', @news_from_date,
-         'toDate', @news_to_date,
-         'market', @market_code,
-         'maxItems', @news_max_items
+         'toDate', @news_to_date
      ),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
-         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
-         JSON_OBJECT('fieldKey', 'items', 'sourcePath', 'items', 'required', TRUE)
+         JSON_OBJECT('fieldKey', 'newsId', 'sourcePath', 'newsId', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'content', 'sourcePath', 'content', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'timestamp', 'sourcePath', 'timestamp', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'createdDate', 'sourcePath', 'createdDate', 'required', TRUE),
+         JSON_OBJECT('fieldKey', 'createTime', 'sourcePath', 'createTime', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'source', 'sourcePath', 'source', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'originalUrl', 'sourcePath', 'originalUrl', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'showInChart', 'sourcePath', 'showInChart', 'required', FALSE),
+         JSON_OBJECT('fieldKey', 'trend', 'sourcePath', 'trend', 'required', FALSE)
      )),
      'transform', JSON_ARRAY(),
      'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
-         'query', JSON_ARRAY('fromDate', 'toDate', 'market', 'maxItems'),
-         'state', JSON_ARRAY(),
-         'contentInput', JSON_ARRAY()
+         'query', JSON_ARRAY('fromDate', 'toDate'),
+         'state', JSON_ARRAY('plotOnChart'),
+         'contentInput', JSON_ARRAY('originalUrl')
      ))
  ), 'SYSTEM', 'SYSTEM'),
 (@sec_reference1, 'REFERENCE_HEADER', 'TEXT',      'GENERAL', '참고 데이터 제목/설명',           0, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
@@ -392,14 +396,10 @@ VALUES
          'contentInput', JSON_ARRAY()
      ))
  ), 'SYSTEM', 'SYSTEM'),
-(@sec_reference1, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('cltn:', @reference1_chart_type),
+(@sec_reference1, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('dedi:', @reference1_chart_type),
  JSON_OBJECT(
-     'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference1_chart_type),
-     'query', JSON_OBJECT(
-         'fromDate', @collection_from_date,
-         'toDate', @collection_to_date,
-         'market', @market_code
-     ),
+     'locator', JSON_OBJECT('kind', 'DEDICATED_CHART', 'refCode', @reference1_chart_type),
+     'query', JSON_OBJECT(),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
          JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
          JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
@@ -407,7 +407,7 @@ VALUES
      )),
      'transform', JSON_ARRAY(),
      'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
-         'query', JSON_ARRAY('fromDate', 'toDate', 'market'),
+         'query', JSON_ARRAY(),
          'state', JSON_ARRAY(),
          'contentInput', JSON_ARRAY()
      ))
@@ -446,8 +446,7 @@ VALUES
      'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference2_chart_type),
      'query', JSON_OBJECT(
          'fromDate', @collection_from_date,
-         'toDate', @collection_to_date,
-         'market', @market_code
+         'toDate', @collection_to_date
      ),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
          JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
@@ -456,7 +455,7 @@ VALUES
      )),
      'transform', JSON_ARRAY(),
      'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
-         'query', JSON_ARRAY('fromDate', 'toDate', 'market'),
+         'query', JSON_ARRAY('fromDate', 'toDate'),
          'state', JSON_ARRAY(),
          'contentInput', JSON_ARRAY()
      ))
@@ -538,8 +537,7 @@ VALUES
      'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference4_chart_type),
      'query', JSON_OBJECT(
          'fromDate', @collection_from_date,
-         'toDate', @collection_to_date,
-         'market', @market_code
+         'toDate', @collection_to_date
      ),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
          JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
@@ -548,7 +546,7 @@ VALUES
      )),
      'transform', JSON_ARRAY(),
      'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
-         'query', JSON_ARRAY('fromDate', 'toDate', 'market'),
+         'query', JSON_ARRAY('fromDate', 'toDate'),
          'state', JSON_ARRAY(),
          'contentInput', JSON_ARRAY()
      ))
@@ -801,8 +799,16 @@ VALUES
 (@blk_news_flow_chart, 'series',          '차트 시리즈',    3, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- NEWS_ITEM (repeatable template block)
-(@blk_news_item, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_news_item, 'items',           '뉴스 목록',     1, NULL, 'N', 'Y', '{"maxItems":20}', 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'newsId',       '뉴스 ID',    0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'title',        '제목',       1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'content',      '내용',       2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'timestamp',    '발생시각',   3, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'createdDate',  '날짜',       4, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'createTime',   '시간',       5, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'source',       '출처',       6, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'originalUrl',  '원문 링크',   7, NULL, 'Y', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'showInChart',  '차트 표시',   8, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'trend',        '추세',       9, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE1_HEADER
 (@blk_reference1_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"WTI 및 달러 인덱스 5분 차트","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),

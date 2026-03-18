@@ -1,12 +1,15 @@
 package com.sk.domain.mi.dto.request.newsletter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record NewsletterIssueStateSaveReq(
     List<Section> sections
 ) {
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record Section(
         Long issueSectionStateId,
         Long templateSectionId,
@@ -14,12 +17,12 @@ public record NewsletterIssueStateSaveReq(
         Boolean visibility,
         String title,
         Integer targetCompanyNo,
-        Boolean collapsed,
         Map<String, Object> state,
         List<Block> blocks
     ) {
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record Block(
         Long issueBlockStateId,
         Long templateBlockId,
@@ -27,7 +30,6 @@ public record NewsletterIssueStateSaveReq(
         Boolean visibility,
         String title,
         Integer targetCompanyNo,
-        Boolean collapsed,
         Boolean plotOnChart,
         Map<String, Object> state
     ) {

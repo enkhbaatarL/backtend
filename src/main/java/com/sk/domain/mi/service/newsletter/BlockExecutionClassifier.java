@@ -35,7 +35,7 @@ public class BlockExecutionClassifier {
     private static final Set<String> ISSUE_STATE_OVERRIDE_KEYS = Set.of("query", "state", "contentInput");
     private static final Set<String> TRANSFORM_TYPES = Set.of("SPLIT_LINES", "FORMAT_DATE", "TO_EPOCH_MILLIS", "LIMIT_ITEMS", "YN_TO_BOOLEAN");
     private static final Set<String> ALLOWED_STATE_KEYS = Set.of("plotOnChart");
-    private static final Set<String> COMMON_STATE_KEYS = Set.of("collapsed", "contentInput");
+    private static final Set<String> COMMON_STATE_KEYS = Set.of("contentInput");
     private static final Pattern SOURCE_PATH_PATTERN = Pattern.compile("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+|\\.\\*)*");
 
     private final ObjectMapper objectMapper;
@@ -183,7 +183,7 @@ public class BlockExecutionClassifier {
             errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
         }
 
-        Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind(), query);
+        Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind());
         if (!allowedQueryKeys.containsAll(query.keySet())) {
             errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
         }
@@ -201,18 +201,7 @@ public class BlockExecutionClassifier {
                 errors.add("INVALID_QUERY_DATE_RANGE");
             }
         }
-        if (query.containsKey("maxItems")) {
-            Integer maxItems = toInteger(query.get("maxItems"));
-            if (maxItems == null || maxItems < 1 || maxItems > 100) {
-                errors.add("INVALID_QUERY_MAX_ITEMS");
-            }
-        }
-
-        if ("NEWS_EVENT".equals(block.dataSourceType()) && query.containsKey("newsId")) {
-            errors.add("UNSUPPORTED_NEWS_EVENT_SINGLE_ITEM_MODE");
-        }
-
-        if ("COLLECTION_CHART".equals(spec.locator().kind()) || ("NEWS_EVENT".equals(block.dataSourceType()) && !query.containsKey("newsId"))) {
+        if ("COLLECTION_CHART".equals(spec.locator().kind()) || "NEWS_EVENT".equals(block.dataSourceType())) {
             if (!query.containsKey("fromDate") || !query.containsKey("toDate")) {
                 errors.add("QUERY_REQUIREDNESS_VIOLATION");
             }
@@ -287,7 +276,7 @@ public class BlockExecutionClassifier {
             .filter(field -> "Y".equals(field.isEditableYn()))
             .map(TemplateTree.FieldNode::fieldKey)
             .collect(java.util.stream.Collectors.toSet());
-        Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind(), spec.query());
+        Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind());
 
         if (issueStateOverride.query() != null && !allowedQueryKeys.containsAll(issueStateOverride.query())) {
             errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
@@ -396,17 +385,6 @@ public class BlockExecutionClassifier {
             }
         }
 
-        Integer fieldMetaMaxItems = block.fields().stream()
-            .map(TemplateTree.FieldNode::fieldMeta)
-            .map(this::extractMaxItems)
-            .filter(Objects::nonNull)
-            .findFirst()
-            .orElse(null);
-        Integer specMaxItems = toInteger(spec.query() == null ? null : spec.query().get("maxItems"));
-        if (fieldMetaMaxItems != null && specMaxItems != null && !Objects.equals(fieldMetaMaxItems, specMaxItems)) {
-            errors.add("CANONICAL_LEGACY_CONFLICT");
-        }
-
         if (blockState != null && blockState.state().containsKey("plotOnChart")
             && (spec.overridePolicy() == null || spec.overridePolicy().issueState() == null
             || spec.overridePolicy().issueState().state() == null
@@ -423,7 +401,18 @@ public class BlockExecutionClassifier {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
         if ("NEWS_ITEM".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of("aggregationTime", "items"))) {
+            && !assignFieldKeys.equals(List.of(
+                "newsId",
+                "title",
+                "content",
+                "timestamp",
+                "createdDate",
+                "createTime",
+                "source",
+                "originalUrl",
+                "showInChart",
+                "trend"
+            ))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
         if ("REFERENCE_TABLE".equals(block.blockCode())
@@ -432,15 +421,13 @@ public class BlockExecutionClassifier {
         }
     }
 
-    private Set<String> allowedQueryKeys(String dataSourceType, String locatorKind, Map<String, Object> query) {
+    private Set<String> allowedQueryKeys(String dataSourceType, String locatorKind) {
         return switch (dataSourceType) {
             case "STATIC", "DYNAMIC_QUERY" -> Set.of();
             case "CHART_SERIES" -> "COLLECTION_CHART".equals(locatorKind)
-                ? Set.of("fromDate", "toDate", "market")
+                ? Set.of("fromDate", "toDate")
                 : Set.of();
-            case "NEWS_EVENT" -> query != null && query.containsKey("newsId")
-                ? Set.of("newsId", "fromDate", "toDate", "market", "maxItems")
-                : Set.of("fromDate", "toDate", "market", "maxItems");
+            case "NEWS_EVENT" -> Set.of("fromDate", "toDate");
             default -> Set.of();
         };
     }
@@ -459,32 +446,6 @@ public class BlockExecutionClassifier {
             };
             default -> null;
         };
-    }
-
-    private Integer extractMaxItems(String fieldMeta) {
-        if (StringUtils.isBlank(fieldMeta)) {
-            return null;
-        }
-        try {
-            JsonNode metaNode = objectMapper.readTree(fieldMeta);
-            return metaNode.has("maxItems") ? metaNode.get("maxItems").asInt() : null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private Integer toInteger(Object value) {
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        if (value == null) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(String.valueOf(value));
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     private boolean isValidDate(Object value) {

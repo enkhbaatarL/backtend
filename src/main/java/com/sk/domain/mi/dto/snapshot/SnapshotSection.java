@@ -18,7 +18,6 @@ public class SnapshotSection {
     private Integer order;
     private Boolean visibility;
     private String target;
-    private Boolean isCollapsed;
     private Map<String, Object> state;
     private List<SnapshotBlock> blocks;
 }

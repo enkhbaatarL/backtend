@@ -17,7 +17,6 @@ public class SnapshotBlock {
     private String format;
     private Integer order;
     private Boolean visibility;
-    private Boolean isCollapsed;
     private String title;
     private Boolean plotOnChart;
     private String target;

@@ -4,7 +4,6 @@ import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
 import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
-import com.sk.domain.mi.service.newsletter.NewsletterChartSupport;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.repository.master.tmd.NewsletterEventRepository;
@@ -15,8 +14,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component("NEWS_EVENT")
 @RequiredArgsConstructor
 public class NewsEventBlockDataStrategy implements BlockDataStrategy {
@@ -24,7 +25,6 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
     private static final DateTimeFormatter CREATED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final NewsletterEventRepository newsletterEventRepository;
-    private final NewsletterChartSupport chartSupport;
 
     @Override
     public String getType() {
@@ -38,66 +38,86 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
         IssueStateTree.BlockStateNode blockState,
         NewsletterPublishHistory pubHist
     ) {
+        Map<String, Object> content;
         if (pubHist == null) {
-            return ResolvedBlockData.of(Map.of("aggregationTime", null, "items", List.of()));
+            content = emptyItem(Boolean.FALSE);
+        } else {
+            List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(pubHist);
+            int index = resolveItemIndex(blockState);
+            try {
+                content = index >= events.size()
+                    ? emptyItem(resolveShowInChart(blockState, Boolean.FALSE))
+                    : toItem(events.get(index), resolveShowInChart(blockState, null));
+            } catch (RuntimeException e) {
+                log.warn("NEWS_ITEM 변환 실패 - issueBlockStateId: {}, index: {}", blockState != null ? blockState.issueBlockStateId() : null, index, e);
+                content = emptyItem(resolveShowInChart(blockState, Boolean.FALSE));
+            }
         }
-
-        List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(pubHist);
-        int maxItems = resolveMaxItems(executionPlan, blockState);
-        List<Map<String, Object>> items = events.stream()
-            .limit(maxItems)
-            .map(this::toItem)
-            .toList();
-
-        Map<String, Object> content = new LinkedHashMap<>();
-        content.put("aggregationTime", chartSupport.calculateMarketTimes(pubHist.getPublishDateTime())[2] != null
-            ? "뉴욕시간 전일 20:00부터 당일 17:00까지" : null);
-        content.put("items", items);
+        content.putAll(resolveContentInput(blockState));
         return ResolvedBlockData.of(content);
     }
 
-    private int resolveMaxItems(BlockExecutionPlan executionPlan, IssueStateTree.BlockStateNode blockState) {
-        if (blockState != null) {
-            Object maxItems = blockState.queryParams().get("maxItems");
-            if (maxItems instanceof Number number) {
-                return number.intValue();
-            }
-            if (maxItems != null) {
-                try {
-                    return Integer.parseInt(String.valueOf(maxItems));
-                } catch (NumberFormatException ignored) {
-                    return 20;
-                }
-            }
+    private int resolveItemIndex(IssueStateTree.BlockStateNode blockState) {
+        if (blockState == null || blockState.order() == null) {
+            return 0;
         }
-        if (executionPlan.isCanonical() && executionPlan.spec() != null && executionPlan.spec().query() != null) {
-            Object maxItems = executionPlan.spec().query().get("maxItems");
-            if (maxItems instanceof Number number) {
-                return number.intValue();
-            }
-            if (maxItems != null) {
-                try {
-                    return Integer.parseInt(String.valueOf(maxItems));
-                } catch (NumberFormatException ignored) {
-                    return 20;
-                }
-            }
-        }
-        return 20;
+        return Math.max(blockState.order() - 1, 0);
     }
 
-    private Map<String, Object> toItem(NewsletterEvent event) {
+    private Boolean resolveShowInChart(IssueStateTree.BlockStateNode blockState, Boolean fallback) {
+        if (blockState == null) {
+            return fallback;
+        }
+        if (blockState.plotOnChart() != null) {
+            return blockState.plotOnChart();
+        }
+        Object raw = blockState.state().get("plotOnChart");
+        if (raw instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        return fallback;
+    }
+
+    private Map<String, Object> toItem(NewsletterEvent event, Boolean showInChartOverride) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("newsId", event.getNewsletterEventId() != null ? String.valueOf(event.getNewsletterEventId()) : null);
         item.put("title", event.getEventTitle());
         item.put("content", toContentLines(event));
         item.put("timestamp", event.getEventCreateTime() != null ? event.getEventCreateTime().toInstant(ZoneOffset.UTC).toEpochMilli() : null);
         item.put("createdDate", event.getEventCreateTime() != null ? event.getEventCreateTime().format(CREATED_DATE_FORMATTER) : null);
-        item.put("markTime", event.getEventMarkTime());
+        item.put("createTime", event.getEventMarkTime());
         item.put("source", event.getEventProvider());
-        item.put("isTurningPoint", "Y".equals(event.getTurningPointMarkYn()));
-        item.put("directionalityType", event.getDirectionalityType());
+        item.put("originalUrl", null);
+        item.put("showInChart", showInChartOverride != null ? showInChartOverride : "Y".equals(event.getTurningPointMarkYn()));
+        item.put("trend", event.getDirectionalityType());
         return item;
+    }
+
+    private Map<String, Object> emptyItem(Boolean showInChart) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("newsId", null);
+        item.put("title", null);
+        item.put("content", List.of());
+        item.put("timestamp", null);
+        item.put("createdDate", null);
+        item.put("createTime", null);
+        item.put("source", null);
+        item.put("originalUrl", null);
+        item.put("showInChart", showInChart);
+        item.put("trend", null);
+        return item;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> resolveContentInput(IssueStateTree.BlockStateNode blockState) {
+        if (blockState == null || blockState.state().isEmpty()) {
+            return Map.of();
+        }
+        Object contentInput = blockState.state().get("contentInput");
+        if (contentInput instanceof Map<?, ?> inputMap) {
+            return new LinkedHashMap<>((Map<String, Object>) inputMap);
+        }
+        return Map.of();
     }
 
     private List<String> toContentLines(NewsletterEvent event) {

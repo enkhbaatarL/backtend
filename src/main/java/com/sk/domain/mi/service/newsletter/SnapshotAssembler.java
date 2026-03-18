@@ -43,9 +43,7 @@ public class SnapshotAssembler {
         NewsletterPublishHistory pubHist
     ) {
         SnapshotMeta meta = SnapshotMeta.builder()
-            .title(pubHist.getNewsletterTitle())
             .emailSubject(pubHist.getEmailSubject())
-            .aiSummary(pubHist.getAiSummary())
             .subInfoText(resolveSubInfoText(issueState, template, resolvedData))
             .build();
 
@@ -72,7 +70,6 @@ public class SnapshotAssembler {
                     .format(blockNode.blockFormatCode())
                     .order(blockState.order())
                     .visibility("Y".equals(blockState.visibilityYn()))
-                    .isCollapsed(Boolean.TRUE.equals(blockState.collapsed()))
                     .title(blockState.title())
                     .plotOnChart(resolvePlotOnChart(blockNode, blockState))
                     .target(resolveTarget(blockState.targetCompanyNo()))
@@ -89,7 +86,6 @@ public class SnapshotAssembler {
                 .order(sectionState.order())
                 .visibility("Y".equals(sectionState.visibilityYn()))
                 .target(resolveTarget(sectionState.targetCompanyNo()))
-                .isCollapsed(Boolean.TRUE.equals(sectionState.collapsed()))
                 .state(sectionState.extraState().isEmpty() ? null : sectionState.extraState())
                 .blocks(blocks)
                 .build());

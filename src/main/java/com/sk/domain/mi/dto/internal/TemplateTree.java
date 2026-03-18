@@ -106,6 +106,7 @@ public record TemplateTree(
         Integer targetCompanyNo,
         String dataSourceType,
         String dataSourceRef,
+        String dataSourceSpecJson,
         List<FieldNode> fields
     ) {
         private static BlockNode from(NewsletterTemplateBlock block, List<FieldNode> fields) {
@@ -122,6 +123,7 @@ public record TemplateTree(
                 block.getTargetCompanyNo(),
                 block.getDataSourceTypeCode(),
                 block.getDataSourceRef(),
+                block.getDataSourceSpecJson(),
                 fields
             );
         }

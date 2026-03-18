@@ -84,7 +84,6 @@ paths:
                             title: 커버
                             order: 0
                             visibility: true
-                            isCollapsed: false
                             blocks:
                               - id: blk-01
                                 type: TITLE
@@ -92,7 +91,6 @@ paths:
                                 title: 제목
                                 order: 0
                                 visibility: true
-                                isCollapsed: false
                                 plotOnChart: false
                                 content:
                                   text: "금일 시장 브리핑"
@@ -128,7 +126,6 @@ paths:
                             title: 뉴스 개요
                             order: 0
                             visibility: true
-                            isCollapsed: false
                             blocks:
                               - id: blk-01
                                 type: TEXT
@@ -136,7 +133,6 @@ paths:
                                 title: 요약
                                 order: 0
                                 visibility: true
-                                isCollapsed: false
                                 plotOnChart: false
                                 content:
                                   text: "수정 반영됨"
@@ -288,7 +284,6 @@ paths:
                             title: 뉴스 개요
                             order: 0
                             visibility: true
-                            isCollapsed: false
                             blocks:
                               - id: blk-01
                                 type: TEXT
@@ -296,7 +291,6 @@ paths:
                                 title: 요약
                                 order: 0
                                 visibility: true
-                                isCollapsed: false
                                 plotOnChart: false
                                 content:
                                   text: "임시저장 반영"

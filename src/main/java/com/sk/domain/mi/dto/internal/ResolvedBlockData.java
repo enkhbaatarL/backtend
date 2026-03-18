@@ -8,7 +8,7 @@ public record ResolvedBlockData(
 ) {
 
     public static ResolvedBlockData of(Map<String, Object> content) {
-        return new ResolvedBlockData(content == null ? Map.of() : Map.copyOf(content));
+        return new ResolvedBlockData(content == null ? Map.of() : new LinkedHashMap<>(content));
     }
 
     public static ResolvedBlockData error(String message) {

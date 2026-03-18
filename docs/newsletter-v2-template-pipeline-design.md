@@ -44,22 +44,11 @@
 
 ### 0-4. NEWS_CARD 다건 조회 시 건수 제한 방식
 
-**결정: BlockField의 `field_meta` JSON 내 `maxItems` 속성으로 제어**
+**결정: 입력 계약으로 노출하지 않고 application 기본값으로 제어**
 
-```json
-{
-  "field_key": "news_items",
-  "col_mapping": "tmd_nws_ltr_evnt.event_title,event_content,...",
-  "field_meta": {
-    "maxItems": 20,
-    "orderBy": "evnt_crt_dtm DESC"
-  }
-}
-```
-
-- 기본값: 20건 (v1 하드코딩과 동일)
-- 템플릿 관리자가 블록필드 단위로 조정 가능
-- 스냅샷 생성 시 BlockDataResolver가 `maxItems`를 적용
+- 기본값: 20건
+- template query / issue state / field_meta로 별도 override 하지 않음
+- 필요 시 후속 요구가 생기면 별도 정책으로 다시 도입
 
 ---
 
@@ -264,10 +253,8 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
   "issueNo": 22,
   "publishedAt": "2026-03-16T09:00:00+09:00",
   "meta": {
-    "title": "Oil Market Weekly #22",
     "emailSubject": "[MIP] Oil Market Weekly #22",
     "subInfoText": "보충 설명 텍스트",     // nullable
-    "aiSummary": "AI가 생성한 요약",       // nullable
     "coverImageUrl": "static/images/oil_trend_cover_img.png"
   },
   "sections": [/* Section[] */]
@@ -284,7 +271,6 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
   "order": 0,
   "visibility": true,
   "target": null,                        // SPECIALIZED일 때 고객사 코드 (e.g. "SKE")
-  "isCollapsed": false,
   "blocks": [/* Block[] */]
 }
 ```
@@ -298,7 +284,6 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
   "format": "GENERAL",                   // GENERAL | SPECIALIZED
   "order": 0,
   "visibility": true,
-  "isCollapsed": false,
   "title": "주요 뉴스 Flow 및 Brent 유가 추이",
   "plotOnChart": true,
   "target": null,
@@ -694,9 +679,7 @@ public class SnapshotAssembler {
 
         // meta
         SnapshotMeta meta = new SnapshotMeta();
-        meta.setTitle(pubHist.getNewsletterTitle());
         meta.setEmailSubject(pubHist.getEmailSubject());
-        meta.setAiSummary(pubHist.getAiSummary());
         root.setMeta(meta);
 
         // sections
@@ -710,8 +693,6 @@ public class SnapshotAssembler {
             section.setOrder(sectionState.getSectionOrder());
             section.setVisibility("Y".equals(sectionState.getVisibilityYn()));
             section.setTarget(resolveTarget(sectionNode.getTargetCompanyNo()));
-            section.setIsCollapsed(sectionState.isCollapsed());
-
             List<SnapshotBlock> blocks = new ArrayList<>();
             for (IssueStateTree.BlockStateNode blockState : sectionState.getBlocks()) {
                 TemplateTree.BlockNode blockNode = template.findBlock(blockState.getTemplateBlockId());
@@ -721,7 +702,6 @@ public class SnapshotAssembler {
                 block.setFormat(blockNode.getBlockFormatCode());
                 block.setOrder(blockState.getBlockOrder());
                 block.setVisibility("Y".equals(blockState.getVisibilityYn()));
-                block.setIsCollapsed(blockState.isCollapsed());
                 block.setTitle(defaultIfBlank(blockState.getBlockTitle(), blockNode.getBlockName()));
                 block.setPlotOnChart(resolvePlotOnChart(blockNode, blockState));
                 block.setTarget(resolveTarget(blockNode.getTargetCompanyNo()));

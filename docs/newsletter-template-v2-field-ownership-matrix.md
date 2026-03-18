@@ -61,8 +61,16 @@
 | `NEWS_FLOW` | `NEWS_FLOW_CHART` | `aggregationTime` | template default `"뉴욕시간 전일 20:00부터 당일 17:00까지"` | 예 | 예 | `delta/snapshot -> state -> template default` | 필수입력 |
 | `NEWS_FLOW` | `NEWS_FLOW_CHART` | `timestamps` | `midb.tif_nws_ltr_chrt` (`code='LCOc1'` + `src_nws_ltr_pub_id`) | 아니오 | 아니오 | `resolved content` | runtime resolve |
 | `NEWS_FLOW` | `NEWS_FLOW_CHART` | `series` | `midb.tif_nws_ltr_chrt` (`code='LCOc1'` + `src_nws_ltr_pub_id`) | 아니오 | 아니오 | `resolved content` | runtime resolve |
-| `NEWS_FLOW` | `NEWS_ITEM` | `aggregationTime` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
-| `NEWS_FLOW` | `NEWS_ITEM` | `items` | news resolver | 아니오 | 아니오 | `resolved content` | list mode canonical shape |
+| `NEWS_FLOW` | `NEWS_ITEM` | `newsId` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve, item 식별자 |
+| `NEWS_FLOW` | `NEWS_ITEM` | `title` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
+| `NEWS_FLOW` | `NEWS_ITEM` | `content` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
+| `NEWS_FLOW` | `NEWS_ITEM` | `timestamp` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
+| `NEWS_FLOW` | `NEWS_ITEM` | `createdDate` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
+| `NEWS_FLOW` | `NEWS_ITEM` | `createTime` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
+| `NEWS_FLOW` | `NEWS_ITEM` | `source` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
+| `NEWS_FLOW` | `NEWS_ITEM` | `originalUrl` | 기본값 없음 | 예 | 예 | `delta/snapshot -> state -> resolved content` | `contentInput.originalUrl` |
+| `NEWS_FLOW` | `NEWS_ITEM` | `showInChart` | issue state `plotOnChart` 또는 news resolver fallback | 예 | 예 | `delta/snapshot -> state -> resolved content` | API에서는 `showInChart`, 내부 저장은 `plotOnChart` |
+| `NEWS_FLOW` | `NEWS_ITEM` | `trend` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
 | `REFERENCE1` | `REFERENCE_HEADER` | `title` | template default `"WTI 및 달러 인덱스 5분 차트"` | 아니오 | 예 | `delta/snapshot -> template default` | 필수입력, state 저장 없음, `maxLength=100` |
 | `REFERENCE1` | `REFERENCE_HEADER` | `description` | template default `"WTI: 청색, 좌측\n달러인덱스: 회색, 우측"` | 아니오 | 예 | `delta/snapshot -> template default` | 선택입력, state 저장 없음, `maxLength=500` |
 | `REFERENCE1` | `REFERENCE_CHART` | `aggregationTime` | chart resolver | 아니오 | 아니오 | `resolved content` | `REFERENCE1` 기준, runtime resolve |
@@ -94,10 +102,10 @@
 |---|---|---|
 | `COVER` | `COVER_IMAGE_CARD` | `showImage` |
 | `NEWS_FLOW` | `NEWS_FLOW_CHART` | `title`, `aggregationTime` |
-| `NEWS_FLOW` | `NEWS_ITEM` | `newsId`, `plotOnChart`, query params 필요 시 |
-| `REFERENCE1` | `REFERENCE_CHART` | `fromDate`, `toDate`, `market` |
-| `REFERENCE2` | `REFERENCE_CHART` | `fromDate`, `toDate`, `market` |
-| `REFERENCE4` | `REFERENCE_CHART` | `fromDate`, `toDate`, `market` |
+| `NEWS_FLOW` | `NEWS_ITEM` | `plotOnChart`, `fromDate`, `toDate` |
+| `REFERENCE1` | `REFERENCE_CHART` | `fromDate`, `toDate` |
+| `REFERENCE2` | `REFERENCE_CHART` | `fromDate`, `toDate` |
+| `REFERENCE4` | `REFERENCE_CHART` | `fromDate`, `toDate` |
 | `FOOTER` | `FOOTER_NOTICE` | `showLogo` |
 
 ## 3-1. Repeatable Block Rule

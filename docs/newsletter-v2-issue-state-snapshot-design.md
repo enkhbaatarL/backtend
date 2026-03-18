@@ -193,13 +193,11 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 
 ### 3-5. `*_stat_json` 사용 기준
 - `sctn_stat_json`
-  - `collapsed`
   - `showDivider`
   - `removed`
   - 기타 섹션 전용 UI/표시 상태
 - `blk_stat_json`
   - `highlightMode`
-  - `collapsed`
   - `removed`
   - 기간/시장/기준시점 등 block query에 필요한 state 파라미터
   - `contentInput`: STATIC 또는 사용자 입력 기반 block의 편집 입력값 묶음
@@ -213,11 +211,11 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 - 현재 컬럼 유지:
   - `sctn_ord`, `blk_ord`, `vsblty_yn`, `sctn_titl`, `blk_titl`, `tgt_cmpny_no`
 - 현재 JSON 유지:
-  - `collapsed`, `showDivider`, `highlightMode`, `removed`
-  - `plotOnChart`, `fromDate`, `toDate`, `market`, `maxItems`
+  - `showDivider`, `highlightMode`, `removed`
+  - `plotOnChart`, `fromDate`, `toDate`
   - `contentInput`
 - 확정 사항:
-  - `removed`, `plotOnChart`, `fromDate`, `toDate`, `market`, `maxItems`, `contentInput`은 현재 설계 범위에서 JSON 유지
+  - `removed`, `plotOnChart`, `fromDate`, `toDate`, `contentInput`은 현재 설계 범위에서 JSON 유지
   - 이유: preview/publish 조립 입력값으로 사용되며 현재 DB 정렬/검색/감사 인덱스 요구가 확정되지 않았기 때문
 
 ### 3-7. 무결성 보장 범위
@@ -247,7 +245,7 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 {
   "dataSourceType": "NEWS_EVENT",
   "dataSourceRef": "NEWS_EVENT_BY_PERIOD",
-  "requiredQueryParams": ["fromDate", "toDate", "market"],
+  "requiredQueryParams": ["fromDate", "toDate"],
   "contentMapping": {
     "items": "collection"
   }
@@ -270,7 +268,6 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 {
   "fromDate": "2026-03-01",
   "toDate": "2026-03-16",
-  "market": "OIL",
   "plotOnChart": true,
   "contentInput": {
     "title": "Oil Price Trends",
@@ -308,7 +305,7 @@ Template Query Policy:
 {
   "dataSourceType": "NEWS_EVENT",
   "dataSourceRef": "NEWS_EVENT_BY_PERIOD",
-  "requiredQueryParams": ["fromDate", "toDate", "market", "maxItems"],
+  "requiredQueryParams": ["fromDate", "toDate"],
   "contentKeys": ["items"]
 }
 ```
@@ -318,8 +315,6 @@ Issue Block State:
 {
   "fromDate": "2026-03-10",
   "toDate": "2026-03-16",
-  "market": "OIL",
-  "maxItems": 6,
   "plotOnChart": true
 }
 ```

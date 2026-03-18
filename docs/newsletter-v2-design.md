@@ -571,7 +571,6 @@ sequenceDiagram
   - `order` (integer, 0 이상): 표시 순서, 필수
   - `visibility` (boolean): 노출 여부, 기본값 `true`
   - `target` (string, nullable): `type=SPECIALIZED`일 때 대상 고객사 코드(예: `SKE`, `SKHy`)
-  - `isCollapsed` (boolean): UI 접힘 상태 저장값, 기본값 `false`
   - `blocks` (array[Block], 최소 1개): 하위 블록 목록, 필수
 - `Block`
   - `id` (string): 블록 식별자, 필수
@@ -579,7 +578,6 @@ sequenceDiagram
   - `format` (enum): `GENERAL | SPECIALIZED`, 필수
   - `order` (integer, 0 이상): 표시 순서, 필수
   - `visibility` (boolean): 노출 여부, 기본값 `true`
-  - `isCollapsed` (boolean): UI 접힘 상태 저장값, 기본값 `false`
   - `title` (string): 블록 라벨, 필수(미입력 시 저장 경고)
   - `plotOnChart` (boolean): `차트 블록`에서만 사용되는 issue-level 상태값. template은 지원 여부만 가진다.
   - `target` (string, nullable): `format=SPECIALIZED`일 때 대상 고객사 코드
@@ -612,7 +610,6 @@ sequenceDiagram
       "order": 0,
       "visibility": true,
       "target": null,
-      "isCollapsed": false,
       "blocks": [
         {
           "id": "blk-001",
@@ -620,7 +617,6 @@ sequenceDiagram
           "format": "GENERAL",
           "order": 0,
           "visibility": true,
-          "isCollapsed": false,
           "title": "타이틀",
           "plotOnChart": false,
           "target": null,

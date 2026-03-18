@@ -34,6 +34,21 @@ public record IssueStateTree(
             ));
     }
 
+    private static Map<String, Object> includeState(Map<String, Object> source, List<String> includedKeys) {
+        if (source == null || source.isEmpty()) {
+            return Map.of();
+        }
+        return source.entrySet().stream()
+            .filter(entry -> includedKeys.contains(entry.getKey()))
+            .filter(entry -> Objects.nonNull(entry.getValue()))
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (left, right) -> right,
+                LinkedHashMap::new
+            ));
+    }
+
     public Map<Long, SectionStateNode> sectionMap() {
         return sections.stream().collect(Collectors.toMap(SectionStateNode::templateSectionId, section -> section));
     }
@@ -51,7 +66,6 @@ public record IssueStateTree(
         String visibilityYn,
         String title,
         Integer targetCompanyNo,
-        Boolean collapsed,
         Map<String, Object> state,
         List<BlockStateNode> blocks
     ) {
@@ -67,14 +81,13 @@ public record IssueStateTree(
                 section.visibilityYn(),
                 section.sectionName(),
                 section.targetCompanyNo(),
-                Boolean.FALSE,
                 Map.of(),
                 blockStates
             );
         }
 
         public Map<String, Object> extraState() {
-            return filterState(state, List.of("collapsed"));
+            return filterState(state, List.of());
         }
     }
 
@@ -85,7 +98,6 @@ public record IssueStateTree(
         String visibilityYn,
         String title,
         Integer targetCompanyNo,
-        Boolean collapsed,
         Boolean plotOnChart,
         Map<String, Object> state
     ) {
@@ -98,7 +110,6 @@ public record IssueStateTree(
                 block.visibilityYn(),
                 block.blockName(),
                 block.targetCompanyNo(),
-                Boolean.FALSE,
                 null,
                 Map.of()
             );
@@ -109,11 +120,11 @@ public record IssueStateTree(
         }
 
         public Map<String, Object> queryParams() {
-            return filterState(state, List.of("collapsed", "plotOnChart", "highlightMode"));
+            return includeState(state, List.of("fromDate", "toDate"));
         }
 
         public Map<String, Object> extraState() {
-            return filterState(state, List.of("collapsed", "plotOnChart", "fromDate", "toDate", "market", "maxItems"));
+            return filterState(state, List.of("plotOnChart", "fromDate", "toDate"));
         }
     }
 }

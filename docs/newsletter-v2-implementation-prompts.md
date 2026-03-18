@@ -198,7 +198,7 @@ TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열�
 ## 참조 코드
 - Step 2: TemplateTree VO
 - Step 3: ResolvedBlockData VO
-- `NewsletterPublishHistory.java` — meta 필드 (title, emailSubject, aiSummary 등)
+- `NewsletterPublishHistory.java` — snapshot/section 기본값 소스(emailSubject 등)
 
 ## 작업 내용
 
@@ -208,9 +208,9 @@ TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열�
 | 클래스 | 역할 |
 |---|---|
 | `SnapshotRoot` | 최상위 (schemaVersion, templateId, newsletterId, issueNo, publishedAt, meta, sections) |
-| `SnapshotMeta` | 메타정보 (title, emailSubject, subInfoText, aiSummary, coverImageUrl) |
-| `SnapshotSection` | 섹션 (id, type, title, order, visibility, target, isCollapsed, blocks) |
-| `SnapshotBlock` | 블록 (id, type, format, order, visibility, isCollapsed, title, plotOnChart, target, editableFields, content) |
+| `SnapshotMeta` | 메타정보 (emailSubject, subInfoText, coverImageUrl) |
+| `SnapshotSection` | 섹션 (id, type, title, order, visibility, target, blocks) |
+| `SnapshotBlock` | 블록 (id, type, format, order, visibility, title, plotOnChart, target, editableFields, content) |
 
 - Jackson 직렬화 대상이므로 @Getter + @Setter 또는 @Builder 사용
 - content 필드는 `Map<String, Object>` 타입 (블록 타입별 동적 구조)

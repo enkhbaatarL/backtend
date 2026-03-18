@@ -10,9 +10,7 @@ import lombok.Setter;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SnapshotMeta {
-    private String title;
     private String emailSubject;
     private String subInfoText;
-    private String aiSummary;
     private String coverImageUrl;
 }
