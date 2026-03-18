@@ -1,5 +1,6 @@
 package com.sk.domain.shared.client.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.Map;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record ModelAgentStreamBody(
         /*
          * 이벤트 상태
