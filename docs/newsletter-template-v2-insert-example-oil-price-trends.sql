@@ -44,7 +44,7 @@ START TRANSACTION;
 SET @newsletter_master_name := 'Oil Price Trends';
 SET @newsletter_master_id := 1;
 
-SET @title_specialized_tgt_cmpny_no := 2015;
+SET @title_specialized_tgt_cmpny_no := 2020;
 SET @main_chart_code := 'LCOc1';
 SET @market_code := 'OIL';
 SET @reference_specialized_tgt_cmpny_no := 2020;
@@ -80,7 +80,7 @@ SET @reference3_pref_table_id := COALESCE(@reference3_pref_table_id, 101);
  * 0-1) COLLECTION CHART CONFIG
  * ========================================================= */
 
-UPDATE tmd_nws_ltr_tmplt_cltn_chrt
+/*UPDATE tmd_nws_ltr_tmplt_cltn_chrt
 SET del_yn = 'Y',
     mod_usr_logn_id = 'SYSTEM',
     mod_dtm = CURRENT_TIMESTAMP
@@ -108,7 +108,7 @@ VALUES
 (@reference2_chart_type, 'midb', 'tif_nws_ltr_chrt', 'code=''CLc1''', 'timestamp,trdprc_1', 'blue', NULL, NULL, 'N', NULL, NULL, 'SYSTEM', 'SYSTEM'),
 (@reference4_chart_type, 'midb', 'tif_interestratesr', 'code=''TRUS10T''', 'date,ry', 'blue', NULL, NULL, 'N', NULL, NULL, 'SYSTEM', 'SYSTEM'),
 (@reference4_chart_type, 'midb', 'tif_interestratesr', 'code=''TRUS10T-TRUS2YT''', 'date,ry', 'grey', NULL, NULL, 'Y', NULL, NULL, 'SYSTEM', 'SYSTEM');
-
+*/
 /* =========================================================
  * 1) TEMPLATE ROOT
  * ========================================================= */

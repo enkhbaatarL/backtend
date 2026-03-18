@@ -162,6 +162,44 @@ paths:
                           path: /status
                           value: EDIT_DRAFT
 
+  /newsletter/{newsletterId}/{issueNo}/original-snapshot:
+    get:
+      tags: [Newsletter]
+      summary: 원본 스냅샷 전용 조회
+      description: |
+        published issue의 `org_snpsht_json`만 그대로 반환한다.
+        revision/review/editor delta를 재조립하지 않으며 응답 `source`는 항상 `ORIGINAL`이다.
+      parameters:
+        - $ref: '#/components/parameters/NewsletterId'
+        - $ref: '#/components/parameters/IssueNo'
+      responses:
+        '200':
+          description: 원본 스냅샷 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponseNewsletterOriginalSnapshotRes'
+              examples:
+                originalSnapshot:
+                  summary: 저장된 원본 스냅샷 그대로 반환
+                  value:
+                    status: true
+                    code: SUC-000
+                    message: Success.
+                    data:
+                      newsletterId: 12
+                      issueNo: 1
+                      schemaVersion: 2
+                      source: ORIGINAL
+                      snapshot:
+                        schemaVersion: 2
+                        newsletterId: 12
+                        issueNo: 1
+                        sections:
+                          - id: sec-01
+                            type: COVER
+                            blocks: []
+
   /newsletter/{newsletterId}/{issueNo}/revisions/{revisionId}/changes:
     get:
       tags: [Newsletter]
@@ -506,6 +544,14 @@ components:
             data:
               $ref: '#/components/schemas/RevisionOrOriginalDetailRes'
 
+    BaseResponseNewsletterOriginalSnapshotRes:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/NewsletterOriginalSnapshotRes'
+
     BaseResponseRevisionListRes:
       allOf:
         - $ref: '#/components/schemas/BaseResponse'
@@ -591,6 +637,25 @@ components:
           description: latestSnapshot 대비 현재 콘텐츠 변경점
           items:
             $ref: '#/components/schemas/JsonPatchOp'
+
+    NewsletterOriginalSnapshotRes:
+      type: object
+      properties:
+        newsletterId:
+          type: integer
+        issueNo:
+          type: integer
+        schemaVersion:
+          type: integer
+          nullable: true
+        source:
+          type: string
+          enum: [ORIGINAL]
+          description: original snapshot 전용 endpoint로 항상 ORIGINAL
+        snapshot:
+          type: object
+          additionalProperties: true
+      required: [newsletterId, issueNo, source, snapshot]
 
     RevisionItem:
       type: object

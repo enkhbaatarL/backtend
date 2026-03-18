@@ -1,0 +1,501 @@
+package com.sk.domain.mi.service.newsletter;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.domain.mi.dto.internal.BlockDataSourceSpec;
+import com.sk.domain.mi.dto.internal.BlockExecutionClassification;
+import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
+import com.sk.domain.mi.dto.internal.IssueStateTree;
+import com.sk.domain.mi.dto.internal.TemplateTree;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class BlockExecutionClassifier {
+
+    private static final Set<String> TOP_LEVEL_KEYS = Set.of("locator", "query", "assign", "transform", "overridePolicy");
+    private static final Set<String> LOCATOR_KEYS = Set.of("kind", "refId", "refCode");
+    private static final Set<String> ASSIGN_KEYS = Set.of("fields");
+    private static final Set<String> ASSIGN_FIELD_KEYS = Set.of("fieldKey", "sourcePath", "required");
+    private static final Set<String> OVERRIDE_POLICY_KEYS = Set.of("issueState");
+    private static final Set<String> ISSUE_STATE_OVERRIDE_KEYS = Set.of("query", "state", "contentInput");
+    private static final Set<String> TRANSFORM_TYPES = Set.of("SPLIT_LINES", "FORMAT_DATE", "TO_EPOCH_MILLIS", "LIMIT_ITEMS", "YN_TO_BOOLEAN");
+    private static final Set<String> ALLOWED_STATE_KEYS = Set.of("plotOnChart");
+    private static final Set<String> COMMON_STATE_KEYS = Set.of("collapsed", "contentInput");
+    private static final Pattern SOURCE_PATH_PATTERN = Pattern.compile("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+|\\.\\*)*");
+
+    private final ObjectMapper objectMapper;
+
+    public BlockExecutionPlan plan(TemplateTree.BlockNode block, IssueStateTree.BlockStateNode blockState) {
+        String specJson = StringUtils.trimToNull(block.dataSourceSpecJson());
+        if (specJson == null) {
+            return new BlockExecutionPlan(
+                BlockExecutionClassification.LEGACY_COMPAT,
+                null,
+                validateLegacy(block)
+            );
+        }
+
+        List<String> errors = new ArrayList<>();
+        BlockDataSourceSpec spec = parseSpec(specJson, errors);
+        if (spec != null) {
+            validateCanonical(block, blockState, spec, errors);
+        }
+
+        BlockExecutionClassification classification = errors.isEmpty()
+            ? BlockExecutionClassification.CANONICAL
+            : BlockExecutionClassification.INVALID_MIXED;
+
+        return new BlockExecutionPlan(classification, spec, List.copyOf(errors));
+    }
+
+    public void validateOrThrow(TemplateTree.BlockNode block, BlockExecutionPlan plan) {
+        if (!plan.validationErrors().isEmpty()) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                block.blockCode() + ":" + String.join(",", plan.validationErrors())
+            );
+        }
+    }
+
+    public void validateResolvedContent(TemplateTree.BlockNode block, BlockExecutionPlan plan, Map<String, Object> resolvedContent) {
+        if (!plan.isCanonical() || plan.spec() == null || plan.spec().assign() == null || plan.spec().assign().fields() == null) {
+            return;
+        }
+
+        for (BlockDataSourceSpec.AssignField field : plan.spec().assign().fields()) {
+            if (field == null || StringUtils.isBlank(field.fieldKey())) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(field.required()) && !resolvedContent.containsKey(field.fieldKey())) {
+                throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "CANONICAL_ASSIGNMENT_MISSING:" + block.blockCode());
+            }
+        }
+    }
+
+    private BlockDataSourceSpec parseSpec(String specJson, List<String> errors) {
+        try {
+            JsonNode root = objectMapper.readTree(specJson);
+            if (!root.isObject()) {
+                errors.add("INVALID_DATA_SRC_SPEC_JSON");
+                return null;
+            }
+
+            Set<String> keys = new LinkedHashSet<>();
+            root.fieldNames().forEachRemaining(keys::add);
+            if (!keys.equals(TOP_LEVEL_KEYS)) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+            }
+
+            return objectMapper.convertValue(root, BlockDataSourceSpec.class);
+        } catch (Exception e) {
+            errors.add("INVALID_DATA_SRC_SPEC_JSON");
+            return null;
+        }
+    }
+
+    private List<String> validateLegacy(TemplateTree.BlockNode block) {
+        List<String> errors = new ArrayList<>();
+        if (StringUtils.isBlank(block.dataSourceType())) {
+            errors.add("LEGACY_REFERENCE_INVALID");
+            return errors;
+        }
+
+        String ref = StringUtils.trimToEmpty(block.dataSourceRef());
+        switch (block.dataSourceType()) {
+            case "STATIC", "NEWS_EVENT" -> {
+            }
+            case "DYNAMIC_QUERY" -> {
+                if (!ref.startsWith("pref_table:")) {
+                    errors.add("LEGACY_REFERENCE_INVALID");
+                }
+            }
+            case "CHART_SERIES" -> {
+                if (StringUtils.isBlank(ref)) {
+                    return errors;
+                }
+                if (!(ref.startsWith("dedi:") || ref.startsWith("cltn:") || !ref.contains(":"))) {
+                    errors.add("LEGACY_REFERENCE_INVALID");
+                }
+            }
+            default -> errors.add("LEGACY_REFERENCE_INVALID");
+        }
+        return errors;
+    }
+
+    private void validateCanonical(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        BlockDataSourceSpec spec,
+        List<String> errors
+    ) {
+        if (StringUtils.isBlank(block.dataSourceType()) || spec.locator() == null || StringUtils.isBlank(spec.locator().kind())) {
+            errors.add("DATA_SRC_TYPE_LOCATOR_MISMATCH");
+            return;
+        }
+
+        validateLocator(block, spec, errors);
+        validateQuery(block, spec, errors);
+        validateAssign(block, spec, errors);
+        validateOverridePolicy(block, blockState, spec, errors);
+        validateTransform(spec, errors);
+        validateConflicts(block, blockState, spec, errors);
+        validateCanonicalShape(block, spec, errors);
+    }
+
+    private void validateLocator(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
+        Map<String, Object> rawLocator = objectMapper.convertValue(spec.locator(), new TypeReference<>() {
+        });
+        if (!rawLocator.keySet().stream().allMatch(LOCATOR_KEYS::contains)) {
+            errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+        }
+
+        String locatorKind = spec.locator().kind();
+        boolean valid = switch (block.dataSourceType()) {
+            case "STATIC" -> Set.of("INLINE", "PUBLISH_CONTEXT").contains(locatorKind);
+            case "DYNAMIC_QUERY" -> "PREFERENCE_TABLE".equals(locatorKind);
+            case "CHART_SERIES" -> Set.of("MAIN_CHART", "DEDICATED_CHART", "COLLECTION_CHART").contains(locatorKind);
+            case "NEWS_EVENT" -> "NEWS_EVENT".equals(locatorKind);
+            default -> false;
+        };
+        if (!valid) {
+            errors.add("DATA_SRC_TYPE_LOCATOR_MISMATCH");
+        }
+    }
+
+    private void validateQuery(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
+        Map<String, Object> query = spec.query() == null ? Map.of() : spec.query();
+        if (query.values().stream().anyMatch(value -> value instanceof Map<?, ?> || value instanceof List<?>)) {
+            errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+        }
+
+        Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind(), query);
+        if (!allowedQueryKeys.containsAll(query.keySet())) {
+            errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+        }
+
+        if (query.containsKey("fromDate") && !isValidDate(query.get("fromDate"))) {
+            errors.add("INVALID_QUERY_DATE_RANGE");
+        }
+        if (query.containsKey("toDate") && !isValidDate(query.get("toDate"))) {
+            errors.add("INVALID_QUERY_DATE_RANGE");
+        }
+        if (query.containsKey("fromDate") && query.containsKey("toDate") && isValidDate(query.get("fromDate")) && isValidDate(query.get("toDate"))) {
+            LocalDate fromDate = LocalDate.parse(String.valueOf(query.get("fromDate")));
+            LocalDate toDate = LocalDate.parse(String.valueOf(query.get("toDate")));
+            if (fromDate.isAfter(toDate)) {
+                errors.add("INVALID_QUERY_DATE_RANGE");
+            }
+        }
+        if (query.containsKey("maxItems")) {
+            Integer maxItems = toInteger(query.get("maxItems"));
+            if (maxItems == null || maxItems < 1 || maxItems > 100) {
+                errors.add("INVALID_QUERY_MAX_ITEMS");
+            }
+        }
+
+        if ("NEWS_EVENT".equals(block.dataSourceType()) && query.containsKey("newsId")) {
+            errors.add("UNSUPPORTED_NEWS_EVENT_SINGLE_ITEM_MODE");
+        }
+
+        if ("COLLECTION_CHART".equals(spec.locator().kind()) || ("NEWS_EVENT".equals(block.dataSourceType()) && !query.containsKey("newsId"))) {
+            if (!query.containsKey("fromDate") || !query.containsKey("toDate")) {
+                errors.add("QUERY_REQUIREDNESS_VIOLATION");
+            }
+        }
+
+        if (Set.of("MAIN_CHART", "DEDICATED_CHART", "PREFERENCE_TABLE", "INLINE", "PUBLISH_CONTEXT").contains(spec.locator().kind())
+            && !query.isEmpty()) {
+            errors.add("QUERY_REQUIREDNESS_VIOLATION");
+        }
+    }
+
+    private void validateAssign(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
+        if (spec.assign() == null || spec.assign().fields() == null || spec.assign().fields().isEmpty()) {
+            errors.add("CANONICAL_ASSIGNMENT_MISSING");
+            return;
+        }
+
+        Map<String, Object> rawAssign = objectMapper.convertValue(spec.assign(), new TypeReference<>() {
+        });
+        if (rawAssign != null && !rawAssign.keySet().stream().allMatch(ASSIGN_KEYS::contains)) {
+            errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+        }
+
+        Set<String> fieldKeys = block.fields().stream().map(TemplateTree.FieldNode::fieldKey).collect(java.util.stream.Collectors.toSet());
+        Set<String> assignFieldKeys = new LinkedHashSet<>();
+
+        for (BlockDataSourceSpec.AssignField field : spec.assign().fields()) {
+            if (field == null) {
+                errors.add("CANONICAL_ASSIGNMENT_MISSING");
+                continue;
+            }
+            Map<String, Object> rawField = objectMapper.convertValue(field, new TypeReference<>() {
+            });
+            if (!rawField.keySet().stream().allMatch(ASSIGN_FIELD_KEYS::contains)) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+            }
+            if (StringUtils.isBlank(field.fieldKey()) || StringUtils.isBlank(field.sourcePath()) || !SOURCE_PATH_PATTERN.matcher(field.sourcePath()).matches()) {
+                errors.add("CANONICAL_ASSIGNMENT_MISSING");
+            }
+            if (!assignFieldKeys.add(field.fieldKey()) || !fieldKeys.contains(field.fieldKey())) {
+                errors.add("ASSIGN_FIELD_NOT_DEFINED");
+            }
+        }
+    }
+
+    private void validateOverridePolicy(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        BlockDataSourceSpec spec,
+        List<String> errors
+    ) {
+        BlockDataSourceSpec.IssueStateOverride issueStateOverride = spec.overridePolicy() == null
+            ? null : spec.overridePolicy().issueState();
+        if (issueStateOverride == null) {
+            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+            return;
+        }
+
+        Map<String, Object> rawOverridePolicy = objectMapper.convertValue(spec.overridePolicy(), new TypeReference<>() {
+        });
+        if (rawOverridePolicy != null && !rawOverridePolicy.keySet().stream().allMatch(OVERRIDE_POLICY_KEYS::contains)) {
+            errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+        }
+
+        Map<String, Object> rawIssueState = objectMapper.convertValue(issueStateOverride, new TypeReference<>() {
+        });
+        if (rawIssueState != null && !rawIssueState.keySet().stream().allMatch(ISSUE_STATE_OVERRIDE_KEYS::contains)) {
+            errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+        }
+
+        Set<String> editableFields = block.fields().stream()
+            .filter(field -> "Y".equals(field.isEditableYn()))
+            .map(TemplateTree.FieldNode::fieldKey)
+            .collect(java.util.stream.Collectors.toSet());
+        Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind(), spec.query());
+
+        if (issueStateOverride.query() != null && !allowedQueryKeys.containsAll(issueStateOverride.query())) {
+            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+        }
+        if (issueStateOverride.state() != null && !ALLOWED_STATE_KEYS.containsAll(issueStateOverride.state())) {
+            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+        }
+        if (issueStateOverride.contentInput() != null) {
+            Set<String> allowedContentInput = new LinkedHashSet<>(editableFields);
+            block.fields().stream()
+                .map(TemplateTree.FieldNode::fieldKey)
+                .filter(fieldKey -> issueStateOverride.contentInput().contains(fieldKey))
+                .forEach(allowedContentInput::add);
+
+            for (String contentInput : issueStateOverride.contentInput()) {
+                String rootKey = StringUtils.substringBefore(contentInput, ".");
+                if (!editableFields.contains(rootKey)) {
+                    errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+                }
+            }
+        }
+
+        if (blockState == null || blockState.state().isEmpty()) {
+            return;
+        }
+
+        Set<String> seenIssueInputs = new LinkedHashSet<>();
+        blockState.state().forEach((key, value) -> {
+            if (COMMON_STATE_KEYS.contains(key)) {
+                return;
+            }
+            if (ALLOWED_STATE_KEYS.contains(key)) {
+                seenIssueInputs.add("state:" + key);
+                return;
+            }
+            if (allowedQueryKeys.contains(key)) {
+                seenIssueInputs.add("query:" + key);
+                return;
+            }
+            if (editableFields.contains(key)) {
+                seenIssueInputs.add("content:" + key);
+                return;
+            }
+            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+        });
+
+        Object contentInput = blockState.state().get("contentInput");
+        if (contentInput instanceof Map<?, ?> contentMap && issueStateOverride.contentInput() != null) {
+            for (Object key : contentMap.keySet()) {
+                String keyString = String.valueOf(key);
+                if (!issueStateOverride.contentInput().contains(keyString)) {
+                    errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+                }
+            }
+        }
+    }
+
+    private void validateTransform(BlockDataSourceSpec spec, List<String> errors) {
+        if (spec.transform() == null) {
+            return;
+        }
+        for (BlockDataSourceSpec.TransformRule rule : spec.transform()) {
+            if (rule == null || !TRANSFORM_TYPES.contains(rule.type()) || StringUtils.isBlank(rule.sourcePath())
+                || !SOURCE_PATH_PATTERN.matcher(rule.sourcePath()).matches()) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+            }
+            if ("FORMAT_DATE".equals(rule.type()) && !Set.of("YYYY-MM-DD", "YYYY년 MM월 DD일").contains(rule.format())) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+            }
+            if ("TO_EPOCH_MILLIS".equals(rule.type()) && StringUtils.isNotBlank(rule.timezone()) && !"UTC".equals(rule.timezone())) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+            }
+            if ("LIMIT_ITEMS".equals(rule.type()) && (rule.maxItems() == null || rule.maxItems() < 1 || rule.maxItems() > 100)) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+            }
+        }
+    }
+
+    private void validateConflicts(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        BlockDataSourceSpec spec,
+        List<String> errors
+    ) {
+        String expectedLegacyRef = translateLegacyRef(block, spec);
+        String actualLegacyRef = StringUtils.trimToNull(block.dataSourceRef());
+        if (expectedLegacyRef == null) {
+            if (actualLegacyRef != null && !"MAIN_CHART".equals(spec.locator().kind())) {
+                errors.add("CANONICAL_LEGACY_CONFLICT");
+            }
+        } else if (actualLegacyRef != null && !Objects.equals(expectedLegacyRef, actualLegacyRef)) {
+            errors.add("CANONICAL_LEGACY_CONFLICT");
+        }
+
+        for (TemplateTree.FieldNode field : block.fields()) {
+            if (StringUtils.isBlank(field.colMapping())) {
+                continue;
+            }
+            BlockDataSourceSpec.AssignField assignField = spec.assign().fields().stream()
+                .filter(assign -> field.fieldKey().equals(assign.fieldKey()))
+                .findFirst()
+                .orElse(null);
+            if (assignField == null || !Objects.equals(field.colMapping(), assignField.sourcePath())) {
+                errors.add("CANONICAL_LEGACY_CONFLICT");
+                break;
+            }
+        }
+
+        Integer fieldMetaMaxItems = block.fields().stream()
+            .map(TemplateTree.FieldNode::fieldMeta)
+            .map(this::extractMaxItems)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+        Integer specMaxItems = toInteger(spec.query() == null ? null : spec.query().get("maxItems"));
+        if (fieldMetaMaxItems != null && specMaxItems != null && !Objects.equals(fieldMetaMaxItems, specMaxItems)) {
+            errors.add("CANONICAL_LEGACY_CONFLICT");
+        }
+
+        if (blockState != null && blockState.state().containsKey("plotOnChart")
+            && (spec.overridePolicy() == null || spec.overridePolicy().issueState() == null
+            || spec.overridePolicy().issueState().state() == null
+            || !spec.overridePolicy().issueState().state().contains("plotOnChart"))) {
+            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
+        }
+    }
+
+    private void validateCanonicalShape(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
+        List<String> assignFieldKeys = spec.assign().fields().stream().map(BlockDataSourceSpec.AssignField::fieldKey).toList();
+
+        if ("NEWS_FLOW_CHART".equals(block.blockCode())
+            && !assignFieldKeys.equals(List.of("title", "aggregationTime", "timestamps", "series"))) {
+            errors.add("ASSIGN_FIELD_NOT_DEFINED");
+        }
+        if ("NEWS_ITEM".equals(block.blockCode())
+            && !assignFieldKeys.equals(List.of("aggregationTime", "items"))) {
+            errors.add("ASSIGN_FIELD_NOT_DEFINED");
+        }
+        if ("REFERENCE_TABLE".equals(block.blockCode())
+            && !assignFieldKeys.equals(List.of("tableData"))) {
+            errors.add("ASSIGN_FIELD_NOT_DEFINED");
+        }
+    }
+
+    private Set<String> allowedQueryKeys(String dataSourceType, String locatorKind, Map<String, Object> query) {
+        return switch (dataSourceType) {
+            case "STATIC", "DYNAMIC_QUERY" -> Set.of();
+            case "CHART_SERIES" -> "COLLECTION_CHART".equals(locatorKind)
+                ? Set.of("fromDate", "toDate", "market")
+                : Set.of();
+            case "NEWS_EVENT" -> query != null && query.containsKey("newsId")
+                ? Set.of("newsId", "fromDate", "toDate", "market", "maxItems")
+                : Set.of("fromDate", "toDate", "market", "maxItems");
+            default -> Set.of();
+        };
+    }
+
+    private String translateLegacyRef(TemplateTree.BlockNode block, BlockDataSourceSpec spec) {
+        if (spec.locator() == null) {
+            return null;
+        }
+        return switch (block.dataSourceType()) {
+            case "DYNAMIC_QUERY" -> spec.locator().refId() == null ? null : "pref_table:" + spec.locator().refId();
+            case "CHART_SERIES" -> switch (spec.locator().kind()) {
+                case "DEDICATED_CHART" -> StringUtils.isBlank(spec.locator().refCode()) ? null : "dedi:" + spec.locator().refCode();
+                case "COLLECTION_CHART" -> StringUtils.isBlank(spec.locator().refCode()) ? null : "cltn:" + spec.locator().refCode();
+                case "MAIN_CHART" -> StringUtils.defaultIfBlank(spec.locator().refCode(), block.blockCode());
+                default -> null;
+            };
+            default -> null;
+        };
+    }
+
+    private Integer extractMaxItems(String fieldMeta) {
+        if (StringUtils.isBlank(fieldMeta)) {
+            return null;
+        }
+        try {
+            JsonNode metaNode = objectMapper.readTree(fieldMeta);
+            return metaNode.has("maxItems") ? metaNode.get("maxItems").asInt() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Integer toInteger(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private boolean isValidDate(Object value) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            LocalDate.parse(String.valueOf(value));
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+}

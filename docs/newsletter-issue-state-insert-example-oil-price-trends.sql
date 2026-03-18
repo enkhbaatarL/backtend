@@ -25,7 +25,7 @@ START TRANSACTION;
 
 SET @newsletter_master_name := 'Oil Price Trends';
 SET @newsletter_master_id := NULL;
-SET @issue_no := 55;
+SET @issue_no := 52;
 
 SELECT nws_ltr_mstr_id
 INTO @newsletter_master_id
@@ -68,7 +68,7 @@ WHERE nws_ltr_tmplt_id = @tmplt_id
 SELECT nws_ltr_tmplt_sctn_id INTO @sec_title
 FROM tmd_nwsltrtmpltsctn
 WHERE nws_ltr_tmplt_id = @tmplt_id
-  AND sctn_cd = 'TITLE'
+  AND sctn_cd = 'TITLE_SPECIALIZED'
   AND del_yn = 'N';
 
 SELECT nws_ltr_tmplt_sctn_id INTO @sec_summary
@@ -134,7 +134,7 @@ WHERE nws_ltr_tmplt_sctn_id = @sec_date_issue
 SELECT nws_ltr_tmplt_blk_id INTO @blk_title_main
 FROM tmd_nwsltrtmpltblk
 WHERE nws_ltr_tmplt_sctn_id = @sec_title
-  AND blk_cd = 'TITLE_MAIN'
+  AND blk_cd = 'TITLE_MAIN_SPECIALIZED'
   AND del_yn = 'N';
 
 SELECT nws_ltr_tmplt_blk_id INTO @blk_summary_body

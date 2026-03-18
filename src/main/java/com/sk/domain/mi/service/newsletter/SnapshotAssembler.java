@@ -129,9 +129,10 @@ public class SnapshotAssembler {
     }
 
     private String resolveSnapshotBlockId(TemplateTree.BlockNode blockNode, IssueStateTree.BlockStateNode blockState) {
+        String baseId = "blk-" + blockNode.blockCode() + "-" + blockNode.id();
         return blockState.issueBlockStateId() != null
-            ? "blk-" + blockNode.blockCode() + "-" + blockState.issueBlockStateId()
-            : "blk-" + blockNode.blockCode();
+            ? baseId + "-" + blockState.issueBlockStateId()
+            : baseId;
     }
 
     private String resolveTarget(Integer targetCompanyNo) {

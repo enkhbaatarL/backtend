@@ -6,6 +6,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueOriginalSnapshotRes;
 import com.sk.domain.mi.service.MiNewsletterService;
 import com.sk.domain.mi.service.newsletter.NewsletterDetailV2Service;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -68,6 +69,23 @@ public class MiNewsletterDedicatedController {
         Integer userNo = authorizationService.getUserNo();
         return BaseResponseFactory.create(
             newsletterDetailV2Service.getNewsletterDetail(companyNo, userNo, newsletterId, issueNo)
+        );
+    }
+
+    @ApiOrder(6)
+    @Parameter(name = "companyNo", description = "고객회사번호")
+    @Operation(summary = "뉴스레터 original snapshot 조회", description = "published issue의 org_snpsht_json 원본 스냅샷만 그대로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping(value = "/{newsletterId}/{issueNo}/original-snapshot", params = "companyNo")
+    @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
+        Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
+    public BaseResponse<NewsletterIssueOriginalSnapshotRes> getNewsletterOriginalSnapshot(
+        @PathVariable("newsletterId") Integer newsletterId,
+        @PathVariable("issueNo") Integer issueNo,
+        @RequestParam(value = "companyNo") Integer companyNo
+    ) {
+        return BaseResponseFactory.create(
+            newsletterDetailV2Service.getOriginalSnapshot(companyNo, newsletterId, issueNo)
         );
     }
 }

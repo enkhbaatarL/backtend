@@ -70,6 +70,10 @@ public class NewsletterTemplateBlock extends BaseEntity {
     @Comment("데이터소스참조")
     private String dataSourceRef;
 
+    @Column(name = "data_src_spec_json", columnDefinition = "json")
+    @Comment("데이터소스명세JSON")
+    private String dataSourceSpecJson;
+
     @Builder
     public NewsletterTemplateBlock(
         Long newsletterTemplateBlockId,
@@ -83,7 +87,8 @@ public class NewsletterTemplateBlock extends BaseEntity {
         String plotOnChartYn,
         Integer targetCompanyNo,
         String dataSourceTypeCode,
-        String dataSourceRef
+        String dataSourceRef,
+        String dataSourceSpecJson
     ) {
         this.newsletterTemplateBlockId = newsletterTemplateBlockId;
         this.sectionId = sectionId;
@@ -97,5 +102,6 @@ public class NewsletterTemplateBlock extends BaseEntity {
         this.targetCompanyNo = targetCompanyNo;
         this.dataSourceTypeCode = dataSourceTypeCode;
         this.dataSourceRef = dataSourceRef;
+        this.dataSourceSpecJson = dataSourceSpecJson;
     }
 }

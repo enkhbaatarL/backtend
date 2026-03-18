@@ -36,10 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class NewsletterIssuePreviewWriteService {
 
     private static final Set<String> FIXED_SECTION_CODES = Set.of(
-        "COVER", "DATE_ISSUE", "TITLE", "SUMMARY", "NEWS_FLOW", "REFERENCE", "FOOTER"
+        "COVER", "DATE_ISSUE", "TITLE_SPECIALIZED", "SUMMARY", "NEWS_FLOW",
+        "REFERENCE1", "REFERENCE2", "REFERENCE3", "REFERENCE4", "FOOTER"
     );
     private static final Set<String> REPEATABLE_BLOCK_CODES = Set.of(
-        "NEWS_ITEM", "REFERENCE_TEXT", "REFERENCE_CHART", "REFERENCE_TABLE"
+        "NEWS_ITEM"
     );
 
     private final NewsletterIssueOriginalRepository issueOriginalRepository;
@@ -58,7 +59,8 @@ public class NewsletterIssuePreviewWriteService {
         Map<String, ResolvedBlockData> resolvedData = blockDataResolver.resolveAll(
             template,
             issueState,
-            issueOriginal.getSourceNewsletterPublishHistory()
+            issueOriginal.getSourceNewsletterPublishHistory(),
+            false
         );
 
         return new NewsletterIssuePreviewRes(
