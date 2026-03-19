@@ -77,9 +77,9 @@ public class IssueStateLoader {
         Map<Long, List<NewsletterIssueBlockState>> blocksBySectionStateId,
         Map<Long, TemplateTree.BlockNode> templateBlockMap
     ) {
-        Map<String, Object> sectionStateJson = withoutDeprecatedUiState(
+        Map<String, Object> sectionStateJson = ensureSectionRemovedDefault(withoutDeprecatedUiState(
             parseJson(persistedSectionState == null ? null : persistedSectionState.getSectionStateJson())
-        );
+        ));
         List<NewsletterIssueBlockState> persistedBlocks = Optional.ofNullable(persistedSectionState)
             .map(NewsletterIssueSectionState::getNewsletterIssueSectionStateId)
             .map(blocksBySectionStateId::get)
@@ -108,6 +108,11 @@ public class IssueStateLoader {
         List<IssueStateTree.BlockStateNode> blocks = templateSection.blocks().stream()
             .flatMap(templateBlock -> {
                 List<NewsletterIssueBlockState> matchedPersistedBlocks = persistedBlocksByTemplateBlockId.get(templateBlock.id());
+                if ("NEWS_ITEM".equals(templateBlock.blockCode())) {
+                    NewsletterIssueBlockState firstPersistedBlock = matchedPersistedBlocks == null || matchedPersistedBlocks.isEmpty()
+                        ? null : matchedPersistedBlocks.get(0);
+                    return java.util.stream.Stream.of(buildBlockState(templateSection, templateBlock, firstPersistedBlock, templateBlockMap));
+                }
                 if (matchedPersistedBlocks == null || matchedPersistedBlocks.isEmpty()) {
                     return java.util.stream.Stream.of(IssueStateTree.BlockStateNode.defaultFrom(templateBlock));
                 }
@@ -147,7 +152,7 @@ public class IssueStateLoader {
             throw new IllegalStateException("ISSUE_BLOCK_STATE_SECTION_MISMATCH: blockId=" + referencedBlock.id());
         }
 
-        Map<String, Object> blockStateJson = withoutDeprecatedUiState(parseJson(persistedBlockState.getBlockStateJson()));
+        Map<String, Object> blockStateJson = sanitizeBlockState(templateBlock, withoutDeprecatedUiState(parseJson(persistedBlockState.getBlockStateJson())));
         if (blockStateJson.containsKey("plotOnChart") && !"Y".equals(templateBlock.plotOnChartYn())) {
             throw new IllegalStateException("PLOT_ON_CHART_NOT_SUPPORTED: blockId=" + templateBlock.id());
         }
@@ -209,9 +214,21 @@ public class IssueStateLoader {
         }
         Map<String, Object> sanitized = new LinkedHashMap<>(source);
         sanitized.remove("collapsed");
-        sanitized.remove("removed");
         sanitized.remove("showDivider");
         return sanitized;
+    }
+
+    private Map<String, Object> ensureSectionRemovedDefault(Map<String, Object> source) {
+        Map<String, Object> normalized = new LinkedHashMap<>(source == null ? Map.of() : source);
+        normalized.putIfAbsent("removed", Boolean.FALSE);
+        return normalized;
+    }
+
+    private Map<String, Object> sanitizeBlockState(TemplateTree.BlockNode templateBlock, Map<String, Object> source) {
+        if (!"NEWS_ITEM".equals(templateBlock.blockCode())) {
+            return source;
+        }
+        return Map.of();
     }
 
     @SuppressWarnings("unchecked")

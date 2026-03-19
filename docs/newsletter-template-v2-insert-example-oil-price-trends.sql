@@ -31,7 +31,7 @@
 --   `REFERENCE2 = HEADER + CHART + CONTENT`
 --   `REFERENCE3 = HEADER + TABLE + CONTENT`
 -- - `NEWS_ITEM` is a repeatable template block. One template block definition may render
---   1..N issue block state rows in the same section.
+--   1..N runtime-expanded snapshot blocks from `NEWS_EVENT` resolver results.
 -- - Editor-modified values are written through delta/snapshot paths; `overridePolicy.issueState`
 --   should only keep values that are directly owned by issue block state
 
@@ -358,10 +358,7 @@ VALUES
 (@sec_news_flow,  'NEWS_ITEM',        'NEWS_CARD', 'GENERAL', '개별 뉴스 카드 (repeatable 1..N)', 1, 'Y', 'N', NULL, 'NEWS_EVENT',    NULL,
  JSON_OBJECT(
      'locator', JSON_OBJECT('kind', 'NEWS_EVENT'),
-     'query', JSON_OBJECT(
-         'fromDate', @news_from_date,
-         'toDate', @news_to_date
-     ),
+     'query', JSON_OBJECT(),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
          JSON_OBJECT('fieldKey', 'newsId', 'sourcePath', 'newsId', 'required', FALSE),
          JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
@@ -376,9 +373,9 @@ VALUES
      )),
      'transform', JSON_ARRAY(),
      'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
-         'query', JSON_ARRAY('fromDate', 'toDate'),
-         'state', JSON_ARRAY('plotOnChart'),
-         'contentInput', JSON_ARRAY('originalUrl')
+         'query', JSON_ARRAY(),
+         'state', JSON_ARRAY(),
+         'contentInput', JSON_ARRAY()
      ))
  ), 'SYSTEM', 'SYSTEM'),
 (@sec_reference1, 'REFERENCE_HEADER', 'TEXT',      'GENERAL', '참고 데이터 제목/설명',           0, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'STATIC',        NULL,
@@ -401,7 +398,6 @@ VALUES
      'locator', JSON_OBJECT('kind', 'DEDICATED_CHART', 'refCode', @reference1_chart_type),
      'query', JSON_OBJECT(),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
-         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
          JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
          JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
      )),
@@ -444,12 +440,8 @@ VALUES
 (@sec_reference2, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('cltn:', @reference2_chart_type),
  JSON_OBJECT(
      'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference2_chart_type),
-     'query', JSON_OBJECT(
-         'fromDate', @collection_from_date,
-         'toDate', @collection_to_date
-     ),
+     'query', JSON_OBJECT(),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
-         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
          JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
          JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
      )),
@@ -535,12 +527,8 @@ VALUES
 (@sec_reference4, 'REFERENCE_CHART',  'CHART',     'GENERAL', '참고 차트 블록',                 1, 'Y', 'N', @reference_specialized_tgt_cmpny_no, 'CHART_SERIES',  CONCAT('cltn:', @reference4_chart_type),
  JSON_OBJECT(
      'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference4_chart_type),
-     'query', JSON_OBJECT(
-         'fromDate', @collection_from_date,
-         'toDate', @collection_to_date
-     ),
+     'query', JSON_OBJECT(),
      'assign', JSON_OBJECT('fields', JSON_ARRAY(
-         JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
          JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
          JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
      )),
@@ -798,7 +786,7 @@ VALUES
 (@blk_news_flow_chart, 'timestamps',      '차트 시간축',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_flow_chart, 'series',          '차트 시리즈',    3, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
--- NEWS_ITEM (repeatable template block)
+-- NEWS_ITEM (runtime-expanded snapshot block template)
 (@blk_news_item, 'newsId',       '뉴스 ID',    0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'title',        '제목',       1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'content',      '내용',       2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
@@ -806,7 +794,7 @@ VALUES
 (@blk_news_item, 'createdDate',  '날짜',       4, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'createTime',   '시간',       5, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'source',       '출처',       6, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_news_item, 'originalUrl',  '원문 링크',   7, NULL, 'Y', 'N', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'originalUrl',  '원문 링크',   7, NULL, 'Y', 'N', '{"editorMutable":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'showInChart',  '차트 표시',   8, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'trend',        '추세',       9, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 
@@ -815,9 +803,8 @@ VALUES
 (@blk_reference1_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"WTI: 청색, 좌측\\n달러인덱스: 회색, 우측","maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE1_CHART
-(@blk_reference1_chart, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_reference1_chart, 'timestamps',      '참조 차트 시간축', 1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_reference1_chart, 'series',          '차트 시리즈',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_chart, 'timestamps',      '참조 차트 시간축', 0, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_chart, 'series',          '차트 시리즈',    1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE1_CONTENT
 (@blk_reference1_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
@@ -827,9 +814,8 @@ VALUES
 (@blk_reference2_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE2_CHART
-(@blk_reference2_chart, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_reference2_chart, 'timestamps',      '참조 차트 시간축', 1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_reference2_chart, 'series',          '차트 시리즈',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_chart, 'timestamps',      '참조 차트 시간축', 0, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_chart, 'series',          '차트 시리즈',    1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE2_CONTENT
 (@blk_reference2_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
@@ -849,9 +835,8 @@ VALUES
 (@blk_reference4_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"미국 10년물 국채금리: 청색,좌측\\n미국 10년-2년물 국채금리 스프레드: 회색,우측","maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE4_CHART
-(@blk_reference4_chart, 'aggregationTime', '집계 시간 설명', 0, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_reference4_chart, 'timestamps',      '참조 차트 시간축', 1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_reference4_chart, 'series',          '차트 시리즈',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_chart, 'timestamps',      '참조 차트 시간축', 0, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_chart, 'series',          '차트 시리즈',    1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE4_CONTENT
 (@blk_reference4_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),

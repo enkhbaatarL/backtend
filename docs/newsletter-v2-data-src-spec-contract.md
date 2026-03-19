@@ -20,7 +20,8 @@
 - 기존 read/preview/publish는 한시적으로 legacy fallback을 허용한다.
 - `data_src_spec_json`이 존재하는 block은 canonical path만 사용한다.
 - canonical spec과 legacy 값이 충돌하면 publish/preview는 fail-fast 한다.
-- issue state는 spec을 바꾸지 않고 `overridePolicy`가 허용한 입력만 override 한다.
+- issue state는 spec을 바꾸지 않고 `overridePolicy`가 허용한 publish-time assembly input만 override 한다.
+- 단, `NEWS_ITEM`은 `NEWS_EVENT` 조회 결과를 snapshot assemble 시 runtime-expanded block으로 펼친다. 반복 개수는 issue block state가 아니라 resolver 결과가 결정한다.
 
 ## 2. Endpoint
 
@@ -53,10 +54,7 @@
   "locator": {
     "kind": "NEWS_EVENT"
   },
-  "query": {
-    "fromDate": "2026-03-10",
-    "toDate": "2026-03-16"
-  },
+  "query": {},
   "assign": {
     "fields": [
       { "fieldKey": "newsId", "sourcePath": "newsId", "required": false },
@@ -74,9 +72,9 @@
   "transform": [],
   "overridePolicy": {
     "issueState": {
-      "query": ["fromDate", "toDate"],
-      "state": ["plotOnChart"],
-      "contentInput": ["originalUrl"]
+      "query": [],
+      "state": [],
+      "contentInput": []
     }
   }
 }
@@ -144,7 +142,7 @@ family별 허용 조합:
 | `STATIC` | 없음 | - | `query`는 빈 object 또는 생략만 허용 |
 | `DYNAMIC_QUERY` | 없음 | - | 실제 query 정의는 preference table master가 정본 |
 | `CHART_SERIES` | `fromDate`, `toDate` | string | `COLLECTION_CHART`일 때만 허용 |
-| `NEWS_EVENT` | `fromDate`, `toDate` | string | list mode only |
+| `NEWS_EVENT` | `fromDate`, `toDate` | string | legacy 호환 입력으로만 허용, runtime 필수 아님 |
 
 추가 규칙:
 
@@ -163,7 +161,7 @@ family별 허용 조합:
 | `CHART_SERIES` | `MAIN_CHART` | 공통 | 없음 | 없음 | 모든 key |
 | `CHART_SERIES` | `DEDICATED_CHART` | 공통 | 없음 | 없음 | 모든 key |
 | `CHART_SERIES` | `COLLECTION_CHART` | 공통 | `fromDate`, `toDate` | 없음 | 없음 |
-| `NEWS_EVENT` | `NEWS_EVENT` | 공통 | `fromDate`, `toDate` | 없음 | 없음 |
+| `NEWS_EVENT` | `NEWS_EVENT` | 공통 | 없음 | `fromDate`, `toDate` | 없음 |
 
 mode 판정 규칙:
 
@@ -172,9 +170,13 @@ mode 판정 규칙:
 
 requiredness validation 규칙:
 
+- required key는 template `query`와 issue state override query를 merge한 effective query 기준으로 판정한다.
 - required key 누락 시 preview/publish 모두 fail-fast
 - forbidden key 존재 시 preview/publish 모두 fail-fast
 - `fromDate`와 `toDate`가 함께 존재하면 `fromDate <= toDate`를 만족해야 한다
+- `COLLECTION_CHART`는 template `query`를 비워 둘 수 있고, 이 경우 required key는 issue state override가 모두 제공해야 한다
+- `NEWS_EVENT`는 현재 `nws_ltr_pub_id` 기준 조회를 사용하므로 `fromDate`, `toDate`는 runtime 필수 입력이 아니다. legacy row에 남아 있는 값은 허용하되 필수 검사에는 포함하지 않는다.
+- `NEWS_ITEM`의 사용자 수정은 issue state가 아니라 snapshot 편집 계층에서 처리한다.
 
 ### 3-5. `assign`
 
@@ -262,7 +264,7 @@ rule별 허용 필드:
 
 ### 3-7. `overridePolicy`
 
-`overridePolicy`는 issue state가 override 가능한 입력 whitelist다.
+`overridePolicy`는 issue state가 override 가능한 publish-time assembly input whitelist다.
 
 shape:
 
@@ -270,7 +272,7 @@ shape:
 {
   "issueState": {
     "query": ["fromDate", "toDate"],
-    "state": ["plotOnChart"],
+    "state": ["plotOnChart", "removed"],
     "contentInput": ["text", "title", "items.*.title", "items.*.content"]
   }
 }
@@ -286,9 +288,11 @@ shape:
 whitelist 규칙:
 
 - `query`는 해당 family의 허용 query key subset이어야 한다
-- `state`는 현재 `plotOnChart`만 허용한다
-- `contentInput`은 `assign.fields.fieldKey`와 `BlockField.fld_key` 중 `is_editable_yn='Y'`인 값의 subset이어야 한다
+- `state`는 현재 `plotOnChart`, `removed`만 허용한다
+- `contentInput`은 state-owned editable subset이어야 한다
+- 즉 `assign.fields.fieldKey`와 `BlockField.fld_key` 중 `is_editable_yn='Y'`이면서 issue block state가 직접 소유하는 값만 포함할 수 있다
 - whitelist에 없는 입력은 issue state에 존재해도 무시하지 않고 validation error로 처리한다
+- 단, `NEWS_ITEM`은 runtime-expanded snapshot block이므로 issue state override를 사용하지 않는다
 
 ### 3-8. Field Ownership Metadata Boundary
 
@@ -384,10 +388,7 @@ whitelist 규칙:
 ```json
 {
   "locator": { "kind": "NEWS_EVENT" },
-  "query": {
-    "fromDate": "2026-03-10",
-    "toDate": "2026-03-16"
-  },
+  "query": {},
   "assign": {
     "fields": [
       { "fieldKey": "newsId", "sourcePath": "newsId", "required": false },
@@ -405,9 +406,9 @@ whitelist 규칙:
   "transform": [],
   "overridePolicy": {
     "issueState": {
-      "query": ["fromDate", "toDate"],
-      "state": ["plotOnChart"],
-      "contentInput": ["originalUrl"]
+      "query": [],
+      "state": [],
+      "contentInput": []
     }
   }
 }
@@ -475,7 +476,7 @@ preview/publish 에러 응답은 `BaseResponse<?>` + 명시적 error code를 사
 - `data_src_type_cd`와 `locator.kind` 조합이 family matrix와 일치
 - `assign.fields` 존재, non-empty, unique
 - `assign.fields.fieldKey` 전부가 실제 `BlockField.fld_key`에 존재
-- `overridePolicy.issueState.contentInput`는 editable field subset
+- `overridePolicy.issueState.contentInput`는 state-owned editable field subset
 - `overridePolicy.issueState.query`는 family query whitelist subset
 - `overridePolicy.issueState.state`는 허용 enum subset
 - `transform` rule이 whitelist를 위반하지 않음

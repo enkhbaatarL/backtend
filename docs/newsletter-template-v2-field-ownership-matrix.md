@@ -27,10 +27,10 @@
 | 레벨 | 항목 | 기본값 | 사용자 수정 | 의미 |
 |---|---|---:|---|---|
 | Section | `vsblty_yn` | `Y` | 가능 | 보이기/숨기기 |
-| Section | `removed` | `false` | 가능 | 발행본 편집에서 제외 |
+| Section | `removed` | `false` | 가능 | 항상 존재하는 issue section state 기본 키, 발행본 편집에서 제외 |
 | Section | `del_yn` | `N` | 사용자 수정 아님 | DB row soft delete |
 | Block | `vsblty_yn` | `Y` | 가능 | 보이기/숨기기 |
-| Block | `removed` | `false` | 가능 | 발행본 편집에서 제외 |
+| Block | `removed` | 없음 | 가능 | 선택적으로만 존재하는 issue block state 키, 발행본 편집에서 제외 |
 | Block | `del_yn` | `N` | 사용자 수정 아님 | DB row soft delete |
 
 ### 1-4. Ownership Metadata Boundary
@@ -68,18 +68,16 @@
 | `NEWS_FLOW` | `NEWS_ITEM` | `createdDate` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
 | `NEWS_FLOW` | `NEWS_ITEM` | `createTime` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
 | `NEWS_FLOW` | `NEWS_ITEM` | `source` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
-| `NEWS_FLOW` | `NEWS_ITEM` | `originalUrl` | 기본값 없음 | 예 | 예 | `delta/snapshot -> state -> resolved content` | `contentInput.originalUrl` |
-| `NEWS_FLOW` | `NEWS_ITEM` | `showInChart` | issue state `plotOnChart` 또는 news resolver fallback | 예 | 예 | `delta/snapshot -> state -> resolved content` | API에서는 `showInChart`, 내부 저장은 `plotOnChart` |
+| `NEWS_FLOW` | `NEWS_ITEM` | `originalUrl` | 기본값 없음 | 아니오 | 예 | `snapshot only -> resolved content` | runtime-expanded block, 백엔드 issue state 미사용 |
+| `NEWS_FLOW` | `NEWS_ITEM` | `showInChart` | news resolver fallback | 아니오 | 예 | `snapshot only -> resolved content` | runtime-expanded block, snapshot top-level `plotOnChart`와 함께 노출 |
 | `NEWS_FLOW` | `NEWS_ITEM` | `trend` | news resolver | 아니오 | 아니오 | `resolved content` | runtime resolve |
 | `REFERENCE1` | `REFERENCE_HEADER` | `title` | template default `"WTI 및 달러 인덱스 5분 차트"` | 아니오 | 예 | `delta/snapshot -> template default` | 필수입력, state 저장 없음, `maxLength=100` |
 | `REFERENCE1` | `REFERENCE_HEADER` | `description` | template default `"WTI: 청색, 좌측\n달러인덱스: 회색, 우측"` | 아니오 | 예 | `delta/snapshot -> template default` | 선택입력, state 저장 없음, `maxLength=500` |
-| `REFERENCE1` | `REFERENCE_CHART` | `aggregationTime` | chart resolver | 아니오 | 아니오 | `resolved content` | `REFERENCE1` 기준, runtime resolve |
 | `REFERENCE1` | `REFERENCE_CHART` | `timestamps` | chart resolver | 아니오 | 아니오 | `resolved content` | `REFERENCE1` 기준, runtime resolve |
 | `REFERENCE1` | `REFERENCE_CHART` | `series` | chart resolver | 아니오 | 아니오 | `resolved content` | `REFERENCE1` 기준, runtime resolve |
 | `REFERENCE1` | `REFERENCE_CONTENT` | `content` | template field 정의만 존재, 기본값 `null` 또는 `''` | 아니오 | 예 | `delta/snapshot only` | state 저장 없음, 사용자 입력 시 delta/snapshot만 저장, `maxLength=500` |
 | `REFERENCE2` | `REFERENCE_HEADER` | `title` | 기본값 없음 | 아니오 | 예 | `delta/snapshot only` | 필수입력, `maxLength=100` |
 | `REFERENCE2` | `REFERENCE_HEADER` | `description` | 기본값 없음 | 아니오 | 예 | `delta/snapshot only` | 선택입력, `maxLength=500` |
-| `REFERENCE2` | `REFERENCE_CHART` | `aggregationTime` | collection chart resolver (`WTI_SNP500`) | 아니오 | 아니오 | `resolved content` | `tmd_nws_ltr_cltn_chrt.start_date/end_date` + runtime resolve |
 | `REFERENCE2` | `REFERENCE_CHART` | `timestamps` | collection chart resolver (`WTI_SNP500`) | 아니오 | 아니오 | `resolved content` | `midb-ske.tif_ske_chrt.timestamp` + `midb.tif_nws_ltr_chrt.timestamp` |
 | `REFERENCE2` | `REFERENCE_CHART` | `series` | collection chart resolver (`WTI_SNP500`) | 아니오 | 아니오 | `resolved content` | `.SPX`/`CLc1`, colors `grey`/`blue`, `ChartData.series` |
 | `REFERENCE2` | `REFERENCE_CONTENT` | `content` | template field 정의만 존재, 기본값 `null` 또는 `''` | 아니오 | 예 | `delta/snapshot only` | state 저장 없음, 사용자 입력 시 delta/snapshot만 저장, `maxLength=500` |
@@ -89,7 +87,6 @@
 | `REFERENCE3` | `REFERENCE_CONTENT` | `content` | template field 정의만 존재, 기본값 `null` 또는 `''` | 아니오 | 예 | `delta/snapshot only` | state 저장 없음, 사용자 입력 시 delta/snapshot만 저장, `maxLength=500` |
 | `REFERENCE4` | `REFERENCE_HEADER` | `title` | template default `"미국 10년물 국채금리 및 미 10년-2년물 국채 금리 스프레드 추이"` | 아니오 | 예 | `delta/snapshot -> template default` | `REFERENCE1` 동일 구조, 필수입력, state 저장 없음, `maxLength=100` |
 | `REFERENCE4` | `REFERENCE_HEADER` | `description` | template default `"미국 10년물 국채금리: 청색,좌측\n미국 10년-2년물 국채금리 스프레드: 회색,우측"` | 아니오 | 예 | `delta/snapshot -> template default` | `REFERENCE1` 동일 구조, 선택입력, state 저장 없음, `maxLength=500` |
-| `REFERENCE4` | `REFERENCE_CHART` | `aggregationTime` | collection chart resolver (`GOV10_2SPRD`) | 아니오 | 아니오 | `resolved content` | `tmd_nws_ltr_cltn_chrt.start_date/end_date` + runtime resolve |
 | `REFERENCE4` | `REFERENCE_CHART` | `timestamps` | collection chart resolver (`GOV10_2SPRD`) | 아니오 | 아니오 | `resolved content` | `midb.tif_interestratesr.date` + `tmd_nws_ltr_cltn_chrt.start_date/end_date` |
 | `REFERENCE4` | `REFERENCE_CHART` | `series` | collection chart resolver (`GOV10_2SPRD`) | 아니오 | 아니오 | `resolved content` | `TRUS10T`/`TRUS10T-TRUS2YT`, colors `blue`/`grey`, `ChartData.series` |
 | `REFERENCE4` | `REFERENCE_CONTENT` | `content` | template field 정의만 존재, 기본값 `null` 또는 `''` | 아니오 | 예 | `delta/snapshot only` | state 저장 없음, 사용자 입력 시 delta/snapshot만 저장, `maxLength=500` |
@@ -100,19 +97,19 @@
 
 | Section | Block | state에 직접 저장되는 값 |
 |---|---|---|
+| `*` | section-level | `removed` |
 | `COVER` | `COVER_IMAGE_CARD` | `showImage` |
-| `NEWS_FLOW` | `NEWS_FLOW_CHART` | `title`, `aggregationTime` |
-| `NEWS_FLOW` | `NEWS_ITEM` | `plotOnChart`, `fromDate`, `toDate` |
-| `REFERENCE1` | `REFERENCE_CHART` | `fromDate`, `toDate` |
-| `REFERENCE2` | `REFERENCE_CHART` | `fromDate`, `toDate` |
-| `REFERENCE4` | `REFERENCE_CHART` | `fromDate`, `toDate` |
+| `NEWS_FLOW` | `NEWS_FLOW_CHART` | `removed`, `title`, `aggregationTime` |
+| `REFERENCE1` | `REFERENCE_CHART` | `removed` |
+| `REFERENCE2` | `REFERENCE_CHART` | `removed`, `fromDate`, `toDate` |
+| `REFERENCE4` | `REFERENCE_CHART` | `removed`, `fromDate`, `toDate` |
 | `FOOTER` | `FOOTER_NOTICE` | `showLogo` |
 
 ## 3-1. Repeatable Block Rule
 
 | Block | 정책 | 표현 방식 | 비고 |
 |---|---|---|---|
-| `NEWS_ITEM` | repeatable `1..N` | template block 1건 + 동일 `nws_ltr_tmplt_blk_id`를 참조하는 issue block state row 다건 | 별도 `blk_inst_no` 없음 |
+| `NEWS_ITEM` | repeatable `1..N` | template block 1건 + `NEWS_EVENT` 조회 결과 개수만큼 runtime-expanded snapshot block 생성 | snapshot block id는 `blk-NEWS_ITEM-{newsId}`, 0건이면 `blk-NEWS_ITEM-empty` |
 
 ## 4. editor 수정 가능하지만 state 비소유인 필드
 
@@ -139,13 +136,13 @@
 | `REFERENCE1` | `REFERENCE_HEADER` | `title`, `description` | template 기본값 확정, issue state 미저장, 사용자 수정 시 delta/snapshot만 저장 |
 | `REFERENCE1` | `REFERENCE_CONTENT` | `content` | 기본값은 `null`/`''`, issue state 미저장, delta/snapshot-only 저장 정책 확정 |
 | `REFERENCE2` | `REFERENCE_HEADER` | `title`, `description` | title required / description optional 확정, 기본값 부여 여부 미정 |
-| `REFERENCE2` | `REFERENCE_CHART` | `aggregationTime`, `timestamps`, `series` | `WTI_SNP500` collection chart 기준. `tmd_nws_ltr_cltn_chrt`에서 `nws_ltr_pub_id + cltn_chrt_type`로 기간을 읽고, `midb-ske.tif_ske_chrt`에서 `.SPX`, `midb.tif_nws_ltr_chrt`에서 `CLc1`를 각각 조회 후 `ChartData`로 resolve |
+| `REFERENCE2` | `REFERENCE_CHART` | `timestamps`, `series` | `WTI_SNP500` collection chart 기준. `tmd_nws_ltr_cltn_chrt`에서 `nws_ltr_pub_id + cltn_chrt_type`로 기간을 읽고, `midb-ske.tif_ske_chrt`에서 `.SPX`, `midb.tif_nws_ltr_chrt`에서 `CLc1`를 각각 조회 후 `ChartData`로 resolve |
 | `REFERENCE2` | `REFERENCE_CONTENT` | `content` | 기본값은 `null`/`''`, issue state 미저장, delta/snapshot-only 저장 정책 확정 |
 | `REFERENCE3` | `REFERENCE_HEADER` | `title`, `description` | title만 template 기본값 사용, description은 기본값 없음 |
 | `REFERENCE3` | `REFERENCE_TABLE` | `tableData` | `midb.tmd_nws_ltr_pref_tbl.json_value`를 `pref_tbl_cd='OIL_PRC_TRND'` + `nws_ltr_pub_id` 조건으로 조회 후 `TableRes`로 resolve |
 | `REFERENCE3` | `REFERENCE_CONTENT` | `content` | 기본값은 `null`/`''`, issue state 미저장, delta/snapshot-only 저장 정책 확정 |
 | `REFERENCE4` | `REFERENCE_HEADER` | `title`, `description` | `REFERENCE1` 동일 구조, header 기본값 확정 |
-| `REFERENCE4` | `REFERENCE_CHART` | `aggregationTime`, `timestamps`, `series` | `GOV10_2SPRD` collection chart 기준. `tmd_nws_ltr_cltn_chrt`에서 `nws_ltr_pub_id + cltn_chrt_type`로 기간을 읽고, `midb.tif_interestratesr`에서 `TRUS10T`/`TRUS10T-TRUS2YT`를 각각 조회 후 `ChartData`로 resolve |
+| `REFERENCE4` | `REFERENCE_CHART` | `timestamps`, `series` | `GOV10_2SPRD` collection chart 기준. `tmd_nws_ltr_cltn_chrt`에서 `nws_ltr_pub_id + cltn_chrt_type`로 기간을 읽고, `midb.tif_interestratesr`에서 `TRUS10T`/`TRUS10T-TRUS2YT`를 각각 조회 후 `ChartData`로 resolve |
 | `REFERENCE4` | `REFERENCE_CONTENT` | `content` | 기본값은 `null`/`''`, issue state 미저장, delta/snapshot-only 저장 정책 확정 |
 
 ## 6. 유지 원칙

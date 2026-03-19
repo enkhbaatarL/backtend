@@ -38,44 +38,26 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
         IssueStateTree.BlockStateNode blockState,
         NewsletterPublishHistory pubHist
     ) {
-        Map<String, Object> content;
         if (pubHist == null) {
-            content = emptyItem(Boolean.FALSE);
-        } else {
-            List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(pubHist);
-            int index = resolveItemIndex(blockState);
-            try {
-                content = index >= events.size()
-                    ? emptyItem(resolveShowInChart(blockState, Boolean.FALSE))
-                    : toItem(events.get(index), resolveShowInChart(blockState, null));
-            } catch (RuntimeException e) {
-                log.warn("NEWS_ITEM 변환 실패 - issueBlockStateId: {}, index: {}", blockState != null ? blockState.issueBlockStateId() : null, index, e);
-                content = emptyItem(resolveShowInChart(blockState, Boolean.FALSE));
+            Map<String, Object> emptyItem = emptyItem(Boolean.FALSE);
+            return ResolvedBlockData.expanded(emptyItem, List.of(emptyItem));
+        }
+
+        List<NewsletterEvent> events = newsletterEventRepository.findByNewsletterPublishHistoryOrderByEventCreateTime(pubHist);
+        try {
+            List<Map<String, Object>> items = events.stream()
+                .map(event -> toItem(event, null))
+                .toList();
+            if (items.isEmpty()) {
+                Map<String, Object> emptyItem = emptyItem(Boolean.FALSE);
+                return ResolvedBlockData.expanded(emptyItem, List.of(emptyItem));
             }
+            return ResolvedBlockData.expanded(items.get(0), items);
+        } catch (RuntimeException e) {
+            log.warn("NEWS_ITEM 변환 실패 - issueBlockStateId: {}", blockState != null ? blockState.issueBlockStateId() : null, e);
+            Map<String, Object> emptyItem = emptyItem(Boolean.FALSE);
+            return ResolvedBlockData.expanded(emptyItem, List.of(emptyItem));
         }
-        content.putAll(resolveContentInput(blockState));
-        return ResolvedBlockData.of(content);
-    }
-
-    private int resolveItemIndex(IssueStateTree.BlockStateNode blockState) {
-        if (blockState == null || blockState.order() == null) {
-            return 0;
-        }
-        return Math.max(blockState.order() - 1, 0);
-    }
-
-    private Boolean resolveShowInChart(IssueStateTree.BlockStateNode blockState, Boolean fallback) {
-        if (blockState == null) {
-            return fallback;
-        }
-        if (blockState.plotOnChart() != null) {
-            return blockState.plotOnChart();
-        }
-        Object raw = blockState.state().get("plotOnChart");
-        if (raw instanceof Boolean booleanValue) {
-            return booleanValue;
-        }
-        return fallback;
     }
 
     private Map<String, Object> toItem(NewsletterEvent event, Boolean showInChartOverride) {
@@ -106,18 +88,6 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
         item.put("showInChart", showInChart);
         item.put("trend", null);
         return item;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> resolveContentInput(IssueStateTree.BlockStateNode blockState) {
-        if (blockState == null || blockState.state().isEmpty()) {
-            return Map.of();
-        }
-        Object contentInput = blockState.state().get("contentInput");
-        if (contentInput instanceof Map<?, ?> inputMap) {
-            return new LinkedHashMap<>((Map<String, Object>) inputMap);
-        }
-        return Map.of();
     }
 
     private List<String> toContentLines(NewsletterEvent event) {

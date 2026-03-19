@@ -4,13 +4,13 @@
 --
 -- Assumptions
 -- 1. template insert example has already been applied
--- 2. repeated block rows are allowed in `tmd_nwsltrorgissblkstat`
+-- 2. `NEWS_ITEM` is runtime-expanded at snapshot assemble time, so it is not inserted into `tmd_nwsltrorgissblkstat`
 -- 3. original issue row exists in `tmd_nwsltrorgissm`
 --
 -- Purpose
 -- - Provide example issue section/block state rows for the editor-aligned section structure
--- - Treat each `tmd_nwsltrorgissblkstat` row as one rendered block instance
--- - Show repeatable block usage with `NEWS_ITEM`
+-- - Treat each non-`NEWS_ITEM` `tmd_nwsltrorgissblkstat` row as one rendered block instance
+-- - Exclude `NEWS_ITEM` issue-state rows because they are legacy ignored / soft-delete cleanup targets
 -- - Reflect specialized reference layouts:
 --   `REFERENCE1 = HEADER + CHART + CONTENT`
 --   `REFERENCE2 = HEADER + CHART + CONTENT`
@@ -147,12 +147,6 @@ SELECT nws_ltr_tmplt_blk_id INTO @blk_news_flow_chart
 FROM tmd_nwsltrtmpltblk
 WHERE nws_ltr_tmplt_sctn_id = @sec_news_flow
   AND blk_cd = 'NEWS_FLOW_CHART'
-  AND del_yn = 'N';
-
-SELECT nws_ltr_tmplt_blk_id INTO @blk_news_item
-FROM tmd_nwsltrtmpltblk
-WHERE nws_ltr_tmplt_sctn_id = @sec_news_flow
-  AND blk_cd = 'NEWS_ITEM'
   AND del_yn = 'N';
 
 SELECT nws_ltr_tmplt_blk_id INTO @blk_reference1_header
@@ -353,9 +347,6 @@ VALUES
 (@issue_original_id, @sec_state_title,      @blk_title_main,       0, 'Y', '뉴스레터 제목 및 부제',               NULL, JSON_OBJECT('removed', FALSE), 'SYSTEM', 'SYSTEM'),
 (@issue_original_id, @sec_state_summary,    @blk_summary_body,     0, 'Y', '뉴스레터 핵심요약',                  NULL, JSON_OBJECT('removed', FALSE), 'SYSTEM', 'SYSTEM'),
 (@issue_original_id, @sec_state_news_flow,  @blk_news_flow_chart,  0, 'Y', '주요 뉴스 Flow 및 Brent 유가 추이',  NULL, JSON_OBJECT('removed', FALSE, 'contentInput', JSON_OBJECT('title', '주요 뉴스 Flow 및 Brent 유가 추이', 'aggregationTime', '뉴욕시간 전일 20:00부터 당일 17:00까지')), 'SYSTEM', 'SYSTEM'),
-(@issue_original_id, @sec_state_news_flow,  @blk_news_item,        1, 'Y', 'Valero-Phillips 66, 정제사 합병 이슈', NULL, JSON_OBJECT('removed', FALSE, 'plotOnChart', TRUE), 'SYSTEM', 'SYSTEM'),
-(@issue_original_id, @sec_state_news_flow,  @blk_news_item,        2, 'Y', 'EU, 러시아산 에너지 수입 감축 발표',   NULL, JSON_OBJECT('removed', FALSE, 'plotOnChart', FALSE), 'SYSTEM', 'SYSTEM'),
-(@issue_original_id, @sec_state_news_flow,  @blk_news_item,        3, 'Y', '테슬라, 새 배터리 비중 공개',         NULL, JSON_OBJECT('removed', FALSE, 'plotOnChart', FALSE), 'SYSTEM', 'SYSTEM'),
 (@issue_original_id, @sec_state_reference,  @blk_reference1_header,  0, 'Y', '미국 10년물 국채금리 및 미 10년-2년물 국채 금리 스프레드 추이', NULL, JSON_OBJECT('removed', FALSE), 'SYSTEM', 'SYSTEM'),
 (@issue_original_id, @sec_state_reference,  @blk_reference1_chart,   1, 'Y', '미국 10년물 국채금리 및 스프레드 차트',                       NULL, JSON_OBJECT('removed', FALSE), 'SYSTEM', 'SYSTEM'),
 (@issue_original_id, @sec_state_reference,  @blk_reference1_content, 2, 'Y', '내용',                                                        NULL, JSON_OBJECT('removed', FALSE), 'SYSTEM', 'SYSTEM'),

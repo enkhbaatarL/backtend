@@ -9,6 +9,7 @@ import com.sk.domain.mi.dto.internal.BlockDataSourceSpec;
 import com.sk.domain.mi.dto.internal.BlockExecutionClassification;
 import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
 import com.sk.domain.mi.dto.internal.IssueStateTree;
+import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -34,7 +35,7 @@ public class BlockExecutionClassifier {
     private static final Set<String> OVERRIDE_POLICY_KEYS = Set.of("issueState");
     private static final Set<String> ISSUE_STATE_OVERRIDE_KEYS = Set.of("query", "state", "contentInput");
     private static final Set<String> TRANSFORM_TYPES = Set.of("SPLIT_LINES", "FORMAT_DATE", "TO_EPOCH_MILLIS", "LIMIT_ITEMS", "YN_TO_BOOLEAN");
-    private static final Set<String> ALLOWED_STATE_KEYS = Set.of("plotOnChart");
+    private static final Set<String> ALLOWED_STATE_KEYS = Set.of("plotOnChart", "removed");
     private static final Set<String> COMMON_STATE_KEYS = Set.of("contentInput");
     private static final Pattern SOURCE_PATH_PATTERN = Pattern.compile("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+|\\.\\*)*");
 
@@ -84,6 +85,17 @@ public class BlockExecutionClassifier {
             if (Boolean.TRUE.equals(field.required()) && !resolvedContent.containsKey(field.fieldKey())) {
                 throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "CANONICAL_ASSIGNMENT_MISSING:" + block.blockCode());
             }
+        }
+    }
+
+    public void validateResolvedContent(TemplateTree.BlockNode block, BlockExecutionPlan plan, ResolvedBlockData resolvedData) {
+        if (resolvedData == null || resolvedData.expandedContents() == null || resolvedData.expandedContents().isEmpty()) {
+            validateResolvedContent(block, plan, resolvedData == null ? Map.of() : resolvedData.toContentMap());
+            return;
+        }
+
+        for (Map<String, Object> item : resolvedData.expandedContents()) {
+            validateResolvedContent(block, plan, item == null ? Map.of() : item);
         }
     }
 
@@ -149,7 +161,7 @@ public class BlockExecutionClassifier {
         }
 
         validateLocator(block, spec, errors);
-        validateQuery(block, spec, errors);
+        validateQuery(block, blockState, spec, errors);
         validateAssign(block, spec, errors);
         validateOverridePolicy(block, blockState, spec, errors);
         validateTransform(spec, errors);
@@ -177,38 +189,47 @@ public class BlockExecutionClassifier {
         }
     }
 
-    private void validateQuery(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
-        Map<String, Object> query = spec.query() == null ? Map.of() : spec.query();
-        if (query.values().stream().anyMatch(value -> value instanceof Map<?, ?> || value instanceof List<?>)) {
+    private void validateQuery(
+        TemplateTree.BlockNode block,
+        IssueStateTree.BlockStateNode blockState,
+        BlockDataSourceSpec spec,
+        List<String> errors
+    ) {
+        Map<String, Object> templateQuery = spec.query() == null ? Map.of() : spec.query();
+        if (templateQuery.values().stream().anyMatch(value -> value instanceof Map<?, ?> || value instanceof List<?>)) {
             errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
         }
 
         Set<String> allowedQueryKeys = allowedQueryKeys(block.dataSourceType(), spec.locator().kind());
-        if (!allowedQueryKeys.containsAll(query.keySet())) {
+        if (!allowedQueryKeys.containsAll(templateQuery.keySet())) {
             errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
         }
 
-        if (query.containsKey("fromDate") && !isValidDate(query.get("fromDate"))) {
+        Map<String, Object> effectiveQuery = new java.util.LinkedHashMap<>(templateQuery);
+        if (blockState != null && blockState.queryParams() != null) {
+            blockState.queryParams().forEach((key, value) -> {
+                if (allowedQueryKeys.contains(key)) {
+                    effectiveQuery.put(key, value);
+                }
+            });
+        }
+
+        if (effectiveQuery.containsKey("fromDate") && !isValidDate(effectiveQuery.get("fromDate"))) {
             errors.add("INVALID_QUERY_DATE_RANGE");
         }
-        if (query.containsKey("toDate") && !isValidDate(query.get("toDate"))) {
+        if (effectiveQuery.containsKey("toDate") && !isValidDate(effectiveQuery.get("toDate"))) {
             errors.add("INVALID_QUERY_DATE_RANGE");
         }
-        if (query.containsKey("fromDate") && query.containsKey("toDate") && isValidDate(query.get("fromDate")) && isValidDate(query.get("toDate"))) {
-            LocalDate fromDate = LocalDate.parse(String.valueOf(query.get("fromDate")));
-            LocalDate toDate = LocalDate.parse(String.valueOf(query.get("toDate")));
+        if (effectiveQuery.containsKey("fromDate") && effectiveQuery.containsKey("toDate")
+            && isValidDate(effectiveQuery.get("fromDate")) && isValidDate(effectiveQuery.get("toDate"))) {
+            LocalDate fromDate = LocalDate.parse(String.valueOf(effectiveQuery.get("fromDate")));
+            LocalDate toDate = LocalDate.parse(String.valueOf(effectiveQuery.get("toDate")));
             if (fromDate.isAfter(toDate)) {
                 errors.add("INVALID_QUERY_DATE_RANGE");
             }
         }
-        if ("COLLECTION_CHART".equals(spec.locator().kind()) || "NEWS_EVENT".equals(block.dataSourceType())) {
-            if (!query.containsKey("fromDate") || !query.containsKey("toDate")) {
-                errors.add("QUERY_REQUIREDNESS_VIOLATION");
-            }
-        }
-
         if (Set.of("MAIN_CHART", "DEDICATED_CHART", "PREFERENCE_TABLE", "INLINE", "PUBLISH_CONTEXT").contains(spec.locator().kind())
-            && !query.isEmpty()) {
+            && !effectiveQuery.isEmpty()) {
             errors.add("QUERY_REQUIREDNESS_VIOLATION");
         }
     }

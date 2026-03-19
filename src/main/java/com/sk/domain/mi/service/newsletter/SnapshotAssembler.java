@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -63,6 +64,10 @@ public class SnapshotAssembler {
                 TemplateTree.BlockNode blockNode = templateBlockMap.get(blockState.templateBlockId());
                 if (blockNode == null) {
                     throw new IllegalStateException("UNKNOWN_TEMPLATE_BLOCK_STATE_REFERENCE: " + blockState.templateBlockId());
+                }
+                if ("NEWS_ITEM".equals(blockNode.blockCode())) {
+                    blocks.addAll(expandNewsItemBlocks(blockNode, blockState, resolvedData));
+                    continue;
                 }
                 blocks.add(SnapshotBlock.builder()
                     .id(resolveSnapshotBlockId(blockNode, blockState))
@@ -131,6 +136,60 @@ public class SnapshotAssembler {
             : baseId;
     }
 
+    private List<SnapshotBlock> expandNewsItemBlocks(
+        TemplateTree.BlockNode blockNode,
+        IssueStateTree.BlockStateNode blockState,
+        Map<String, ResolvedBlockData> resolvedData
+    ) {
+        ResolvedBlockData resolved = resolvedData.getOrDefault(blockState.resolvedDataKey(), ResolvedBlockData.of(Map.of()));
+        List<Map<String, Object>> expandedItems = resolved.toExpandedContents();
+        if (expandedItems.isEmpty()) {
+            expandedItems = List.of(resolved.toContentMap());
+        }
+
+        List<String> editableFields = blockNode.fields().stream()
+            .filter(field -> "Y".equals(field.isEditableYn()))
+            .map(TemplateTree.FieldNode::fieldKey)
+            .toList();
+
+        List<SnapshotBlock> blocks = new ArrayList<>();
+        for (int index = 0; index < expandedItems.size(); index++) {
+            Map<String, Object> item = expandedItems.get(index);
+            blocks.add(SnapshotBlock.builder()
+                .id(resolveNewsItemSnapshotBlockId(item, index))
+                .type(blockNode.blockTypeCode())
+                .format(blockNode.blockFormatCode())
+                .order(blockState.order() == null ? index : blockState.order() + index)
+                .visibility("Y".equals(blockState.visibilityYn()))
+                .title(Objects.toString(item.get("title"), null))
+                .plotOnChart(asBoolean(item.get("showInChart")))
+                .target(resolveTarget(blockState.targetCompanyNo()))
+                .queryParams(null)
+                .state(new LinkedHashMap<>(Map.of("removed", Boolean.FALSE)))
+                .editableFields(editableFields)
+                .content(item == null ? Map.of() : new LinkedHashMap<>(item))
+                .build());
+        }
+        return blocks;
+    }
+
+    private String resolveNewsItemSnapshotBlockId(Map<String, Object> item, int index) {
+        Object newsId = item == null ? null : item.get("newsId");
+        if (newsId != null && !String.valueOf(newsId).isBlank()) {
+            return "blk-NEWS_ITEM-" + newsId;
+        }
+        boolean emptyItem = item == null || item.isEmpty() || (
+            item.get("newsId") == null
+                && item.get("title") == null
+                && item.get("timestamp") == null
+                && (item.get("content") instanceof List<?> contentList && contentList.isEmpty())
+        );
+        if (emptyItem) {
+            return "blk-NEWS_ITEM-empty";
+        }
+        return "blk-NEWS_ITEM-idx-" + index;
+    }
+
     private String resolveTarget(Integer targetCompanyNo) {
         return targetCompanyNo == null ? null : String.valueOf(targetCompanyNo);
     }
@@ -140,5 +199,9 @@ public class SnapshotAssembler {
             return null;
         }
         return blockState.plotOnChart() != null ? blockState.plotOnChart() : Boolean.FALSE;
+    }
+
+    private Boolean asBoolean(Object value) {
+        return value instanceof Boolean booleanValue ? booleanValue : null;
     }
 }

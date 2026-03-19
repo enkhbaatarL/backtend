@@ -35,7 +35,7 @@
     │
     ▼
 ② Issue State 저장  PUT /{newsletterId}/{issueNo}/issue-state
-   └─ 이번 호 노출 여부, 순서, 조회 기간(fromDate/toDate), 시장코드 등
+   └─ 이번 호 노출 여부, 순서, 조회 기간(fromDate/toDate), state-owned 입력값 등
     │
     ▼
 ③ Preview 조회  GET /{newsletterId}/{issueNo}/preview
@@ -107,23 +107,26 @@ overridePolicy → Issue State가 override 가능한 값의 whitelist
 ```json
 {
   "locator": { "kind": "NEWS_EVENT" },
-  "query": {
-    "fromDate": "2026-03-10",
-    "toDate": "2026-03-16"
-  },
+  "query": {},
   "assign": {
     "fields": [
-      { "fieldKey": "aggregationTime", "sourcePath": "aggregationTime", "required": false },
-      { "fieldKey": "items", "sourcePath": "items", "required": true }
+      { "fieldKey": "newsId", "sourcePath": "newsId", "required": false },
+      { "fieldKey": "title", "sourcePath": "title", "required": true },
+      { "fieldKey": "content", "sourcePath": "content", "required": true },
+      { "fieldKey": "timestamp", "sourcePath": "timestamp", "required": false },
+      { "fieldKey": "createdDate", "sourcePath": "createdDate", "required": true },
+      { "fieldKey": "createTime", "sourcePath": "createTime", "required": false },
+      { "fieldKey": "source", "sourcePath": "source", "required": false },
+      { "fieldKey": "originalUrl", "sourcePath": "originalUrl", "required": false },
+      { "fieldKey": "showInChart", "sourcePath": "showInChart", "required": false },
+      { "fieldKey": "trend", "sourcePath": "trend", "required": false }
     ]
   },
-  "transform": [
-    { "type": "SPLIT_LINES", "sourcePath": "items.*.content", "dropBlank": true }
-  ],
+  "transform": [],
   "overridePolicy": {
     "issueState": {
-      "query": ["fromDate", "toDate"],
-      "state": ["plotOnChart"],
+      "query": [],
+      "state": [],
       "contentInput": []
     }
   }
@@ -137,8 +140,10 @@ Issue State에서 설정 가능한 값의 범위는 **template의 `overridePolic
 | 구분 | 의미 |
 |------|------|
 | `issueState.query` | 이번 호 조회 파라미터 override 가능 목록 (fromDate, toDate 등) |
-| `issueState.state` | 블록 옵션 override 가능 목록 (plotOnChart 등) |
-| `issueState.contentInput` | 사용자가 직접 입력 가능한 editable 필드 목록 |
+| `issueState.state` | 블록 옵션 override 가능 목록 (plotOnChart, removed 등) |
+| `issueState.contentInput` | state가 직접 소유하는 editable field subset 목록 |
+
+`NEWS_ITEM`은 예외적으로 issue state override를 사용하지 않고, `NEWS_EVENT` 조회 결과를 runtime-expanded snapshot block으로 직접 확장합니다. `originalUrl`도 issue state가 아니라 snapshot/revision edit 대상입니다.
 
 ---
 
@@ -166,12 +171,12 @@ NEWS_FLOW
 
 REFERENCE1
   └─ REFERENCE_HEADER   : 참조1 헤더 (제목/설명 편집 가능)
-  └─ REFERENCE_CHART    : WTI·달러인덱스 차트 (차트 자동, fromDate/toDate state 소유)
+  └─ REFERENCE_CHART    : WTI·달러인덱스 차트 (차트 자동, timestamps/series 출력)
   └─ REFERENCE_CONTENT  : 참조1 본문 (편집 가능, 기본값 없음)
 
 REFERENCE2
   └─ REFERENCE_HEADER   : 참조2 헤더 (편집 가능)
-  └─ REFERENCE_CHART    : WTI·S&P500 차트 (collection chart WTI_SNP500 기반)
+  └─ REFERENCE_CHART    : WTI·S&P500 차트 (collection chart WTI_SNP500 기반, timestamps/series 출력)
   └─ REFERENCE_CONTENT  : 참조2 본문 (편집 가능)
 
 REFERENCE3
@@ -181,14 +186,14 @@ REFERENCE3
 
 REFERENCE4
   └─ REFERENCE_HEADER   : 참조4 헤더 (편집 가능)
-  └─ REFERENCE_CHART    : 국채금리·스프레드 차트 (collection chart GOV10_2SPRD 기반)
+  └─ REFERENCE_CHART    : 국채금리·스프레드 차트 (collection chart GOV10_2SPRD 기반, timestamps/series 출력)
   └─ REFERENCE_CONTENT  : 참조4 본문 (편집 가능)
 
 FOOTER
   └─ FOOTER_NOTICE      : 풋터 (showLogo 편집 가능, footerContent 편집 가능)
 ```
 
-> **반복 블록(Repeatable Block)**: `NEWS_ITEM`은 동일 template block을 기준으로 issue block state row를 여러 개 생성해 복수 뉴스를 표현합니다.
+> **반복 블록(Repeatable Block)**: `NEWS_ITEM`은 동일 template block 1건만 정의하고, preview/publish 시 `NEWS_EVENT` 조회 결과 개수만큼 snapshot block을 동적으로 생성합니다.
 
 ---
 
@@ -204,7 +209,7 @@ FOOTER
 
 | 필드 예시 | 1순위 | 2순위 | 3순위 |
 |-----------|-------|-------|-------|
-| NEWS_ITEM `fromDate` | 사용자 수정 | issue block state `blk_stat_json.fromDate` | template query 기본값 |
+| NEWS_ITEM `originalUrl` | 사용자 수정 snapshot | — (issue state 비소유) | source 기본값 없음 |
 | SUMMARY `summaryText` | 사용자 수정 | — (state 비소유) | publish history AI 요약 |
 | DATE_ISSUE `publishDate` | — | — | publish context 발행일 (고정) |
 | COVER `imageBase64` | — | — | master 이미지 자동 인코딩 (고정) |
@@ -407,7 +412,7 @@ erDiagram
         int blk_ord "블록순서(오버라이드)"
         char vsblty_yn "노출여부"
         varchar blk_titl "블록제목오버라이드"
-        json blk_stat_json "가변값(plotOnChart/fromDate/toDate 등)"
+        json blk_stat_json "가변값(plotOnChart/removed/state-owned contentInput 등)"
     }
 
     %% ─────────────────────────────────────────

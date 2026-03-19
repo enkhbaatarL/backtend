@@ -81,7 +81,7 @@ public record IssueStateTree(
                 section.visibilityYn(),
                 section.sectionName(),
                 section.targetCompanyNo(),
-                Map.of(),
+                Map.of("removed", Boolean.FALSE),
                 blockStates
             );
         }

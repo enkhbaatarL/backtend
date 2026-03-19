@@ -108,7 +108,7 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
             List<NewsletterTemplateDedicatedChart> configs = dedicatedChartRepository.findByDedicatedChartTypeAndIsDeleted(refCode, false);
             Map<String, List<NewsletterChart>> chartsByCode = new HashMap<>();
             configs.forEach(config -> chartsByCode.put(config.getCode(), newsletterChartRepository.findByNewsletterPublishHistoryAndCode(pubHist, config.getCode())));
-            return chartSupport.toDedicatedChartContent(configs, chartsByCode, pubHist.getPublishDateTime());
+            return new HashMap<>(chartSupport.toDedicatedChartContent(configs, chartsByCode, pubHist.getPublishDateTime()));
         }
 
         if ("COLLECTION_CHART".equals(locatorKind)) {
@@ -116,11 +116,11 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
                 .findTopByNewsletterPublishHistoryAndCollectionChartTypeAndIsDeletedFalse(pubHist, refCode)
                 .orElse(null);
             if (collectionChart == null) {
-                return Map.of("aggregationTime", "뉴욕시간 전일 20:00부터 당일 17:00까지", "timestamps", List.of(), "series", List.of());
+                return Map.of("timestamps", List.of(), "series", List.of());
             }
             List<NewsletterTemplateCollectionChart> configs = collectionChartRepository.findByCollectionChartTypeAndIsDeleted(refCode, false);
             List<CollectionSeriesData> seriesDataList = buildCollectionSeries(configs, collectionChart);
-            return chartSupport.toCollectionChartContent(configs, collectionChart, seriesDataList, pubHist.getPublishDateTime());
+            return new HashMap<>(chartSupport.toCollectionChartContent(configs, collectionChart, seriesDataList, pubHist.getPublishDateTime()));
         }
 
         List<NewsletterChart> charts = newsletterChartRepository.findByNewsletterPublishHistoryAndCode(pubHist, refCode);

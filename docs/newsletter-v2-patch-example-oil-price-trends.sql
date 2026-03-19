@@ -7,6 +7,7 @@
 -- Safe scope:
 -- - Template patch targets only the `NEWS_ITEM` block in `NEWS_FLOW`
 -- - Issue-state patch targets only the selected original issue
+-- - Legacy `NEWS_ITEM` issue-state rows are removed because canonical ownership moved to snapshot/revision
 
 START TRANSACTION;
 
@@ -110,10 +111,7 @@ SET data_src_type_cd = 'NEWS_EVENT',
     data_src_ref = NULL,
     data_src_spec_json = JSON_OBJECT(
         'locator', JSON_OBJECT('kind', 'NEWS_EVENT'),
-        'query', JSON_OBJECT(
-            'fromDate', @news_from_date,
-            'toDate', @news_to_date
-        ),
+        'query', JSON_OBJECT(),
         'assign', JSON_OBJECT('fields', JSON_ARRAY(
             JSON_OBJECT('fieldKey', 'newsId', 'sourcePath', 'newsId', 'required', FALSE),
             JSON_OBJECT('fieldKey', 'title', 'sourcePath', 'title', 'required', TRUE),
@@ -128,9 +126,9 @@ SET data_src_type_cd = 'NEWS_EVENT',
         )),
         'transform', JSON_ARRAY(),
         'overridePolicy', JSON_OBJECT('issueState', JSON_OBJECT(
-            'query', JSON_ARRAY('fromDate', 'toDate'),
-            'state', JSON_ARRAY('plotOnChart'),
-            'contentInput', JSON_ARRAY('originalUrl')
+            'query', JSON_ARRAY(),
+            'state', JSON_ARRAY(),
+            'contentInput', JSON_ARRAY()
         ))
     ),
     mod_usr_logn_id = 'SYSTEM',
@@ -177,7 +175,6 @@ SET data_src_type_cd = 'CHART_SERIES',
         'locator', JSON_OBJECT('kind', 'DEDICATED_CHART', 'refCode', @reference1_chart_type),
         'query', JSON_OBJECT(),
         'assign', JSON_OBJECT('fields', JSON_ARRAY(
-            JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
             JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
             JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
         )),
@@ -198,12 +195,8 @@ SET data_src_type_cd = 'CHART_SERIES',
     data_src_ref = CONCAT('cltn:', @reference2_chart_type),
     data_src_spec_json = JSON_OBJECT(
         'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference2_chart_type),
-        'query', JSON_OBJECT(
-            'fromDate', @collection_from_date,
-            'toDate', @collection_to_date
-        ),
+        'query', JSON_OBJECT(),
         'assign', JSON_OBJECT('fields', JSON_ARRAY(
-            JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
             JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
             JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
         )),
@@ -224,12 +217,8 @@ SET data_src_type_cd = 'CHART_SERIES',
     data_src_ref = CONCAT('cltn:', @reference4_chart_type),
     data_src_spec_json = JSON_OBJECT(
         'locator', JSON_OBJECT('kind', 'COLLECTION_CHART', 'refCode', @reference4_chart_type),
-        'query', JSON_OBJECT(
-            'fromDate', @collection_from_date,
-            'toDate', @collection_to_date
-        ),
+        'query', JSON_OBJECT(),
         'assign', JSON_OBJECT('fields', JSON_ARRAY(
-            JSON_OBJECT('fieldKey', 'aggregationTime', 'sourcePath', 'aggregationTime', 'required', FALSE),
             JSON_OBJECT('fieldKey', 'timestamps', 'sourcePath', 'timestamps', 'required', TRUE),
             JSON_OBJECT('fieldKey', 'series', 'sourcePath', 'series', 'required', TRUE)
         )),
@@ -243,6 +232,26 @@ SET data_src_type_cd = 'CHART_SERIES',
     mod_usr_logn_id = 'SYSTEM',
     mod_dtm = CURRENT_TIMESTAMP
 WHERE nws_ltr_tmplt_blk_id = @blk_reference4_chart
+  AND del_yn = 'N';
+
+DELETE FROM tmd_nwsltrtmpltblkfld
+WHERE nws_ltr_tmplt_blk_id IN (@blk_reference1_chart, @blk_reference2_chart, @blk_reference4_chart)
+  AND fld_key = 'aggregationTime';
+
+UPDATE tmd_nwsltrtmpltblkfld
+SET fld_ord = 0,
+    mod_usr_logn_id = 'SYSTEM',
+    mod_dtm = CURRENT_TIMESTAMP
+WHERE nws_ltr_tmplt_blk_id IN (@blk_reference1_chart, @blk_reference2_chart, @blk_reference4_chart)
+  AND fld_key = 'timestamps'
+  AND del_yn = 'N';
+
+UPDATE tmd_nwsltrtmpltblkfld
+SET fld_ord = 1,
+    mod_usr_logn_id = 'SYSTEM',
+    mod_dtm = CURRENT_TIMESTAMP
+WHERE nws_ltr_tmplt_blk_id IN (@blk_reference1_chart, @blk_reference2_chart, @blk_reference4_chart)
+  AND fld_key = 'series'
   AND del_yn = 'N';
 
 /* =========================================================
@@ -283,6 +292,21 @@ WHERE b.nws_ltr_org_iss_id = @issue_original_id
   AND b.del_yn = 'N'
   AND b.blk_stat_json IS NOT NULL
   AND JSON_CONTAINS_PATH(b.blk_stat_json, 'one', '$.fromDate', '$.toDate');
+
+UPDATE tmd_nwsltrorgissblkstat b
+JOIN tmd_nwsltrorgisssctnstat s
+  ON s.nws_ltr_org_iss_sctn_stat_id = b.nws_ltr_org_iss_sctn_stat_id
+JOIN tmd_nwsltrtmpltsctn ts
+  ON ts.nws_ltr_tmplt_sctn_id = s.nws_ltr_tmplt_sctn_id
+JOIN tmd_nwsltrtmpltblk tb
+  ON tb.nws_ltr_tmplt_blk_id = b.nws_ltr_tmplt_blk_id
+SET b.del_yn = 'Y',
+    b.mod_usr_logn_id = 'SYSTEM',
+    b.mod_dtm = CURRENT_TIMESTAMP
+WHERE b.nws_ltr_org_iss_id = @issue_original_id
+  AND ts.sctn_cd = 'NEWS_FLOW'
+  AND tb.blk_cd = 'NEWS_ITEM'
+  AND b.del_yn = 'N';
 
 /* =========================================================
  * 5) POST-CHECK

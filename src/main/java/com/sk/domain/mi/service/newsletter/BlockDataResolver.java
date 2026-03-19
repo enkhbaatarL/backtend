@@ -52,7 +52,7 @@ public class BlockDataResolver {
             try {
                 ResolvedBlockData resolved = strategy.resolve(block, executionPlan, blockState, pubHist);
                 if (validateResolvedContent) {
-                    executionClassifier.validateResolvedContent(block, executionPlan, resolved.toContentMap());
+                    executionClassifier.validateResolvedContent(block, executionPlan, resolved);
                 }
                 result.put(blockState.resolvedDataKey(), resolved);
             } catch (AppErrorException e) {

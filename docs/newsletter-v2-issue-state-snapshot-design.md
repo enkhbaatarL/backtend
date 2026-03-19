@@ -17,27 +17,27 @@
 - `issue section state / issue block state`: 발행 이슈별 상태값
 - `resolved content`: template의 query policy와 issue state를 반영해 조회/가공한 실제 데이터
 - `original snapshot`: 발행 완료 시점에 동결한 원본 완성본
-- `rendered block instance row`: `tmd_nwsltrorgissblkstat`의 개별 row. preview/publish 조립 시 실제 렌더링 block 1건으로 해석한다.
+- `rendered block instance row`: 일반 block에서는 `tmd_nwsltrorgissblkstat`의 개별 row를 뜻한다. 단, `NEWS_ITEM`은 이 row truth를 쓰지 않고 resolver가 만든 runtime-expanded snapshot block을 뜻한다.
 
 ## 0-1. Source of Truth / 책임 경계
 - 본 문서는 역할 분리와 책임 경계를 정의하는 설계 기준 문서다.
 - 물리 스키마의 최종 원본은 canonical DDL 문서군이다.
 - `original snapshot`은 published original의 유일한 조회 원본이다.
 - `issue state`는 preview 및 publish 직전 snapshot 생성 입력값이며, published 이후 원본 조회의 원천이 아니다.
-- `template`은 구조와 지원 가능 옵션을 정의하고, instance-level 최종 상태값은 issue state가 가진다.
+- `template`은 구조와 지원 가능 옵션을 정의하고, instance-level 최종 상태값은 issue state 또는 snapshot/revision 계층이 가진다.
 
 ## 0-2. 고정 결정 사항
 - original detail은 항상 `org_snpsht_json` 우선으로 조회한다.
 - preview는 `template + issue state + resolved content`를 동적으로 조합한다.
-- `plotOnChart`는 template에서 "이 block이 해당 옵션 구조를 지원하는가"를 뜻하고, issue block state에서 최종 true/false 값을 가진다.
+- `plotOnChart`는 template에서 "이 block이 해당 옵션 구조를 지원하는가"를 뜻하고, issue block state 또는 snapshot 편집 계층에서 최종 true/false 값을 가진다.
 - `plotOnChart`를 차트 연계 표시용 canonical state key로 사용한다.
   - 과거 문서/예시의 `showInChart`는 `plotOnChart`로 통일한다.
 - field-level state 테이블은 도입하지 않는다.
   - 이유: 현재 요구사항의 가변값은 section/block 단위이며, field는 주로 content schema 또는 editable field 정의에 가깝다.
   - 예외: 향후 field별 order/visibility/override 요구가 독립적으로 생길 때만 별도 검토한다.
 - 반복 block는 별도 `blk_inst_no` 없이 지원한다.
-  - 같은 template block을 참조하는 복수 `issue block state` row를 허용한다.
-  - 각 row는 `nws_ltr_org_iss_blk_stat_id`와 section 내 `blk_ord`로 식별/정렬한다.
+- 같은 template block을 참조하는 복수 `issue block state` row를 허용할 수 있지만, `NEWS_ITEM`은 issue block state row truth가 아니라 runtime-expanded snapshot block으로 처리한다.
+  - 일반 block row만 `nws_ltr_org_iss_blk_stat_id`와 section 내 `blk_ord`로 식별/정렬한다.
 
 ## 0-3. DB 약어 판단
 - `sctn`: 기존 `tmd_nwsltrtmpltsctn` 등에서 이미 사용 중이므로 유지 가능
@@ -71,7 +71,7 @@
   - `order`, `visibility`, title override, `plotOnChart` 등 옵션 값: issue block state 기준
   - template은 block option의 지원 가능 여부만 정의하며, published snapshot에는 issue block state에서 계산된 최종값을 기록한다.
   - `content`: resolved content 기준
-  - 반복 block는 template block 1건에 대해 issue block state row가 여러 건 생성될 수 있으며, snapshot block도 row 수만큼 생성한다.
+  - 반복 block는 기본적으로 template block 1건을 기준으로 하되, `NEWS_ITEM`은 `NEWS_EVENT` 조회 결과 개수만큼 snapshot block을 runtime에서 확장한다.
 - 값 우선순위
   - structure/policy는 template 기준, instance state 값은 issue state 기준
 
@@ -111,7 +111,7 @@
 - field는 기본적으로 별도 state 테이블을 두지 않는다.
   - field는 대부분 content schema 정의에 가깝기 때문이다.
 - block state는 반드시 동일 `issue`의 section state에만 연결되어야 한다.
-- issue block state row 자체를 rendered block instance row로 해석한다.
+- issue block state row 자체를 rendered block instance row로 해석하되, `NEWS_ITEM`은 예외적으로 resolver 결과를 rendered block instance로 사용한다.
 - 같은 template block을 참조하는 복수 row를 허용한다.
 - 신규 state 테이블은 null-safe rollout을 위해 기존 read path를 깨지 않는 독립 추가 테이블로 도입한다.
 
@@ -200,7 +200,7 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
   - `highlightMode`
   - `removed`
   - 기간/시장/기준시점 등 block query에 필요한 state 파라미터
-  - `contentInput`: STATIC 또는 사용자 입력 기반 block의 편집 입력값 묶음
+  - `contentInput`: state-owned editable subset만 담는 publish-time assembly input 묶음
 
 ### 3-6. 컬럼 승격 기준
 - 다음 조건에 해당하는 값은 `*_stat_json`에만 두지 않고 컬럼 승격을 검토한다.
@@ -225,9 +225,10 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
   - section 내 `blk_ord` 단일성
 - 애플리케이션 레벨에서 추가 검증할 것
   - `nws_ltr_tmplt_blk_id`가 참조하는 block이 실제로 해당 `nws_ltr_org_iss_sctn_stat_id`의 template section 하위 block인지 검증
-  - 같은 template block을 참조하는 복수 row가 있어도 각 row가 독립 rendered block instance로 취급되는지 검증
+  - 같은 template block을 참조하는 복수 row가 있어도 일반 block에 한해 각 row가 독립 rendered block instance로 취급되는지 검증
   - `plotOnChart` 같은 state key는 template이 해당 옵션 구조를 지원하는 block에서만 허용되도록 검증
-  - `contentInput`은 block field 정의와 호환되는 입력 key만 허용되도록 검증
+  - `contentInput`은 block field 정의와 호환되는 state-owned editable subset key만 허용되도록 검증
+  - `NEWS_ITEM` block state row는 신규 save path에서 허용하지 않고, legacy row는 preview/publish에서 무시되도록 검증
   - template default와 issue override 조합 결과가 block type 제약을 위반하지 않는지 검증
 
 ## 4. Template Query Policy / Issue State / Resolved Content 예시 스키마
@@ -261,7 +262,8 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
   - published original의 원본 조회는 issue state를 직접 읽지 않는다.
   - issue state는 publish 전 조립 입력값이며, publish 완료 후에는 snapshot으로 책임이 이동한다.
   - 렌더링 최종 content 그 자체를 직접 저장하는 것이 아니라, resolver가 content를 만들기 위한 입력값을 저장한다.
-  - STATIC/사용자편집 block의 입력값은 `blk_stat_json.contentInput` 아래에 둔다.
+  - `blk_stat_json.contentInput`은 state-owned editable subset에 한해 사용한다.
+  - `NEWS_ITEM.originalUrl` 같은 사용자 편집값은 issue state가 아니라 snapshot/revision 계층 책임이다.
 
 예시:
 ```json
@@ -280,7 +282,7 @@ CREATE INDEX tmd_nwsltrorgissblkstat_ix01
 - 목적: 실제 렌더링할 최종 데이터
 - 생성 방식: `query policy + issue state`를 바탕으로 resolver가 생성
 - 구분 원칙
-  - `issue state`: 조회 파라미터, UI 상태, 사용자 입력값(`contentInput`)
+  - `issue state`: 조회 파라미터, UI 상태, state-owned editable subset(`contentInput`)
   - `resolved content`: 위 입력값을 해석/조회해 renderer가 바로 사용할 수 있게 만든 결과
 
 예시:
@@ -304,34 +306,25 @@ Template Query Policy:
 ```json
 {
   "dataSourceType": "NEWS_EVENT",
-  "dataSourceRef": "NEWS_EVENT_BY_PERIOD",
-  "requiredQueryParams": ["fromDate", "toDate"],
-  "contentKeys": ["items"]
+  "dataSourceRef": "NEWS_EVENT_BY_PUBLISH_HISTORY",
+  "requiredQueryParams": [],
+  "contentKeys": ["newsId", "title", "content", "timestamp", "createdDate", "createTime", "source", "originalUrl", "showInChart", "trend"]
 }
 ```
 
 Issue Block State:
 ```json
-{
-  "fromDate": "2026-03-10",
-  "toDate": "2026-03-16",
-  "plotOnChart": true
-}
+{}
 ```
 
 Resolved Content:
 ```json
 {
-  "aggregationTime": "뉴욕시간 전일 20:00부터 당일 17:00까지",
-  "items": [
-    {
-      "newsId": "101",
-      "title": "공급 차질 우려",
-      "content": ["중동 정세 불안 지속"],
-      "createdDate": "2026-03-16",
-      "isTurningPoint": true
-    }
-  ]
+  "newsId": "101",
+  "title": "공급 차질 우려",
+  "content": ["중동 정세 불안 지속"],
+  "createdDate": "2026-03-16",
+  "showInChart": true
 }
 ```
 

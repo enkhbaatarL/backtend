@@ -39,10 +39,6 @@ public class NewsletterIssuePreviewWriteService {
         "COVER", "DATE_ISSUE", "TITLE_SPECIALIZED", "SUMMARY", "NEWS_FLOW",
         "REFERENCE1", "REFERENCE2", "REFERENCE3", "REFERENCE4", "FOOTER"
     );
-    private static final Set<String> REPEATABLE_BLOCK_CODES = Set.of(
-        "NEWS_ITEM"
-    );
-
     private final NewsletterIssueOriginalRepository issueOriginalRepository;
     private final NewsletterIssueSectionStateRepository sectionStateRepository;
     private final NewsletterIssueBlockStateRepository blockStateRepository;
@@ -270,7 +266,7 @@ public class NewsletterIssuePreviewWriteService {
                 section.visibility() == null ? Boolean.TRUE : section.visibility(),
                 StringUtils.trimToNull(section.title()),
                 section.targetCompanyNo(),
-                normalizeStateMap(section.state()),
+                normalizeSectionStateMap(section.state()),
                 section.blocks() == null ? List.of() : section.blocks().stream()
                     .map(block -> new NewsletterIssueStateSaveReq.Block(
                         block.issueBlockStateId(),
@@ -335,13 +331,16 @@ public class NewsletterIssuePreviewWriteService {
                 if (!Objects.equals(templateBlock.sectionId(), section.templateSectionId())) {
                     throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "ISSUE_BLOCK_STATE_SECTION_MISMATCH");
                 }
+                if ("NEWS_ITEM".equals(templateBlock.blockCode())) {
+                    throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "NEWS_ITEM_STATE_NOT_SUPPORTED");
+                }
                 if (block.order() == null || !seenBlockOrders.add(block.order())) {
                     throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "DUPLICATE_BLOCK_ORDER");
                 }
 
                 int nextCount = blockCountByTemplateId.getOrDefault(block.templateBlockId(), 0) + 1;
                 blockCountByTemplateId.put(block.templateBlockId(), nextCount);
-                if (nextCount > 1 && !REPEATABLE_BLOCK_CODES.contains(templateBlock.blockCode())) {
+                if (nextCount > 1) {
                     throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "NON_REPEATABLE_BLOCK_DUPLICATED");
                 }
 
@@ -358,9 +357,8 @@ public class NewsletterIssuePreviewWriteService {
     }
 
     private Map<String, Object> buildSectionStateJson(NewsletterIssueStateSaveReq.Section section) {
-        Map<String, Object> state = new LinkedHashMap<>(normalizeStateMap(section.state()));
+        Map<String, Object> state = new LinkedHashMap<>(normalizeSectionStateMap(section.state()));
         state.remove("collapsed");
-        state.remove("removed");
         state.remove("showDivider");
         return state;
     }
@@ -368,11 +366,16 @@ public class NewsletterIssuePreviewWriteService {
     private Map<String, Object> buildBlockStateJson(NewsletterIssueStateSaveReq.Block block) {
         Map<String, Object> state = new LinkedHashMap<>(normalizeStateMap(block.state()));
         state.remove("collapsed");
-        state.remove("removed");
         if (block.plotOnChart() != null) {
             state.put("plotOnChart", block.plotOnChart());
         }
         return state;
+    }
+
+    private Map<String, Object> normalizeSectionStateMap(Map<String, Object> source) {
+        Map<String, Object> normalized = new LinkedHashMap<>(normalizeStateMap(source));
+        normalized.putIfAbsent("removed", Boolean.FALSE);
+        return normalized;
     }
 
     @SuppressWarnings("unchecked")
