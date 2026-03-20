@@ -16,11 +16,11 @@
 | 개념 | 한 줄 설명 | 언제 읽히나 |
 |------|-----------|------------|
 | **Template** | 뉴스레터의 구조 설계도 (섹션/블록 배치, 데이터 소스 실행 스펙) | 관리자가 수정할 때, Preview 동적 조립 시 |
-| **Issue State** | 이번 발행호에만 적용되는 가변 값 (노출 여부, 순서, 기간 파라미터 등) | 발행 전 Preview 조립 시, issue-state 저장 API |
+| **Issue State** | 이번 발행호에만 적용되는 가변 값 (노출 여부, 순서, 기간 파라미터 등) | 발행 전 Snapshot 조립 시, 발행(Publish) 시 |
 | **Original Snapshot** | 발행 완료 시점에 동결된 원본 완성본 (JSON 1건) | 원본 상세 조회 시 |
 | **User Revision** | 사용자가 개인적으로 수정한 편집본 (임시저장/최종저장) | 사용자 편집 화면 |
 
-> **핵심 규칙**: 발행된 원본을 보여줄 때는 **항상 Snapshot만** 읽습니다. Issue State는 발행 전 Preview에서만 사용합니다.
+> **핵심 규칙**: 발행된 원본을 보여줄 때는 **항상 Snapshot만** 읽습니다. Issue State는 발행 전 Snapshot 조립 및 발행(Publish) 시에만 사용합니다.
 
 ---
 
@@ -34,19 +34,15 @@
    └─ 섹션/블록 구성 + 블록별 data_src_spec_json 설정 (데이터 소스 실행 계획)
     │
     ▼
-② Issue State 저장  PUT /{newsletterId}/{issueNo}/issue-state
-   └─ 이번 호 노출 여부, 순서, 조회 기간(fromDate/toDate), state-owned 입력값 등
-    │
-    ▼
-③ Preview 조회  GET /{newsletterId}/{issueNo}/preview
+② Snapshot 조회  GET /{newsletterId}/{issueNo}/snapshot
    └─ Template + Issue State + 실시간 데이터 → 미리보기 화면
     │
     ▼
-④ 발행 (Publish)
+③ 발행 (Publish)
    └─ Template + Issue State + 실제 데이터 → Original Snapshot 생성 및 동결
     │
     ▼
-⑤ 원본 조회  GET /{newsletterId}/{issueNo}/original-snapshot
+④ 원본 조회  GET /{newsletterId}/{issueNo}/original-snapshot
    └─ org_snpsht_json 만 반환 (Template/State 불필요)
 ```
 
@@ -67,11 +63,11 @@
 - **tenant 규칙**: actor 소속 회사와 요청 회사는 다를 수 있으며, 상세 조회는 요청 `companyNo`로 접근 검증 후 수정본 선택
 - **수정본 선택 규칙**: 접근 성공 후 `ownerUserNo = actorUser.userNo` 기준 수정본이 있으면 수정본, 없으면 원본 발행본 반환
 
-### 4-2. Preview (Issue Preview View)
-- **엔드포인트**: `GET /{newsletterId}/{issueNo}/preview`
+### 4-2. Snapshot 조회 (Issue Snapshot View)
+- **엔드포인트**: `GET /{newsletterId}/{issueNo}/snapshot`
 - **데이터 원천**: Template + Issue State + 실시간 데이터 동적 조합
 - **목적**: 발행 전 검수, 운영 미리보기
-- **특징**: 발행 전 상태이므로 데이터가 실시간으로 반영됨
+- **특징**: 발행 전 상태이므로 데이터가 실시간으로 반영됨. 응답 타입: `NewsletterIssuePreviewRes`
 
 ---
 
@@ -200,7 +196,7 @@ FOOTER
   └─ FOOTER_NOTICE      : 풋터 (showLogo 편집 가능, footerContent 편집 가능)
 ```
 
-> **반복 블록(Repeatable Block)**: `NEWS_ITEM`은 동일 template block 1건만 정의하고, preview/publish 시 `NEWS_EVENT` 조회 결과 개수만큼 snapshot block을 동적으로 생성합니다.
+> **반복 블록(Repeatable Block)**: `NEWS_ITEM`은 동일 template block 1건만 정의하고, snapshot/publish 시 `NEWS_EVENT` 조회 결과 개수만큼 snapshot block을 동적으로 생성합니다.
 
 ---
 
@@ -263,8 +259,7 @@ Original Snapshot (원본)
 |------|--------|------|------|
 | 뉴스레터 상세 (v2) | GET | `/{newsletterId}/{issueNo}?companyNo=` | canonical 상세 조회, 응답은 항상 `NewsletterDetailV2Res` |
 | 원본 스냅샷 조회 | GET | `/{newsletterId}/{issueNo}/original-snapshot?companyNo=` | 요청 `companyNo` 기준 `org_snpsht_json` 원본 고정 조회 |
-| Preview 조회 | GET | `/{newsletterId}/{issueNo}/preview` | Issue State 기반 동적 조합 |
-| Issue State 저장 | PUT | `/{newsletterId}/{issueNo}/issue-state` | section/block state upsert |
+| Snapshot 조회 | GET | `/{newsletterId}/{issueNo}/snapshot` | Template + Issue State + 실시간 데이터 동적 조합, 발행 전 미리보기용 |
 | 사용자 편집본 조회 | GET | `/{issueId}/revision` | 내 편집본 |
 | 임시저장 | POST | `/{issueId}/revision/draft` | Delta 저장 |
 | 최종저장 | POST | `/{issueId}/revision/save` | Delta + Snapshot |
@@ -285,7 +280,6 @@ Original Snapshot (원본)
 | 템플릿 구조가 바뀌면 과거 발행본도 바뀌나? | 아니요. 과거 발행본은 Snapshot으로 동결됨 |
 | 사용자 편집본은 다른 사람도 볼 수 있나? | 아니요. 편집본은 1인 1본 개인 소유 |
 | 구독 취소 후 재구독 시 이력이 남나? | 예. `sub_dtm`, `unsub_dtm`으로 시점 이력 보존 |
-| Issue State는 언제 입력하나? | 발행 담당자가 발행 전 issue-state API로 저장 |
 | `plotOnChart`는 무엇? | 특정 블록의 데이터를 차트 변곡점으로 표시할지 여부 (NEWS_ITEM 블록 전용) |
 | 관리자가 섹션/블록을 추가할 수 있나? | 템플릿 관리 API를 통해 가능. 섹션 타입: FIXED(시스템 고정) / GENERAL(기본) / SPECIALIZED(특화) |
 | 편집 불가 필드는? | 커버 이미지, 발행일, 발행 차수, AI 요약 기본값, 차트 데이터 등 소스 파생값 |
