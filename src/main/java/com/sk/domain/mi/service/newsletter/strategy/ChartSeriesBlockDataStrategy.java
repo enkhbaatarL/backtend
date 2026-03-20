@@ -108,6 +108,7 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
             List<NewsletterTemplateDedicatedChart> configs = dedicatedChartRepository.findByDedicatedChartTypeAndIsDeleted(refCode, false);
             Map<String, List<NewsletterChart>> chartsByCode = new HashMap<>();
             configs.forEach(config -> chartsByCode.put(config.getCode(), newsletterChartRepository.findByNewsletterPublishHistoryAndCode(pubHist, config.getCode())));
+            // chartSupport가 불변 Map을 반환할 수 있으므로 호출자가 수정할 수 있도록 가변 Map으로 복사한다.
             return new HashMap<>(chartSupport.toDedicatedChartContent(configs, chartsByCode, pubHist.getPublishDateTime()));
         }
 
@@ -120,6 +121,7 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
             }
             List<NewsletterTemplateCollectionChart> configs = collectionChartRepository.findByCollectionChartTypeAndIsDeleted(refCode, false);
             List<CollectionSeriesData> seriesDataList = buildCollectionSeries(configs, collectionChart);
+            // chartSupport가 불변 Map을 반환할 수 있으므로 호출자가 수정할 수 있도록 가변 Map으로 복사한다.
             return new HashMap<>(chartSupport.toCollectionChartContent(configs, collectionChart, seriesDataList, pubHist.getPublishDateTime()));
         }
 

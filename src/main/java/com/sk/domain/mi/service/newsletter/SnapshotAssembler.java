@@ -159,6 +159,8 @@ public class SnapshotAssembler {
                 .id(resolveNewsItemSnapshotBlockId(item, index))
                 .type(blockNode.blockTypeCode())
                 .format(blockNode.blockFormatCode())
+                // order는 0-based. NEWS_ITEM은 단일 블록이 복수 항목으로 확장되므로,
+                // base order에 0-based index를 더해 각 항목의 순서를 부여한다.
                 .order(blockState.order() == null ? index : blockState.order() + index)
                 .visibility("Y".equals(blockState.visibilityYn()))
                 .title(Objects.toString(item.get("title"), null))
@@ -167,18 +169,18 @@ public class SnapshotAssembler {
                 .queryParams(null)
                 .state(new LinkedHashMap<>(Map.of("removed", Boolean.FALSE)))
                 .editableFields(editableFields)
-                .content(item == null ? Map.of() : new LinkedHashMap<>(item))
+                .content(new LinkedHashMap<>(item))
                 .build());
         }
         return blocks;
     }
 
     private String resolveNewsItemSnapshotBlockId(Map<String, Object> item, int index) {
-        Object newsId = item == null ? null : item.get("newsId");
+        Object newsId = item.get("newsId");
         if (newsId != null && !String.valueOf(newsId).isBlank()) {
             return "blk-NEWS_ITEM-" + newsId;
         }
-        boolean emptyItem = item == null || item.isEmpty() || (
+        boolean emptyItem = item.isEmpty() || (
             item.get("newsId") == null
                 && item.get("title") == null
                 && item.get("timestamp") == null

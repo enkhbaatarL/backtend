@@ -37,8 +37,7 @@ public record ResolvedBlockData(
 
     public java.util.List<Map<String, Object>> toExpandedContents() {
         return expandedContents.stream()
-            .map(LinkedHashMap::new)
-            .map(map -> (Map<String, Object>) map)
+            .<Map<String, Object>>map(LinkedHashMap::new)
             .toList();
     }
 }

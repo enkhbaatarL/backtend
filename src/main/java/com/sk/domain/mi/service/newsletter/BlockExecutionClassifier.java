@@ -214,6 +214,9 @@ public class BlockExecutionClassifier {
             });
         }
 
+        // fromDate/toDate는 필수 체크를 하지 않는다.
+        // 템플릿 spec에 없어도 blockState.queryParams()를 통해 이슈 저장 시점에 주입될 수 있으므로,
+        // 값이 존재할 때만 형식과 범위가 유효한지 검증한다.
         if (effectiveQuery.containsKey("fromDate") && !isValidDate(effectiveQuery.get("fromDate"))) {
             errors.add("INVALID_QUERY_DATE_RANGE");
         }

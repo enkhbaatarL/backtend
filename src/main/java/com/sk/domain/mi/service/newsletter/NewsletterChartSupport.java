@@ -35,6 +35,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class NewsletterChartSupport {
 
+    // y축 구간 수 (tick 수 = Y_AXIS_SECTIONS + 1). 변경 시 이 상수만 수정하면 됨
+    private static final int Y_AXIS_SECTIONS = 5;
+
     public Map<String, Object> toMainChartContent(List<NewsletterChart> flowCharts, LocalDateTime publishDateTime) {
         String[] marketTimes = calculateMarketTimes(publishDateTime);
         List<String> timestamps = new ArrayList<>();
@@ -65,17 +68,19 @@ public class NewsletterChartSupport {
             volumeValues.add(chart != null ? chart.getNumMoves() : null);
         }
 
-        BigDecimal max = closeValues.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        BigDecimal min = closeValues.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        String closeDtick = calculateAutoDtick(max, min, 6);
-        List<Double> closeRangeValues = calculateRangeWithDtick(max, min, closeDtick);
-        String range = String.format("[%s, %s]", closeRangeValues.get(0), closeRangeValues.get(1));
+        // 캔들스틱 y축 범위는 실제 고가(high) 최대 ~ 저가(low) 최소 기준으로 계산
+        BigDecimal ohlcMax = highValues.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        BigDecimal ohlcMin = lowValues.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        String dtick = calculateAutoDtick(ohlcMax, ohlcMin);
+        List<Double> rangeValues = calculateRangeWithDtick(ohlcMax, ohlcMin, dtick);
+        String range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
 
+        // high/low/open/close는 동일 y축을 공유하므로 같은 dtick/range 적용. volume은 별도 단위
         List<Series> series = Arrays.asList(
-            Series.of("high", "High", RenderAs.HIGH, highValues, true),
-            Series.of("low", "Low", RenderAs.LOW, lowValues, true),
-            Series.of("open", "Open", RenderAs.OPEN, openValues, true),
-            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, "1", range, false),
+            Series.ofWithChartOption("high", "High", RenderAs.HIGH, highValues, true, null, dtick, range, false),
+            Series.ofWithChartOption("low", "Low", RenderAs.LOW, lowValues, true, null, dtick, range, false),
+            Series.ofWithChartOption("open", "Open", RenderAs.OPEN, openValues, true, null, dtick, range, false),
+            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, dtick, range, false),
             Series.of("volume", "Volume", RenderAs.VOLUME, volumeValues, true)
         );
 
@@ -126,6 +131,9 @@ public class NewsletterChartSupport {
             if (!values.isEmpty()) {
                 BigDecimal max = values.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
                 BigDecimal min = values.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+                String dtick = calculateAutoDtick(max, min);
+                List<Double> rangeValues = calculateRangeWithDtick(max, min, dtick);
+                String range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
                 series.add(Series.ofWithChartOption(
                     config.getColor(),
                     config.getColor(),
@@ -133,8 +141,8 @@ public class NewsletterChartSupport {
                     values,
                     true,
                     config.getColor(),
-                    StringUtils.defaultIfBlank(config.getDtick(), "1"),
-                    calculateRange(max, min, config.getColor()),
+                    dtick,
+                    range,
                     config.isBidirectional()
                 ));
             }
@@ -177,13 +185,11 @@ public class NewsletterChartSupport {
         for (CollectionSeriesData seriesData : seriesDataList) {
             NewsletterTemplateCollectionChart config = seriesData.config();
             List<BigDecimal> values = timestampList.stream().map(ts -> seriesData.valuesByTimestamp().get(ts)).toList();
-            String range = config.getRange();
-            if (StringUtils.isBlank(range)) {
-                BigDecimal max = values.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-                BigDecimal min = values.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-                List<Double> rangeValues = calculateRangeWithDtick(max, min, config.getDtick());
-                range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
-            }
+            BigDecimal max = values.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            BigDecimal min = values.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            String dtick = calculateAutoDtick(max, min);
+            List<Double> rangeValues = calculateRangeWithDtick(max, min, dtick);
+            String range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
             series.add(Series.ofWithChartOption(
                 config.getColor(),
                 config.getColor(),
@@ -191,7 +197,7 @@ public class NewsletterChartSupport {
                 values,
                 true,
                 config.getColor(),
-                StringUtils.defaultIfBlank(config.getDtick(), "1"),
+                dtick,
                 range,
                 config.isBidirectional()
             ));
@@ -295,23 +301,12 @@ public class NewsletterChartSupport {
         return new ArrayList<>(merged);
     }
 
-    private String calculateRange(BigDecimal max, BigDecimal min, String color) {
-        BigDecimal difference = max.subtract(min);
-        BigDecimal compare = BigDecimal.valueOf("blue".equals(color) ? 4 : 2);
-        double range = "blue".equals(color) ? 1 : 0.5;
-        BigDecimal adjustedMax = BigDecimal.valueOf(Math.ceil(max.doubleValue()));
-        BigDecimal adjustedMin = BigDecimal.valueOf(Math.floor(min.doubleValue()));
-        BigDecimal resultMax = difference.compareTo(compare) < 0 ? adjustedMax.add(BigDecimal.valueOf(range)) : adjustedMax;
-        BigDecimal resultMin = difference.compareTo(compare) < 0 ? adjustedMin.subtract(BigDecimal.valueOf(range)) : adjustedMin;
-        return String.format("[%s, %s]", resultMax, resultMin);
-    }
-
-    private String calculateAutoDtick(BigDecimal max, BigDecimal min, int targetSections) {
+    private String calculateAutoDtick(BigDecimal max, BigDecimal min) {
         double span = max.subtract(min).abs().doubleValue();
         if (span == 0) {
             span = Math.max(Math.abs(max.doubleValue()), 1.0d);
         }
-        double rawStep = span / targetSections;
+        double rawStep = span / Y_AXIS_SECTIONS;
         double magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
         double normalized = rawStep / magnitude;
         double niceNormalized = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
@@ -319,10 +314,14 @@ public class NewsletterChartSupport {
     }
 
     private List<Double> calculateRangeWithDtick(BigDecimal max, BigDecimal min, String dtickStr) {
-        double dtick = Double.parseDouble(StringUtils.defaultIfBlank(dtickStr, "1"));
-        double targetMax = max.doubleValue() + dtick;
-        double targetMin = min.doubleValue() - dtick;
-        return List.of(Math.floor(targetMin / dtick) * dtick, Math.ceil(targetMax / dtick) * dtick);
+        double dtick = Double.parseDouble(dtickStr);
+        double rangeMin = Math.floor(min.doubleValue() / dtick) * dtick;
+        double rangeMax = rangeMin + Y_AXIS_SECTIONS * dtick;
+        // 부동소수점 오차 등으로 실제 max가 범위를 벗어나는 경우 1 구간 위로 보정
+        if (rangeMax < max.doubleValue()) {
+            rangeMax += dtick;
+        }
+        return List.of(rangeMin, rangeMax);
     }
 
     private long toIntervalMillis(BigDecimal intervalValue, String intervalUnit) {

@@ -228,6 +228,8 @@ public class IssueStateLoader {
         if (!"NEWS_ITEM".equals(templateBlock.blockCode())) {
             return source;
         }
+        // NEWS_ITEM은 publish 시점에 NEWS_EVENT 데이터 소스로부터 동적으로 확장(expand)되므로,
+        // 이전에 저장된 block state(콘텐츠 입력값 등)는 의미가 없다. 빈 Map을 반환해 무시한다.
         return Map.of();
     }
 
