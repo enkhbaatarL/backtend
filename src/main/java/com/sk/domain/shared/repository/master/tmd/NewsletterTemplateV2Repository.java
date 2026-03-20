@@ -11,11 +11,10 @@ public interface NewsletterTemplateV2Repository extends JpaRepository<Newsletter
     @Query("""
         SELECT t
         FROM NewsletterTemplateV2 t
-        WHERE t.newsletterMasterId = :newsletterMasterId
+        WHERE t.newsletterTemplateV2Id = :templateId
           AND t.isDeleted = false
         """)
-    Optional<NewsletterTemplateV2> findByNewsletterMasterIdAndDelYn(
-        @Param("newsletterMasterId") Integer newsletterMasterId,
-        @Param("delYn") String delYn
+    Optional<NewsletterTemplateV2> findActiveByTemplateId(
+        @Param("templateId") Long templateId
     );
 }

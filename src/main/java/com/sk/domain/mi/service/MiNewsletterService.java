@@ -327,7 +327,7 @@ public class MiNewsletterService {
                         newsletterId, issueNo)));
 
             List<NewsletterTemplate> templates = newsletterTemplateRepository
-                .findByNewsletterTemplateIdOrderByElementOrder(nph.getNewsletterTemplateId());
+                .findByNewsletterTemplateIdOrderByElementOrder(Math.toIntExact(nph.getNewsletterTemplateId()));
 
             Map<Integer, Map<String, String>> templatesByOrder = templates.stream()
                 .collect(Collectors.groupingBy(

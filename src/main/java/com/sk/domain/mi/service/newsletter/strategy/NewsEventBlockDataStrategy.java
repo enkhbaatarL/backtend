@@ -1,7 +1,6 @@
 package com.sk.domain.mi.service.newsletter.strategy;
 
 import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
-import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
@@ -35,7 +34,6 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
     public ResolvedBlockData resolve(
         TemplateTree.BlockNode block,
         BlockExecutionPlan executionPlan,
-        IssueStateTree.BlockStateNode blockState,
         NewsletterPublishHistory pubHist
     ) {
         if (pubHist == null) {
@@ -54,7 +52,7 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
             }
             return ResolvedBlockData.expanded(items.get(0), items);
         } catch (RuntimeException e) {
-            log.warn("NEWS_ITEM 변환 실패 - issueBlockStateId: {}", blockState != null ? blockState.issueBlockStateId() : null, e);
+            log.warn("NEWS_ITEM 변환 실패 - templateBlockId: {}", block.id(), e);
             Map<String, Object> emptyItem = emptyItem(Boolean.FALSE);
             return ResolvedBlockData.expanded(emptyItem, List.of(emptyItem));
         }

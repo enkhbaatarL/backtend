@@ -1,7 +1,6 @@
 package com.sk.domain.mi.service.newsletter.strategy;
 
 import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
-import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
@@ -11,7 +10,6 @@ public interface BlockDataStrategy {
     ResolvedBlockData resolve(
         TemplateTree.BlockNode block,
         BlockExecutionPlan executionPlan,
-        IssueStateTree.BlockStateNode blockState,
         NewsletterPublishHistory pubHist
     );
 }

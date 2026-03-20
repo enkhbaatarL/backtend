@@ -2,7 +2,6 @@ package com.sk.domain.mi.service.newsletter;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssuePreviewRes;
@@ -26,11 +25,9 @@ public class NewsletterSnapshotService {
 
     public NewsletterIssuePreviewRes generateSnapshot(Integer newsletterId, Integer issueNo, User actorUser) {
         NewsletterIssueOriginal issueOriginal = getAccessibleIssue(newsletterId, issueNo, actorUser);
-        TemplateTree template = templateLoader.load(newsletterId);
-        IssueStateTree issueState = IssueStateTree.defaultFrom(template);
+        TemplateTree template = templateLoader.loadByPublishHistory(issueOriginal.getSourceNewsletterPublishHistory());
         Map<String, ResolvedBlockData> resolvedData = blockDataResolver.resolveAll(
             template,
-            issueState,
             issueOriginal.getSourceNewsletterPublishHistory(),
             false
         );
@@ -38,7 +35,7 @@ public class NewsletterSnapshotService {
         return new NewsletterIssuePreviewRes(
             newsletterId,
             issueNo,
-            snapshotAssembler.assembleNode(template, issueState, resolvedData, issueOriginal.getSourceNewsletterPublishHistory())
+            snapshotAssembler.assembleNode(template, resolvedData, issueOriginal.getSourceNewsletterPublishHistory())
         );
     }
 

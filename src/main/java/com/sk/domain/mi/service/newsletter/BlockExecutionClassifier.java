@@ -8,7 +8,6 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.dto.internal.BlockDataSourceSpec;
 import com.sk.domain.mi.dto.internal.BlockExecutionClassification;
 import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
-import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import java.time.LocalDate;
@@ -36,12 +35,11 @@ public class BlockExecutionClassifier {
     private static final Set<String> ISSUE_STATE_OVERRIDE_KEYS = Set.of("query", "state", "contentInput");
     private static final Set<String> TRANSFORM_TYPES = Set.of("SPLIT_LINES", "FORMAT_DATE", "TO_EPOCH_MILLIS", "LIMIT_ITEMS", "YN_TO_BOOLEAN");
     private static final Set<String> ALLOWED_STATE_KEYS = Set.of("plotOnChart", "removed");
-    private static final Set<String> COMMON_STATE_KEYS = Set.of("contentInput");
     private static final Pattern SOURCE_PATH_PATTERN = Pattern.compile("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+|\\.\\*)*");
 
     private final ObjectMapper objectMapper;
 
-    public BlockExecutionPlan plan(TemplateTree.BlockNode block, IssueStateTree.BlockStateNode blockState) {
+    public BlockExecutionPlan plan(TemplateTree.BlockNode block) {
         String specJson = StringUtils.trimToNull(block.dataSourceSpecJson());
         if (specJson == null) {
             return new BlockExecutionPlan(
@@ -54,7 +52,7 @@ public class BlockExecutionClassifier {
         List<String> errors = new ArrayList<>();
         BlockDataSourceSpec spec = parseSpec(specJson, errors);
         if (spec != null) {
-            validateCanonical(block, blockState, spec, errors);
+            validateCanonical(block, spec, errors);
         }
 
         BlockExecutionClassification classification = errors.isEmpty()
@@ -151,7 +149,6 @@ public class BlockExecutionClassifier {
 
     private void validateCanonical(
         TemplateTree.BlockNode block,
-        IssueStateTree.BlockStateNode blockState,
         BlockDataSourceSpec spec,
         List<String> errors
     ) {
@@ -161,11 +158,11 @@ public class BlockExecutionClassifier {
         }
 
         validateLocator(block, spec, errors);
-        validateQuery(block, blockState, spec, errors);
+        validateQuery(block, spec, errors);
         validateAssign(block, spec, errors);
-        validateOverridePolicy(block, blockState, spec, errors);
+        validateOverridePolicy(block, spec, errors);
         validateTransform(spec, errors);
-        validateConflicts(block, blockState, spec, errors);
+        validateConflicts(block, spec, errors);
         validateCanonicalShape(block, spec, errors);
     }
 
@@ -191,7 +188,6 @@ public class BlockExecutionClassifier {
 
     private void validateQuery(
         TemplateTree.BlockNode block,
-        IssueStateTree.BlockStateNode blockState,
         BlockDataSourceSpec spec,
         List<String> errors
     ) {
@@ -206,13 +202,6 @@ public class BlockExecutionClassifier {
         }
 
         Map<String, Object> effectiveQuery = new java.util.LinkedHashMap<>(templateQuery);
-        if (blockState != null && blockState.queryParams() != null) {
-            blockState.queryParams().forEach((key, value) -> {
-                if (allowedQueryKeys.contains(key)) {
-                    effectiveQuery.put(key, value);
-                }
-            });
-        }
 
         // fromDate/toDate는 필수 체크를 하지 않는다.
         // 템플릿 spec에 없어도 blockState.queryParams()를 통해 이슈 저장 시점에 주입될 수 있으므로,
@@ -273,7 +262,6 @@ public class BlockExecutionClassifier {
 
     private void validateOverridePolicy(
         TemplateTree.BlockNode block,
-        IssueStateTree.BlockStateNode blockState,
         BlockDataSourceSpec spec,
         List<String> errors
     ) {
@@ -309,49 +297,9 @@ public class BlockExecutionClassifier {
             errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
         }
         if (issueStateOverride.contentInput() != null) {
-            Set<String> allowedContentInput = new LinkedHashSet<>(editableFields);
-            block.fields().stream()
-                .map(TemplateTree.FieldNode::fieldKey)
-                .filter(fieldKey -> issueStateOverride.contentInput().contains(fieldKey))
-                .forEach(allowedContentInput::add);
-
             for (String contentInput : issueStateOverride.contentInput()) {
                 String rootKey = StringUtils.substringBefore(contentInput, ".");
                 if (!editableFields.contains(rootKey)) {
-                    errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
-                }
-            }
-        }
-
-        if (blockState == null || blockState.state().isEmpty()) {
-            return;
-        }
-
-        Set<String> seenIssueInputs = new LinkedHashSet<>();
-        blockState.state().forEach((key, value) -> {
-            if (COMMON_STATE_KEYS.contains(key)) {
-                return;
-            }
-            if (ALLOWED_STATE_KEYS.contains(key)) {
-                seenIssueInputs.add("state:" + key);
-                return;
-            }
-            if (allowedQueryKeys.contains(key)) {
-                seenIssueInputs.add("query:" + key);
-                return;
-            }
-            if (editableFields.contains(key)) {
-                seenIssueInputs.add("content:" + key);
-                return;
-            }
-            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
-        });
-
-        Object contentInput = blockState.state().get("contentInput");
-        if (contentInput instanceof Map<?, ?> contentMap && issueStateOverride.contentInput() != null) {
-            for (Object key : contentMap.keySet()) {
-                String keyString = String.valueOf(key);
-                if (!issueStateOverride.contentInput().contains(keyString)) {
                     errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
                 }
             }
@@ -381,7 +329,6 @@ public class BlockExecutionClassifier {
 
     private void validateConflicts(
         TemplateTree.BlockNode block,
-        IssueStateTree.BlockStateNode blockState,
         BlockDataSourceSpec spec,
         List<String> errors
     ) {
@@ -409,12 +356,6 @@ public class BlockExecutionClassifier {
             }
         }
 
-        if (blockState != null && blockState.state().containsKey("plotOnChart")
-            && (spec.overridePolicy() == null || spec.overridePolicy().issueState() == null
-            || spec.overridePolicy().issueState().state() == null
-            || !spec.overridePolicy().issueState().state().contains("plotOnChart"))) {
-            errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
-        }
     }
 
     private void validateCanonicalShape(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {

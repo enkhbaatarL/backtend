@@ -42,18 +42,24 @@ public class NewsletterTemplateV2 extends BaseEntity {
     @Comment("스키마버전")
     private Integer schemaVersion;
 
+    @Column(name = "tmplt_ver_no", nullable = false, columnDefinition = "int unsigned")
+    @Comment("템플릿버전번호")
+    private Integer templateVersionNo;
+
     @Builder
     public NewsletterTemplateV2(
         Long newsletterTemplateV2Id,
         Integer newsletterMasterId,
         String templateName,
         String templateDescription,
-        Integer schemaVersion
+        Integer schemaVersion,
+        Integer templateVersionNo
     ) {
         this.newsletterTemplateV2Id = newsletterTemplateV2Id;
         this.newsletterMasterId = newsletterMasterId;
         this.templateName = templateName;
         this.templateDescription = templateDescription;
         this.schemaVersion = schemaVersion;
+        this.templateVersionNo = templateVersionNo;
     }
 }

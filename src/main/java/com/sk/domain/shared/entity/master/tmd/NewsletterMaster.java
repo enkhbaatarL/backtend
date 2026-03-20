@@ -51,9 +51,9 @@ public class NewsletterMaster extends BaseEntity {
     @Comment("보여줄 이미지 주소")
     private String imageUrl;
 
-    @Column(name = "nws_ltr_tmplt_id", nullable = false, columnDefinition = "int unsigned")
-    @Comment("뉴스레터템플릿ID")
-    private Integer newsletterTemplateId;
+    @Column(name = "nws_ltr_tmplt_id", nullable = false, columnDefinition = "bigint unsigned")
+    @Comment("현재활성뉴스레터템플릿버전ID")
+    private Long newsletterTemplateId;
 
     @Column(name = "mstr_nm", nullable = false, length = 100)
     @Comment("뉴스레터마스터 이름")
@@ -71,7 +71,7 @@ public class NewsletterMaster extends BaseEntity {
     public NewsletterMaster(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
         String modifyUserId,
         Boolean isDeleted, Integer newsletterMasterId, PeriodType periodType, String explanation,
-        String imageUrl, Integer newsletterTemplateId, String masterName,
+        String imageUrl, Long newsletterTemplateId, String masterName,
         Integer customerCompanyNo) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.newsletterMasterId = newsletterMasterId;
@@ -84,7 +84,7 @@ public class NewsletterMaster extends BaseEntity {
     }
 
     public static NewsletterMaster of(PeriodType periodType, String explanation, String imageUrl,
-        Integer newsletterTemplateId, String masterName, Integer customerCompanyNo) {
+        Long newsletterTemplateId, String masterName, Integer customerCompanyNo) {
         return NewsletterMaster.builder()
             .periodType(periodType)
             .explanation(explanation)

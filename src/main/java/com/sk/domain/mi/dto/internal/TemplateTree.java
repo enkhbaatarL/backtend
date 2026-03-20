@@ -57,14 +57,16 @@ public record TemplateTree(
         Long id,
         String name,
         Integer masterId,
-        Integer schemaVersion
+        Integer schemaVersion,
+        Integer templateVersionNo
     ) {
         private static TemplateNode from(NewsletterTemplateV2 template) {
             return new TemplateNode(
                 template.getNewsletterTemplateV2Id(),
                 template.getTemplateName(),
                 template.getNewsletterMasterId(),
-                template.getSchemaVersion()
+                template.getSchemaVersion(),
+                template.getTemplateVersionNo()
             );
         }
     }

@@ -3,7 +3,6 @@ package com.sk.domain.mi.service.newsletter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterIssueOriginal;
@@ -24,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class NewsletterPublishPipelineService {
 
     private final TemplateLoader templateLoader;
-    private final IssueStateLoader issueStateLoader;
     private final BlockDataResolver blockDataResolver;
     private final SnapshotAssembler snapshotAssembler;
     private final NewsletterIssueOriginalRepository issueOriginalRepository;
@@ -34,16 +32,16 @@ public class NewsletterPublishPipelineService {
         NewsletterPublishHistory pubHist = publishHistoryRepository.findById(publishHistoryId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "NEWSLETTER_NOT_FOUND"));
 
-        TemplateTree template = templateLoader.load(newsletterMasterId);
+        if (!pubHist.getNewsletterMaster().getNewsletterMasterId().equals(newsletterMasterId)) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "PUBLISH_HISTORY_MASTER_MISMATCH");
+        }
+
+        TemplateTree template = templateLoader.loadByPublishHistory(pubHist);
         NewsletterIssueOriginal existingIssueOriginal = issueOriginalRepository
             .findByNewsletterMasterNewsletterMasterIdAndIssueNoAndIsDeletedFalse(newsletterMasterId, issueNo)
             .orElse(null);
-        IssueStateTree issueState = issueStateLoader.load(
-            existingIssueOriginal != null ? existingIssueOriginal.getNewsletterIssueOriginalId() : null,
-            template
-        );
-        Map<String, ResolvedBlockData> resolvedData = blockDataResolver.resolveAll(template, issueState, pubHist);
-        JsonNode snapshotNode = snapshotAssembler.assembleNode(template, issueState, resolvedData, pubHist);
+        Map<String, ResolvedBlockData> resolvedData = blockDataResolver.resolveAll(template, pubHist);
+        JsonNode snapshotNode = snapshotAssembler.assembleNode(template, resolvedData, pubHist);
 
         NewsletterIssueOriginal issueOriginal = existingIssueOriginal != null
             ? existingIssueOriginal.updateSnapshot(snapshotNode, 2, PublishStatusCode.PUBLISHED, pubHist.getPublishDateTime(), pubHist)

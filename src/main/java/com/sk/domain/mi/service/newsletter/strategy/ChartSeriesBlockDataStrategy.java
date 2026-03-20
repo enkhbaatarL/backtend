@@ -4,7 +4,6 @@ import com.sk.common.utils.CombineUtil;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
-import com.sk.domain.mi.dto.internal.IssueStateTree;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.service.newsletter.NewsletterChartSupport;
@@ -53,12 +52,11 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
     public ResolvedBlockData resolve(
         TemplateTree.BlockNode block,
         BlockExecutionPlan executionPlan,
-        IssueStateTree.BlockStateNode blockState,
         NewsletterPublishHistory pubHist
     ) {
         try {
             Map<String, Object> content = executionPlan.isCanonical()
-                ? resolveCanonical(block, blockState, executionPlan, pubHist)
+                ? resolveCanonical(block, executionPlan, pubHist)
                 : resolveLegacy(block, pubHist);
             return ResolvedBlockData.of(content);
         } catch (Exception e) {
@@ -69,7 +67,6 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
 
     private Map<String, Object> resolveCanonical(
         TemplateTree.BlockNode block,
-        IssueStateTree.BlockStateNode blockState,
         BlockExecutionPlan executionPlan,
         NewsletterPublishHistory pubHist
     ) {
@@ -79,7 +76,6 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
             refCode = block.blockCode();
         }
         Map<String, Object> content = new HashMap<>(defaultValueResolver.resolve(block, pubHist));
-        content.putAll(resolveChartBlockState(block, blockState));
         content.putAll(resolveChartPayload(block, pubHist, locatorKind, refCode));
         return content;
     }
@@ -130,20 +126,6 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
         if ("NEWS_FLOW_CHART".equals(block.blockCode()) && !content.containsKey("title")) {
             content.put("title", block.blockName());
         }
-        return content;
-    }
-
-    private Map<String, Object> resolveChartBlockState(TemplateTree.BlockNode block, IssueStateTree.BlockStateNode blockState) {
-        if (blockState == null || blockState.state().isEmpty()) {
-            return Map.of();
-        }
-        Map<String, Object> content = new HashMap<>();
-        block.fields().forEach(field -> {
-            Object value = blockState.state().get(field.fieldKey());
-            if (value != null) {
-                content.put(field.fieldKey(), value);
-            }
-        });
         return content;
     }
 

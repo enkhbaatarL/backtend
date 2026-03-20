@@ -41,9 +41,9 @@ public class NewsletterPublishHistory extends BaseEntity {
     @Comment("뉴스레터마스터ID")
     private NewsletterMaster newsletterMaster;
 
-    @Column(name = "nws_ltr_tmplt_id", nullable = false, columnDefinition = "int unsigned")
-    @Comment("뉴스레터템플릿ID")
-    private Integer newsletterTemplateId;
+    @Column(name = "nws_ltr_tmplt_id", nullable = false, columnDefinition = "bigint unsigned")
+    @Comment("발행시점뉴스레터템플릿버전ID")
+    private Long newsletterTemplateId;
 
     @Column(name = "issno", nullable = false)
     @Comment("발행차수")
