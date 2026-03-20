@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Airflow DAG 등 외부 시스템에서 뉴스레터 메일 발송을 트리거하는 컨트롤러.
  * OAuth2 인증 필요 (Role.SYSTEM 또는 관리자 권한).
  */
-@Tag(name = "13. Newsletter Mail API", description = "뉴스레터 Mail API입니다.")
+@Tag(name = "13-5. Newsletter Mail API", description = "뉴스레터 Mail API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")

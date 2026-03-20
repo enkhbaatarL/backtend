@@ -39,10 +39,11 @@ paths:
   /newsletter/{newsletterId}/{issueNo}:
     get:
       tags: [Newsletter]
-      summary: 원본 or 편집본 상세 조회
+      summary: canonical 상세 조회
       description: |
-        source 필드 기준으로 본문 타입을 판별한다. source가 REVISION이면 편집본, ORIGINAL이면 원본을 반환한다.
-        최초 진입이 detail 호출이 아닐 경우에도 저장 API는 revisionId를 미사용해 동작한다.
+        canonical 상세 endpoint는 항상 NewsletterDetailV2Res를 반환한다.
+        요청 companyNo로 접근 가능한 발행본을 먼저 찾고, 접근 성공 후 ownerUserNo=actorUser.userNo 기준 사용자 수정본이 있으면 수정본을,
+        없으면 원본 발행본을 반환한다. actor 소속 회사와 요청 회사는 다를 수 있다.
 
         revisionId 규칙
         - revisionId는 사용자-이슈(1:1) 리비전 식별자이다.
@@ -51,18 +52,19 @@ paths:
       parameters:
         - $ref: '#/components/parameters/NewsletterId'
         - $ref: '#/components/parameters/IssueNo'
+        - $ref: '#/components/parameters/CompanyNo'
       responses:
         '200':
           description: 조회 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BaseResponseRevisionOrOriginalDetailRes'
+                $ref: '#/components/schemas/BaseResponseNewsletterDetailV2Res'
               examples:
                 originalWithNoRevision:
                   summary: 최초 진입/저장 전(리비전 없음)
                   description: |
-                    originalSnapshot/latestSnapshot의 revisionNo=0은 원본 스냅샷 기준값(sentinel)이다.
+                    originalSnapshot/snapshot의 revisionNo=0은 원본 스냅샷 기준값(sentinel)이다.
                     리비전 저장 버전을 의미하지 않는다.
                   value:
                     status: true
@@ -71,13 +73,15 @@ paths:
                     data:
                       newsletterId: 12
                       issueNo: 1
+                      schemaVersion: 2
                       revisionId: null
                       editStatus: NONE
                       revisionNo: null
                       source: ORIGINAL
                       hasDraft: false
                       latestDraftRevisionNo: null
-                      content:
+                      subscribed: false
+                      snapshot:
                         sections:
                           - id: sec-01
                             type: FIXED
@@ -98,7 +102,7 @@ paths:
                         revisionNo: 0
                         data:
                           title: "금일 시장 브리핑"
-                      latestSnapshot:
+                      snapshot:
                         revisionNo: 0
                         data:
                           title: "금일 시장 브리핑"
@@ -113,13 +117,15 @@ paths:
                     data:
                       newsletterId: 12
                       issueNo: 1
+                      schemaVersion: 2
                       revisionId: 203
                       editStatus: EDIT_DRAFT
                       revisionNo: 4
                       source: REVISION
                       hasDraft: true
                       latestDraftRevisionNo: 7
-                      content:
+                      subscribed: true
+                      snapshot:
                         sections:
                           - id: sec-01
                             type: GENERAL
@@ -140,7 +146,7 @@ paths:
                         revisionNo: 1
                         data:
                           sections: []
-                      latestSnapshot:
+                      snapshot:
                         revisionNo: 4
                         data:
                           sections:
@@ -163,11 +169,12 @@ paths:
       tags: [Newsletter]
       summary: 원본 스냅샷 전용 조회
       description: |
-        published issue의 `org_snpsht_json`만 그대로 반환한다.
-        revision/review/editor delta를 재조립하지 않으며 응답 `source`는 항상 `ORIGINAL`이다.
+        요청 companyNo 기준으로 접근 가능한 published issue의 `org_snpsht_json`만 그대로 반환한다.
+        revision/review/editor delta를 재조립하지 않는 원본 고정 조회이며 응답 `source`는 항상 `ORIGINAL`이다.
       parameters:
         - $ref: '#/components/parameters/NewsletterId'
         - $ref: '#/components/parameters/IssueNo'
+        - $ref: '#/components/parameters/CompanyNo'
       responses:
         '200':
           description: 원본 스냅샷 조회 성공
@@ -489,6 +496,14 @@ components:
       schema:
         type: integer
         format: int32
+    CompanyNo:
+      name: companyNo
+      in: query
+      required: true
+      description: 접근 제어와 tenant resolution에 사용하는 요청 고객회사번호. actor 소속 회사와 다를 수 있다.
+      schema:
+        type: integer
+        format: int32
 
   schemas:
     BaseResponse:
@@ -530,13 +545,13 @@ components:
             data:
               $ref: '#/components/schemas/RevisionFlowGuideRes'
 
-    BaseResponseRevisionOrOriginalDetailRes:
+    BaseResponseNewsletterDetailV2Res:
       allOf:
         - $ref: '#/components/schemas/BaseResponse'
         - type: object
           properties:
             data:
-              $ref: '#/components/schemas/RevisionOrOriginalDetailRes'
+              $ref: '#/components/schemas/NewsletterDetailV2Res'
 
     BaseResponseNewsletterOriginalSnapshotRes:
       allOf:
@@ -587,13 +602,16 @@ components:
               type: string
               nullable: true
 
-    RevisionOrOriginalDetailRes:
+    NewsletterDetailV2Res:
       type: object
       properties:
         newsletterId:
           type: integer
         issueNo:
           type: integer
+        schemaVersion:
+          type: integer
+          nullable: true
         revisionId:
           type: integer
           nullable: true
@@ -616,19 +634,18 @@ components:
           type: integer
           nullable: true
           description: hasDraft가 true일 때 조회 대상 draft revisionNo
-        content:
-          type: object
-          additionalProperties: true
+        subscribed:
+          type: boolean
         originalSnapshot:
           $ref: '#/components/schemas/ContentSnapshot'
-        latestSnapshot:
+        snapshot:
           $ref: '#/components/schemas/ContentSnapshot'
         deltaCount:
           type: integer
-          description: latestSnapshot 대비 deltaChanges 건수. 권장 snapshot cut 임계치 초기값은 8.
+          description: snapshot 대비 deltaChanges 건수. 권장 snapshot cut 임계치 초기값은 8.
         deltaChanges:
           type: array
-          description: latestSnapshot 대비 현재 콘텐츠 변경점
+          description: snapshot 대비 현재 콘텐츠 변경점
           items:
             $ref: '#/components/schemas/JsonPatchOp'
 

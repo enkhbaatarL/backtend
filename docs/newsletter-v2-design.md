@@ -363,8 +363,9 @@ sequenceDiagram
 
 ### Originals
 - `GET /api/v1/mi/newsletter/{newsletterId}/{issueNo}`
-  - 원본 or 편집본 상세 조회
-  - 편집본이 존재하면 편집본 반환, 없으면 원본 반환
+  - canonical 상세 조회 (`NewsletterDetailV2Res`)
+  - `companyNo`는 접근 제어와 tenant resolution 용도이며, actor 소속 회사와 요청 회사는 다를 수 있다.
+  - 요청 `companyNo`로 접근 가능한 발행본을 먼저 검증한 뒤, `ownerUserNo = actorUser.userNo` 기준 수정본이 있으면 수정본을, 없으면 원본을 반환한다.
   - 상세조회 응답은 리비전이 존재하면 `revisionId`를 포함한다.
   - 리비전이 없으면 `revisionId` 미포함.
   - 리비전이 있으면 `changes` API 호출에 `revisionId`를 사용한다.
@@ -372,11 +373,14 @@ sequenceDiagram
     - `source`: 현재 상세조회에서 반환된 본문 유형 (`ORIGINAL` | `REVISION`)
     - `hasDraft`: 임시저장 존재 여부 (`revisionType=AUTOSAVE` 최신 이력 존재 여부)
     - `originalSnapshot`: 원본 기준 기준점 스냅샷
-    - `latestSnapshot`: 현재 기준 최신 스냅샷(원본/편집본 기준)
-    - `deltaChanges`: `latestSnapshot` 대비 현재 콘텐츠의 변경사항 배열
+    - `snapshot`: 현재 기준 최신 스냅샷(원본/편집본 기준, 내부 Java 필드명은 `latestSnapshot`)
+    - `deltaChanges`: `snapshot` 대비 현재 콘텐츠의 변경사항 배열
     - `deltaCount`: `deltaChanges` 개수
   - `source`가 `REVISION`이면 편집본 반환, `ORIGINAL`이면 원본 반환.
   - `hasDraft`가 `true`이면 `GET /revisions/draft`로 최신 임시저장 데이터 조회
+- `GET /api/v1/mi/newsletter/{newsletterId}/{issueNo}/original-snapshot`
+  - 요청 `companyNo` 기준 접근 가능한 원본 발행본을 고정 조회한다.
+  - 수정본 합성 없이 `org_snpsht_json` 원본만 반환한다.
 - `POST /api/v1/mi/newsletter/{newsletterId}/{issueNo}/send-mail`
   - 편집본 기준 메일 발송
   - `EDIT_SAVED` 가드
@@ -414,26 +418,27 @@ sequenceDiagram
 예시(리비전 조회/저장 응답)
 ```json
 {
-  "revisionId": 101,
   "newsletterId": 1,
   "issueNo": 22,
-  "ownerUserNo": 12345,
+  "schemaVersion": 2,
+  "revisionId": 101,
   "editStatus": "EDIT_DRAFT",
+  "revisionNo": 4,
   "source": "REVISION",
   "hasDraft": true,
   "latestDraftRevisionNo": 6,
-  "revisionNo": 4,
+  "subscribed": true,
   "originalSnapshot": {
-    "revisionNo": 1,
-    "content": {
+    "revisionNo": 0,
+    "data": {
       "title": "초안 기획서",
       "status": "draft",
       "content": "초기 내용입니다."
     }
   },
-  "latestSnapshot": {
+  "snapshot": {
     "revisionNo": 2,
-    "content": {
+    "data": {
       "title": "초안 기획서",
       "status": "draft",
       "content": "초기 내용입니다."
@@ -445,18 +450,7 @@ sequenceDiagram
     { "op": "replace", "path": "/status", "value": "review" },
     { "op": "replace", "path": "/content", "value": "내용이 업데이트 되었습니다." }
   ],
-  "content": {
-    "sections": []
-  },
-  "isNewRevision": false,
-  "lastAutoSavedAt": "2026-03-05T10:15:00Z",
-  "savedAt": null,
-  "createdAt": "2026-03-04T09:00:00Z",
-  "updatedAt": "2026-03-05T10:15:00Z",
-  "canEdit": true,
-  "recentHistoryFromSeq": 3,
-  "nextHistorySeq": 6,
-  "validationWarnings": []
+  "sections": []
 }
 ```
 예시(개념: histories/{seq} 응답)
@@ -490,7 +484,7 @@ sequenceDiagram
   - 기본 동작: `EDIT_DRAFT -> EDIT_SAVED` 전환
   - 기본 동작: `deltas`(현재 상태 대비 상대 변경분) + (선택) `snapshotPayload`
   - `snapshotPayload`가 있으면 해당 payload 기준으로 snapshot 저장, 없으면 snapshot 저장 생략
-- 상세조회 응답은 `latestSnapshot` + `deltaChanges`/`deltaCount`를 항상 내려, 프론트는 임계치(클라이언트 정책)에 따라 `PUT /revisions/save`에 `snapshotPayload`를 포함할지 판단한다.
+- 상세조회 응답은 `snapshot` + `deltaChanges`/`deltaCount`를 항상 내려, 프론트는 임계치(클라이언트 정책)에 따라 `PUT /revisions/save`에 `snapshotPayload`를 포함할지 판단한다.
 
 요청 예시
 ```json

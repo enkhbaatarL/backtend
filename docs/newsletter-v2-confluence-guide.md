@@ -58,7 +58,14 @@
 - **엔드포인트**: `GET /{newsletterId}/{issueNo}/original-snapshot`
 - **데이터 원천**: `org_snpsht_json` (발행 완료 동결본)
 - **목적**: 발행 이력 재현, 메일 원본 확인, 감사
-- **특징**: 이후 템플릿이나 DB 원천 데이터가 바뀌어도 과거 발행본은 항상 동일하게 재현 가능
+- **특징**: 요청 `companyNo` 기준 접근 가능한 원본만 고정 조회하며, 이후 템플릿이나 DB 원천 데이터가 바뀌어도 과거 발행본은 항상 동일하게 재현 가능
+
+### 4-1A. canonical 상세 조회
+- **엔드포인트**: `GET /{newsletterId}/{issueNo}?companyNo=`
+- **응답 타입**: `NewsletterDetailV2Res`
+- **companyNo 용도**: 접근 제어와 tenant resolution
+- **tenant 규칙**: actor 소속 회사와 요청 회사는 다를 수 있으며, 상세 조회는 요청 `companyNo`로 접근 검증 후 수정본 선택
+- **수정본 선택 규칙**: 접근 성공 후 `ownerUserNo = actorUser.userNo` 기준 수정본이 있으면 수정본, 없으면 원본 발행본 반환
 
 ### 4-2. Preview (Issue Preview View)
 - **엔드포인트**: `GET /{newsletterId}/{issueNo}/preview`
@@ -254,8 +261,8 @@ Original Snapshot (원본)
 
 | 기능 | Method | 경로 | 설명 |
 |------|--------|------|------|
-| 뉴스레터 상세 (v2) | GET | `/{newsletterId}/{issueNo}?companyNo=` | snapshot 기반 상세 조회 |
-| 원본 스냅샷 조회 | GET | `/{newsletterId}/{issueNo}/original-snapshot?companyNo=` | `org_snpsht_json` 직접 반환 |
+| 뉴스레터 상세 (v2) | GET | `/{newsletterId}/{issueNo}?companyNo=` | canonical 상세 조회, 응답은 항상 `NewsletterDetailV2Res` |
+| 원본 스냅샷 조회 | GET | `/{newsletterId}/{issueNo}/original-snapshot?companyNo=` | 요청 `companyNo` 기준 `org_snpsht_json` 원본 고정 조회 |
 | Preview 조회 | GET | `/{newsletterId}/{issueNo}/preview` | Issue State 기반 동적 조합 |
 | Issue State 저장 | PUT | `/{newsletterId}/{issueNo}/issue-state` | section/block state upsert |
 | 사용자 편집본 조회 | GET | `/{issueId}/revision` | 내 편집본 |

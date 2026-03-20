@@ -195,13 +195,17 @@
 ### 10.1 Originals
 | Method | Path | 설명 |
 |---|---|---|
- | GET | `/api/v1/mi/newsletter/{newsletterId}/{issueNo}` | 원본 or 편집본 상세 조회 (편집본 존재 시 편집본 반환), 응답 동기화 항목 포함 |
+ | GET | `/api/v1/mi/newsletter/{newsletterId}/{issueNo}?companyNo=` | canonical 상세 조회 (`NewsletterDetailV2Res`) |
+ | GET | `/api/v1/mi/newsletter/{newsletterId}/{issueNo}/original-snapshot?companyNo=` | 요청 companyNo 기준 원본 고정 조회 |
 
+  - `companyNo`는 접근 제어와 tenant resolution 용도이며, actor 소속 회사와 요청 회사는 다를 수 있다.
+  - 상세조회는 요청 `companyNo`로 접근 가능한 발행본을 먼저 검증한 뒤, `ownerUserNo = actorUser.userNo` 기준 수정본이 있으면 수정본을, 없으면 원본을 `NewsletterDetailV2Res`로 반환한다.
   - 상세조회는 리비전이 존재할 때 `revisionId`를 포함한다.
   - `/revisions/draft`, `/revisions/save`는 revisionId 미존재 상태에서 자동 생성한다.
   - 리비전 존재 시 `/revisions/{revisionId}/changes...` API에 사용한다.
   - 응답 필드는 `source`를 추가하여 반환 본문 유형을 명시한다. (`ORIGINAL` or `REVISION`)
   - `source`가 `REVISION`이면 편집본 반환, `ORIGINAL`이면 원본 반환.
+  - `/original-snapshot`은 수정본 합성 없이 원본 발행본만 반환한다.
 | POST | `/api/v1/mi/newsletter/{newsletterId}/{issueNo}/send-mail` | 편집본 메일 발송 (`EDIT_SAVED` 가드, `recipientEmails` 미입력 시 유효 수신자 없음) |
 
 ### 10.2 Revisions
@@ -214,7 +218,7 @@
 | GET | `/api/v1/mi/newsletter/{newsletterId}/{issueNo}/revisions/{revisionId}/changes/{seq}` | 특정 수정 이력 조회 |
 
 ### 10-2. revisions 응답 규칙 정리(프론트 동기화)
-- `originalSnapshot/latestSnapshot`의 `revisionNo=0`은 원본 스냅샷 기준값(sentinel)이며, 리비전 저장 버전값이 아니다.
+- `originalSnapshot/snapshot`의 `revisionNo=0`은 원본 스냅샷 기준값(sentinel)이며, 리비전 저장 버전값이 아니다.
 - `baseSnapshot.seq`는 `fromSeq`로 간주
 - 응답엔 `fromSeq`, `toSeq`도 함께 제공
 - 프론트는 `baseSnapshot`에서 `histories`를 `seq` 오름차순으로 적용해 최종 상태 재구성
@@ -223,10 +227,10 @@
 - 상세조회 응답의 `hasDraft=true`면 임시저장본 조회를 위해 `GET /revisions/draft` 호출
 - 임시저장 반영 정책: `PUT /revisions/draft` 반복 호출 시 저장본은 덮어써서 단일 최신 임시저장본만 유지한다.
 - `GET /api/v1/mi/newsletter/{newsletterId}/{issueNo}` 응답 동기화 필드
+  - `snapshot`
   - `source`
   - `hasDraft`
   - `originalSnapshot`
-  - `latestSnapshot`
   - `deltaChanges`
   - `deltaCount`
 
