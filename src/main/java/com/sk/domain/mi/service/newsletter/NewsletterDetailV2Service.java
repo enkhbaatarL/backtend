@@ -3,7 +3,10 @@ package com.sk.domain.mi.service.newsletter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.domain.mi.dto.response.newsletter.ContentSnapshotRes;
+import com.sk.domain.mi.dto.response.newsletter.JsonPatchOpRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res.RevisionStateRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueOriginalSnapshotRes;
 import com.sk.domain.mi.dto.response.newsletter.RevisionOrOriginalDetailRes;
 import com.sk.domain.mi.service.MiNewsletterRevisionService;
@@ -12,6 +15,7 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tmd.NewsletterIssueOriginalRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterSubscriptionRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,15 +37,29 @@ public class NewsletterDetailV2Service {
     public NewsletterDetailV2Res getNewsletterDetail(Integer companyNo, Integer userNo, Integer newsletterId, Integer issueNo) {
         NewsletterIssueOriginal issueOriginal = getAccessibleIssue(companyNo, newsletterId, issueNo);
 
-        JsonNode snapshot = issueOriginal.getOriginalSnapshotJson();
-        String source = ORIGINAL_SOURCE;
+        RevisionStateRes revision = null;
+        ContentSnapshotRes latestSnapshot = new ContentSnapshotRes(0, issueOriginal.getOriginalSnapshotJson(), issueOriginal.getCreateDt());
+        Integer deltaCount = 0;
+        List<JsonPatchOpRes> deltaChanges = List.of();
 
         if (issueOriginal.getSchemaVersion() != null && issueOriginal.getSchemaVersion() >= 2 && userNo != null) {
             User actorUser = userRepository.findByUserNoAndIsDeletedFalse(userNo).orElse(null);
             if (actorUser != null) {
-                RevisionOrOriginalDetailRes revisionOrOriginal = revisionService.getRevisionOrOriginalDetail(newsletterId, issueNo, actorUser);
-                snapshot = revisionOrOriginal.content();
-                source = revisionOrOriginal.source();
+                RevisionOrOriginalDetailRes detail =
+                    revisionService.getRevisionOrOriginalDetailForAccessibleIssue(issueOriginal, actorUser.getUserNo());
+                latestSnapshot = detail.latestSnapshot();
+                deltaCount = detail.deltaCount();
+                deltaChanges = detail.deltaChanges();
+
+                if (detail.revisionId() != null) {
+                    revision = new RevisionStateRes(
+                        detail.revisionId(),
+                        detail.editStatus(),
+                        detail.revisionNo(),
+                        detail.hasDraft(),
+                        detail.latestDraftRevisionNo()
+                    );
+                }
             }
         }
 
@@ -50,7 +68,17 @@ public class NewsletterDetailV2Service {
             .map(subscription -> Boolean.TRUE.equals(subscription.getIsSubscribed()))
             .orElse(false);
 
-        return new NewsletterDetailV2Res(newsletterId, issueNo, issueOriginal.getSchemaVersion(), source, subscribed, snapshot);
+        return new NewsletterDetailV2Res(
+            newsletterId,
+            issueNo,
+            issueOriginal.getSchemaVersion(),
+            issueOriginal.getPublishDateTime(),
+            subscribed,
+            revision,
+            latestSnapshot,
+            deltaCount,
+            deltaChanges
+        );
     }
 
     public NewsletterIssueOriginalSnapshotRes getOriginalSnapshot(Integer companyNo, Integer newsletterId, Integer issueNo) {

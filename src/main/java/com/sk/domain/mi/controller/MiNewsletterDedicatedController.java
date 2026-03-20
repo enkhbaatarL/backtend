@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "13. Newsletter API", description = "뉴스레터 API입니다.")
+@Tag(name = "13-1. Newsletter API", description = "뉴스레터 API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")
@@ -55,8 +55,11 @@ public class MiNewsletterDedicatedController {
     }
 
     @ApiOrder(5)
-    @Parameter(name = "companyNo", description = "고객회사번호")
-    @Operation(summary = "뉴스레터 상세 v2 조회", description = "org_snpsht_json 기반 상세 정보를 조회합니다.")
+    @Parameter(name = "companyNo", description = "접근 제어와 tenant resolution에 사용하는 요청 고객회사번호")
+    @Operation(
+        summary = "뉴스레터 상세 v2 조회",
+        description = "요청 companyNo로 접근 가능한 발행본을 먼저 확인한 뒤, actor user 소유 수정본이 있으면 수정본을, 없으면 원본을 NewsletterDetailV2Res로 반환합니다."
+    )
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping(value = "/{newsletterId}/{issueNo}", params = "companyNo")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
@@ -73,8 +76,8 @@ public class MiNewsletterDedicatedController {
     }
 
     @ApiOrder(6)
-    @Parameter(name = "companyNo", description = "고객회사번호")
-    @Operation(summary = "뉴스레터 original snapshot 조회", description = "published issue의 org_snpsht_json 원본 스냅샷만 그대로 조회합니다.")
+    @Parameter(name = "companyNo", description = "접근 제어와 tenant resolution에 사용하는 요청 고객회사번호")
+    @Operation(summary = "뉴스레터 original snapshot 조회", description = "요청 companyNo 기준으로 접근 가능한 published issue의 org_snpsht_json 원본 스냅샷만 그대로 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping(value = "/{newsletterId}/{issueNo}/original-snapshot", params = "companyNo")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,

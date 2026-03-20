@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "13. Newsletter API", description = "뉴스레터 API입니다.")
+@Tag(name = "13-1. Newsletter API", description = "뉴스레터 API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")

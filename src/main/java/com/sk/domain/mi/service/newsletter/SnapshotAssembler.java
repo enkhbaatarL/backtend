@@ -97,11 +97,6 @@ public class SnapshotAssembler {
         }
 
         SnapshotRoot root = SnapshotRoot.builder()
-            .schemaVersion(2)
-            .templateId(template.template().id())
-            .newsletterId(pubHist.getNewsletterMaster().getNewsletterMasterId())
-            .issueNo(pubHist.getIssueNo())
-            .publishedAt(pubHist.getPublishDateTime())
             .meta(meta)
             .sections(sections)
             .build();

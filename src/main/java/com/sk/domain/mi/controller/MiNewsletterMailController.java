@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "13. Newsletter Mail API", description = "뉴스레터 Mail API입니다.")
+@Tag(name = "13-5. Newsletter Mail API", description = "뉴스레터 Mail API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")

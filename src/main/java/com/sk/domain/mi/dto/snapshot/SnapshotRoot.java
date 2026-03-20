@@ -12,7 +12,6 @@ import lombok.Setter;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SnapshotRoot {
-    private Integer schemaVersion;
     private Long templateId;
     private Integer newsletterId;
     private Integer issueNo;

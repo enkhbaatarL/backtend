@@ -47,8 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MiNewsletterRevisionService {
 
     private static final int ORIGINAL_SNAPSHOT_REVISION_NO = 0;
-    private static final String SOURCE_ORIGINAL = "ORIGINAL";
-    private static final String SOURCE_REVISION = "REVISION";
+    private static final String NEWS_EVENT_SHOW_IN_CHART_FIELD = "showInChart";
 
     private final NewsletterIssueOriginalRepository newsletterIssueOriginalRepository;
     private final NewsletterUserRevisionRepository newsletterUserRevisionRepository;
@@ -95,24 +94,31 @@ public class MiNewsletterRevisionService {
         User actorUser
     ) {
         NewsletterIssueOriginal issueOriginal = getAccessibleIssue(newsletterId, issueNo, actorUser);
-        NewsletterUserRevision revision = findOwnedRevision(issueOriginal, actorUser.getUserNo());
+        return getRevisionOrOriginalDetailForAccessibleIssue(issueOriginal, actorUser.getUserNo());
+    }
 
-        JsonNode originalSnapshot = deepCopy(issueOriginal.getOriginalSnapshotJson());
+    public RevisionOrOriginalDetailRes getRevisionOrOriginalDetailForAccessibleIssue(
+        NewsletterIssueOriginal issueOriginal,
+        Integer ownerUserNo
+    ) {
+        validateIssueOriginal(issueOriginal);
+        validateOwnerUserNo(ownerUserNo);
+
+        Integer newsletterId = issueOriginal.getNewsletterMaster().getNewsletterMasterId();
+        Integer issueNo = issueOriginal.getIssueNo();
+        NewsletterUserRevision revision = findOwnedRevision(issueOriginal, ownerUserNo);
 
         if (revision == null) {
-            ContentSnapshotRes sentinel = new ContentSnapshotRes(ORIGINAL_SNAPSHOT_REVISION_NO, originalSnapshot);
+            JsonNode originalSnapshot = deepCopy(issueOriginal.getOriginalSnapshotJson());
             return new RevisionOrOriginalDetailRes(
                 newsletterId,
                 issueNo,
                 null,
                 "NONE",
                 null,
-                SOURCE_ORIGINAL,
                 false,
                 null,
-                originalSnapshot,
-                sentinel,
-                sentinel,
+                new ContentSnapshotRes(ORIGINAL_SNAPSHOT_REVISION_NO, originalSnapshot, issueOriginal.getCreateDt()),
                 0,
                 List.of()
             );
@@ -123,18 +129,19 @@ public class MiNewsletterRevisionService {
         List<JsonPatchOpRes> latestDeltaChanges = flattenDeltaChanges(replayContext.histories());
         boolean hasDraft = revision.getDraftSavedAt() != null;
 
+        LocalDateTime latestSavedAt = revision.getFinalSavedAt() != null
+            ? revision.getFinalSavedAt()
+            : (revision.getDraftSavedAt() != null ? revision.getDraftSavedAt() : replayContext.baseSnapshotSavedAt());
+
         return new RevisionOrOriginalDetailRes(
             newsletterId,
             issueNo,
             revision.getNewsletterUserRevisionId(),
             revision.getEditStatus().name(),
             revision.getRevisionNo().intValue(),
-            SOURCE_REVISION,
             hasDraft,
             hasDraft ? revision.getRevisionNo().intValue() : null,
-            content,
-            new ContentSnapshotRes(ORIGINAL_SNAPSHOT_REVISION_NO, originalSnapshot),
-            new ContentSnapshotRes(replayContext.baseRevisionNo().intValue(), deepCopy(replayContext.baseContent())),
+            new ContentSnapshotRes(revision.getRevisionNo().intValue(), content, latestSavedAt),
             latestDeltaChanges.size(),
             latestDeltaChanges
         );
@@ -417,7 +424,7 @@ public class MiNewsletterRevisionService {
                     revision,
                     snapshot.getBaseDeltaNo()
                 );
-            return new ReplayContext(snapshot.getSnapshotNo(), snapshot.getBaseDeltaNo(), deepCopy(snapshot.getSnapshotJson()), deltas);
+            return new ReplayContext(snapshot.getSnapshotNo(), snapshot.getBaseDeltaNo(), deepCopy(snapshot.getSnapshotJson()), snapshot.getCreateDt(), deltas);
         }
 
         List<NewsletterUserRevisionDeltaHistory> deltas =
@@ -429,6 +436,7 @@ public class MiNewsletterRevisionService {
             (long) ORIGINAL_SNAPSHOT_REVISION_NO,
             0L,
             deepCopy(issueOriginal.getOriginalSnapshotJson()),
+            issueOriginal.getCreateDt(),
             deltas
         );
     }
@@ -444,11 +452,11 @@ public class MiNewsletterRevisionService {
                 .orElse(null);
 
             if (snapshot != null && snapshot.getBaseDeltaNo() <= seq) {
-                return new ReplayContext(snapshot.getSnapshotNo(), snapshot.getBaseDeltaNo(), deepCopy(snapshot.getSnapshotJson()), List.of());
+                return new ReplayContext(snapshot.getSnapshotNo(), snapshot.getBaseDeltaNo(), deepCopy(snapshot.getSnapshotJson()), snapshot.getCreateDt(), List.of());
             }
         }
 
-        return new ReplayContext(0L, 0L, deepCopy(issueOriginal.getOriginalSnapshotJson()), List.of());
+        return new ReplayContext(0L, 0L, deepCopy(issueOriginal.getOriginalSnapshotJson()), issueOriginal.getCreateDt(), List.of());
     }
 
     private NewsletterIssueOriginal getAccessibleIssue(Integer newsletterId, Integer issueNo, User actorUser) {
@@ -488,6 +496,18 @@ public class MiNewsletterRevisionService {
     private void validateActorUser(User actorUser) {
         if (actorUser == null || actorUser.getUserNo() == null || actorUser.getCustomerCompany() == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
+        }
+    }
+
+    private void validateIssueOriginal(NewsletterIssueOriginal issueOriginal) {
+        if (issueOriginal == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "issueOriginal is required");
+        }
+    }
+
+    private void validateOwnerUserNo(Integer ownerUserNo) {
+        if (ownerUserNo == null || ownerUserNo <= 0) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "owner user is required");
         }
     }
 
@@ -634,6 +654,10 @@ public class MiNewsletterRevisionService {
 
         if (parent instanceof ObjectNode objectNode) {
             if (!allowCreate && !objectNode.has(lastToken)) {
+                if (canBackfillMissingField(tokens, lastToken)) {
+                    objectNode.set(lastToken, deepCopy(value));
+                    return root;
+                }
                 throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "patch path not found: " + path);
             }
             objectNode.set(lastToken, deepCopy(value));
@@ -663,6 +687,17 @@ public class MiNewsletterRevisionService {
         }
 
         throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "patch parent is not a container: " + path);
+    }
+
+    private boolean canBackfillMissingField(List<String> tokens, String lastToken) {
+        if (!NEWS_EVENT_SHOW_IN_CHART_FIELD.equals(lastToken)) {
+            return false;
+        }
+        if (tokens.size() < 4) {
+            return false;
+        }
+        return "relatedNews".equals(tokens.get(tokens.size() - 4))
+            && "newsEventItems".equals(tokens.get(tokens.size() - 3));
     }
 
     private JsonNode navigateParent(JsonNode root, List<String> tokens) {
@@ -755,6 +790,7 @@ public class MiNewsletterRevisionService {
         Long baseRevisionNo,
         Long baseDeltaNo,
         JsonNode baseContent,
+        LocalDateTime baseSnapshotSavedAt,
         List<NewsletterUserRevisionDeltaHistory> histories
     ) {
     }
