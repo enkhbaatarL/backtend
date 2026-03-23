@@ -1,9 +1,12 @@
 package com.sk.domain.shared.client.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.Map;
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +20,8 @@ import lombok.extern.slf4j.Slf4j;
  *   "state": "start | progress | error | complete",
  *   "data": "message | series | table | chunk | vector_data",
  *   "node": "PreparePromptNode | DataAnalysisNode | VectorSearchNode | ...",
- *   "value": "string or dict depending on data type"
+ *   "value": "string",
+ *   "segment": "optional structured object"
  * }
  */
 @Slf4j
@@ -54,11 +58,15 @@ public record ModelAgentStreamBody(
         /*
          * 이벤트의 값
          * - data가 "message" 또는 "chunk"인 경우: String
-         * - data가 "series", "table", "vector_data"인 경우: Map/Object 형태
-         * <p>
-         * Object 타입으로 받아 런타임에 타입 체크 후 처리
+         * - value: String (일부 이벤트는 JSON 문자열 형태일 수 있음)
          */
-        Object value
+        String value,
+
+        /*
+         * 추가로 수신되는 구조화 데이터
+         * (예: timeseries_insights, sources 등)
+         */
+        Segment segment
 
 ) {
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -85,39 +93,39 @@ public record ModelAgentStreamBody(
     }
 
     /**
-     * value가 String인 경우 반환
+     * value 문자열 반환
      */
     public String getValueAsString() {
-        if (value instanceof String stringValue) {
-            return stringValue;
-        }
-        return null;
+        return value;
     }
 
     /**
-     * value가 Map인 경우 반환
+     * value가 JSON Object 문자열인 경우 Map으로 변환
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> getValueAsMap() {
-        if (value instanceof Map) {
-            return (Map<String, Object>) value;
+        if (value == null || value.trim().isEmpty()) {
+            return Collections.emptyMap();
         }
-        return Collections.emptyMap();
+        try {
+            return objectMapper.readValue(value, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            return Collections.emptyMap();
+        }
     }
 
     /**
-     * value를 특정 타입으로 변환
+     * value(JSON 문자열)를 특정 타입으로 변환
      */
     public <T> T getValueAs(Class<T> clazz) {
         try {
-            if (value == null) {
+            if (value == null || value.trim().isEmpty()) {
                 return null;
             }
             if (clazz.isInstance(value)) {
                 return clazz.cast(value);
             }
-            // Map이나 List 형태인 경우 ObjectMapper를 사용해 변환
-            return objectMapper.convertValue(value, clazz);
+            return objectMapper.readValue(value, clazz);
         } catch (Exception e) {
             log.error("Failed to convert value to {}: {}", clazz.getSimpleName(), e.getMessage());
             return null;
@@ -210,6 +218,103 @@ public record ModelAgentStreamBody(
             return getValueAsString();
         }
         return null;
+    }
+
+    /**
+     * Agent 응답에 포함되는 구조화 데이터 DTO
+     * (예: `segment.sources`, `segment.timeseries_insights` 등)
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Segment(
+        Sources sources,
+        @JsonProperty("timeseries_insights") TimeseriesInsights timeseriesInsights,
+        @JsonProperty("requested_range") String requestedRange,
+        @JsonProperty("available_range") String availableRange,
+        @JsonProperty("primary_value_field") String primaryValueField,
+        String unit,
+        List<String> suggestions,
+        Usage usage
+    ) {
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Sources(
+            Rdb rdb,
+            @JsonProperty("vdb") List<VdbSource> vdb,
+            @JsonProperty("web") List<WebSource> web
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Rdb(
+            @JsonProperty("sql_queries") List<String> sqlQueries,
+            @JsonProperty("used_tables") List<String> usedTables,
+            @JsonProperty("product_numbers") List<Integer> productNumbers
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record VdbSource(
+            String source,
+            String title,
+            @JsonProperty("gds_no") Integer gdsNo,
+            @JsonProperty("gds_data_dstg_id") String gdsDataDstgId
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record WebSource(
+            String url,
+            @JsonProperty("source_nm") String sourceNm
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record TimeseriesInsights(
+            @JsonProperty("key_indicators") List<KeyIndicator> keyIndicators,
+            @JsonProperty("timeline_highlights") TimelineHighlights timelineHighlights,
+            List<Chart> charts
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record KeyIndicator(
+            String label,
+            Double value,
+            String date,
+            String unit,
+            List<String> sources
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record TimelineHighlights(
+            List<Column> columns,
+            List<Row> rows
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Column(
+            String key,
+            String label,
+            String type,
+            String unit
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Row(
+            String date,
+            Double value,
+            String event,
+            List<String> sources
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Chart(
+            int order,
+            String legend,
+            List<String> date,
+            List<Double> value
+        ) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Usage(
+            @JsonProperty("prompt_tokens") int promptTokens,
+            @JsonProperty("completion_tokens") int completionTokens,
+            @JsonProperty("total_tokens") int totalTokens
+        ) {}
     }
 
     /**

@@ -1,9 +1,12 @@
 package com.sk.domain.mi.service.agent.stream;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +40,44 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RdbDataStreamEventHandler implements StreamEventHandler {
 
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private List<Map<String, Object>> tryParseRdbData(String rawValue) {
+        if (rawValue == null || rawValue.trim().isEmpty()) {
+            return null;
+        }
+
+        // 1) value가 바로 배열 형태인 경우: [{...}, {...}]
+        try {
+            return objectMapper.readValue(rawValue, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception ignored) {
+            // ignore
+        }
+
+        // 2) value가 wrapper 객체인 경우: {"data": [{...}]}
+        try {
+            Map<String, Object> wrapper = objectMapper.readValue(
+                rawValue,
+                new TypeReference<Map<String, Object>>() {}
+            );
+
+            Object data = wrapper.get("data");
+            if (!(data instanceof List<?> list)) {
+                return null;
+            }
+
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> mapItem) {
+                    result.add((Map<String, Object>) mapItem);
+                }
+            }
+            return result;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     @Override
     public String getEventDataType() {
         return "rdb_data";
@@ -48,21 +89,23 @@ public class RdbDataStreamEventHandler implements StreamEventHandler {
         log.debug("RdbDataStreamEventHandler - state: {}, data: {}, node: {}",
             streamBody.state(), streamBody.data(), streamBody.node());
 
-        Object value = streamBody.value();
-        List<Map<String, Object>> dataList = (List<Map<String, Object>>) value;
+        String rawValue = streamBody.value();
+        List<Map<String, Object>> dataList = tryParseRdbData(rawValue);
 
-        if (dataList == null || dataList.isEmpty()) {
+        if (rawValue == null || rawValue.trim().isEmpty()
+            || (dataList != null && dataList.isEmpty())) {
             log.debug("No rdb data found for qnaNo: {}", qna.getChatbotTalkQnaNo());
             StreamRes streamRes = StreamRes.of(qna, streamBody);
             return AnswerRes.of(streamBody, streamRes, "rdb_data");
         }
 
-
-
-        // StreamRes 생성 (원본 value 사용)
+        // StreamRes 생성:
+        // - 파싱 성공 시 List<Map> 형태 유지
+        // - 파싱 실패 시 rawValue(String) 그대로 전달
+        Object streamData = dataList != null ? dataList : rawValue;
         StreamRes streamRes = StreamRes.builder()
             .qnaNo(qna.getChatbotTalkQnaNo())
-            .data(value)
+            .data(streamData)
             .build();
 
         return AnswerRes.of(streamBody, streamRes, "rdb_data");
