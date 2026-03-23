@@ -23,8 +23,8 @@ public class NewsletterSnapshotService {
     private final BlockDataResolver blockDataResolver;
     private final SnapshotAssembler snapshotAssembler;
 
-    public NewsletterIssuePreviewRes generateSnapshot(Integer newsletterId, Integer issueNo, User actorUser) {
-        NewsletterIssueOriginal issueOriginal = getAccessibleIssue(newsletterId, issueNo, actorUser);
+    public NewsletterIssuePreviewRes generateSnapshot(Integer publishHistoryId, User actorUser) {
+        NewsletterIssueOriginal issueOriginal = getAccessibleIssue(publishHistoryId, actorUser);
         TemplateTree template = templateLoader.loadByPublishHistory(issueOriginal.getSourceNewsletterPublishHistory());
         Map<String, ResolvedBlockData> resolvedData = blockDataResolver.resolveAll(
             template,
@@ -33,16 +33,16 @@ public class NewsletterSnapshotService {
         );
 
         return new NewsletterIssuePreviewRes(
-            newsletterId,
-            issueNo,
+            issueOriginal.getNewsletterMaster().getNewsletterMasterId(),
+            issueOriginal.getIssueNo(),
             snapshotAssembler.assembleNode(template, resolvedData, issueOriginal.getSourceNewsletterPublishHistory())
         );
     }
 
-    private NewsletterIssueOriginal getAccessibleIssue(Integer newsletterId, Integer issueNo, User actorUser) {
+    private NewsletterIssueOriginal getAccessibleIssue(Integer publishHistoryId, User actorUser) {
         Integer customerCompanyNo = actorUser != null && actorUser.getCustomerCompany() != null
             ? actorUser.getCustomerCompany().getCustomerCompanyNo() : null;
-        return issueOriginalRepository.findAccessibleIssue(newsletterId, issueNo, customerCompanyNo)
+        return issueOriginalRepository.findAccessibleIssueByPublishHistoryId(publishHistoryId, customerCompanyNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "NEWSLETTER_NOT_FOUND"));
     }
 }

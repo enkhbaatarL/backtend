@@ -33,12 +33,17 @@ public class NewsletterDetailV2Service {
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final UserRepository userRepository;
     private final MiNewsletterRevisionService revisionService;
+    private final SnapshotCanonicalizer snapshotCanonicalizer;
 
     public NewsletterDetailV2Res getNewsletterDetail(Integer companyNo, Integer userNo, Integer newsletterId, Integer issueNo) {
         NewsletterIssueOriginal issueOriginal = getAccessibleIssue(companyNo, newsletterId, issueNo);
 
         RevisionStateRes revision = null;
-        ContentSnapshotRes latestSnapshot = new ContentSnapshotRes(0, issueOriginal.getOriginalSnapshotJson(), issueOriginal.getCreateDt());
+        ContentSnapshotRes latestSnapshot = new ContentSnapshotRes(
+            0,
+            snapshotCanonicalizer.canonicalize(issueOriginal.getOriginalSnapshotJson()),
+            issueOriginal.getCreateDt()
+        );
         Integer deltaCount = 0;
         List<JsonPatchOpRes> deltaChanges = List.of();
 
@@ -94,7 +99,7 @@ public class NewsletterDetailV2Service {
             issueNo,
             issueOriginal.getSchemaVersion(),
             ORIGINAL_SOURCE,
-            snapshot
+            snapshotCanonicalizer.canonicalize(snapshot)
         );
     }
 

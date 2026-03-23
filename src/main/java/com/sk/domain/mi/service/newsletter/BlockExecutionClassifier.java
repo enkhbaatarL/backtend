@@ -36,6 +36,11 @@ public class BlockExecutionClassifier {
     private static final Set<String> TRANSFORM_TYPES = Set.of("SPLIT_LINES", "FORMAT_DATE", "TO_EPOCH_MILLIS", "LIMIT_ITEMS", "YN_TO_BOOLEAN");
     private static final Set<String> ALLOWED_STATE_KEYS = Set.of("plotOnChart", "removed");
     private static final Pattern SOURCE_PATH_PATTERN = Pattern.compile("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+|\\.\\*)*");
+    private static final Map<String, Set<String>> SECTION_OWNED_FIELD_KEYS_BY_BLOCK = Map.of(
+        "NEWS_FLOW_CHART", Set.of("title", "aggregationTime"),
+        "REFERENCE_HEADER", Set.of("title", "description"),
+        "FOOTER_NOTICE", Set.of("footerContent")
+    );
 
     private final ObjectMapper objectMapper;
 
@@ -78,6 +83,9 @@ public class BlockExecutionClassifier {
 
         for (BlockDataSourceSpec.AssignField field : plan.spec().assign().fields()) {
             if (field == null || StringUtils.isBlank(field.fieldKey())) {
+                continue;
+            }
+            if (isSectionOwnedFieldKey(block, field.fieldKey())) {
                 continue;
             }
             if (Boolean.TRUE.equals(field.required()) && !resolvedContent.containsKey(field.fieldKey())) {
@@ -254,6 +262,9 @@ public class BlockExecutionClassifier {
             if (StringUtils.isBlank(field.fieldKey()) || StringUtils.isBlank(field.sourcePath()) || !SOURCE_PATH_PATTERN.matcher(field.sourcePath()).matches()) {
                 errors.add("CANONICAL_ASSIGNMENT_MISSING");
             }
+            if (isSectionOwnedFieldKey(block, field.fieldKey())) {
+                continue;
+            }
             if (!assignFieldKeys.add(field.fieldKey()) || !fieldKeys.contains(field.fieldKey())) {
                 errors.add("ASSIGN_FIELD_NOT_DEFINED");
             }
@@ -299,6 +310,9 @@ public class BlockExecutionClassifier {
         if (issueStateOverride.contentInput() != null) {
             for (String contentInput : issueStateOverride.contentInput()) {
                 String rootKey = StringUtils.substringBefore(contentInput, ".");
+                if (isSectionOwnedFieldKey(block, rootKey)) {
+                    continue;
+                }
                 if (!editableFields.contains(rootKey)) {
                     errors.add("ISSUE_STATE_OVERRIDE_NOT_ALLOWED");
                 }
@@ -359,10 +373,13 @@ public class BlockExecutionClassifier {
     }
 
     private void validateCanonicalShape(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
-        List<String> assignFieldKeys = spec.assign().fields().stream().map(BlockDataSourceSpec.AssignField::fieldKey).toList();
+        List<String> assignFieldKeys = spec.assign().fields().stream()
+            .map(BlockDataSourceSpec.AssignField::fieldKey)
+            .filter(fieldKey -> !isSectionOwnedFieldKey(block, fieldKey))
+            .toList();
 
         if ("NEWS_FLOW_CHART".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of("title", "aggregationTime", "timestamps", "series"))) {
+            && !assignFieldKeys.equals(List.of("timestamps", "series"))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
         if ("NEWS_ITEM".equals(block.blockCode())
@@ -423,5 +440,11 @@ public class BlockExecutionClassifier {
         } catch (DateTimeParseException e) {
             return false;
         }
+    }
+
+    private boolean isSectionOwnedFieldKey(TemplateTree.BlockNode block, String fieldKey) {
+        return SECTION_OWNED_FIELD_KEYS_BY_BLOCK
+            .getOrDefault(block.blockCode(), Set.of())
+            .contains(fieldKey);
     }
 }

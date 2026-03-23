@@ -28,18 +28,17 @@ public class MiNewsletterSnapshotController {
     private final NewsletterSnapshotService newsletterSnapshotService;
 
     @ApiOrder(15)
-    @Operation(summary = "뉴스레터 snapshot 조회", description = "템플릿 기본 구조 기반으로 snapshot을 동적으로 조립합니다.")
+    @Operation(summary = "뉴스레터 snapshot 조회", description = "publishHistory에 고정된 템플릿 버전 기준으로 snapshot을 동적으로 조립합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @GetMapping("/{newsletterId}/{issueNo}/snapshot")
+    @GetMapping("/publish-histories/{publishHistoryId}/snapshot")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterIssuePreviewRes> generateSnapshot(
-        @PathVariable Integer newsletterId,
-        @PathVariable Integer issueNo,
+        @PathVariable Integer publishHistoryId,
         @UserResolve User actorUser
     ) {
         return BaseResponseFactory.create(
-            newsletterSnapshotService.generateSnapshot(newsletterId, issueNo, actorUser)
+            newsletterSnapshotService.generateSnapshot(publishHistoryId, actorUser)
         );
     }
 }

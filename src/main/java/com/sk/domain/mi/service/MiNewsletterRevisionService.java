@@ -20,6 +20,7 @@ import com.sk.domain.mi.dto.response.newsletter.RevisionListRes;
 import com.sk.domain.mi.dto.response.newsletter.RevisionOrOriginalDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.RevisionReplayRes;
 import com.sk.domain.mi.dto.response.newsletter.RevisionSaveRes;
+import com.sk.domain.mi.service.newsletter.SnapshotCanonicalizer;
 import com.sk.domain.shared.entity.master.tmd.NewsletterIssueOriginal;
 import com.sk.domain.shared.entity.master.tmd.NewsletterUserRevision;
 import com.sk.domain.shared.entity.master.tmd.NewsletterUserRevisionDeltaHistory;
@@ -54,6 +55,7 @@ public class MiNewsletterRevisionService {
     private final NewsletterUserRevisionDeltaHistoryRepository revisionDeltaHistoryRepository;
     private final NewsletterUserRevisionSnapshotHistoryRepository revisionSnapshotHistoryRepository;
     private final ObjectMapper objectMapper;
+    private final SnapshotCanonicalizer snapshotCanonicalizer;
 
     public RevisionFlowGuideRes getRevisionFlowGuide(Integer newsletterId, Integer issueNo) {
         validateNewsletterIssue(newsletterId, issueNo);
@@ -109,7 +111,7 @@ public class MiNewsletterRevisionService {
         NewsletterUserRevision revision = findOwnedRevision(issueOriginal, ownerUserNo);
 
         if (revision == null) {
-            JsonNode originalSnapshot = deepCopy(issueOriginal.getOriginalSnapshotJson());
+            JsonNode originalSnapshot = snapshotCanonicalizer.canonicalize(deepCopy(issueOriginal.getOriginalSnapshotJson()));
             return new RevisionOrOriginalDetailRes(
                 newsletterId,
                 issueNo,
@@ -125,7 +127,9 @@ public class MiNewsletterRevisionService {
         }
 
         ReplayContext replayContext = buildReplayContext(issueOriginal, revision);
-        JsonNode content = applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories());
+        JsonNode content = snapshotCanonicalizer.canonicalize(
+            applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories())
+        );
         List<JsonPatchOpRes> latestDeltaChanges = flattenDeltaChanges(replayContext.histories());
         boolean hasDraft = revision.getDraftSavedAt() != null;
 
@@ -225,7 +229,9 @@ public class MiNewsletterRevisionService {
         }
 
         ReplayContext replayContext = buildReplayContext(issueOriginal, revision);
-        JsonNode content = applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories());
+        JsonNode content = snapshotCanonicalizer.canonicalize(
+            applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories())
+        );
 
         return new RevisionDraftRes(
             revision.getRevisionNo().intValue(),

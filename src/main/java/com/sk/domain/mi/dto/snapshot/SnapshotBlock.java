@@ -1,7 +1,6 @@
 package com.sk.domain.mi.dto.snapshot;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,6 +21,6 @@ public class SnapshotBlock {
     private String target;
     private Map<String, Object> queryParams;
     private Map<String, Object> state;
-    private List<String> editableFields;
-    private Map<String, Object> content;
+    private Map<String, Object> fields;
+    private Map<String, SnapshotFieldDef> fieldDefs;
 }

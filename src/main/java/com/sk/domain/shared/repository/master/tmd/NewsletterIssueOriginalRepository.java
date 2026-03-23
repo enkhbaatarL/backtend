@@ -32,4 +32,19 @@ public interface NewsletterIssueOriginalRepository extends JpaRepository<Newslet
         @Param("issueNo") Integer issueNo,
         @Param("customerCompanyNo") Integer customerCompanyNo
     );
+
+    @Query("""
+        SELECT o
+        FROM NewsletterIssueOriginal o
+        JOIN o.newsletterMaster m
+        JOIN o.sourceNewsletterPublishHistory h
+        WHERE h.newsletterPublishId = :publishHistoryId
+          AND o.isDeleted = false
+          AND m.isDeleted = false
+          AND (m.customerCompanyNo IS NULL OR m.customerCompanyNo = :customerCompanyNo)
+        """)
+    Optional<NewsletterIssueOriginal> findAccessibleIssueByPublishHistoryId(
+        @Param("publishHistoryId") Integer publishHistoryId,
+        @Param("customerCompanyNo") Integer customerCompanyNo
+    );
 }

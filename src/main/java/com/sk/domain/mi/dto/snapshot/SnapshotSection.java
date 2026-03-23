@@ -14,10 +14,13 @@ import lombok.Setter;
 public class SnapshotSection {
     private String id;
     private String type;
-    private String title;
+    private String code;
+    private String name;
     private Integer order;
     private Boolean visibility;
     private String target;
-    private Map<String, Object> state;
+    private Boolean removed;
+    private Map<String, Object> fields;
+    private Map<String, SnapshotFieldDef> fieldDefs;
     private List<SnapshotBlock> blocks;
 }

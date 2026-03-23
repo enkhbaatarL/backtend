@@ -7,10 +7,12 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateBlock;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateSection;
+import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateSectionField;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateV2;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateBlockFieldRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateBlockRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateSectionFieldRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateSectionRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateV2Repository;
 import java.util.List;
@@ -26,6 +28,7 @@ public class TemplateLoader {
     private final NewsletterMasterRepository masterRepository;
     private final NewsletterTemplateV2Repository templateRepository;
     private final NewsletterTemplateSectionRepository sectionRepository;
+    private final NewsletterTemplateSectionFieldRepository sectionFieldRepository;
     private final NewsletterTemplateBlockRepository blockRepository;
     private final NewsletterTemplateBlockFieldRepository blockFieldRepository;
 
@@ -63,6 +66,10 @@ public class TemplateLoader {
             ? List.of()
             : blockRepository.findBySectionIdInAndDelYnOrderByBlkOrd(sectionIds, "N");
 
+        List<NewsletterTemplateSectionField> sectionFields = sectionIds.isEmpty()
+            ? List.of()
+            : sectionFieldRepository.findBySectionIdInAndDelYnOrderByFldOrd(sectionIds, "N");
+
         List<Long> blockIds = blocks.stream()
             .map(NewsletterTemplateBlock::getNewsletterTemplateBlockId)
             .toList();
@@ -70,6 +77,7 @@ public class TemplateLoader {
         return TemplateTree.of(
             template,
             sections,
+            sectionFields,
             blocks,
             blockIds.isEmpty() ? List.of()
                 : blockFieldRepository.findByBlockIdInAndDelYnOrderByFldOrd(blockIds, "N")

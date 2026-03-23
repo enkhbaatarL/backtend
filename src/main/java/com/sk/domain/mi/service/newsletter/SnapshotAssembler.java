@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.dto.snapshot.SnapshotBlock;
+import com.sk.domain.mi.dto.snapshot.SnapshotFieldDef;
 import com.sk.domain.mi.dto.snapshot.SnapshotMeta;
 import com.sk.domain.mi.dto.snapshot.SnapshotRoot;
 import com.sk.domain.mi.dto.snapshot.SnapshotSection;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class SnapshotAssembler {
 
     private final ObjectMapper objectMapper;
+    private final TemplateFieldValueResolver fieldValueResolver;
 
     public String assemble(
         TemplateTree template,
@@ -48,11 +50,23 @@ public class SnapshotAssembler {
         List<SnapshotSection> sections = new ArrayList<>();
         for (TemplateTree.SectionNode sectionNode : template.sections()) {
             List<SnapshotBlock> blocks = new ArrayList<>();
+            LinkedHashMap<String, Object> sectionFields = buildSectionFields(sectionNode, resolvedData, pubHist);
+            LinkedHashMap<String, SnapshotFieldDef> sectionFieldDefs = buildSectionFieldDefs(sectionNode);
             for (TemplateTree.BlockNode blockNode : sectionNode.blocks()) {
                 if ("NEWS_ITEM".equals(blockNode.blockCode())) {
                     blocks.addAll(expandNewsItemBlocks(blockNode, resolvedData));
                     continue;
                 }
+                if (shouldSkipBlock(sectionNode.sectionCode(), blockNode.blockCode())) {
+                    continue;
+                }
+
+                Map<String, Object> content = resolvedData
+                    .getOrDefault(BlockDataResolver.resolvedDataKey(blockNode.id()), ResolvedBlockData.of(Map.of()))
+                    .toContentMap();
+                LinkedHashMap<String, Object> blockFields = content.isEmpty() ? null : new LinkedHashMap<>(content);
+                LinkedHashMap<String, SnapshotFieldDef> blockFieldDefs = buildBlockFieldDefs(blockNode);
+
                 blocks.add(SnapshotBlock.builder()
                     .id(resolveSnapshotBlockId(blockNode))
                     .type(blockNode.blockTypeCode())
@@ -64,18 +78,21 @@ public class SnapshotAssembler {
                     .target(resolveTarget(blockNode.targetCompanyNo()))
                     .queryParams(null)
                     .state(null)
-                    .editableFields(blockNode.fields().stream().filter(field -> "Y".equals(field.isEditableYn())).map(TemplateTree.FieldNode::fieldKey).toList())
-                    .content(resolvedData.getOrDefault(BlockDataResolver.resolvedDataKey(blockNode.id()), ResolvedBlockData.of(Map.of())).toContentMap())
+                    .fields(blockFields)
+                    .fieldDefs(blockFieldDefs.isEmpty() ? null : blockFieldDefs)
                     .build());
             }
             sections.add(SnapshotSection.builder()
                 .id("sec-" + sectionNode.sectionCode())
                 .type(sectionNode.sectionTypeCode())
-                .title(sectionNode.sectionName())
+                .code(sectionNode.sectionCode())
+                .name(sectionNode.sectionName())
                 .order(sectionNode.sectionOrder())
                 .visibility("Y".equals(sectionNode.visibilityYn()))
                 .target(resolveTarget(sectionNode.targetCompanyNo()))
-                .state(defaultSectionState())
+                .removed(Boolean.FALSE)
+                .fields(sectionFields.isEmpty() ? null : sectionFields)
+                .fieldDefs(sectionFieldDefs.isEmpty() ? null : sectionFieldDefs)
                 .blocks(blocks)
                 .build());
         }
@@ -114,14 +131,12 @@ public class SnapshotAssembler {
             expandedItems = List.of(resolved.toContentMap());
         }
 
-        List<String> editableFields = blockNode.fields().stream()
-            .filter(field -> "Y".equals(field.isEditableYn()))
-            .map(TemplateTree.FieldNode::fieldKey)
-            .toList();
+        LinkedHashMap<String, SnapshotFieldDef> blockFieldDefs = buildBlockFieldDefs(blockNode);
 
         List<SnapshotBlock> blocks = new ArrayList<>();
         for (int index = 0; index < expandedItems.size(); index++) {
             Map<String, Object> item = expandedItems.get(index);
+            LinkedHashMap<String, Object> blockFields = item.isEmpty() ? null : new LinkedHashMap<>(item);
             blocks.add(SnapshotBlock.builder()
                 .id(resolveNewsItemSnapshotBlockId(item, index))
                 .type(blockNode.blockTypeCode())
@@ -135,8 +150,8 @@ public class SnapshotAssembler {
                 .target(resolveTarget(blockNode.targetCompanyNo()))
                 .queryParams(null)
                 .state(new LinkedHashMap<>(Map.of("removed", Boolean.FALSE)))
-                .editableFields(editableFields)
-                .content(new LinkedHashMap<>(item))
+                .fields(blockFields)
+                .fieldDefs(blockFieldDefs.isEmpty() ? null : new LinkedHashMap<>(blockFieldDefs))
                 .build());
         }
         return blocks;
@@ -163,10 +178,6 @@ public class SnapshotAssembler {
         return targetCompanyNo == null ? null : String.valueOf(targetCompanyNo);
     }
 
-    private Map<String, Object> defaultSectionState() {
-        return new LinkedHashMap<>(Map.of("removed", Boolean.FALSE));
-    }
-
     private Boolean resolvePlotOnChart(TemplateTree.BlockNode blockNode) {
         if (!"Y".equals(blockNode.plotOnChartYn())) {
             return null;
@@ -176,5 +187,51 @@ public class SnapshotAssembler {
 
     private Boolean asBoolean(Object value) {
         return value instanceof Boolean booleanValue ? booleanValue : null;
+    }
+
+    private boolean shouldSkipBlock(String sectionCode, String blockCode) {
+        return isReferenceSection(sectionCode) && "REFERENCE_HEADER".equals(blockCode);
+    }
+
+    private LinkedHashMap<String, Object> buildSectionFields(
+        TemplateTree.SectionNode sectionNode,
+        Map<String, ResolvedBlockData> resolvedData,
+        NewsletterPublishHistory pubHist
+    ) {
+        LinkedHashMap<String, Object> sectionFields = new LinkedHashMap<>();
+        for (TemplateTree.SectionFieldNode fieldNode : sectionNode.sectionFields()) {
+            Object resolvedValue = fieldValueResolver.resolveSectionFieldValue(sectionNode, fieldNode, resolvedData, pubHist);
+            if (resolvedValue != null) {
+                sectionFields.put(fieldNode.fieldKey(), resolvedValue);
+            }
+        }
+        return sectionFields;
+    }
+
+    private LinkedHashMap<String, SnapshotFieldDef> buildSectionFieldDefs(TemplateTree.SectionNode sectionNode) {
+        LinkedHashMap<String, SnapshotFieldDef> sectionFieldDefs = new LinkedHashMap<>();
+        for (TemplateTree.SectionFieldNode fieldNode : sectionNode.sectionFields()) {
+            sectionFieldDefs.put(fieldNode.fieldKey(), buildFieldDef(fieldNode.isEditableYn(), fieldNode.isRequiredYn()));
+        }
+        return sectionFieldDefs;
+    }
+
+    private LinkedHashMap<String, SnapshotFieldDef> buildBlockFieldDefs(TemplateTree.BlockNode blockNode) {
+        LinkedHashMap<String, SnapshotFieldDef> blockFieldDefs = new LinkedHashMap<>();
+        for (TemplateTree.FieldNode fieldNode : blockNode.fields()) {
+            blockFieldDefs.put(fieldNode.fieldKey(), buildFieldDef(fieldNode.isEditableYn(), fieldNode.isRequiredYn()));
+        }
+        return blockFieldDefs;
+    }
+
+    private SnapshotFieldDef buildFieldDef(String editableYn, String requiredYn) {
+        return SnapshotFieldDef.builder()
+            .editable("Y".equals(editableYn))
+            .required("Y".equals(requiredYn))
+            .build();
+    }
+
+    private boolean isReferenceSection(String sectionCode) {
+        return List.of("REFERENCE1", "REFERENCE2", "REFERENCE3", "REFERENCE4").contains(sectionCode);
     }
 }

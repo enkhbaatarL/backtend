@@ -122,11 +122,7 @@ public class ChartSeriesBlockDataStrategy implements BlockDataStrategy {
         }
 
         List<NewsletterChart> charts = newsletterChartRepository.findByNewsletterPublishHistoryAndCode(pubHist, refCode);
-        Map<String, Object> content = new HashMap<>(chartSupport.toMainChartContent(charts, pubHist.getPublishDateTime()));
-        if ("NEWS_FLOW_CHART".equals(block.blockCode()) && !content.containsKey("title")) {
-            content.put("title", block.blockName());
-        }
-        return content;
+        return new HashMap<>(chartSupport.toMainChartContent(charts, pubHist.getPublishDateTime()));
     }
 
     private List<CollectionSeriesData> buildCollectionSeries(

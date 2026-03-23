@@ -49,6 +49,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1371,10 +1372,144 @@ public class MiNewsletterService {
         }
     }
 
+    /**
+     * 기준일(baseDate)로부터 pre 영업일(거래일) 전 날짜를 반환한다.
+     * 주말(토/일)을 건너뛰기 위해 dayShift를 추가한다.
+     */
+    private LocalDate getPreDay(LocalDate baseDate, int pre) {
+        DayOfWeek dayOfWeek = baseDate.getDayOfWeek();
+        int dayShift;
+        if (dayOfWeek == DayOfWeek.MONDAY) {
+            dayShift = 2;
+        } else if (dayOfWeek == DayOfWeek.TUESDAY && (pre == 2 || pre == 3)) {
+            dayShift = 2;
+        } else if (dayOfWeek == DayOfWeek.WEDNESDAY && pre == 3) {
+            dayShift = 2;
+        } else {
+            dayShift = 0;
+        }
+        return baseDate.minusDays(pre + dayShift);
+    }
+
+    /**
+     * 브렌트유(LCOc1) 전일 대비 가격 등락률 문자열을 반환한다.
+     * 최근 2회 발행 이력의 종가(tradePrice1)를 비교하여 등락률을 계산한다.
+     *
+     * @param newsletterMaster 뉴스레터마스터
+     * @return "+0.97%" 또는 "△0.97%" 형식의 등락률 문자열, 데이터 부족 시 null
+     */
+    private String getBrentPriceChangePercentage(NewsletterMaster newsletterMaster) {
+        if (newsletterMaster == null) {
+            return null;
+        }
+
+        List<NewsletterPublishHistory> publishHistories =
+            newsletterPublishHistoryRepository
+                .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+                    newsletterMaster, PublishStatusCode.PUBLISHED);
+
+        if (publishHistories.size() < 2) {
+            log.warn("브렌트유 등락률 계산 불가 - 발행 이력 부족 (size: {})", publishHistories.size());
+            return null;
+        }
+
+        BrentPriceTradePrices tradePrices = getBrentPriceTradePrices(newsletterMaster, publishHistories.get(0));
+        if (tradePrices == null) {
+            return null;
+        }
+
+        BigDecimal pre1d = tradePrices.pre1d();
+        BigDecimal pre2d = tradePrices.pre2d();
+
+        if (pre1d == null || pre2d == null || pre2d.compareTo(BigDecimal.ZERO) == 0) {
+            log.warn("브렌트유 등락률 계산 불가 - 종가 데이터 없음 (pre1d: {}, pre2d: {})", pre1d, pre2d);
+            return null;
+        }
+
+        // 등락률 = (pre1d - pre2d) / pre2d * 100
+        BigDecimal diff = pre1d.subtract(pre2d)
+            .divide(pre2d, 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100))
+            .setScale(2, RoundingMode.HALF_UP);
+
+        String sign = diff.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "△";
+        return sign + diff.abs().toPlainString() + "%";
+    }
+
+    public BrentPriceTradePrices getBrentPriceTradePrices(
+        NewsletterMaster newsletterMaster,
+        NewsletterPublishHistory 기준PublishHistory
+    ) {
+        if (newsletterMaster == null || 기준PublishHistory == null || 기준PublishHistory.getIssueNo() == null) {
+            return null;
+        }
+
+        String brentCode = "LCOc1";
+        List<NewsletterPublishHistory> publishHistories =
+            newsletterPublishHistoryRepository
+                .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+                    newsletterMaster, PublishStatusCode.PUBLISHED);
+
+        NewsletterPublishHistory currentPubHist = publishHistories.stream()
+            .filter(publishHistory -> publishHistory.getIssueNo() != null)
+            .filter(publishHistory -> publishHistory.getIssueNo().equals(기준PublishHistory.getIssueNo()))
+            .findFirst()
+            .orElse(null);
+
+        if (currentPubHist == null) {
+            log.warn("브렌트유 기준 발행 이력을 찾을 수 없음 - issueNo: {}", 기준PublishHistory.getIssueNo());
+            return null;
+        }
+
+        NewsletterPublishHistory previousPubHist = publishHistories.stream()
+            .filter(publishHistory -> publishHistory.getIssueNo() != null)
+            .filter(publishHistory -> publishHistory.getIssueNo() < currentPubHist.getIssueNo())
+            .findFirst()
+            .orElse(null);
+
+        if (previousPubHist == null) {
+            log.warn("브렌트유 등락률 계산 불가 - 직전 발행 이력 부족 (issueNo: {})", currentPubHist.getIssueNo());
+            return null;
+        }
+
+        return new BrentPriceTradePrices(
+            getLatestTradePrice(currentPubHist, brentCode),
+            getLatestTradePrice(previousPubHist, brentCode)
+        );
+    }
+
+    /**
+     * 특정 발행 이력의 차트 데이터에서 가장 마지막 row의 종가(tradePrice1)를 반환한다.
+     *
+     * @param pubHist 뉴스레터발행이력
+     * @param code    차트코드 (예: LCOc1, CLc1)
+     * @return 마지막 row의 tradePrice1, 데이터 없으면 null
+     */
+    private BigDecimal getLatestTradePrice(NewsletterPublishHistory pubHist, String code) {
+        List<NewsletterChart> charts =
+            newsletterChartRepository.findByNewsletterPublishHistoryAndCode(pubHist, code);
+
+        if (charts.isEmpty()) {
+            return null;
+        }
+
+        // timestamp 기준 가장 마지막 데이터의 종가 반환
+        return charts.stream()
+            .max((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
+            .map(NewsletterChart::getTradePrice1)
+            .orElse(null);
+    }
+
     private record CollectionSeriesData(
         NewsletterTemplateCollectionChart config,
         List<Long> timestamps,
         Map<Long, BigDecimal> valuesByTimestamp
+    ) {
+    }
+
+    public record BrentPriceTradePrices(
+        BigDecimal pre1d,
+        BigDecimal pre2d
     ) {
     }
 }
