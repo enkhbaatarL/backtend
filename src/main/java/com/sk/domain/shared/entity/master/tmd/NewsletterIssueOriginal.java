@@ -70,18 +70,13 @@ public class NewsletterIssueOriginal extends BaseEntity {
     @Comment("원본스냅샷JSON")
     private JsonNode originalSnapshotJson;
 
-    @Column(name = "schm_ver", nullable = false, columnDefinition = "smallint unsigned")
-    @Comment("스키마버전")
-    private Integer schemaVersion;
-
     public static NewsletterIssueOriginal create(
         NewsletterMaster newsletterMaster,
         NewsletterPublishHistory sourceNewsletterPublishHistory,
         Integer issueNo,
         PublishStatusCode publishStatusCode,
         LocalDateTime publishDateTime,
-        JsonNode originalSnapshotJson,
-        Integer schemaVersion
+        JsonNode originalSnapshotJson
     ) {
         NewsletterIssueOriginal issueOriginal = new NewsletterIssueOriginal();
         issueOriginal.newsletterMaster = newsletterMaster;
@@ -90,19 +85,16 @@ public class NewsletterIssueOriginal extends BaseEntity {
         issueOriginal.publishStatusCode = publishStatusCode;
         issueOriginal.publishDateTime = publishDateTime;
         issueOriginal.originalSnapshotJson = originalSnapshotJson;
-        issueOriginal.schemaVersion = schemaVersion;
         return issueOriginal;
     }
 
     public NewsletterIssueOriginal updateSnapshot(
         JsonNode originalSnapshotJson,
-        Integer schemaVersion,
         PublishStatusCode publishStatusCode,
         LocalDateTime publishDateTime,
         NewsletterPublishHistory sourceNewsletterPublishHistory
     ) {
         this.originalSnapshotJson = originalSnapshotJson;
-        this.schemaVersion = schemaVersion;
         this.publishStatusCode = publishStatusCode;
         this.publishDateTime = publishDateTime;
         this.sourceNewsletterPublishHistory = sourceNewsletterPublishHistory;

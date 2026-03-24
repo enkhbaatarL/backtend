@@ -56,23 +56,17 @@ public class NewsletterUserRevisionSnapshotHistory extends BaseEntity {
     @Comment("스냅샷JSON")
     private JsonNode snapshotJson;
 
-    @Column(name = "schm_ver", nullable = false, columnDefinition = "smallint unsigned")
-    @Comment("스키마버전")
-    private Integer schemaVersion;
-
     public static NewsletterUserRevisionSnapshotHistory create(
         NewsletterUserRevision revision,
         long snapshotNo,
         long baseDeltaNo,
-        JsonNode snapshotJson,
-        int schemaVersion
+        JsonNode snapshotJson
     ) {
         NewsletterUserRevisionSnapshotHistory snapshot = new NewsletterUserRevisionSnapshotHistory();
         snapshot.newsletterUserRevision = revision;
         snapshot.snapshotNo = snapshotNo;
         snapshot.baseDeltaNo = baseDeltaNo;
         snapshot.snapshotJson = snapshotJson;
-        snapshot.schemaVersion = schemaVersion;
         return snapshot;
     }
 }

@@ -18,11 +18,10 @@ WHERE table_schema = DATABASE()
  * 1) APPLY
  * ========================================================= */
 
-INSERT INTO tmd_nwsltrtmpltm (nws_ltr_mstr_id, tmplt_nm, tmplt_desc, schm_ver, crt_usr_logn_id, mod_usr_logn_id)
+INSERT INTO tmd_nwsltrtmpltm (nws_ltr_mstr_id, tmplt_nm, tmplt_desc, crt_usr_logn_id, mod_usr_logn_id)
 SELECT DISTINCT h.nws_ltr_mstr_id,
        CONCAT(m.mstr_nm, ' 기본 템플릿'),
        'Migrated from v1 template',
-       2,
        'MIGRATION_20260316',
        'MIGRATION_20260316'
 FROM tmd_nws_ltr_tmplt t
@@ -31,7 +30,6 @@ JOIN tmd_nws_ltr_mstr m ON m.nws_ltr_mstr_id = h.nws_ltr_mstr_id
 WHERE t.del_yn = 'N'
 ON DUPLICATE KEY UPDATE
     tmplt_nm = VALUES(tmplt_nm),
-    schm_ver = VALUES(schm_ver),
     mod_usr_logn_id = VALUES(mod_usr_logn_id),
     mod_dtm = CURRENT_TIMESTAMP;
 

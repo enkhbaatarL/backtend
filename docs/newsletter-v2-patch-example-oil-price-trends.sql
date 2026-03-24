@@ -1,4 +1,5 @@
 -- Newsletter V2 Patch Example
+-- Status: LEGACY REFERENCE ONLY (current local test DB already dropped issue-state tables)
 -- Purpose:
 -- - Apply only post-seed changes after the original insert scripts were already executed
 -- - Refresh `NEWS_ITEM` template block spec/fields to the latest single-card contract

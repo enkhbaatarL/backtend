@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 public record NewsletterIssueOriginalSnapshotRes(
     Integer newsletterId,
     Integer issueNo,
-    Integer schemaVersion,
     String source,
     JsonNode snapshot
 ) {

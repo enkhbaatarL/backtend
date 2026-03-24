@@ -8,6 +8,10 @@
   - `docs/newsletter-v2-ddl-canonical-index.md` (확정 DDL)
   - `docs/newsletter-v2-field-mapping.md` (필드 매핑)
 
+> 2026-03-20 current note:
+> 현재 구현의 preview/publish/snapshot 경로는 `IssueStateTree`/`IssueStateLoader`와 삭제된 issue-state 테이블을 사용하지 않는다.
+> 이 문서에 남아 있는 issue-state 기반 설명과 코드 조각은 과거 설계 검토 흔적이며, 현재 기준에서는 legacy reference로만 본다.
+
 ---
 
 ## 0. 미결사항 결정안
@@ -81,7 +85,6 @@ CREATE TABLE tmd_nwsltrtmpltm
     nws_ltr_mstr_id      INT UNSIGNED                          NOT NULL COMMENT '뉴스레터마스터ID',
     tmplt_nm             VARCHAR(200)                          NOT NULL COMMENT '템플릿명',
     tmplt_desc           VARCHAR(500)                          NULL     COMMENT '템플릿설명',
-    schm_ver             SMALLINT UNSIGNED DEFAULT 1           NOT NULL COMMENT '스키마버전',
 
     CONSTRAINT tmd_nwsltrtmpltm_ux01 UNIQUE (nws_ltr_mstr_id),
 
@@ -247,7 +250,6 @@ CREATE INDEX tmd_nwsltrtmpltblkfld_ix01
 
 ```jsonc
 {
-  "schemaVersion": 2,
   "templateId": 1,                    // tmd_nwsltrtmpltm.nws_ltr_tmplt_id
   "newsletterId": 1,                  // nws_ltr_mstr_id
   "issueNo": 22,
@@ -520,7 +522,6 @@ public class NewsletterPublishPipelineService {
             .publishStatusCode("PUBLISHED")
             .publishDateTime(pubHist.getPublishDateTime())
             .originalSnapshotJson(snapshotJson)
-            .schemaVersion(2)
             .build();
 
         issueOriginalRepository.save(issueOriginal);
@@ -814,7 +815,7 @@ FOR EACH DISTINCT nws_ltr_tmplt_id IN tmd_nws_ltr_tmplt:
 
 ### 4-3. 기존 발행분 org_snpsht_json 백필 전략
 
-현재 `tmd_nwsltrorgissm` 백필은 **최소 플레이스홀더 스냅샷** (schm_ver=1)으로 완료됨:
+현재 `tmd_nwsltrorgissm` 백필은 최소 플레이스홀더 스냅샷 기준으로 완료됨:
 
 ```json
 {
@@ -829,12 +830,12 @@ FOR EACH DISTINCT nws_ltr_tmplt_id IN tmd_nws_ltr_tmplt:
 
 | 단계 | 작업 | 기준 |
 |---|---|---|
-| Phase A (현행) | 최소 플레이스홀더 (완료) | schm_ver=1 |
-| Phase B | v2 파이프라인 가동 후 신규 발행 | schm_ver=2 |
+| Phase A (현행) | 최소 플레이스홀더 (완료) | 완료 |
+| Phase B | v2 파이프라인 가동 후 신규 발행 | 신규 발행 스냅샷 |
 | Phase C (선택) | 과거 발행분 Full Resolve 백필 | 배치 스크립트로 publishHistoryId 기반 재실행 |
 
 **Phase C 세부:**
-- 별도 배치 Job으로 `schm_ver=1`인 레코드를 순회
+- 별도 배치 Job으로 과거 발행 레코드를 순회
 - `NewsletterPublishPipelineService.executePublish()`와 동일한 로직을 배치에서 재실행
 - 단, v1 `tmd_nws_ltr_tmplt` → v2 4테이블 변환이 선행되어야 함
 - 백필 대상 범위: 최근 N개월(운영 판단) 또는 전체

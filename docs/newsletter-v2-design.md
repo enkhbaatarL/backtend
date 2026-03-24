@@ -257,7 +257,6 @@
 - `pub_stat_cd`
 - `pub_dtm`
 - `org_snpsht_json`
-- `schm_ver`
 - `created_at`, `updated_at`
 
 ### 2) `newsletter_user_revision`
@@ -420,7 +419,6 @@ sequenceDiagram
 {
   "newsletterId": 1,
   "issueNo": 22,
-  "schemaVersion": 2,
   "revisionId": 101,
   "editStatus": "EDIT_DRAFT",
   "revisionNo": 4,

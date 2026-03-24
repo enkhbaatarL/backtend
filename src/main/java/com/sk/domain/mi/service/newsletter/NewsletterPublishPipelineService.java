@@ -44,15 +44,14 @@ public class NewsletterPublishPipelineService {
         JsonNode snapshotNode = snapshotAssembler.assembleNode(template, resolvedData, pubHist);
 
         NewsletterIssueOriginal issueOriginal = existingIssueOriginal != null
-            ? existingIssueOriginal.updateSnapshot(snapshotNode, 2, PublishStatusCode.PUBLISHED, pubHist.getPublishDateTime(), pubHist)
+            ? existingIssueOriginal.updateSnapshot(snapshotNode, PublishStatusCode.PUBLISHED, pubHist.getPublishDateTime(), pubHist)
             : NewsletterIssueOriginal.create(
                 pubHist.getNewsletterMaster(),
                 pubHist,
                 issueNo,
                 PublishStatusCode.PUBLISHED,
                 pubHist.getPublishDateTime(),
-                snapshotNode,
-                2
+                snapshotNode
             );
 
         NewsletterIssueOriginal saved = issueOriginalRepository.save(issueOriginal);

@@ -340,8 +340,7 @@ public class MiNewsletterRevisionService {
                 revision,
                 nextSnapshotNo,
                 nextDeltaNo,
-                snapshotJson,
-                1
+                snapshotJson
             );
             revisionSnapshotHistoryRepository.save(snapshotHistory);
         }
@@ -401,8 +400,7 @@ public class MiNewsletterRevisionService {
                 revision,
                 revisionNo,
                 deltaNo,
-                deepCopy(request.snapshotPayload()),
-                1
+                deepCopy(request.snapshotPayload())
             );
             revisionSnapshotHistoryRepository.save(snapshotHistory);
             revision.applySave(status, revisionNo, deltaNo, true, revisionNo, now);

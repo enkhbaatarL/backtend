@@ -4,6 +4,10 @@
 - 실행 순서: Step 1 → 8 (순차 진행)
 - 각 프롬프트는 독립 세션에서 실행 가능하도록 컨텍스트를 포함
 
+> 2026-03-20 current note:
+> Step 4~5에 남아 있는 `IssueStateTree`/`IssueStateLoader` 중심 지시는 현재 코드 기준과 맞지 않는다.
+> 현재 활성 구현은 issue-state 테이블 없이 `TemplateTree + ResolvedBlockData + publish context` 중심으로 정렬되어 있다.
+
 ---
 
 ## Step 1. DDL 4테이블 생성 + JPA Entity
@@ -90,7 +94,7 @@ Newsletter v2 템플릿 4테이블의 JPA Entity와 Repository를 생성한다.
 ```java
 // 불변 트리 구조 (record 또는 @Getter + final 필드)
 TemplateTree
-  ├── template: TemplateNode (id, name, masterId, schemaVersion)
+  ├── template: TemplateNode (id, name, masterId)
   └── sections: List<SectionNode>
         ├── sectionCode, sectionTypeCode, sectionName, sectionOrder, visibilityYn, targetCompanyNo
         └── blocks: List<BlockNode>
@@ -186,11 +190,11 @@ public interface BlockDataStrategy {
 
 ---
 
-## Step 4. IssueState + SnapshotAssembler 구현
+## Step 4. Legacy Reference: IssueState + SnapshotAssembler 구현
 
 ```
 ## 목표
-TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열을 생성하는 SnapshotAssembler를 구현한다.
+Legacy prompt reference. 현재 구현 기준 SnapshotAssembler는 `TemplateTree + ResolvedBlockData + publish context`로 동작한다.
 
 ## 입력 문서
 - `docs/newsletter-v2-template-pipeline-design.md` — 섹션 2 (스냅샷 JSON 스키마), 섹션 3-2 D (SnapshotAssembler)
@@ -207,7 +211,7 @@ TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열�
 
 | 클래스 | 역할 |
 |---|---|
-| `SnapshotRoot` | 최상위 (schemaVersion, templateId, newsletterId, issueNo, publishedAt, meta, sections) |
+| `SnapshotRoot` | 최상위 (templateId, newsletterId, issueNo, publishedAt, meta, sections) |
 | `SnapshotMeta` | 메타정보 (emailSubject, subInfoText, coverImageUrl) |
 | `SnapshotSection` | 섹션 (id, type, title, order, visibility, target, blocks) |
 | `SnapshotBlock` | 블록 (id, type, format, order, visibility, title, plotOnChart, target, editableFields, content) |
@@ -215,7 +219,7 @@ TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열�
 - Jackson 직렬화 대상이므로 @Getter + @Setter 또는 @Builder 사용
 - content 필드는 `Map<String, Object>` 타입 (블록 타입별 동적 구조)
 
-### 2. IssueStateTree VO 및 로더 구현
+### 2. Legacy reference: IssueStateTree VO 및 로더 구현
 위치: `src/main/java/com/sk/domain/mi/dto/internal/`, `src/main/java/com/sk/domain/mi/service/newsletter/`
 
 - issue section/block state를 표현하는 `IssueStateTree` 또는 동등한 내부 VO 생성
@@ -240,7 +244,6 @@ TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열�
 - 완전한 TemplateTree + IssueStateTree + ResolvedBlockData 입력 → JSON 출력 검증
 - 설계 문서 섹션 2의 예시 JSON 구조와 일치하는지 검증
 - editableFields가 정확히 is_editable 필드만 포함하는지 검증
-- schemaVersion=2 포함 검증
 - template이 `plotOnChart`를 지원하지 않으면 state 값이 반영되지 않거나 예외 처리되는지 검증
 ```
 
@@ -250,7 +253,7 @@ TemplateTree + IssueStateTree + ResolvedBlockData → org_snpsht_json 문자열�
 
 ```
 ## 목표
-Trigger → TemplateLoader → IssueStateLoader → BlockDataResolver → SnapshotAssembler → 저장까지의 전체 파이프라인을 오케스트레이션하는 서비스를 구현한다.
+Legacy prompt reference. 현재 구현 기준 파이프라인은 `TemplateLoader → BlockDataResolver → SnapshotAssembler → 저장` 순서로 동작한다.
 
 ## 입력 문서
 - `docs/newsletter-v2-template-pipeline-design.md` — 섹션 3-2 A (오케스트레이터)
@@ -268,17 +271,17 @@ Trigger → TemplateLoader → IssueStateLoader → BlockDataResolver → Snapsh
 ### 1. NewsletterIssueOriginal 엔티티 확인/보완
 - 기존 `tmd_nwsltrorgissm` 엔티티가 없으면 생성
 - org_snpsht_json 컬럼: `@Column(columnDefinition = "json")` + String 타입
-- schm_ver, pub_stat_cd 등 DDL과 정합성 확인
+- pub_stat_cd 등 DDL과 정합성 확인
 
 ### 2. NewsletterPublishPipelineService 구현
 위치: `src/main/java/com/sk/domain/mi/service/newsletter/`
 
 - 설계 문서의 오케스트레이터 코드 구현
 - `@Transactional` 단일 트랜잭션으로 스냅샷 생성 + 저장
-- 이미 존재하는 `(nws_ltr_mstr_id, issno)` 조합이면 UPDATE (org_snpsht_json, schm_ver=2)
+- 이미 존재하는 `(nws_ltr_mstr_id, issno)` 조합이면 UPDATE (org_snpsht_json)
 - 발행 상태: PUBLISHING → PUBLISHED 전이 포함
-- 기존 template 중심 조립 가정을 제거하고 issue state를 publish 입력으로 포함
-- state row가 없어도 기존 published read path는 깨지지 않도록 preview/write path에서만 state 로드
+- 기존 template 중심 조립 가정을 제거하고 publish context + resolved content를 조합
+- issue-state 물리 테이블이 없어도 published read path와 preview path가 동작하도록 유지
 
 ### 3. 호출 진입점
 - Airflow HTTP 호출용 내부 API 엔드포인트 (또는 기존 발행 배치 훅에 연동)
@@ -292,7 +295,7 @@ Trigger → TemplateLoader → IssueStateLoader → BlockDataResolver → Snapsh
 ### 5. 통합 테스트
 - @SpringBootTest 기반 E2E 테스트
 - 테스트 데이터 셋업 → executePublish() 호출 → tmd_nwsltrorgissm 레코드 검증
-- org_snpsht_json 파싱하여 schemaVersion=2, sections 존재 여부 검증
+- org_snpsht_json 파싱하여 sections 존재 여부 검증
 ```
 
 ---
@@ -375,11 +378,8 @@ Step F: 블록필드 INSERT (타입별 기본 필드셋)
 public NewsletterDetailV2Res getNewsletterDetail(Integer companyNo, Integer userNo,
                                                   Integer newsletterId, Integer issueNo) {
     // 1. tmd_nwsltrorgissm에서 org_snpsht_json 조회
-    // 2. schm_ver 확인:
-    //    - schm_ver=2: org_snpsht_json 직접 파싱하여 응답
-    //    - schm_ver=1: 기존 v1 로직 fallback (getNewsletterDetail 호출)
-    // 3. 사용자 리비전 존재 시: delta 적용된 결과 반환 (확정사항 ④)
-    // 4. 구독 상태 조회 포함
+    // 2. 사용자 리비전 존재 시: delta 적용된 결과 반환 (확정사항 ④)
+    // 3. 구독 상태 조회 포함
 }
 ```
 
@@ -389,11 +389,9 @@ public NewsletterDetailV2Res getNewsletterDetail(Integer companyNo, Integer user
 - `NewsletterDetailV2Res`: 스냅샷 JSON 구조를 기반으로 한 응답 DTO
 - 기존 `NewsletterDetailRes`와 호환성 유지 or 프론트와 협의 후 새 구조
 - `source` 필드: ORIGINAL | REVISION
-- `schemaVersion` 필드 포함
 
 ### 3. Controller 엔드포인트
 - 기존 `GET /api/v1/mi/newsletter/{newsletterId}/{issueNo}` 유지하되 내부에서 v2 서비스 우선 호출
-- schm_ver=1 fallback 시 기존 로직 호출
 - 또는 별도 v2 엔드포인트 신설 후 프론트 전환 완료 시 v1 제거
 
 ### 4. 기존 코드 deprecate 처리
@@ -401,7 +399,6 @@ public NewsletterDetailV2Res getNewsletterDetail(Integer companyNo, Integer user
 - 해당 메서드를 직접 호출하는 곳 목록 확인 후 v2로 전환 계획 수립
 
 ## 주의사항
-- v1 API를 즉시 삭제하지 않는다 (schm_ver=1인 기존 발행분 조회 보장)
 - 프론트엔드와 응답 구조 변경 사항 협의 필요
 ```
 
@@ -411,7 +408,7 @@ public NewsletterDetailV2Res getNewsletterDetail(Integer companyNo, Integer user
 
 ```
 ## 목표
-schm_ver=1인 기존 발행분의 org_snpsht_json을 Full Resolve된 v2 스냅샷으로 백필하는 배치 Job을 구현한다.
+기존 발행분의 org_snpsht_json을 Full Resolve된 v2 스냅샷으로 백필하는 배치 Job을 구현한다.
 
 ## 입력 문서
 - `docs/newsletter-v2-template-pipeline-design.md` — 섹션 4-3 (백필 전략)
@@ -428,10 +425,10 @@ schm_ver=1인 기존 발행분의 org_snpsht_json을 Full Resolve된 v2 스냅�
 ```java
 // NewsletterSnapshotBackfillService
 public void backfillAll(Integer batchSize, boolean dryRun) {
-    // 1. tmd_nwsltrorgissm WHERE schm_ver = 1 조회 (페이징)
+    // 1. 백필 대상 원본 이슈 조회 (페이징)
     // 2. 각 레코드의 src_nws_ltr_pub_id로 publishHistory 조회
     // 3. NewsletterPublishPipelineService와 동일한 로직으로 스냅샷 재생성
-    // 4. org_snpsht_json UPDATE + schm_ver = 2
+    // 4. org_snpsht_json UPDATE
     // 5. 실패 건은 로깅 후 SKIP (전체 중단 방지)
 }
 ```

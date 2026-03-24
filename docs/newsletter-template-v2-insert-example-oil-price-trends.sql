@@ -9,7 +9,7 @@
 --   `tmd_nws_ltr_mstr.perd_type` via `getPeriodType().getCode()`,
 --   `newsletterName` derived from `tmd_nws_ltr_mstr.mstr_nm`,
 --   `newsletterDescription` derived from `tmd_nws_ltr_mstr.expn`,
---   `newsletterName.maxLength = 100`, `newsletterDescription.maxLength = 500`
+--   `newsletterName`, `newsletterDescription` derived from master source values
 --
 -- Assumptions
 -- 1. newsletter master name = 'Oil Price Trends'
@@ -23,13 +23,30 @@
 -- 9. reference4 collection chart type = 'GOV10_2SPRD'
 -- 10. this script assumes data_src_spec_json column already exists
 --
+-- Storage / response boundary:
+-- - This file seeds storage truth for the current template tables.
+-- - It is NOT a direct dump of the external snapshot response contract.
+-- - Until a separate section-field physical model is approved, some response-level
+--   section fields remain stored via block/field rows and are promoted by the app.
+-- - Promotion targets in current app contract:
+--   * `NEWS_FLOW_CHART.title` -> `NEWS_FLOW.fields.title`
+--   * `NEWS_FLOW_CHART.aggregationTime` -> `NEWS_FLOW.fields.aggregationTime`
+--   * `REFERENCE_HEADER.title` -> `REFERENCE{N}.fields.title`
+--   * `REFERENCE_HEADER.description` -> `REFERENCE{N}.fields.description`
+--   * `FOOTER_NOTICE.footerContent` -> `FOOTER.fields.footerContent`
+-- - Therefore `REFERENCE_HEADER` rows in this file are storage-truth compatibility seeds,
+--   not canonical response blocks.
+--
 -- Purpose
 -- - Align template section/block structure with the latest editor screen
 -- - Separate Cover / Date&Issue / Title / Summary / News Flow / Reference / Footer
--- - Define specialized reference sections:
+-- - Define storage-truth block seeds for specialized reference sections:
 --   `REFERENCE1 = HEADER + CHART + CONTENT`
 --   `REFERENCE2 = HEADER + CHART + CONTENT`
 --   `REFERENCE3 = HEADER + TABLE + CONTENT`
+--   `REFERENCE4 = HEADER + CHART + CONTENT`
+-- - Canonical response truth differs:
+--   `REFERENCE{N} = section fields(title, description) + data block + content block`
 -- - `NEWS_ITEM` is a repeatable template block. One template block definition may render
 --   1..N runtime-expanded snapshot blocks from `NEWS_EVENT` resolver results.
 -- - Editor-modified values are written through delta/snapshot paths; `overridePolicy.issueState`
@@ -116,7 +133,6 @@ INSERT INTO tmd_nwsltrtmpltm
     nws_ltr_mstr_id,
     tmplt_nm,
     tmplt_desc,
-    schm_ver,
     crt_usr_logn_id,
     mod_usr_logn_id
 )
@@ -125,14 +141,12 @@ VALUES
     @newsletter_master_id,
     'Test Template',
     'v2 Energy 용최신 피그마 편집 화면 기준 템플릿',
-    2,
     'SYSTEM',
     'SYSTEM'
 )
 ON DUPLICATE KEY UPDATE
     tmplt_nm = VALUES(tmplt_nm),
     tmplt_desc = VALUES(tmplt_desc),
-    schm_ver = VALUES(schm_ver),
     mod_usr_logn_id = VALUES(mod_usr_logn_id),
     mod_dtm = CURRENT_TIMESTAMP;
 
@@ -759,30 +773,32 @@ INSERT INTO tmd_nwsltrtmpltblkfld
 )
 VALUES
 -- COVER_IMAGE_CARD
-(@blk_cover_image_card, 'imageBase64',  '커버 이미지 Base64', 0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_IMAGE_URL","transform":"ENCODE_IMAGE_BASE64","format":"base64","stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_image_card, 'imageBase64',  '커버 이미지 Base64', 0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_IMAGE_URL","transform":"ENCODE_IMAGE_BASE64","format":"base64"}', 'SYSTEM', 'SYSTEM'),
 (@blk_cover_image_card, 'showImage',    '커버 이미지 노출',   1, NULL, 'Y', 'N', NULL,                                            'SYSTEM', 'SYSTEM'),
 
 -- COVER_INFO
-(@blk_cover_info, 'publishCycle',          '발행 주기',       0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_PERIOD_TYPE","transform":"ENUM_CODE","options":["DAILY","WEEKLY","MONTHLY","QUARTERLY","ON-DEMAND"],"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_cover_info, 'newsletterName',        '뉴스레터명',      1, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_NAME","maxLength":100,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_cover_info, 'newsletterDescription', '뉴스레터 소개',   2, NULL, 'N', 'N', '{"valueSource":"NEWSLETTER_MASTER_EXPLANATION","maxLength":500,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_info, 'publishCycle',          '발행 주기',       0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_PERIOD_TYPE","transform":"ENUM_CODE","options":["DAILY","WEEKLY","MONTHLY","QUARTERLY","ON-DEMAND"]}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_info, 'newsletterName',        '뉴스레터명',      1, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_MASTER_NAME"}', 'SYSTEM', 'SYSTEM'),
+(@blk_cover_info, 'newsletterDescription', '뉴스레터 소개',   2, NULL, 'N', 'N', '{"valueSource":"NEWSLETTER_MASTER_EXPLANATION"}', 'SYSTEM', 'SYSTEM'),
 
 -- DATE_ISSUE_INFO
-(@blk_date_issue_info, 'publishDate', '날짜',         0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_PUBLISH_DTM","transform":"FORMAT_DATE","format":"YYYY-MM-DD","stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_date_issue_info, 'issueNumber', '이슈 번호',     1, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_ISSUE_NO","stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_date_issue_info, 'publishDate', '날짜',         0, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_PUBLISH_DTM","transform":"FORMAT_DATE","format":"YYYY-MM-DD"}', 'SYSTEM', 'SYSTEM'),
+(@blk_date_issue_info, 'issueNumber', '이슈 번호',     1, NULL, 'N', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_ISSUE_NO"}', 'SYSTEM', 'SYSTEM'),
 
 -- TITLE_MAIN_SPECIALIZED
-(@blk_title_main_specialized, 'title',           '뉴스레터 제목',          0, NULL, 'Y', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_TITLE","maxLength":100,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_title_main_specialized, 'subtitle',        '뉴스레터 부제',          1, NULL, 'Y', 'N', '{"maxLength":100,"editorMutable":true,"hasDefaultValue":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_title_main_specialized, 'priceChangeFrom', '유가 변동 시작값',      2, NULL, 'Y', 'Y', '{"inputType":"number","unit":"USD/bbl","editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_title_main_specialized, 'priceChangeTo',   '유가 변동 종료값',      3, NULL, 'Y', 'Y', '{"inputType":"number","unit":"USD/bbl","editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'title',           '뉴스레터 제목',          0, NULL, 'Y', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_TITLE","editorMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'subtitle',        '뉴스레터 부제',          1, NULL, 'Y', 'N', '{"editorMutable":true,"hasDefaultValue":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'priceChangeFrom', '유가 변동 시작값',      2, NULL, 'Y', 'Y', '{"inputType":"number","unit":"USD/bbl","editorMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_title_main_specialized, 'priceChangeTo',   '유가 변동 종료값',      3, NULL, 'Y', 'Y', '{"inputType":"number","unit":"USD/bbl","editorMutable":true}', 'SYSTEM', 'SYSTEM'),
 
 -- SUMMARY_BODY
-(@blk_summary_body, 'summaryText', '핵심 요약', 0, NULL, 'Y', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_AI_SUMMARY","maxLength":1000,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_summary_body, 'summaryText', '핵심 요약', 0, NULL, 'Y', 'Y', '{"valueSource":"NEWSLETTER_PUBLISH_HISTORY_AI_SUMMARY","editorMutable":true}', 'SYSTEM', 'SYSTEM'),
 
+-- NOTE: `title`, `aggregationTime` are storage-truth fields only.
+-- The app promotes them to `NEWS_FLOW.fields.*` and removes them from response block content.
 -- NEWS_FLOW_CHART
-(@blk_news_flow_chart, 'title',           '뉴스 Flow 제목', 0, NULL, 'Y', 'Y', '{"defaultValue":"주요 뉴스 Flow 및 Brent 유가 추이","editorMutable":true,"stateScoped":true,"stateMutable":true}', 'SYSTEM', 'SYSTEM'),
-(@blk_news_flow_chart, 'aggregationTime', '집계 시간 설명', 1, NULL, 'Y', 'Y', '{"defaultValue":"뉴욕시간 전일 20:00부터 당일 17:00까지","editorMutable":true,"stateScoped":true,"stateMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_news_flow_chart, 'title',           '뉴스 Flow 제목', 0, NULL, 'Y', 'Y', '{"defaultValue":"주요 뉴스 Flow 및 Brent 유가 추이","editorMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_news_flow_chart, 'aggregationTime', '집계 시간 설명', 1, NULL, 'Y', 'Y', '{"defaultValue":"뉴욕시간 전일 20:00부터 당일 17:00까지","editorMutable":true}', 'SYSTEM', 'SYSTEM'),
 (@blk_news_flow_chart, 'timestamps',      '차트 시간축',    2, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_flow_chart, 'series',          '차트 시리즈',    3, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
@@ -794,56 +810,60 @@ VALUES
 (@blk_news_item, 'createdDate',  '날짜',       4, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'createTime',   '시간',       5, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'source',       '출처',       6, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
-(@blk_news_item, 'originalUrl',  '원문 링크',   7, NULL, 'Y', 'N', '{"editorMutable":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_news_item, 'originalUrl',  '원문 링크',   7, NULL, 'Y', 'N', '{"editorMutable":true}', 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'showInChart',  '차트 표시',   8, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_news_item, 'trend',        '추세',       9, NULL, 'N', 'N', NULL, 'SYSTEM', 'SYSTEM'),
 
+-- NOTE: `REFERENCE_HEADER` is seeded for current storage truth only.
+-- Response truth removes this block and promotes `title` / `description` to section fields.
 -- REFERENCE1_HEADER
-(@blk_reference1_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"WTI 및 달러 인덱스 5분 차트","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_reference1_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"WTI: 청색, 좌측\\n달러인덱스: 회색, 우측","maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"WTI 및 달러 인덱스 5분 차트","editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"WTI: 청색, 좌측\\n달러인덱스: 회색, 우측","editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE1_CHART
 (@blk_reference1_chart, 'timestamps',      '참조 차트 시간축', 0, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_reference1_chart, 'series',          '차트 시리즈',    1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE1_CONTENT
-(@blk_reference1_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference1_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE2_HEADER
-(@blk_reference2_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"maxLength":100,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_reference2_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"stateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"editorMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"editorMutable":true}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE2_CHART
 (@blk_reference2_chart, 'timestamps',      '참조 차트 시간축', 0, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_reference2_chart, 'series',          '차트 시리즈',    1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE2_CONTENT
-(@blk_reference2_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference2_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE3_HEADER
-(@blk_reference3_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"유가 추이","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_reference3_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference3_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"유가 추이","editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference3_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE3_TABLE
 (@blk_reference3_table, 'tableData', '테이블 데이터', 0, NULL, 'N', 'Y', '{"valueType":"TableRes","sourceDatabase":"midb","sourceTable":"tmd_nws_ltr_pref_tbl","sourceColumn":"json_value","baseCondition":"pref_tbl_cd=''OIL_PRC_TRND''","runtimeCondition":"nws_ltr_pub_id"}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE3_CONTENT
-(@blk_reference3_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference3_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE4_HEADER
-(@blk_reference4_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"미국 10년물 국채금리 및 미 10년-2년물 국채 금리 스프레드 추이","maxLength":100,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
-(@blk_reference4_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"미국 10년물 국채금리: 청색,좌측\\n미국 10년-2년물 국채금리 스프레드: 회색,우측","maxLength":500,"editorMutable":true,"templateScoped":true,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_header, 'title',       '참고 제목',   0, NULL, 'Y', 'Y', '{"defaultValue":"미국 10년물 국채금리 및 미 10년-2년물 국채 금리 스프레드 추이","editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_header, 'description', '참고 설명',   1, NULL, 'Y', 'N', '{"defaultValue":"미국 10년물 국채금리: 청색,좌측\\n미국 10년-2년물 국채금리 스프레드: 회색,우측","editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE4_CHART
 (@blk_reference4_chart, 'timestamps',      '참조 차트 시간축', 0, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 (@blk_reference4_chart, 'series',          '차트 시리즈',    1, NULL, 'N', 'Y', NULL, 'SYSTEM', 'SYSTEM'),
 
 -- REFERENCE4_CONTENT
-(@blk_reference4_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"maxLength":500,"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false,"stateScoped":false,"stateMutable":false}', 'SYSTEM', 'SYSTEM'),
+(@blk_reference4_content, 'content', '내용', 0, NULL, 'Y', 'N', '{"editorMutable":true,"hasDefaultValue":false,"defaultValue":null,"persistWhenEmpty":false}', 'SYSTEM', 'SYSTEM'),
 
+-- NOTE: `footerContent` is stored on FOOTER_NOTICE for now, but response truth promotes it
+-- to `FOOTER.fields.footerContent` and leaves `showLogo` in block content only.
 -- FOOTER_NOTICE
-(@blk_footer_notice, 'showLogo',      '로고 노출 여부', 0, NULL, 'Y', 'N', '{"defaultValue":true,"editorMutable":true,"stateScoped":true,"stateMutable":true}', 'SYSTEM', 'SYSTEM'),
-(@blk_footer_notice, 'footerContent', '푸터 내용',     1, NULL, 'Y', 'Y', '{"defaultValue":"본 메일은 발신전용입니다. 수신거부 또는 문의는 담당자에게 연락해 주세요.","maxLength":1000,"editorMutable":true,"templateScoped":true,"stateMutable":false}', 'SYSTEM', 'SYSTEM')
+(@blk_footer_notice, 'showLogo',      '로고 노출 여부', 0, NULL, 'Y', 'N', '{"defaultValue":true,"editorMutable":true}', 'SYSTEM', 'SYSTEM'),
+(@blk_footer_notice, 'footerContent', '푸터 내용',     1, NULL, 'Y', 'Y', '{"defaultValue":"본 메일은 발신전용입니다. 수신거부 또는 문의는 담당자에게 연락해 주세요.","editorMutable":true,"templateScoped":true}', 'SYSTEM', 'SYSTEM')
 ON DUPLICATE KEY UPDATE
     fld_nm = VALUES(fld_nm),
     fld_ord = VALUES(fld_ord),
@@ -858,7 +878,7 @@ ON DUPLICATE KEY UPDATE
  * 6) POST-CHECK
  * ========================================================= */
 
-SELECT t.nws_ltr_tmplt_id, t.nws_ltr_mstr_id, t.tmplt_nm, t.schm_ver
+SELECT t.nws_ltr_tmplt_id, t.nws_ltr_mstr_id, t.tmplt_nm
 FROM tmd_nwsltrtmpltm t
 WHERE t.nws_ltr_tmplt_id = @tmplt_id;
 

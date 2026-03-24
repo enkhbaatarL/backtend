@@ -10,7 +10,6 @@ import org.springframework.lang.Nullable;
 public record NewsletterDetailV2Res(
     Integer newsletterId,
     Integer issueNo,
-    Integer schemaVersion,
     LocalDateTime publishedAt,
     Boolean subscribed,
 

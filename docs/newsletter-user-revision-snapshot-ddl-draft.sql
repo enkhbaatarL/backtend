@@ -55,7 +55,6 @@ CREATE TABLE tmd_nwsltrusrrvsnsnpshth
     snpsht_no            BIGINT UNSIGNED                        NOT NULL COMMENT '스냅샷번호(리비전 내 단조증가)',
     base_dlta_no          BIGINT UNSIGNED                        NOT NULL COMMENT '기준델타번호(복원 시작점)',
     snpsht_json            JSON                                   NOT NULL COMMENT '스냅샷JSON',
-    schm_ver               SMALLINT UNSIGNED DEFAULT 1            NOT NULL COMMENT '스키마버전',
 
     CONSTRAINT tmd_nwsltrusrrvsnsnpshth_ux01 UNIQUE (nws_ltr_usr_rvsn_id, snpsht_no),
 
@@ -102,7 +101,7 @@ GROUP BY nws_ltr_usr_rvsn_id, snpsht_no
 HAVING COUNT(*) > 1;
 
 EXPLAIN
-SELECT s.nws_ltr_usr_rvsn_snpsht_id, s.snpsht_no, s.base_dlta_no, s.snpsht_json, s.schm_ver
+SELECT s.nws_ltr_usr_rvsn_snpsht_id, s.snpsht_no, s.base_dlta_no, s.snpsht_json
 FROM tmd_nwsltrusrrvsnsnpshth s
 WHERE s.nws_ltr_usr_rvsn_id = 1001
   AND s.del_yn = 'N'

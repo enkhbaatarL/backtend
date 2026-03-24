@@ -5,6 +5,10 @@
 - scope: Newsletter v2 News Template Block canonical execution contract
 - out of scope: implementation, DDL 상세 재검토, fallback 제거 시점 확정
 
+> 2026-03-20 current note:
+> 이 문서의 `issue state`는 물리 테이블이 아니라 block 실행 시 허용되는 logical override 입력을 뜻한다.
+> 삭제된 `tmd_nwsltrorgisssctnstat` / `tmd_nwsltrorgissblkstat` 테이블 의존성을 전제하지 않는다.
+
 ## 1. Feature Goal
 
 이 문서는 Newsletter v2 block data source execution model의 canonical contract를 구현 가능한 수준으로 고정한다.
@@ -558,7 +562,7 @@ schema impact는 column addition 수준이며 manual DBA rollout에 맞게 nulla
   - `CANONICAL`, `LEGACY_COMPAT`, `INVALID_MIXED` 판정
 - `BlockDataResolver`
   - canonical path 우선, legacy fallback 분기
-- `IssueStateLoader` / preview save validator
+- preview/publish validator
   - `overridePolicy` 기준 issue state key 검증
 - `NewsletterIssuePreviewWriteService`
   - save 시 spec whitelist 위반 차단
@@ -651,7 +655,6 @@ legacy bridge translation 허용 범위:
 1. published issue의 `org_snpsht_json`이 존재하면 snapshot만 읽는다
 2. published read는 source re-resolution을 하지 않는다
 3. admin/template read에서는 block classification과 validation 결과를 같이 보여줄 수 있다
-4. 기존 `schm_ver=1` read fallback은 기존 v1 read policy를 유지한다
 
 ## 15. Publish Fail-fast Rules
 

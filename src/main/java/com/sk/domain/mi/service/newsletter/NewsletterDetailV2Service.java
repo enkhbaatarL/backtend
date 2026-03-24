@@ -47,7 +47,7 @@ public class NewsletterDetailV2Service {
         Integer deltaCount = 0;
         List<JsonPatchOpRes> deltaChanges = List.of();
 
-        if (issueOriginal.getSchemaVersion() != null && issueOriginal.getSchemaVersion() >= 2 && userNo != null) {
+        if (userNo != null) {
             User actorUser = userRepository.findByUserNoAndIsDeletedFalse(userNo).orElse(null);
             if (actorUser != null) {
                 RevisionOrOriginalDetailRes detail =
@@ -76,7 +76,6 @@ public class NewsletterDetailV2Service {
         return new NewsletterDetailV2Res(
             newsletterId,
             issueNo,
-            issueOriginal.getSchemaVersion(),
             issueOriginal.getPublishDateTime(),
             subscribed,
             revision,
@@ -97,7 +96,6 @@ public class NewsletterDetailV2Service {
         return new NewsletterIssueOriginalSnapshotRes(
             newsletterId,
             issueNo,
-            issueOriginal.getSchemaVersion(),
             ORIGINAL_SOURCE,
             snapshotCanonicalizer.canonicalize(snapshot)
         );

@@ -42,7 +42,6 @@ CREATE TABLE tmd_nwsltrorgissm
     pub_stat_cd        VARCHAR(20)                           NOT NULL COMMENT '발행상태코드(PUBLISHING,PUBLISHED,SUSPENDED)',
     pub_dtm            DATETIME                              NULL COMMENT '발행일시',
     org_snpsht_json    JSON                                  NOT NULL COMMENT '원본스냅샷JSON',
-    schm_ver           SMALLINT UNSIGNED DEFAULT 1           NOT NULL COMMENT '스키마버전',
 
     CONSTRAINT tmd_nwsltrorgissm_ux01 UNIQUE (nws_ltr_mstr_id, issno),
     CONSTRAINT tmd_nwsltrorgissm_ux02 UNIQUE (src_nws_ltr_pub_id),
@@ -76,7 +75,6 @@ INSERT INTO tmd_nwsltrorgissm
     pub_stat_cd,
     pub_dtm,
     org_snpsht_json,
-    schm_ver,
     crt_usr_logn_id,
     mod_usr_logn_id
 )
@@ -96,7 +94,6 @@ SELECT h.nws_ltr_mstr_id,
                'newsletterTitle', h.nws_ltr_titl,
                'emailSubject', h.eml_titl
        ) AS org_snpsht_json,
-       1 AS schm_ver,
        'MIGRATION_20260312',
        'MIGRATION_20260312'
 FROM tmd_nws_ltr_pub_hist h
@@ -105,7 +102,6 @@ ON DUPLICATE KEY UPDATE
     pub_stat_cd = VALUES(pub_stat_cd),
     pub_dtm = VALUES(pub_dtm),
     org_snpsht_json = VALUES(org_snpsht_json),
-    schm_ver = VALUES(schm_ver),
     mod_usr_logn_id = VALUES(mod_usr_logn_id),
     mod_dtm = CURRENT_TIMESTAMP;
 
@@ -125,8 +121,7 @@ WHERE o.del_yn = 'N';
 
 SELECT COUNT(*) AS null_snapshot_cnt
 FROM tmd_nwsltrorgissm o
-WHERE o.org_snpsht_json IS NULL
-   OR o.schm_ver IS NULL;
+WHERE o.org_snpsht_json IS NULL;
 
 SELECT o.nws_ltr_mstr_id, o.issno, COUNT(*) AS dup_cnt
 FROM tmd_nwsltrorgissm o
