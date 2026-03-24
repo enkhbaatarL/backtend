@@ -23,6 +23,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
+import com.sk.domain.shared.entity.master.tmd.NewsletterSubscription;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplate;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplateDedicatedChart;
@@ -35,6 +36,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterCollectionChartRepos
 import com.sk.domain.shared.repository.master.tmd.NewsletterEventRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
+import com.sk.domain.shared.repository.master.tmd.NewsletterSubscriptionRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateCollectionChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplateDedicatedChartRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
@@ -47,6 +49,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -88,6 +91,7 @@ public class MiNewsletterService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterPublishHistoryRepository newsletterPublishHistoryRepository;
+    private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
     private final NewsletterTemplateRepository newsletterTemplateRepository;
     private final NewsletterTextRepository newsletterTextRepository;
     private final NewsletterEventRepository newsletterEventRepository;
@@ -153,9 +157,10 @@ public class MiNewsletterService {
     /**
      * 뉴스레터별 최근호 조회
      */
-    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(Integer companyNo, int page, int size) {
+    public PaginationRes<NewsletterFeaturedListRes> getLatestNewsletters(
+        Integer companyNo, Integer userNo, int page, int size) {
 
-        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters(companyNo);
+        List<NewsletterFeaturedListRes> featuredList = getFeaturedNewsletters(companyNo, userNo);
 
         // 페이징 처리
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -172,12 +177,14 @@ public class MiNewsletterService {
         return PaginationRes.toRes(newsletterPage);
     }
 
-    private List<NewsletterFeaturedListRes> getFeaturedNewsletters(Integer companyNo) {
+    private List<NewsletterFeaturedListRes> getFeaturedNewsletters(Integer companyNo, Integer userNo) {
         List<NewsletterFeaturedListRes> latestNewsletters = new ArrayList<>();
 
         try {
             List<NewsletterMaster> newsletterMasters = newsletterMasterRepository
                 .findByCustomerCompanyNoAndIsDeletedFalse(companyNo);
+
+            Map<Integer, Boolean> subscriptionMap = getSubscriptionMap(userNo, newsletterMasters);
 
             for (NewsletterMaster master : newsletterMasters) {
                 Optional<NewsletterPublishHistory> latestPublished =
@@ -187,7 +194,8 @@ public class MiNewsletterService {
                     );
 
                 NewsletterFeaturedListRes featuredRes = createFeaturedListRes(master,
-                    latestPublished.orElse(null));
+                    latestPublished.orElse(null),
+                    subscriptionMap.getOrDefault(master.getNewsletterMasterId(), false));
                 latestNewsletters.add(featuredRes);
             }
 
@@ -200,13 +208,13 @@ public class MiNewsletterService {
     }
 
     private NewsletterFeaturedListRes createFeaturedListRes(NewsletterMaster master,
-        NewsletterPublishHistory latestHistory) {
+        NewsletterPublishHistory latestHistory, Boolean subscribed) {
         return new NewsletterFeaturedListRes(
             master.getNewsletterMasterId().toString(),                    // newsletterId
             master.getPeriodType().getCode(),                                // frequency
             master.getMasterName(),                                       // name
             master.getExplanation(),                                      // description
-            false,
+            subscribed,
             latestHistory != null ? latestHistory.getIssueNo().toString() : "0",  // issueNo
             encodeImageToBase64(master.getImageUrl(),
                 MIME_TYPE),                                         // image
@@ -290,10 +298,12 @@ public class MiNewsletterService {
         NewsletterMaster master = newsletterMasterRepository.findById(newsletterId)
                 .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
         Integer companyNo = master.getCustomerCompanyNo() != null ? master.getCustomerCompanyNo() : 0;
-        return getNewsletterDetail(companyNo, String.valueOf(newsletterId), String.valueOf(issueNo));
+        return getNewsletterDetail(companyNo, null, String.valueOf(newsletterId), String.valueOf(issueNo));
     }
 
-    public NewsletterDetailRes getNewsletterDetail(Integer companyNo, String newsletterId, String issueNo) {
+    @Deprecated
+    public NewsletterDetailRes getNewsletterDetail(
+        Integer companyNo, Integer userNo, String newsletterId, String issueNo) {
         log.info("뉴스레터 상세 조회 - newsletterId: {}, issueNo: {}", newsletterId, issueNo);
 
         DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
@@ -318,7 +328,7 @@ public class MiNewsletterService {
                         newsletterId, issueNo)));
 
             List<NewsletterTemplate> templates = newsletterTemplateRepository
-                .findByNewsletterTemplateIdOrderByElementOrder(nph.getNewsletterTemplateId());
+                .findByNewsletterTemplateIdOrderByElementOrder(Math.toIntExact(nph.getNewsletterTemplateId()));
 
             Map<Integer, Map<String, String>> templatesByOrder = templates.stream()
                 .collect(Collectors.groupingBy(
@@ -426,7 +436,7 @@ public class MiNewsletterService {
                 nm.getPeriodType().getCode(),
                 nm.getMasterName(),
                 nm.getExplanation(),
-                false,
+                resolveSubscribed(userNo, nm),
                 encodeImageToBase64(nm.getImageUrl(), MIME_TYPE),
                 true,
                 issueDetail);
@@ -472,6 +482,32 @@ public class MiNewsletterService {
             null,
             null
         );
+    }
+
+    private Map<Integer, Boolean> getSubscriptionMap(Integer userNo, List<NewsletterMaster> newsletterMasters) {
+        if (userNo == null || newsletterMasters.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Integer> newsletterIds = newsletterMasters.stream()
+            .map(NewsletterMaster::getNewsletterMasterId)
+            .toList();
+
+        return newsletterSubscriptionRepository.findByUserNoAndNewsletterMasterIds(userNo, newsletterIds).stream()
+            .collect(Collectors.toMap(
+                subscription -> subscription.getNewsletterMaster().getNewsletterMasterId(),
+                NewsletterSubscription::getIsSubscribed,
+                (left, right) -> left
+            ));
+    }
+
+    private Boolean resolveSubscribed(Integer userNo, NewsletterMaster newsletterMaster) {
+        if (userNo == null) {
+            return false;
+        }
+        return newsletterSubscriptionRepository
+            .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, userNo)
+            .map(NewsletterSubscription::getIsSubscribed)
+            .orElse(false);
     }
 
     /**
@@ -1336,10 +1372,144 @@ public class MiNewsletterService {
         }
     }
 
+    /**
+     * 기준일(baseDate)로부터 pre 영업일(거래일) 전 날짜를 반환한다.
+     * 주말(토/일)을 건너뛰기 위해 dayShift를 추가한다.
+     */
+    private LocalDate getPreDay(LocalDate baseDate, int pre) {
+        DayOfWeek dayOfWeek = baseDate.getDayOfWeek();
+        int dayShift;
+        if (dayOfWeek == DayOfWeek.MONDAY) {
+            dayShift = 2;
+        } else if (dayOfWeek == DayOfWeek.TUESDAY && (pre == 2 || pre == 3)) {
+            dayShift = 2;
+        } else if (dayOfWeek == DayOfWeek.WEDNESDAY && pre == 3) {
+            dayShift = 2;
+        } else {
+            dayShift = 0;
+        }
+        return baseDate.minusDays(pre + dayShift);
+    }
+
+    /**
+     * 브렌트유(LCOc1) 전일 대비 가격 등락률 문자열을 반환한다.
+     * 최근 2회 발행 이력의 종가(tradePrice1)를 비교하여 등락률을 계산한다.
+     *
+     * @param newsletterMaster 뉴스레터마스터
+     * @return "+0.97%" 또는 "△0.97%" 형식의 등락률 문자열, 데이터 부족 시 null
+     */
+    private String getBrentPriceChangePercentage(NewsletterMaster newsletterMaster) {
+        if (newsletterMaster == null) {
+            return null;
+        }
+
+        List<NewsletterPublishHistory> publishHistories =
+            newsletterPublishHistoryRepository
+                .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+                    newsletterMaster, PublishStatusCode.PUBLISHED);
+
+        if (publishHistories.size() < 2) {
+            log.warn("브렌트유 등락률 계산 불가 - 발행 이력 부족 (size: {})", publishHistories.size());
+            return null;
+        }
+
+        BrentPriceTradePrices tradePrices = getBrentPriceTradePrices(newsletterMaster, publishHistories.get(0));
+        if (tradePrices == null) {
+            return null;
+        }
+
+        BigDecimal pre1d = tradePrices.pre1d();
+        BigDecimal pre2d = tradePrices.pre2d();
+
+        if (pre1d == null || pre2d == null || pre2d.compareTo(BigDecimal.ZERO) == 0) {
+            log.warn("브렌트유 등락률 계산 불가 - 종가 데이터 없음 (pre1d: {}, pre2d: {})", pre1d, pre2d);
+            return null;
+        }
+
+        // 등락률 = (pre1d - pre2d) / pre2d * 100
+        BigDecimal diff = pre1d.subtract(pre2d)
+            .divide(pre2d, 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100))
+            .setScale(2, RoundingMode.HALF_UP);
+
+        String sign = diff.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "△";
+        return sign + diff.abs().toPlainString() + "%";
+    }
+
+    public BrentPriceTradePrices getBrentPriceTradePrices(
+        NewsletterMaster newsletterMaster,
+        NewsletterPublishHistory 기준PublishHistory
+    ) {
+        if (newsletterMaster == null || 기준PublishHistory == null || 기준PublishHistory.getIssueNo() == null) {
+            return null;
+        }
+
+        String brentCode = "LCOc1";
+        List<NewsletterPublishHistory> publishHistories =
+            newsletterPublishHistoryRepository
+                .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
+                    newsletterMaster, PublishStatusCode.PUBLISHED);
+
+        NewsletterPublishHistory currentPubHist = publishHistories.stream()
+            .filter(publishHistory -> publishHistory.getIssueNo() != null)
+            .filter(publishHistory -> publishHistory.getIssueNo().equals(기준PublishHistory.getIssueNo()))
+            .findFirst()
+            .orElse(null);
+
+        if (currentPubHist == null) {
+            log.warn("브렌트유 기준 발행 이력을 찾을 수 없음 - issueNo: {}", 기준PublishHistory.getIssueNo());
+            return null;
+        }
+
+        NewsletterPublishHistory previousPubHist = publishHistories.stream()
+            .filter(publishHistory -> publishHistory.getIssueNo() != null)
+            .filter(publishHistory -> publishHistory.getIssueNo() < currentPubHist.getIssueNo())
+            .findFirst()
+            .orElse(null);
+
+        if (previousPubHist == null) {
+            log.warn("브렌트유 등락률 계산 불가 - 직전 발행 이력 부족 (issueNo: {})", currentPubHist.getIssueNo());
+            return null;
+        }
+
+        return new BrentPriceTradePrices(
+            getLatestTradePrice(currentPubHist, brentCode),
+            getLatestTradePrice(previousPubHist, brentCode)
+        );
+    }
+
+    /**
+     * 특정 발행 이력의 차트 데이터에서 가장 마지막 row의 종가(tradePrice1)를 반환한다.
+     *
+     * @param pubHist 뉴스레터발행이력
+     * @param code    차트코드 (예: LCOc1, CLc1)
+     * @return 마지막 row의 tradePrice1, 데이터 없으면 null
+     */
+    private BigDecimal getLatestTradePrice(NewsletterPublishHistory pubHist, String code) {
+        List<NewsletterChart> charts =
+            newsletterChartRepository.findByNewsletterPublishHistoryAndCode(pubHist, code);
+
+        if (charts.isEmpty()) {
+            return null;
+        }
+
+        // timestamp 기준 가장 마지막 데이터의 종가 반환
+        return charts.stream()
+            .max((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()))
+            .map(NewsletterChart::getTradePrice1)
+            .orElse(null);
+    }
+
     private record CollectionSeriesData(
         NewsletterTemplateCollectionChart config,
         List<Long> timestamps,
         Map<Long, BigDecimal> valuesByTimestamp
+    ) {
+    }
+
+    public record BrentPriceTradePrices(
+        BigDecimal pre1d,
+        BigDecimal pre2d
     ) {
     }
 }

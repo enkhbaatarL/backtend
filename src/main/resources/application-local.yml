@@ -188,3 +188,8 @@ dummy:
   enabled: true
   data:
     path: static/json/dummy-data
+
+chart-capture:
+  frontend-base-url: http://localhost:5437
+  jwt-ttl-seconds: 300
+  capture-timeout-ms: 30000

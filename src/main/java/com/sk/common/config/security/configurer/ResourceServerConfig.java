@@ -5,6 +5,8 @@ import com.sk.common.config.security.CustomAuthenticationEntryPoint;
 import com.sk.common.config.security.jwt.CustomJwtAuthenticationConverter;
 import com.sk.common.config.security.jwt.CustomJwtDecoder;
 import com.sk.common.filter.ExceptionHandlerFilter;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,9 +23,6 @@ import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -43,7 +42,8 @@ public class ResourceServerConfig {
             .addFilterBefore(exceptionHandlerFilter, SecurityContextHolderFilter.class)
             .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**", "/api/v1/external/**",
                 "/api/v1/common/health-check",
-                "/api/v1/admin/provider-management/goods-datas/upload-temp/structured-data/**" // TODO 인증 넣어야 함.
+                "/api/v1/admin/provider-management/goods-datas/upload-temp/structured-data/**", // TODO 인증 넣어야 함.
+                "/internal/**"  // chart-capture JWT로 자체 인증 (Spring Security 불필요)
             )
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
