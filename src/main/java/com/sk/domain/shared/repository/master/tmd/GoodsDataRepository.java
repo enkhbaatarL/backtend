@@ -171,6 +171,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     List<GoodsData> findByGoodsDataDistinguishIdInAndIsDeletedFalse(List<String> distinguishIds);
 
+    List<GoodsData> findByGoodsDataNoInAndIsDeletedFalse(List<Integer> goodsDataNos);
+
     @Query(value = """
             SELECT gd
             FROM GoodsData gd

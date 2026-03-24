@@ -53,7 +53,7 @@ public record QnaRes(
             entity.getChatbotTalkQnaNo(),
             entity.getUserQuestionCntt(),
             Optional.ofNullable(entity.getChatbotAnswerCntt())
-                .map(str -> JsonUtil.fromJson(str, Answer.class))
+                .map(QnaRes::parseAnswer)
                 .orElse(null),
             entity.getIsRecommended(),
             entity.getIsNotRecommended(),
@@ -71,6 +71,14 @@ public record QnaRes(
                 entity.getModifyDt()
             )
         );
+    }
+
+    private static Answer parseAnswer(String rawAnswer) {
+        try {
+            return JsonUtil.fromJson(rawAnswer, Answer.class);
+        } catch (Exception e) {
+            return Answer.of(rawAnswer);
+        }
     }
 
     @Builder

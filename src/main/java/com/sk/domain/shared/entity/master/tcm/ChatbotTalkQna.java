@@ -7,6 +7,7 @@ import com.sk.domain.mi.dto.request.agent.QnaReq;
 import com.sk.domain.mi.dto.response.agent.StreamRes;
 import com.sk.domain.mi.dto.response.agent.talk.Answer;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
+import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
@@ -156,9 +157,27 @@ public class ChatbotTalkQna extends BaseEntity {
         } else {
             StreamRes streamRes = (StreamRes) answerRes.message();
             Answer previousAnswer = JsonUtil.fromJson(this.chatbotAnswerCntt, Answer.class);
-            Answer updateAnswer = new Answer(String.valueOf(streamRes.data()),
-                previousAnswer.series(), previousAnswer.tables());
+            Answer updateAnswer = new Answer(
+                String.valueOf(streamRes.data()),
+                previousAnswer.series(),
+                previousAnswer.tables(),
+                previousAnswer.sources(),
+                previousAnswer.relatedData()
+            );
             this.chatbotAnswerCntt = JsonUtil.toJson(updateAnswer);
+        }
+    }
+
+    public void updateCompleteResult(AnswerRes answerRes, ModelAgentStreamBody streamBody) {
+        this.answerStatusCd = AnswerStatusCd.COMPLETE;
+        StreamRes streamRes = answerRes == null ? null : (StreamRes) answerRes.message();
+        this.chatbotAnswerCntt = streamRes == null ? null : JsonUtil.toJson(streamRes.data());
+
+        if (streamBody != null
+            && streamBody.segment() != null
+            && streamBody.segment().usage() != null) {
+            this.inputTokenCnt = streamBody.segment().usage().promptTokens();
+            this.outputTokenCnt = streamBody.segment().usage().completionTokens();
         }
     }
 

@@ -91,8 +91,14 @@ public record ModelAgentReq(
                 return Optional.ofNullable(histories).orElse(List.of()).stream()
                     .filter(h -> h.getChatbotAnswerCntt() != null)
                     .map(h -> {
-                        AnswerRes parsed = JsonUtil.fromJson(h.getChatbotAnswerCntt(), AnswerRes.class);
-                        Ai ai1 = Ai.builder().text(parsed.message().toString()).build();
+                        String aiText;
+                        try {
+                            AnswerRes parsed = JsonUtil.fromJson(h.getChatbotAnswerCntt(), AnswerRes.class);
+                            aiText = parsed.message() == null ? "" : parsed.message().toString();
+                        } catch (Exception e) {
+                            aiText = h.getChatbotAnswerCntt();
+                        }
+                        Ai ai1 = Ai.builder().text(aiText).build();
 //                        var bundles = Optional.ofNullable(parsed)
 //                            .map(AnswerRes::bundles)
 //                            .orElse(List.of());

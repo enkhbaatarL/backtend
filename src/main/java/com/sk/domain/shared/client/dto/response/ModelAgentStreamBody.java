@@ -1,6 +1,7 @@
 package com.sk.domain.shared.client.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -227,10 +228,10 @@ public record ModelAgentStreamBody(
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Segment(
         Sources sources,
-        @JsonProperty("timeseries_insights") TimeseriesInsights timeseriesInsights,
-        @JsonProperty("requested_range") String requestedRange,
-        @JsonProperty("available_range") String availableRange,
-        @JsonProperty("primary_value_field") String primaryValueField,
+        @JsonProperty("timeseries_insights") @JsonAlias("timeseriesInsights") TimeseriesInsights timeseriesInsights,
+        @JsonProperty("requested_range") @JsonAlias("requestedRange") String requestedRange,
+        @JsonProperty("available_range") @JsonAlias("availableRange") String availableRange,
+        @JsonProperty("primary_value_field") @JsonAlias("primaryValueField") String primaryValueField,
         String unit,
         List<String> suggestions,
         Usage usage
@@ -246,27 +247,30 @@ public record ModelAgentStreamBody(
         public record Rdb(
             @JsonProperty("sql_queries") List<String> sqlQueries,
             @JsonProperty("used_tables") List<String> usedTables,
-            @JsonProperty("product_numbers") List<Integer> productNumbers
+            @JsonProperty("product_numbers") @JsonAlias("productNumbers") List<Integer> productNumbers,
+            @JsonProperty("product_data_numbers") @JsonAlias("productDataNumbers") List<Integer> productDataNumbers,
+            @JsonAlias("charts") List<Chart> charts
         ) {}
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record VdbSource(
             String source,
             String title,
-            @JsonProperty("gds_no") Integer gdsNo,
-            @JsonProperty("gds_data_dstg_id") String gdsDataDstgId
+            @JsonProperty("product_num") @JsonAlias({"productNum", "gds_no"}) Integer productNum,
+            @JsonProperty("product_data_num") @JsonAlias({"productDataNum", "gds_data_no"}) String productDataNum,
+            String content
         ) {}
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record WebSource(
             String url,
-            @JsonProperty("source_nm") String sourceNm
+            @JsonProperty("source_nm") @JsonAlias("sourceNm") String sourceNm
         ) {}
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record TimeseriesInsights(
-            @JsonProperty("key_indicators") List<KeyIndicator> keyIndicators,
-            @JsonProperty("timeline_highlights") TimelineHighlights timelineHighlights,
+            @JsonProperty("key_indicators") @JsonAlias("keyIndicators") List<KeyIndicator> keyIndicators,
+            @JsonProperty("timeline_highlights") @JsonAlias("timelineHighlights") TimelineHighlights timelineHighlights,
             List<Chart> charts
         ) {}
 
@@ -281,8 +285,8 @@ public record ModelAgentStreamBody(
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record TimelineHighlights(
-            List<Column> columns,
-            List<Row> rows
+            @JsonAlias("Columns") List<Column> columns,
+            @JsonAlias("Rows") List<Row> rows
         ) {}
 
         @JsonIgnoreProperties(ignoreUnknown = true)
@@ -305,15 +309,15 @@ public record ModelAgentStreamBody(
         public record Chart(
             int order,
             String legend,
-            List<String> date,
-            List<Double> value
+            @JsonAlias("timestamps") List<String> date,
+            @JsonAlias("values") List<Double> value
         ) {}
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record Usage(
-            @JsonProperty("prompt_tokens") int promptTokens,
-            @JsonProperty("completion_tokens") int completionTokens,
-            @JsonProperty("total_tokens") int totalTokens
+            @JsonProperty("promptTokens") int promptTokens,
+            @JsonProperty("completionTokens") int completionTokens,
+            @JsonProperty("totalTokens") int totalTokens
         ) {}
     }
 
