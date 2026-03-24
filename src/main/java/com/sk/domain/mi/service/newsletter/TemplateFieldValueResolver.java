@@ -9,8 +9,10 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -262,8 +264,17 @@ public class TemplateFieldValueResolver {
             case "FORMAT_DATE" -> rawValue instanceof java.time.temporal.TemporalAccessor temporalAccessor
                 ? PUBLISH_DATE_FORMATTER.format(temporalAccessor) : rawValue;
             case "ENCODE_IMAGE_BASE64" -> rawValue instanceof String stringValue ? encodeImageToBase64(stringValue) : null;
+            case "FORMAT_DAILY_RANGE_KST" -> rawValue instanceof LocalDateTime dateTime
+                ? formatDailyRangeKst(dateTime) : rawValue;
             default -> rawValue;
         };
+    }
+
+    private String formatDailyRangeKst(LocalDateTime publishDateTime) {
+        DateTimeFormatter rangeFormatter = DateTimeFormatter.ofPattern("MMM dd HH:mm", Locale.US);
+        LocalDateTime rangeStart = publishDateTime.minusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime rangeEnd = publishDateTime.withHour(9).withMinute(0).withSecond(0).withNano(0);
+        return rangeStart.format(rangeFormatter) + " - " + rangeEnd.format(rangeFormatter) + " (KST)";
     }
 
     private FieldMetaSpec parseFieldMeta(String fieldMeta) {
