@@ -2,12 +2,10 @@ package com.sk.domain.mi.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
-import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssuePreviewRes;
 import com.sk.domain.mi.service.newsletter.NewsletterSnapshotService;
-import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "13-4. Newsletter Snapshot API", description = "뉴스레터 snapshot API입니다.")
@@ -35,10 +34,10 @@ public class MiNewsletterSnapshotController {
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterIssuePreviewRes> generateSnapshot(
         @PathVariable Integer publishHistoryId,
-        @UserResolve User actorUser
+        @RequestParam(value = "companyNo") Integer companyNo
     ) {
         return BaseResponseFactory.create(
-            newsletterSnapshotService.generateSnapshot(publishHistoryId, actorUser)
+            newsletterSnapshotService.generateSnapshot(publishHistoryId, companyNo)
         );
     }
 }

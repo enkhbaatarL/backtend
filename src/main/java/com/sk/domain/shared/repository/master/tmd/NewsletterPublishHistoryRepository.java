@@ -67,4 +67,19 @@ public interface NewsletterPublishHistoryRepository extends
         @Param("newsletterMaster") NewsletterMaster newsletterMaster,
         @Param("issueNo") Integer issueNo
     );
+
+    @Query("""
+        SELECT h
+        FROM NewsletterPublishHistory h
+        JOIN FETCH h.newsletterMaster m
+        WHERE h.newsletterPublishId = :publishHistoryId
+          AND h.isDeleted = false
+          AND m.isDeleted = false
+          AND h.publishStatusCode = com.sk.domain.shared.enums.newsletter.PublishStatusCode.PUBLISHED
+          AND (:customerCompanyNo IS NULL OR m.customerCompanyNo IS NULL OR m.customerCompanyNo = :customerCompanyNo)
+        """)
+    Optional<NewsletterPublishHistory> findAccessiblePublishedById(
+        @Param("publishHistoryId") Integer publishHistoryId,
+        @Param("customerCompanyNo") Integer customerCompanyNo
+    );
 }

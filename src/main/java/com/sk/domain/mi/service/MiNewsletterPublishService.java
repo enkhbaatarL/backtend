@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service;
 
 import com.sk.common.properties.ChartCaptureProperties;
+import com.sk.domain.mi.service.newsletter.NewsletterIssueOriginalService;
 import com.sk.domain.shared.client.ChartRendererClient;
 import com.sk.domain.shared.service.ChartCaptureJwtService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class MiNewsletterPublishService {
     private final ChartCaptureProperties chartCaptureProperties;
     private final ChartRendererClient chartRendererClient;
     private final MiNewsletterMailService miNewsletterMailService;
+    private final NewsletterIssueOriginalService newsletterIssueOriginalService;
 
     /**
      * 차트 캡처 + 메일 발송 비동기 실행.
@@ -46,9 +48,10 @@ public class MiNewsletterPublishService {
         log.info("Newsletter capture+send started. newsletterId={}, issueNo={}", newsletterId, issueNo);
 
         try {
+            newsletterIssueOriginalService.getIssueOriginal(newsletterId, issueNo);
             String jwt = chartCaptureJwtService.issueToken(newsletterId, issueNo);
             String renderUrl = chartCaptureProperties.getFrontendBaseUrl()
-                    + "/newsletter-chart-render?token=" + jwt;
+                    + "/newsletter-render?token=" + jwt;
 
             log.info("Playwright capture started. renderUrl={}", renderUrl);
             ChartRendererClient.MailContents mailContents = chartRendererClient.capture(renderUrl);

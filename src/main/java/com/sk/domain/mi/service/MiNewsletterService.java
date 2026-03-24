@@ -15,9 +15,11 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsEventIte
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsFlowChart;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.Reference;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
+import com.sk.domain.mi.service.newsletter.NewsletterDetailV2Service;
 import com.sk.domain.shared.entity.master.tif.NewsletterChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
@@ -103,6 +105,7 @@ public class MiNewsletterService {
     private final NewsletterCollectionChartRepository newsletterCollectionChartRepository;
     private final NewsletterTemplatePreferenceTableRepository newsletterTemplatePreferenceTableRepository;
     private final AuthorizationService authorizationService;
+    private final NewsletterDetailV2Service newsletterDetailV2Service;
 
     public PaginationRes<NewsletterListRes> getNewsletterList(Integer companyNo, int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -291,14 +294,19 @@ public class MiNewsletterService {
     /**
      * 시스템 내부 전용 뉴스레터 상세 조회 (Playwright 차트 캡처 경로).
      *
-     * <p>회사별 접근 제어 없이 newsletterId 단독으로 조회한다.
-     * 호출 주체가 chart-capture JWT로 인증된 내부 시스템이므로 company 필터가 불필요하다.
+     * <p>newsletterId로 뉴스레터 마스터를 조회해 customerCompanyNo를 확인한 뒤,
+     * 내부 시스템 전용 V2 상세 조회를 수행한다.
      */
-    public NewsletterDetailRes getNewsletterDetailForSystem(Integer newsletterId, Integer issueNo) {
+    public NewsletterDetailV2Res getNewsletterDetailForSystem(Integer newsletterId, Integer issueNo) {
         NewsletterMaster master = newsletterMasterRepository.findById(newsletterId)
-                .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
-        Integer companyNo = master.getCustomerCompanyNo() != null ? master.getCustomerCompanyNo() : 0;
-        return getNewsletterDetail(companyNo, null, String.valueOf(newsletterId), String.valueOf(issueNo));
+            .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
+
+        return newsletterDetailV2Service.getNewsletterDetail(
+            master.getCustomerCompanyNo(),
+            null,
+            newsletterId,
+            issueNo
+        );
     }
 
     @Deprecated

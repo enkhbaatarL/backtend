@@ -379,26 +379,11 @@ public class BlockExecutionClassifier {
             .toList();
 
         if ("NEWS_FLOW_CHART".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of("timestamps", "series"))) {
-            errors.add("ASSIGN_FIELD_NOT_DEFINED");
-        }
-        if ("NEWS_ITEM".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of(
-                "newsId",
-                "title",
-                "content",
-                "timestamp",
-                "createdDate",
-                "createTime",
-                "source",
-                "originalUrl",
-                "showInChart",
-                "trend"
-            ))) {
+            && !Set.copyOf(assignFieldKeys).equals(Set.of("timestamps", "series"))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
         if ("REFERENCE_TABLE".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of("tableData"))) {
+            && !Set.copyOf(assignFieldKeys).equals(Set.of("tableData"))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
     }

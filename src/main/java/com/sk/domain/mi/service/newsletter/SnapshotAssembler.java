@@ -83,7 +83,7 @@ public class SnapshotAssembler {
                     .build());
             }
             sections.add(SnapshotSection.builder()
-                .id("sec-" + sectionNode.sectionCode())
+                .id("sec-" + sectionNode.sectionCode() + "-" + sectionNode.id())
                 .type(sectionNode.sectionTypeCode())
                 .code(sectionNode.sectionCode())
                 .name(sectionNode.sectionName())

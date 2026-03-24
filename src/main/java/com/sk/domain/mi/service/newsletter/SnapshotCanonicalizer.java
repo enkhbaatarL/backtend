@@ -121,7 +121,9 @@ public class SnapshotCanonicalizer {
         if (idNode != null && !idNode.isNull()) {
             String id = idNode.asText();
             if (id.startsWith("sec-") && id.length() > 4) {
-                return id.substring(4);
+                String body = id.substring(4);
+                int lastDash = body.lastIndexOf('-');
+                return lastDash > 0 ? body.substring(0, lastDash) : body;
             }
         }
         return null;
