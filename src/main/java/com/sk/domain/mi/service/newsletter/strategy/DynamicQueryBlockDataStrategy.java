@@ -9,10 +9,12 @@ import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.internal.BlockExecutionPlan;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
+import com.sk.domain.mi.service.newsletter.StaticBlockDefaultValueResolver;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.entity.master.tmd.NewsletterTemplatePreferenceTable;
 import com.sk.domain.shared.repository.master.tmd.NewsletterTemplatePreferenceTableRepository;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class DynamicQueryBlockDataStrategy implements BlockDataStrategy {
     private final NewsletterTemplatePreferenceTableRepository preferenceTableRepository;
     private final MybatisDynamicQueryService mybatisDynamicQueryService;
     private final ObjectMapper objectMapper;
+    private final StaticBlockDefaultValueResolver defaultValueResolver;
 
     @Override
     public String getType() {
@@ -52,6 +55,7 @@ public class DynamicQueryBlockDataStrategy implements BlockDataStrategy {
         }
 
         try {
+            Map<String, Object> content = new LinkedHashMap<>(defaultValueResolver.resolve(block, pubHist));
             DynamicDataReq dynamicDataReq = DynamicDataReq.builder()
                 .targetDataSource(config.getTargetDatabaseName())
                 .tableName(config.getTargetTableName())
@@ -62,12 +66,14 @@ public class DynamicQueryBlockDataStrategy implements BlockDataStrategy {
 
             List<Map<String, Object>> rows = mybatisDynamicQueryService.getDynamicData(dynamicDataReq);
             if (rows.isEmpty()) {
-                return ResolvedBlockData.of(Map.of("tableData", TableRes.of(List.of(), List.of())));
+                content.put("tableData", TableRes.of(List.of(), List.of()));
+                return ResolvedBlockData.of(content);
             }
 
             Object payload = rows.get(0).get(config.getTableColumnName());
             TableRes tableRes = readTableDataFromJsonString(payload == null ? null : payload.toString());
-            return ResolvedBlockData.of(Map.of("tableData", tableRes));
+            content.put("tableData", tableRes);
+            return ResolvedBlockData.of(content);
         } catch (Exception e) {
             log.error("동적 쿼리 블록 resolve 실패 - blockCode: {}", block.blockCode(), e);
             return ResolvedBlockData.error("DYNAMIC_QUERY_RESOLVE_FAILED");

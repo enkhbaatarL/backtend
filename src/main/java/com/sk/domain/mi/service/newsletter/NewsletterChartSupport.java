@@ -48,7 +48,7 @@ public class NewsletterChartSupport {
         List<BigDecimal> volumeValues = new ArrayList<>();
 
         if (flowCharts.isEmpty()) {
-            return Map.of("chartType", "candlestick", "aggregationTime", generateAggregationTime(List.of()), "timestamps", List.of(), "series", List.of());
+            return Map.of("aggregationTime", generateAggregationTime(List.of()), "timestamps", List.of(), "series", List.of());
         }
 
         TreeMap<Long, NewsletterChart> chartMap = new TreeMap<>();
@@ -85,7 +85,6 @@ public class NewsletterChartSupport {
         );
 
         return Map.of(
-            "chartType", "candlestick",
             "aggregationTime", generateAggregationTime(timestamps),
             "timestamps", timestamps,
             "series", series
@@ -111,7 +110,7 @@ public class NewsletterChartSupport {
         }
 
         if (observedTimestamps.isEmpty()) {
-            return Map.of("chartType", "line", "aggregationTime", generateAggregationTime(List.of()), "timestamps", List.of(), "series", List.of());
+            return Map.of("aggregationTime", generateAggregationTime(List.of()), "timestamps", List.of(), "series", List.of());
         }
 
         String[] marketTimes = calculateMarketTimes(publishDateTime);
@@ -149,7 +148,6 @@ public class NewsletterChartSupport {
         }
 
         return Map.of(
-            "chartType", "line",
             "aggregationTime", generateAggregationTime(timestamps),
             "timestamps", timestamps,
             "series", series
@@ -177,7 +175,7 @@ public class NewsletterChartSupport {
         }
 
         if (unionTimestamps.isEmpty()) {
-            return Map.of("chartType", "line", "aggregationTime", generateAggregationTime(List.of()), "timestamps", List.of(), "series", List.of());
+            return Map.of("aggregationTime", generateAggregationTime(List.of()), "timestamps", List.of(), "series", List.of());
         }
 
         List<Long> timestampList = new ArrayList<>(unionTimestamps);
@@ -204,7 +202,6 @@ public class NewsletterChartSupport {
         }
 
         return Map.of(
-            "chartType", "line",
             "aggregationTime", generateAggregationTime(timestampList.stream().map(String::valueOf).toList()),
             "timestamps", timestampList.stream().map(String::valueOf).toList(),
             "series", series
