@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")
 @RequiredArgsConstructor
-public class MiNewsletterSnapshotController {
+public class MiNewsletterDedicatedSnapshotController {
 
     private final NewsletterSnapshotService newsletterSnapshotService;
 

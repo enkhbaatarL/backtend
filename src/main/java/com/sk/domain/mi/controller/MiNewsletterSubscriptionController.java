@@ -12,9 +12,12 @@ import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!dedicated")
 @Tag(name = "13-2. Newsletter Subscription API", description = "뉴스레터 구독 API입니다.")
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")
@@ -31,14 +35,14 @@ public class MiNewsletterSubscriptionController {
     private final MiNewsletterSubscriptionService miNewsletterSubscriptionService;
 
     @ApiOrder(5)
-    @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
+    @Parameter(name = "newsletterId", in = ParameterIn.PATH, description = "뉴스레터 마스터 ID")
     @Operation(summary = "뉴스레터 구독", description = "현재 사용자를 뉴스레터 구독 상태로 변경합니다. 멱등하게 동작합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PutMapping("/{newsletterId}/subscription")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterSubscriptionRes> subscribe(
-        @PathVariable Integer newsletterId,
+        @PathVariable @Min(1) Integer newsletterId,
         @UserResolve User actorUser
     ) {
         return BaseResponseFactory.create(
@@ -47,14 +51,15 @@ public class MiNewsletterSubscriptionController {
     }
 
     @ApiOrder(6)
-    @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
+    @Parameter(name = "newsletterId", in = ParameterIn.PATH, description = "뉴스레터 마스터 ID")
     @Operation(summary = "뉴스레터 구독 해지", description = "현재 사용자를 뉴스레터 미구독 상태로 변경합니다. 멱등하게 동작합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @ApiResponse(responseCode = "204", description = "구독 해지 성공 후 응답 본문이 없을 때 사용")
     @DeleteMapping("/{newsletterId}/subscription")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterSubscriptionRes> unsubscribe(
-        @PathVariable Integer newsletterId,
+        @PathVariable @Min(1) Integer newsletterId,
         @UserResolve User actorUser
     ) {
         return BaseResponseFactory.create(
@@ -63,14 +68,14 @@ public class MiNewsletterSubscriptionController {
     }
 
     @ApiOrder(7)
-    @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
+    @Parameter(name = "newsletterId", in = ParameterIn.PATH, description = "뉴스레터 마스터 ID")
     @Operation(summary = "내 뉴스레터 구독 상태 조회", description = "현재 사용자의 뉴스레터 구독 상태를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @GetMapping("/{newsletterId}/subscription")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterSubscriptionRes> getSubscriptionStatus(
-        @PathVariable Integer newsletterId,
+        @PathVariable @Min(1) Integer newsletterId,
         @UserResolve User actorUser
     ) {
         return BaseResponseFactory.create(
