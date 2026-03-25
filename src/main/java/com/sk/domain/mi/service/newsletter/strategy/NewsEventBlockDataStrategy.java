@@ -67,7 +67,7 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
         item.put("createdDate", event.getEventCreateTime() != null ? event.getEventCreateTime().format(CREATED_DATE_FORMATTER) : null);
         item.put("createTime", event.getEventMarkTime());
         item.put("source", event.getEventProvider());
-        item.put("originalUrl", null);
+        item.put("originalUrl", event.getOriginalUrl());
         item.put("showInChart", showInChartOverride != null ? showInChartOverride : "Y".equals(event.getTurningPointMarkYn()));
         item.put("trend", event.getDirectionalityType());
         return item;
