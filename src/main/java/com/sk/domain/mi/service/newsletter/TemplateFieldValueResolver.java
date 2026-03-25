@@ -115,8 +115,8 @@ public class TemplateFieldValueResolver {
             case "NEWSLETTER_PUBLISH_HISTORY_ISSUE_NO" -> pubHist != null ? pubHist.getIssueNo() : null;
             case "NEWSLETTER_PUBLISH_HISTORY_TITLE" -> pubHist != null ? pubHist.getNewsletterTitle() : null;
             case "NEWSLETTER_PUBLISH_HISTORY_AI_SUMMARY" -> pubHist != null ? pubHist.getAiSummary() : null;
-            case "PRICE_CHANGE_TO", "priceChangeTo" -> resolveBrentPriceValue(master, pubHist, true);
-            case "PRICE_CHANGE_FROM", "priceChangeFrom" -> resolveBrentPriceValue(master, pubHist, false);
+            case "PRICE_CHANGE_TO" -> resolveBrentPriceValue(master, pubHist, true);
+            case "PRICE_CHANGE_FROM" -> resolveBrentPriceValue(master, pubHist, false);
             case "NEWSLETTER_MASTER" -> resolveNewsletterMasterValue(master, valueSource, metaSpec);
             case "PUBLISH_CONTEXT" -> resolvePublishContextValue(pubHist, valueSource, metaSpec);
             case "BLOCK_CONTENT" -> resolveBlockContentValue(fieldKey, valueSource, context);

@@ -310,6 +310,10 @@ public class MiNewsletterRevisionService {
         );
         revisionDeltaHistoryRepository.save(deltaHistory);
 
+        Long snapshotNoToPersist = nextSnapshotBaseType == RevisionSnapshotBaseType.REVISION_SNAPSHOT
+            ? Long.valueOf(nextSnapshotNo)
+            : revision.getSnapshotNo();
+
         if (expectedRevisionNo != null) {
             int updatedCount = newsletterUserRevisionRepository.updateWithExpectedRevisionNo(
                 revision.getNewsletterUserRevisionId(),
@@ -317,7 +321,7 @@ public class MiNewsletterRevisionService {
                 expectedRevisionNo,
                 nextStatus,
                 nextSnapshotBaseType,
-                nextSnapshotBaseType == RevisionSnapshotBaseType.REVISION_SNAPSHOT ? nextSnapshotNo : revision.getSnapshotNo(),
+                snapshotNoToPersist,
                 nextDeltaNo,
                 requestType == RevisionSaveRequestType.DRAFT,
                 requestType == RevisionSaveRequestType.SAVE,

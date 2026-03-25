@@ -232,6 +232,6 @@ public class SnapshotAssembler {
     }
 
     private boolean isReferenceSection(String sectionCode) {
-        return List.of("REFERENCE1", "REFERENCE2", "REFERENCE3", "REFERENCE4").contains(sectionCode);
+        return "REFERENCE".equals(sectionCode);
     }
 }
