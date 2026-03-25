@@ -293,7 +293,6 @@ public class MiNewsletterRevisionService {
         long nextRevisionNo = revision.getRevisionNo() + 1;
         long nextDeltaNo = revision.getDeltaNo() + 1;
         boolean snapshotSaved = normalizedRequest.snapshotPayload() != null;
-        long nextSnapshotNo = nextRevisionNo;
 
         RevisionEditStatusCode nextStatus = toEditStatus(requestType);
         RevisionSnapshotBaseType nextSnapshotBaseType = snapshotSaved
@@ -311,7 +310,7 @@ public class MiNewsletterRevisionService {
         revisionDeltaHistoryRepository.save(deltaHistory);
 
         Long snapshotNoToPersist = nextSnapshotBaseType == RevisionSnapshotBaseType.REVISION_SNAPSHOT
-            ? Long.valueOf(nextSnapshotNo)
+            ? Long.valueOf(nextRevisionNo)
             : revision.getSnapshotNo();
 
         if (expectedRevisionNo != null) {
@@ -332,7 +331,8 @@ public class MiNewsletterRevisionService {
                 throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "REVISION_VERSION_CONFLICT");
             }
         } else {
-            revision.applySave(nextStatus, nextRevisionNo, nextDeltaNo, snapshotSaved, nextSnapshotNo, now);
+            revision.applySave(nextStatus, nextRevisionNo, nextDeltaNo, snapshotSaved,
+                nextRevisionNo, now);
             newsletterUserRevisionRepository.save(revision);
         }
 
@@ -342,7 +342,7 @@ public class MiNewsletterRevisionService {
                 : normalizedRequest.snapshotPayload());
             NewsletterUserRevisionSnapshotHistory snapshotHistory = NewsletterUserRevisionSnapshotHistory.create(
                 revision,
-                nextSnapshotNo,
+                nextRevisionNo,
                 nextDeltaNo,
                 snapshotJson
             );
