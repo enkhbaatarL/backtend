@@ -57,6 +57,8 @@ public class MiNewsletterMailController {
                 request.getHtmlBody(),
                 images,
                 request.getRecipientEmails(),
+                request.getCcEmails(),
+                request.getBccEmails(),
                 request.getScheduledAt(),
                 actorUser);
 

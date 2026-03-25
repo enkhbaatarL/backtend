@@ -90,7 +90,7 @@ public class MiNewsletterMailService {
         }
 
         List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images);
-        sendMailWithRetry(recipients, subject, htmlBody, inlineResources);
+        sendMailWithRetry(MailRecipients.toOnly(recipients), subject, htmlBody, inlineResources);
 
         log.info("Newsletter original mail sent. newsletterId: {}, issueNo: {}, recipients: {}", newsletterId, issueNo, recipients.size());
     }
@@ -144,6 +144,8 @@ public class MiNewsletterMailService {
             String htmlBody,
             List<MultipartFile> images,
             List<String> recipientEmails,
+            List<String> ccEmails,
+            List<String> bccEmails,
             String scheduledAt,
             User actorUser) {
 
@@ -154,17 +156,21 @@ public class MiNewsletterMailService {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
         }
 
-        List<String> recipients = resolveRevisionRecipients(recipientEmails);
+        MailRecipients recipients = resolveRevisionRecipients(recipientEmails, ccEmails, bccEmails);
         if (recipients.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                    "No valid recipientEmails provided. Provide at least one valid email.");
+                    "Provide at least one valid email in recipientEmails, ccEmails, or bccEmails.");
+        }
+        if (recipients.to().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                    "recipientEmails must include at least one valid email.");
         }
 
         List<InlineResource> inlineResources = validateAndBuildInlineResources(htmlBody, images);
         sendMailWithRetry(recipients, subject, htmlBody, inlineResources);
 
-        log.info("Newsletter revision mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
-                newsletterId, issueNo, recipients.size());
+        log.info("Newsletter revision mail sent. newsletterId: {}, issueNo: {}, to: {}, cc: {}, bcc: {}",
+                newsletterId, issueNo, recipients.to().size(), recipients.cc().size(), recipients.bcc().size());
     }
 
     private void validateSendRequest(String subject, String htmlBody) {
@@ -252,22 +258,32 @@ public class MiNewsletterMailService {
     }
 
     private List<String> resolveOriginalRecipients(Integer newsletterId, List<String> recipientEmails) {
-        List<String> explicitRecipients = normalizeRecipients(recipientEmails);
+        List<String> explicitRecipients = normalizeRecipients(recipientEmails, "recipient");
         if (!explicitRecipients.isEmpty()) {
             return explicitRecipients;
         }
-        return normalizeRecipients(newsletterSubscriptionRepository.findActiveSubscriberEmails(newsletterId));
+        return normalizeRecipients(newsletterSubscriptionRepository.findActiveSubscriberEmails(newsletterId), "recipient");
     }
 
-    private List<String> resolveRevisionRecipients(List<String> recipientEmails) {
-        List<String> explicitRecipients = normalizeRecipients(recipientEmails);
-        if (!explicitRecipients.isEmpty()) {
-            return explicitRecipients;
-        }
-        return List.of();
+    private MailRecipients resolveRevisionRecipients(
+            List<String> recipientEmails,
+            List<String> ccEmails,
+            List<String> bccEmails) {
+
+        List<String> toRecipients = normalizeRecipients(recipientEmails, "recipient");
+        List<String> ccRecipients = filterDuplicatesByPriority(
+                normalizeRecipients(ccEmails, "cc"),
+                new LinkedHashSet<>(toRecipients));
+        LinkedHashSet<String> occupied = new LinkedHashSet<>(toRecipients);
+        occupied.addAll(ccRecipients);
+        List<String> bccRecipients = filterDuplicatesByPriority(
+                normalizeRecipients(bccEmails, "bcc"),
+                occupied);
+
+        return new MailRecipients(toRecipients, ccRecipients, bccRecipients);
     }
 
-    private List<String> normalizeRecipients(List<String> recipientEmails) {
+    private List<String> normalizeRecipients(List<String> recipientEmails, String fieldName) {
         if (recipientEmails == null || recipientEmails.isEmpty()) {
             return List.of();
         }
@@ -286,13 +302,28 @@ public class MiNewsletterMailService {
                 }
                 if (!EMAIL_ALLOWED_PATTERN.matcher(trimmed).matches()) {
                     throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                            "Invalid recipient email: " + trimmed);
+                            "Invalid %s email: %s".formatted(fieldName, trimmed));
                 }
                 normalized.add(trimmed);
             }
         }
 
         return new ArrayList<>(normalized);
+    }
+
+    private List<String> filterDuplicatesByPriority(List<String> recipients, Set<String> higherPriorityRecipients) {
+        if (recipients.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> filtered = new ArrayList<>();
+        for (String recipient : recipients) {
+            if (higherPriorityRecipients.contains(recipient)) {
+                continue;
+            }
+            filtered.add(recipient);
+        }
+        return filtered;
     }
 
     private List<InlineResource> validateAndBuildInlineResources(String htmlBody, List<MultipartFile> images) {
@@ -424,18 +455,19 @@ public class MiNewsletterMailService {
         return contentType;
     }
 
-    private void sendMailWithRetry(List<String> recipients, String subject, String htmlBody, List<InlineResource> inlineResources) {
+    private void sendMailWithRetry(MailRecipients recipients, String subject, String htmlBody, List<InlineResource> inlineResources) {
         sendSingleMailWithRetry(recipients, subject, htmlBody, inlineResources);
     }
 
     private void sendSingleMailWithRetry(
-            List<String> recipients,
+            MailRecipients recipients,
             String subject,
             String htmlBody,
             List<InlineResource> inlineResources) {
 
         if (recipients == null || recipients.isEmpty()) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "recipientEmails is required");
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                    "At least one recipient is required");
         }
 
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
@@ -444,7 +476,13 @@ public class MiNewsletterMailService {
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
                 helper.setFrom(mailProperties.getFrom());
-                helper.setTo(recipients.toArray(String[]::new));
+                helper.setTo(recipients.to().toArray(String[]::new));
+                if (!recipients.cc().isEmpty()) {
+                    helper.setCc(recipients.cc().toArray(String[]::new));
+                }
+                if (!recipients.bcc().isEmpty()) {
+                    helper.setBcc(recipients.bcc().toArray(String[]::new));
+                }
                 helper.setSubject(subject);
 
                 // IMPORTANT: setText를 먼저 호출한 뒤 inline 리소스를 추가해야 메일 클라이언트 호환성이 높다.
@@ -466,9 +504,9 @@ public class MiNewsletterMailService {
         }
     }
 
-    private void waitBeforeRetry(int attempt, List<String> recipients, Exception e) {
+    private void waitBeforeRetry(int attempt, MailRecipients recipients, Exception e) {
         log.warn("Mail sending failed on attempt {} for recipients(count={}). Retrying after {}ms...",
-                attempt, recipients.size(), RETRY_DELAY_MILLIS, e);
+                attempt, recipients.totalCount(), RETRY_DELAY_MILLIS, e);
         try {
             Thread.sleep(RETRY_DELAY_MILLIS);
         } catch (InterruptedException ie) {
@@ -570,12 +608,32 @@ public class MiNewsletterMailService {
                         "Mail sending failed after %d attempts for %s: %s"
                             .formatted(MAX_RETRY_COUNT, recipient, e.getMessage()));
                 }
-                waitBeforeRetry(attempt, List.of(recipient), e);
+                waitBeforeRetry(attempt, MailRecipients.toOnly(List.of(recipient)), e);
             }
         }
     }
 
     private record RevisionStateRow(Object ownerUserNo, String editStatus) {
+    }
+
+    private record MailRecipients(List<String> to, List<String> cc, List<String> bcc) {
+        private MailRecipients {
+            to = List.copyOf(to);
+            cc = List.copyOf(cc);
+            bcc = List.copyOf(bcc);
+        }
+
+        private static MailRecipients toOnly(List<String> to) {
+            return new MailRecipients(to, List.of(), List.of());
+        }
+
+        private boolean isEmpty() {
+            return to.isEmpty() && cc.isEmpty() && bcc.isEmpty();
+        }
+
+        private int totalCount() {
+            return to.size() + cc.size() + bcc.size();
+        }
     }
 
     /** cid + InputStreamSource(MultipartFile 또는 ByteArrayResource) + contentType */
