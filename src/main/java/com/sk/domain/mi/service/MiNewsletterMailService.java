@@ -96,7 +96,7 @@ public class MiNewsletterMailService {
     }
 
     /**
-     * 스케줄러 자동 발송 - Playwright로 캡처한 메일 콘텐츠를 구독자에게 개별 발송
+     * Playwright로 캡처한 메일 콘텐츠를 구독자에게 개별 발송
      *
      * 정책:
      * - 수신자는 각자 본인만 수신자로 보임 (개별 발송)
@@ -120,13 +120,32 @@ public class MiNewsletterMailService {
         List<InlineResource> inlineResources =
             buildInlineResourcesFromCaptured(mailContents.htmlBody(), mailContents.images());
 
+        List<String> failedRecipients = new ArrayList<>();
+
         // 수신자 개별 발송 - 각자 본인만 수신자로 보임
         for (String recipient : recipients) {
-            sendIndividualMailWithRetry(recipient, subject, mailContents.htmlBody(), inlineResources);
+            try {
+                sendIndividualMailWithRetry(recipient, subject, mailContents.htmlBody(), inlineResources);
+            } catch (AppErrorException e) {
+                failedRecipients.add(recipient);
+                log.error("Newsletter captured mail send failed. newsletterId={}, issueNo={}, recipient={}",
+                    newsletterId, issueNo, recipient, e);
+            }
         }
 
-        log.info("Newsletter captured mail sent. newsletterId: {}, issueNo: {}, recipients: {}",
-            newsletterId, issueNo, recipients.size());
+        int successCount = recipients.size() - failedRecipients.size();
+        if (!failedRecipients.isEmpty()) {
+            log.warn("Newsletter captured mail completed with partial failures. newsletterId={}, issueNo={}, successCount={}, failureCount={}, failedRecipients={}",
+                newsletterId, issueNo, successCount, failedRecipients.size(), failedRecipients);
+
+            if (successCount == 0) {
+                throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR,
+                    "Mail sending failed for all recipients: " + failedRecipients);
+            }
+        }
+
+        log.info("Newsletter captured mail sent. newsletterId: {}, issueNo: {}, successCount: {}, failureCount: {}",
+            newsletterId, issueNo, successCount, failedRecipients.size());
     }
 
     /**

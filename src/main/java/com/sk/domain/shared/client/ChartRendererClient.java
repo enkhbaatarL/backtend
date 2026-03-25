@@ -5,6 +5,7 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.sk.common.properties.ChartCaptureProperties;
 import java.util.List;
@@ -22,7 +23,29 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ChartRendererClient {
 
+    private static final String MAIL_CONTENTS_READY_SCRIPT = """
+        () => {
+            const captureReady = document.body?.getAttribute('data-capture-ready') === 'true';
+            const mailContents = window.__mailContents;
+            const mailContentsReady =
+                !!mailContents
+                && typeof mailContents === 'object'
+                && typeof mailContents.htmlBody === 'string'
+                && Array.isArray(mailContents.images);
+            return captureReady || mailContentsReady;
+        }
+        """;
+
     private final ChartCaptureProperties properties;
+
+    static boolean hasUsableMailContents(Map<String, Object> mailContents) {
+        if (mailContents == null) {
+            return false;
+        }
+
+        return mailContents.get("htmlBody") instanceof String
+            && mailContents.get("images") instanceof List<?>;
+    }
 
     /**
      * 프론트엔드 차트 렌더 페이지를 헤드리스 Chrome으로 열고
@@ -48,19 +71,25 @@ public class ChartRendererClient {
              BrowserContext context = browser.newContext()) {
 
             Page page = context.newPage();
+            page.onConsoleMessage(message ->
+                log.debug("Chart render console[{}]: {}", message.type(), message.text()));
+            page.onPageError(error ->
+                log.warn("Chart render page error: {}", error));
+            page.onRequestFailed(request ->
+                log.warn("Chart render request failed. url={}, error={}",
+                    request.url(), request.failure() == null ? "unknown" : request.failure()));
+
             page.navigate(renderUrl, new Page.NavigateOptions()
                 .setWaitUntil(WaitUntilState.NETWORKIDLE));
 
-            page.waitForSelector("body[data-charts-ready=\"true\"]",
-                new Page.WaitForSelectorOptions()
-                    .setTimeout(properties.getCaptureTimeoutMs()));
+            waitForMailContentsReady(page);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> mailContents =
                 (Map<String, Object>) page.evaluate("() => window.__mailContents");
 
-            if (mailContents == null) {
-                log.warn("window.__mailContents is null");
+            if (!hasUsableMailContents(mailContents)) {
+                log.warn("window.__mailContents is missing or malformed");
                 return new MailContents("", List.of());
             }
 
@@ -78,9 +107,72 @@ public class ChartRendererClient {
                     img.get("contentType")
                 ))
                 .toList();
-
             log.info("Mail contents captured: {} image(s)", images.size());
             return new MailContents(htmlBody, images);
+        }
+    }
+
+    private void waitForMailContentsReady(Page page) {
+        try {
+            page.waitForFunction(
+                MAIL_CONTENTS_READY_SCRIPT,
+                null,
+                new Page.WaitForFunctionOptions()
+                    .setTimeout(properties.getCaptureTimeoutMs())
+            );
+        } catch (TimeoutError e) {
+            log.error("Timed out waiting for chart render readiness. diagnostics={}",
+                buildDiagnostics(page), e);
+            throw e;
+        }
+    }
+
+    private String buildDiagnostics(Page page) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> diagnostics = (Map<String, Object>) page.evaluate("""
+                () => {
+                    const bodyText = document.body?.innerText ?? '';
+                    const mailContents = window.__mailContents;
+                    return {
+                        location: window.location.href,
+                        readyState: document.readyState,
+                        bodyCaptureReady: document.body?.getAttribute('data-capture-ready'),
+                        bodyCaptureStage: document.body?.getAttribute('data-capture-stage'),
+                        bodyCaptureError: document.body?.getAttribute('data-capture-error'),
+                        bodyCaptureErrorDetail:
+                            document.body?.getAttribute('data-capture-error-detail'),
+                        bodyCaptureReadyCheck:
+                            document.body?.getAttribute('data-capture-ready-check'),
+                        mainChartCanvasInfo:
+                            document.body?.getAttribute('data-main-chart-canvas-info'),
+                        mainChartCanvasSaved:
+                            document.body?.getAttribute('data-main-chart-canvas-saved'),
+                        volumeChartCanvasSaved:
+                            document.body?.getAttribute('data-volume-chart-canvas-saved'),
+                        mainChartImageReady:
+                            document.body?.getAttribute('data-main-chart-image-ready'),
+                        anyCaptureReadyNode: !!document.querySelector('[data-capture-ready="true"]'),
+                        hasMailContents: !!mailContents,
+                        mailContentsKeys:
+                            mailContents && typeof mailContents === 'object'
+                                ? Object.keys(mailContents).join(',')
+                                : '',
+                        mailContentsUsable:
+                            !!mailContents
+                            && typeof mailContents === 'object'
+                            && typeof mailContents.htmlBody === 'string'
+                            && Array.isArray(mailContents.images),
+                        bodyTextSnippet: bodyText.slice(0, 500),
+                        bodyOuterHtmlSnippet: (document.body?.outerHTML ?? '').slice(0, 1200)
+                    };
+                }
+                """);
+
+            return diagnostics.toString();
+        } catch (Exception ex) {
+            log.warn("Failed to collect chart render diagnostics: {}", ex.getMessage());
+            return "diagnostics-unavailable";
         }
     }
 
