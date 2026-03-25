@@ -1,0 +1,10 @@
+### Mari
+POST {{baseUrl}}/api/v1/mi/mari-agent/chat-rooms/{{chatRoomId}}/stream
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: */*
+
+{
+    "question": "Brent유 1개월물의 최근 가격 알려줘",
+    "shouldWebSearch": true
+}

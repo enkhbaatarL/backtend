@@ -76,6 +76,19 @@ public class MariAgentGatewayService {
         }
     }
 
+    private static final int LOG_PREVIEW_MAX = 400;
+
+    private static String previewForLog(String text, int max) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = text.replace('\n', ' ');
+        if (normalized.length() <= max) {
+            return normalized;
+        }
+        return normalized.substring(0, max) + "...";
+    }
+
     @Transactional
     protected Optional<AnswerRes> executeModelAgent(QnaReq.Insert talkReq, ChatbotTalkQna qna,
         List<ChatbotTalkQna> histories, Set<ContentProviderAccess> contentProviderAccesses, int userNo,
@@ -86,7 +99,24 @@ public class MariAgentGatewayService {
                 qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
             ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, contentProviderAccesses,true, true);
 
+            String question = talkReq.question();
+            log.info(
+                "[Model-Agent] invoke request qnaNo={} chatRoomId={} companyNo={} userNo={} questionLen={} historiesCount={} preview={}",
+                qna.getChatbotTalkQnaNo(),
+                qna.getChatbotTalk().getChatbotTalkUuid(),
+                companyNo,
+                userNo,
+                question == null ? 0 : question.length(),
+                histories == null ? 0 : histories.size(),
+                previewForLog(question, LOG_PREVIEW_MAX));
+
             ModelAgentRes modelAgentRes = modelAgentApi.postMessage(appId, headers, body);
+
+            log.info(
+                "[Model-Agent] invoke response qnaNo={} chatRoomId={} receivedOutput={}",
+                qna.getChatbotTalkQnaNo(),
+                qna.getChatbotTalk().getChatbotTalkUuid(),
+                modelAgentRes != null && modelAgentRes.output() != null);
 
             AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
             qna.updateCompleteResult(answerRes);
@@ -150,6 +180,24 @@ public class MariAgentGatewayService {
             talkReq, histories, companyNo, userNo, contentProviderAccesses, true, true
         );
 
+        try {
+            String bodyJson = objectMapper.writeValueAsString(body);
+            log.info(
+                "[Model-Agent] stream request qnaNo={} chatRoomId={} companyNo={} userNo={} path=/{}/stream json={}",
+                qna.getChatbotTalkQnaNo(),
+                qna.getChatbotTalk().getChatbotTalkUuid(),
+                companyNo,
+                userNo,
+                appId,
+                bodyJson);
+        } catch (JsonProcessingException e) {
+            log.warn(
+                "[Model-Agent] stream request qnaNo={} chatRoomId={} failed to serialize request body to JSON",
+                qna.getChatbotTalkQnaNo(),
+                qna.getChatbotTalk().getChatbotTalkUuid(),
+                e);
+        }
+
         log.info("[PERF] Stream started for qnaNo: {}", qna.getChatbotTalkQnaNo());
 
         return webClient.post()
@@ -165,11 +213,31 @@ public class MariAgentGatewayService {
             })
             .timeout(Duration.ofSeconds(agentReadTimeout.getSeconds()))
             .doOnNext(event -> {
+                String data = event.data();
+                int len = data == null ? 0 : data.length();
+                if (log.isDebugEnabled()) {
+                    log.debug(
+                        "[Model-Agent] stream SSE raw qnaNo={} eventId={} eventName={} dataLen={} dataPreview={}",
+                        qna.getChatbotTalkQnaNo(),
+                        event.id(),
+                        event.event(),
+                        len,
+                        previewForLog(data, 300));
+                } else {
+                    log.trace("[Model-Agent] stream SSE qnaNo={} event={} dataLen={}",
+                        qna.getChatbotTalkQnaNo(), event.event(), len);
+                }
             })
             .concatMap(event -> processServerSentEvent(event, qna))
             .doOnNext(answerRes -> {
             })
             .doOnComplete(() -> {
+                long elapsed = System.currentTimeMillis() - streamStartTime;
+                log.info(
+                    "[Model-Agent] stream completed qnaNo={} chatRoomId={} elapsedMs={}",
+                    qna.getChatbotTalkQnaNo(),
+                    qna.getChatbotTalk().getChatbotTalkUuid(),
+                    elapsed);
             })
             .doOnError(error -> {
                 long totalTime = System.currentTimeMillis() - streamStartTime;
@@ -208,6 +276,28 @@ public class MariAgentGatewayService {
                     log.warn("Invalid event data: node={}, data={}",
                         streamBody.node(), streamBody.data());
                     return Flux.empty();
+                }
+
+                String value = streamBody.value();
+                int valueLen = value == null ? 0 : value.length();
+                if (streamBody.isCompleteState()) {
+                    log.info(
+                        "[Model-Agent] stream agent data (complete) qnaNo={} chatRoomId={} node={} dataType={} valueLen={} preview={}",
+                        qna.getChatbotTalkQnaNo(),
+                        qna.getChatbotTalk().getChatbotTalkUuid(),
+                        streamBody.node(),
+                        streamBody.data(),
+                        valueLen,
+                        previewForLog(value, LOG_PREVIEW_MAX));
+                } else {
+                    log.debug(
+                        "[Model-Agent] stream agent data qnaNo={} state={} node={} dataType={} valueLen={} preview={}",
+                        qna.getChatbotTalkQnaNo(),
+                        streamBody.state(),
+                        streamBody.node(),
+                        streamBody.data(),
+                        valueLen,
+                        previewForLog(value, 200));
                 }
 
                 // Handler 선택
