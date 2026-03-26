@@ -5,6 +5,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterUserRevision;
 import com.sk.domain.shared.enums.newsletter.RevisionEditStatusCode;
 import com.sk.domain.shared.enums.newsletter.RevisionSnapshotBaseType;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,6 +18,8 @@ public interface NewsletterUserRevisionRepository extends JpaRepository<Newslett
         NewsletterIssueOriginal issueOriginal,
         Integer ownerUserNo
     );
+
+    List<NewsletterUserRevision> findAllByIssueOriginalAndIsDeletedFalse(NewsletterIssueOriginal issueOriginal);
 
     @Query("""
         SELECT r
@@ -67,4 +70,13 @@ public interface NewsletterUserRevisionRepository extends JpaRepository<Newslett
         @Param("modifierUserId") String modifierUserId,
         @Param("now") LocalDateTime now
     );
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE NewsletterUserRevision r
+        SET r.isDeleted = true
+        WHERE r.issueOriginal = :issueOriginal
+          AND r.isDeleted = false
+        """)
+    int softDeleteByIssueOriginal(@Param("issueOriginal") NewsletterIssueOriginal issueOriginal);
 }

@@ -11,6 +11,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface NewsletterSubscriptionRepository extends JpaRepository<NewsletterSubscription, Long> {
 
+    Optional<NewsletterSubscription> findByNewsletterMasterAndUserUserNo(
+        NewsletterMaster newsletterMaster, Integer userNo
+    );
+
     Optional<NewsletterSubscription> findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(
         NewsletterMaster newsletterMaster, Integer userNo
     );

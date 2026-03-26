@@ -25,7 +25,7 @@ public class MiNewsletterSubscriptionService {
         NewsletterMaster newsletterMaster = getAccessibleNewsletter(newsletterId, actorUser);
 
         NewsletterSubscription subscription = newsletterSubscriptionRepository
-            .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, actorUser.getUserNo())
+            .findByNewsletterMasterAndUserUserNo(newsletterMaster, actorUser.getUserNo())
             .orElseGet(() -> NewsletterSubscription.subscribe(newsletterMaster, actorUser));
 
         subscription.subscribe();
@@ -38,7 +38,7 @@ public class MiNewsletterSubscriptionService {
         NewsletterMaster newsletterMaster = getAccessibleNewsletter(newsletterId, actorUser);
 
         NewsletterSubscription subscription = newsletterSubscriptionRepository
-            .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, actorUser.getUserNo())
+            .findByNewsletterMasterAndUserUserNo(newsletterMaster, actorUser.getUserNo())
             .orElse(null);
 
         if (subscription != null) {
@@ -53,7 +53,7 @@ public class MiNewsletterSubscriptionService {
         NewsletterMaster newsletterMaster = getAccessibleNewsletter(newsletterId, actorUser);
 
         NewsletterSubscription subscription = newsletterSubscriptionRepository
-            .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, actorUser.getUserNo())
+            .findByNewsletterMasterAndUserUserNo(newsletterMaster, actorUser.getUserNo())
             .orElse(null);
 
         return toRes(newsletterMaster, subscription);

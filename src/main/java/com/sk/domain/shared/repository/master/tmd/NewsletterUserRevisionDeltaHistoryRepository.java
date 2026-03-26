@@ -6,6 +6,9 @@ import com.sk.domain.shared.enums.newsletter.RevisionSaveRequestType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface NewsletterUserRevisionDeltaHistoryRepository extends JpaRepository<NewsletterUserRevisionDeltaHistory, Long> {
 
@@ -56,4 +59,13 @@ public interface NewsletterUserRevisionDeltaHistoryRepository extends JpaReposit
         RevisionSaveRequestType requestType,
         Long deltaNo
     );
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE NewsletterUserRevisionDeltaHistory d
+        SET d.isDeleted = true
+        WHERE d.newsletterUserRevision IN :revisions
+          AND d.isDeleted = false
+        """)
+    int softDeleteByNewsletterUserRevisionIn(@Param("revisions") List<NewsletterUserRevision> revisions);
 }

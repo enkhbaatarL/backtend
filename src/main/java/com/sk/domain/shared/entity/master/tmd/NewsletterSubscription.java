@@ -82,12 +82,12 @@ public class NewsletterSubscription extends BaseEntity {
     }
 
     public void unsubscribe() {
-        if (Boolean.FALSE.equals(this.isSubscribed) && this.getIsDeleted()) {
+        if (Boolean.FALSE.equals(this.isSubscribed) && !this.getIsDeleted()) {
             return;
         }
 
         this.isSubscribed = false;
         this.unsubscribedAt = LocalDateTime.now();
-        this.softDelete();
+        this.softRestore();
     }
 }
