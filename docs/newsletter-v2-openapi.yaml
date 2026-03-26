@@ -324,16 +324,11 @@ paths:
       summary: 뉴스레터 메일 발송 트리거
       description: |
         Airflow DAG 등 외부 시스템이 발행 완료 후 호출한다.
+        메일 제목은 요청값이 아니라 발행 이력(`NewsletterPublishHistory.emailSubject`)에서 조회한다.
         차트 캡처 + 구독자 메일 발송을 비동기로 시작하고 즉시 `202 Accepted`를 반환한다.
       parameters:
         - $ref: '#/components/parameters/NewsletterId'
         - $ref: '#/components/parameters/IssueNo'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewsletterMailTriggerReq'
       responses:
         '202':
           description: 비동기 발송 시작
@@ -862,13 +857,6 @@ components:
             type: string
             format: binary
       required: [subject, htmlBody]
-
-    NewsletterMailTriggerReq:
-      type: object
-      properties:
-        subject:
-          type: string
-      required: [subject]
 
     SnapshotRoot:
       type: object

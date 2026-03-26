@@ -4,7 +4,6 @@ import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.dto.request.newsletter.NewsletterMailTriggerReq;
 import com.sk.domain.mi.service.MiNewsletterPublishService;
 import com.sk.domain.mi.service.newsletter.NewsletterIssueOriginalService;
 import com.sk.domain.shared.enums.Role;
@@ -12,14 +11,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,8 +50,7 @@ public class MiNewsletterDedicatedTriggerController {
     @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.ADMIN, Role.SYSTEM})
     public ResponseEntity<BaseResponse<String>> triggerMail(
             @PathVariable Integer newsletterId,
-            @PathVariable Integer issueNo,
-            @Valid @RequestBody NewsletterMailTriggerReq request) {
+            @PathVariable Integer issueNo) {
 
         log.info("Newsletter mail trigger received. newsletterId={}, issueNo={}",
                 newsletterId, issueNo);
@@ -65,8 +61,7 @@ public class MiNewsletterDedicatedTriggerController {
         //  - trigger 요청 멱등/상태 관리를 위한 별도 테이블(예: newsletter_send_trigger) 추가
         //  - idempotencyKey UNIQUE + status(RECEIVED/PROCESSING/SUCCEEDED/FAILED) 저장
         //  - trigger-mail API 진입 시 중복 요청 여부를 선검증 후 비동기 발송 실행
-        miNewsletterPublishService.captureAndSendAsync(
-                newsletterId, issueNo, request.subject());
+        miNewsletterPublishService.captureAndSendAsync(newsletterId, issueNo);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(BaseResponseFactory.create("accepted"));

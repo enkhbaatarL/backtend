@@ -5,8 +5,8 @@
 --   - 개발기 DB 초기 구축용
 -- Scope:
 --   - CREATE TABLE / CREATE INDEX only
---   - except prerequisite legacy index drop on parent table
---   - ALTER / BACKFILL / DROP excluded
+--   - except prerequisite legacy index drop and parent table ALTER
+--   - BACKFILL / DROP excluded
 -- Prerequisites:
 --   - Existing parent tables must already exist:
 --     tmd_nws_ltr_mstr, tmd_nws_ltr_pub_hist, tmd_usrm
@@ -18,6 +18,13 @@
 -- `tmd_nws_ltr_mstr.nws_ltr_tmplt_id` is repurposed to point to V2 template ID.
 -- Drop the legacy index first if it still exists in the target environment.
 DROP INDEX nws_ltr_mstr_fk01 ON tmd_nws_ltr_mstr;
+
+-- Parent table column type alignment for V2 FK compatibility.
+ALTER TABLE tmd_nws_ltr_mstr
+    MODIFY COLUMN nws_ltr_tmplt_id BIGINT UNSIGNED NOT NULL COMMENT '현재활성뉴스레터템플릿버전ID';
+
+ALTER TABLE tmd_nws_ltr_pub_hist
+    MODIFY COLUMN nws_ltr_tmplt_id BIGINT UNSIGNED NOT NULL COMMENT '발행시점뉴스레터템플릿버전ID';
 
 /* =========================================================
  * 1) TEMPLATE TABLES
@@ -102,6 +109,7 @@ CREATE TABLE tmd_nwsltrtmpltblk
     tgt_cmpny_no          INT UNSIGNED                          NULL COMMENT '대상고객사번호',
     data_src_type_cd      VARCHAR(30)                           NULL COMMENT '데이터소스타입',
     data_src_ref          VARCHAR(500)                          NULL COMMENT '데이터소스참조',
+    data_src_spec_json    JSON                                  NULL COMMENT '데이터소스명세JSON',
     CONSTRAINT tmd_nwsltrtmpltblk_ux01 UNIQUE (nws_ltr_tmplt_sctn_id, blk_cd),
     CONSTRAINT tmd_nwsltrtmpltblk_fk01 FOREIGN KEY (nws_ltr_tmplt_sctn_id) REFERENCES tmd_nwsltrtmpltsctn (nws_ltr_tmplt_sctn_id)
 ) COMMENT 'TMD_뉴스레터템플릿블록';

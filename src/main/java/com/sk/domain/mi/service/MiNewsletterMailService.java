@@ -106,10 +106,10 @@ public class MiNewsletterMailService {
     public void sendOriginalIssueMailFromCapture(
             Integer newsletterId,
             Integer issueNo,
-            String subject,
+            String emailSubject,
             ChartRendererClient.MailContents mailContents) {
 
-        validateSendRequest(subject, mailContents.htmlBody());
+        validateSendRequest(emailSubject, mailContents.htmlBody());
 
         List<String> recipients = resolveOriginalRecipients(newsletterId, null);
         if (recipients.isEmpty()) {
@@ -125,7 +125,7 @@ public class MiNewsletterMailService {
         // 수신자 개별 발송 - 각자 본인만 수신자로 보임
         for (String recipient : recipients) {
             try {
-                sendIndividualMailWithRetry(recipient, subject, mailContents.htmlBody(), inlineResources);
+                sendIndividualMailWithRetry(recipient, emailSubject, mailContents.htmlBody(), inlineResources);
             } catch (AppErrorException e) {
                 failedRecipients.add(recipient);
                 log.error("Newsletter captured mail send failed. newsletterId={}, issueNo={}, recipient={}",

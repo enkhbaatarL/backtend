@@ -41,14 +41,14 @@ public class MiNewsletterPublishService {
      *
      * @param newsletterId 뉴스레터 마스터 ID
      * @param issueNo      회차 번호
-     * @param subject      메일 제목
      */
     @Async
-    public void captureAndSendAsync(Integer newsletterId, Integer issueNo, String subject) {
+    public void captureAndSendAsync(Integer newsletterId, Integer issueNo) {
         log.info("Newsletter capture+send started. newsletterId={}, issueNo={}", newsletterId, issueNo);
 
         try {
             newsletterIssueOriginalService.getIssueOriginal(newsletterId, issueNo);
+            String emailSubject = newsletterIssueOriginalService.getPublishedEmailSubject(newsletterId, issueNo);
             String jwt = chartCaptureJwtService.issueToken(newsletterId, issueNo);
             String renderUrl = chartCaptureProperties.getFrontendBaseUrl()
                     + "/newsletter-render?token=" + jwt;
@@ -56,7 +56,7 @@ public class MiNewsletterPublishService {
             log.info("Playwright capture started. renderUrl={}", renderUrl);
             ChartRendererClient.MailContents mailContents = chartRendererClient.capture(renderUrl);
 
-            miNewsletterMailService.sendOriginalIssueMailFromCapture(newsletterId, issueNo, subject, mailContents);
+            miNewsletterMailService.sendOriginalIssueMailFromCapture(newsletterId, issueNo, emailSubject, mailContents);
 
             log.info("Newsletter capture+send completed. newsletterId={}, issueNo={}", newsletterId, issueNo);
 

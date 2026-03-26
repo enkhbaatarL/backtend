@@ -15,6 +15,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryReposi
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ public class NewsletterIssueOriginalService {
     private static final String PUBLISH_HISTORY_MASTER_MISMATCH = "PUBLISH_HISTORY_MASTER_MISMATCH";
     private static final String NEWSLETTER_PUBLISH_HISTORY_NOT_FOUND = "NEWSLETTER_PUBLISH_HISTORY_NOT_FOUND";
     private static final String NEWSLETTER_PUBLISH_HISTORY_NOT_PUBLISHED = "NEWSLETTER_PUBLISH_HISTORY_NOT_PUBLISHED";
+    private static final String NEWSLETTER_PUBLISH_HISTORY_EMAIL_SUBJECT_MISSING = "NEWSLETTER_PUBLISH_HISTORY_EMAIL_SUBJECT_MISSING";
 
     private final TemplateLoader templateLoader;
     private final BlockDataResolver blockDataResolver;
@@ -121,7 +123,7 @@ public class NewsletterIssueOriginalService {
         }
     }
 
-    private NewsletterPublishHistory getPublishedHistory(Integer newsletterId, Integer issueNo) {
+    public NewsletterPublishHistory getPublishedHistory(Integer newsletterId, Integer issueNo) {
         NewsletterMaster newsletterMaster = newsletterMasterRepository.findById(newsletterId)
             .filter(master -> !Boolean.TRUE.equals(master.getIsDeleted()))
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, NEWSLETTER_NOT_FOUND));
@@ -131,6 +133,17 @@ public class NewsletterIssueOriginalService {
 
         validatePublishHistory(newsletterId, issueNo, publishHistory);
         return publishHistory;
+    }
+
+    public String getPublishedEmailSubject(Integer newsletterId, Integer issueNo) {
+        NewsletterPublishHistory publishHistory = getPublishedHistory(newsletterId, issueNo);
+        if (StringUtils.isBlank(publishHistory.getEmailSubject())) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                NEWSLETTER_PUBLISH_HISTORY_EMAIL_SUBJECT_MISSING + ": newsletterId=%d, issueNo=%d".formatted(newsletterId, issueNo)
+            );
+        }
+        return publishHistory.getEmailSubject();
     }
 
     private void validatePublishHistory(Integer newsletterId, Integer issueNo, NewsletterPublishHistory publishHistory) {

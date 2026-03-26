@@ -146,6 +146,7 @@ CREATE TABLE tmd_nwsltrtmpltblk
     tgt_cmpny_no          INT UNSIGNED                          NULL COMMENT '대상고객사번호',
     data_src_type_cd      VARCHAR(30)                           NULL COMMENT '데이터소스타입',
     data_src_ref          VARCHAR(500)                          NULL COMMENT '데이터소스참조',
+    data_src_spec_json    JSON                                  NULL COMMENT '데이터소스명세JSON',
     CONSTRAINT tmd_nwsltrtmpltblk_ux01 UNIQUE (nws_ltr_tmplt_sctn_id, blk_cd),
     CONSTRAINT tmd_nwsltrtmpltblk_fk01 FOREIGN KEY (nws_ltr_tmplt_sctn_id) REFERENCES tmd_nwsltrtmpltsctn (nws_ltr_tmplt_sctn_id)
 ) COMMENT 'TMD_뉴스레터템플릿블록';

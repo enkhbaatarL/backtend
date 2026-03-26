@@ -178,15 +178,12 @@ Airflow DAG이 뉴스레터 발행 완료 시 호출한다.
 ```
 POST /api/v1/mi/newsletter/{newsletterId}/{issueNo}/trigger-mail
 Authorization: Bearer <OAuth2 토큰>  (Role: SYSTEM / ADMIN / API_SUB_ADMIN / API_PLUS_OPERATOR)
-
-{
-  "subject": "2026년 3월 마켓 인텔리전스 뉴스레터"
-}
 ```
 
 - 202 Accepted 즉시 반환 (fire-and-forget)
 - 실제 캡처 + 발송은 `@Async` 백그라운드 실행 (`MiNewsletterPublishService.captureAndSendAsync`)
 - `companyNo`는 `newsletterId`로 `NewsletterMaster`를 조회하여 내부에서 자동 결정
+- 메일 제목은 요청 body가 아니라 `tmd_nws_ltr_pub_hist.eml_titl` (`NewsletterPublishHistory.emailSubject`)에서 조회
 
 ### 5-2. JWT 발급 스펙
 
@@ -224,7 +221,9 @@ Authorization: Bearer <chart-capture JWT>
 ```java
 // MiNewsletterPublishService
 @Async
-public void captureAndSendAsync(Integer newsletterId, Integer issueNo, String subject) {
+public void captureAndSendAsync(Integer newsletterId, Integer issueNo) {
+    NewsletterPublishHistory publishHistory = newsletterIssueOriginalService.getPublishedHistory(newsletterId, issueNo);
+    String emailSubject = publishHistory.getEmailSubject();
     Integer companyNo = resolveCompanyNo(newsletterId);  // DB 조회
     String jwt = chartCaptureJwtService.issueToken(newsletterId, issueNo, companyNo);
     String renderUrl = properties.getFrontendBaseUrl()
@@ -232,7 +231,7 @@ public void captureAndSendAsync(Integer newsletterId, Integer issueNo, String su
 
     MailContents mailContents = chartRendererClient.capture(renderUrl);
     miNewsletterMailService.sendOriginalIssueMailFromCapture(
-        newsletterId, issueNo, subject, mailContents);
+        newsletterId, issueNo, emailSubject, mailContents);
 }
 ```
 
@@ -301,6 +300,7 @@ chart-capture:
 - 2026-03-09: JWT 알고리즘 HS256 → RS256 (기존 RSA 키 재사용)으로 변경
 - 2026-03-09: 트리거 API 경로 `/api/v1/external/**` → `/api/v1/mi/newsletter/**` 변경, OAuth2 인증 적용
 - 2026-03-09: `trigger-mail` 멱등/상태 분리 설계(`newsletter_send_trigger` + `newsletter_send_history`) 반영
-- 2026-03-09: 트리거 요청 파라미터에서 `companyNo` 제거, `subject`만 수신
+- 2026-03-09: 트리거 요청 파라미터에서 `companyNo` 제거
+- 2026-03-26: `trigger-mail` request body 제거, 메일 제목 source를 `NewsletterPublishHistory.emailSubject`로 변경
 - 2026-03-09: JWT 페이로드에서 `companyNo` 제거 — 내부 조회는 `getNewsletterDetailForSystem()`으로 company 필터 우회
 - 2026-03-09: 프론트 테스트용 chart-capture-url API 제거 (trigger-mail API로 대체)
