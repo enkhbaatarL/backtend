@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -97,7 +98,14 @@ public class MariAgentGatewayService {
         try {
             Map<String, Object> headers = ModelAgentHeaders.of(companyNo, userNo,
                 qna.getChatbotTalk().getChatbotTalkUuid(), qna.getChatbotTalkQnaNo()).toMap();
-            ModelAgentReq body = ModelAgentReq.of(talkReq, histories, companyNo, userNo, contentProviderAccesses,true, true);
+            List<ContentProviderAccess> vdbContentProviderAccesses =
+                getVdbContentProviderAccesses(companyNo, userNo);
+
+            ModelAgentReq body = ModelAgentReq.of(
+                talkReq, histories, companyNo, userNo,
+                contentProviderAccesses,
+                vdbContentProviderAccesses,
+                true, true);
 
             String question = talkReq.question();
             log.info(
@@ -176,8 +184,14 @@ public class MariAgentGatewayService {
             qna.getChatbotTalkQnaNo()
         ).toHeaders();
 
+        List<ContentProviderAccess> vdbContentProviderAccesses =
+            getVdbContentProviderAccesses(companyNo, userNo);
+
         ModelAgentReq body = ModelAgentReq.of(
-            talkReq, histories, companyNo, userNo, contentProviderAccesses, true, true
+            talkReq, histories, companyNo, userNo,
+            contentProviderAccesses,
+            vdbContentProviderAccesses,
+            true, true
         );
 
         try {
@@ -372,6 +386,20 @@ public class MariAgentGatewayService {
 
         // 5. 완료 상태 (최종 결과)
         return streamEventHandlerMap.get("generate");
+    }
+
+    private List<ContentProviderAccess> getVdbContentProviderAccesses(int companyNo, int userNo) {
+        List<Object[]> rows = goodsRepository.findVdbGoodsNosAndRepositoryIdsWithPermission(
+            companyNo, userNo);
+
+        return rows.stream()
+            .collect(Collectors.groupingBy(
+                row -> (String) row[2], // prvd_id
+                Collectors.mapping(row -> ((Number) row[0]).intValue(), Collectors.toSet())
+            ))
+            .entrySet().stream()
+            .map(entry -> ContentProviderAccess.of(entry.getKey(), entry.getValue()))
+            .toList();
     }
 
 }

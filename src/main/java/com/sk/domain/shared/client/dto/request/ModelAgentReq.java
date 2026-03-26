@@ -22,7 +22,9 @@ public record ModelAgentReq(
 
     public static ModelAgentReq of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
         Integer companyNo, Integer userNo, Set<ContentProviderAccess> contentProviderAccesses,
+        List<ContentProviderAccess> contentProviderVdbAccesses,
         boolean shouldWebSearch, boolean useMiDataset) {
+
         return ModelAgentReq.builder()
             .input(Input.of(
                 talkReq, histories, companyNo, userNo,
@@ -31,8 +33,9 @@ public record ModelAgentReq(
                     .map(ContentProviderAccess::authGdsList)
                     .filter(java.util.Objects::nonNull)
                     .flatMap(Set::stream)
-                    .map(String::valueOf)
-                    .collect(Collectors.toSet()),
+                    .distinct()
+                    .toList(),
+                contentProviderVdbAccesses,
                 shouldWebSearch, useMiDataset, null))
             .build();
     }
@@ -49,8 +52,11 @@ public record ModelAgentReq(
         @JsonProperty("user_num")
         Integer userNo,
 
-        @JsonProperty("authorized_product_nums")
-        Set<String> authGdsList,
+        @JsonProperty("content_provider_rdb_accesses")
+        ContentProviderRdbAccesses contentProviderRdbAccesses,
+
+        @JsonProperty("content_provider_vdb_accesses")
+        List<ContentProviderAccess> contentProviderVdbAccesses,
 
 //        @JsonProperty("rdb_search_metadata_repo_id")
 //        String rdbSearchMetadataRepoId,
@@ -63,22 +69,37 @@ public record ModelAgentReq(
     ) {
 
         public static Input of(QnaReq.Insert talkReq, List<ChatbotTalkQna> histories,
-            Integer companyNo, Integer userNo, Set<String> authGdsList, boolean shouldWebSearch, boolean useMiDataset, String rdbSearchMetadataRepoId) {
+            Integer companyNo, Integer userNo, List<Integer> authorizedProductNums,
+            List<ContentProviderAccess> contentProviderVdbAccesses,
+            boolean shouldWebSearch, boolean useMiDataset, String rdbSearchMetadataRepoId) {
             Set<String> searchSources = new HashSet<>();
             if(shouldWebSearch) searchSources.add("web");
             if(useMiDataset) {
                 searchSources.add("rdb");
                 searchSources.add("vdb");
             }
+            List<ContentProviderAccess> safeVdbAccesses =
+                contentProviderVdbAccesses == null ? List.of() : contentProviderVdbAccesses;
             return Input.builder()
                 .userQuery(talkReq.question())
                 .searchSources(searchSources)
                 .histories(History.ofList(histories))
                 .companyNo(String.valueOf(companyNo))
                 .userNo(userNo)
-                .authGdsList(authGdsList)
+                .contentProviderRdbAccesses(new ContentProviderRdbAccesses(authorizedProductNums))
+                .contentProviderVdbAccesses(safeVdbAccesses)
                 //.rdbSearchMetadataRepoId(rdbSearchMetadataRepoId)
                 .build();
+        }
+
+        @Builder
+        public record ContentProviderRdbAccesses(
+            @JsonProperty("authorized_product_nums")
+            List<Integer> authorizedProductNums
+        ) {
+            public ContentProviderRdbAccesses(List<Integer> authorizedProductNums) {
+                this.authorizedProductNums = authorizedProductNums;
+            }
         }
 
         @Builder
