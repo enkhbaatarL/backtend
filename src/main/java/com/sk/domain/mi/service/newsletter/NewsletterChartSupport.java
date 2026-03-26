@@ -71,17 +71,23 @@ public class NewsletterChartSupport {
         // 캔들스틱 y축 범위는 실제 고가(high) 최대 ~ 저가(low) 최소 기준으로 계산
         BigDecimal ohlcMax = highValues.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
         BigDecimal ohlcMin = lowValues.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        String dtick = calculateAutoDtick(ohlcMax, ohlcMin);
-        List<Double> rangeValues = calculateRangeWithDtick(ohlcMax, ohlcMin, dtick);
-        String range = String.format("[%s, %s]", rangeValues.get(0), rangeValues.get(1));
+        String priceDtick = calculateAutoDtick(ohlcMax, ohlcMin);
+        List<Double> priceRangeValues = calculateRangeWithDtick(ohlcMax, ohlcMin, priceDtick);
+        String priceRange = String.format("[%s, %s]", priceRangeValues.get(0), priceRangeValues.get(1));
+
+        BigDecimal volumeMax = volumeValues.stream().filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        BigDecimal volumeMin = volumeValues.stream().filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        String volumeDtick = calculateAutoDtick(volumeMax, volumeMin);
+        List<Double> volumeRangeValues = calculateRangeWithDtick(volumeMax, volumeMin, volumeDtick);
+        String volumeRange = String.format("[%s, %s]", volumeRangeValues.get(0), volumeRangeValues.get(1));
 
         // high/low/open/close는 동일 y축을 공유하므로 같은 dtick/range 적용. volume은 별도 단위
         List<Series> series = Arrays.asList(
-            Series.ofWithChartOption("high", "High", RenderAs.HIGH, highValues, true, null, dtick, range, false),
-            Series.ofWithChartOption("low", "Low", RenderAs.LOW, lowValues, true, null, dtick, range, false),
-            Series.ofWithChartOption("open", "Open", RenderAs.OPEN, openValues, true, null, dtick, range, false),
-            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, dtick, range, false),
-            Series.of("volume", "Volume", RenderAs.VOLUME, volumeValues, true)
+            Series.ofWithChartOption("high", "High", RenderAs.HIGH, highValues, true, null, priceDtick, priceRange, false),
+            Series.ofWithChartOption("low", "Low", RenderAs.LOW, lowValues, true, null, priceDtick, priceRange, false),
+            Series.ofWithChartOption("open", "Open", RenderAs.OPEN, openValues, true, null, priceDtick, priceRange, false),
+            Series.ofWithChartOption("close", "Close", RenderAs.CLOSE, closeValues, true, null, priceDtick, priceRange, false),
+            Series.ofWithChartOption("volume", "Volume", RenderAs.VOLUME, volumeValues, true, null, volumeDtick, volumeRange, false)
         );
 
         return Map.of(
