@@ -19,7 +19,7 @@ public interface NewsletterUserRevisionRepository extends JpaRepository<Newslett
         Integer ownerUserNo
     );
 
-    List<NewsletterUserRevision> findAllByIssueOriginalAndIsDeletedFalse(NewsletterIssueOriginal issueOriginal);
+    List<NewsletterUserRevision> findAllByIssueOriginal(NewsletterIssueOriginal issueOriginal);
 
     @Query("""
         SELECT r
@@ -71,12 +71,10 @@ public interface NewsletterUserRevisionRepository extends JpaRepository<Newslett
         @Param("now") LocalDateTime now
     );
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-        UPDATE NewsletterUserRevision r
-        SET r.isDeleted = true
+        DELETE FROM NewsletterUserRevision r
         WHERE r.issueOriginal = :issueOriginal
-          AND r.isDeleted = false
         """)
-    int softDeleteByIssueOriginal(@Param("issueOriginal") NewsletterIssueOriginal issueOriginal);
+    int deleteByIssueOriginal(@Param("issueOriginal") NewsletterIssueOriginal issueOriginal);
 }

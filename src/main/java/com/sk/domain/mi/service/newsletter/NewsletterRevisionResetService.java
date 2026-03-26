@@ -19,15 +19,15 @@ public class NewsletterRevisionResetService {
 
     public NewsletterRevisionResetResult resetUserRevisionState(NewsletterIssueOriginal issueOriginal) {
         List<NewsletterUserRevision> revisions =
-            newsletterUserRevisionRepository.findAllByIssueOriginalAndIsDeletedFalse(issueOriginal);
+            newsletterUserRevisionRepository.findAllByIssueOriginal(issueOriginal);
 
         if (revisions.isEmpty()) {
             return new NewsletterRevisionResetResult(issueOriginal.getNewsletterIssueOriginalId(), 0, 0, 0);
         }
 
-        int deletedDeltaCount = revisionDeltaHistoryRepository.softDeleteByNewsletterUserRevisionIn(revisions);
-        int deletedSnapshotCount = revisionSnapshotHistoryRepository.softDeleteByNewsletterUserRevisionIn(revisions);
-        int deletedRevisionCount = newsletterUserRevisionRepository.softDeleteByIssueOriginal(issueOriginal);
+        int deletedDeltaCount = revisionDeltaHistoryRepository.deleteByNewsletterUserRevisionIn(revisions);
+        int deletedSnapshotCount = revisionSnapshotHistoryRepository.deleteByNewsletterUserRevisionIn(revisions);
+        int deletedRevisionCount = newsletterUserRevisionRepository.deleteByIssueOriginal(issueOriginal);
 
         return new NewsletterRevisionResetResult(
             issueOriginal.getNewsletterIssueOriginalId(),

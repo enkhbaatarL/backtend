@@ -16,12 +16,10 @@ public interface NewsletterUserRevisionSnapshotHistoryRepository extends JpaRepo
         Long snapshotNo
     );
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-        UPDATE NewsletterUserRevisionSnapshotHistory s
-        SET s.isDeleted = true
+        DELETE FROM NewsletterUserRevisionSnapshotHistory s
         WHERE s.newsletterUserRevision IN :revisions
-          AND s.isDeleted = false
         """)
-    int softDeleteByNewsletterUserRevisionIn(@Param("revisions") List<NewsletterUserRevision> revisions);
+    int deleteByNewsletterUserRevisionIn(@Param("revisions") List<NewsletterUserRevision> revisions);
 }

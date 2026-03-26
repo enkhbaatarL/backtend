@@ -60,12 +60,10 @@ public interface NewsletterUserRevisionDeltaHistoryRepository extends JpaReposit
         Long deltaNo
     );
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-        UPDATE NewsletterUserRevisionDeltaHistory d
-        SET d.isDeleted = true
+        DELETE FROM NewsletterUserRevisionDeltaHistory d
         WHERE d.newsletterUserRevision IN :revisions
-          AND d.isDeleted = false
         """)
-    int softDeleteByNewsletterUserRevisionIn(@Param("revisions") List<NewsletterUserRevision> revisions);
+    int deleteByNewsletterUserRevisionIn(@Param("revisions") List<NewsletterUserRevision> revisions);
 }
