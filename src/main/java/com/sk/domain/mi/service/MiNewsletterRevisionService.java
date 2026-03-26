@@ -126,16 +126,36 @@ public class MiNewsletterRevisionService {
             );
         }
 
-        ReplayContext replayContext = buildReplayContext(issueOriginal, revision);
-        JsonNode content = snapshotCanonicalizer.canonicalize(
-            applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories())
-        );
-        List<JsonPatchOpRes> latestDeltaChanges = flattenDeltaChanges(replayContext.histories());
+        // 저장된 최근 스냅샷을 그대로 반환 (delta replay 없음)
+        JsonNode snapshotContent;
+        LocalDateTime snapshotSavedAt;
+        Long baseDeltaNo;
+
+        if (revision.getSnapshotBaseType() == RevisionSnapshotBaseType.REVISION_SNAPSHOT && revision.getSnapshotNo() != null) {
+            NewsletterUserRevisionSnapshotHistory snapshot = revisionSnapshotHistoryRepository
+                .findByNewsletterUserRevisionAndSnapshotNoAndIsDeletedFalse(revision, revision.getSnapshotNo())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "REVISION_NOT_FOUND"));
+            snapshotContent = snapshotCanonicalizer.canonicalize(deepCopy(snapshot.getSnapshotJson()));
+            snapshotSavedAt = snapshot.getCreateDt();
+            baseDeltaNo = snapshot.getBaseDeltaNo();
+        } else {
+            snapshotContent = snapshotCanonicalizer.canonicalize(deepCopy(issueOriginal.getOriginalSnapshotJson()));
+            snapshotSavedAt = issueOriginal.getCreateDt();
+            baseDeltaNo = 0L;
+        }
+
+        // 최근 스냅샷 이후 SAVE 타입 delta만 조회
+        List<NewsletterUserRevisionDeltaHistory> saveDeltaHistories =
+            revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndRequestTypeAndDeltaNoGreaterThanAndIsDeletedFalseOrderByDeltaNoAsc(
+                revision, RevisionSaveRequestType.SAVE, baseDeltaNo
+            );
+
+        List<JsonPatchOpRes> latestDeltaChanges = flattenDeltaChanges(saveDeltaHistories);
         boolean hasDraft = revision.getDraftSavedAt() != null;
 
         LocalDateTime latestSavedAt = revision.getFinalSavedAt() != null
             ? revision.getFinalSavedAt()
-            : (revision.getDraftSavedAt() != null ? revision.getDraftSavedAt() : replayContext.baseSnapshotSavedAt());
+            : (revision.getDraftSavedAt() != null ? revision.getDraftSavedAt() : snapshotSavedAt);
 
         return new RevisionOrOriginalDetailRes(
             newsletterId,
@@ -145,8 +165,8 @@ public class MiNewsletterRevisionService {
             revision.getRevisionNo().intValue(),
             hasDraft,
             hasDraft ? revision.getRevisionNo().intValue() : null,
-            new ContentSnapshotRes(revision.getRevisionNo().intValue(), content, latestSavedAt),
-            latestDeltaChanges.size(),
+            new ContentSnapshotRes(revision.getRevisionNo().intValue(), snapshotContent, latestSavedAt),
+            saveDeltaHistories.size(),
             latestDeltaChanges
         );
     }
@@ -160,7 +180,9 @@ public class MiNewsletterRevisionService {
         NewsletterUserRevision revision = getOwnedRevision(newsletterId, issueNo, revisionId, actorUser);
 
         List<NewsletterUserRevisionDeltaHistory> histories =
-            revisionDeltaHistoryRepository.findTop20ByNewsletterUserRevisionAndIsDeletedFalseOrderByDeltaNoDesc(revision);
+            revisionDeltaHistoryRepository.findTop20ByNewsletterUserRevisionAndRequestTypeAndIsDeletedFalseOrderByDeltaNoDesc(
+                revision, RevisionSaveRequestType.SAVE
+            );
 
         List<RevisionItemRes> items = histories.stream()
             .map(history -> new RevisionItemRes(
@@ -177,7 +199,9 @@ public class MiNewsletterRevisionService {
 
         Long nextCursor = items.get(items.size() - 1).seq();
         boolean hasNext = revisionDeltaHistoryRepository
-            .countByNewsletterUserRevisionAndDeltaNoLessThanAndIsDeletedFalse(revision, nextCursor) > 0;
+            .countByNewsletterUserRevisionAndRequestTypeAndDeltaNoLessThanAndIsDeletedFalse(
+                revision, RevisionSaveRequestType.SAVE, nextCursor
+            ) > 0;
 
         return new RevisionListRes(items, hasNext, hasNext ? nextCursor : null);
     }
