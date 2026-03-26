@@ -151,7 +151,7 @@ public class MiNewsletterRevisionService {
             );
 
         List<JsonPatchOpRes> latestDeltaChanges = flattenDeltaChanges(saveDeltaHistories);
-        boolean hasDraft = revision.getDraftSavedAt() != null;
+        boolean hasDraft = hasActiveDraft(revision);
 
         LocalDateTime latestSavedAt = revision.getFinalSavedAt() != null
             ? revision.getFinalSavedAt()
@@ -248,7 +248,7 @@ public class MiNewsletterRevisionService {
         NewsletterIssueOriginal issueOriginal = getAccessibleIssue(newsletterId, issueNo, actorUser);
         NewsletterUserRevision revision = findOwnedRevision(issueOriginal, actorUser.getUserNo());
 
-        if (revision == null || revision.getDraftSavedAt() == null) {
+        if (revision == null || !hasActiveDraft(revision)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "REVISION_NOT_FOUND");
         }
 
@@ -378,7 +378,7 @@ public class MiNewsletterRevisionService {
             : revision.getFinalSavedAt();
         LocalDateTime lastAutoSavedAt = requestType == RevisionSaveRequestType.DRAFT
             ? now
-            : revision.getDraftSavedAt();
+            : null;
 
         return new RevisionSaveRes(
             revision.getNewsletterUserRevisionId(),
@@ -801,6 +801,11 @@ public class MiNewsletterRevisionService {
         return requestType == RevisionSaveRequestType.DRAFT
             ? RevisionEditStatusCode.EDIT_DRAFT
             : RevisionEditStatusCode.EDIT_SAVED;
+    }
+
+    private boolean hasActiveDraft(NewsletterUserRevision revision) {
+        return revision.getEditStatus() == RevisionEditStatusCode.EDIT_DRAFT
+            && revision.getDraftSavedAt() != null;
     }
 
     private String toApiRevisionType(RevisionSaveRequestType requestType) {

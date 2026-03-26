@@ -47,7 +47,7 @@ public interface NewsletterUserRevisionRepository extends JpaRepository<Newslett
             r.revisionNo = r.revisionNo + 1,
             r.modifyDt = :now,
             r.modifyUserId = :modifierUserId,
-            r.draftSavedAt = CASE WHEN :isDraft = true THEN :now ELSE r.draftSavedAt END,
+            r.draftSavedAt = CASE WHEN :isDraft = true THEN :now ELSE null END,
             r.finalSavedAt = CASE WHEN :isFinal = true THEN :now ELSE r.finalSavedAt END
         WHERE r.newsletterUserRevisionId = :revisionId
           AND r.ownerUser.userNo = :ownerUserNo

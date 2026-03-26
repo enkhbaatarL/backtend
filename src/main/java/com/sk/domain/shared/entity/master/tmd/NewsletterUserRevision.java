@@ -98,7 +98,9 @@ public class NewsletterUserRevision extends BaseEntity {
         revision.deltaNo = deltaNo;
         if (editStatus == RevisionEditStatusCode.EDIT_DRAFT) {
             revision.draftSavedAt = now;
+            revision.finalSavedAt = null;
         } else {
+            revision.draftSavedAt = null;
             revision.finalSavedAt = now;
         }
         return revision;
@@ -119,6 +121,7 @@ public class NewsletterUserRevision extends BaseEntity {
         if (nextStatus == RevisionEditStatusCode.EDIT_DRAFT) {
             this.draftSavedAt = now;
         } else {
+            this.draftSavedAt = null;
             this.finalSavedAt = now;
         }
 
