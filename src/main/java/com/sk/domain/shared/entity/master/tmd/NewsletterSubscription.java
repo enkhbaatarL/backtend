@@ -58,30 +58,36 @@ public class NewsletterSubscription extends BaseEntity {
     @Comment("구독해지일시")
     private LocalDateTime unsubscribedAt;
 
-    public static NewsletterSubscription subscribe(NewsletterMaster newsletterMaster, User user) {
+    public static NewsletterSubscription subscribe(NewsletterMaster newsletterMaster,
+        User actorUser) {
         NewsletterSubscription subscription = new NewsletterSubscription();
         subscription.newsletterMaster = newsletterMaster;
-        subscription.user = user;
+        subscription.user = actorUser;
         subscription.isSubscribed = true;
         subscription.subscribedAt = LocalDateTime.now();
         subscription.unsubscribedAt = null;
+        subscription.softRestore();
         return subscription;
     }
 
     public void subscribe() {
-        if (Boolean.TRUE.equals(this.isSubscribed)) {
+        if (Boolean.TRUE.equals(this.isSubscribed) && !this.getIsDeleted()) {
             return;
         }
+
         this.isSubscribed = true;
-        this.subscribedAt = LocalDateTime.now();
+        this.subscribedAt = this.subscribedAt == null ? LocalDateTime.now() : this.subscribedAt;
         this.unsubscribedAt = null;
+        this.softRestore();
     }
 
     public void unsubscribe() {
-        if (Boolean.FALSE.equals(this.isSubscribed)) {
+        if (Boolean.FALSE.equals(this.isSubscribed) && this.getIsDeleted()) {
             return;
         }
+
         this.isSubscribed = false;
         this.unsubscribedAt = LocalDateTime.now();
+        this.softDelete();
     }
 }
