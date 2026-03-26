@@ -43,7 +43,8 @@ public class ResourceServerConfig {
             .securityMatcher("/api/v1/auth/**", "/api/v1/test/**", "/api/v1/saml2/**", "/api/v1/external/**",
                 "/api/v1/common/health-check",
                 "/api/v1/admin/provider-management/goods-datas/upload-temp/structured-data/**", // TODO 인증 넣어야 함.
-                "/internal/**"  // chart-capture JWT로 자체 인증 (Spring Security 불필요)
+                "/api/v1/mi/internal/newsletter/publish",
+                "/api/v1/mi/internal/newsletter/render-data"  // chart-capture JWT로 자체 인증
             )
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())

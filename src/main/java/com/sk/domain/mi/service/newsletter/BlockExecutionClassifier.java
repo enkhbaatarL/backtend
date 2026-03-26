@@ -373,32 +373,21 @@ public class BlockExecutionClassifier {
     }
 
     private void validateCanonicalShape(TemplateTree.BlockNode block, BlockDataSourceSpec spec, List<String> errors) {
-        List<String> assignFieldKeys = spec.assign().fields().stream()
+        Set<String> assignFieldKeys = new LinkedHashSet<>(spec.assign().fields().stream()
             .map(BlockDataSourceSpec.AssignField::fieldKey)
             .filter(fieldKey -> !isSectionOwnedFieldKey(block, fieldKey))
-            .toList();
+            .toList());
 
         if ("NEWS_FLOW_CHART".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of("timestamps", "series"))) {
+            && !assignFieldKeys.equals(Set.of("timestamps", "series"))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
-        if ("NEWS_ITEM".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of(
-                "newsId",
-                "title",
-                "content",
-                "timestamp",
-                "createdDate",
-                "createTime",
-                "source",
-                "originalUrl",
-                "showInChart",
-                "trend"
-            ))) {
+        if ("REFERENCE_CHART".equals(block.blockCode())
+            && !assignFieldKeys.equals(Set.of("timestamps", "series", "content"))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
         if ("REFERENCE_TABLE".equals(block.blockCode())
-            && !assignFieldKeys.equals(List.of("tableData"))) {
+            && !assignFieldKeys.equals(Set.of("tableData", "content"))) {
             errors.add("ASSIGN_FIELD_NOT_DEFINED");
         }
     }

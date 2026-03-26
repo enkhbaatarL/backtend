@@ -181,3 +181,8 @@ custom:
   gie-eu:
     goods-data-source-no: 4209
     card-index: 6
+
+chart-capture:
+  frontend-base-url: ${MI_DOMAIN:https://mi.sk.com}
+  jwt-ttl-seconds: 300
+  capture-timeout-ms: 30000

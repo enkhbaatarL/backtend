@@ -65,11 +65,16 @@ public class NewsletterEvent extends BaseEntity {
     @Comment("이벤트 출처")
     private String eventProvider;
 
+    @Column(name = "org_url", columnDefinition = "TEXT")
+    @Comment("원문URL")
+    private String originalUrl;
+
     @Builder
     public NewsletterEvent(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
             Boolean isDeleted, Integer newsletterEventId, NewsletterPublishHistory newsletterPublishHistory,
             LocalDateTime eventCreateTime, String eventMarkTime, String turningPointMarkYn,
-            String directionalityType, String eventTitle, String eventContent, String eventProvider) {
+            String directionalityType, String eventTitle, String eventContent, String eventProvider,
+            String originalUrl) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.newsletterEventId = newsletterEventId;
         this.newsletterPublishHistory = newsletterPublishHistory;
@@ -80,11 +85,13 @@ public class NewsletterEvent extends BaseEntity {
         this.eventTitle = eventTitle;
         this.eventContent = eventContent;
         this.eventProvider = eventProvider;
+        this.originalUrl = originalUrl;
     }
 
     public static NewsletterEvent createNewsletterEvent(NewsletterPublishHistory newsletterPublishHistory,
             LocalDateTime eventCreateTime, String eventMarkTime, String turningPointMarkYn,
-            String directionalityType, String eventTitle, String eventContent, String eventProvider) {
+            String directionalityType, String eventTitle, String eventContent, String eventProvider,
+            String originalUrl) {
         return NewsletterEvent.builder()
                 .newsletterPublishHistory(newsletterPublishHistory)
                 .eventCreateTime(eventCreateTime)
@@ -94,6 +101,7 @@ public class NewsletterEvent extends BaseEntity {
                 .eventTitle(eventTitle)
                 .eventContent(eventContent)
                 .eventProvider(eventProvider)
+                .originalUrl(originalUrl)
                 .build();
     }
 }

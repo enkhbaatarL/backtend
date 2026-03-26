@@ -43,8 +43,8 @@ public class MiNewsletterDedicatedController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterDetailRes> getNewsletterDetail(
-        @PathVariable("newsletterId") String newsletterId,
-        @PathVariable("issueNo") String issueNo,
+        @PathVariable String newsletterId,
+        @PathVariable String issueNo,
         @RequestParam(value = "companyNo") Integer companyNo
         ) {
         Integer userNo = authorizationService.getUserNo();
@@ -65,8 +65,8 @@ public class MiNewsletterDedicatedController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterDetailV2Res> getNewsletterDetailV2(
-        @PathVariable("newsletterId") Integer newsletterId,
-        @PathVariable("issueNo") Integer issueNo,
+        @PathVariable Integer newsletterId,
+        @PathVariable Integer issueNo,
         @RequestParam(value = "companyNo") Integer companyNo
     ) {
         Integer userNo = authorizationService.getUserNo();
@@ -83,8 +83,8 @@ public class MiNewsletterDedicatedController {
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
     public BaseResponse<NewsletterIssueOriginalSnapshotRes> getNewsletterOriginalSnapshot(
-        @PathVariable("newsletterId") Integer newsletterId,
-        @PathVariable("issueNo") Integer issueNo,
+        @PathVariable Integer newsletterId,
+        @PathVariable Integer issueNo,
         @RequestParam(value = "companyNo") Integer companyNo
     ) {
         return BaseResponseFactory.create(

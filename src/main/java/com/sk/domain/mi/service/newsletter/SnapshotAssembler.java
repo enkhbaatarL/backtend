@@ -83,7 +83,7 @@ public class SnapshotAssembler {
                     .build());
             }
             sections.add(SnapshotSection.builder()
-                .id("sec-" + sectionNode.sectionCode())
+                .id("sec-" + sectionNode.sectionCode() + "-" + sectionNode.id())
                 .type(sectionNode.sectionTypeCode())
                 .code(sectionNode.sectionCode())
                 .name(sectionNode.sectionName())
@@ -232,6 +232,6 @@ public class SnapshotAssembler {
     }
 
     private boolean isReferenceSection(String sectionCode) {
-        return List.of("REFERENCE1", "REFERENCE2", "REFERENCE3", "REFERENCE4").contains(sectionCode);
+        return "REFERENCE".equals(sectionCode);
     }
 }

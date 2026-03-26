@@ -190,6 +190,6 @@ dummy:
     path: static/json/dummy-data
 
 chart-capture:
-  frontend-base-url: http://localhost:5437
+  frontend-base-url: http://localhost:5173
   jwt-ttl-seconds: 300
   capture-timeout-ms: 30000

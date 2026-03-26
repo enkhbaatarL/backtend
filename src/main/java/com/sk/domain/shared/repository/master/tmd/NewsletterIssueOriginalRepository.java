@@ -37,10 +37,13 @@ public interface NewsletterIssueOriginalRepository extends JpaRepository<Newslet
         WHERE h.newsletterPublishId = :publishHistoryId
           AND o.isDeleted = false
           AND m.isDeleted = false
-          AND (m.customerCompanyNo IS NULL OR m.customerCompanyNo = :customerCompanyNo)
+          AND o.publishStatusCode = com.sk.domain.shared.enums.newsletter.PublishStatusCode.PUBLISHED
+          AND (:customerCompanyNo IS NULL OR m.customerCompanyNo IS NULL OR m.customerCompanyNo = :customerCompanyNo)
         """)
     Optional<NewsletterIssueOriginal> findAccessibleIssueByPublishHistoryId(
         @Param("publishHistoryId") Integer publishHistoryId,
         @Param("customerCompanyNo") Integer customerCompanyNo
     );
+
+    boolean existsBySourceNewsletterPublishHistoryNewsletterPublishId(Integer publishHistoryId);
 }

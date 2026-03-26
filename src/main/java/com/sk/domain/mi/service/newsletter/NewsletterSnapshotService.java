@@ -2,13 +2,12 @@ package com.sk.domain.mi.service.newsletter;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.domain.mi.dto.internal.ResolvedBlockData;
-import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssuePreviewRes;
 import com.sk.domain.shared.entity.master.tmd.NewsletterIssueOriginal;
-import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.repository.master.tmd.NewsletterIssueOriginalRepository;
-import java.util.Map;
+import com.sk.domain.shared.repository.master.tmd.NewsletterPublishHistoryRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,30 +18,33 @@ import org.springframework.transaction.annotation.Transactional;
 public class NewsletterSnapshotService {
 
     private final NewsletterIssueOriginalRepository issueOriginalRepository;
-    private final TemplateLoader templateLoader;
-    private final BlockDataResolver blockDataResolver;
-    private final SnapshotAssembler snapshotAssembler;
+    private final NewsletterPublishHistoryRepository publishHistoryRepository;
+    private final NewsletterIssueOriginalService newsletterIssueOriginalService;
 
-    public NewsletterIssuePreviewRes generateSnapshot(Integer publishHistoryId, User actorUser) {
-        NewsletterIssueOriginal issueOriginal = getAccessibleIssue(publishHistoryId, actorUser);
-        TemplateTree template = templateLoader.loadByPublishHistory(issueOriginal.getSourceNewsletterPublishHistory());
-        Map<String, ResolvedBlockData> resolvedData = blockDataResolver.resolveAll(
-            template,
-            issueOriginal.getSourceNewsletterPublishHistory(),
-            false
-        );
+    public NewsletterIssuePreviewRes generateSnapshot(Integer publishHistoryId, Integer customerCompanyNo) {
+        Optional<NewsletterIssueOriginal> issueOriginalOpt =
+            issueOriginalRepository.findAccessibleIssueByPublishHistoryId(publishHistoryId, customerCompanyNo);
 
+        if (issueOriginalOpt.isPresent()) {
+            NewsletterIssueOriginal issueOriginal = issueOriginalOpt.get();
+            return new NewsletterIssuePreviewRes(
+                issueOriginal.getNewsletterMaster().getNewsletterMasterId(),
+                issueOriginal.getIssueNo(),
+                newsletterIssueOriginalService.assembleSnapshot(issueOriginal.getSourceNewsletterPublishHistory())
+            );
+        }
+
+        // 원본 이슈가 아직 생성되지 않은 경우, 발행 이력에서 직접 스냅샷 조립
+        NewsletterPublishHistory publishHistory = getAccessiblePublishHistory(publishHistoryId, customerCompanyNo);
         return new NewsletterIssuePreviewRes(
-            issueOriginal.getNewsletterMaster().getNewsletterMasterId(),
-            issueOriginal.getIssueNo(),
-            snapshotAssembler.assembleNode(template, resolvedData, issueOriginal.getSourceNewsletterPublishHistory())
+            publishHistory.getNewsletterMaster().getNewsletterMasterId(),
+            publishHistory.getIssueNo(),
+            newsletterIssueOriginalService.assembleSnapshot(publishHistory)
         );
     }
 
-    private NewsletterIssueOriginal getAccessibleIssue(Integer publishHistoryId, User actorUser) {
-        Integer customerCompanyNo = actorUser != null && actorUser.getCustomerCompany() != null
-            ? actorUser.getCustomerCompany().getCustomerCompanyNo() : null;
-        return issueOriginalRepository.findAccessibleIssueByPublishHistoryId(publishHistoryId, customerCompanyNo)
+    private NewsletterPublishHistory getAccessiblePublishHistory(Integer publishHistoryId, Integer customerCompanyNo) {
+        return publishHistoryRepository.findAccessiblePublishedById(publishHistoryId, customerCompanyNo)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "NEWSLETTER_NOT_FOUND"));
     }
 }

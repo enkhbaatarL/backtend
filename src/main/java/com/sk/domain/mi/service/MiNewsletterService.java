@@ -15,9 +15,11 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsEventIte
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.NewsFlowChart;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.Reference;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes.RelatedNews;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterFeaturedListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueListRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterListRes;
+import com.sk.domain.mi.service.newsletter.NewsletterDetailV2Service;
 import com.sk.domain.shared.entity.master.tif.NewsletterChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterCollectionChart;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
@@ -49,7 +51,6 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
-import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -103,6 +104,7 @@ public class MiNewsletterService {
     private final NewsletterCollectionChartRepository newsletterCollectionChartRepository;
     private final NewsletterTemplatePreferenceTableRepository newsletterTemplatePreferenceTableRepository;
     private final AuthorizationService authorizationService;
+    private final NewsletterDetailV2Service newsletterDetailV2Service;
 
     public PaginationRes<NewsletterListRes> getNewsletterList(Integer companyNo, int page, int size, String keyword) {
         log.info("뉴스레터 목록 조회 - page: {}, size: {}, keyword: '{}'", page, size, keyword);
@@ -291,14 +293,19 @@ public class MiNewsletterService {
     /**
      * 시스템 내부 전용 뉴스레터 상세 조회 (Playwright 차트 캡처 경로).
      *
-     * <p>회사별 접근 제어 없이 newsletterId 단독으로 조회한다.
-     * 호출 주체가 chart-capture JWT로 인증된 내부 시스템이므로 company 필터가 불필요하다.
+     * <p>newsletterId로 뉴스레터 마스터를 조회해 customerCompanyNo를 확인한 뒤,
+     * 내부 시스템 전용 V2 상세 조회를 수행한다.
      */
-    public NewsletterDetailRes getNewsletterDetailForSystem(Integer newsletterId, Integer issueNo) {
+    public NewsletterDetailV2Res getNewsletterDetailForSystem(Integer newsletterId, Integer issueNo) {
         NewsletterMaster master = newsletterMasterRepository.findById(newsletterId)
-                .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
-        Integer companyNo = master.getCustomerCompanyNo() != null ? master.getCustomerCompanyNo() : 0;
-        return getNewsletterDetail(companyNo, null, String.valueOf(newsletterId), String.valueOf(issueNo));
+            .orElseThrow(() -> new IllegalArgumentException("Newsletter not found: " + newsletterId));
+
+        return newsletterDetailV2Service.getNewsletterDetail(
+            master.getCustomerCompanyNo(),
+            null,
+            newsletterId,
+            issueNo
+        );
     }
 
     @Deprecated
@@ -1372,75 +1379,11 @@ public class MiNewsletterService {
         }
     }
 
-    /**
-     * 기준일(baseDate)로부터 pre 영업일(거래일) 전 날짜를 반환한다.
-     * 주말(토/일)을 건너뛰기 위해 dayShift를 추가한다.
-     */
-    private LocalDate getPreDay(LocalDate baseDate, int pre) {
-        DayOfWeek dayOfWeek = baseDate.getDayOfWeek();
-        int dayShift;
-        if (dayOfWeek == DayOfWeek.MONDAY) {
-            dayShift = 2;
-        } else if (dayOfWeek == DayOfWeek.TUESDAY && (pre == 2 || pre == 3)) {
-            dayShift = 2;
-        } else if (dayOfWeek == DayOfWeek.WEDNESDAY && pre == 3) {
-            dayShift = 2;
-        } else {
-            dayShift = 0;
-        }
-        return baseDate.minusDays(pre + dayShift);
-    }
-
-    /**
-     * 브렌트유(LCOc1) 전일 대비 가격 등락률 문자열을 반환한다.
-     * 최근 2회 발행 이력의 종가(tradePrice1)를 비교하여 등락률을 계산한다.
-     *
-     * @param newsletterMaster 뉴스레터마스터
-     * @return "+0.97%" 또는 "△0.97%" 형식의 등락률 문자열, 데이터 부족 시 null
-     */
-    private String getBrentPriceChangePercentage(NewsletterMaster newsletterMaster) {
-        if (newsletterMaster == null) {
-            return null;
-        }
-
-        List<NewsletterPublishHistory> publishHistories =
-            newsletterPublishHistoryRepository
-                .findByNewsletterMasterAndPublishStatusCodeAndIsDeletedFalseOrderByIssueNoDesc(
-                    newsletterMaster, PublishStatusCode.PUBLISHED);
-
-        if (publishHistories.size() < 2) {
-            log.warn("브렌트유 등락률 계산 불가 - 발행 이력 부족 (size: {})", publishHistories.size());
-            return null;
-        }
-
-        BrentPriceTradePrices tradePrices = getBrentPriceTradePrices(newsletterMaster, publishHistories.get(0));
-        if (tradePrices == null) {
-            return null;
-        }
-
-        BigDecimal pre1d = tradePrices.pre1d();
-        BigDecimal pre2d = tradePrices.pre2d();
-
-        if (pre1d == null || pre2d == null || pre2d.compareTo(BigDecimal.ZERO) == 0) {
-            log.warn("브렌트유 등락률 계산 불가 - 종가 데이터 없음 (pre1d: {}, pre2d: {})", pre1d, pre2d);
-            return null;
-        }
-
-        // 등락률 = (pre1d - pre2d) / pre2d * 100
-        BigDecimal diff = pre1d.subtract(pre2d)
-            .divide(pre2d, 4, RoundingMode.HALF_UP)
-            .multiply(BigDecimal.valueOf(100))
-            .setScale(2, RoundingMode.HALF_UP);
-
-        String sign = diff.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "△";
-        return sign + diff.abs().toPlainString() + "%";
-    }
-
     public BrentPriceTradePrices getBrentPriceTradePrices(
         NewsletterMaster newsletterMaster,
-        NewsletterPublishHistory 기준PublishHistory
+        NewsletterPublishHistory basePublishHistory
     ) {
-        if (newsletterMaster == null || 기준PublishHistory == null || 기준PublishHistory.getIssueNo() == null) {
+        if (newsletterMaster == null || basePublishHistory == null || basePublishHistory.getIssueNo() == null) {
             return null;
         }
 
@@ -1452,12 +1395,12 @@ public class MiNewsletterService {
 
         NewsletterPublishHistory currentPubHist = publishHistories.stream()
             .filter(publishHistory -> publishHistory.getIssueNo() != null)
-            .filter(publishHistory -> publishHistory.getIssueNo().equals(기준PublishHistory.getIssueNo()))
+            .filter(publishHistory -> publishHistory.getIssueNo().equals(basePublishHistory.getIssueNo()))
             .findFirst()
             .orElse(null);
 
         if (currentPubHist == null) {
-            log.warn("브렌트유 기준 발행 이력을 찾을 수 없음 - issueNo: {}", 기준PublishHistory.getIssueNo());
+            log.warn("브렌트유 기준 발행 이력을 찾을 수 없음 - issueNo: {}", basePublishHistory.getIssueNo());
             return null;
         }
 

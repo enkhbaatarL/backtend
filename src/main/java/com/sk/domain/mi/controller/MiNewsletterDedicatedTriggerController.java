@@ -6,6 +6,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.newsletter.NewsletterMailTriggerReq;
 import com.sk.domain.mi.service.MiNewsletterPublishService;
+import com.sk.domain.mi.service.newsletter.NewsletterIssueOriginalService;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,9 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/mi/newsletter")
 @RequiredArgsConstructor
-public class MiNewsletterTriggerController {
+public class MiNewsletterDedicatedTriggerController {
 
     private final MiNewsletterPublishService miNewsletterPublishService;
+    private final NewsletterIssueOriginalService newsletterIssueOriginalService;
 
     @ApiOrder(2)
     @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
@@ -56,6 +58,8 @@ public class MiNewsletterTriggerController {
 
         log.info("Newsletter mail trigger received. newsletterId={}, issueNo={}",
                 newsletterId, issueNo);
+
+        newsletterIssueOriginalService.upsertOriginalIssue(newsletterId, issueNo);
 
         // TODO [newsletter_send_history 설계 연계]:
         //  - trigger 요청 멱등/상태 관리를 위한 별도 테이블(예: newsletter_send_trigger) 추가
