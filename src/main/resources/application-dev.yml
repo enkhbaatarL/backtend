@@ -188,3 +188,8 @@ custom:
     goods-data-source-no: 4231
     card-index: 8
     market-dashboard: 4217
+
+chart-capture:
+  frontend-base-url: ${MI_DOMAIN:https://dev-mi.sk.com}
+  jwt-ttl-seconds: 300
+  capture-timeout-ms: 30000
