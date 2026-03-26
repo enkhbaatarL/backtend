@@ -39,10 +39,13 @@ public class MiNewsletterSubscriptionService {
 
         NewsletterSubscription subscription = newsletterSubscriptionRepository
             .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, actorUser.getUserNo())
-            .orElseGet(() -> NewsletterSubscription.subscribe(newsletterMaster, actorUser));
+            .orElse(null);
 
-        subscription.unsubscribe();
-        newsletterSubscriptionRepository.save(subscription);
+        if (subscription != null) {
+            subscription.unsubscribe();
+            newsletterSubscriptionRepository.save(subscription);
+        }
+
         return toRes(newsletterMaster, subscription);
     }
 
@@ -53,14 +56,6 @@ public class MiNewsletterSubscriptionService {
             .findByNewsletterMasterAndUserUserNoAndIsDeletedFalse(newsletterMaster, actorUser.getUserNo())
             .orElse(null);
 
-        if (subscription == null) {
-            return new NewsletterSubscriptionRes(
-                newsletterMaster.getNewsletterMasterId().toString(),
-                false,
-                null,
-                null
-            );
-        }
         return toRes(newsletterMaster, subscription);
     }
 
@@ -82,9 +77,9 @@ public class MiNewsletterSubscriptionService {
     private NewsletterSubscriptionRes toRes(NewsletterMaster newsletterMaster, NewsletterSubscription subscription) {
         return new NewsletterSubscriptionRes(
             newsletterMaster.getNewsletterMasterId().toString(),
-            subscription.getIsSubscribed(),
-            subscription.getSubscribedAt(),
-            subscription.getUnsubscribedAt()
+            subscription != null && subscription.getIsSubscribed(),
+            subscription != null ? subscription.getSubscribedAt() : null,
+            subscription != null ? subscription.getUnsubscribedAt() : null
         );
     }
 }
