@@ -296,7 +296,6 @@ public class MiNewsletterRevisionService {
         NewsletterIssueOriginal issueOriginal = getAccessibleIssue(newsletterId, issueNo, actorUser);
 
         RevisionSaveReq normalizedRequest = normalizeRequest(request);
-        validatePatchOps(normalizedRequest.deltas());
 
         NewsletterUserRevision revision = findOwnedRevision(issueOriginal, actorUser.getUserNo());
         LocalDateTime now = LocalDateTime.now();
@@ -309,10 +308,6 @@ public class MiNewsletterRevisionService {
         if (expectedRevisionNo != null && !expectedRevisionNo.equals(revision.getRevisionNo())) {
             throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "REVISION_VERSION_CONFLICT");
         }
-
-        ReplayContext replayContext = buildReplayContext(issueOriginal, revision);
-        JsonNode currentContent = applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories());
-        JsonNode mergedContent = applyPatchOps(currentContent, normalizedRequest.deltas());
 
         long nextRevisionNo = revision.getRevisionNo() + 1;
         long nextDeltaNo = revision.getDeltaNo() + 1;
@@ -361,9 +356,7 @@ public class MiNewsletterRevisionService {
         }
 
         if (snapshotSaved) {
-            JsonNode snapshotJson = deepCopy(normalizedRequest.snapshotPayload() == null
-                ? mergedContent
-                : normalizedRequest.snapshotPayload());
+            JsonNode snapshotJson = deepCopy(normalizedRequest.snapshotPayload());
             NewsletterUserRevisionSnapshotHistory snapshotHistory = NewsletterUserRevisionSnapshotHistory.create(
                 revision,
                 nextRevisionNo,
@@ -400,8 +393,6 @@ public class MiNewsletterRevisionService {
         long revisionNo = 1L;
         long deltaNo = 1L;
         RevisionEditStatusCode status = toEditStatus(requestType);
-
-        JsonNode mergedContent = applyPatchOps(deepCopy(issueOriginal.getOriginalSnapshotJson()), request.deltas());
 
         NewsletterUserRevision revision = NewsletterUserRevision.create(
             issueOriginal,
@@ -563,24 +554,8 @@ public class MiNewsletterRevisionService {
         return new RevisionSaveReq(request.revisionNo(), deltas, request.snapshotPayload());
     }
 
-    private void validatePatchOps(List<JsonPatchOpReq> patchOps) {
-        for (JsonPatchOpReq patchOp : patchOps) {
-            if (patchOp == null || StringUtils.isBlank(patchOp.op()) || StringUtils.isBlank(patchOp.path())) {
-                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "invalid patch op");
-            }
-        }
-    }
-
     private ArrayNode toDeltaJson(List<JsonPatchOpReq> patchOps) {
-        ArrayNode arrayNode = objectMapper.createArrayNode();
-        for (JsonPatchOpReq patchOp : patchOps) {
-            ObjectNode objectNode = objectMapper.createObjectNode();
-            objectNode.put("op", patchOp.op());
-            objectNode.put("path", patchOp.path());
-            objectNode.set("value", patchOp.value() == null ? NullNode.instance : patchOp.value());
-            arrayNode.add(objectNode);
-        }
-        return arrayNode;
+        return objectMapper.valueToTree(patchOps == null ? List.of() : patchOps);
     }
 
     private List<JsonPatchOpRes> toJsonPatchOps(JsonNode deltaJson) {
