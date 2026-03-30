@@ -66,28 +66,25 @@ public class NewsletterSubscription extends BaseEntity {
         subscription.isSubscribed = true;
         subscription.subscribedAt = LocalDateTime.now();
         subscription.unsubscribedAt = null;
-        subscription.softRestore();
         return subscription;
     }
 
     public void subscribe() {
-        if (Boolean.TRUE.equals(this.isSubscribed) && !this.getIsDeleted()) {
+        if (Boolean.TRUE.equals(this.isSubscribed)) {
             return;
         }
 
         this.isSubscribed = true;
         this.subscribedAt = this.subscribedAt == null ? LocalDateTime.now() : this.subscribedAt;
         this.unsubscribedAt = null;
-        this.softRestore();
     }
 
     public void unsubscribe() {
-        if (Boolean.FALSE.equals(this.isSubscribed) && !this.getIsDeleted()) {
+        if (Boolean.FALSE.equals(this.isSubscribed)) {
             return;
         }
 
         this.isSubscribed = false;
         this.unsubscribedAt = LocalDateTime.now();
-        this.softRestore();
     }
 }

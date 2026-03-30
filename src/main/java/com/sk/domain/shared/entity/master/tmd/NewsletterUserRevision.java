@@ -106,6 +106,17 @@ public class NewsletterUserRevision extends BaseEntity {
         return revision;
     }
 
+    public boolean hasActiveDraft() {
+        return this.editStatus == RevisionEditStatusCode.EDIT_DRAFT
+            && this.draftSavedAt != null;
+    }
+
+    public LocalDateTime resolveLastSavedAt() {
+        if (this.finalSavedAt != null) return this.finalSavedAt;
+        if (this.draftSavedAt != null) return this.draftSavedAt;
+        return null;
+    }
+
     public void applySave(
         RevisionEditStatusCode nextStatus,
         long nextRevisionNo,
