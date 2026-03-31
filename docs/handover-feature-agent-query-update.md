@@ -2,7 +2,7 @@
 
 > **브랜치**: `feature/agent-query-update`
 > **기준 브랜치**: `dev`
-> **작업 기간**: 2025-11-06 ~ 2025-12-24
+> **작업 기간**: 2025-11-06 ~ 2026-01-16
 > **작성일**: 2026-03-12
 
 ---
@@ -15,11 +15,12 @@
 - 외부 Agent API 요청 DTO 포맷 변경
 - SSE(Server-Sent Events) 스트림 응답 구조 변경
 - 스트림 연결 관리 및 취소 기능 신규 구현
-- 질의 시 `repositoryIds` 파라미터 추가 (**이어서 작업 필요**)
+- 질의 시 `repositoryIds` 파라미터 추가
+- `rdb_data` 스트림 이벤트 타입 핸들러 신규 추가
 
 ---
 
-## 2. 커밋 흐름 요약 (9개 커밋)
+## 2. 커밋 흐름 요약 (10개 커밋)
 
 ### Phase 1 — 외부 API 스펙 변경 대응 (2025-11-06 ~ 11-17)
 
@@ -74,7 +75,41 @@
 - `MariAgentGatewayService` — 조회한 `repositoryIds`를 `ModelAgentReq` 생성 시 전달
 - `ModelAgentReq.Input` — `repositoryIds` 파라미터 수신 처리 추가
 
-> ⚠️ **미완성 항목**: `ModelAgentReq.Input.of()` 내부 빌더에서 `repositoryIds` 값이 실제로 세팅되지 않음. 외부 API 요청 시 누락되는 상태이므로 이어서 작업 필요.
+> ✅ `ModelAgentReq.Input.ReqInput.of()` 빌더에서 `repositoryIds` 정상 세팅 완료. 외부 API 요청 시 `repository_ids` 필드로 전달됨.
+
+---
+
+### Phase 4 — `rdb_data` 스트림 핸들러 추가 (2026-01-16)
+
+| 커밋 | 내용 |
+|------|------|
+| `b295b9ee` | RDB 데이터 타입 처리 핸들러 추가 |
+
+**주요 변경 내용**
+
+- **`RdbDataStreamEventHandler` 신규 추가** — `rdb_data` 타입 스트림 이벤트 전담 처리
+- `ModelAgentStreamBody` — `DataType.RDB_DATA` enum 추가, `isRdbData()` 메서드 추가
+- `MariAgentGatewayService` — 핸들러 라우팅 로직에 `rdb_data` 분기 추가 (`vector_data` 다음, `complete` 이전 순서)
+
+**`rdb_data` 이벤트 구조 (외부 API)**
+
+```json
+{
+  "node": "RdbSearchNode",
+  "data": "rdb_data",
+  "state": "progress",
+  "value": [
+    {
+      "source": "Hong Leong Investment Bank Bhd",
+      "title": "Traders_Brief_0620",
+      "gds_no": 70008,
+      "gds_data_dstg_id": "116049757"
+    }
+  ]
+}
+```
+
+> ⚠️ **미완성**: `RdbDataStreamEventHandler`에서 `value` 내 `gds_no`를 수신하고 있으나 현재 **DB 조회 없이 raw 데이터를 그대로 반환**. `gds_no`로 상품 정보를 조회하여 프론트에 필요한 값(상품 상세 페이지 이동에 필요한 정보 등)을 구해 전달하는 로직이 미구현 상태.
 
 ---
 
@@ -90,7 +125,8 @@
 | `AgentStreamException` ⭐ 신규 | 스트림 전용 예외 |
 | `StreamCancelReq` ⭐ 신규 | 스트림 중단 요청 DTO |
 | `ModelAgentReq` | 외부 API 요청 DTO (repositoryIds 포함 예정) |
-| `ModelAgentStreamBody` | 스트림 응답 파싱 구조 |
+| `RdbDataStreamEventHandler` ⭐ 신규 | rdb_data 타입 스트림 이벤트 처리 핸들러 |
+| `ModelAgentStreamBody` | 스트림 응답 파싱 구조 (RDB_DATA enum 추가) |
 | `ModelAgentRes` | 비스트림 응답 파싱 구조 (VectorSource 포함) |
 | `ChatbotTalkQna` | 저장 포맷 변경 |
 
@@ -132,55 +168,35 @@ Related.ofUnstructuredList()   →   { type: UNSTRUCTURED, goodsNo, goodsDataNo,
 
 ## 5. 이어서 해야 할 작업
 
-### 5-1. `repositoryIds` 외부 API 전달 완성
+### 5-1. `rdb_data` 핸들러 내 `gds_no` 조회 및 프론트 전달
 
-`ModelAgentReq.Input.of()` 빌더에서 `repositoryIds` 필드 세팅이 누락된 상태입니다.
+`RdbDataStreamEventHandler`에서 외부 API로부터 `gds_no`를 수신하고 있으나, 현재 **DB 조회 없이 raw 데이터를 그대로 프론트에 반환**하는 상태입니다. `gds_no`로 상품 정보를 조회해 상품 상세 페이지 이동에 필요한 값을 구성하여 전달해야 합니다.
+
+**현재 핸들러 처리** (`RdbDataStreamEventHandler.java`)
 
 ```java
-// ModelAgentReq.Input (현재)
-public static Input of(..., Set<String> repositoryIds) {
-    return Input.builder()
-        .message(talkReq.question())
-        ...
-        .authGdsList(authGdsList)
-        // ⚠️ .repositoryIds(repositoryIds)  ← 누락 상태
-        .build();
-}
+// rdb_data value 예시
+// [{ "source": "...", "title": "...", "gds_no": 70008, "gds_data_dstg_id": "116049757" }]
+
+Object value = streamBody.value();
+List<Map<String, Object>> dataList = (List<Map<String, Object>>) value;
+
+// ⚠️ 현재: gds_no 조회 없이 raw value 그대로 반환
+StreamRes streamRes = StreamRes.builder()
+    .qnaNo(qna.getChatbotTalkQnaNo())
+    .data(value)
+    .build();
 ```
 
 **작업 내용**:
-1. `Input` 레코드에 `repository_ids` 필드 추가
-2. `Input.of()` 빌더에서 `repositoryIds` 세팅
-3. 외부 API 전달 JSON 키명 확인 후 `@JsonProperty` 적용
-
----
-
-### 5-2. `related_data` 내 `gds_no` 조회 및 프론트 전달
-
-현재 외부 Agent API의 `vector_metadata`(비정형 응답)에 `gds_no` 필드가 내려오고 있으나, 이를 이용한 상품 조회 및 프론트 전달 로직이 미구현 상태입니다.
-
-**현재 `VectorSource` 구조** (`ModelAgentRes.java`)
-
-```java
-public record VectorSource(
-    String source,
-    String title,
-    @JsonProperty("gds_no")
-    String gdsNo,             // ← 수신은 되나 현재 미사용
-    @JsonProperty("gds_data_dstg_id")
-    String gdsDataDstgId      // ← 현재 비정형 조회에 사용 중
-)
-```
-
-**작업 내용**:
-1. `VectorSource.gdsNo`를 이용해 `Goods` (또는 `GoodsData`) 조회
-2. 조회 결과를 `Related` 응답에 포함하거나 별도 필드로 프론트에 전달
-3. 스트림(`ModelAgentStreamBody`) / 비스트림(`ModelAgentRes`) 양쪽 모두 대응
+1. `dataList`에서 `gds_no` 추출
+2. `gds_no`로 `Goods` (또는 `GoodsData`) 조회 — 상품 상세 페이지 이동에 필요한 정보 구성
+3. 조회 결과를 `StreamRes` 또는 별도 DTO에 담아 프론트에 전달
 
 **예상 수정 파일**:
-- `MariAgentResParser` — `gdsNo` 기반 조회 로직 추가
-- `Related` 또는 신규 DTO — `gds_no` 기반 응답 필드 추가
-- `GoodsRepository` 또는 `GoodsDataRepository` — `gdsNo` 조회 메서드 추가 (필요 시)
+- `RdbDataStreamEventHandler` — `gds_no` 기반 DB 조회 로직 추가
+- `MariAgentResParser` — `prepareRelatedData()` 활용 또는 신규 메서드 추가
+- `StreamRes` 또는 신규 DTO — `gds_no` 조회 결과 필드 추가 (필요 시)
 
 ---
 
@@ -206,6 +222,7 @@ src/main/java/com/sk/
 │       ├── MariAgentResParser.java
 │       └── stream/
 │           ├── SseConnectionManager.java               ⭐ 신규
+│           ├── RdbDataStreamEventHandler.java          ⭐ 신규
 │           ├── ExecuteStreamEventHandler.java
 │           ├── GenerateStreamEventHandler.java
 │           ├── PlanStreamEventHandler.java

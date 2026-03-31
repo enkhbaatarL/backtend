@@ -63,7 +63,7 @@ public class ResultCode {
 
         // DB: 데이터베이스 관련 오류
         DB_CONNECTION_ERROR("DB-001", "A database connection error has occurred."),
-        DB_QUERY_ERROR("DB-002", "An error occurred while executing the database query."),
+        DB_QUERY_ERROR("DB-002", "An error occurred while executing the database userQuery."),
         DB_TRANSACTION_FAILED("DB-003", "Database transaction failed."),
 
         // SYS: 서버 및 시스템 관련 오류

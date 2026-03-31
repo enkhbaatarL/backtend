@@ -1,0 +1,9 @@
+### SSE TEST
+POST {{baseUrl}}/api/sse
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+    "message": "start"
+}

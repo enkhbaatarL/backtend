@@ -2,15 +2,14 @@ package com.sk.domain.mi.dto.response.agent;
 
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.common.utils.JsonUtil;
-import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
+import com.sk.domain.mi.dto.response.agent.talk.Answer;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.entity.master.tcm.ChatbotTalkQna;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-
 import java.util.Optional;
+import lombok.Builder;
 
 public record QnaRes(
 
@@ -21,7 +20,7 @@ public record QnaRes(
     String question,
 
     @Schema(description = "AI응답")
-    AnswerRes answer,
+    Answer answer,
 
     @Schema(description = "추천 여부", example = "true")
     Boolean isRecommended,
@@ -54,7 +53,7 @@ public record QnaRes(
             entity.getChatbotTalkQnaNo(),
             entity.getUserQuestionCntt(),
             Optional.ofNullable(entity.getChatbotAnswerCntt())
-                .map(str -> JsonUtil.fromJson(str, AnswerRes.class))
+                .map(QnaRes::parseAnswer)
                 .orElse(null),
             entity.getIsRecommended(),
             entity.getIsNotRecommended(),
@@ -74,8 +73,16 @@ public record QnaRes(
         );
     }
 
+    private static Answer parseAnswer(String rawAnswer) {
+        try {
+            return JsonUtil.fromJson(rawAnswer, Answer.class);
+        } catch (Exception e) {
+            return Answer.of(rawAnswer);
+        }
+    }
+
     @Builder
-    public QnaRes(Integer qnaNo, String question, AnswerRes answer, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd statusCd,
+    public QnaRes(Integer qnaNo, String question, Answer answer, Boolean isRecommended, Boolean isNotRecommended, AnswerStatusCd statusCd,
                   String statusNm, AssessmentFeedbackCd feedbackCd, String feedbackNm, String feedbackComment, AuditInfo auditInfo) {
         this.qnaNo = qnaNo;
         this.question = question;
@@ -116,7 +123,7 @@ public record QnaRes(
             .build();
     }
 
-    public static QnaRes of(ChatbotTalkQna qna, AnswerRes answer) {
+    public static QnaRes of(ChatbotTalkQna qna, Answer answer) {
         return QnaRes.builder()
             .qnaNo(qna.getChatbotTalkQnaNo())
             .question(qna.getUserQuestionCntt())

@@ -1,0 +1,9 @@
+### login
+GET {{baseUrl}}/api/v1/test/token?loginUserId={{loginUserId}}&role=USER
+Accept: */*
+Content-Type: application/json
+
+> {%
+    client.global.set("token", response.body.data);
+%}
+

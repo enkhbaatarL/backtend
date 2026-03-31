@@ -11,6 +11,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
 
+    /**
+     * 고객회사번호와 이벤트타입 리스트로 ActivityLog 조회 (페이징)
+     * User 정보를 fetch join으로 함께 조회하여 N+1 문제 방지
+     */
     @Query("""
         SELECT al
         FROM ActivityLog al
@@ -20,20 +24,12 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
         AND (:keyword IS NULL OR :keyword = ''
           OR UPPER(al.evntDtlExpn) LIKE UPPER(CONCAT('%', :keyword, '%')))
             AND (:eventTypes IS NULL OR al.evntType IN :eventTypes)
-        ORDER BY
-            CASE WHEN :evntDtSort = 'ASC' THEN al.evntDt END ASC,
-            CASE WHEN :evntDtSort = 'DESC' THEN al.evntDt END DESC,
-            CASE WHEN :sigLvlSort = 'ASC' THEN al.sigLvl END ASC,
-            CASE WHEN :sigLvlSort = 'DESC' THEN al.sigLvl END DESC,
-            al.actLogId DESC
         """)
     Page<ActivityLog> findByCustomerCompanyNoAndEventTypes(
-        @Param("customerCompanyNo") Integer customerCompanyNo,
-        @Param("keyword") String keyword,
-        @Param("eventTypes") List<ActivityLogType> eventTypes,
-        @Param("evntDtSort") String evntDtSort,
-        @Param("sigLvlSort") String sigLvlSort,
-        Pageable pageable
+            @Param("customerCompanyNo") Integer customerCompanyNo,
+            @Param("keyword") String keyword,
+            @Param("eventTypes") List<ActivityLogType> eventTypes,
+            Pageable pageable
     );
 
 }

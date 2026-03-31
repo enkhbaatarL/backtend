@@ -1,0 +1,21 @@
+{
+  "input": {
+    "user_query": "Brent유 1개월물의 최근 가격 알려줘",
+    "company_code": "2020",
+    "user_num": 1000100,
+    "authorized_product_nums": [
+      "70028",
+      "70008",
+      "70029",
+      "70047",
+      "70033",
+      "70050"
+    ],
+    "histories": [],
+    "search_sources": [
+      "rdb",
+      "web",
+      "vdb"
+    ]
+  }
+}

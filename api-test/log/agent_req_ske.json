@@ -1,0 +1,37 @@
+{
+  "input": {
+    "user_query": "Brent유 1개월물의 최근 가격 알려줘",
+    "company_code": "2020",
+    "user_num": 1000100,
+    "content_provider_rdb_accesses": {
+      "authorized_product_nums": [
+        70050,
+        70008,
+        70047,
+        70033,
+        70029,
+        70028
+      ]
+    },
+    "content_provider_vdb_accesses": [
+      {
+        "content_provider": "WOODMAC",
+        "authorized_product_nums": [
+          70028
+        ]
+      },
+      {
+        "content_provider": "LSEG",
+        "authorized_product_nums": [
+          70008
+        ]
+      }
+    ],
+    "histories": [],
+    "search_sources": [
+      "rdb",
+      "web",
+      "vdb"
+    ]
+  }
+}

@@ -4,25 +4,32 @@ import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.agent.QnaAssessmentReq;
 import com.sk.domain.mi.dto.request.agent.QnaReq;
+import com.sk.domain.mi.dto.response.agent.StreamRes;
+import com.sk.domain.mi.dto.response.agent.talk.Answer;
 import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
-import com.sk.domain.shared.client.dto.response.ModelAgentRes;
+import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
 import com.sk.domain.shared.converter.StringToAnswerStatusCdConverter;
 import com.sk.domain.shared.converter.StringToAssessmentFeedbackCdConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.agent.AnswerStatusCd;
 import com.sk.domain.shared.enums.agent.AssessmentFeedbackCd;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Comment;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Getter
 @Entity
@@ -83,10 +90,13 @@ public class ChatbotTalkQna extends BaseEntity {
     private Integer outputTokenCnt;
 
     @Builder
-    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
-                          Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt, String chatbotAnswerCntt, Boolean isRecommended,
-                          Boolean isNotRecommended, AnswerStatusCd answerStatusCd, AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt,
-                          Integer inputTokenCnt, Integer outputTokenCnt) {
+    public ChatbotTalkQna(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId,
+        String modifyUserId, Boolean isDeleted,
+        Integer chatbotTalkQnaNo, ChatbotTalk chatbotTalk, String userQuestionCntt,
+        String chatbotAnswerCntt, Boolean isRecommended,
+        Boolean isNotRecommended, AnswerStatusCd answerStatusCd,
+        AssessmentFeedbackCd assessmentFeedbackCd, String assessmentFeedbackCntt,
+        Integer inputTokenCnt, Integer outputTokenCnt) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.chatbotTalkQnaNo = chatbotTalkQnaNo;
         this.chatbotTalk = chatbotTalk;
@@ -111,7 +121,8 @@ public class ChatbotTalkQna extends BaseEntity {
             .build();
     }
 
-    public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk, AnswerStatusCd answerStatusCd) {
+    public static ChatbotTalkQna ofFail(QnaReq.Insert talkReq, ChatbotTalk talk,
+        AnswerStatusCd answerStatusCd) {
         return ChatbotTalkQna.builder()
             .chatbotTalk(talk)
             .userQuestionCntt(talkReq.question())
@@ -130,31 +141,44 @@ public class ChatbotTalkQna extends BaseEntity {
             this.assessmentFeedbackCd = dto.feedbackCd();
         }
 
-        if (ObjectUtils.isNotEmpty(dto.feedbackComment()) && AssessmentFeedbackCd.OTHER == dto.feedbackCd()) {
+        if (ObjectUtils.isNotEmpty(dto.feedbackComment())
+            && AssessmentFeedbackCd.OTHER == dto.feedbackCd()) {
             this.assessmentFeedbackCntt = dto.feedbackComment();
         }
 
     }
 
-    public void updateCompleteResult(ModelAgentRes.Output output, AnswerRes answerRes) {
+    public void updateCompleteResult(AnswerRes answerRes) {
         this.answerStatusCd = AnswerStatusCd.COMPLETE;
-        this.chatbotAnswerCntt = Optional.ofNullable(answerRes).map(JsonUtil::toJson).orElse(null);
-        this.inputTokenCnt = Optional.ofNullable(output)
-            .map(ModelAgentRes.Output::messages)
-            .stream()
-            .flatMap(List::stream)
-            .map(ModelAgentRes.Output.Message::usage)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.Usage::promptTokens)
-            .sum();
-        this.outputTokenCnt = Optional.ofNullable(output)
-            .map(ModelAgentRes.Output::messages)
-            .stream()
-            .flatMap(List::stream)
-            .map(ModelAgentRes.Output.Message::usage)
-            .filter(Objects::nonNull)
-            .mapToInt(ModelAgentRes.Output.Message.Usage::completionTokens)
-            .sum();
+
+        if (ObjectUtils.isEmpty(this.chatbotAnswerCntt)) {
+            Answer answer = Answer.of(answerRes);
+            this.chatbotAnswerCntt = JsonUtil.toJson(answer);
+        } else {
+            StreamRes streamRes = (StreamRes) answerRes.message();
+            Answer previousAnswer = JsonUtil.fromJson(this.chatbotAnswerCntt, Answer.class);
+            Answer updateAnswer = new Answer(
+                String.valueOf(streamRes.data()),
+                previousAnswer.series(),
+                previousAnswer.tables(),
+                previousAnswer.sources(),
+                previousAnswer.relatedData()
+            );
+            this.chatbotAnswerCntt = JsonUtil.toJson(updateAnswer);
+        }
+    }
+
+    public void updateCompleteResult(AnswerRes answerRes, ModelAgentStreamBody streamBody) {
+        this.answerStatusCd = AnswerStatusCd.COMPLETE;
+        StreamRes streamRes = answerRes == null ? null : (StreamRes) answerRes.message();
+        this.chatbotAnswerCntt = streamRes == null ? null : JsonUtil.toJson(streamRes.data());
+
+        if (streamBody != null
+            && streamBody.segment() != null
+            && streamBody.segment().usage() != null) {
+            this.inputTokenCnt = streamBody.segment().usage().promptTokens();
+            this.outputTokenCnt = streamBody.segment().usage().completionTokens();
+        }
     }
 
     public void updateFailResult() {
@@ -164,6 +188,15 @@ public class ChatbotTalkQna extends BaseEntity {
 
     public void updateFailResult(AnswerStatusCd validationStatus) {
         this.answerStatusCd = validationStatus;
+        this.chatbotAnswerCntt = null;
+    }
+
+    /**
+     * 스트림 중단 시 부분 응답을 저장합니다.
+     */
+    public void updateCancelledResult(String message) {
+        this.answerStatusCd = AnswerStatusCd.CANCELLED_BY_USER;
+        this.chatbotAnswerCntt = message;
     }
 
 }

@@ -171,6 +171,16 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
 
     List<GoodsData> findByGoodsDataDistinguishIdInAndIsDeletedFalse(List<String> distinguishIds);
 
+    List<GoodsData> findByGoodsDataNoInAndIsDeletedFalse(List<Integer> goodsDataNos);
+
+    /**
+     * VDB의 product_num(gds_no) + document_id(gds_data_dstg_id) 조합으로 GoodsData를 조회합니다.
+     */
+    @EntityGraph(attributePaths = {"goods"})
+    List<GoodsData> findByGoods_GoodsNoAndGoodsDataDistinguishIdInAndIsDeletedFalse(
+        @Param("goodsNo") Integer goodsNo,
+        @Param("distinguishIds") List<String> distinguishIds);
+
     @Query(value = """
             SELECT gd
             FROM GoodsData gd
