@@ -82,11 +82,19 @@ public class MariAgentResParser {
     }
 
     private List<Related> prepareUnstructuredDateResources(ModelAgentStreamBody modelAgentStreamBody) {
-        List<Integer> goodsDataNos = extractVdbProductDataNumbers(modelAgentStreamBody);
-        if (goodsDataNos.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return toRelatedByGoodsDataNos(goodsDataNos, Related.Type.UNSTRUCTURED);
+        List<Integer> goodsDataNosFromProductDataNum = extractVdbProductDataNumbers(modelAgentStreamBody);
+        List<Related> relatedFromProductDataNum = goodsDataNosFromProductDataNum.isEmpty()
+            ? Collections.emptyList()
+            : toRelatedByGoodsDataNos(goodsDataNosFromProductDataNum, Related.Type.UNSTRUCTURED);
+
+        List<GoodsData> goodsDataFromDocumentId = extractVdbGoodsDataFromDocumentIds(modelAgentStreamBody);
+        List<Related> relatedFromDocumentId = toRelatedByGoodsDataList(
+            goodsDataFromDocumentId, Related.Type.UNSTRUCTURED);
+
+        List<Related> combined = new ArrayList<>();
+        combined.addAll(relatedFromProductDataNum);
+        combined.addAll(relatedFromDocumentId);
+        return combined;
     }
 
     private List<Related> prepareUnstructuredDateResources(List<String> distinguishIds) {
@@ -194,6 +202,41 @@ public class MariAgentResParser {
             .toList();
     }
 
+    /**
+     * vdb에서 product_data_num 대신 document_id가 들어오는 경우를 처리합니다.
+     * - vdb의 product_num  -> tmd_gdsdatam.gds_no
+     * - vdb의 document_id -> tmd_gdsdatam.gds_data_dstg_id
+     */
+    private List<GoodsData> extractVdbGoodsDataFromDocumentIds(ModelAgentStreamBody streamBody) {
+        if (streamBody == null || streamBody.segment() == null || streamBody.segment().sources() == null
+            || streamBody.segment().sources().vdb() == null) {
+            return Collections.emptyList();
+        }
+
+        Map<Integer, List<String>> goodsNoToDocumentIds = streamBody.segment().sources().vdb().stream()
+            .filter(vdb -> vdb.productNum() != null)
+            .filter(vdb -> vdb.documentId() != null && !vdb.documentId().trim().isEmpty())
+            .collect(Collectors.groupingBy(
+                ModelAgentStreamBody.Segment.VdbSource::productNum,
+                Collectors.mapping(vdb -> vdb.documentId().trim(), Collectors.toList())
+            ));
+
+        if (goodsNoToDocumentIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return goodsNoToDocumentIds.entrySet().stream()
+            .flatMap(entry -> goodsDataRepository
+                .findByGoods_GoodsNoAndGoodsDataDistinguishIdInAndIsDeletedFalse(
+                    entry.getKey(),
+                    entry.getValue().stream().distinct().toList()
+                ).stream())
+            .collect(Collectors.toMap(GoodsData::getGoodsDataNo, Function.identity(), (a, b) -> a))
+            .values()
+            .stream()
+            .toList();
+    }
+
     private List<Related> toRelatedByGoodsDataNos(List<Integer> goodsDataNos, Related.Type type) {
         if (goodsDataNos == null || goodsDataNos.isEmpty()) {
             return Collections.emptyList();
@@ -201,6 +244,23 @@ public class MariAgentResParser {
 
         List<GoodsData> goodsDataList = goodsDataRepository.findByGoodsDataNoInAndIsDeletedFalse(goodsDataNos);
         return goodsDataList.stream()
+            .filter(goodsData -> goodsData.getGoods() != null)
+            .map(goodsData -> Related.builder()
+                .type(type)
+                .goodsNo(goodsData.getGoods().getGoodsNo())
+                .goodsDataNo(goodsData.getGoodsDataNo())
+                .displayNm(goodsData.getGoodsDataNm())
+                .build())
+            .toList();
+    }
+
+    private List<Related> toRelatedByGoodsDataList(List<GoodsData> goodsDataList, Related.Type type) {
+        if (goodsDataList == null || goodsDataList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return goodsDataList.stream()
+            .filter(Objects::nonNull)
             .filter(goodsData -> goodsData.getGoods() != null)
             .map(goodsData -> Related.builder()
                 .type(type)

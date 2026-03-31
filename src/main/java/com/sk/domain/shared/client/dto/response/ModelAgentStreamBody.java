@@ -258,6 +258,7 @@ public record ModelAgentStreamBody(
             String title,
             @JsonProperty("product_num") @JsonAlias({"productNum", "gds_no"}) Integer productNum,
             @JsonProperty("product_data_num") @JsonAlias({"productDataNum", "gds_data_no"}) String productDataNum,
+            @JsonProperty("document_id") @JsonAlias({"documentId", "gds_data_dstg_id"}) String documentId,
             String content
         ) {}
 
