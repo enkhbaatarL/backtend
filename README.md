@@ -43,6 +43,37 @@
 curl -X POST "http://localhost:8080/oauth2/token" -H "Content-Type: application/x-www-form-urlencoded" -u "mi-client:secret"  -d "grant_type=client_credentials"
 
 
+---
+
+## Dedicated 아키텍처 (고객사 전용 DB 분리)
+
+일부 고객사는 자체 전용 DB를 가지고 있으며, 해당 고객사에 서비스를 제공할 때는 공유 DB가 아닌 고객사 전용 DB에 접근해야 합니다. Spring Profile 기준으로 `dedicated` 여부를 구분하여 별도 API 서버를 운영합니다.
+
+### 실행 구조 비교
+
+| 구분 | 일반 서버 (`dedicated`가 아닌 프로필) | 전용 서버 (`dedicated`) |
+|------|---------------------|----------------------|
+| 기동 예시 | `--spring.profiles.active=dev`, `--spring.profiles.active=prod` | `--spring.profiles.active=dedicated` |
+| 접근 DB | MI DB | 고객사 전용 DB |
+| 주요 활성화 방식 | `@Profile("!dedicated")` 대상 Bean 활성 | dedicated 전용 Controller / Config 조합 활성 |
+
+### `@Profile` 적용 규칙
+
+- **일반 Controller** (공유 DB 사용): `@Profile("!dedicated")` 선언 → dedicated 서버에서 제외
+- **전용 Controller** (전용 DB 사용): 별도 Dedicated Controller를 두는 패턴을 사용하되, 실제 활성 여부는 profile/config 조합 기준으로 확인
+
+### 프론트엔드 연동
+
+Dedicated API는 고객사별 Base URL이 다르게 설정됩니다.
+
+| 고객사 | Base URL |
+|--------|----------|
+| 기본 (예시) | `dev-mi.sk.com` |
+| SK Energy (전용 서버 예시) | `dev-mi-ski.sk.com` |
+
+> ⚠️ Dedicated API를 신규 추가할 경우, 백엔드 개발 후 반드시 프론트엔드 팀에 API 정보를 전달하고 해당 고객사의 `withCustomBaseUrl` 적용을 요청해야 합니다.
+
+
 # GIT STATUS 에 나온 값을 가지고 temp 에 복사하는 방법
 ./copy_modified_to_temp.sh --dest ./temp <<'EOF'
 modified:   README.md
