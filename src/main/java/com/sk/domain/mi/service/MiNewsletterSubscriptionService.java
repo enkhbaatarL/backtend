@@ -8,6 +8,7 @@ import com.sk.domain.shared.entity.master.tmd.NewsletterSubscription;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.repository.master.tmd.NewsletterMasterRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterSubscriptionRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class MiNewsletterSubscriptionService {
 
     private final NewsletterMasterRepository newsletterMasterRepository;
     private final NewsletterSubscriptionRepository newsletterSubscriptionRepository;
+    private final AuthorizationService authorizationService;
 
     @Transactional
     public NewsletterSubscriptionRes subscribe(Integer newsletterId, User actorUser) {
@@ -60,18 +62,32 @@ public class MiNewsletterSubscriptionService {
     }
 
     private NewsletterMaster getAccessibleNewsletter(Integer newsletterId, User actorUser) {
-        if (actorUser == null || actorUser.getUserNo() == null || actorUser.getCustomerCompany() == null) {
+        validateActorUser(actorUser);
+        validateNewsletterId(newsletterId);
+
+        return newsletterMasterRepository
+            .findByNewsletterMasterIdAndIsDeletedFalse(newsletterId, resolveAccessibleCompanyNo())
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "newsletter not found"));
+    }
+
+    private Integer resolveAccessibleCompanyNo() {
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        if (companyNo == null || companyNo <= 0) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "accessible company is required");
+        }
+        return companyNo;
+    }
+
+    private void validateActorUser(User actorUser) {
+        if (actorUser == null || actorUser.getUserNo() == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
         }
+    }
+
+    private void validateNewsletterId(Integer newsletterId) {
         if (newsletterId == null || newsletterId <= 0) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "newsletterId is invalid");
         }
-
-        Integer customerCompanyNo = actorUser.getCustomerCompany().getCustomerCompanyNo();
-
-        return newsletterMasterRepository
-            .findByNewsletterMasterIdAndIsDeletedFalse(newsletterId, customerCompanyNo)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "newsletter not found"));
     }
 
     private NewsletterSubscriptionRes toRes(NewsletterMaster newsletterMaster, NewsletterSubscription subscription) {

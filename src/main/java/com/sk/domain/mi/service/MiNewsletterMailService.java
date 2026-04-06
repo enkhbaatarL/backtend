@@ -205,13 +205,13 @@ public class MiNewsletterMailService {
         if (newsletterId == null || issueNo == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "newsletterId and issueNo are required");
         }
-        if (actorUser == null || actorUser.getCustomerCompany() == null) {
+        if (actorUser == null || actorUser.getUserNo() == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
         }
 
         NewsletterMaster newsletterMaster = newsletterMasterRepository.findByNewsletterMasterIdAndIsDeletedFalse(
                         newsletterId,
-                        actorUser.getCustomerCompany().getCustomerCompanyNo())
+                        resolveAccessibleCompanyNo())
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                         "newsletterId not found: " + newsletterId));
 
@@ -227,6 +227,14 @@ public class MiNewsletterMailService {
             throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
                     "Original issue is not in PUBLISHED state");
         }
+    }
+
+    private Integer resolveAccessibleCompanyNo() {
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        if (companyNo == null || companyNo <= 0) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "accessible company is required");
+        }
+        return companyNo;
     }
 
     private void validateRevisionOwnershipAndState(Integer newsletterId, Integer issueNo, User actorUser) {

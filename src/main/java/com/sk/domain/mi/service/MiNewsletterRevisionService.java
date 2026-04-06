@@ -33,6 +33,7 @@ import com.sk.domain.shared.repository.master.tmd.NewsletterIssueOriginalReposit
 import com.sk.domain.shared.repository.master.tmd.NewsletterUserRevisionDeltaHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterUserRevisionRepository;
 import com.sk.domain.shared.repository.master.tmd.NewsletterUserRevisionSnapshotHistoryRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +55,7 @@ public class MiNewsletterRevisionService {
     private final NewsletterUserRevisionRepository newsletterUserRevisionRepository;
     private final NewsletterUserRevisionDeltaHistoryRepository revisionDeltaHistoryRepository;
     private final NewsletterUserRevisionSnapshotHistoryRepository revisionSnapshotHistoryRepository;
+    private final AuthorizationService authorizationService;
     private final ObjectMapper objectMapper;
     private final SnapshotCanonicalizer snapshotCanonicalizer;
 
@@ -485,9 +487,8 @@ public class MiNewsletterRevisionService {
         validateActorUser(actorUser);
         validateNewsletterIssue(newsletterId, issueNo);
 
-        Integer companyNo = actorUser.getCustomerCompany().getCustomerCompanyNo();
         return newsletterIssueOriginalRepository
-            .findAccessibleIssue(newsletterId, issueNo, companyNo)
+            .findAccessibleIssue(newsletterId, issueNo, resolveAccessibleCompanyNo())
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "NEWSLETTER_NOT_FOUND"));
     }
 
@@ -516,9 +517,17 @@ public class MiNewsletterRevisionService {
     }
 
     private void validateActorUser(User actorUser) {
-        if (actorUser == null || actorUser.getUserNo() == null || actorUser.getCustomerCompany() == null) {
+        if (actorUser == null || actorUser.getUserNo() == null) {
             throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "actor user is required");
         }
+    }
+
+    private Integer resolveAccessibleCompanyNo() {
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        if (companyNo == null || companyNo <= 0) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "accessible company is required");
+        }
+        return companyNo;
     }
 
     private void validateIssueOriginal(NewsletterIssueOriginal issueOriginal) {
