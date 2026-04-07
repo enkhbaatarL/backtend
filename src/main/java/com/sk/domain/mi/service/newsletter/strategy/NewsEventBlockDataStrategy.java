@@ -6,6 +6,7 @@ import com.sk.domain.mi.dto.internal.TemplateTree;
 import com.sk.domain.shared.entity.master.tmd.NewsletterEvent;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
 import com.sk.domain.shared.repository.master.tmd.NewsletterEventRepository;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 public class NewsEventBlockDataStrategy implements BlockDataStrategy {
 
     private static final DateTimeFormatter CREATED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final ZoneId NEW_YORK_ZONE = ZoneId.of("America/New_York");
 
     private final NewsletterEventRepository newsletterEventRepository;
 
@@ -64,7 +66,13 @@ public class NewsEventBlockDataStrategy implements BlockDataStrategy {
         item.put("title", event.getEventTitle());
         item.put("content", toContentLines(event));
         item.put("timestamp", event.getEventCreateTime() != null ? event.getEventCreateTime().toInstant(ZoneOffset.UTC).toEpochMilli() : null);
-        item.put("createdDate", event.getEventCreateTime() != null ? event.getEventCreateTime().format(CREATED_DATE_FORMATTER) : null);
+        item.put("createdDate", event.getEventCreateTime() != null
+            ? event.getEventCreateTime()
+                .atOffset(ZoneOffset.UTC)
+                .atZoneSameInstant(NEW_YORK_ZONE)
+                .toLocalDate()
+                .format(CREATED_DATE_FORMATTER)
+            : null);
         item.put("createTime", event.getEventMarkTime());
         item.put("source", event.getEventProvider());
         item.put("originalUrl", event.getOriginalUrl());
