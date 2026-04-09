@@ -4,16 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.domain.mi.dto.internal.ResolvedBlockData;
 import com.sk.domain.mi.dto.internal.TemplateTree;
-import com.sk.domain.mi.service.MiNewsletterService;
 import com.sk.domain.shared.entity.master.tmd.NewsletterMaster;
 import com.sk.domain.shared.entity.master.tmd.NewsletterPublishHistory;
+import com.sk.domain.shared.entity.master.tmd.NewsletterText;
+import com.sk.domain.shared.repository.master.tmd.NewsletterTextRepository;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,14 +31,21 @@ public class TemplateFieldValueResolver {
     private static final String MIME_TYPE = "image/png";
     private static final String FALLBACK_IMAGE_PATH = "static/images/oil_trend_cover_img.png";
     private static final DateTimeFormatter PUBLISH_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final String BRENT_PRICE_TEXT_TYPE = "SUB_INFO_TXT";
+    private static final Pattern BRENT_PRICE_RANGE_PATTERN = Pattern.compile(
+        ".*?\\$\\s*([0-9]+(?:\\.[0-9]+)?)\\s*/B\\s*(?:→|->)\\s*\\$\\s*([0-9]+(?:\\.[0-9]+)?)\\s*/B.*"
+    );
 
     private final ObjectMapper objectMapper;
-    private final MiNewsletterService miNewsletterService;
+    private final NewsletterTextRepository newsletterTextRepository;
 
     @Autowired
-    public TemplateFieldValueResolver(ObjectMapper objectMapper, MiNewsletterService miNewsletterService) {
+    public TemplateFieldValueResolver(
+        ObjectMapper objectMapper,
+        NewsletterTextRepository newsletterTextRepository
+    ) {
         this.objectMapper = objectMapper;
-        this.miNewsletterService = miNewsletterService;
+        this.newsletterTextRepository = newsletterTextRepository;
     }
 
     TemplateFieldValueResolver(ObjectMapper objectMapper) {
@@ -130,17 +141,31 @@ public class TemplateFieldValueResolver {
         NewsletterPublishHistory pubHist,
         boolean isPriceChangeTo
     ) {
-        if (master == null || pubHist == null || miNewsletterService == null) {
+        if (master == null || pubHist == null || newsletterTextRepository == null) {
             return null;
         }
 
-        MiNewsletterService.BrentPriceTradePrices tradePrices =
-            miNewsletterService.getBrentPriceTradePrices(master, pubHist);
-        if (tradePrices == null) {
+        String newsletterTextValue = newsletterTextRepository
+            .findByNewsletterPublishHistoryAndNewsletterTextType(pubHist, BRENT_PRICE_TEXT_TYPE)
+            .map(NewsletterText::getNewsletterTextValue)
+            .orElse(null);
+        if (StringUtils.isBlank(newsletterTextValue)) {
             return null;
         }
 
-        return isPriceChangeTo ? tradePrices.pre1d() : tradePrices.pre2d();
+        Matcher matcher = BRENT_PRICE_RANGE_PATTERN.matcher(newsletterTextValue);
+        if (!matcher.matches()) {
+            return null;
+        }
+
+        try {
+            BigDecimal priceChangeFrom = new BigDecimal(matcher.group(1));
+            BigDecimal priceChangeTo = new BigDecimal(matcher.group(2));
+            return isPriceChangeTo ? priceChangeTo : priceChangeFrom;
+        } catch (NumberFormatException e) {
+            log.warn("브렌트 가격 문자열 파싱 실패 - nws_ltr_txt_value: {}", newsletterTextValue);
+            return null;
+        }
     }
 
     private Object resolveNewsletterMasterValue(
