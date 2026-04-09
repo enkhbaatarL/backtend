@@ -148,6 +148,13 @@ public class MiNewsletterMailService {
             newsletterId, issueNo, successCount, failedRecipients.size());
     }
 
+    public boolean hasActiveOriginalRecipients(Integer newsletterId) {
+        if (newsletterId == null || newsletterId <= 0) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "newsletterId is required");
+        }
+        return !newsletterSubscriptionRepository.findActiveSubscriberEmails(newsletterId).isEmpty();
+    }
+
     /**
      * 리비전 메일 발송
      *

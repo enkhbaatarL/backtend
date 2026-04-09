@@ -8,9 +8,12 @@ import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterDetailV2Res;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssueOriginalSnapshotRes;
 import com.sk.domain.mi.dto.response.newsletter.NewsletterIssuePreviewRes;
+import com.sk.domain.mi.dto.response.newsletter.NewsletterOriginalSnapshotReplayRes;
+import com.sk.domain.mi.service.MiNewsletterMailService;
 import com.sk.domain.mi.service.MiNewsletterPublishService;
 import com.sk.domain.mi.service.MiNewsletterService;
 import com.sk.domain.mi.service.newsletter.NewsletterDetailV2Service;
+import com.sk.domain.mi.service.newsletter.NewsletterOriginalSnapshotReplayService;
 import com.sk.domain.mi.service.newsletter.NewsletterSnapshotService;
 import com.sk.domain.mi.service.newsletter.NewsletterTriggerMailPreparationService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -40,8 +43,10 @@ public class MiNewsletterDedicatedController {
 
     private final MiNewsletterService miNewsletterService;
     private final NewsletterDetailV2Service newsletterDetailV2Service;
+    private final MiNewsletterMailService miNewsletterMailService;
     private final MiNewsletterPublishService miNewsletterPublishService;
     private final NewsletterTriggerMailPreparationService newsletterTriggerMailPreparationService;
+    private final NewsletterOriginalSnapshotReplayService newsletterOriginalSnapshotReplayService;
     private final NewsletterSnapshotService newsletterSnapshotService;
     private final AuthorizationService authorizationService;
 
@@ -124,6 +129,11 @@ public class MiNewsletterDedicatedController {
 
         newsletterTriggerMailPreparationService.resetRevisionStateAndUpsertOriginalIssue(newsletterId, issueNo);
 
+        if (!miNewsletterMailService.hasActiveOriginalRecipients(newsletterId)) {
+            log.info("Newsletter mail trigger skipped due to no active subscribers. newsletterId={}, issueNo={}", newsletterId, issueNo);
+            return ResponseEntity.ok(BaseResponseFactory.create("skipped-no-active-subscribers"));
+        }
+
         // TODO [newsletter_send_history 설계 연계]:
         //  - trigger 요청 멱등/상태 관리를 위한 별도 테이블(예: newsletter_send_trigger) 추가
         //  - idempotencyKey UNIQUE + status(RECEIVED/PROCESSING/SUCCEEDED/FAILED) 저장
@@ -132,6 +142,29 @@ public class MiNewsletterDedicatedController {
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)
             .body(BaseResponseFactory.create("accepted"));
+    }
+
+    @ApiOrder(3)
+    @Parameter(name = "newsletterId", description = "뉴스레터 마스터 ID")
+    @Parameter(name = "issueNo", description = "회차 번호")
+    @Operation(
+        summary = "뉴스레터 original snapshot 재실행",
+        description = """
+                운영 복구용 API입니다.
+
+                - 해당 회차의 사용자 수정본을 삭제하고 original snapshot 을 다시 생성합니다.
+                - 구독자 조회, 차트 캡처, 메일 발송은 수행하지 않습니다.
+                """)
+    @ApiResponse(responseCode = "200", description = "original snapshot 재실행 완료")
+    @PostMapping("/{newsletterId}/{issueNo}/replay-original-snapshot")
+    @RequiredPermission(roles = {Role.API_SUB_ADMIN, Role.API_PLUS_OPERATOR, Role.ADMIN, Role.SYSTEM})
+    public BaseResponse<NewsletterOriginalSnapshotReplayRes> replayOriginalSnapshot(
+        @PathVariable Integer newsletterId,
+        @PathVariable Integer issueNo
+    ) {
+        return BaseResponseFactory.create(
+            newsletterOriginalSnapshotReplayService.replayOriginalSnapshot(newsletterId, issueNo)
+        );
     }
 
     @ApiOrder(15)

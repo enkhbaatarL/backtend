@@ -18,7 +18,7 @@ public class NewsletterTriggerMailPreparationService {
     private final NewsletterRevisionResetService newsletterRevisionResetService;
     private final NewsletterIssueOriginalService newsletterIssueOriginalService;
 
-    public NewsletterIssueOriginal resetRevisionStateAndUpsertOriginalIssue(Integer newsletterId, Integer issueNo) {
+    public NewsletterTriggerMailPreparationResult resetRevisionStateAndUpsertOriginalIssue(Integer newsletterId, Integer issueNo) {
         String stage = "FIND_ISSUE_ORIGINAL";
         Long issueOriginalId = null;
         int deletedRevisionCount = 0;
@@ -63,7 +63,14 @@ public class NewsletterTriggerMailPreparationService {
                 deletedDeltaCount,
                 deletedSnapshotCount
             );
-            return saved;
+            return new NewsletterTriggerMailPreparationResult(
+                newsletterId,
+                issueNo,
+                saved.getNewsletterIssueOriginalId(),
+                deletedRevisionCount,
+                deletedDeltaCount,
+                deletedSnapshotCount
+            );
         } catch (Exception e) {
             log.error(
                 "Newsletter trigger-mail preparation failed. stage={}, newsletterId={}, issueNo={}, issueOriginalId={}, deletedRevisionCount={}, deletedDeltaCount={}, deletedSnapshotCount={}",
@@ -78,5 +85,15 @@ public class NewsletterTriggerMailPreparationService {
             );
             throw e;
         }
+    }
+
+    public record NewsletterTriggerMailPreparationResult(
+        Integer newsletterId,
+        Integer issueNo,
+        Long issueOriginalId,
+        int deletedRevisionCount,
+        int deletedDeltaCount,
+        int deletedSnapshotCount
+    ) {
     }
 }
