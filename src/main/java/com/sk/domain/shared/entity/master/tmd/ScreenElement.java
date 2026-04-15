@@ -25,7 +25,7 @@ import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
-@Table(name = "tmd_scrnelmntm")
+@Table(name = "tcm_scrnelmntm")
 @Comment("TMD_화면요소기본")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScreenElement extends BaseEntity {

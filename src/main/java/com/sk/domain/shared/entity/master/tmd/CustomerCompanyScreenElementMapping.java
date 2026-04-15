@@ -22,7 +22,7 @@ import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
-@Table(name = "tmd_custcpnyscrnelmntmappl")
+@Table(name = "tcm_custcpnyscrnelmntmappl")
 @Comment("TMD_고객회사화면요소매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerCompanyScreenElementMapping extends BaseEntity {
