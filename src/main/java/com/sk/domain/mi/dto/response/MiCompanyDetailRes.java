@@ -47,13 +47,16 @@ public record MiCompanyDetailRes(
     List<ScreenElementNode> menus,
 
     @Schema(description = "플로팅 화면요소 (FLOATING)")
-    List<ScreenElementNode> floating
+    List<ScreenElementNode> floating,
+
+    @Schema(description = "기본 랜딩 화면요소 코드")
+    String defaultLandingCd
 
 ) {
 
     @Builder
-    public MiCompanyDetailRes(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String customerCompanyMipUrl, Boolean isQualitative, Boolean isMari, Boolean isFuture, Boolean isNewsletter, List<ScreenElementNode> menus, List<ScreenElementNode> floating) {
-        this(customerCompanyNo, customerCompanyNm, customerCompanyCd, customerCompanyMipUrl, isQualitative, isMari, isFuture, null, isNewsletter, menus, floating);
+    public MiCompanyDetailRes(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String customerCompanyMipUrl, Boolean isQualitative, Boolean isMari, Boolean isFuture, Boolean isNewsletter, List<ScreenElementNode> menus, List<ScreenElementNode> floating, String defaultLandingCd) {
+        this(customerCompanyNo, customerCompanyNm, customerCompanyCd, customerCompanyMipUrl, isQualitative, isMari, isFuture, null, isNewsletter, menus, floating, defaultLandingCd);
     }
 
     public static MiCompanyDetailRes of(CustomerCompany customerCompany, String miDefaultDomain,

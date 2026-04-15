@@ -13,6 +13,7 @@ import com.sk.domain.shared.repository.master.tmd.CustomerCompanyScreenElementMa
 import com.sk.domain.shared.repository.master.tmd.ScreenElementRepository;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,9 +53,14 @@ public class MiCompanyService {
 
         MiCompanyDetailRes.ScreenElementTrees trees = new MiCompanyDetailRes.TreeBuilder(screenElements, mappings).build();
 
+        String defaultLandingCd = customerCompany.getDefaultLandingScreenElement() != null
+            ? customerCompany.getDefaultLandingScreenElement().getScreenElementCd()
+            : findFirstMenuItemCd(trees.menus());
+
         miCompanyDetailRes = miCompanyDetailRes.toBuilder()
             .menus(trees.menus())
             .floating(trees.floating())
+            .defaultLandingCd(defaultLandingCd)
             .build();
 
         if (customerCompanyMarketCategory != null) {
@@ -64,5 +70,19 @@ public class MiCompanyService {
         }
 
         return miCompanyDetailRes;
+    }
+
+    private String findFirstMenuItemCd(List<MiCompanyDetailRes.ScreenElementNode> menus) {
+        return menus.stream()
+            .flatMap(node -> findFirstMenuItem(node).stream())
+            .findFirst()
+            .orElse(null);
+    }
+
+    private Optional<String> findFirstMenuItem(MiCompanyDetailRes.ScreenElementNode node) {
+        if ("MENU_ITEM".equals(node.typeCd())) return Optional.of(node.screenElementCd());
+        return node.children().stream()
+            .flatMap(child -> findFirstMenuItem(child).stream())
+            .findFirst();
     }
 }

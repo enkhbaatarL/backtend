@@ -22,14 +22,14 @@ import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
-@Table(name = "tmd_custcpnyscrnelmmappl")
+@Table(name = "tmd_custcpnyscrnelmntmappl")
 @Comment("TMD_고객회사화면요소매핑내역")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerCompanyScreenElementMapping extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cust_cpny_scrn_elm_map_no", nullable = false, columnDefinition = "int unsigned")
+    @Column(name = "cust_cpny_scrn_elmnt_map_no", nullable = false, columnDefinition = "int unsigned")
     @Comment("고객회사화면요소매핑번호")
     private Integer customerCompanyScreenElementMapNo;
 
@@ -39,11 +39,11 @@ public class CustomerCompanyScreenElementMapping extends BaseEntity {
     private CustomerCompany customerCompany;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "scrn_elm_no", nullable = false)
+    @JoinColumn(name = "scrn_elmnt_no", nullable = false)
     @Comment("화면요소번호")
     private ScreenElement screenElement;
 
-    @Column(name = "exps_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Column(name = "vsblty_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("노출여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)

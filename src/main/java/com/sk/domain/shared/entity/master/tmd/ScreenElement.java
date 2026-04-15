@@ -25,40 +25,40 @@ import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
-@Table(name = "tmd_scrnelmm")
+@Table(name = "tmd_scrnelmntm")
 @Comment("TMD_화면요소기본")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScreenElement extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "scrn_elm_no", nullable = false, columnDefinition = "int unsigned")
+    @Column(name = "scrn_elmnt_no", nullable = false, columnDefinition = "int unsigned")
     @Comment("화면요소번호")
     private Integer screenElementNo;
 
-    @Column(name = "scrn_elm_cd", nullable = false, length = 30)
+    @Column(name = "scrn_elmnt_cd", nullable = false, length = 30)
     @Comment("화면요소코드")
     private String screenElementCd;
 
-    @Column(name = "scrn_elm_expln", length = 500)
+    @Column(name = "scrn_elmnt_expln", length = 500)
     @Comment("화면요소설명")
     private String screenElementExpln;
 
-    @Column(name = "scrn_elm_type_cd", nullable = false, length = 20)
+    @Column(name = "scrn_elmnt_type_cd", nullable = false, length = 20)
     @Comment("화면요소유형코드")
     @Enumerated(EnumType.STRING)
     private ScreenElementType screenElementTypeCd;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "upr_scrn_elm_no")
+    @JoinColumn(name = "upr_scrn_elmnt_no")
     @Comment("상위화면요소번호")
     private ScreenElement upperScreenElement;
 
-    @Column(name = "dflt_ord_no", columnDefinition = "smallint unsigned")
+    @Column(name = "defl_ord_no", columnDefinition = "smallint unsigned")
     @Comment("기본정렬순서")
     private Integer defaultOrderNo;
 
-    @Column(name = "dflt_exps_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Column(name = "defl_vsblty_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("기본노출여부")
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
