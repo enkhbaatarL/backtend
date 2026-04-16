@@ -3,12 +3,14 @@ package com.sk.domain.mi.dto.response;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompanyScreenElementMapping;
 import com.sk.domain.shared.entity.master.tmd.ScreenElement;
+import com.sk.domain.shared.enums.ScreenElementType;
 import com.sk.domain.shared.enums.news.MarketCategoryCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -28,18 +30,22 @@ public record MiCompanyDetailRes(
     @Schema(description = "고객회사MI플랫폼URL주소")
     String customerCompanyMipUrl,
 
+    // deprecated -> screen element로 대체
     @Schema(description = "정성모델 표시여부")
     Boolean isQualitative,
 
+    // deprecated -> screen element로 대체
     @Schema(description = "마리 표시여부")
     Boolean isMari,
 
+    // deprecated -> screen element로 대체
     @Schema(description = "미래 기능 예시 표출 여부")
     Boolean isFuture,
 
     @Schema(description = "뉴스시장카테고리코드", example = "CROIL")
     MarketCategoryCode newsMarketCategoryCode,
 
+    // deprecated -> screen element로 대체
     @Schema(description = "뉴스레터 화면 표출 여부")
     Boolean isNewsletter,
 
@@ -80,7 +86,7 @@ public record MiCompanyDetailRes(
         String screenElementCd,
 
         @Schema(description = "화면요소유형코드")
-        String typeCd,
+        ScreenElementType typeCd,
 
         @Schema(description = "하위 화면요소")
         List<ScreenElementNode> children
@@ -91,6 +97,19 @@ public record MiCompanyDetailRes(
         List<ScreenElementNode> menus,
         List<ScreenElementNode> floating
     ) {
+        public String findFirstMenuItemCd() {
+            return menus.stream()
+                .flatMap(node -> findFirstMenuItem(node).stream())
+                .findFirst()
+                .orElse(null);
+        }
+
+        private static Optional<String> findFirstMenuItem(ScreenElementNode node) {
+            if (ScreenElementType.MENU_ITEM == node.typeCd()) return Optional.of(node.screenElementCd());
+            return node.children().stream()
+                .flatMap(child -> findFirstMenuItem(child).stream())
+                .findFirst();
+        }
     }
 
     public static class TreeBuilder {
@@ -154,7 +173,7 @@ public record MiCompanyDetailRes(
 
             return ScreenElementNode.builder()
                 .screenElementCd(screenElement.getScreenElementCd())
-                .typeCd(screenElement.getScreenElementTypeCd().name())
+                .typeCd(screenElement.getScreenElementTypeCd())
                 .children(children)
                 .build();
         }
