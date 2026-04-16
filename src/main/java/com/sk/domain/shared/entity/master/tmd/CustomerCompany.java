@@ -13,6 +13,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -179,6 +181,11 @@ public class CustomerCompany extends BaseEntity {
     @ColumnDefault("'N'")
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isNewsLetter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "defl_land_scrn_elmnt_no")
+    @Comment("기본랜딩화면요소번호")
+    private ScreenElement defaultLandingScreenElement;
 
     @OneToMany(mappedBy = "customerCompany", fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
