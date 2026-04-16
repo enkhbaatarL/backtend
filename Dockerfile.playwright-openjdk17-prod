@@ -1,86 +1,88 @@
 # syntax=docker/dockerfile:1.7
 
-##
-## 목적
-## - Tekton 이 생성한 Dockerfile 에서 사용하던 `openjdk:17` 계열 대체로
-##   `eclipse-temurin:17-jdk` 를 기준 삼아 Playwright Chromium 실행 가능 여부를
-##   검증하기 위한 운영 유사 이미지 초안
-##
-## 가정
-## - 과거 `openjdk:17` 태그는 현재 Docker Hub 에서 직접 재현되지 않으므로,
-##   현재 사용 가능한 JDK 17 대체 이미지인 `eclipse-temurin:17-jdk` 로 실험한다.
-## - `eclipse-temurin:17-jdk` 태그도 upstream 변경에 따라 하위 OS 가 달라질 수 있으므로,
-##   실험 재현성이 중요하면 이후 digest pinning 이 필요하다.
-## - 현재 애플리케이션 Playwright Java 버전은 `1.58.0` 이다.
-##
-
-FROM gradle:8-jdk17 AS builder
-
-WORKDIR /workspace
-
-# 빌드 단계에서는 브라우저 다운로드를 생략한다.
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-
-COPY gradlew settings.gradle build.gradle /workspace/
-COPY gradle /workspace/gradle
-COPY src /workspace/src
-
-RUN chmod +x ./gradlew
-RUN ./gradlew bootJar -x test
-RUN cp build/libs/*.jar /workspace/app.jar
-
 FROM eclipse-temurin:17-jdk
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8"
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-WORKDIR /app
+ARG PLAYWRIGHT_VERSION=1.58.0
 
-# Playwright Chromium 런타임 의존 패키지 설치
+WORKDIR /opt/playwright
+
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list ]; then \
+      sed -i 's|http://archive.ubuntu.com/ubuntu|http://kr.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
+      sed -i 's|http://security.ubuntu.com/ubuntu|http://kr.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
+    fi; \
+    if [ -d /etc/apt/sources.list.d ]; then \
+      find /etc/apt/sources.list.d -type f \( -name "*.list" -o -name "*.sources" \) -exec \
+        sed -i 's|http://archive.ubuntu.com/ubuntu|http://kr.archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://kr.archive.ubuntu.com/ubuntu|g' {} \; ; \
+    fi; \
+    ok=''; \
+    for i in 1 2 3 4 5; do \
+      apt-get update && ok=1 && break; \
+      echo "apt-get update failed, retry $i"; \
+      rm -rf /var/lib/apt/lists/*; \
+      sleep 20; \
+    done; \
+    [ -n "$ok" ]; \
+    asound_pkg="$(apt-cache show libasound2t64 >/dev/null 2>&1 && echo libasound2t64 || echo libasound2)"; \
+    cups_pkg="$(apt-cache show libcups2t64 >/dev/null 2>&1 && echo libcups2t64 || echo libcups2)"; \
+    apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      maven \
+      fonts-liberation \
+      "${asound_pkg}" \
+      libatk-bridge2.0-0 \
+      libatk1.0-0 \
+      libatspi2.0-0 \
+      libcairo2 \
+      "${cups_pkg}" \
+      libdbus-1-3 \
+      libdrm2 \
+      libgbm1 \
+      libglib2.0-0 \
+      libgtk-3-0 \
+      libnspr4 \
+      libnss3 \
+      libpango-1.0-0 \
+      libx11-6 \
+      libx11-xcb1 \
+      libxcb1 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxext6 \
+      libxfixes3 \
+      libxkbcommon0 \
+      libxrandr2 \
+      xdg-utils; \
+    rm -rf /var/lib/apt/lists/*
+
 RUN set -eux \
-    && apt-get update \
-    && asound_pkg="$(apt-cache show libasound2t64 >/dev/null 2>&1 && echo libasound2t64 || echo libasound2)" \
-    && cups_pkg="$(apt-cache show libcups2t64 >/dev/null 2>&1 && echo libcups2t64 || echo libcups2)" \
-    && apt-get install -y --no-install-recommends \
-        ca-certificates \
-        fonts-liberation \
-        "${asound_pkg}" \
-        libatk-bridge2.0-0 \
-        libatk1.0-0 \
-        libatspi2.0-0 \
-        libcairo2 \
-        "${cups_pkg}" \
-        libdbus-1-3 \
-        libdrm2 \
-        libgbm1 \
-        libglib2.0-0 \
-        libgtk-3-0 \
-        libnspr4 \
-        libnss3 \
-        libpango-1.0-0 \
-        libx11-6 \
-        libx11-xcb1 \
-        libxcb1 \
-        libxcomposite1 \
-        libxdamage1 \
-        libxext6 \
-        libxfixes3 \
-        libxkbcommon0 \
-        libxrandr2 \
-        xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+    && mkdir -p /tmp/pw /ms-playwright \
+    && cd /tmp/pw \
+    && printf '%s\n' \
+        '<project xmlns="http://maven.apache.org/POM/4.0.0"' \
+        '         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+        '         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">' \
+        '  <modelVersion>4.0.0</modelVersion>' \
+        '  <groupId>local</groupId>' \
+        '  <artifactId>playwright-installer</artifactId>' \
+        '  <version>1.0.0</version>' \
+        '  <dependencies>' \
+        '    <dependency>' \
+        '      <groupId>com.microsoft.playwright</groupId>' \
+        '      <artifactId>playwright</artifactId>' \
+        "      <version>${PLAYWRIGHT_VERSION}</version>" \
+        '    </dependency>' \
+        '  </dependencies>' \
+        '</project>' \
+        > pom.xml \
+    && mvn -q -DskipTests dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=deps \
+    && java -cp "deps/*" com.microsoft.playwright.CLI install chromium \
+    && rm -rf /tmp/pw
 
-COPY --from=builder /workspace/app.jar /app/app.jar
-
-# Chromium 브라우저를 이미지 빌드 시점에 고정 설치
-RUN mkdir -p /ms-playwright /tmp/playwright \
-    && cd /tmp/playwright \
-    && jar xf /app/app.jar BOOT-INF/lib \
-    && java -cp "/tmp/playwright/BOOT-INF/lib/*" com.microsoft.playwright.CLI install chromium \
-    && rm -rf /tmp/playwright
-
-EXPOSE 8080
-
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+WORKDIR /workspace
