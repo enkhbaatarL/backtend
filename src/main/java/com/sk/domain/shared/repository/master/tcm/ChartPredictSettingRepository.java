@@ -13,6 +13,8 @@ public interface ChartPredictSettingRepository extends JpaRepository<ChartPredic
 
     boolean existsByCustomerCompany(CustomerCompany customerCompany);
 
+    boolean existsByCustomerCompanyAndIsDeletedFalse(CustomerCompany customerCompany);
+
     @Query(value = """
             SELECT cps FROM ChartPredictSetting cps
             WHERE cps.customerCompany.customerCompanyNo = :companyNo
