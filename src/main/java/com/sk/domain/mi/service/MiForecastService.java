@@ -952,6 +952,18 @@ public class MiForecastService {
     }
 
     /**
+     * Forecast 데이터 존재 여부 조회
+     *
+     * @param companyNo 회사 번호
+     * @return boolean
+     */
+    public boolean forecastDataExists(int companyNo) {
+        CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, DateUtil.toYmd(LocalDate.now()))
+            .orElseThrow(() -> AppErrorException.of(Error.RSC_NOT_FOUND, "customer company does not exist: companyNo=%s".formatted(companyNo)));
+        return chartPredictSettingRepository.existsByCustomerCompanyAndIsDeletedFalse(customerCompany);
+    }
+
+    /**
      * Forecast 기본 정보 조회
      *
      * @param companyNo 회사 번호

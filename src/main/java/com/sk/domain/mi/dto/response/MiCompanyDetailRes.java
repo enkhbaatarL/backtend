@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Builder;
 
@@ -91,17 +92,31 @@ public record MiCompanyDetailRes(
         @Schema(description = "하위 화면요소")
         List<ScreenElementNode> children
     ) {
+        public ScreenElementNode {
+            children = children == null ? List.of() : children;
+        }
     }
 
     public record ScreenElementTrees(
         List<ScreenElementNode> menus,
         List<ScreenElementNode> floating
     ) {
+        public ScreenElementTrees {
+            menus = menus == null ? List.of() : menus;
+            floating = floating == null ? List.of() : floating;
+        }
+
         public String findFirstMenuItemCd() {
             return menus.stream()
                 .flatMap(node -> findFirstMenuItem(node).stream())
                 .findFirst()
                 .orElse(null);
+        }
+
+        public boolean containsMenuItemCd(String screenElementCd) {
+            if (screenElementCd == null) return false;
+            return menus.stream()
+                .anyMatch(node -> containsMenuItem(node, screenElementCd));
         }
 
         private static Optional<String> findFirstMenuItem(ScreenElementNode node) {
@@ -110,6 +125,14 @@ public record MiCompanyDetailRes(
                 .flatMap(child -> findFirstMenuItem(child).stream())
                 .findFirst();
         }
+
+        private static boolean containsMenuItem(ScreenElementNode node, String screenElementCd) {
+            if (ScreenElementType.MENU_ITEM == node.typeCd()) {
+                return screenElementCd.equals(node.screenElementCd());
+            }
+            return node.children().stream()
+                .anyMatch(child -> containsMenuItem(child, screenElementCd));
+        }
     }
 
     public static class TreeBuilder {
@@ -117,14 +140,30 @@ public record MiCompanyDetailRes(
         private final List<ScreenElement> screenElements;
         private final Map<Integer, CustomerCompanyScreenElementMapping> mappingByScreenElementNo;
         private final Map<Integer, List<ScreenElement>> childrenByParentNo;
+        private final Predicate<ScreenElement> availabilityFilter;
 
         public TreeBuilder(List<ScreenElement> screenElements, List<CustomerCompanyScreenElementMapping> mappings) {
+            this(screenElements, mappings, screenElement -> true);
+        }
 
-            this.screenElements = screenElements.stream()
+        public TreeBuilder(List<ScreenElement> screenElements,
+            List<CustomerCompanyScreenElementMapping> mappings,
+            Predicate<ScreenElement> availabilityFilter) {
+
+            List<ScreenElement> safeScreenElements = screenElements == null ? List.of() : screenElements;
+            List<CustomerCompanyScreenElementMapping> safeMappings = mappings == null ? List.of() : mappings;
+
+            this.screenElements = safeScreenElements.stream()
+                .filter(Objects::nonNull)
                 .filter(se -> Boolean.TRUE.equals(se.getIsUsed()))
                 .toList();
 
-            this.mappingByScreenElementNo = mappings.stream()
+            this.availabilityFilter = availabilityFilter == null ? screenElement -> true : availabilityFilter;
+
+            this.mappingByScreenElementNo = safeMappings.stream()
+                .filter(Objects::nonNull)
+                .filter(m -> m.getScreenElement() != null)
+                .filter(m -> m.getScreenElement().getScreenElementNo() != null)
                 .collect(Collectors.toMap(
                     m -> m.getScreenElement().getScreenElementNo(),
                     Function.identity(),
@@ -132,6 +171,7 @@ public record MiCompanyDetailRes(
 
             this.childrenByParentNo = this.screenElements.stream()
                 .filter(se -> se.getUpperScreenElement() != null)
+                .filter(se -> se.getUpperScreenElement().getScreenElementNo() != null)
                 .collect(Collectors.groupingBy(se -> se.getUpperScreenElement().getScreenElementNo()));
 
         }
@@ -143,14 +183,14 @@ public record MiCompanyDetailRes(
                 .toList();
 
             List<ScreenElementNode> menus = roots.stream()
-                .filter(se -> se.getScreenElementTypeCd().isMenu())
+                .filter(se -> se.getScreenElementTypeCd() != null && se.getScreenElementTypeCd().isMenu())
                 .sorted(comparator())
                 .map(this::toNode)
                 .filter(Objects::nonNull)
                 .toList();
 
             List<ScreenElementNode> floating = roots.stream()
-                .filter(se -> se.getScreenElementTypeCd().isFloating())
+                .filter(se -> se.getScreenElementTypeCd() != null && se.getScreenElementTypeCd().isFloating())
                 .sorted(comparator())
                 .map(this::toNode)
                 .filter(Objects::nonNull)
@@ -162,6 +202,10 @@ public record MiCompanyDetailRes(
         private ScreenElementNode toNode(ScreenElement screenElement) {
 
             if (!resolveExposure(screenElement)) return null;
+            if (!availabilityFilter.test(screenElement)) return null;
+
+            ScreenElementType screenElementType = screenElement.getScreenElementTypeCd();
+            if (screenElementType == null) return null;
 
             List<ScreenElementNode> children = childrenByParentNo
                 .getOrDefault(screenElement.getScreenElementNo(), List.of())
@@ -171,9 +215,16 @@ public record MiCompanyDetailRes(
                 .filter(Objects::nonNull)
                 .toList();
 
+            // 하위 메뉴가 모두 제외된 메뉴 그룹/상위 메뉴는 빈 껍데기만 남지 않도록 제거한다.
+            if (screenElementType != ScreenElementType.MENU_ITEM
+                && screenElementType.isMenu()
+                && children.isEmpty()) {
+                return null;
+            }
+
             return ScreenElementNode.builder()
                 .screenElementCd(screenElement.getScreenElementCd())
-                .typeCd(screenElement.getScreenElementTypeCd())
+                .typeCd(screenElementType)
                 .children(children)
                 .build();
         }
