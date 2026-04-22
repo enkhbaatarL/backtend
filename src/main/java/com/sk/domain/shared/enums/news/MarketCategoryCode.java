@@ -5,6 +5,7 @@ import lombok.Getter;
 public enum MarketCategoryCode {
     CROIL("CROIL", "Crude Oil", "원유"),
     LNG("LNG", "Natural Gas", "천연가스"),
+    GAS("GAS", "Gas", "가스"),
     SCDT("SCDT", "Semiconductor", "반도체"),
     BTRY("BTRY", "EV Battery", "EV배터리");
 
