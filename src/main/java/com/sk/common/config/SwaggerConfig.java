@@ -20,7 +20,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Profile({"local", "tech", "dev", "prod"})
+@Profile({"local", "tech", "dev", "prod", "testdb"})
 @Configuration
 @RequiredArgsConstructor
 public class SwaggerConfig {
@@ -46,6 +46,7 @@ public class SwaggerConfig {
             .group("MI API")
             .displayName("MI 서비스 API")
             .pathsToMatch("/api/v1/mi/**")
+            .pathsToExclude("/api/v1/mi/scenario-workbench/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
@@ -70,6 +71,18 @@ public class SwaggerConfig {
             .group("TEST API - 테스트 용")
             .displayName("테스트 API")
             .pathsToMatch("/api/v1/test/**")
+            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+            .addOperationCustomizer(apiOrderOperationCustomizer)
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi scenarioWorkbenchApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+                                               @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
+        return GroupedOpenApi.builder()
+            .group("SK Gas Scenario Workbench API")
+            .displayName("SK Gas Scenario Workbench API")
+            .pathsToMatch("/api/v1/mi/scenario-workbench/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
