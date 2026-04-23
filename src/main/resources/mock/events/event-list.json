@@ -1,0 +1,203 @@
+{
+  "summaryNotice": {
+    "newEventCount": 4,
+    "updatedEventCount": 7
+  },
+  "events": [
+    {
+      "eventId": "ev_8f3a91c2b7d0",
+      "title": "미국/이스라엘 이란 공습 개시 (Operation Epic Fury)",
+      "eventStatus": "NEW",
+      "eventCategoryLv1": "GEOPOLITICAL_RISK",
+      "occurredAt": "2026-02-28T09:00:00",
+      "updatedAt": "2026-02-28T09:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "MEDIUM", "priceDirection": "UP" }
+      ]
+    },
+    {
+      "eventId": "ev_2901ac428093",
+      "title": "카타르 Ras Laffan 시설 가동 중단",
+      "eventStatus": "NEW",
+      "eventCategoryLv1": "INFRASTRUCTURE_FACILITY",
+      "occurredAt": "2026-02-27T14:30:00",
+      "updatedAt": "2026-02-28T08:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_c4d7e1f29a83",
+      "title": "한국 12월말 LNG 재고 5.0Mt, 계절 평균 상회",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "SUPPLY_DEMAND_BALANCE",
+      "occurredAt": "2026-02-26T09:30:00",
+      "updatedAt": "2026-02-28T06:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "MEDIUM", "priceDirection": "DOWN" },
+        { "indexName": "TTF", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_a1b2c3d4e5f6",
+      "title": "유럽 겨울 한파로 TTF 급등",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "WEATHER_CLIMATE",
+      "occurredAt": "2026-02-25T12:00:00",
+      "updatedAt": "2026-02-27T18:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_f6e5d4c3b2a1",
+      "title": "일본-한국 LNG 수요 경쟁 심화",
+      "eventStatus": "NEW",
+      "eventCategoryLv1": "SUPPLY_DEMAND_BALANCE",
+      "occurredAt": "2026-02-24T10:00:00",
+      "updatedAt": "2026-02-24T10:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_7b8c9d0e1f2a",
+      "title": "파나마 운하 통행 제한 연장 발표",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "LOGISTICS_SHIPPING",
+      "occurredAt": "2026-02-23T15:00:00",
+      "updatedAt": "2026-02-27T10:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_3d4e5f6a7b8c",
+      "title": "호주 North West Shelf 정기보수 일정 공시",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "INFRASTRUCTURE_FACILITY",
+      "occurredAt": "2026-02-22T08:00:00",
+      "updatedAt": "2026-02-26T14:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_9a0b1c2d3e4f",
+      "title": "미국 Freeport LNG 3호기 가동 재개",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "INFRASTRUCTURE_FACILITY",
+      "occurredAt": "2026-02-21T11:00:00",
+      "updatedAt": "2026-02-25T09:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "MEDIUM", "priceDirection": "DOWN" },
+        { "indexName": "TTF", "impactLevel": "MEDIUM", "priceDirection": "DOWN" },
+        { "indexName": "HH", "impactLevel": "HIGH", "priceDirection": "DOWN" }
+      ]
+    },
+    {
+      "eventId": "ev_5e6f7a8b9c0d",
+      "title": "EU 가스저장 의무 규정 90% → 95% 상향 법안 발의",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "MACROECONOMY_POLICY",
+      "occurredAt": "2026-02-20T16:00:00",
+      "updatedAt": "2026-02-24T12:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "TTF", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_1f2a3b4c5d6e",
+      "title": "중국 LNG 장기계약 3건 동시 체결 (연간 12Mt)",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "MARKET_TRADING_STRUCTURE",
+      "occurredAt": "2026-02-19T10:00:00",
+      "updatedAt": "2026-02-23T08:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "MEDIUM", "priceDirection": "UP" }
+      ]
+    },
+    {
+      "eventId": "ev_d0e1f2a3b4c5",
+      "title": "프랑스 원전 14기 동시 정비 진입",
+      "eventStatus": "CLOSED",
+      "eventCategoryLv1": "ENERGY_MIX_TRANSITION",
+      "occurredAt": "2026-02-18T09:00:00",
+      "updatedAt": "2026-02-22T18:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "TTF", "impactLevel": "HIGH", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_b5c6d7e8f9a0",
+      "title": "인도 GAIL 현물 입찰 대량 발행 (Spot Tender 5건)",
+      "eventStatus": "NEW",
+      "eventCategoryLv1": "SUPPLY_DEMAND_BALANCE",
+      "occurredAt": "2026-02-17T13:00:00",
+      "updatedAt": "2026-02-17T13:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "TTF", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    },
+    {
+      "eventId": "ev_a4b5c6d7e8f9",
+      "title": "LNG 해상 운임 Atlantic Basin 급등",
+      "eventStatus": "UPDATED",
+      "eventCategoryLv1": "LOGISTICS_SHIPPING",
+      "occurredAt": "2026-02-16T10:00:00",
+      "updatedAt": "2026-02-21T15:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "TTF", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "MEDIUM", "priceDirection": "UP" }
+      ]
+    },
+    {
+      "eventId": "ev_e8f9a0b1c2d3",
+      "title": "미 연준 금리 동결, 달러 약세 전환",
+      "eventStatus": "CLOSED",
+      "eventCategoryLv1": "MACROECONOMY_POLICY",
+      "occurredAt": "2026-02-15T04:00:00",
+      "updatedAt": "2026-02-20T10:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "TTF", "impactLevel": "LOW", "priceDirection": "FLAT" },
+        { "indexName": "HH", "impactLevel": "MEDIUM", "priceDirection": "UP" }
+      ]
+    },
+    {
+      "eventId": "ev_c2d3e4f5a6b7",
+      "title": "JKM-TTF 스프레드 역전, 아시아 프리미엄 소멸",
+      "eventStatus": "CLOSED",
+      "eventCategoryLv1": "MARKET_TRADING_STRUCTURE",
+      "occurredAt": "2026-02-14T09:00:00",
+      "updatedAt": "2026-02-19T12:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "impactLevel": "HIGH", "priceDirection": "DOWN" },
+        { "indexName": "TTF", "impactLevel": "MEDIUM", "priceDirection": "UP" },
+        { "indexName": "HH", "impactLevel": "LOW", "priceDirection": "FLAT" }
+      ]
+    }
+  ]
+}
