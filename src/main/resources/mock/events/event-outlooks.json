@@ -1,0 +1,192 @@
+{
+  "ev_8f3a91c2b7d0": [
+    {
+      "publishedAt": "2026-02-28T09:00:00",
+      "institutionName": "Uniper",
+      "outlookSummary": "재고 부족 대응, Spot 물량 조기 확보"
+    },
+    {
+      "publishedAt": "2026-02-28T09:00:00",
+      "institutionName": "Engie",
+      "outlookSummary": "장기 계약 기반 안정 공급 조달 유지"
+    },
+    {
+      "publishedAt": "2026-02-27T09:00:00",
+      "institutionName": "Goldman Sachs",
+      "outlookSummary": "JKM $18~22 범위 단기 상방 전망, 호르무즈 리스크 프리미엄 $3~5 반영"
+    },
+    {
+      "publishedAt": "2026-02-27T09:00:00",
+      "institutionName": "IEA",
+      "outlookSummary": "글로벌 LNG 공급 타이트닝 경고, 아시아 재고 수준 모니터링 강화 권고"
+    },
+    {
+      "publishedAt": "2026-02-26T09:00:00",
+      "institutionName": "Wood Mackenzie",
+      "outlookSummary": "카타르 공급 차질 시 아시아 LNG 현물 $20 돌파 가능성 제시"
+    }
+  ],
+  "ev_2901ac428093": [
+    {
+      "publishedAt": "2026-02-28T08:00:00",
+      "institutionName": "Shell",
+      "outlookSummary": "카타르 대체 물량 확보를 위한 호주 NWS 증산 가능성 타진"
+    },
+    {
+      "publishedAt": "2026-02-27T16:00:00",
+      "institutionName": "Morgan Stanley",
+      "outlookSummary": "JKM $20~25 단기 목표가 상향, Ras Laffan 가동 중단 2주 이상 지속 시 추가 상방"
+    },
+    {
+      "publishedAt": "2026-02-27T10:00:00",
+      "institutionName": "KOGAS",
+      "outlookSummary": "비상 재고 운용 및 대체 공급선 확보 착수"
+    }
+  ],
+  "ev_c4d7e1f29a83": [
+    {
+      "publishedAt": "2026-02-26T10:00:00",
+      "institutionName": "KOGAS",
+      "outlookSummary": "1~2월 현물 매입 축소, 장기계약 물량 중심 운영"
+    },
+    {
+      "publishedAt": "2026-02-25T09:00:00",
+      "institutionName": "Bernstein",
+      "outlookSummary": "한국 재고 상회는 JKM 단기 하방 요인이나 영향 제한적"
+    }
+  ],
+  "ev_a1b2c3d4e5f6": [
+    {
+      "publishedAt": "2026-02-27T09:00:00",
+      "institutionName": "Uniper",
+      "outlookSummary": "한파 장기화 대비 비상 가스 조달 계획 가동"
+    },
+    {
+      "publishedAt": "2026-02-26T14:00:00",
+      "institutionName": "IEA",
+      "outlookSummary": "유럽 재고 소진 가속화 경고, 2주 내 35% 이하 전망"
+    },
+    {
+      "publishedAt": "2026-02-26T09:00:00",
+      "institutionName": "Goldman Sachs",
+      "outlookSummary": "TTF 단기 €55~65 범위 전망, 한파 1주 추가 시 €70 상회 가능"
+    }
+  ],
+  "ev_f6e5d4c3b2a1": [
+    {
+      "publishedAt": "2026-02-24T12:00:00",
+      "institutionName": "JERA",
+      "outlookSummary": "원전 재가동 지연에 따른 가스 발전 비중 확대, 현물 조달 불가피"
+    },
+    {
+      "publishedAt": "2026-02-24T09:00:00",
+      "institutionName": "Citi",
+      "outlookSummary": "아시아 현물 경쟁 심화로 JKM 단기 $1~2 추가 상승 전망"
+    }
+  ],
+  "ev_7b8c9d0e1f2a": [
+    {
+      "publishedAt": "2026-02-27T10:00:00",
+      "institutionName": "Cheniere Energy",
+      "outlookSummary": "아시아향 cargo 희망봉 우회 비중 60%까지 확대, 운임 전가 불가피"
+    },
+    {
+      "publishedAt": "2026-02-26T09:00:00",
+      "institutionName": "Clarksons",
+      "outlookSummary": "LNG 용선료 2분기 +15% 상승 전망"
+    }
+  ],
+  "ev_3d4e5f6a7b8c": [
+    {
+      "publishedAt": "2026-02-26T09:00:00",
+      "institutionName": "Woodside Energy",
+      "outlookSummary": "Pluto/Wheatstone 자산 활용한 부분적 물량 보충 계획"
+    },
+    {
+      "publishedAt": "2026-02-25T09:00:00",
+      "institutionName": "Macquarie",
+      "outlookSummary": "4~5월 아시아 현물 타이트닝 전망, JKM +$1~1.5 상방 예상"
+    }
+  ],
+  "ev_9a0b1c2d3e4f": [
+    {
+      "publishedAt": "2026-02-25T10:00:00",
+      "institutionName": "EIA",
+      "outlookSummary": "미국 LNG 수출량 2월 기준 역대 최고 기록 전망"
+    },
+    {
+      "publishedAt": "2026-02-24T09:00:00",
+      "institutionName": "JP Morgan",
+      "outlookSummary": "Freeport 복귀로 JKM $0.5~1.0 단기 하방, 그러나 수급 타이트닝 속 효과 제한"
+    }
+  ],
+  "ev_5e6f7a8b9c0d": [
+    {
+      "publishedAt": "2026-02-24T14:00:00",
+      "institutionName": "IEA",
+      "outlookSummary": "법안 통과 시 여름 TTF 가격 €5~8 추가 상방 압력 전망"
+    },
+    {
+      "publishedAt": "2026-02-23T09:00:00",
+      "institutionName": "Barclays",
+      "outlookSummary": "EU 저장 규정 강화는 중기적으로 LNG 수입 수요 구조적 확대 요인"
+    }
+  ],
+  "ev_1f2a3b4c5d6e": [
+    {
+      "publishedAt": "2026-02-23T10:00:00",
+      "institutionName": "Wood Mackenzie",
+      "outlookSummary": "2030년 글로벌 LNG 미계약 물량 40Mt → 이번 계약으로 28Mt로 급감"
+    },
+    {
+      "publishedAt": "2026-02-22T09:00:00",
+      "institutionName": "Goldman Sachs",
+      "outlookSummary": "장기계약 가격 slope 0.13~0.15 수준, 향후 0.16 이상 상승 전망"
+    },
+    {
+      "publishedAt": "2026-02-21T14:00:00",
+      "institutionName": "Rystad Energy",
+      "outlookSummary": "중국 선점 전략으로 일본·한국 바이어 장기 계약 협상력 약화"
+    }
+  ],
+  "ev_d0e1f2a3b4c5": [
+    {
+      "publishedAt": "2026-02-22T09:00:00",
+      "institutionName": "RTE",
+      "outlookSummary": "원전 정비 기간 가스발전 가동률 상승, 전력 수급 안정적 유지 전망"
+    }
+  ],
+  "ev_b5c6d7e8f9a0": [
+    {
+      "publishedAt": "2026-02-17T15:00:00",
+      "institutionName": "ICIS",
+      "outlookSummary": "인도 현물 수요 확대 추세, 2026년 현물 비중 25% 전망"
+    }
+  ],
+  "ev_a4b5c6d7e8f9": [
+    {
+      "publishedAt": "2026-02-21T09:00:00",
+      "institutionName": "Spark Commodities",
+      "outlookSummary": "운임 강세 2분기까지 지속 전망, 신조선 인도 전 공급 제약 불가피"
+    }
+  ],
+  "ev_e8f9a0b1c2d3": [
+    {
+      "publishedAt": "2026-02-15T09:00:00",
+      "institutionName": "Goldman Sachs",
+      "outlookSummary": "달러 약세 전환으로 원자재 전반 소폭 지지, LNG 영향 미미"
+    }
+  ],
+  "ev_c2d3e4f5a6b7": [
+    {
+      "publishedAt": "2026-02-19T09:00:00",
+      "institutionName": "Citi",
+      "outlookSummary": "스프레드 정상화 확인, 아시아 프리미엄 $1~2 수준 유지 전망"
+    },
+    {
+      "publishedAt": "2026-02-15T09:00:00",
+      "institutionName": "Macquarie",
+      "outlookSummary": "스프레드 역전은 단기 현상, 아시아 수요 구조적 우위 유지"
+    }
+  ]
+}
