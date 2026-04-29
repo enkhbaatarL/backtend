@@ -2,25 +2,24 @@
   "ev_8f3a91c2b7d0": {
     "eventId": "ev_8f3a91c2b7d0",
     "title": "미국/이스라엘 이란 공습 개시 (Operation Epic Fury)",
-    "eventStatus": "NEW",
     "createdAt": "2026-02-28T09:00:00",
     "updatedAt": "2026-02-28T09:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "HIGH",
-          "priceDirection": "UP"
+          "impactLevel": "high", "impactLevelLabel": "높음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "HIGH",
-          "priceDirection": "UP"
+          "impactLevel": "high", "impactLevelLabel": "높음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "호르무즈 해협을 통과하는 글로벌 LNG 물량의 약 20%(연간 약 8,700만톤)가 직접적 차질 위험에 노출되어며, 특히 연간 8,200만톤 규모의 카타르 Ras Laffan 수출 인프라가 이란과 근접한 위치에 있어 물리적 타격보다 심각한 운영적 리스크에 포함되어 있습니다. 이는 단일 이벤트 기준으로 글로벌 LNG 공급의 역대급 비중이 동시다발적 risk exposure에 편입되는 구조로, 실제 생산 차질이 없더라도 재고 지표, 보험료 상승, 우회 운송 등을 통해 단기적 가격 상방 압력이 가능합니다.",
@@ -164,25 +163,24 @@
   "ev_2901ac428093": {
     "eventId": "ev_2901ac428093",
     "title": "카타르 Ras Laffan 시설 가동 중단",
-    "eventStatus": "NEW",
     "createdAt": "2026-02-27T14:30:00",
     "updatedAt": "2026-02-28T08:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "HIGH",
-          "priceDirection": "UP"
+          "impactLevel": "high", "impactLevelLabel": "높음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "HIGH",
-          "priceDirection": "UP"
+          "impactLevel": "high", "impactLevelLabel": "높음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         }
       ],
       "analysisText": "카타르 Ras Laffan은 연간 약 8,200만톤 규모의 LNG 액화 능력을 보유한 세계 최대 LNG 수출 허브입니다. 해당 시설의 가동 중단은 글로벌 LNG 공급의 약 17%에 해당하는 물량이 시장에서 이탈하는 것을 의미하며, 특히 아시아와 유럽의 장기계약 물량에 직접적 영향을 미칩니다. 카타르는 일본(14%), 한국(18%), 인도(30%), 유럽(25%) 등 주요 수입국의 핵심 공급원으로, 가동 중단 기간에 따라 글로벌 LNG 현물 시장의 구조적 타이트닝이 불가피합니다.",
@@ -296,25 +294,24 @@
   "ev_c4d7e1f29a83": {
     "eventId": "ev_c4d7e1f29a83",
     "title": "한국 12월말 LNG 재고 5.0Mt, 계절 평균 상회",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-26T09:30:00",
     "updatedAt": "2026-02-28T06:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "LOW",
-          "priceDirection": "DOWN"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bearish", "directionLabel": "하락"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "한국의 12월말 LNG 재고가 5.0Mt로 5년 계절 평균(4.2Mt)을 약 19% 상회하고 있습니다. 이는 KOGAS의 선제적 재고 확보 전략과 최근 현물 가격 하락 시점의 추가 매입에 기인합니다. 단기적으로 한국의 현물 매입 수요가 줄어들 수 있어 JKM에 소폭 하방 압력으로 작용할 수 있으나, 글로벌 수급 타이트닝 국면에서 영향은 제한적입니다.",
@@ -412,25 +409,24 @@
   "ev_a1b2c3d4e5f6": {
     "eventId": "ev_a1b2c3d4e5f6",
     "title": "유럽 겨울 한파로 TTF 급등",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-25T12:00:00",
     "updatedAt": "2026-02-27T18:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "HIGH",
-          "priceDirection": "UP"
+          "impactLevel": "high", "impactLevelLabel": "높음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         }
       ],
       "analysisText": "유럽 전역에 걸친 이례적 한파로 난방용 가스 수요가 급증하고 있으며, TTF 가격이 주간 기준 +18% 급등했습니다. 특히 독일, 프랑스, 폴란드 등 주요 소비국의 일간 가스 소비량이 5년 평균 대비 25~35% 상회하고 있어 재고 인출 속도가 크게 가속화되고 있습니다. 유럽 재고율은 이미 39.2%로 5년 평균(63%)을 크게 하회하고 있어, 한파 장기화 시 봄철 재고 충진 압박이 심화될 전망입니다.",
@@ -544,25 +540,24 @@
   "ev_f6e5d4c3b2a1": {
     "eventId": "ev_f6e5d4c3b2a1",
     "title": "일본-한국 LNG 수요 경쟁 심화",
-    "eventStatus": "NEW",
     "createdAt": "2026-02-24T10:00:00",
     "updatedAt": "2026-02-24T10:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "일본 JERA와 한국 KOGAS가 동시기 현물 입찰을 발행하면서 아시아 LNG 현물 시장에서 수요 경쟁이 심화되고 있습니다. 양국 합산 연간 수입량이 약 130Mt로 글로벌 LNG 교역의 약 27%를 차지하는 만큼, 동시 조달 시 현물 프리미엄 상승이 불가피합니다.",
@@ -653,25 +648,24 @@
   "ev_7b8c9d0e1f2a": {
     "eventId": "ev_7b8c9d0e1f2a",
     "title": "파나마 운하 통행 제한 연장 발표",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-23T15:00:00",
     "updatedAt": "2026-02-27T10:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         }
       ],
       "analysisText": "파나마운하청(ACP)이 가뭄 지속으로 일간 통행 허용 선박 수를 24척에서 18척으로 제한하는 조치를 6개월 연장 발표했습니다. 미국 걸프 LNG 수출의 아시아향 물량 중 약 40%가 파나마 운하를 경유하고 있어, 우회 항로(희망봉 경유) 전환 시 운송 기간이 약 10~15일 증가하며 실효 운임 상승이 불가피합니다.",
@@ -778,25 +772,24 @@
   "ev_3d4e5f6a7b8c": {
     "eventId": "ev_3d4e5f6a7b8c",
     "title": "호주 North West Shelf 정기보수 일정 공시",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-22T08:00:00",
     "updatedAt": "2026-02-26T14:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "Woodside Energy가 North West Shelf(NWS) LNG Train 2, 3의 4월 정기보수(약 6주) 일정을 공시했습니다. NWS는 연간 약 16.9Mt 생산 능력을 보유한 호주 최대 LNG 프로젝트로, 보수 기간 동안 약 3.5Mt 물량이 시장에서 이탈합니다. 아시아 수급이 타이트한 상황에서 추가적인 공급 감소 요인으로 작용합니다.",
@@ -887,25 +880,24 @@
   "ev_9a0b1c2d3e4f": {
     "eventId": "ev_9a0b1c2d3e4f",
     "title": "미국 Freeport LNG 3호기 가동 재개",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-21T11:00:00",
     "updatedAt": "2026-02-25T09:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "DOWN"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bearish", "directionLabel": "하락"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "DOWN"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bearish", "directionLabel": "하락"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         }
       ],
       "analysisText": "Freeport LNG의 3호 Train이 4개월간의 비정상 가동 중단 후 재개되었습니다. Freeport LNG는 연간 약 15Mt 생산 능력을 보유하고 있으며, 3호기(약 5Mt/년)의 복귀로 글로벌 LNG 공급 여력이 확대됩니다. 이는 아시아와 유럽 현물 시장에 소폭 하방 압력으로 작용하며, 반면 HH는 수출용 가스 수요 증가로 소폭 상방입니다.",
@@ -997,25 +989,24 @@
   "ev_5e6f7a8b9c0d": {
     "eventId": "ev_5e6f7a8b9c0d",
     "title": "EU 가스저장 의무 규정 90% → 95% 상향 법안 발의",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-20T16:00:00",
     "updatedAt": "2026-02-24T12:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         }
       ],
       "analysisText": "EU 집행위원회가 동절기 대비 가스저장 의무 비율을 현행 90%에서 95%로 상향하는 법안을 발의했습니다. 이 법안이 통과될 경우 여름 충진 시즌(4~10월)의 LNG 추가 조달 수요가 약 50~70 TWh(약 3.5~5 bcm) 증가할 것으로 추정됩니다.",
@@ -1113,25 +1104,24 @@
   "ev_1f2a3b4c5d6e": {
     "eventId": "ev_1f2a3b4c5d6e",
     "title": "중국 LNG 장기계약 3건 동시 체결 (연간 12Mt)",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-19T10:00:00",
     "updatedAt": "2026-02-23T08:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "HIGH",
-          "priceDirection": "UP"
+          "impactLevel": "high", "impactLevelLabel": "높음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         }
       ],
       "analysisText": "중국 CNOOC, Sinopec, PetroChina가 동시에 3건의 대규모 장기계약(총 연간 12Mt, 20년)을 체결했습니다. 이는 글로벌 LNG 장기계약 시장에서 중국의 선점 전략이 본격화되고 있음을 의미하며, 미계약 물량(uncontracted volume)의 급감으로 향후 아시아·유럽 바이어의 조달 경쟁이 심화될 전망입니다.",
@@ -1233,25 +1223,24 @@
   "ev_d0e1f2a3b4c5": {
     "eventId": "ev_d0e1f2a3b4c5",
     "title": "프랑스 원전 14기 동시 정비 진입",
-    "eventStatus": "CLOSED",
     "createdAt": "2026-02-18T09:00:00",
     "updatedAt": "2026-02-22T18:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "EDF가 프랑스 원전 56기 중 14기의 동시 정비 진입을 발표했습니다. 원전 가동률 저하로 가스발전 대체 수요가 증가하며 TTF에 상방 압력을 가합니다. 다만 정비 대부분이 계획된 일정이어서 시장 충격은 제한적이며, 이벤트는 CLOSED 상태로 전환되었습니다.",
@@ -1343,25 +1332,24 @@
   "ev_b5c6d7e8f9a0": {
     "eventId": "ev_b5c6d7e8f9a0",
     "title": "인도 GAIL 현물 입찰 대량 발행 (Spot Tender 5건)",
-    "eventStatus": "NEW",
     "createdAt": "2026-02-17T13:00:00",
     "updatedAt": "2026-02-17T13:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "MEDIUM",
-          "priceDirection": "UP"
+          "impactLevel": "medium", "impactLevelLabel": "중간",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "인도 GAIL이 3~4월 인도분 LNG 현물 입찰 5건(총 약 25만톤)을 동시 발행했습니다. 인도의 가스 수요는 산업용·비료용 중심으로 꾸준히 증가하고 있으며, 장기계약 외 현물 비중 확대가 아시아 현물 시장의 추가 수요 요인으로 작용합니다.",
@@ -1452,25 +1440,24 @@
   "ev_a4b5c6d7e8f9": {
     "eventId": "ev_a4b5c6d7e8f9",
     "title": "LNG 해상 운임 Atlantic Basin 급등",
-    "eventStatus": "UPDATED",
     "createdAt": "2026-02-16T10:00:00",
     "updatedAt": "2026-02-21T15:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "Atlantic Basin LNG 해상 운임이 전월 대비 20% 급등하며 $95,000/일을 기록했습니다. 파나마 운하 제한과 유럽 난방 수요 증가로 선박 수요가 집중되고 있으며, 운임 상승은 FOB-CIF 스프레드를 확대시켜 수입국 조달 비용을 높이는 효과가 있습니다.",
@@ -1561,25 +1548,24 @@
   "ev_e8f9a0b1c2d3": {
     "eventId": "ev_e8f9a0b1c2d3",
     "title": "미 연준 금리 동결, 달러 약세 전환",
-    "eventStatus": "CLOSED",
     "createdAt": "2026-02-15T04:00:00",
     "updatedAt": "2026-02-20T10:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "LOW",
-          "priceDirection": "FLAT"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "negligible", "directionLabel": "보합"
         }
       ],
       "analysisText": "미 연준(Fed)이 2월 FOMC에서 기준금리를 4.25~4.50%로 동결하며 시장 예상에 부합했습니다. 동결 후 달러 인덱스(DXY)가 소폭 하락하면서 원자재 가격에 간접적 지지 요인으로 작용하나, LNG 가격에 대한 직접적 영향은 제한적입니다. 이벤트는 시장 반영 완료로 CLOSED 처리되었습니다.",
@@ -1670,25 +1656,24 @@
   "ev_c2d3e4f5a6b7": {
     "eventId": "ev_c2d3e4f5a6b7",
     "title": "JKM-TTF 스프레드 역전, 아시아 프리미엄 소멸",
-    "eventStatus": "CLOSED",
     "createdAt": "2026-02-14T09:00:00",
     "updatedAt": "2026-02-19T12:00:00",
     "impactAnalysis": {
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "LOW",
-          "priceDirection": "DOWN"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bearish", "directionLabel": "하락"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "LOW",
-          "priceDirection": "UP"
+          "impactLevel": "low", "impactLevelLabel": "낮음",
+          "direction": "bullish", "directionLabel": "상승"
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "NONE",
-          "priceDirection": "NONE"
+          "impactLevel": null, "impactLevelLabel": null,
+          "direction": null, "directionLabel": null
         }
       ],
       "analysisText": "JKM-TTF 스프레드가 일시적으로 역전(JKM < TTF)되면서 아시아 프리미엄이 소멸되었습니다. 이는 유럽 한파로 TTF가 급등한 반면 아시아 수요가 상대적으로 안정적이었던 시기에 발생한 구조적 가격 역전입니다. 스프레드 역전 시 LNG cargo 흐름이 유럽으로 쏠리는 효과가 있으나, 이후 아시아 수요 회복과 함께 정상화되었습니다.",

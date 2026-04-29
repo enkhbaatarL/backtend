@@ -45,38 +45,33 @@ public class EventController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - page: 기본값 1 / 1-based
-             - size: 기본값 20
+             - eventStatus: 이벤트 상태 / 기본값 ALL / example - eventStatus=NEW, eventStatus=UPDATED
              - sort: 정렬 기준 / 기본값 LATEST(최신순) / example - sort=LATEST, sort=OLDEST
-             - eventStatus: 이벤트 상태 필터 (복수 가능) / example - eventStatus=NEW&eventStatus=UPDATED
              - eventCategoryLv1: 이벤트 유형 필터 (복수 가능) / example - eventCategoryLv1=GEOPOLITICAL_RISK&eventCategoryLv1=WEATHER_CLIMATE
              - period: 조회 기간 / 기본값 SIX_MONTHS / example - period=THREE_MONTHS, period=CUSTOM
              - startDate: 커스텀 조회 시작일 (period=CUSTOM 시 필수) / example - startDate=2025-09-01
              - endDate: 커스텀 조회 종료일 (period=CUSTOM 시 필수) / example - endDate=2026-02-28
              - keyword: 이벤트 제목 검색 키워드 / example - keyword=호르무즈
+             - page: 기본값 1 / 1-based
+             - size: 기본값 20
 
             <br><br>
-            ### summaryNotice 필드
-            - `summaryNotice`는 현재 조회 기간 내 신규/업데이트 이벤트 수를 요약한 알림 정보입니다.
-            - `newEventCount`: 신규 이벤트 수
-            - `updatedEventCount`: 업데이트된 이벤트 수
-
-            <br><br>
-            ### appliedFilter 필드
-            - `appliedFilter`는 현재 요청에 적용된 필터 조건을 그대로 반환합니다.
+            ### 이벤트 상태 (eventStatus)
+            - `ALL`: 전체 이벤트
+            - `NEW`: 신규 이벤트 (crt_dtm == mod_dtm, 생성 후 갱신 없음)
+            - `UPDATED`: 갱신 이벤트 (crt_dtm != mod_dtm, 1회 이상 갱신됨)
 
             <br><br>
             ### events.content 항목 필드
             - `eventId`: 이벤트 고유 식별자
             - `title`: 이벤트 제목
-            - `eventStatus`: 이벤트 상태 (NEW / UPDATED / CLOSED)
-            - `eventCategoryLv1`: 이벤트 유형 Lv1 (GEOPOLITICAL_RISK, WEATHER_CLIMATE, INFRASTRUCTURE_FACILITY, SUPPLY_DEMAND_BALANCE, LOGISTICS_SHIPPING, ENERGY_MIX_TRANSITION, MACROECONOMY_POLICY, MARKET_TRADING_STRUCTURE)
-            - `occurredAt`: 이벤트 발생/인지 시각
-            - `updatedAt`: 마지막 업데이트 시각
-            - `indexImpacts`: 인덱스별 영향도 (JKM, TTF, HH 각각의 impactLevel + priceDirection)
+            - `eventCategoryLv1`: 이벤트 유형 Lv1
+            - `createdAt`: 생성일시 (crt_dtm)
+            - `updatedAt`: 수정일시 (mod_dtm)
+            - `indexImpacts`: 인덱스별 영향도
             """
     )
-    @Parameter(name = "eventStatus", description = "이벤트 상태. 복수 선택 가능")
+    @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
     @Parameter(name = "eventCategoryLv1", description = "이벤트 유형 Lv1. 복수 선택 가능")
     @Parameter(name = "period", description = "조회 기간. 기본값 SIX_MONTHS")
     @Parameter(name = "startDate", description = "커스텀 조회 시작일. period=CUSTOM 시 사용")
@@ -100,28 +95,23 @@ public class EventController {
         summary = "Event 상세 조회 API",
         description = """
             Event 상세 페이지의 핵심 데이터를 조회합니다. <br>
-            `영향도 분석`, `AI Insights`, `Fundamental Deep-dive` 정보가 포함됩니다. <br>
-            (Records와 기관 전망은 별도 페이징 API를 사용합니다.)
+            `영향도 분석`, `AI Insights` 정보가 포함됩니다. <br>
+            (Records와 기관 전망은 별도 페이징 API를 사용함.) <br>
+            (Fundamental Deep-dive는 관련 테이블 미준비 상태로 현재 `null` 반환)
 
             <br><br>
             ### impactAnalysis 필드
             이벤트가 LNG 시장 주요 인덱스(JKM, TTF, Henry Hub)에 미치는 영향을 분석한 결과입니다.
             - `indexImpacts`: 인덱스별 영향도 요약 (indexName, impactLevel, priceDirection)
             - `analysisText`: AI가 생성한 영향도 분석 본문
-            - `categoryLv1` / `categoryLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 20종)
-            - `sources`: 분석에 사용된 출처 목록
+            - `categoryLv1` / `categoryLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
+            - `sources`: 분석에 사용된 출처(provider) 목록 (이벤트의 record들이 인용하는 NEWS/REPORT publisher명)
 
             <br><br>
             ### aiInsights 필드
             AI 에이전트가 생성한 이벤트 핵심 요약 및 상세 분석입니다.
-            - `keySummaries`: 핵심 요약 포인트 (3~5개 bullet)
+            - `keySummaries`: 핵심 요약 포인트
             - `detailedAnalysis`: 상세 분석 본문
-
-            <br><br>
-            ### fundamentalDeepdive 필드
-            이벤트 관련 시장 펀더멘탈 데이터와 Driver Tree Scoreboard입니다.
-            - `metrics`: 정량 지표 (metricName, currentValue, interpretation, source)
-            - `indicators`: 시장 시그널 지표 (indicatorName, currentValue, implication, source)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -131,7 +121,7 @@ public class EventController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<EventDetailRes> getEventDetail(
-        @Parameter(description = "이벤트 ID", example = "ev_8f3a91c2b7d0") @PathVariable String eventId
+        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId
     ) {
         return BaseResponseFactory.create(eventService.getEventDetail(eventId));
     }
@@ -144,7 +134,7 @@ public class EventController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - eventId: 이벤트 ID (Path) / example - ev_8f3a91c2b7d0
+             - eventId: 이벤트 ID (Path) / example - 1
              - page: 기본값 1 / 1-based
              - size: 기본값 10
 
@@ -163,7 +153,7 @@ public class EventController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<PaginationRes<EventRelatedRecordRes>> getEventRecords(
-        @Parameter(description = "이벤트 ID", example = "ev_8f3a91c2b7d0") @PathVariable String eventId,
+        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
         @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
@@ -178,7 +168,7 @@ public class EventController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - eventId: 이벤트 ID (Path) / example - ev_8f3a91c2b7d0
+             - eventId: 이벤트 ID (Path) / example - 1
              - page: 기본값 1 / 1-based
              - size: 기본값 10
 
@@ -196,7 +186,7 @@ public class EventController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
-        @Parameter(description = "이벤트 ID", example = "ev_8f3a91c2b7d0") @PathVariable String eventId,
+        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
         @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {

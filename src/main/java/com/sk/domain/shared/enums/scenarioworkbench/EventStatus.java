@@ -6,14 +6,18 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum EventStatus {
-    NEW("NEW", "신규"),
-    UPDATED("UPDATED", "갱신"),
-    CLOSED("CLOSED", "종료");
 
-    private final String code;
-    private final String description;
+    ALL("전체"),
+    NEW("신규"),
+    UPDATED("갱신");
 
-    public boolean isActive() {
-        return this == NEW || this == UPDATED;
+    private final String label;
+
+    public boolean isNew() {
+        return this == NEW;
+    }
+
+    public boolean isUpdated() {
+        return this == UPDATED;
     }
 }

@@ -1,11 +1,13 @@
 package com.sk.domain.shared.enums.scenarioworkbench;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
 public enum EventCategoryLv1 {
+
     GEOPOLITICAL_RISK("geopolitical_risk", "지정학적 리스크"),
     WEATHER_CLIMATE("weather_climate", "기상 / 기후"),
     INFRASTRUCTURE_FACILITY("infrastructure_facility", "인프라 / 설비"),
@@ -15,6 +17,20 @@ public enum EventCategoryLv1 {
     MACROECONOMY_POLICY("macroeconomy_policy", "거시경제 / 정책"),
     MARKET_TRADING_STRUCTURE("market_trading_structure", "시장 / 거래 구조");
 
+    @JsonValue
     private final String code;
-    private final String description;
+    private final String label;
+
+    public static EventCategoryLv1 fromCode(String code) {
+        if (code == null) {
+            return null;
+        }
+        for (EventCategoryLv1 category : values()) {
+            if (category.code.equalsIgnoreCase(code)) {
+                return category;
+            }
+        }
+        return null;
+    }
+
 }

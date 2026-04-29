@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
+import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -12,4 +13,12 @@ public record EventAiInsightsRes(
     String detailedAnalysis
 
 ) {
+
+    public static EventAiInsightsRes from(EventDetailRow row) {
+        return new EventAiInsightsRes(
+            row.keyBullets(),
+            row.detailAnalysis()
+        );
+    }
+
 }

@@ -80,8 +80,8 @@ public class SwaggerConfig {
     public GroupedOpenApi scenarioWorkbenchApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                                @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
-            .group("SK Gas Scenario Workbench API")
-            .displayName("SK Gas Scenario Workbench API")
+            .group("SK Gas API")
+            .displayName("SK Gas API")
             .pathsToMatch("/api/v1/mi/scenario-workbench/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)

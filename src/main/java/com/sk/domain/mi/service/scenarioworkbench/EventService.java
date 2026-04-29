@@ -11,9 +11,10 @@ public interface EventService {
 
     EventListRes getEvents(EventListReq request);
 
-    EventDetailRes getEventDetail(String eventId);
+    EventDetailRes getEventDetail(Long eventId);
 
-    PaginationRes<EventRelatedRecordRes> getEventRecords(String eventId, int page, int size);
+    PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size);
 
-    PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(String eventId, int page, int size);
+    PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size);
+
 }
