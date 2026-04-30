@@ -12,6 +12,6 @@ public interface CustomMiEventRepository {
 
     Page<EventListRow> getEventsByConditions(EventListReq request);
 
-    Optional<EventDetailRow> findEventDetail(Long eventId);
+    Optional<EventDetailRow> findEventDetail(String eventId);
 
 }

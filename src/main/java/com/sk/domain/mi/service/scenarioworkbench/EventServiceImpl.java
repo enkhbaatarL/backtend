@@ -38,21 +38,21 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventDetailRes getEventDetail(Long eventId) {
+    public EventDetailRes getEventDetail(String eventId) {
         return miEventRepository.findEventDetail(eventId)
             .map(EventDetailRes::from)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("event id: %d", eventId)));
     }
 
     @Override
-    public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
+    public PaginationRes<EventRelatedRecordRes> getEventRecords(String eventId, int page, int size) {
         return PaginationRes.toRes(
             miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size)).map(EventRelatedRecordRes::from)
         );
     }
 
     @Override
-    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
+    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(String eventId, int page, int size) {
         return PaginationRes.toRes(
             miEventRepository.findEventOutlooks(eventId, PageRequest.of(page - 1, size)).map(EventInstitutionOutlookRes::from)
         );

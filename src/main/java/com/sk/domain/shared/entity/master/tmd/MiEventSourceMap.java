@@ -29,9 +29,9 @@ public class MiEventSourceMap {
     @Comment("매핑 일련번호")
     private Integer mapId;
 
-    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
+    @Column(name = "mi_event_id", length = 32, nullable = false)
     @Comment("MI Event ID FK")
-    private Long miEventId;
+    private String miEventId;
 
     @Column(name = "mi_record_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Record ID FK")
@@ -42,7 +42,7 @@ public class MiEventSourceMap {
     private LocalDateTime createDt;
 
     @Builder
-    public MiEventSourceMap(Long miEventId, Integer miRecordId, LocalDateTime createDt) {
+    public MiEventSourceMap(String miEventId, Integer miRecordId, LocalDateTime createDt) {
         this.miEventId = miEventId;
         this.miRecordId = miRecordId;
         this.createDt = createDt;

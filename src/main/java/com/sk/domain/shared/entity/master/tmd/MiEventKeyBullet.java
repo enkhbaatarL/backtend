@@ -26,9 +26,9 @@ public class MiEventKeyBullet {
     @Comment("키 불릿 일련번호")
     private Integer bulletId;
 
-    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
+    @Column(name = "mi_event_id", length = 32, nullable = false)
     @Comment("MI Event ID FK")
-    private Long miEventId;
+    private String miEventId;
 
     @Column(name = "bullet_order", nullable = false, columnDefinition = "smallint unsigned")
     @Comment("표시 순서")
@@ -43,7 +43,7 @@ public class MiEventKeyBullet {
     private String categoryType;
 
     @Builder
-    public MiEventKeyBullet(Long miEventId, Integer bulletOrder, String bulletText, String categoryType) {
+    public MiEventKeyBullet(String miEventId, Integer bulletOrder, String bulletText, String categoryType) {
         this.miEventId = miEventId;
         this.bulletOrder = bulletOrder;
         this.bulletText = bulletText;

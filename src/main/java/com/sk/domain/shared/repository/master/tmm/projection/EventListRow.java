@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record EventListRow(
-    Long miEventId,
+    String miEventId,
     String eventTitleKo,
     String level1Code,
     LocalDateTime createDt,

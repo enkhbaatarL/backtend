@@ -121,7 +121,7 @@ public class EventController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<EventDetailRes> getEventDetail(
-        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId
+        @Parameter(description = "이벤트 ID", example = "ev_abc123def456") @PathVariable String eventId
     ) {
         return BaseResponseFactory.create(eventService.getEventDetail(eventId));
     }
@@ -153,7 +153,7 @@ public class EventController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<PaginationRes<EventRelatedRecordRes>> getEventRecords(
-        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
+        @Parameter(description = "이벤트 ID", example = "ev_abc123def456") @PathVariable String eventId,
         @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
@@ -186,7 +186,7 @@ public class EventController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
-        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
+        @Parameter(description = "이벤트 ID", example = "ev_abc123def456") @PathVariable String eventId,
         @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {

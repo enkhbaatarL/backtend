@@ -5,7 +5,7 @@ import java.util.List;
 
 // note: 이벤트 상세 화면 — 영향도 분석 + AI Insights 영역에 필요한 모든 데이터를 Repository에서 조립
 public record EventDetailRow(
-    Long miEventId,
+    String miEventId,
     String eventTitleKo,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
