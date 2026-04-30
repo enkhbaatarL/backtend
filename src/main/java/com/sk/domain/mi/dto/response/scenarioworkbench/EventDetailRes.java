@@ -4,6 +4,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record EventDetailRes(
 
@@ -26,7 +27,10 @@ public record EventDetailRes(
     EventAiInsightsRes aiInsights,
 
     @Schema(description = "Fundamental Deep-dive (테이블 미준비 상태이므로 현재는 null)")
-    EventFundamentalRes fundamentalDeepdive
+    EventFundamentalRes fundamentalDeepdive,
+
+    @Schema(description = "Driver Tree Scoreboard")
+    List<DriverTreeScoreboardRes> driverTreeScoreboard
 
 ) {
 
@@ -38,7 +42,8 @@ public record EventDetailRes(
             row.modifyDt(),
             EventImpactAnalysisRes.from(row),
             EventAiInsightsRes.from(row),
-            null
+            null,
+            row.driverTags().stream().map(DriverTreeScoreboardRes::from).toList()
         );
     }
 

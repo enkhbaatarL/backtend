@@ -53,7 +53,9 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
-        throw new UnsupportedOperationException("실 DB 연동 미구현. mock 프로파일을 사용하세요.");
+        return PaginationRes.toRes(
+            miEventRepository.findEventOutlooks(eventId, PageRequest.of(page - 1, size)).map(EventInstitutionOutlookRes::from)
+        );
     }
 
 }

@@ -10,6 +10,7 @@ import static com.sk.domain.shared.entity.master.tmd.QProvider.provider;
 import static com.sk.domain.shared.entity.master.tmm.QImpact.impact;
 import static com.sk.domain.shared.entity.master.tmm.QImpactResult.impactResult;
 import static com.sk.domain.shared.entity.master.tmm.QMiEvent.miEvent;
+import static com.sk.domain.shared.entity.master.tmm.QDriverTag.driverTag;
 import static com.sk.domain.shared.entity.master.tmm.QQualitativeImpact.qualitativeImpact;
 
 import java.time.LocalDateTime;
@@ -37,9 +38,11 @@ import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import com.sk.domain.shared.enums.scenarioworkbench.EventStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.IndexName;
 import com.sk.domain.shared.enums.scenarioworkbench.TargetType;
+import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QDriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QEventIndexImpactRow;
 
 import lombok.RequiredArgsConstructor;
@@ -170,6 +173,11 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         // 출처 조회
         List<String> sources = fetchEventProviderNames(event.getMiEventId());
 
+        // Driver Tree Scoreboard 조회
+        List<DriverTagScoreboardRow> driverTags = fetchDriverTags(event.getMiEventId());
+
+        // todo 연관 시나리오
+
         return Optional.of(new EventDetailRow(
             event.getMiEventId(),
             event.getEventTitleKo(),
@@ -181,7 +189,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             impactAnalysisText,
             indexImpacts,
             keyBullets,
-            sources
+            sources,
+            driverTags
         ));
     }
 
@@ -271,6 +280,34 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                     .and(provider.isDeleted.isFalse())
                     .and(provider.isUsed.isTrue()))
             .where(miEventSourceMap.miEventId.eq(eventId))
+            .fetch();
+    }
+
+    // note: Event -> Impact -> ImpactResult -> DriverTag 경로로 Driver Tree Scoreboard 데이터 조회
+    private List<DriverTagScoreboardRow> fetchDriverTags(Long eventId) {
+        return queryFactory
+            .select(new QDriverTagScoreboardRow(
+                driverTag.lv1Id,
+                driverTag.lv1Label,
+                driverTag.lv2Id,
+                driverTag.lv2Label,
+                driverTag.lv3Id,
+                driverTag.lv3Label,
+                driverTag.driverMagnitude,
+                driverTag.direction,
+                driverTag.driverReason
+            ))
+            .from(driverTag)
+            .innerJoin(impactResult)
+                .on(impactResult.impactResultId.eq(driverTag.impactResultId)
+                    .and(impactResult.isDeleted.isFalse()))
+            .innerJoin(impact)
+                .on(impact.impactId.eq(impactResult.impactId)
+                    .and(impact.isDeleted.isFalse()))
+            .where(
+                driverTag.isDeleted.isFalse(),
+                impact.miEventId.eq(eventId)
+            )
             .fetch();
     }
 

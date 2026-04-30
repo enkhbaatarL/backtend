@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
+import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
@@ -15,4 +16,13 @@ public record EventInstitutionOutlookRes(
     String outlookSummary
 
 ) {
+
+    public static EventInstitutionOutlookRes from(EventOutlookRow row) {
+        return new EventInstitutionOutlookRes(
+            row.getPublishedAt(),
+            row.getInstitutionName(),
+            row.getOutlookSummary()
+        );
+    }
+
 }

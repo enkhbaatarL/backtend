@@ -39,18 +39,24 @@ public class MiRecord extends BaseEntity {
     @Comment("데이터 유형 - NEWS, REPORT, EMAIL")
     private String recordType;
 
-    // note: tmd_nws_smry.nws_smry_id가 Long으로 매핑되어 있어 NEWS 경로 호환을 위해 Long 사용
     @Column(name = "source_obj_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("데이터 소스 ID (record_type별로 다른 원본 테이블의 PK)")
     private Long sourceObjId;
 
+    @Column(name = "ref_nm", length = 50)
+    @Comment("데이터 소스 출처이름")
+    private String refNm;
+
     @Builder
     public MiRecord(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer miRecordId, LocalDateTime firstCreated, String recordType, Long sourceObjId) {
+            Boolean isDeleted, Integer miRecordId, LocalDateTime firstCreated, String recordType, Long sourceObjId,
+            String refNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.miRecordId = miRecordId;
         this.firstCreated = firstCreated;
         this.recordType = recordType;
         this.sourceObjId = sourceObjId;
+        this.refNm = refNm;
     }
+
 }

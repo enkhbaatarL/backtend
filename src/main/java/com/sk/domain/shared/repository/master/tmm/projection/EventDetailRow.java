@@ -15,6 +15,7 @@ public record EventDetailRow(
     String impactAnalysisText,
     List<EventIndexImpactRow> indexImpacts,
     List<String> keyBullets,
-    List<String> sources
+    List<String> sources,
+    List<DriverTagScoreboardRow> driverTags
 ) {
 }
