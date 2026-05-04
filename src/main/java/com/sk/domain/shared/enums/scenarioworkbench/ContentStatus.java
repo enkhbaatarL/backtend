@@ -1,16 +1,19 @@
 package com.sk.domain.shared.enums.scenarioworkbench;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum EventStatus {
+public enum ContentStatus {
 
-    ALL("전체"),
-    NEW("신규"),
-    UPDATED("갱신");
+    ALL("ALL", "전체"),
+    NEW("NEW", "신규"),
+    UPDATED("UPDATED", "갱신");
 
+    @JsonValue
+    private final String code;
     private final String label;
 
     public boolean isNew() {
@@ -20,4 +23,5 @@ public enum EventStatus {
     public boolean isUpdated() {
         return this == UPDATED;
     }
+
 }

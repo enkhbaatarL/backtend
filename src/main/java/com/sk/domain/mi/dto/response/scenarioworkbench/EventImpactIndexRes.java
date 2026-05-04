@@ -6,7 +6,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Optional;
 
-public record ImpactIndexSummaryRes(
+public record EventImpactIndexRes(
 
     @Schema(description = "인덱스명", example = "JKM")
     String indexName,
@@ -25,11 +25,11 @@ public record ImpactIndexSummaryRes(
 
 ) {
 
-    public static ImpactIndexSummaryRes from(EventIndexImpactRow row) {
+    public static EventImpactIndexRes from(EventIndexImpactRow row) {
         MarketImpactLevel impactLevel = MarketImpactLevel.fromCode(row.magnitudeLevel());
         MarketDirection direction = MarketDirection.fromCode(row.direction());
 
-        return new ImpactIndexSummaryRes(
+        return new EventImpactIndexRes(
             row.targetId(),
             impactLevel,
             Optional.ofNullable(impactLevel).map(MarketImpactLevel::getLabel).orElse(null),

@@ -1,0 +1,1176 @@
+{
+  "1": {
+    "scenarioId": 1,
+    "scenarioName": "호르무즈 봉쇄 3개월+ 유지",
+    "tags": [
+      "장기봉쇄",
+      "수요파괴"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 21,
+              "to": 23
+            },
+            {
+              "from": 19,
+              "to": 20
+            },
+            {
+              "from": 19,
+              "to": 19
+            }
+          ],
+          "trendText": "3월 11일 호르무즈 해협이 완전히 봉쇄된 이후 이 상황이 3개월 이상 지속될 경우, 4~6월에는 급등 충격으로 인해 JKM 가격이 $21~23 수준까지 상승할 것으로 예상됩니다. 이후 7~9월에는 인도와 동남아 여름 중심으로 $20 이상 가격에 대한 수요 저항이 발생하면서 수요 피크가 나타나고, 동시에 미국의 증산 영향이 더해져 가격은 $19~20 수준으로 하향 안정화될 가능성이 있습니다.",
+          "trendSummary": "4~6월 $21~23 (급등 충격) → 7~9월 $19~20 (수요 피크+증산) → 4Q $18.5~19.5 (거래 반등)"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 21,
+              "to": 23
+            },
+            {
+              "from": 19,
+              "to": 20
+            },
+            {
+              "from": 19,
+              "to": 19
+            }
+          ],
+          "trendText": "유럽 TTF 시장은 호르무즈 봉쇄의 간접 영향을 받습니다. 카타르 LNG 물량 차질로 인한 아시아 수급 압박이 유럽 현물 시장으로 전이되며, 4~6월 TTF는 $19~21 수준으로 상승 후 파이프라인 공급 보완으로 하반기 $17~19 수준에서 안정화될 전망입니다.",
+          "trendSummary": "4~6월 $19~21 (아시아 전이) → 7~9월 $17~19 (파이프라인 보완) → 4Q $16~18 (계절 수요)"
+        },
+        {
+          "indexName": "Henry Hub",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 21,
+              "to": 23
+            },
+            {
+              "from": 10,
+              "to": 20
+            },
+            {
+              "from": 19,
+              "to": 19
+            }
+          ],
+          "trendText": "미국 Henry Hub는 호르무즈 봉쇄의 직접 영향이 제한적이나, 미국 LNG 수출 증가에 따른 국내 공급 감소 효과가 반영됩니다. 수출 프리미엄 확대로 HH는 $4.5~5.5 수준으로 소폭 상승 후 셰일 증산 대응으로 $4.0~4.5에서 안정화됩니다.",
+          "trendSummary": "4~6월 $4.5~5.5 (수출 프리미엄) → 7~9월 $4.0~4.5 (증산) → 4Q $4.2~4.8 (난방 수요)"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              21.0,
+              19.5,
+              18.5,
+              18.0,
+              17.5,
+              17.0,
+              16.5,
+              16.0,
+              15.5,
+              15.0,
+              14.8,
+              14.5,
+              14.2,
+              14.0,
+              13.8,
+              13.5,
+              13.2,
+              13.0,
+              12.8
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              19.0,
+              17.5,
+              16.5,
+              16.0,
+              15.5,
+              15.0,
+              14.5,
+              14.0,
+              13.8,
+              13.5,
+              13.2,
+              13.0,
+              12.8,
+              12.5,
+              12.2,
+              12.0,
+              11.8,
+              11.5,
+              11.2
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              4.5,
+              4.2,
+              4.0,
+              4.0,
+              3.8,
+              3.8,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "갈등 기간",
+        "value": "6개월 이상",
+        "supportingText": null,
+        "direction": null
+      },
+      {
+        "label": "피해 수준",
+        "value": "대규모 인프라 파괴",
+        "supportingText": null,
+        "direction": null
+      },
+      {
+        "label": "복구 전망",
+        "value": "3~5년 예상",
+        "supportingText": "완전 복구 기준",
+        "direction": null
+      },
+      {
+        "label": "LNG 수출 영향",
+        "value": "20 MTPA+ (25%+)",
+        "supportingText": null,
+        "direction": "down"
+      },
+      {
+        "label": "보험료 상승",
+        "value": "300%+ 급등",
+        "supportingText": "전쟁 리스크 프리미엄 반영",
+        "direction": "up"
+      },
+      {
+        "label": "우회 운송",
+        "value": "희망봉 경유 +15일",
+        "supportingText": "운송비 $2~3/MMBtu 추가",
+        "direction": "up"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "3/11 호르무즈 완전 봉쇄 + 150+ 선박 대기",
+        "currentStatusSummary": "물리적 통항 차단 지속",
+        "marketImpactInterpretation": "LNG 및 원유 공급 병목 현실화 → 가격 상방 압력",
+        "observationTrigger": "대기 선박 증가 여부 / 실물 운송 재개 여부",
+        "sources": [
+          "MarineTraffic",
+          "Reuters"
+        ]
+      },
+      {
+        "keyEvent": "3/11 호르무즈 완전 봉쇄 + 150+ 선박 대기",
+        "currentStatusSummary": "물리적 통항 차단 지속",
+        "marketImpactInterpretation": "LNG 및 원유 공급 병목 현실화 → 가격 상방 압력",
+        "observationTrigger": "대기 선박 증가 여부 / 실물 운송 재개 여부",
+        "sources": [
+          "MarineTraffic",
+          "Reuters"
+        ]
+      },
+      {
+        "keyEvent": "카타르 Ras Laffan 수출 중단 선언",
+        "currentStatusSummary": "Force Majeure 발동",
+        "marketImpactInterpretation": "글로벌 LNG 공급 20% 차질 → JKM 급등 트리거",
+        "observationTrigger": "카타르 정부 공식 발표 / QatarEnergy 성명",
+        "sources": [
+          "Platts",
+          "Bloomberg"
+        ]
+      },
+      {
+        "keyEvent": "이란 혁명수비대 해상 기뢰 부설 확인",
+        "currentStatusSummary": "기뢰 제거 작전 진행 중",
+        "marketImpactInterpretation": "해상 보험료 급등 → 실질 운송비 상승",
+        "observationTrigger": "기뢰 제거 완료 여부 / 추가 부설 여부",
+        "sources": [
+          "Lloyd's List",
+          "Reuters"
+        ]
+      },
+      {
+        "keyEvent": "미 제5함대 호르무즈 해역 증강 배치",
+        "currentStatusSummary": "항공모함 전단 2개 배치",
+        "marketImpactInterpretation": "군사 긴장 → 보험 리스크 지속",
+        "observationTrigger": "교전 발생 여부 / 외교 채널 활성화",
+        "sources": [
+          "US CENTCOM",
+          "AP"
+        ]
+      },
+      {
+        "keyEvent": "인도·파키스탄 LNG 긴급 입찰 발행",
+        "currentStatusSummary": "스팟 입찰 3건 동시 발행",
+        "marketImpactInterpretation": "아시아 스팟 수요 급증 → JKM 추가 상방",
+        "observationTrigger": "낙찰 가격 / 추가 입찰 발행 여부",
+        "sources": [
+          "ICIS",
+          "Argus"
+        ]
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 1,
+        "eventName": "미국/이스라엘 이란 공습 개시 (Operation Epic Fury)",
+        "eventCategoryLv1": "geopolitical_risk",
+        "eventCategoryLv1Label": "지정학적 리스크",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "impactLevel": "high",
+            "impactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "TTF",
+            "impactLevel": "high",
+            "impactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "HH",
+            "impactLevel": "high",
+            "impactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          }
+        ],
+        "createdAt": "2026-03-01T09:00:00",
+        "updatedAt": "2026-03-01T09:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 1,
+          "scenarioName": "호르무즈 봉쇄 3개월+ 유지",
+          "baseCase": true,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            }
+          ],
+          "probability": 0.325
+        }
+      ]
+    },
+    "status": "NEW",
+    "statusLabel": "신규"
+  },
+  "2": {
+    "scenarioId": 2,
+    "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+    "tags": [
+      "EU재충전",
+      "카고경쟁"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 14,
+              "to": 16
+            },
+            {
+              "from": 13,
+              "to": 15
+            },
+            {
+              "from": 12,
+              "to": 12
+            }
+          ],
+          "trendText": "EU의 가스 저장시설 재충전 의무화 정책에 따라 2분기부터 대규모 LNG 카고 흡수가 시작됩니다. 유럽행 카고 증가로 아시아 도달 물량이 감소하며, JKM은 $14~16까지 상승 후 3분기 아시아 자체 수요 피크와 맞물려 $13~15에서 유지됩니다.",
+          "trendSummary": "2Q $14~16 (EU 흡수) → 3Q $13~15 (아시아 피크) → 4Q $12~13 (계절 완화)"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 15,
+              "to": 18
+            },
+            {
+              "from": 14,
+              "to": 16
+            },
+            {
+              "from": 13,
+              "to": 13
+            }
+          ],
+          "trendText": "EU 재충전 의무 이행을 위한 대규모 구매가 TTF를 직접 끌어올립니다. 2분기 $15~18로 급등 후, 저장률 목표 달성에 따라 3분기 $14~16, 4분기 $13~14로 점진적 하락합니다.",
+          "trendSummary": "2Q $15~18 (재충전 피크) → 3Q $14~16 (목표 근접) → 4Q $13~14 (안정화)"
+        },
+        {
+          "indexName": "Henry Hub",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 3.8,
+              "to": 4.2
+            },
+            {
+              "from": 3.5,
+              "to": 4.0
+            },
+            {
+              "from": 3.5,
+              "to": 3.5
+            }
+          ],
+          "trendText": "미국 LNG 수출 증가로 HH에 소폭 상방 압력이 있으나, 셰일가스 생산 탄력성으로 인해 영향이 제한됩니다. 연중 $3.5~4.2 범위에서 움직일 전망입니다.",
+          "trendSummary": "2Q $3.8~4.2 (수출 증가) → 3Q $3.5~4.0 (증산 대응) → 4Q $3.5~3.8 (안정)"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              14.0,
+              13.5,
+              12.5,
+              12.0,
+              11.8,
+              11.5,
+              11.2,
+              11.0,
+              10.8,
+              10.5,
+              10.2,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              15.5,
+              14.5,
+              13.5,
+              13.0,
+              12.8,
+              12.5,
+              12.2,
+              12.0,
+              11.8,
+              11.5,
+              11.2,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.8,
+              3.7,
+              3.6,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "EU 저장률 목표",
+        "value": "11월 1일까지 90%",
+        "supportingText": "EU 규정 2022/1032 기반",
+        "direction": null
+      },
+      {
+        "label": "현재 EU 저장률",
+        "value": "34% (3월 초 기준)",
+        "supportingText": "전년 동기 대비 -12%p",
+        "direction": "down"
+      },
+      {
+        "label": "필요 충전량",
+        "value": "약 56bcm",
+        "supportingText": "8개월간 월평균 7bcm",
+        "direction": "up"
+      },
+      {
+        "label": "러시아 PNG 공급",
+        "value": "전년 대비 -15%",
+        "supportingText": "TurkStream 유지보수 영향",
+        "direction": "down"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "EU 집행위 재충전 의무 강화 발표",
+        "currentStatusSummary": "90% 목표 재확인",
+        "marketImpactInterpretation": "의무 구매량 확정 → TTF 상방 지지",
+        "observationTrigger": "목표 상향 여부 / 벌금 규정 변경",
+        "sources": [
+          "EU Commission",
+          "Reuters"
+        ]
+      },
+      {
+        "keyEvent": "독일 SEFE 장기 LNG 계약 3건 체결",
+        "currentStatusSummary": "연간 5MTPA 확보",
+        "marketImpactInterpretation": "스팟 물량 감소 → 아시아 경쟁 심화",
+        "observationTrigger": "추가 계약 체결 / 가격 조건 공개",
+        "sources": [
+          "Argus",
+          "ICIS"
+        ]
+      },
+      {
+        "keyEvent": "TurkStream 유지보수 2주 연장",
+        "currentStatusSummary": "4월 중 추가 차단 예정",
+        "marketImpactInterpretation": "PNG 감소분 LNG 대체 수요 증가",
+        "observationTrigger": "유지보수 완료 시점 / 추가 연장 여부",
+        "sources": [
+          "Gazprom",
+          "Bloomberg"
+        ]
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 2,
+        "eventName": "카타르 Ras Laffan 시설 가동 중단",
+        "eventCategoryLv1": "infrastructure_facility",
+        "eventCategoryLv1Label": "인프라 / 설비",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "impactLevel": "medium",
+            "impactLevelLabel": "중간",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "TTF",
+            "impactLevel": "high",
+            "impactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "HH",
+            "impactLevel": "low",
+            "impactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "보합"
+          }
+        ],
+        "createdAt": "2026-02-15T14:00:00",
+        "updatedAt": "2026-02-15T14:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 2,
+          "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+          "baseCase": true,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.45
+        },
+        {
+          "scenarioId": 3,
+          "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "low",
+              "impactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.3
+        },
+        {
+          "scenarioId": 4,
+          "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "low",
+              "impactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.25
+        }
+      ]
+    },
+    "status": "NEW",
+    "statusLabel": "신규"
+  },
+  "3": {
+    "scenarioId": 3,
+    "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+    "tags": [
+      "수요분산",
+      "아시아안정"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 11,
+              "to": 12
+            },
+            {
+              "from": 10,
+              "to": 11
+            },
+            {
+              "from": 10,
+              "to": 10
+            }
+          ],
+          "trendText": "EU 재충전이 상반기에 분산 진행되면서 글로벌 LNG 카고 경쟁이 완화됩니다. 아시아 도달 물량 감소폭이 제한적이어서 JKM은 $11~12에서 소폭 상승 후 $10~11로 안정화됩니다.",
+          "trendSummary": "2Q $11~12 (소폭 상승) → 3Q $10~11 (안정) → 4Q $10~10.5 (안정)"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 13,
+              "to": 15
+            },
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 12,
+              "to": 12
+            }
+          ],
+          "trendText": "EU 재충전 수요가 존재하지만 분산 구매 전략으로 가격 급등이 억제됩니다. TTF는 $13~15에서 점진적 상승 후 저장률 목표 달성에 따라 하반기 하락합니다.",
+          "trendSummary": "2Q $13~15 (점진 상승) → 3Q $12~14 (목표 접근) → 4Q $12~13 (안정)"
+        },
+        {
+          "indexName": "Henry Hub",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 3.5,
+              "to": 3.8
+            },
+            {
+              "from": 3.5,
+              "to": 3.5
+            },
+            {
+              "from": 3.5,
+              "to": 3.5
+            }
+          ],
+          "trendText": "수요 분산 시나리오에서 미국 LNG 수출 변동폭이 크지 않아 HH에 미치는 영향은 미미합니다. 연중 $3.3~3.8 범위에서 안정적으로 유지됩니다.",
+          "trendSummary": "2Q $3.5~3.8 → 3Q $3.3~3.5 → 4Q $3.5~3.8"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              11.0,
+              10.5,
+              10.2,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              13.5,
+              13.0,
+              12.5,
+              12.0,
+              11.8,
+              11.5,
+              11.2,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "EU 구매 전략",
+        "value": "분산 구매 (월별 균등)",
+        "supportingText": "스팟 비중 30% 이하",
+        "direction": null
+      },
+      {
+        "label": "노르웨이 공급",
+        "value": "전년 수준 유지",
+        "supportingText": "Troll/Oseberg 정상 가동",
+        "direction": null
+      },
+      {
+        "label": "LNG 신규 공급",
+        "value": "Golden Pass T1 가동",
+        "supportingText": "2Q 말 커미셔닝 완료 예상",
+        "direction": "up"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "EU 월별 LNG 수입량 안정화",
+        "currentStatusSummary": "월 7~8MTPA 유지",
+        "marketImpactInterpretation": "수요 집중 없이 안정적 조달 → 가격 안정",
+        "observationTrigger": "월별 수입량 급증 여부 / 스팟 비중 변화",
+        "sources": [
+          "Eurostat",
+          "ICIS"
+        ]
+      },
+      {
+        "keyEvent": "Golden Pass LNG T1 첫 카고 출하",
+        "currentStatusSummary": "커미셔닝 진행 중",
+        "marketImpactInterpretation": "신규 공급 → 글로벌 수급 완화",
+        "observationTrigger": "커미셔닝 일정 / 첫 출하 시점",
+        "sources": [
+          "QatarEnergy",
+          "ExxonMobil"
+        ]
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 2,
+        "eventName": "카타르 Ras Laffan 시설 가동 중단",
+        "eventCategoryLv1": "infrastructure_facility",
+        "eventCategoryLv1Label": "인프라 / 설비",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "impactLevel": "medium",
+            "impactLevelLabel": "중간",
+            "direction": "negligible",
+            "directionLabel": "보합"
+          },
+          {
+            "indexName": "TTF",
+            "impactLevel": "high",
+            "impactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "HH",
+            "impactLevel": "low",
+            "impactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "보합"
+          }
+        ],
+        "createdAt": "2026-02-15T14:00:00",
+        "updatedAt": "2026-02-15T14:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 2,
+          "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.45
+        },
+        {
+          "scenarioId": 3,
+          "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+          "baseCase": true,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "high",
+              "impactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "low",
+              "impactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.3
+        },
+        {
+          "scenarioId": 4,
+          "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "impactLevel": "medium",
+              "impactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "impactLevel": "low",
+              "impactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.25
+        }
+      ]
+    },
+    "status": "NEW",
+    "statusLabel": "신규"
+  }
+}

@@ -32,10 +32,10 @@ public record DriverTreeScoreboardRes(
     @Schema(description = "영향도 수준 라벨", example = "높음")
     String impactLevelLabel,
 
-    @Schema(description = "방향", example = "bullish")
+    @Schema(description = "가격 방향", example = "bullish")
     MarketDirection direction,
 
-    @Schema(description = "방향 라벨", example = "상승")
+    @Schema(description = "가격 방향 라벨", example = "상승")
     String directionLabel,
 
     @Schema(description = "근거")

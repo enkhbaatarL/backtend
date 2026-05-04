@@ -64,7 +64,7 @@ public class EventController {
             <br><br>
             ### events.content 항목 필드
             - `eventId`: 이벤트 고유 식별자
-            - `title`: 이벤트 제목
+            - `eventName`: 이벤트명
             - `eventCategoryLv1`: 이벤트 유형 Lv1
             - `createdAt`: 생성일시 (crt_dtm)
             - `updatedAt`: 수정일시 (mod_dtm)
@@ -102,7 +102,7 @@ public class EventController {
             <br><br>
             ### impactAnalysis 필드
             이벤트가 LNG 시장 주요 인덱스(JKM, TTF, Henry Hub)에 미치는 영향을 분석한 결과입니다.
-            - `indexImpacts`: 인덱스별 영향도 요약 (indexName, impactLevel, priceDirection)
+            - `indexImpacts`: 인덱스별 영향도 요약 (indexName, impactLevel, direction)
             - `analysisText`: AI가 생성한 영향도 분석 본문
             - `categoryLv1` / `categoryLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
             - `sources`: 분석에 사용된 출처(provider) 목록 (이벤트의 record들이 인용하는 NEWS/REPORT publisher명)
