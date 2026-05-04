@@ -1,5 +1,5 @@
 {
-  "ev_8f3a91c2b7d0": [
+  "1": [
     {
       "publishedAt": "2026-02-28T09:00:00",
       "institutionName": "Uniper",
@@ -26,7 +26,7 @@
       "outlookSummary": "카타르 공급 차질 시 아시아 LNG 현물 $20 돌파 가능성 제시"
     }
   ],
-  "ev_2901ac428093": [
+  "2": [
     {
       "publishedAt": "2026-02-28T08:00:00",
       "institutionName": "Shell",
@@ -43,7 +43,7 @@
       "outlookSummary": "비상 재고 운용 및 대체 공급선 확보 착수"
     }
   ],
-  "ev_c4d7e1f29a83": [
+  "3": [
     {
       "publishedAt": "2026-02-26T10:00:00",
       "institutionName": "KOGAS",
@@ -55,7 +55,7 @@
       "outlookSummary": "한국 재고 상회는 JKM 단기 하방 요인이나 영향 제한적"
     }
   ],
-  "ev_a1b2c3d4e5f6": [
+  "4": [
     {
       "publishedAt": "2026-02-27T09:00:00",
       "institutionName": "Uniper",
@@ -72,7 +72,7 @@
       "outlookSummary": "TTF 단기 €55~65 범위 전망, 한파 1주 추가 시 €70 상회 가능"
     }
   ],
-  "ev_f6e5d4c3b2a1": [
+  "5": [
     {
       "publishedAt": "2026-02-24T12:00:00",
       "institutionName": "JERA",
@@ -84,7 +84,7 @@
       "outlookSummary": "아시아 현물 경쟁 심화로 JKM 단기 $1~2 추가 상승 전망"
     }
   ],
-  "ev_7b8c9d0e1f2a": [
+  "6": [
     {
       "publishedAt": "2026-02-27T10:00:00",
       "institutionName": "Cheniere Energy",
@@ -96,7 +96,7 @@
       "outlookSummary": "LNG 용선료 2분기 +15% 상승 전망"
     }
   ],
-  "ev_3d4e5f6a7b8c": [
+  "7": [
     {
       "publishedAt": "2026-02-26T09:00:00",
       "institutionName": "Woodside Energy",
@@ -108,7 +108,7 @@
       "outlookSummary": "4~5월 아시아 현물 타이트닝 전망, JKM +$1~1.5 상방 예상"
     }
   ],
-  "ev_9a0b1c2d3e4f": [
+  "8": [
     {
       "publishedAt": "2026-02-25T10:00:00",
       "institutionName": "EIA",
@@ -120,7 +120,7 @@
       "outlookSummary": "Freeport 복귀로 JKM $0.5~1.0 단기 하방, 그러나 수급 타이트닝 속 효과 제한"
     }
   ],
-  "ev_5e6f7a8b9c0d": [
+  "9": [
     {
       "publishedAt": "2026-02-24T14:00:00",
       "institutionName": "IEA",
@@ -132,7 +132,7 @@
       "outlookSummary": "EU 저장 규정 강화는 중기적으로 LNG 수입 수요 구조적 확대 요인"
     }
   ],
-  "ev_1f2a3b4c5d6e": [
+  "10": [
     {
       "publishedAt": "2026-02-23T10:00:00",
       "institutionName": "Wood Mackenzie",
@@ -149,35 +149,35 @@
       "outlookSummary": "중국 선점 전략으로 일본·한국 바이어 장기 계약 협상력 약화"
     }
   ],
-  "ev_d0e1f2a3b4c5": [
+  "11": [
     {
       "publishedAt": "2026-02-22T09:00:00",
       "institutionName": "RTE",
       "outlookSummary": "원전 정비 기간 가스발전 가동률 상승, 전력 수급 안정적 유지 전망"
     }
   ],
-  "ev_b5c6d7e8f9a0": [
+  "12": [
     {
       "publishedAt": "2026-02-17T15:00:00",
       "institutionName": "ICIS",
       "outlookSummary": "인도 현물 수요 확대 추세, 2026년 현물 비중 25% 전망"
     }
   ],
-  "ev_a4b5c6d7e8f9": [
+  "13": [
     {
       "publishedAt": "2026-02-21T09:00:00",
       "institutionName": "Spark Commodities",
       "outlookSummary": "운임 강세 2분기까지 지속 전망, 신조선 인도 전 공급 제약 불가피"
     }
   ],
-  "ev_e8f9a0b1c2d3": [
+  "14": [
     {
       "publishedAt": "2026-02-15T09:00:00",
       "institutionName": "Goldman Sachs",
       "outlookSummary": "달러 약세 전환으로 원자재 전반 소폭 지지, LNG 영향 미미"
     }
   ],
-  "ev_c2d3e4f5a6b7": [
+  "15": [
     {
       "publishedAt": "2026-02-19T09:00:00",
       "institutionName": "Citi",

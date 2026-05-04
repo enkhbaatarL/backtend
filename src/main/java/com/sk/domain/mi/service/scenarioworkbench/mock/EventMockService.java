@@ -82,7 +82,7 @@ public class EventMockService implements EventService {
     public EventListRes getEvents(EventListReq request) {
         List<EventListItemRes> filtered = eventList.stream()
             .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
-            .filter(e -> request.keyword().isEmpty() || e.title().contains(request.keyword()))
+            .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
             .toList();
 
         int total = filtered.size();

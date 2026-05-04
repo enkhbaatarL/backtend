@@ -1,0 +1,264 @@
+{
+  "scenarios": [
+    {
+      "scenarioId": 1,
+      "scenarioName": "호르무즈 봉쇄 3개월+ 유지",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.325,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 2,
+      "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.45,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 3,
+      "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 4,
+      "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
+      "createdAt": "2026-02-28T09:00:00",
+      "updatedAt": "2026-03-01T10:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.25,
+      "status": "UPDATED",
+      "statusLabel": "갱신"
+    },
+    {
+      "scenarioId": 5,
+      "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 6,
+      "scenarioName": "EU 카고 선회 — 아시아 도달 물량 제한",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.35,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 7,
+      "scenarioName": "미국 LNG 수출 규제 재논의",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 8,
+      "scenarioName": "Train 2-3 동시 조기 가동 — 오버서플라이",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "high",
+          "impactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.15,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 9,
+      "scenarioName": "KOGAS 스팟 매수 축소 — JKM 근월 약세",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.55,
+      "status": "NEW",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 10,
+      "scenarioName": "노르웨이·알제리 파이프라인 증산 — EU 내부 해소",
+      "createdAt": "2026-03-01T09:00:00",
+      "updatedAt": "2026-03-01T09:00:00",
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "impactLevel": "medium",
+          "impactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "impactLevel": "low",
+          "impactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "NEW",
+      "statusLabel": "신규"
+    }
+  ]
+}

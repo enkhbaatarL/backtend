@@ -1,9 +1,9 @@
 package com.sk.domain.mi.dto.request.scenarioworkbench;
 
+import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import com.sk.domain.shared.enums.scenarioworkbench.EventPeriod;
-import com.sk.domain.shared.enums.scenarioworkbench.EventSort;
-import com.sk.domain.shared.enums.scenarioworkbench.EventStatus;
+import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
@@ -13,8 +13,8 @@ import java.util.List;
 
 public record EventListReq(
 
-    @Schema(description = "이벤트 상태", implementation = EventStatus.class, defaultValue = "ALL")
-    EventStatus eventStatus,
+    @Schema(description = "이벤트 상태", implementation = ContentStatus.class, defaultValue = "ALL")
+    ContentStatus eventStatus,
 
     @ArraySchema(schema = @Schema(description = "이벤트 유형 Lv1", implementation = EventCategoryLv1.class))
     List<EventCategoryLv1> eventCategoryLv1,
@@ -28,8 +28,8 @@ public record EventListReq(
     @Schema(description = "커스텀 조회 종료일 (period=CUSTOM 시 사용)", example = "2026-02-28")
     LocalDate endDate,
 
-    @Schema(description = "정렬 기준", implementation = EventSort.class, defaultValue = "LATEST")
-    EventSort sort,
+    @Schema(description = "정렬 기준", implementation = SortOrder.class, defaultValue = "LATEST")
+    SortOrder sort,
 
     @Schema(description = "검색 키워드", example = "호르무즈")
     String keyword,
@@ -45,10 +45,10 @@ public record EventListReq(
 ) {
 
     public EventListReq {
-        eventStatus = eventStatus == null ? EventStatus.ALL : eventStatus;
+        eventStatus = eventStatus == null ? ContentStatus.ALL : eventStatus;
         eventCategoryLv1 = defaultList(eventCategoryLv1);
         period = period == null ? EventPeriod.SIX_MONTHS : period;
-        sort = sort == null ? EventSort.LATEST : sort;
+        sort = sort == null ? SortOrder.LATEST : sort;
         keyword = keyword == null ? "" : keyword;
         page = page == null ? 1 : page;
         size = size == null ? 20 : size;

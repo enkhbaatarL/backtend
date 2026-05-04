@@ -35,7 +35,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
 import com.sk.domain.shared.entity.master.tmm.MiEvent;
 import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
-import com.sk.domain.shared.enums.scenarioworkbench.EventStatus;
+import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.IndexName;
 import com.sk.domain.shared.enums.scenarioworkbench.TargetType;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
@@ -111,7 +111,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     // todo: 변경 가능성 있음. https://skmihq.slack.com/archives/C0AR16F8QQG/p1777365927701349
-    private void applyStatusFilter(BooleanBuilder where, EventStatus status) {
+    private void applyStatusFilter(BooleanBuilder where, ContentStatus status) {
         switch (status) {
             case NEW -> where.and(miEvent.createDt.eq(miEvent.modifyDt));
             case UPDATED -> where.and(miEvent.createDt.ne(miEvent.modifyDt));
