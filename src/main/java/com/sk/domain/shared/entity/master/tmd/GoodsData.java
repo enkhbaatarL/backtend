@@ -92,6 +92,10 @@ public class GoodsData extends BaseEntity {
     @Comment("발행일")
     private LocalDate publishedDate;
 
+    @Column(name = "gds_data_outlook", columnDefinition = "text")
+    @Comment("상품데이터전망")
+    private String gdsDataOutlook;
+
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,

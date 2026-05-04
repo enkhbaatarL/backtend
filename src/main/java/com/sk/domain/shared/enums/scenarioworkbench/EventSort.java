@@ -6,9 +6,15 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum EventSort {
+
     LATEST("LATEST", "최신순"),
     OLDEST("OLDEST", "오래된순");
 
     private final String code;
-    private final String description;
+    private final String label;
+
+    public boolean isAscending() {
+        return this == OLDEST;
+    }
+
 }

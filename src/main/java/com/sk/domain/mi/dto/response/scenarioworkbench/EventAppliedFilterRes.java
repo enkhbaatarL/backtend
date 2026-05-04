@@ -12,7 +12,7 @@ import java.util.List;
 public record EventAppliedFilterRes(
 
     @Schema(description = "이벤트 상태")
-    List<EventStatus> eventStatus,
+    EventStatus eventStatus,
 
     @Schema(description = "이벤트 유형 Lv1")
     List<EventCategoryLv1> eventCategoryLv1,

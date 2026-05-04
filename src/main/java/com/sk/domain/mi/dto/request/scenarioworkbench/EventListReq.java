@@ -13,8 +13,8 @@ import java.util.List;
 
 public record EventListReq(
 
-    @ArraySchema(schema = @Schema(description = "이벤트 상태", implementation = EventStatus.class))
-    List<EventStatus> eventStatus,
+    @Schema(description = "이벤트 상태", implementation = EventStatus.class, defaultValue = "ALL")
+    EventStatus eventStatus,
 
     @ArraySchema(schema = @Schema(description = "이벤트 유형 Lv1", implementation = EventCategoryLv1.class))
     List<EventCategoryLv1> eventCategoryLv1,
@@ -41,11 +41,11 @@ public record EventListReq(
     @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다")
     @Schema(description = "페이지당 항목 수", example = "20", defaultValue = "20")
     Integer size
+
 ) {
 
-    // 기본값 보정
     public EventListReq {
-        eventStatus = defaultList(eventStatus);
+        eventStatus = eventStatus == null ? EventStatus.ALL : eventStatus;
         eventCategoryLv1 = defaultList(eventCategoryLv1);
         period = period == null ? EventPeriod.SIX_MONTHS : period;
         sort = sort == null ? EventSort.LATEST : sort;

@@ -27,11 +27,10 @@ public class EventMockService implements EventService {
 
     private final ObjectMapper objectMapper;
 
-    private EventSummaryNoticeRes summaryNotice;
     private List<EventListItemRes> eventList;
-    private Map<String, EventDetailRes> eventDetailMap;
-    private Map<String, List<EventRelatedRecordRes>> eventRecordsMap;
-    private Map<String, List<EventInstitutionOutlookRes>> eventOutlooksMap;
+    private Map<Long, EventDetailRes> eventDetailMap;
+    private Map<Long, List<EventRelatedRecordRes>> eventRecordsMap;
+    private Map<Long, List<EventInstitutionOutlookRes>> eventOutlooksMap;
 
     @PostConstruct
     void init() {
@@ -44,7 +43,6 @@ public class EventMockService implements EventService {
                 eventList.size(), eventDetailMap.size(), eventRecordsMap.size(), eventOutlooksMap.size());
         } catch (IOException e) {
             log.error("[Mock] Failed to load event mock data", e);
-            summaryNotice = new EventSummaryNoticeRes(0, 0);
             eventList = Collections.emptyList();
             eventDetailMap = Collections.emptyMap();
             eventRecordsMap = Collections.emptyMap();
@@ -55,7 +53,6 @@ public class EventMockService implements EventService {
     private void loadEventList() throws IOException {
         try (InputStream is = new ClassPathResource("mock/events/event-list.json").getInputStream()) {
             JsonNode root = objectMapper.readTree(is);
-            summaryNotice = objectMapper.treeToValue(root.get("summaryNotice"), EventSummaryNoticeRes.class);
             eventList = objectMapper.treeToValue(
                 root.get("events"),
                 objectMapper.getTypeFactory().constructCollectionType(List.class, EventListItemRes.class)
@@ -84,7 +81,6 @@ public class EventMockService implements EventService {
     @Override
     public EventListRes getEvents(EventListReq request) {
         List<EventListItemRes> filtered = eventList.stream()
-            .filter(e -> request.eventStatus().isEmpty() || request.eventStatus().contains(e.eventStatus()))
             .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
             .filter(e -> request.keyword().isEmpty() || e.title().contains(request.keyword()))
             .toList();
@@ -104,11 +100,11 @@ public class EventMockService implements EventService {
             pageItems
         );
 
-        return new EventListRes(summaryNotice, EventAppliedFilterRes.from(request), pagination);
+        return new EventListRes(EventAppliedFilterRes.from(request), pagination);
     }
 
     @Override
-    public EventDetailRes getEventDetail(String eventId) {
+    public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRes detail = eventDetailMap.get(eventId);
         if (detail == null) {
             throw new IllegalArgumentException("Event not found: " + eventId);
@@ -117,13 +113,13 @@ public class EventMockService implements EventService {
     }
 
     @Override
-    public PaginationRes<EventRelatedRecordRes> getEventRecords(String eventId, int page, int size) {
+    public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         List<EventRelatedRecordRes> records = eventRecordsMap.getOrDefault(eventId, Collections.emptyList());
         return paginate(records, page, size);
     }
 
     @Override
-    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(String eventId, int page, int size) {
+    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
         List<EventInstitutionOutlookRes> outlooks = eventOutlooksMap.getOrDefault(eventId, Collections.emptyList());
         return paginate(outlooks, page, size);
     }

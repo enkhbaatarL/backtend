@@ -1,5 +1,6 @@
 package com.sk.domain.shared.enums.scenarioworkbench;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -36,7 +37,20 @@ public enum EventCategoryLv2 {
     TRANSACTION_HEDGING_COST_CHANGE("transaction_hedging_cost_change", "거래 / 헷징 비용 변동", EventCategoryLv1.MARKET_TRADING_STRUCTURE),
     INTER_INDEX_SPREAD_GAP("inter_index_spread_gap", "인덱스별 스프레드 Gap", EventCategoryLv1.MARKET_TRADING_STRUCTURE);
 
+    @JsonValue
     private final String code;
-    private final String description;
+    private final String label;
     private final EventCategoryLv1 parent;
+
+    public static EventCategoryLv2 fromCode(String code) {
+        if (code == null) {
+            return null;
+        }
+        for (EventCategoryLv2 category : values()) {
+            if (category.code.equalsIgnoreCase(code)) {
+                return category;
+            }
+        }
+        return null;
+    }
 }
