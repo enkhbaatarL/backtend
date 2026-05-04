@@ -24,11 +24,11 @@ public class MiEventKeyBullet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "bullet_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("키 불릿 일련번호")
-    private Integer bulletId;
+    private Long bulletId;
 
-    @Column(name = "mi_event_id", length = 32, nullable = false)
+    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Event ID FK")
-    private String miEventId;
+    private Long miEventId;
 
     @Column(name = "bullet_order", nullable = false, columnDefinition = "smallint unsigned")
     @Comment("표시 순서")
@@ -43,7 +43,7 @@ public class MiEventKeyBullet {
     private String categoryType;
 
     @Builder
-    public MiEventKeyBullet(String miEventId, Integer bulletOrder, String bulletText, String categoryType) {
+    public MiEventKeyBullet(Long miEventId, Integer bulletOrder, String bulletText, String categoryType) {
         this.miEventId = miEventId;
         this.bulletOrder = bulletOrder;
         this.bulletText = bulletText;

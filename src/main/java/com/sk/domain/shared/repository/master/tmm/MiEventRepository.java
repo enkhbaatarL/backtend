@@ -11,7 +11,7 @@ import com.sk.domain.shared.repository.master.tmm.custom.CustomMiEventRepository
 import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
 
-public interface MiEventRepository extends JpaRepository<MiEvent, String>, CustomMiEventRepository {
+public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomMiEventRepository {
 
     @Query(
         value = """
@@ -54,7 +54,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, String>, Custo
             """,
         nativeQuery = true
     )
-    Page<EventRecordRow> findEventRecords(@Param("eventId") String eventId, Pageable pageable);
+    Page<EventRecordRow> findEventRecords(@Param("eventId") Long eventId, Pageable pageable);
 
     @Query(
         value = """
@@ -87,6 +87,6 @@ public interface MiEventRepository extends JpaRepository<MiEvent, String>, Custo
             """,
         nativeQuery = true
     )
-    Page<EventOutlookRow> findEventOutlooks(@Param("eventId") String eventId, Pageable pageable);
+    Page<EventOutlookRow> findEventOutlooks(@Param("eventId") Long eventId, Pageable pageable);
 
 }

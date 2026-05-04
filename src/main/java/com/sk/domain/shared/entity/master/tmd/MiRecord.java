@@ -29,7 +29,7 @@ public class MiRecord extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "mi_record_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Record 일련번호")
-    private Integer miRecordId;
+    private Long miRecordId;
 
     @Column(name = "first_created", nullable = false)
     @Comment("Record 최초생성일시")
@@ -49,7 +49,7 @@ public class MiRecord extends BaseEntity {
 
     @Builder
     public MiRecord(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId,
-            Boolean isDeleted, Integer miRecordId, LocalDateTime firstCreated, String recordType, Long sourceObjId,
+            Boolean isDeleted, Long miRecordId, LocalDateTime firstCreated, String recordType, Long sourceObjId,
             String refNm) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.miRecordId = miRecordId;

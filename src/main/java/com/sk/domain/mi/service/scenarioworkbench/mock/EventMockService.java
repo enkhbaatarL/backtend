@@ -28,9 +28,9 @@ public class EventMockService implements EventService {
     private final ObjectMapper objectMapper;
 
     private List<EventListItemRes> eventList;
-    private Map<String, EventDetailRes> eventDetailMap;
-    private Map<String, List<EventRelatedRecordRes>> eventRecordsMap;
-    private Map<String, List<EventInstitutionOutlookRes>> eventOutlooksMap;
+    private Map<Long, EventDetailRes> eventDetailMap;
+    private Map<Long, List<EventRelatedRecordRes>> eventRecordsMap;
+    private Map<Long, List<EventInstitutionOutlookRes>> eventOutlooksMap;
 
     @PostConstruct
     void init() {
@@ -104,7 +104,7 @@ public class EventMockService implements EventService {
     }
 
     @Override
-    public EventDetailRes getEventDetail(String eventId) {
+    public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRes detail = eventDetailMap.get(eventId);
         if (detail == null) {
             throw new IllegalArgumentException("Event not found: " + eventId);
@@ -113,13 +113,13 @@ public class EventMockService implements EventService {
     }
 
     @Override
-    public PaginationRes<EventRelatedRecordRes> getEventRecords(String eventId, int page, int size) {
+    public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         List<EventRelatedRecordRes> records = eventRecordsMap.getOrDefault(eventId, Collections.emptyList());
         return paginate(records, page, size);
     }
 
     @Override
-    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(String eventId, int page, int size) {
+    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
         List<EventInstitutionOutlookRes> outlooks = eventOutlooksMap.getOrDefault(eventId, Collections.emptyList());
         return paginate(outlooks, page, size);
     }

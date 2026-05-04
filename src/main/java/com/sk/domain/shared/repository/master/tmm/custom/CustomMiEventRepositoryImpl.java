@@ -81,8 +81,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             return PageableExecutionUtils.getPage(List.of(), pageable, countQuery::fetchOne);
         }
 
-        List<String> eventIds = events.stream().map(MiEvent::getMiEventId).toList();
-        Map<String, List<EventIndexImpactRow>> impactsByEventId = fetchIndexImpactsGroupedByEventId(eventIds);
+        List<Long> eventIds = events.stream().map(MiEvent::getMiEventId).toList();
+        Map<Long, List<EventIndexImpactRow>> impactsByEventId = fetchIndexImpactsGroupedByEventId(eventIds);
 
         List<EventListRow> rows = events.stream()
             .map(e -> new EventListRow(
@@ -149,7 +149,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     @Override
-    public Optional<EventDetailRow> findEventDetail(String eventId) {
+    public Optional<EventDetailRow> findEventDetail(Long eventId) {
 
         MiEvent event = queryFactory
             .selectFrom(miEvent)
@@ -194,7 +194,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         ));
     }
 
-    private List<String> fetchKeyBullets(String eventId) {
+    private List<String> fetchKeyBullets(Long eventId) {
         return queryFactory
             .select(miEventKeyBullet.bulletText)
             .from(miEventKeyBullet)
@@ -204,7 +204,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     // note: tmm_impactresultm.impact_assessment_reason을 인덱스별(JKM -> TTF -> HH)로 조회하여 합산.
-    private String fetchImpactAnalysisText(String eventId) {
+    private String fetchImpactAnalysisText(Long eventId) {
 
         OrderSpecifier<Integer> indexOrder = new CaseBuilder()
             .when(impactResult.targetId.eq(IndexName.JKM.getCode())).then(1)
@@ -235,14 +235,14 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     // note: 이벤트의 출처(provider name) - record_type 분기 따라 두 경로
     //  - NEWS: tmd_mi_record -> tmd_nws_smry -> tmd_gdsm (gds_id) -> tmd_prvdm
     //  - 그 외: tmd_mi_record -> tmd_gdsdatam -> tmd_gdsm -> tmd_prvdm
-    private List<String> fetchEventProviderNames(String eventId) {
+    private List<String> fetchEventProviderNames(Long eventId) {
         Set<String> names = new LinkedHashSet<>();
         names.addAll(fetchNewsProviderNames(eventId));
         names.addAll(fetchNonNewsProviderNames(eventId));
         return new ArrayList<>(names);
     }
 
-    private List<String> fetchNewsProviderNames(String eventId) {
+    private List<String> fetchNewsProviderNames(Long eventId) {
         return queryFactory
             .select(provider.providerNm).distinct()
             .from(miEventSourceMap)
@@ -263,7 +263,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .fetch();
     }
 
-    private List<String> fetchNonNewsProviderNames(String eventId) {
+    private List<String> fetchNonNewsProviderNames(Long eventId) {
         return queryFactory
             .select(provider.providerNm).distinct()
             .from(miEventSourceMap)
@@ -284,7 +284,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     // note: Event -> Impact -> ImpactResult -> DriverTag 경로로 Driver Tree Scoreboard 데이터 조회
-    private List<DriverTagScoreboardRow> fetchDriverTags(String eventId) {
+    private List<DriverTagScoreboardRow> fetchDriverTags(Long eventId) {
         return queryFactory
             .select(new QDriverTagScoreboardRow(
                 driverTag.lv1Id,
@@ -311,7 +311,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .fetch();
     }
 
-    private Map<String, List<EventIndexImpactRow>> fetchIndexImpactsGroupedByEventId(List<String> eventIds) {
+    private Map<Long, List<EventIndexImpactRow>> fetchIndexImpactsGroupedByEventId(List<Long> eventIds) {
 
         List<EventIndexImpactRow> rows = queryFactory
             .select(new QEventIndexImpactRow(

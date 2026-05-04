@@ -27,22 +27,22 @@ public class MiEventSourceMap {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "map_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("매핑 일련번호")
-    private Integer mapId;
+    private Long mapId;
 
-    @Column(name = "mi_event_id", length = 32, nullable = false)
+    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Event ID FK")
-    private String miEventId;
+    private Long miEventId;
 
     @Column(name = "mi_record_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Record ID FK")
-    private Integer miRecordId;
+    private Long miRecordId;
 
     @Column(name = "crt_dtm", nullable = false)
     @Comment("생성일시")
     private LocalDateTime createDt;
 
     @Builder
-    public MiEventSourceMap(String miEventId, Integer miRecordId, LocalDateTime createDt) {
+    public MiEventSourceMap(Long miEventId, Long miRecordId, LocalDateTime createDt) {
         this.miEventId = miEventId;
         this.miRecordId = miRecordId;
         this.createDt = createDt;

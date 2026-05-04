@@ -9,8 +9,8 @@ import java.util.Optional;
 
 public record EventListItemRes(
 
-    @Schema(description = "이벤트 ID", example = "ev_abc123def456")
-    String eventId,
+    @Schema(description = "이벤트 ID", example = "1")
+    Long eventId,
 
     @Schema(description = "이벤트 제목", example = "호르무즈 해협 긴장 재확대")
     String title,

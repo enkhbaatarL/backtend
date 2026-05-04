@@ -33,16 +33,16 @@ public class Impact extends BaseEntity {
     @Comment("Impact ID")
     private String impactId;
 
-    @Column(name = "mi_event_id", length = 32, nullable = false)
+    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Event ID FK")
-    private String miEventId;
+    private Long miEventId;
 
     @Column(name = "updated_at")
     @Comment("업데이트 일시")
     private LocalDateTime updatedAt;
 
     @Builder
-    public Impact(String impactId, String miEventId, LocalDateTime updatedAt) {
+    public Impact(String impactId, Long miEventId, LocalDateTime updatedAt) {
         this.impactId = impactId;
         this.miEventId = miEventId;
         this.updatedAt = updatedAt;

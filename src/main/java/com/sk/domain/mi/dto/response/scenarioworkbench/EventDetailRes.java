@@ -8,8 +8,8 @@ import java.util.List;
 
 public record EventDetailRes(
 
-    @Schema(description = "이벤트 ID", example = "ev_abc123def456")
-    String eventId,
+    @Schema(description = "이벤트 ID", example = "1")
+    Long eventId,
 
     @Schema(description = "이벤트 제목")
     String title,

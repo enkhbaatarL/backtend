@@ -9,6 +9,8 @@ import com.sk.domain.shared.entity.base.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -25,9 +27,10 @@ import lombok.NoArgsConstructor;
 public class MiEvent extends BaseEntity {
 
     @Id
-    @Column(name = "mi_event_id", length = 32, nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("MI Event ID")
-    private String miEventId;
+    private Long miEventId;
 
     @Column(name = "first_created", nullable = false)
     @Comment("Event 최초생성일시")
@@ -90,7 +93,7 @@ public class MiEvent extends BaseEntity {
     private String statusTaxonomyVersion;
 
     @Builder
-    public MiEvent(String miEventId, LocalDateTime firstCreated, String eventTitleKo, String oneLineSummary,
+    public MiEvent(Long miEventId, LocalDateTime firstCreated, String eventTitleKo, String oneLineSummary,
             String detailAnalysis, String marketAndInstitutionView, String language,
             LocalDateTime occurredAt, BigDecimal probability, String dedupState,
             String level1Code, String level2Code, String taxonomyVersion,
