@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
 import com.sk.domain.mi.dto.response.scenarioworkbench.*;
-import com.sk.domain.mi.service.scenarioworkbench.ScenarioService;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,15 +14,13 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 @Slf4j
-@Service
-@Profile("mock")
+@Component
 @RequiredArgsConstructor
-public class ScenarioMockService implements ScenarioService {
+public class ScenarioMockService {
 
     private final ObjectMapper objectMapper;
 
@@ -60,7 +57,6 @@ public class ScenarioMockService implements ScenarioService {
         }
     }
 
-    @Override
     public ScenarioListRes getScenarios(ScenarioListReq request) {
         List<ScenarioListItemRes> filtered = scenarioList.stream()
             .filter(s -> request.keyword().isEmpty() || s.scenarioName().contains(request.keyword()))
@@ -84,7 +80,6 @@ public class ScenarioMockService implements ScenarioService {
         return new ScenarioListRes(ScenarioAppliedFilterRes.from(request), pagination);
     }
 
-    @Override
     public ScenarioDetailRes getScenarioDetail(Long scenarioId) {
         ScenarioDetailRes detail = scenarioDetailMap.get(scenarioId);
         if (detail == null) {
