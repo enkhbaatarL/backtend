@@ -37,6 +37,12 @@ public interface NewsletterUserRevisionDeltaHistoryRepository extends JpaReposit
         Long deltaNo
     );
 
+    Optional<NewsletterUserRevisionDeltaHistory> findByNewsletterUserRevisionAndRequestTypeAndDeltaNoAndIsDeletedFalse(
+        NewsletterUserRevision newsletterUserRevision,
+        RevisionSaveRequestType requestType,
+        Long deltaNo
+    );
+
     List<NewsletterUserRevisionDeltaHistory> findByNewsletterUserRevisionAndDeltaNoGreaterThanAndIsDeletedFalseOrderByDeltaNoAsc(
         NewsletterUserRevision newsletterUserRevision,
         Long deltaNo
@@ -44,6 +50,13 @@ public interface NewsletterUserRevisionDeltaHistoryRepository extends JpaReposit
 
     List<NewsletterUserRevisionDeltaHistory> findByNewsletterUserRevisionAndDeltaNoGreaterThanAndDeltaNoLessThanEqualAndIsDeletedFalseOrderByDeltaNoAsc(
         NewsletterUserRevision newsletterUserRevision,
+        Long fromDeltaNo,
+        Long toDeltaNo
+    );
+
+    List<NewsletterUserRevisionDeltaHistory> findByNewsletterUserRevisionAndRequestTypeAndDeltaNoGreaterThanAndDeltaNoLessThanEqualAndIsDeletedFalseOrderByDeltaNoAsc(
+        NewsletterUserRevision newsletterUserRevision,
+        RevisionSaveRequestType requestType,
         Long fromDeltaNo,
         Long toDeltaNo
     );
