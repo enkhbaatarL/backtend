@@ -219,14 +219,19 @@ public class MiNewsletterRevisionService {
         NewsletterUserRevision revision = getOwnedRevision(newsletterId, issueNo, revisionId, actorUser);
         NewsletterIssueOriginal issueOriginal = revision.getIssueOriginal();
 
-        revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndDeltaNoAndIsDeletedFalse(revision, seq)
+        revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndRequestTypeAndDeltaNoAndIsDeletedFalse(
+                revision,
+                RevisionSaveRequestType.SAVE,
+                seq
+            )
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "REVISION_NOT_FOUND"));
 
         ReplayContext replayContext = resolveReplayContextForSeq(issueOriginal, revision, seq);
 
         List<NewsletterUserRevisionDeltaHistory> histories =
-            revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndDeltaNoGreaterThanAndDeltaNoLessThanEqualAndIsDeletedFalseOrderByDeltaNoAsc(
+            revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndRequestTypeAndDeltaNoGreaterThanAndDeltaNoLessThanEqualAndIsDeletedFalseOrderByDeltaNoAsc(
                 revision,
+                RevisionSaveRequestType.SAVE,
                 replayContext.baseDeltaNo(),
                 seq
             );
@@ -639,7 +644,7 @@ public class MiNewsletterRevisionService {
 
         if (parent instanceof ObjectNode objectNode) {
             if (!objectNode.has(lastToken)) {
-                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "patch path not found: " + path);
+                return root;
             }
             objectNode.remove(lastToken);
             return root;

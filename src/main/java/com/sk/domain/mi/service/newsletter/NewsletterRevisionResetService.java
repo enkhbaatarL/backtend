@@ -25,8 +25,8 @@ public class NewsletterRevisionResetService {
             return new NewsletterRevisionResetResult(issueOriginal.getNewsletterIssueOriginalId(), 0, 0, 0);
         }
 
-        int deletedDeltaCount = revisionDeltaHistoryRepository.deleteByNewsletterUserRevisionIn(revisions);
         int deletedSnapshotCount = revisionSnapshotHistoryRepository.deleteByNewsletterUserRevisionIn(revisions);
+        int deletedDeltaCount = revisionDeltaHistoryRepository.deleteByNewsletterUserRevisionIn(revisions);
         int deletedRevisionCount = newsletterUserRevisionRepository.deleteByIssueOriginal(issueOriginal);
 
         return new NewsletterRevisionResetResult(
