@@ -59,3 +59,17 @@ springdoc:
 
 security:
   enabled: true
+
+mi:
+  scenario-workbench:
+    mock:
+      events:
+        api:
+          get-list: true
+          get-detail: true
+          get-records: true
+          get-outlooks: true
+      scenarios:
+        api:
+          get-list: true
+          get-detail: true

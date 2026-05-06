@@ -1,6 +1,5 @@
 package com.sk.domain.mi.service.scenarioworkbench;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@Profile("!mock")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
