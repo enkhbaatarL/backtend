@@ -30,7 +30,7 @@
           "directionLabel": "상승"
         }
       ],
-      "status": "NEW",
+      "status": "new",
       "statusLabel": "신규"
     },
     {
@@ -63,7 +63,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -96,7 +96,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -129,7 +129,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -162,7 +162,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "NEW",
+      "status": "new",
       "statusLabel": "신규"
     },
     {
@@ -195,7 +195,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -228,7 +228,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -261,7 +261,7 @@
           "directionLabel": "하락"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -294,7 +294,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -327,7 +327,7 @@
           "directionLabel": "상승"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -360,7 +360,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -393,7 +393,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "NEW",
+      "status": "new",
       "statusLabel": "신규"
     },
     {
@@ -426,7 +426,7 @@
           "directionLabel": "상승"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -459,7 +459,7 @@
           "directionLabel": "상승"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     },
     {
@@ -492,7 +492,7 @@
           "directionLabel": "보합"
         }
       ],
-      "status": "UPDATED",
+      "status": "updated",
       "statusLabel": "갱신"
     }
   ]

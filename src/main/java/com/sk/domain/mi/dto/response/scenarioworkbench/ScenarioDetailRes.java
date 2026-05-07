@@ -32,16 +32,19 @@ public record ScenarioDetailRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
-    @Schema(description = "시나리오 요약 (Tab 1)")
+    @Schema(description = "시나리오 요약")
     ScenarioSummaryRes summary,
 
-    @Schema(description = "시나리오 주요 가정 (Tab 2)")
+    @Schema(description = "시나리오 주요 가정")
     List<ScenarioAssumptionRes> assumptions,
 
-    @Schema(description = "Signpost 모니터링 현황 (Tab 3)")
+    @Schema(description = "Signpost 정의")
+    List<ScenarioSignpostDefinitionRes> signpostDefinitions,
+
+    @Schema(description = "Signpost 모니터링 현황")
     List<ScenarioSignpostRes> signposts,
 
-    @Schema(description = "관련 이벤트 및 시나리오 (Tab 4)")
+    @Schema(description = "관련 이벤트 및 시나리오")
     RelatedEventScenarioRes relatedEventScenario
 
 ) {

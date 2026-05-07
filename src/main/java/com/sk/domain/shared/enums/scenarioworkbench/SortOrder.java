@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SortOrder {
 
-    LATEST("LATEST", "최신순"),
-    OLDEST("OLDEST", "오래된순");
+    LATEST("latest", "최신순"),
+    OLDEST("oldest", "오래된순");
 
     @JsonValue
     private final String code;

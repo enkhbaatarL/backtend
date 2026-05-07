@@ -6,12 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
 import com.sk.domain.mi.dto.response.scenarioworkbench.*;
+import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
+import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -58,8 +63,21 @@ public class ScenarioMockService {
     }
 
     public ScenarioListRes getScenarios(ScenarioListReq request) {
+        LocalDateTime now = LocalDateTime.now();
+        Optional<LocalDateTime> periodStart = request.period().calcStartDateTime(now, request.startDate());
+        Optional<LocalDateTime> periodEnd = request.period().calcEndDateTime(request.endDate());
+
+        Comparator<ScenarioListItemRes> comparator = Comparator.comparing(ScenarioListItemRes::updatedAt);
+        if (request.sort() == SortOrder.LATEST) {
+            comparator = comparator.reversed();
+        }
+
         List<ScenarioListItemRes> filtered = scenarioList.stream()
+            .filter(s -> request.scenarioStatus() == ContentStatus.ALL || s.status() == request.scenarioStatus())
+            .filter(s -> periodStart.map(start -> !s.updatedAt().isBefore(start)).orElse(true))
+            .filter(s -> periodEnd.map(end -> s.updatedAt().isBefore(end)).orElse(true))
             .filter(s -> request.keyword().isEmpty() || s.scenarioName().contains(request.keyword()))
+            .sorted(comparator)
             .toList();
 
         int total = filtered.size();

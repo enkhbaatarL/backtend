@@ -243,7 +243,7 @@
         }
       ]
     },
-    "status": "NEW",
+    "status": "new",
     "statusLabel": "신규"
   },
   "2": {
@@ -462,7 +462,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "3": {
@@ -666,7 +666,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "4": {
@@ -885,7 +885,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "5": {
@@ -1087,7 +1087,7 @@
         }
       ]
     },
-    "status": "NEW",
+    "status": "new",
     "statusLabel": "신규"
   },
   "6": {
@@ -1304,7 +1304,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "7": {
@@ -1506,7 +1506,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "8": {
@@ -1709,7 +1709,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "9": {
@@ -1913,7 +1913,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "10": {
@@ -2130,7 +2130,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "11": {
@@ -2333,7 +2333,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "12": {
@@ -2535,7 +2535,7 @@
         }
       ]
     },
-    "status": "NEW",
+    "status": "new",
     "statusLabel": "신규"
   },
   "13": {
@@ -2737,7 +2737,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "14": {
@@ -2939,7 +2939,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   },
   "15": {
@@ -3142,7 +3142,7 @@
         }
       ]
     },
-    "status": "UPDATED",
+    "status": "updated",
     "statusLabel": "갱신"
   }
 }
