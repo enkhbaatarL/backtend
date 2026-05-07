@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ContentStatus {
 
-    ALL("ALL", "전체"),
-    NEW("NEW", "신규"),
-    UPDATED("UPDATED", "갱신");
+    ALL("all", "전체"),
+    NEW("new", "신규"),
+    UPDATED("updated", "갱신");
 
     @JsonValue
     private final String code;
