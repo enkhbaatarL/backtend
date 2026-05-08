@@ -11,11 +11,11 @@ public record ScenarioIndexOutlookRes(
     @Schema(description = "인덱스명", example = "JKM")
     String indexName,
 
-    @Schema(description = "영향도 수준", example = "high")
-    MarketImpactLevel impactLevel,
+    @Schema(description = "시장 영향도 수준", example = "high")
+    MarketImpactLevel marketImpactLevel,
 
-    @Schema(description = "영향도 수준 라벨", example = "높음")
-    String impactLevelLabel,
+    @Schema(description = "시장 영향도 수준 라벨", example = "높음")
+    String marketImpactLevelLabel,
 
     @Schema(description = "가격 방향", example = "bullish")
     MarketDirection direction,
