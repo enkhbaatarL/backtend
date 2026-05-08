@@ -3,8 +3,10 @@ package com.sk.domain.mi.service.scenarioworkbench.mock;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.dto.response.scenarioworkbench.*;
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
@@ -101,7 +103,8 @@ public class ScenarioMockService {
     public ScenarioDetailRes getScenarioDetail(Long scenarioId) {
         ScenarioDetailRes detail = scenarioDetailMap.get(scenarioId);
         if (detail == null) {
-            throw new IllegalArgumentException("Scenario not found: " + scenarioId);
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "Scenario not found: " + scenarioId);
         }
         return detail;
     }

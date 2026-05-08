@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "1. Scenario Workbench Event API", description = "Scenario Workbench Event API입니다.")
+@Tag(name = "2. Scenario Workbench Event API", description = "Scenario Workbench Event API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/scenario-workbench/events")

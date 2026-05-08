@@ -3,6 +3,8 @@ package com.sk.domain.mi.service.scenarioworkbench.mock;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
 import com.sk.domain.mi.dto.response.scenarioworkbench.*;
@@ -120,7 +122,8 @@ public class EventMockService {
     public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRes detail = eventDetailMap.get(eventId);
         if (detail == null) {
-            throw new IllegalArgumentException("Event not found: " + eventId);
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "Event not found: " + eventId);
         }
         return detail;
     }

@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.scenarioworkbench;
 
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
+import com.sk.domain.shared.enums.scenarioworkbench.EventSignalType;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -34,6 +35,12 @@ public record EventListItemRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
+    @Schema(description = "신호/소음 구분", example = "signal")
+    EventSignalType signalType,
+
+    @Schema(description = "신호/소음 라벨", example = "신호")
+    String signalTypeLabel,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventImpactIndexRes> indexImpacts
 
@@ -52,6 +59,8 @@ public record EventListItemRes(
             Optional.ofNullable(categoryLv1).map(EventCategoryLv1::getLabel).orElse(null),
             row.createDt(),
             row.modifyDt(),
+            null,
+            null,
             row.indexImpacts().stream().map(EventImpactIndexRes::from).toList()
         );
     }
