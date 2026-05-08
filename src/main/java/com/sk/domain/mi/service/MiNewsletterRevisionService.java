@@ -50,6 +50,10 @@ public class MiNewsletterRevisionService {
 
     private static final int ORIGINAL_SNAPSHOT_REVISION_NO = 0;
     private static final String NEWS_EVENT_SHOW_IN_CHART_FIELD = "showInChart";
+    private static final String REVISION_VERSION_CONFLICT = "REVISION_VERSION_CONFLICT";
+    private static final String REVISION_BASELINE_MISMATCH = "REVISION_BASELINE_MISMATCH";
+    private static final String STALE_EDITOR_STATE = "STALE_EDITOR_STATE";
+    private static final String PATCH_REPLAY_INVALID = "PATCH_REPLAY_INVALID";
 
     private final NewsletterIssueOriginalRepository newsletterIssueOriginalRepository;
     private final NewsletterUserRevisionRepository newsletterUserRevisionRepository;
@@ -312,8 +316,10 @@ public class MiNewsletterRevisionService {
 
         Long expectedRevisionNo = toLong(normalizedRequest.revisionNo());
         if (expectedRevisionNo != null && !expectedRevisionNo.equals(revision.getRevisionNo())) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "REVISION_VERSION_CONFLICT");
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, REVISION_VERSION_CONFLICT);
         }
+
+        validateSaveRequestPatchApplies(issueOriginal, revision, normalizedRequest);
 
         long nextRevisionNo = revision.getRevisionNo() + 1;
         long nextDeltaNo = revision.getDeltaNo() + 1;
@@ -353,7 +359,7 @@ public class MiNewsletterRevisionService {
                 now
             );
             if (updatedCount == 0) {
-                throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "REVISION_VERSION_CONFLICT");
+                throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, REVISION_VERSION_CONFLICT);
             }
         } else {
             revision.applySave(nextStatus, nextRevisionNo, nextDeltaNo, snapshotSaved,
@@ -396,6 +402,8 @@ public class MiNewsletterRevisionService {
         RevisionSaveRequestType requestType,
         LocalDateTime now
     ) {
+        validateSaveRequestPatchApplies(issueOriginal, null, request);
+
         long revisionNo = 1L;
         long deltaNo = 1L;
         RevisionEditStatusCode status = toEditStatus(requestType);
@@ -440,6 +448,79 @@ public class MiNewsletterRevisionService {
             requestType == RevisionSaveRequestType.DRAFT ? now : null,
             snapshotSaved ? Boolean.TRUE : null
         );
+    }
+
+    private void validateSaveRequestPatchApplies(
+        NewsletterIssueOriginal issueOriginal,
+        NewsletterUserRevision revision,
+        RevisionSaveReq request
+    ) {
+        JsonNode currentSavedContent = resolveCurrentSavedContentForSave(issueOriginal, revision);
+
+        try {
+            applyPatchOps(currentSavedContent, request.deltas());
+        } catch (AppErrorException ex) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                classifyRequestPatchError(ex) + ": " + resolvePatchErrorMessage(ex)
+            );
+        }
+    }
+
+    private JsonNode resolveCurrentSavedContentForSave(
+        NewsletterIssueOriginal issueOriginal,
+        NewsletterUserRevision revision
+    ) {
+        if (revision == null) {
+            return snapshotCanonicalizer.canonicalize(deepCopy(issueOriginal.getOriginalSnapshotJson()));
+        }
+
+        JsonNode snapshotContent;
+        Long baseDeltaNo;
+
+        if (revision.getSnapshotBaseType() == RevisionSnapshotBaseType.REVISION_SNAPSHOT && revision.getSnapshotNo() != null) {
+            NewsletterUserRevisionSnapshotHistory snapshot = revisionSnapshotHistoryRepository
+                .findByNewsletterUserRevisionAndSnapshotNoAndIsDeletedFalse(revision, revision.getSnapshotNo())
+                .orElseThrow(() -> AppErrorException.of(
+                    ResultCode.Error.BIZ_RULE_VIOLATION,
+                    REVISION_BASELINE_MISMATCH + ": REVISION_NOT_FOUND"
+                ));
+            snapshotContent = snapshotCanonicalizer.canonicalize(deepCopy(snapshot.getSnapshotJson()));
+            baseDeltaNo = snapshot.getBaseDeltaNo();
+        } else {
+            snapshotContent = snapshotCanonicalizer.canonicalize(deepCopy(issueOriginal.getOriginalSnapshotJson()));
+            baseDeltaNo = 0L;
+        }
+
+        List<NewsletterUserRevisionDeltaHistory> saveDeltaHistories =
+            revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndRequestTypeAndDeltaNoGreaterThanAndIsDeletedFalseOrderByDeltaNoAsc(
+                revision, RevisionSaveRequestType.SAVE, baseDeltaNo
+            );
+
+        try {
+            return snapshotCanonicalizer.canonicalize(
+                applyDeltaHistories(deepCopy(snapshotContent), saveDeltaHistories)
+            );
+        } catch (AppErrorException ex) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                REVISION_BASELINE_MISMATCH + ": " + resolvePatchErrorMessage(ex)
+            );
+        }
+    }
+
+    private String classifyRequestPatchError(AppErrorException ex) {
+        String message = resolvePatchErrorMessage(ex);
+        if (message.contains("patch path not found")
+            || message.contains("patch index out of range")
+            || message.contains("patch parent is not a container")) {
+            return STALE_EDITOR_STATE;
+        }
+        return PATCH_REPLAY_INVALID;
+    }
+
+    private String resolvePatchErrorMessage(AppErrorException ex) {
+        return StringUtils.defaultIfBlank(ex.getAdditionalMessage(), ex.getErrorCode().name());
     }
 
     private ReplayContext buildReplayContext(NewsletterIssueOriginal issueOriginal, NewsletterUserRevision revision) {
@@ -587,7 +668,10 @@ public class MiNewsletterRevisionService {
 
     private JsonNode applyDeltaHistories(JsonNode baseContent, List<NewsletterUserRevisionDeltaHistory> histories) {
         JsonNode current = baseContent;
-        for (NewsletterUserRevisionDeltaHistory history : histories) {
+        List<NewsletterUserRevisionDeltaHistory> safeHistories = histories == null
+            ? List.of()
+            : histories;
+        for (NewsletterUserRevisionDeltaHistory history : safeHistories) {
             current = applyPatchOps(current, toPatchOps(history.getDeltaJson()));
         }
         return current;
@@ -615,7 +699,11 @@ public class MiNewsletterRevisionService {
     }
 
     private JsonNode applyPatchOp(JsonNode source, JsonPatchOpReq patchOp) {
-        String op = patchOp.op().toLowerCase();
+        if (patchOp == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "patch op is required");
+        }
+
+        String op = StringUtils.defaultString(patchOp.op()).toLowerCase();
         return switch (op) {
             case "add" -> applyAdd(source, patchOp.path(), patchOp.value());
             case "replace" -> applyReplace(source, patchOp.path(), patchOp.value());
