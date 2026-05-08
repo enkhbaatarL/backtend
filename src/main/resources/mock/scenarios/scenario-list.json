@@ -8,18 +8,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "HH",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         }
       ],
       "probability": 0.325,
@@ -34,18 +34,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "HH",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         }
       ],
       "probability": 0.45,
@@ -60,18 +60,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         }
       ],
       "probability": 0.3,
@@ -86,18 +86,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         }
       ],
       "probability": 0.25,
@@ -112,18 +112,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         }
       ],
       "probability": 0.4,
@@ -138,18 +138,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "HH",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         }
       ],
       "probability": 0.35,
@@ -164,18 +164,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "HH",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         }
       ],
       "probability": 0.2,
@@ -190,18 +190,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "HH",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         }
       ],
       "probability": 0.15,
@@ -216,18 +216,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         }
       ],
       "probability": 0.55,
@@ -242,18 +242,18 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         }
       ],
       "probability": 0.3,

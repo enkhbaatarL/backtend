@@ -18,11 +18,11 @@ public record ScenarioSignpostDefinitionRes(
     @Schema(description = "방향 라벨", example = "상승")
     String directionLabel,
 
-    @Schema(description = "영향도", example = "strong")
-    SignpostImpactLevel impactLevel,
+    @Schema(description = "Signpost 영향도", example = "strong")
+    SignpostImpactLevel signpostImpactLevel,
 
-    @Schema(description = "영향도 라벨", example = "강함")
-    String impactLevelLabel,
+    @Schema(description = "Signpost 영향도 라벨", example = "강함")
+    String signpostImpactLevelLabel,
 
     @Schema(description = "핵심 근거")
     String rationale
