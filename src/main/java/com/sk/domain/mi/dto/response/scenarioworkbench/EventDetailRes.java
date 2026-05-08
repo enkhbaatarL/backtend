@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
+import com.sk.domain.shared.enums.scenarioworkbench.EventSignalType;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -26,6 +27,12 @@ public record EventDetailRes(
 
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
+
+    @Schema(description = "신호/소음 구분", example = "signal")
+    EventSignalType signalType,
+
+    @Schema(description = "신호/소음 라벨", example = "신호")
+    String signalTypeLabel,
 
     @Schema(description = "영향도 분석")
     EventImpactAnalysisRes impactAnalysis,
@@ -65,6 +72,8 @@ public record EventDetailRes(
             status.getLabel(),
             row.createDt(),
             row.modifyDt(),
+            null,
+            null,
             impactAnalysis,
             EventAiInsightsRes.from(row),
             null,

@@ -73,3 +73,8 @@ mi:
         api:
           get-list: true
           get-detail: true
+      overview:
+        api:
+          get-events: true
+          get-scenarios: true
+          get-price-forecasts: true

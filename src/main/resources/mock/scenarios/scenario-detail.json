@@ -1260,5 +1260,2626 @@
     },
     "status": "new",
     "statusLabel": "신규"
+  },
+  "4": {
+    "scenarioId": 4,
+    "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
+    "tags": [
+      "EU절약",
+      "수요억제"
+    ],
+    "createdAt": "2026-02-28T09:00:00",
+    "updatedAt": "2026-03-01T10:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              10.5,
+              10.0,
+              9.8,
+              9.5,
+              9.3,
+              9.0,
+              9.0,
+              8.8,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              11.0,
+              10.5,
+              10.0,
+              9.8,
+              9.5,
+              9.3,
+              9.0,
+              9.0,
+              8.8,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.5,
+              3.3,
+              3.2,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "EU 난방 온도 제한",
+        "value": "19°C → 17°C"
+      },
+      {
+        "label": "가스 절약 목표",
+        "value": "15% 절감"
+      },
+      {
+        "label": "산업용 가스 배급",
+        "value": "우선순위 조정"
+      },
+      {
+        "label": "대체 에너지 전환",
+        "value": "히트펌프 보조금 확대"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "EU 집행위 가스 절약 규정 연장 발표",
+        "currentStatusSummary": "규정 시행 중",
+        "marketImpactInterpretation": "수요 억제 → TTF 하방 압력",
+        "observationTrigger": "규정 연장 여부 / 회원국 이행률",
+        "sources": [
+          "EU Commission",
+          "Reuters"
+        ]
+      },
+      {
+        "keyEvent": "독일 산업용 가스 배급 우선순위 조정 발표",
+        "currentStatusSummary": "배급 제한 시행",
+        "marketImpactInterpretation": "산업 수요 감소 → 총수요 하락",
+        "observationTrigger": "산업 생산 지수 변화",
+        "sources": [
+          "Bloomberg",
+          "Handelsblatt"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "EU 월간 가스 소비량 전년비 10% 감소 확인",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "절약 정책이 실제 수요 감소로 이어지고 있음을 확인하는 직접적 신호"
+      },
+      {
+        "category": "Observation",
+        "label": "프랑스 히트펌프 보조금 신청 건수 50만 돌파",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
+        "rationale": "대체 에너지 전환이 가속화되면 장기적 가스 수요 구조적 감소"
+      },
+      {
+        "category": "Contradiction",
+        "label": "EU 내 전력 위기로 가스발전 긴급 확대",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
+        "rationale": "절약 정책에도 불구하고 전력 안정성 우선으로 가스 수요 반등 가능성"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 2,
+        "eventName": "ICE, TTF 거래시간 22시간 확대 시행 중",
+        "eventCategoryLv1": "supply_demand_balance",
+        "eventCategoryLv1Label": "수급 밸런스",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "중립"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "중립"
+          }
+        ],
+        "createdAt": "2026-02-27T16:00:00",
+        "updatedAt": "2026-02-27T16:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 2,
+          "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.45
+        },
+        {
+          "scenarioId": 3,
+          "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.3
+        },
+        {
+          "scenarioId": 4,
+          "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.25
+        }
+      ]
+    },
+    "status": "updated",
+    "statusLabel": "갱신"
+  },
+  "5": {
+    "scenarioId": 5,
+    "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
+    "tags": [
+      "커미셔닝지연",
+      "공급차질"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              12.5,
+              13.0,
+              13.5,
+              13.0,
+              12.5,
+              12.0,
+              12.0,
+              11.8,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              12.0,
+              12.5,
+              13.0,
+              12.5,
+              12.0,
+              11.5,
+              11.5,
+              11.2,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              4.0,
+              3.8,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "Golden Pass Train 1 지연",
+        "value": "6개월 이상"
+      },
+      {
+        "label": "기술적 문제",
+        "value": "LNG 액화 공정 결함"
+      },
+      {
+        "label": "공급 차질 규모",
+        "value": "2-3 MTPA"
+      },
+      {
+        "label": "대체 공급",
+        "value": "제한적"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "Golden Pass LNG 커미셔닝 일정 재조정 발표",
+        "currentStatusSummary": "6개월 지연 공식 발표",
+        "marketImpactInterpretation": "공급 기대 실망 → 가격 상방",
+        "observationTrigger": "추가 지연 여부 / 기술적 해결 진행률",
+        "sources": [
+          "ExxonMobil IR",
+          "Platts"
+        ]
+      },
+      {
+        "keyEvent": "Venture Global Plaquemines 도 3개월 지연 발표",
+        "currentStatusSummary": "동시 다발 지연",
+        "marketImpactInterpretation": "미국 LNG 신규 공급 전체 지연 우려",
+        "observationTrigger": "추가 프로젝트 지연 도미노 효과",
+        "sources": [
+          "Reuters",
+          "Bloomberg"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "Golden Pass Train 1 첫 선적 2027년으로 연기 확정",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "신규 공급 지연이 확정되면 기존 공급-수요 밸런스에 직접 영향"
+      },
+      {
+        "category": "Contradiction",
+        "label": "Sabine Pass 증설 조기 완공으로 공급 보완",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
+        "rationale": "다른 프로젝트의 조기 완공이 지연 효과를 상쇄"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 6,
+        "eventName": "Golden Pass LNG Train 1 커미셔닝, 하반기 Full Capa",
+        "eventCategoryLv1": "supply_demand_balance",
+        "eventCategoryLv1Label": "수급 밸런스",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          }
+        ],
+        "createdAt": "2026-02-25T10:00:00",
+        "updatedAt": "2026-02-25T10:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 5,
+          "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.4
+        },
+        {
+          "scenarioId": 8,
+          "scenarioName": "Train 2-3 동시 조기 가동 — 오버서플라이",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.15
+        }
+      ]
+    },
+    "status": "new",
+    "statusLabel": "신규"
+  },
+  "6": {
+    "scenarioId": 6,
+    "scenarioName": "EU 카고 선회 — 아시아 도달 물량 제한",
+    "tags": [
+      "EU카고선회",
+      "아시아수급"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              14.0,
+              14.5,
+              15.0,
+              14.5,
+              14.0,
+              13.5,
+              13.0,
+              13.0,
+              12.8,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              11.0,
+              10.5,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              4.0,
+              4.2,
+              4.5,
+              4.2,
+              4.0,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8,
+              3.8
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "EU 재충전 수요",
+        "value": "15-20Mt 추가 수입"
+      },
+      {
+        "label": "카고 선회 비율",
+        "value": "아시아향 30% → EU향 전환"
+      },
+      {
+        "label": "JKM 프리미엄",
+        "value": "상승 $2-3/MMBtu"
+      },
+      {
+        "label": "대체 공급",
+        "value": "제한적"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "Atlantic Basin LNG 카고 EU향 전환 급증",
+        "currentStatusSummary": "EU 향 카고 30% 증가",
+        "marketImpactInterpretation": "아시아 도달 물량 감소 → JKM 상승",
+        "observationTrigger": "카고 라우팅 데이터 / 아시아 도착 물량",
+        "sources": [
+          "Kpler",
+          "ICIS"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "아시아향 LNG 카고 3월 연속 감소",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "카고 선회가 실제 아시아 공급 감소로 이어지고 있음을 확인"
+      },
+      {
+        "category": "Contradiction",
+        "label": "EU 저장률 90% 조기 달성으로 카고 선회 완화",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
+        "rationale": "저장 목표 달성 시 카고 선회 압력 감소"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 7,
+        "eventName": "EU 가스 재고 39.2% — 5년 평균 63% 대비 하회",
+        "eventCategoryLv1": "supply_demand_balance",
+        "eventCategoryLv1Label": "수급 밸런스",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          }
+        ],
+        "createdAt": "2026-02-24T09:00:00",
+        "updatedAt": "2026-02-24T09:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 2,
+          "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.45
+        },
+        {
+          "scenarioId": 3,
+          "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.3
+        },
+        {
+          "scenarioId": 6,
+          "scenarioName": "EU 카고 선회 — 아시아 도달 물량 제한",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.35
+        }
+      ]
+    },
+    "status": "new",
+    "statusLabel": "신규"
+  },
+  "7": {
+    "scenarioId": 7,
+    "scenarioName": "미국 LNG 수출 규제 재논의",
+    "tags": [
+      "수출규제",
+      "정책리스크"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              13.0,
+              14.0,
+              15.0,
+              14.5,
+              14.0,
+              13.5,
+              13.0,
+              13.0,
+              12.8,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5,
+              12.5
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              12.0,
+              12.5,
+              13.0,
+              12.5,
+              12.0,
+              12.0,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5,
+              11.5
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.0,
+              2.8,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "규제 범위",
+        "value": "신규 FTA 비체결국 수출 제한"
+      },
+      {
+        "label": "영향 규모",
+        "value": "5-8 MTPA 감소"
+      },
+      {
+        "label": "대체 공급원",
+        "value": "카타르/호주 증산 제한적"
+      },
+      {
+        "label": "정치적 환경",
+        "value": "대선 이슈화"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "미 에너지부 장관 LNG 수출 허가 재검토 발언",
+        "currentStatusSummary": "검토 시작",
+        "marketImpactInterpretation": "공급 불확실성 → JKM/TTF 상방",
+        "observationTrigger": "법안 발의 여부 / 행정명령 내용",
+        "sources": [
+          "DOE",
+          "Reuters"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "미국 상원 LNG 수출 제한 법안 발의",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "수출 규제 법안 발의는 시나리오 실현 가능성을 직접 높이는 신호"
+      },
+      {
+        "category": "Contradiction",
+        "label": "백악관, LNG 수출 확대 지지 성명 발표",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "행정부의 명확한 지지는 규제 시나리오를 직접 약화"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 9,
+        "eventName": "미 에너지부 장관, LNG 수출 허가 재검토 발언",
+        "eventCategoryLv1": "macroeconomy_policy",
+        "eventCategoryLv1Label": "거시경제 / 정책",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          }
+        ],
+        "createdAt": "2026-02-22T18:45:00",
+        "updatedAt": "2026-02-22T18:45:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 5,
+          "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.4
+        },
+        {
+          "scenarioId": 7,
+          "scenarioName": "미국 LNG 수출 규제 재논의",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            }
+          ],
+          "probability": 0.2
+        }
+      ]
+    },
+    "status": "new",
+    "statusLabel": "신규"
+  },
+  "8": {
+    "scenarioId": 8,
+    "scenarioName": "Train 2-3 동시 조기 가동 — 오버서플라이",
+    "tags": [
+      "오버서플라이",
+      "대규모증설"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              9.5,
+              9.0,
+              8.5,
+              8.5,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              10.0,
+              9.5,
+              9.0,
+              9.0,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5,
+              8.5
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.0,
+              2.8,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5,
+              2.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "Golden Pass Train 2-3",
+        "value": "동시 조기 가동"
+      },
+      {
+        "label": "추가 공급량",
+        "value": "15+ MTPA"
+      },
+      {
+        "label": "수요 성장",
+        "value": "공급 증가 미달"
+      },
+      {
+        "label": "가격 효과",
+        "value": "글로벌 하방 압력"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "Golden Pass Train 2 커미셔닝 조기 완료 발표",
+        "currentStatusSummary": "예정보다 3개월 앞당겨",
+        "marketImpactInterpretation": "공급 과쟉 우려 → 가격 하방",
+        "observationTrigger": "Train 3 진행 상황 / 수요 흡수 여력",
+        "sources": [
+          "ExxonMobil IR",
+          "FERC"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "Golden Pass Train 2 첫 카고 선적 완료",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "조기 가동이 실제 공급 증가로 이어지고 있음을 확인"
+      },
+      {
+        "category": "Contradiction",
+        "label": "중국 신규 LNG 터미널 3기 동시 가동으로 수요 흡수",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
+        "rationale": "수요 측 확대가 공급 증가를 상쇄할 수 있음"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 6,
+        "eventName": "Golden Pass LNG Train 1 커미셔닝, 하반기 Full Capa",
+        "eventCategoryLv1": "supply_demand_balance",
+        "eventCategoryLv1Label": "수급 밸런스",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          }
+        ],
+        "createdAt": "2026-02-25T10:00:00",
+        "updatedAt": "2026-02-25T10:00:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 5,
+          "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.4
+        },
+        {
+          "scenarioId": 8,
+          "scenarioName": "Train 2-3 동시 조기 가동 — 오버서플라이",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.15
+        }
+      ]
+    },
+    "status": "new",
+    "statusLabel": "신규"
+  },
+  "9": {
+    "scenarioId": 9,
+    "scenarioName": "KOGAS 스팟 매수 축소 — JKM 근월 약세",
+    "tags": [
+      "KOGAS",
+      "스팟매수축소"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bullish",
+          "directionLabel": "상승",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              10.0,
+              9.5,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0,
+              9.0
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0,
+              11.0
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "KOGAS 스팟 매수",
+        "value": "50% 감소"
+      },
+      {
+        "label": "재고 수준",
+        "value": "5.0Mt (평균 상회)"
+      },
+      {
+        "label": "원전 재가동",
+        "value": "3기 추가"
+      },
+      {
+        "label": "JKM 영향",
+        "value": "근월 하락 압력"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "KOGAS 월간 스팟 입찰 건수 감소",
+        "currentStatusSummary": "전월 대비 50% 감소",
+        "marketImpactInterpretation": "JKM 근월 수요 감소 → 하방 압력",
+        "observationTrigger": "월별 입찰 건수 / 재고 변동",
+        "sources": [
+          "KOGAS",
+          "Platts"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "KOGAS 3월 스팟 입찰 0건",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "한국 최대 LNG 구매자의 스팟 부재는 JKM 근월물 직접 하락 요인"
+      },
+      {
+        "category": "Contradiction",
+        "label": "한국 여름 폭염 예보로 냉방 수요 급증 전망",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
+        "rationale": "폭염 시 냉방 전력 수요 급증으로 KOGAS 긴급 스팟 매수 재개 가능성"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 4,
+        "eventName": "한국 12월말 LNG 재고 5.0Mt, 계절 평균 상회",
+        "eventCategoryLv1": "supply_demand_balance",
+        "eventCategoryLv1Label": "수급 밸런스",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
+            "direction": "bearish",
+            "directionLabel": "하락"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "중립"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "중립"
+          }
+        ],
+        "createdAt": "2026-02-26T09:30:00",
+        "updatedAt": "2026-02-26T09:30:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 9,
+          "scenarioName": "KOGAS 스팟 매수 축소 — JKM 근월 약세",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.55
+        }
+      ]
+    },
+    "status": "new",
+    "statusLabel": "신규"
+  },
+  "10": {
+    "scenarioId": 10,
+    "scenarioName": "노르웨이·알제리 파이프라인 증산 — EU 내부 해소",
+    "tags": [
+      "파이프라인증산",
+      "EU내부해소"
+    ],
+    "createdAt": "2026-03-01T09:00:00",
+    "updatedAt": "2026-03-01T09:00:00",
+    "summary": {
+      "indexOutlooks": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
+          "direction": "negligible",
+          "directionLabel": "보합",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "JKM 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "TTF 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        },
+        {
+          "indexName": "Henry Hub",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
+          "direction": "bearish",
+          "directionLabel": "하락",
+          "priceFlow": [
+            {
+              "from": 12,
+              "to": 14
+            },
+            {
+              "from": 11,
+              "to": 13
+            },
+            {
+              "from": 10,
+              "to": 11
+            }
+          ],
+          "trendText": "HH 시장 전망 분석 내용입니다.",
+          "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
+        }
+      ],
+      "priceForecast": {
+        "currency": "USD",
+        "unit": "MMBtu",
+        "dates": [
+          "2023-01",
+          "2023-04",
+          "2023-07",
+          "2023-10",
+          "2024-01",
+          "2024-04",
+          "2024-07",
+          "2024-10",
+          "2025-01",
+          "2025-04",
+          "2025-07",
+          "2025-10",
+          "2026-01",
+          "2026-04",
+          "2026-07",
+          "2026-10",
+          "2027-01",
+          "2027-04",
+          "2027-07",
+          "2027-10",
+          "2028-01",
+          "2028-04",
+          "2028-07",
+          "2028-10",
+          "2029-01",
+          "2029-04",
+          "2029-07",
+          "2029-10",
+          "2030-01",
+          "2030-04",
+          "2030-07",
+          "2030-10"
+        ],
+        "series": [
+          {
+            "indexName": "JKM",
+            "values": [
+              32.0,
+              25.5,
+              20.0,
+              35.0,
+              18.0,
+              14.5,
+              12.0,
+              13.5,
+              12.8,
+              11.5,
+              10.7,
+              11.0,
+              10.7,
+              10.5,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0
+            ]
+          },
+          {
+            "indexName": "TTF",
+            "values": [
+              55.0,
+              42.0,
+              30.0,
+              48.0,
+              28.0,
+              22.0,
+              18.0,
+              16.5,
+              14.0,
+              12.5,
+              11.2,
+              11.8,
+              11.2,
+              10.5,
+              10.0,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5,
+              9.5
+            ]
+          },
+          {
+            "indexName": "HH",
+            "values": [
+              3.5,
+              2.8,
+              2.5,
+              6.0,
+              3.2,
+              2.0,
+              2.2,
+              3.0,
+              3.5,
+              2.8,
+              3.8,
+              3.5,
+              3.8,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5,
+              3.5
+            ]
+          }
+        ]
+      }
+    },
+    "assumptions": [
+      {
+        "label": "노르웨이 증산",
+        "value": "10-15 bcm/년"
+      },
+      {
+        "label": "알제리 증산",
+        "value": "5-8 bcm/년"
+      },
+      {
+        "label": "LNG 수입 대체",
+        "value": "부분적 대체"
+      },
+      {
+        "label": "TTF 효과",
+        "value": "하방 안정화"
+      }
+    ],
+    "signposts": [
+      {
+        "keyEvent": "노르웨이 Troll 가스전 증산 계획 발표",
+        "currentStatusSummary": "연간 10bcm 증산 목표",
+        "marketImpactInterpretation": "EU 내부 공급 확대 → LNG 수입 압력 감소",
+        "observationTrigger": "실제 증산 실적 / 파이프라인 용량",
+        "sources": [
+          "Equinor IR",
+          "Reuters"
+        ]
+      }
+    ],
+    "signpostDefinitions": [
+      {
+        "category": "Observation",
+        "label": "노르웨이 가스 수출량 3개월 연속 증가",
+        "direction": "bearish",
+        "directionLabel": "하락",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "파이프라인 공급 증가가 실제로 EU LNG 수입 수요를 대체하고 있음을 확인"
+      },
+      {
+        "category": "Contradiction",
+        "label": "Troll 가스전 비정상 셔티다운 발생",
+        "direction": "bullish",
+        "directionLabel": "상승",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
+        "rationale": "주요 공급원 차질은 증산 시나리오를 직접 부정"
+      }
+    ],
+    "relatedEventScenario": {
+      "event": {
+        "eventId": 8,
+        "eventName": "노르웨이 Troll 가스전 비정상 셧다운 — 공급 차질 우려",
+        "eventCategoryLv1": "supply_demand_balance",
+        "eventCategoryLv1Label": "수급 밸런스",
+        "indexImpacts": [
+          {
+            "indexName": "JKM",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "TTF",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
+            "direction": "bullish",
+            "directionLabel": "상승"
+          },
+          {
+            "indexName": "HH",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
+            "direction": "negligible",
+            "directionLabel": "중립"
+          }
+        ],
+        "createdAt": "2026-02-23T11:20:00",
+        "updatedAt": "2026-02-23T11:20:00"
+      },
+      "scenarios": [
+        {
+          "scenarioId": 6,
+          "scenarioName": "EU 카고 선회 — 아시아 도달 물량 제한",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            }
+          ],
+          "probability": 0.35
+        },
+        {
+          "scenarioId": 10,
+          "scenarioName": "노르웨이·알제리 파이프라인 증산 — EU 내부 해소",
+          "baseCase": false,
+          "indexImpacts": [
+            {
+              "indexName": "JKM",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            },
+            {
+              "indexName": "TTF",
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
+            },
+            {
+              "indexName": "HH",
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
+            }
+          ],
+          "probability": 0.3
+        }
+      ]
+    },
+    "status": "new",
+    "statusLabel": "신규"
   }
 }
