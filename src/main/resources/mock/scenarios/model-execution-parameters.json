@@ -1,0 +1,52 @@
+{
+  "parameterTablesByScenario": {
+    "default": [
+      {
+        "tableId": "table_monthly_supply",
+        "tableLabel": "월별 공급량",
+        "timeAxisType": "MONTHLY",
+        "timePeriods": ["2025-01", "2025-02", "2025-03", "2025-04"],
+        "rows": [
+          {
+            "rowId": "row_qatar_lng_supply",
+            "target": "카타르 LNG 공급량",
+            "values": {
+              "2025-01": 1.01,
+              "2025-02": 1.01,
+              "2025-03": 1.00,
+              "2025-04": 0.99
+            }
+          },
+          {
+            "rowId": "row_us_lng_supply",
+            "target": "미국 LNG 공급량",
+            "values": {
+              "2025-01": 0.97,
+              "2025-02": 0.98,
+              "2025-03": 0.99,
+              "2025-04": 1.00
+            }
+          }
+        ]
+      },
+      {
+        "tableId": "table_monthly_demand",
+        "tableLabel": "월별 수요량",
+        "timeAxisType": "MONTHLY",
+        "timePeriods": ["2025-01", "2025-02", "2025-03", "2025-04"],
+        "rows": [
+          {
+            "rowId": "row_northeast_asia_demand",
+            "target": "동북아 LNG 수요량",
+            "values": {
+              "2025-01": 1.03,
+              "2025-02": 1.02,
+              "2025-03": 1.01,
+              "2025-04": 1.00
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

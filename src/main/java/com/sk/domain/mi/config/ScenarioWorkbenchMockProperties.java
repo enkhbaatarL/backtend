@@ -13,6 +13,7 @@ public class ScenarioWorkbenchMockProperties {
 
     private Events events = new Events();
     private Scenarios scenarios = new Scenarios();
+    private ModelExecutions modelExecutions = new ModelExecutions();
 
     @Getter
     @Setter
@@ -39,6 +40,29 @@ public class ScenarioWorkbenchMockProperties {
         public static class Api {
             private boolean getList = false;
             private boolean getDetail = false;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class ModelExecutions {
+        private Api api = new Api();
+        private Workflow workflow = new Workflow();
+
+        @Getter
+        @Setter
+        public static class Api {
+            private boolean getParameters = false;
+            private boolean submit = false;
+            private boolean getStatus = false;
+            private boolean callback = false;
+        }
+
+        @Getter
+        @Setter
+        public static class Workflow {
+            private boolean dispatchSuccess = true;
+            private long runningTimeoutMinutes = 10;
         }
     }
 
