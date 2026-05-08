@@ -102,7 +102,7 @@ public class EventController {
             <br><br>
             ### impactAnalysis 필드
             이벤트가 LNG 시장 주요 인덱스(JKM, TTF, Henry Hub)에 미치는 영향을 분석한 결과입니다.
-            - `indexImpacts`: 인덱스별 영향도 요약 (indexName, impactLevel, direction)
+            - `indexImpacts`: 인덱스별 영향도 요약 (indexName, marketImpactLevel, direction)
             - `analysisText`: AI가 생성한 영향도 분석 본문
             - `categoryLv1` / `categoryLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
             - `sources`: 분석에 사용된 출처(provider) 목록 (이벤트의 record들이 인용하는 NEWS/REPORT publisher명)

@@ -26,11 +26,11 @@ public record DriverTreeScoreboardRes(
     @Schema(description = "Driver Tree 3단계 명칭", example = "Ras Laffan")
     String lv3Label,
 
-    @Schema(description = "영향도 수준", example = "high")
-    MarketImpactLevel impactLevel,
+    @Schema(description = "시장 영향도 수준", example = "high")
+    MarketImpactLevel marketImpactLevel,
 
-    @Schema(description = "영향도 수준 라벨", example = "높음")
-    String impactLevelLabel,
+    @Schema(description = "시장 영향도 수준 라벨", example = "높음")
+    String marketImpactLevelLabel,
 
     @Schema(description = "가격 방향", example = "bullish")
     MarketDirection direction,
@@ -44,7 +44,7 @@ public record DriverTreeScoreboardRes(
 ) {
 
     public static DriverTreeScoreboardRes from(DriverTagScoreboardRow row) {
-        MarketImpactLevel impactLevel = MarketImpactLevel.fromCode(row.magnitudeLevel());
+        MarketImpactLevel marketImpactLevel = MarketImpactLevel.fromCode(row.magnitudeLevel());
         MarketDirection direction = MarketDirection.fromCode(row.direction());
 
         return new DriverTreeScoreboardRes(
@@ -54,8 +54,8 @@ public record DriverTreeScoreboardRes(
             row.lv2Label(),
             row.lv3Id(),
             row.lv3Label(),
-            impactLevel,
-            Optional.ofNullable(impactLevel).map(MarketImpactLevel::getLabel).orElse(null),
+            marketImpactLevel,
+            Optional.ofNullable(marketImpactLevel).map(MarketImpactLevel::getLabel).orElse(null),
             direction,
             Optional.ofNullable(direction).map(MarketDirection::getLabel).orElse(null),
             row.driverReason()

@@ -8,22 +8,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -67,8 +67,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "Ras Laffan 가동 중단으로 글로벌 LNG 공급의 17% 차질 발생 → 복구에 3~5년 소요 예상으로 장기 공급 감소 고착화"
@@ -80,8 +80,8 @@
         "lv2Label": "기대 형성",
         "lv3Id": null,
         "lv3Label": "Bull/Bear 내러티브 변화",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "공급 차질 확산 내러티브로 시장 심리 bullish 전환"
@@ -93,8 +93,8 @@
         "lv2Label": "실제 거래 활동",
         "lv3Id": null,
         "lv3Label": "긴급 조달 거래 발생 여부",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "KOGAS, JERA 대체 물량 긴급 조달 → 현물 수요 급증"
@@ -106,8 +106,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "카타르 유럽향 계약 물량 차질로 간접 상방 압력"
@@ -119,8 +119,8 @@
         "lv2Label": "터미널별 적재율",
         "lv3Id": null,
         "lv3Label": "전략적 비축량",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "EU 재고율 39.2%로 5년 평균 대비 낮아 충진 수요 확대 전망"
@@ -132,8 +132,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "중동 리스크로 미국 LNG 수출 대안 수요 증가 가능성 있으나 직접적 영향 제한적"
@@ -150,22 +150,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           }
@@ -179,18 +179,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -202,18 +202,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -225,18 +225,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -255,22 +255,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         }
@@ -312,8 +312,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "Ras Laffan 전면 중단으로 글로벌 최대 공급원 오프라인 → JKM 직접 상방 압력"
@@ -325,8 +325,8 @@
         "lv2Label": "계절 수요",
         "lv3Id": null,
         "lv3Label": "동절기 난방 수요",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "동절기 말 재고 소진과 맞물려 대체 물량 확보 압박 가중"
@@ -338,8 +338,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "카타르 유럽향 장기계약 물량 차질 → TTF 상방"
@@ -351,8 +351,8 @@
         "lv2Label": "신규 프로젝트",
         "lv3Id": null,
         "lv3Label": "FID 진행률",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "미국 LNG 대체 수요 증가 가능성은 있으나 HH 가격 영향은 제한적"
@@ -369,22 +369,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -398,18 +398,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -421,18 +421,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -444,18 +444,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -474,22 +474,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bearish",
           "directionLabel": "하락"
         },
         {
           "indexName": "TTF",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -529,8 +529,8 @@
         "lv2Label": "터미널별 적재율",
         "lv3Id": null,
         "lv3Label": "전략적 비축량",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "한국 재고 상회로 단기 현물 매입 수요 감소 → JKM 소폭 하방 압력"
@@ -542,8 +542,8 @@
         "lv2Label": "터미널별 적재율",
         "lv3Id": null,
         "lv3Label": "전략적 비축량",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "한국 재고 상황은 유럽 TTF에 직접적 영향 없음"
@@ -555,8 +555,8 @@
         "lv2Label": "터미널별 적재율",
         "lv3Id": null,
         "lv3Label": "전략적 비축량",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "HH는 국내 수급 중심으로 한국 재고와 무관"
@@ -573,22 +573,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bearish",
             "directionLabel": "하락"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -602,18 +602,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -625,18 +625,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -648,18 +648,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -678,22 +678,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         }
@@ -735,8 +735,8 @@
         "lv2Label": "지역간 수요 경쟁",
         "lv3Id": null,
         "lv3Label": "유럽 vs 아시아 cargo 경쟁",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유럽 수요 급증으로 아시아향 cargo 유입 감소 → JKM 간접 상방 압력"
@@ -748,8 +748,8 @@
         "lv2Label": "계절 수요",
         "lv3Id": null,
         "lv3Label": "동절기 난방 수요",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "이례적 한파로 유럽 전역 난방 수요 급증 → TTF 직접 상방"
@@ -761,8 +761,8 @@
         "lv2Label": "터미널별 적재율",
         "lv3Id": null,
         "lv3Label": "전략적 비축량",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "EU 재고율 39.2%로 위기 수준 접근 → 충진 압박 가중"
@@ -774,8 +774,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유럽향 미국 LNG 수출 증가 가능성으로 HH 소폭 상방 가능"
@@ -792,22 +792,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -821,18 +821,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -844,18 +844,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -867,18 +867,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -897,22 +897,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -950,8 +950,8 @@
         "lv2Label": "지역간 수요 경쟁",
         "lv3Id": null,
         "lv3Label": "유럽 vs 아시아 cargo 경쟁",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "일본·한국 동시 현물 입찰로 아시아 내 cargo 경쟁 격화"
@@ -963,8 +963,8 @@
         "lv2Label": "지역간 수요 경쟁",
         "lv3Id": null,
         "lv3Label": "유럽 vs 아시아 cargo 경쟁",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "아시아 수요 증가로 유럽향 물량 감소 가능성 있으나 제한적"
@@ -976,8 +976,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "아시아 내 경쟁은 HH에 직접적 영향 미미"
@@ -994,22 +994,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -1023,18 +1023,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -1046,18 +1046,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -1069,18 +1069,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -1099,22 +1099,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         }
@@ -1154,8 +1154,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "미국→아시아 운송 비용 증가로 JKM CIF 기준 상방 압력"
@@ -1167,8 +1167,8 @@
         "lv2Label": "화물 흐름",
         "lv3Id": null,
         "lv3Label": "운하/항만 차질",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "파나마 운하 제한 장기화로 아시아향 미국 cargo 도착 지연"
@@ -1180,8 +1180,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유럽향은 대서양 직항으로 영향 제한적이나 글로벌 운임 상승 간접 영향"
@@ -1193,8 +1193,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "운송 제약은 FOB 가격인 HH에 직접적 영향 미미"
@@ -1211,22 +1211,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -1240,18 +1240,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -1263,18 +1263,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -1286,18 +1286,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -1316,22 +1316,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -1369,8 +1369,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "NWS 보수로 아시아 핵심 공급원 일시 감소 → JKM 상방 압력"
@@ -1382,8 +1382,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "호주 LNG는 주로 아시아향으로 유럽 영향 미미"
@@ -1395,8 +1395,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "호주 프로젝트 보수는 HH와 무관"
@@ -1413,22 +1413,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -1442,18 +1442,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -1465,18 +1465,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -1488,18 +1488,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -1518,22 +1518,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bearish",
           "directionLabel": "하락"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bearish",
           "directionLabel": "하락"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         }
@@ -1572,8 +1572,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "미국 LNG 공급 복귀로 아시아 현물 가용 물량 증가 → JKM 소폭 하방"
@@ -1585,8 +1585,8 @@
         "lv2Label": "기존 인프라 공급량",
         "lv3Id": null,
         "lv3Label": "Liquefaction rate",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유럽향 미국 LNG cargo 증가 가능 → TTF 소폭 하방"
@@ -1598,8 +1598,8 @@
         "lv2Label": "LNG 수출 수요",
         "lv3Id": null,
         "lv3Label": "Feed gas 수요",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "Freeport 재가동으로 feed gas 수요 약 0.7bcf/d 복귀 → HH 소폭 상방"
@@ -1616,22 +1616,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bearish",
             "directionLabel": "하락"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bearish",
             "directionLabel": "하락"
           },
           {
             "indexName": "HH",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bearish",
             "directionLabel": "하락"
           }
@@ -1645,18 +1645,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -1668,18 +1668,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -1691,18 +1691,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -1721,22 +1721,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         }
@@ -1776,8 +1776,8 @@
         "lv2Label": "지역간 수요 경쟁",
         "lv3Id": null,
         "lv3Label": "유럽 vs 아시아 cargo 경쟁",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유럽 추가 조달 수요로 아시아향 cargo 감소 가능성"
@@ -1789,8 +1789,8 @@
         "lv2Label": "정책/규제",
         "lv3Id": null,
         "lv3Label": "저장 의무 규정",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "의무 비율 상향으로 여름 충진 수요 구조적 확대 → TTF 중기 상방"
@@ -1802,8 +1802,8 @@
         "lv2Label": "LNG 수출 수요",
         "lv3Id": null,
         "lv3Label": "Feed gas 수요",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유럽 수요 확대 시 미국 LNG 수출 증가 가능 → HH 간접 상방"
@@ -1820,22 +1820,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -1849,18 +1849,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -1872,18 +1872,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -1895,18 +1895,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -1925,22 +1925,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         }
@@ -1980,8 +1980,8 @@
         "lv2Label": "기대 형성",
         "lv3Id": null,
         "lv3Label": "Bull/Bear 내러티브 변화",
-        "impactLevel": "high",
-        "impactLevelLabel": "높음",
+        "marketImpactLevel": "high",
+        "marketImpactLevelLabel": "높음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "미계약 물량 급감으로 장기적 공급 부족 내러티브 강화 → JKM forward 상방"
@@ -1993,8 +1993,8 @@
         "lv2Label": "실제 거래 활동",
         "lv3Id": null,
         "lv3Label": "긴급 조달 거래 발생 여부",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "일본·한국 바이어의 선제적 장기계약 체결 경쟁 촉발 가능"
@@ -2006,8 +2006,8 @@
         "lv2Label": "기대 형성",
         "lv3Id": null,
         "lv3Label": "Bull/Bear 내러티브 변화",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "글로벌 미계약 물량 감소로 유럽 조달 우려 간접 반영"
@@ -2019,8 +2019,8 @@
         "lv2Label": "신규 프로젝트",
         "lv3Id": null,
         "lv3Label": "FID 진행률",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "장기계약 확보로 미국 신규 LNG 프로젝트 FID 촉진 → HH feed gas 수요 증가"
@@ -2037,22 +2037,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           }
@@ -2066,18 +2066,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -2089,18 +2089,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -2112,18 +2112,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -2142,22 +2142,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -2196,8 +2196,8 @@
         "lv2Label": "발전 수요",
         "lv3Id": null,
         "lv3Label": "원전 대체 가스 수요",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "프랑스 원전 정비는 아시아 JKM에 직접적 영향 없음"
@@ -2209,8 +2209,8 @@
         "lv2Label": "발전 수요",
         "lv3Id": null,
         "lv3Label": "원전 대체 가스 수요",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "원전 14기 정비로 가스발전 대체 수요 증가 → TTF 상방"
@@ -2222,8 +2222,8 @@
         "lv2Label": "발전 수요",
         "lv3Id": null,
         "lv3Label": "원전 대체 가스 수요",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "프랑스 원전은 HH와 무관"
@@ -2240,22 +2240,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -2269,18 +2269,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -2292,18 +2292,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -2315,18 +2315,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -2345,22 +2345,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -2398,8 +2398,8 @@
         "lv2Label": "지역간 수요 경쟁",
         "lv3Id": null,
         "lv3Label": "유럽 vs 아시아 cargo 경쟁",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "인도 현물 수요 확대로 아시아 내 cargo 경쟁 심화"
@@ -2411,8 +2411,8 @@
         "lv2Label": "지역간 수요 경쟁",
         "lv3Id": null,
         "lv3Label": "유럽 vs 아시아 cargo 경쟁",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "아시아 수요 증가로 유럽향 물량 감소 가능성 있으나 제한적"
@@ -2424,8 +2424,8 @@
         "lv2Label": "LNG 수출 수요",
         "lv3Id": null,
         "lv3Label": "Feed gas 수요",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "인도 현물 수요는 HH에 직접적 영향 미미"
@@ -2442,22 +2442,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -2471,18 +2471,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -2494,18 +2494,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -2517,18 +2517,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -2547,22 +2547,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -2600,8 +2600,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "운임 상승으로 아시아 CIF 가격 소폭 상방"
@@ -2613,8 +2613,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "대서양 운임 상승으로 유럽 조달 비용 소폭 증가"
@@ -2626,8 +2626,8 @@
         "lv2Label": "선박 가용성/운임",
         "lv3Id": null,
         "lv3Label": "운임/용선료",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "운임은 FOB 가격인 HH에 직접 영향 없음"
@@ -2644,22 +2644,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           }
@@ -2673,18 +2673,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -2696,18 +2696,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -2719,18 +2719,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -2749,22 +2749,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         },
         {
           "indexName": "HH",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합"
         }
@@ -2802,8 +2802,8 @@
         "lv2Label": "통화정책",
         "lv3Id": null,
         "lv3Label": "금리/환율 변동",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "달러 약세는 JKM에 간접적 지지 요인이나 영향 미미"
@@ -2815,8 +2815,8 @@
         "lv2Label": "통화정책",
         "lv3Id": null,
         "lv3Label": "금리/환율 변동",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "유로화 강세 시 TTF 유로 기준 소폭 하방 가능성 있으나 미미"
@@ -2828,8 +2828,8 @@
         "lv2Label": "통화정책",
         "lv3Id": null,
         "lv3Label": "금리/환율 변동",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "달러 약세는 미국 내 가스 가격에 미미한 영향"
@@ -2846,22 +2846,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "HH",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           }
@@ -2875,18 +2875,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -2898,18 +2898,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -2921,18 +2921,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -2951,22 +2951,22 @@
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bearish",
           "directionLabel": "하락"
         },
         {
           "indexName": "TTF",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "bullish",
           "directionLabel": "상승"
         },
         {
           "indexName": "HH",
-          "impactLevel": null,
-          "impactLevelLabel": null,
+          "marketImpactLevel": null,
+          "marketImpactLevelLabel": null,
           "direction": null,
           "directionLabel": null
         }
@@ -3005,8 +3005,8 @@
         "lv2Label": "실제 거래 활동",
         "lv3Id": null,
         "lv3Label": "인덱스별 스프레드 Gap",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "스프레드 정상화로 아시아 cargo 흐름 회복 → 가격 영향 해소"
@@ -3018,8 +3018,8 @@
         "lv2Label": "실제 거래 활동",
         "lv3Id": null,
         "lv3Label": "인덱스별 스프레드 Gap",
-        "impactLevel": "low",
-        "impactLevelLabel": "낮음",
+        "marketImpactLevel": "low",
+        "marketImpactLevelLabel": "낮음",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "스프레드 역전 해소로 유럽향 cargo 유입 감소 → TTF 소폭 상방 해소"
@@ -3031,8 +3031,8 @@
         "lv2Label": "실제 거래 활동",
         "lv3Id": null,
         "lv3Label": "인덱스별 스프레드 Gap",
-        "impactLevel": "medium",
-        "impactLevelLabel": "중간",
+        "marketImpactLevel": "medium",
+        "marketImpactLevelLabel": "중간",
         "direction": "bullish",
         "directionLabel": "상승",
         "reason": "JKM-TTF 스프레드는 HH에 직접 영향 없음"
@@ -3049,22 +3049,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bearish",
             "directionLabel": "하락"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -3078,18 +3078,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -3101,18 +3101,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -3124,18 +3124,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3

@@ -12,8 +12,8 @@
       "indexOutlooks": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승",
           "priceFlow": [
@@ -35,8 +35,8 @@
         },
         {
           "indexName": "TTF",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bearish",
           "directionLabel": "하락",
           "priceFlow": [
@@ -58,8 +58,8 @@
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "bearish",
           "directionLabel": "하락",
           "priceFlow": [
@@ -326,8 +326,8 @@
         "label": "일본 JERA, 여름 피크 대비 추가 LNG 카고 10선 긴급 조달 발표",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "strong",
-        "impactLevelLabel": "강함",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
         "rationale": "대규모 긴급 조달은 실제 수급 긴장이 현실화되었음을 보여주는 결정적 신호로, 시나리오의 LNG 수요 급증(6-12Mt)이 진행 중임을 직접 증명합니다."
       },
       {
@@ -335,8 +335,8 @@
         "label": "중국 CNOOC, 광둥성 LNG 터미널 가동률 95% 돌파",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "strong",
-        "impactLevelLabel": "강함",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
         "rationale": "터미널 가동률 95%는 물리적 한계에 근접한 수준으로, 아시아 최대 수요처의 LNG 수급 긴장이 실제로 심화되었음을 확증합니다."
       },
       {
@@ -344,8 +344,8 @@
         "label": "유럽 TTF 선물가격 $18/MMBtu 돌파",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "moderate",
-        "impactLevelLabel": "보통",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
         "rationale": "가격 급등은 수급 긴장의 명확한 신호이나, 시나리오가 예상하는 장기간 지속성과 유럽-아시아 경쟁 격화까지는 추가 확인이 필요합니다."
       },
       {
@@ -353,8 +353,8 @@
         "label": "카타르 에너지, 아시아향 장기계약 프리미엄 15% 인상 통보",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "moderate",
-        "impactLevelLabel": "보통",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
         "rationale": "장기계약 프리미엄 인상은 구조적 수급 불균형을 반영하며, 시나리오가 예측한 '장기 계약 프리미엄 상승'이 실현되었음을 직접 보여줍니다."
       },
       {
@@ -362,8 +362,8 @@
         "label": "싱가포르 EMA, 8월 전력 예비율 15% 이하 경고",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "weak",
-        "impactLevelLabel": "약함",
+        "signpostImpactLevel": "weak",
+        "signpostImpactLevelLabel": "약함",
         "rationale": "전력 예비율 경고는 냉방 수요 증가의 간접적 신호이나, 실제 가스발전 신호의 LNG 수요 및 끝까지는 추가 데이터가 필요합니다."
       }
     ],
@@ -376,22 +376,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           }
@@ -407,18 +407,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             }
           ],
           "probability": 0.325
@@ -441,8 +441,8 @@
       "indexOutlooks": [
         {
           "indexName": "JKM",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승",
           "priceFlow": [
@@ -464,8 +464,8 @@
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승",
           "priceFlow": [
@@ -487,8 +487,8 @@
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "negligible",
           "directionLabel": "보합",
           "priceFlow": [
@@ -717,8 +717,8 @@
         "label": "EU 집행위, 가스 저장률 목표 95%로 상향 검토 발표",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "strong",
-        "impactLevelLabel": "강함",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
         "rationale": "목표 상향은 추가 구매 물량 확대를 의미하며, 글로벌 LNG 카고 흡수 시나리오를 직접 강화합니다."
       },
       {
@@ -726,8 +726,8 @@
         "label": "독일 Brunsbüttel FSRU, 3월 수입량 역대 최고 기록",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "strong",
-        "impactLevelLabel": "강함",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
         "rationale": "독일의 LNG 수입 급증은 EU 재충전 수요가 실제로 가속화되고 있음을 보여주는 핵심 지표입니다."
       },
       {
@@ -735,8 +735,8 @@
         "label": "아시아 스팟 LNG 프리미엄, TTF 대비 $1.5/MMBtu 이하로 축소",
         "direction": "bearish",
         "directionLabel": "하락",
-        "impactLevel": "moderate",
-        "impactLevelLabel": "보통",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
         "rationale": "아시아 프리미엄 축소는 카고가 유럽으로 이동하고 있음을 시사하나, 계절적 요인도 존재합니다."
       },
       {
@@ -744,8 +744,8 @@
         "label": "노르웨이 Equinor, Troll 필드 유지보수 4주 연장 발표",
         "direction": "bullish",
         "directionLabel": "상승",
-        "impactLevel": "moderate",
-        "impactLevelLabel": "보통",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
         "rationale": "PNG 공급 감소는 LNG 대체 수요를 증가시켜 카고 경쟁을 심화시킵니다."
       }
     ],
@@ -758,22 +758,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -789,18 +789,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -812,18 +812,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -835,18 +835,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.25
@@ -869,8 +869,8 @@
       "indexOutlooks": [
         {
           "indexName": "JKM",
-          "impactLevel": "medium",
-          "impactLevelLabel": "중간",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간",
           "direction": "negligible",
           "directionLabel": "보합",
           "priceFlow": [
@@ -892,8 +892,8 @@
         },
         {
           "indexName": "TTF",
-          "impactLevel": "high",
-          "impactLevelLabel": "높음",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음",
           "direction": "bullish",
           "directionLabel": "상승",
           "priceFlow": [
@@ -915,8 +915,8 @@
         },
         {
           "indexName": "Henry Hub",
-          "impactLevel": "low",
-          "impactLevelLabel": "낮음",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
           "directionLabel": "보합",
           "priceFlow": [
@@ -1131,8 +1131,8 @@
         "label": "Golden Pass LNG T1, 예정대로 커미셔닝 완료 확인",
         "direction": "bearish",
         "directionLabel": "하락",
-        "impactLevel": "strong",
-        "impactLevelLabel": "강함",
+        "signpostImpactLevel": "strong",
+        "signpostImpactLevelLabel": "강함",
         "rationale": "신규 공급 프로젝트의 정상 가동은 글로벌 수급 완화의 핵심 요인으로, 수요 분산 시나리오를 직접 뒷받침합니다."
       },
       {
@@ -1140,8 +1140,8 @@
         "label": "EU 월별 LNG 수입량 8MTPA 이하 안정 유지",
         "direction": "bearish",
         "directionLabel": "하락",
-        "impactLevel": "moderate",
-        "impactLevelLabel": "보통",
+        "signpostImpactLevel": "moderate",
+        "signpostImpactLevelLabel": "보통",
         "rationale": "EU 수입량 안정은 카고 집중 없이 분산 조달이 이루어지고 있음을 시사합니다."
       },
       {
@@ -1149,8 +1149,8 @@
         "label": "한국 KOGAS, 하계 LNG 재고 적정 수준 발표",
         "direction": "bearish",
         "directionLabel": "하락",
-        "impactLevel": "weak",
-        "impactLevelLabel": "약함",
+        "signpostImpactLevel": "weak",
+        "signpostImpactLevelLabel": "약함",
         "rationale": "아시아 주요 수입국의 재고 안정은 스팟 수요 급증 가능성을 낮추는 간접 신호입니다."
       }
     ],
@@ -1163,22 +1163,22 @@
         "indexImpacts": [
           {
             "indexName": "JKM",
-            "impactLevel": "medium",
-            "impactLevelLabel": "중간",
+            "marketImpactLevel": "medium",
+            "marketImpactLevelLabel": "중간",
             "direction": "negligible",
             "directionLabel": "보합"
           },
           {
             "indexName": "TTF",
-            "impactLevel": "high",
-            "impactLevelLabel": "높음",
+            "marketImpactLevel": "high",
+            "marketImpactLevelLabel": "높음",
             "direction": "bullish",
             "directionLabel": "상승"
           },
           {
             "indexName": "HH",
-            "impactLevel": "low",
-            "impactLevelLabel": "낮음",
+            "marketImpactLevel": "low",
+            "marketImpactLevelLabel": "낮음",
             "direction": "negligible",
             "directionLabel": "보합"
           }
@@ -1194,18 +1194,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             }
           ],
           "probability": 0.45
@@ -1217,18 +1217,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "high",
-              "impactLevelLabel": "높음"
+              "marketImpactLevel": "high",
+              "marketImpactLevelLabel": "높음"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.3
@@ -1240,18 +1240,18 @@
           "indexImpacts": [
             {
               "indexName": "JKM",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "TTF",
-              "impactLevel": "medium",
-              "impactLevelLabel": "중간"
+              "marketImpactLevel": "medium",
+              "marketImpactLevelLabel": "중간"
             },
             {
               "indexName": "HH",
-              "impactLevel": "low",
-              "impactLevelLabel": "낮음"
+              "marketImpactLevel": "low",
+              "marketImpactLevelLabel": "낮음"
             }
           ],
           "probability": 0.25
