@@ -1,0 +1,69 @@
+{
+  "template": [
+    {
+      "scenarioId": 1,
+      "scenarioName": "호르무즈 봉쇄 3개월+ 유지",
+      "baseCase": true,
+      "tags": ["#장기봉쇄", "#공급충격"],
+      "createdAt": "2026-03-01T10:21:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음" },
+        { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음" },
+        { "indexName": "HH", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간" }
+      ],
+      "probability": 0.35
+    },
+    {
+      "scenarioId": 2,
+      "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
+      "baseCase": false,
+      "tags": ["#EU수요", "#카고흡수"],
+      "createdAt": "2026-03-01T10:21:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간" },
+        { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음" }
+      ],
+      "probability": 0.25
+    },
+    {
+      "scenarioId": 3,
+      "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
+      "baseCase": false,
+      "tags": ["#수요분산", "#제한적영향"],
+      "createdAt": "2026-03-01T10:21:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음" }
+      ],
+      "probability": 0.20
+    },
+    {
+      "scenarioId": 4,
+      "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
+      "baseCase": false,
+      "tags": ["#수요억제", "#정책개입"],
+      "createdAt": "2026-03-01T10:21:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음" }
+      ],
+      "probability": 0.12
+    },
+    {
+      "scenarioId": 5,
+      "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
+      "baseCase": false,
+      "tags": ["#공급지연", "#기대실망"],
+      "createdAt": "2026-03-01T10:21:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음" }
+      ],
+      "probability": 0.08
+    }
+  ]
+}

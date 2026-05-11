@@ -15,6 +15,7 @@ public class ScenarioWorkbenchMockProperties {
     private Scenarios scenarios = new Scenarios();
     private Overview overview = new Overview();
     private ModelExecutions modelExecutions = new ModelExecutions();
+    private Design design = new Design();
 
     @Getter
     @Setter
@@ -55,6 +56,22 @@ public class ScenarioWorkbenchMockProperties {
             private boolean getEvents = false;
             private boolean getScenarios = false;
             private boolean getPriceForecasts = false;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Design {
+        private Api api = new Api();
+
+        @Getter
+        @Setter
+        public static class Api {
+            private boolean getEvents = false;
+            private boolean postGenerate = false;
+            private boolean postCallback = false;
+            private boolean getGeneratedScenarios = false;
+            private boolean getStatuses = false;
         }
     }
 
