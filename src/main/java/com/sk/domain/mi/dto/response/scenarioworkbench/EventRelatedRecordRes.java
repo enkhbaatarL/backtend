@@ -19,7 +19,10 @@ public record EventRelatedRecordRes(
     String summary,
 
     @Schema(description = "상품번호")
-    Integer goodsNo
+    Integer goodsNo,
+
+    @Schema(description = "파일명")
+    String fileName
 
 ) {
 
@@ -29,7 +32,8 @@ public record EventRelatedRecordRes(
             row.getRecordType(),
             row.getTitle(),
             row.getSummary(),
-            row.getGoodsNo()
+            row.getGoodsNo(),
+            row.getFileName()
         );
     }
 }
