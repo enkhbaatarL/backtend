@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "2. Scenario Workbench Scenario API", description = "Scenario Workbench Scenario API입니다.")
+@Tag(name = "3. Scenario Workbench Scenario API", description = "Scenario Workbench Scenario API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/scenario-workbench/scenarios")

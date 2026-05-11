@@ -13,6 +13,7 @@ public class ScenarioWorkbenchMockProperties {
 
     private Events events = new Events();
     private Scenarios scenarios = new Scenarios();
+    private Overview overview = new Overview();
     private ModelExecutions modelExecutions = new ModelExecutions();
 
     @Getter
@@ -40,6 +41,20 @@ public class ScenarioWorkbenchMockProperties {
         public static class Api {
             private boolean getList = false;
             private boolean getDetail = false;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Overview {
+        private Api api = new Api();
+
+        @Getter
+        @Setter
+        public static class Api {
+            private boolean getEvents = false;
+            private boolean getScenarios = false;
+            private boolean getPriceForecasts = false;
         }
     }
 

@@ -26,6 +26,9 @@ public record ScenarioListItemRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
+    @Schema(description = "BC(Base Case) 여부", example = "false")
+    boolean baseCase,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<ScenarioImpactIndexRes> indexImpacts,
 
