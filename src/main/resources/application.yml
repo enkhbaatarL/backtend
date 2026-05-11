@@ -73,6 +73,15 @@ mi:
         api:
           get-list: true
           get-detail: true
+      model-executions:
+        api:
+          get-parameters: true
+          submit: true
+          get-status: true
+          callback: true
+        workflow:
+          dispatch-success: true
+          running-timeout-minutes: 10
       overview:
         api:
           get-events: true
