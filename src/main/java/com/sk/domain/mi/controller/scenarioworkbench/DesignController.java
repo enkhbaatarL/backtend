@@ -52,9 +52,9 @@ public class DesignController {
 
             <br><br>
             ### 시나리오 생성 상태 (scenarioGenStatus)
-            - `READY`: 시나리오 미생성 (생성 버튼 표시)
-            - `PROCESSING`: 시나리오 생성 중 (생성중 표시)
-            - `COMPLETED`: 시나리오 생성 완료 (완료 버튼 표시)
+            - `ready`: 시나리오 미생성 (생성 버튼 표시)
+            - `processing`: 시나리오 생성 중 (생성중 표시)
+            - `completed`: 시나리오 생성 완료 (완료 버튼 표시)
             """
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
@@ -87,9 +87,9 @@ public class DesignController {
             <br><br>
             ### 요청 흐름
             1. `eventIds`로 대상 이벤트 지정 (Phase 1: 1건, Phase 2: N건)
-            2. 서버에서 외부 API 호출 -> 요청 접수 (PROCESSING)
+            2. 서버에서 외부 API 호출 -> 요청 접수 (processing)
             3. 프론트는 `GET /generate/status` 폴링으로 상태 확인
-            4. 외부 서비스 완료 시 콜백 -> COMPLETED
+            4. 외부 서비스 완료 시 콜백 -> completed
             """
     )
     @ApiResponse(responseCode = "200", description = "생성 요청 접수 성공")
@@ -110,7 +110,7 @@ public class DesignController {
         summary = "시나리오 생성 콜백 수신 API",
         description = """
             외부 서비스가 시나리오 생성 완료/실패 시 호출하는 콜백 API입니다. <br>
-            `externalRefId`로 요청을 매칭하여 상태를 갱신하고, 생성된 시나리오를 매핑합니다.
+            `requestId`로 요청을 매칭하여 상태를 갱신하고, 생성된 시나리오를 매핑합니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
@@ -147,12 +147,12 @@ public class DesignController {
         summary = "시나리오 생성 상태 폴링 API",
         description = """
             시나리오 생성 요청의 상태를 폴링 조회합니다. <br>
-            프론트에서 목록의 PROCESSING 상태 항목들의 requestId를 전달하여 상태 갱신을 확인합니다. <br>
+            프론트에서 목록의 processing 상태 항목들의 requestId를 전달하여 상태 갱신을 확인합니다. <br>
 
             <br><br>
             ### 사용 방법
-            - 목록 조회 후 PROCESSING 상태인 항목의 requestId 목록을 수집
-            - 주기적으로 본 API 호출하여 COMPLETED/FAILED 전환 확인
+            - 목록 조회 후 processing 상태인 항목의 requestId 목록을 수집
+            - 주기적으로 본 API 호출하여 completed 전환 확인
             - 상태가 바뀌면 프론트에서 해당 행의 버튼 상태 갱신
             """
     )

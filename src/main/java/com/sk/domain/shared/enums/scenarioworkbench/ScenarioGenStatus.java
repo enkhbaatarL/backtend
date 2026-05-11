@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScenarioGenStatus {
 
-    READY("READY", "생성준비"),
-    PROCESSING("PROCESSING", "생성중"),
-    COMPLETED("COMPLETED", "생성완료");
+    READY("ready", "생성준비"),
+    PROCESSING("processing", "생성중"),
+    COMPLETED("completed", "생성완료");
 
     @JsonValue
     private final String code;

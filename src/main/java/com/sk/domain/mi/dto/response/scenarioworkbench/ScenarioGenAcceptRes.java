@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 public record ScenarioGenAcceptRes(
 
-    @Schema(description = "생성 요청 ID", example = "1")
+    @Schema(description = "생성 요청 ID", example = "200")
     Long requestId,
 
-    @Schema(description = "요청 상태", example = "PROCESSING")
+    @Schema(description = "요청 상태", example = "processing")
     ScenarioGenStatus status,
 
     @Schema(description = "요청 상태 라벨", example = "생성중")

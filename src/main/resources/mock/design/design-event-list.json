@@ -14,7 +14,7 @@
         { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -32,7 +32,7 @@
         { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bearish", "directionLabel": "하락" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -50,7 +50,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -68,7 +68,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -86,7 +86,7 @@
         { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -104,7 +104,7 @@
         { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -122,7 +122,7 @@
         { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -140,7 +140,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -158,7 +158,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -176,7 +176,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -194,7 +194,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -212,7 +212,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -230,7 +230,7 @@
         { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -248,7 +248,7 @@
         { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     },
@@ -266,7 +266,7 @@
         { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
         { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
       ],
-      "scenarioGenStatus": "READY",
+      "scenarioGenStatus": "ready",
       "scenarioGenStatusLabel": "생성",
       "requestId": null
     }
