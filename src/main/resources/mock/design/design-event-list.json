@@ -1,0 +1,274 @@
+{
+  "events": [
+    {
+      "eventId": 1,
+      "eventName": "미국/이스라엘 이란 공습 개시 (Operation Epic Fury)",
+      "status": "updated",
+      "statusLabel": "갱신",
+      "eventCategoryLv1": "geopolitical_risk",
+      "eventCategoryLv1Label": "지정학적 리스크",
+      "createdAt": "2026-02-28T15:35:00",
+      "updatedAt": "2026-02-28T15:35:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 2,
+      "eventName": "이란, 호르무즈 해협 봉쇄 선언 — 선박 통항 위협 개시",
+      "status": "updated",
+      "statusLabel": "갱신",
+      "eventCategoryLv1": "geopolitical_risk",
+      "eventCategoryLv1Label": "지정학적 리스크",
+      "createdAt": "2026-02-28T15:35:00",
+      "updatedAt": "2026-02-28T15:35:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bearish", "directionLabel": "하락" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 3,
+      "eventName": "QatarEnergy, Ras Laffan LNG 터미널 Force Majeure 선언",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "infrastructure_facility",
+      "eventCategoryLv1Label": "인프라/설비",
+      "createdAt": "2026-02-27T09:30:00",
+      "updatedAt": "2026-02-27T09:30:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 4,
+      "eventName": "LNG 선박 호르무즈 통항 중단 — 희망봉 우회 전환 개시",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "logistics_shipping",
+      "eventCategoryLv1Label": "물류/해운",
+      "createdAt": "2026-02-26T14:00:00",
+      "updatedAt": "2026-02-26T14:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 5,
+      "eventName": "글로벌 LNG 공급 20% 즉시 차질 — 카타르·UAE 수출 중단",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "supply_demand_balance",
+      "eventCategoryLv1Label": "수급밸런스",
+      "createdAt": "2026-02-26T18:45:00",
+      "updatedAt": "2026-02-26T18:45:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 6,
+      "eventName": "미군 항모전단 호르무즈 인근 집결 — 이란과 군사적 긴장 고조",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "geopolitical_risk",
+      "eventCategoryLv1Label": "지정학적 리스크",
+      "createdAt": "2026-02-24T09:00:00",
+      "updatedAt": "2026-02-24T09:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 7,
+      "eventName": "JERA(일본), 긴급 대체 LNG 카고 확보 절차 돌입",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "supply_demand_balance",
+      "eventCategoryLv1Label": "수급밸런스",
+      "createdAt": "2026-02-23T11:10:00",
+      "updatedAt": "2026-02-23T11:10:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 8,
+      "eventName": "이스라엘 Leviathan 가스전, 보안 조치로 생산량 30% 감축",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "infrastructure_facility",
+      "eventCategoryLv1Label": "인프라/설비",
+      "createdAt": "2026-02-22T09:45:00",
+      "updatedAt": "2026-02-22T09:45:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 9,
+      "eventName": "이란 IRGC, 걸프 내 민간 LNG 선박 2척 나포 확인 (CENTCOM)",
+      "status": "updated",
+      "statusLabel": "갱신",
+      "eventCategoryLv1": "geopolitical_risk",
+      "eventCategoryLv1Label": "지정학적 리스크",
+      "createdAt": "2026-02-22T16:30:00",
+      "updatedAt": "2026-02-22T16:30:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 10,
+      "eventName": "EU, 긴급 가스 공급 안보 회의 소집 — 저장고 조기 방출 논의",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "supply_demand_balance",
+      "eventCategoryLv1Label": "수급밸런스",
+      "createdAt": "2026-02-21T10:00:00",
+      "updatedAt": "2026-02-21T10:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 11,
+      "eventName": "전쟁보험료 급등 — LNG 카고 운임 $200,000/일 돌파 전망",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "logistics_shipping",
+      "eventCategoryLv1Label": "물류/해운",
+      "createdAt": "2026-02-20T14:15:00",
+      "updatedAt": "2026-02-20T14:15:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 12,
+      "eventName": "IEA, 비상 석유 비축 방출 결의 — 천연가스 긴급 조율 병행",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "energy_mix_transition",
+      "eventCategoryLv1Label": "에너지믹스전환",
+      "createdAt": "2026-02-19T09:00:00",
+      "updatedAt": "2026-02-19T09:00:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 13,
+      "eventName": "S&P Platts: 호르무즈 차단 지속 시 JKM $30+ 상승 가능 경고",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "supply_demand_balance",
+      "eventCategoryLv1Label": "수급밸런스",
+      "createdAt": "2026-02-18T13:20:00",
+      "updatedAt": "2026-02-18T13:20:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "high", "marketImpactLevelLabel": "높음", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 14,
+      "eventName": "트럼프, 모든 해상무역 대상 정치위험 보험 제공 행정 지시",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "geopolitical_risk",
+      "eventCategoryLv1Label": "지정학적 리스크",
+      "createdAt": "2026-02-17T10:45:00",
+      "updatedAt": "2026-02-17T10:45:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    },
+    {
+      "eventId": 15,
+      "eventName": "Mozambique LNG, 공사 재개 후 호르무즈 위기로 자금 조달 리스크 재부상",
+      "status": "new",
+      "statusLabel": "신규",
+      "eventCategoryLv1": "infrastructure_facility",
+      "eventCategoryLv1Label": "인프라/설비",
+      "createdAt": "2026-02-16T09:30:00",
+      "updatedAt": "2026-02-16T09:30:00",
+      "indexImpacts": [
+        { "indexName": "JKM", "marketImpactLevel": "medium", "marketImpactLevelLabel": "중간", "direction": "bullish", "directionLabel": "상승" },
+        { "indexName": "TTF", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" },
+        { "indexName": "HH", "marketImpactLevel": "low", "marketImpactLevelLabel": "낮음", "direction": "negligible", "directionLabel": "보합" }
+      ],
+      "scenarioGenStatus": "READY",
+      "scenarioGenStatusLabel": "생성",
+      "requestId": null
+    }
+  ]
+}
