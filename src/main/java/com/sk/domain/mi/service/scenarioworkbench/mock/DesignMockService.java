@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DesignMockService {
 
-    private static final long AUTO_COMPLETE_DELAY_SECONDS = 30;
+    private static final long AUTO_COMPLETE_DELAY_SECONDS = 5;
     private static final String SCENARIO_TEMPLATE_KEY = "template";
 
     private final ObjectMapper objectMapper;
