@@ -13,12 +13,12 @@ import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -65,9 +65,8 @@ public class ScenarioMockService {
     }
 
     public ScenarioListRes getScenarios(ScenarioListReq request) {
-        LocalDateTime now = LocalDateTime.now();
-        Optional<LocalDateTime> periodStart = request.period().calcStartDateTime(now, request.startDate());
-        Optional<LocalDateTime> periodEnd = request.period().calcEndDateTime(request.endDate());
+        LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
+        LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
         Comparator<ScenarioListItemRes> comparator = Comparator.comparing(ScenarioListItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
@@ -76,8 +75,8 @@ public class ScenarioMockService {
 
         List<ScenarioListItemRes> filtered = scenarioList.stream()
             .filter(s -> request.scenarioStatus() == ContentStatus.ALL || s.status() == request.scenarioStatus())
-            .filter(s -> periodStart.map(start -> !s.updatedAt().isBefore(start)).orElse(true))
-            .filter(s -> periodEnd.map(end -> s.updatedAt().isBefore(end)).orElse(true))
+            .filter(s -> startDateTime == null || !s.updatedAt().isBefore(startDateTime))
+            .filter(s -> endDateTime == null || s.updatedAt().isBefore(endDateTime))
             .filter(s -> request.keyword().isEmpty() || s.scenarioName().contains(request.keyword()))
             .sorted(comparator)
             .toList();

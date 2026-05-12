@@ -20,13 +20,13 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -113,9 +113,8 @@ public class DesignMockService {
     }
 
     public DesignEventListRes getDesignEvents(DesignEventListReq request) {
-        LocalDateTime now = LocalDateTime.now();
-        Optional<LocalDateTime> periodStart = request.period().calcStartDateTime(now, request.startDate());
-        Optional<LocalDateTime> periodEnd = request.period().calcEndDateTime(request.endDate());
+        LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
+        LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
         Comparator<DesignEventItemRes> comparator = Comparator.comparing(DesignEventItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
@@ -125,8 +124,8 @@ public class DesignMockService {
         List<DesignEventItemRes> filtered = eventList.stream()
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.status() == request.eventStatus())
             .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
-            .filter(e -> periodStart.map(s -> !e.updatedAt().isBefore(s)).orElse(true))
-            .filter(e -> periodEnd.map(end -> e.updatedAt().isBefore(end)).orElse(true))
+            .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
+            .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
             .filter(e -> !request.hideCompleted() || e.scenarioGenStatus() != ScenarioGenStatus.COMPLETED)
             .sorted(comparator)

@@ -13,12 +13,12 @@ import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -83,9 +83,8 @@ public class EventMockService {
     }
 
     public EventListRes getEvents(EventListReq request) {
-        LocalDateTime now = LocalDateTime.now();
-        Optional<LocalDateTime> periodStart = request.period().calcStartDateTime(now, request.startDate());
-        Optional<LocalDateTime> periodEnd = request.period().calcEndDateTime(request.endDate());
+        LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
+        LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
         Comparator<EventListItemRes> comparator = Comparator.comparing(EventListItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
@@ -95,8 +94,8 @@ public class EventMockService {
         List<EventListItemRes> filtered = eventList.stream()
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.status() == request.eventStatus())
             .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
-            .filter(e -> periodStart.map(s -> !e.updatedAt().isBefore(s)).orElse(true))
-            .filter(e -> periodEnd.map(end -> e.updatedAt().isBefore(end)).orElse(true))
+            .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
+            .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
             .sorted(comparator)
             .toList();

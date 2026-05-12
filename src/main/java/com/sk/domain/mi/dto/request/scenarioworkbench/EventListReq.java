@@ -2,7 +2,6 @@ package com.sk.domain.mi.dto.request.scenarioworkbench;
 
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
-import com.sk.domain.shared.enums.scenarioworkbench.EventPeriod;
 import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,13 +18,10 @@ public record EventListReq(
     @ArraySchema(schema = @Schema(description = "이벤트 유형 Lv1", implementation = EventCategoryLv1.class))
     List<EventCategoryLv1> eventCategoryLv1,
 
-    @Schema(description = "조회 기간", implementation = EventPeriod.class, defaultValue = "SIX_MONTHS")
-    EventPeriod period,
-
-    @Schema(description = "커스텀 조회 시작일 (period=CUSTOM 시 사용)", example = "2025-09-01")
+    @Schema(description = "조회 시작일", example = "2025-09-01")
     LocalDate startDate,
 
-    @Schema(description = "커스텀 조회 종료일 (period=CUSTOM 시 사용)", example = "2026-02-28")
+    @Schema(description = "조회 종료일", example = "2026-02-28")
     LocalDate endDate,
 
     @Schema(description = "정렬 기준", implementation = SortOrder.class, defaultValue = "LATEST")
@@ -47,7 +43,6 @@ public record EventListReq(
     public EventListReq {
         eventStatus = eventStatus == null ? ContentStatus.ALL : eventStatus;
         eventCategoryLv1 = defaultList(eventCategoryLv1);
-        period = period == null ? EventPeriod.SIX_MONTHS : period;
         sort = sort == null ? SortOrder.LATEST : sort;
         keyword = keyword == null ? "" : keyword;
         page = page == null ? 1 : page;
