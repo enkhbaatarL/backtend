@@ -2,7 +2,6 @@ package com.sk.domain.mi.dto.response.scenarioworkbench;
 
 import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
-import com.sk.domain.shared.enums.scenarioworkbench.EventPeriod;
 import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
@@ -12,13 +11,10 @@ public record ScenarioAppliedFilterRes(
     @Schema(description = "시나리오 상태")
     ContentStatus scenarioStatus,
 
-    @Schema(description = "조회 기간")
-    EventPeriod period,
-
-    @Schema(description = "커스텀 조회 시작일")
+    @Schema(description = "조회 시작일")
     LocalDate startDate,
 
-    @Schema(description = "커스텀 조회 종료일")
+    @Schema(description = "조회 종료일")
     LocalDate endDate,
 
     @Schema(description = "정렬 기준")
@@ -32,7 +28,6 @@ public record ScenarioAppliedFilterRes(
     public static ScenarioAppliedFilterRes from(ScenarioListReq request) {
         return new ScenarioAppliedFilterRes(
             request.scenarioStatus(),
-            request.period(),
             request.startDate(),
             request.endDate(),
             request.sort(),

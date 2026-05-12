@@ -130,11 +130,12 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     private void applyPeriodFilter(BooleanBuilder where, EventListReq request) {
-        LocalDateTime now = LocalDateTime.now();
-        request.period().calcStartDateTime(now, request.startDate())
-            .ifPresent(start -> where.and(miEvent.modifyDt.goe(start)));
-        request.period().calcEndDateTime(request.endDate())
-            .ifPresent(end -> where.and(miEvent.modifyDt.lt(end)));
+        if (request.startDate() != null) {
+            where.and(miEvent.modifyDt.goe(request.startDate().atStartOfDay()));
+        }
+        if (request.endDate() != null) {
+            where.and(miEvent.modifyDt.lt(request.endDate().plusDays(1).atStartOfDay()));
+        }
     }
 
     private void applyKeywordFilter(BooleanBuilder where, String keyword) {

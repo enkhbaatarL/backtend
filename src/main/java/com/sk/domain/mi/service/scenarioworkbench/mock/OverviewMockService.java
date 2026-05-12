@@ -14,11 +14,11 @@ import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -84,9 +84,8 @@ public class OverviewMockService {
     }
 
     public OverviewEventListRes getOverviewEvents(OverviewEventListReq request) {
-        LocalDateTime now = LocalDateTime.now();
-        Optional<LocalDateTime> periodStart = request.period().calcStartDateTime(now, request.startDate());
-        Optional<LocalDateTime> periodEnd = request.period().calcEndDateTime(request.endDate());
+        LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
+        LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
         Comparator<OverviewEventItemRes> comparator = Comparator.comparing(OverviewEventItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
@@ -94,8 +93,8 @@ public class OverviewMockService {
         }
 
         List<OverviewEventItemRes> filtered = overviewEventList.stream()
-            .filter(e -> periodStart.map(s -> !e.updatedAt().isBefore(s)).orElse(true))
-            .filter(e -> periodEnd.map(end -> e.updatedAt().isBefore(end)).orElse(true))
+            .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
+            .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .sorted(comparator)
             .toList();
 
@@ -118,9 +117,8 @@ public class OverviewMockService {
     }
 
     public OverviewScenarioListRes getOverviewScenarios(OverviewEventListReq request) {
-        LocalDateTime now = LocalDateTime.now();
-        Optional<LocalDateTime> periodStart = request.period().calcStartDateTime(now, request.startDate());
-        Optional<LocalDateTime> periodEnd = request.period().calcEndDateTime(request.endDate());
+        LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
+        LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
         Comparator<OverviewScenarioItemRes> comparator = Comparator.comparing(OverviewScenarioItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
@@ -128,8 +126,8 @@ public class OverviewMockService {
         }
 
         List<OverviewScenarioItemRes> filtered = overviewScenarioList.stream()
-            .filter(s -> periodStart.map(start -> !s.updatedAt().isBefore(start)).orElse(true))
-            .filter(s -> periodEnd.map(end -> s.updatedAt().isBefore(end)).orElse(true))
+            .filter(s -> startDateTime == null || !s.updatedAt().isBefore(startDateTime))
+            .filter(s -> endDateTime == null || s.updatedAt().isBefore(endDateTime))
             .sorted(comparator)
             .toList();
 
