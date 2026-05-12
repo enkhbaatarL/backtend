@@ -57,7 +57,7 @@
           "trendSummary": "4~6월 $19~21 (아시아 전이) → 7~9월 $17~19 (파이프라인 보완) → 4Q $16~18 (계절 수요)"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "medium",
           "marketImpactLevelLabel": "중간",
           "direction": "bearish",
@@ -486,7 +486,7 @@
           "trendSummary": "2Q $15~18 (재충전 피크) → 3Q $14~16 (목표 근접) → 4Q $13~14 (안정화)"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "medium",
           "marketImpactLevelLabel": "중간",
           "direction": "negligible",
@@ -914,7 +914,7 @@
           "trendSummary": "2Q $13~15 (점진 상승) → 3Q $12~14 (목표 접근) → 4Q $12~13 (안정)"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "low",
           "marketImpactLevelLabel": "낮음",
           "direction": "negligible",
@@ -1319,7 +1319,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "low",
           "marketImpactLevelLabel": "낮음",
           "direction": "bearish",
@@ -1728,7 +1728,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "low",
           "marketImpactLevelLabel": "낮음",
           "direction": "bearish",
@@ -2105,7 +2105,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "medium",
           "marketImpactLevelLabel": "중간",
           "direction": "negligible",
@@ -2495,7 +2495,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "high",
           "marketImpactLevelLabel": "높음",
           "direction": "bullish",
@@ -2862,7 +2862,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "medium",
           "marketImpactLevelLabel": "중간",
           "direction": "negligible",
@@ -3229,7 +3229,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "low",
           "marketImpactLevelLabel": "낮음",
           "direction": "bearish",
@@ -3573,7 +3573,7 @@
           "trendSummary": "2Q $12~14 → 3Q $11~13 → 4Q $10~11"
         },
         {
-          "indexName": "Henry Hub",
+          "indexName": "HH",
           "marketImpactLevel": "low",
           "marketImpactLevelLabel": "낮음",
           "direction": "bearish",
