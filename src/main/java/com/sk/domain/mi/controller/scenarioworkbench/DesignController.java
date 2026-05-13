@@ -13,6 +13,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.GeneratedScenarioRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioGenAcceptRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioGenStatusRes;
 import com.sk.domain.mi.service.scenarioworkbench.DesignService;
+import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,8 +25,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,10 +68,10 @@ public class DesignController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/events")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<DesignEventListRes> getDesignEvents(@Valid @ParameterObject DesignEventListReq request) {
         return BaseResponseFactory.create(designService.getDesignEvents(request));
     }
@@ -94,10 +93,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "생성 요청 접수 성공")
     @PostMapping("/generate")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ScenarioGenAcceptRes> generateScenarios(
         @Valid @RequestBody ScenarioGenReq request
     ) {
@@ -132,10 +131,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/generate/{requestId}/scenarios")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<List<GeneratedScenarioRes>> getGeneratedScenarios(
         @Parameter(description = "생성 요청 ID", example = "1") @PathVariable Long requestId
     ) {
@@ -158,10 +157,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/generate/status")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<List<ScenarioGenStatusRes>> getGenerateStatuses(
         @Parameter(description = "생성 요청 ID 목록", example = "1,2,3")
         @RequestParam List<Long> requestIds
@@ -179,10 +178,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "초기화 성공")
     @PostMapping("/reset")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<Void> reset() {
         designService.reset();
         return BaseResponseFactory.create(ResultCode.Success.OK);

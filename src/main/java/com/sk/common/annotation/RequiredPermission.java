@@ -49,4 +49,11 @@ public @interface RequiredPermission {
      */
     PermissionCondition condition() default PermissionCondition.NONE;
 
+    /**
+     * 복합 권한 규칙
+     * - PermissionRule 간: OR 조건
+     * - PermissionRule 내부 roles + conditions: AND 조건
+     */
+    PermissionRule[] rules() default {};
+
 }

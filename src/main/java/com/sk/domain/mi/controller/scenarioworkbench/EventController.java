@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.EventInstitutionOutlookRe
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventRelatedRecordRes;
 import com.sk.domain.mi.service.scenarioworkbench.EventService;
+import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -82,10 +83,10 @@ public class EventController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<EventListRes> getEvents(@Valid @ParameterObject EventListReq request) {
         return BaseResponseFactory.create(eventService.getEvents(request));
     }
@@ -116,10 +117,10 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<EventDetailRes> getEventDetail(
         @Parameter(description = "이���트 ID", example = "1") @PathVariable Long eventId
     ) {
@@ -148,10 +149,10 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}/records")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<PaginationRes<EventRelatedRecordRes>> getEventRecords(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
         @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
@@ -181,10 +182,10 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}/outlooks")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
         @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,

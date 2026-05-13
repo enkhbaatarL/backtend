@@ -1,15 +1,15 @@
 package com.sk.common.aop;
 
+import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.GoodsNestedEntityResolver;
+import com.sk.domain.shared.service.permissions.PermissionMessageFormatter;
 import com.sk.domain.shared.service.permissions.PermissionStrategyFactory;
 import com.sk.domain.shared.service.permissions.strategy.PermissionStrategy;
-import java.util.Arrays;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -28,6 +28,7 @@ public class PermissionAspect {
 
     private final PermissionStrategyFactory strategyFactory;
     private final GoodsNestedEntityResolver goodsNestedEntityResolver;
+    private final PermissionMessageFormatter permissionMessageFormatter;
 
     /**
      * 주어진 @RequiredPermission 어노테이션을 기반으로 API 접근 권한을 검사합니다.
@@ -38,21 +39,46 @@ public class PermissionAspect {
     @Before("@annotation(requiredPermission)")
     public void checkPermission(JoinPoint joinPoint, RequiredPermission requiredPermission) {
 
+        PermissionStrategy strategy = hasRules(requiredPermission)
+            ? checkRulePermission(requiredPermission) // rule 기반 권한 체크
+            : checkLegacyPermission(requiredPermission); // role 기반 권한 체크(legacy)
+
+        checkGoodsPermission(joinPoint, strategy, requiredPermission);
+
+    }
+
+    private boolean hasRules(RequiredPermission requiredPermission) {
+        return requiredPermission.rules().length > 0;
+    }
+
+    private PermissionStrategy checkRulePermission(RequiredPermission requiredPermission) {
+        PermissionRule[] rules = requiredPermission.rules();
+        PermissionStrategy strategy = strategyFactory.getStrategy(rules);
+
+        // 1. API 접근 가능 여부 체크
+        if (BooleanUtils.isFalse(strategy.canAccessApi(rules))) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, permissionMessageFormatter.allowedOnlyFor(rules));
+        }
+
+        return strategy;
+    }
+
+    private PermissionStrategy checkLegacyPermission(RequiredPermission requiredPermission) {
         // allowedRoles
         Role[] roles = requiredPermission.roles();
         PermissionCondition condition = requiredPermission.condition();
 
         PermissionStrategy strategy = strategyFactory.getStrategy(condition);
 
-        List<String> allowedRoleCode = Arrays.stream(roles)
-            .map(role -> (role == Role.ADMIN && condition == PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
-                ? "%s(%s)".formatted(role.getCode(), condition) : role.getCode()).toList();
-
         // 1. API 접근 가능 여부 체크
         if (BooleanUtils.isFalse(strategy.canAccessApi(roles, condition))) {
-            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "This API is allowed only for the following roles: %s".formatted(allowedRoleCode));
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, permissionMessageFormatter.allowedOnlyFor(roles, condition));
         }
 
+        return strategy;
+    }
+
+    private void checkGoodsPermission(JoinPoint joinPoint, PermissionStrategy strategy, RequiredPermission requiredPermission) {
         // 2-1. 상품 권한이 필요한 경우 (상품 하위 엔티티 식별자를 통해 접근)
         if (StringUtils.hasText(requiredPermission.goodsNestedParam())) {
 
@@ -75,7 +101,6 @@ public class PermissionAspect {
                 checkViewOrDownload(strategy, goodsNo, requiredPermission);
             }
         }
-
     }
 
     /**

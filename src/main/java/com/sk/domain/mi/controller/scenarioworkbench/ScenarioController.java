@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioDetailRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioListRes;
 import com.sk.domain.mi.service.scenarioworkbench.ScenarioService;
+import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,10 +76,10 @@ public class ScenarioController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ScenarioListRes> getScenarios(@Valid @ParameterObject ScenarioListReq request) {
         return BaseResponseFactory.create(scenarioService.getScenarios(request));
     }
@@ -111,10 +112,10 @@ public class ScenarioController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{scenarioId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ScenarioDetailRes> getScenarioDetail(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId
     ) {

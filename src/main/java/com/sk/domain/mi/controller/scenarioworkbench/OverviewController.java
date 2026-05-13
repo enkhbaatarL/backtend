@@ -9,6 +9,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.OverviewEventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.OverviewPriceForecastRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.OverviewScenarioListRes;
 import com.sk.domain.mi.service.scenarioworkbench.OverviewService;
+import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.scenarioworkbench.IndexName;
@@ -76,10 +77,10 @@ public class OverviewController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 10")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/events")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<OverviewEventListRes> getOverviewEvents(@Valid @ParameterObject OverviewEventListReq request) {
         return BaseResponseFactory.create(overviewService.getOverviewEvents(request));
     }
@@ -126,10 +127,10 @@ public class OverviewController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 10")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/scenarios")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<OverviewScenarioListRes> getOverviewScenarios(@Valid @ParameterObject OverviewEventListReq request) {
         return BaseResponseFactory.create(overviewService.getOverviewScenarios(request));
     }
@@ -167,10 +168,10 @@ public class OverviewController {
     @Parameter(name = "scenarioIds", description = "시나리오 ID 목록 (선택) — Scenario First 모드에서 현재 페이지의 시나리오 필터", example = "1,2,3")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/price-forecasts")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermission(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<OverviewPriceForecastRes> getOverviewPriceForecasts(
         @RequestParam IndexName indexName,
         @RequestParam(required = false) Long eventId,
