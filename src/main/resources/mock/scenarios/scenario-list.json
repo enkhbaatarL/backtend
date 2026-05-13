@@ -2,9 +2,1143 @@
   "scenarios": [
     {
       "scenarioId": 1,
-      "scenarioName": "호르무즈 봉쇄 3개월+ 유지",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioName": "외교 관리 속 제한적 프리미엄 반영",
+      "createdAt": "2026-05-12T06:24:17",
+      "updatedAt": "2026-05-12T06:24:17",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 2,
+      "scenarioName": "직접 군사위협으로 카타르 LNG 차질 우려 급등",
+      "createdAt": "2026-05-12T06:24:17",
+      "updatedAt": "2026-05-12T06:24:17",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 3,
+      "scenarioName": "대리세력 리스크로 간헐적 지연 프리미엄 확대",
+      "createdAt": "2026-05-12T06:24:17",
+      "updatedAt": "2026-05-12T06:24:17",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 4,
+      "scenarioName": "물리적 충돌과 항로 전면 중단으로 패닉 프리미엄 형성",
+      "createdAt": "2026-05-12T06:24:17",
+      "updatedAt": "2026-05-12T06:24:17",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 5,
+      "scenarioName": "외교 국면에도 간헐 차질이 누적되며 고프리미엄 유지",
+      "createdAt": "2026-05-12T06:24:17",
+      "updatedAt": "2026-05-12T06:24:17",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 6,
+      "scenarioName": "외교적 봉합 시도에도 지속 감시가 극단적 불안 심리 자극",
+      "createdAt": "2026-05-12T06:24:17",
+      "updatedAt": "2026-05-12T06:24:17",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 7,
+      "scenarioName": "1~3개월 내 외교 봉합으로 리스크 프리미엄 반납",
+      "createdAt": "2026-05-12T06:45:49",
+      "updatedAt": "2026-05-12T06:45:49",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 8,
+      "scenarioName": "대리전성 충돌과 간헐적 통항 차질로 제한적 재상승",
+      "createdAt": "2026-05-12T06:45:49",
+      "updatedAt": "2026-05-12T06:45:49",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 9,
+      "scenarioName": "단기 대리전에도 부분 봉쇄가 겹치며 현물 LNG 방어매수 확대",
+      "createdAt": "2026-05-12T06:45:49",
+      "updatedAt": "2026-05-12T06:45:49",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 10,
+      "scenarioName": "단기 지역전과 전면 봉쇄 충격이나 조기 해소 기대가 가격 급등을 제한",
+      "createdAt": "2026-05-12T06:45:49",
+      "updatedAt": "2026-05-12T06:45:49",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 11,
+      "scenarioName": "장기 고강도 충돌과 전면 봉쇄로 에너지 안보 프리미엄 급등",
+      "createdAt": "2026-05-12T06:45:49",
+      "updatedAt": "2026-05-12T06:45:49",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 12,
+      "scenarioName": "1년 이상 지역전 고착과 부분 봉쇄로 극단적 LNG 프리미엄 형성",
+      "createdAt": "2026-05-12T06:45:49",
+      "updatedAt": "2026-05-12T06:45:49",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 13,
+      "scenarioName": "1개월 내 제한 충돌로 리스크 프리미엄은 낮게 잔존",
+      "createdAt": "2026-05-12T06:04:32",
+      "updatedAt": "2026-05-12T06:04:32",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 14,
+      "scenarioName": "1~3개월 지역전과 부분 봉쇄로 중간 수준 프리미엄 반영",
+      "createdAt": "2026-05-12T06:04:32",
+      "updatedAt": "2026-05-12T06:04:32",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 15,
+      "scenarioName": "장기 고강도 전쟁과 호르무즈 전면 봉쇄로 LNG 쇼크 확대",
+      "createdAt": "2026-05-12T06:04:32",
+      "updatedAt": "2026-05-12T06:04:32",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 16,
+      "scenarioName": "단기 고강도 충돌에도 부분 봉쇄와 극단 프리미엄이 즉각 반영",
+      "createdAt": "2026-05-12T06:04:32",
+      "updatedAt": "2026-05-12T06:04:32",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 17,
+      "scenarioName": "제한적 대리전 속 전면 봉쇄로 물류 리스크만 극단화",
+      "createdAt": "2026-05-12T06:04:32",
+      "updatedAt": "2026-05-12T06:04:32",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 18,
+      "scenarioName": "3~6개월 존립 위기형 확전과 장기 폐쇄로 극단적 공급 경색",
+      "createdAt": "2026-05-12T06:04:32",
+      "updatedAt": "2026-05-12T06:04:32",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 19,
+      "scenarioName": "1주 내 외교 봉합, 제한적 감시 프리미엄만 반영",
+      "createdAt": "2026-05-12T06:13:30",
+      "updatedAt": "2026-05-12T06:13:30",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 20,
+      "scenarioName": "1~3개월 대리전 긴장, 간헐적 운항 차질 프리미엄",
+      "createdAt": "2026-05-12T06:13:30",
+      "updatedAt": "2026-05-12T06:13:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 21,
+      "scenarioName": "장기 군사위협 상시화, 호르무즈 리스크 프리미엄 고착",
+      "createdAt": "2026-05-12T06:13:30",
+      "updatedAt": "2026-05-12T06:13:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 22,
+      "scenarioName": "1주 미만 대리전발 전면 중단, 단기 LNG 스파이크",
+      "createdAt": "2026-05-12T06:13:30",
+      "updatedAt": "2026-05-12T06:13:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 23,
+      "scenarioName": "1주 내 물리적 충돌, 상시 경계 속 단기 강세",
+      "createdAt": "2026-05-12T06:13:30",
+      "updatedAt": "2026-05-12T06:13:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 24,
+      "scenarioName": "3~6개월 물리적 충돌과 전면 중단, 에너지 가격 급등 국면",
+      "createdAt": "2026-05-12T06:13:30",
+      "updatedAt": "2026-05-12T06:13:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 25,
+      "scenarioName": "개별 제재에 그치며 3개월 내 운송 정상화",
+      "createdAt": "2026-05-12T06:44:44",
+      "updatedAt": "2026-05-12T06:44:44",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 26,
+      "scenarioName": "2차 제재와 벌금 집행으로 1년짜리 리스크 프리미엄 형성",
+      "createdAt": "2026-05-12T06:44:44",
+      "updatedAt": "2026-05-12T06:44:44",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 27,
+      "scenarioName": "부분 섹터 제재의 엄격 집행으로 6개월간 LNG 조달 비용 상승",
+      "createdAt": "2026-05-12T06:44:44",
+      "updatedAt": "2026-05-12T06:44:44",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 28,
+      "scenarioName": "벌금 리스크와 1년 초과 대체 지연이 중기 비용 부담으로 누적",
+      "createdAt": "2026-05-12T06:44:44",
+      "updatedAt": "2026-05-12T06:44:44",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 29,
+      "scenarioName": "대상은 좁지만 엄격 집행과 극단적 프리미엄이 시장 회피를 촉발",
+      "createdAt": "2026-05-12T06:44:44",
+      "updatedAt": "2026-05-12T06:44:44",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 30,
+      "scenarioName": "자산동결 집행으로 6개월간 보험·결제 경로가 경색",
+      "createdAt": "2026-05-12T06:44:44",
+      "updatedAt": "2026-05-12T06:44:44",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 31,
+      "scenarioName": "단기 모니터링으로 아시아 현물 조달 불안 제한",
+      "createdAt": "2026-05-12T04:59:23",
+      "updatedAt": "2026-05-12T04:59:23",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 32,
+      "scenarioName": "중간 강도의 수요 조정으로 완만한 아시아 프리미엄 유지",
+      "createdAt": "2026-05-12T04:59:23",
+      "updatedAt": "2026-05-12T04:59:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 33,
+      "scenarioName": "수요는 약하지만 장기 재배분이 완만한 리스크 프리미엄을 남김",
+      "createdAt": "2026-05-12T04:59:23",
+      "updatedAt": "2026-05-12T04:59:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 34,
+      "scenarioName": "수출통제 논의와 극단적 스프레드가 아시아 프리미엄을 재점화",
+      "createdAt": "2026-05-12T04:59:23",
+      "updatedAt": "2026-05-12T04:59:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 35,
+      "scenarioName": "약한 수요에도 수출통제 논의 장기화가 조달 심리를 압박",
+      "createdAt": "2026-05-12T04:59:23",
+      "updatedAt": "2026-05-12T04:59:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 36,
+      "scenarioName": "수출제한과 초장기 재배분으로 역내 공급 경색 심화",
+      "createdAt": "2026-05-12T04:59:23",
+      "updatedAt": "2026-05-12T04:59:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 37,
+      "scenarioName": "제한 제재로 단기 경계만 확대",
+      "createdAt": "2026-05-12T06:02:30",
+      "updatedAt": "2026-05-12T06:02:30",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 38,
+      "scenarioName": "2차 제재와 벌금 리스크로 거래 회피 확산",
+      "createdAt": "2026-05-12T06:02:30",
+      "updatedAt": "2026-05-12T06:02:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 39,
+      "scenarioName": "부분 섹터 압박으로 중간 수준 프리미엄 형성",
+      "createdAt": "2026-05-12T06:02:30",
+      "updatedAt": "2026-05-12T06:02:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 40,
+      "scenarioName": "좁은 제재라도 엄격 집행에 고위험 프리미엄 부각",
+      "createdAt": "2026-05-12T06:02:30",
+      "updatedAt": "2026-05-12T06:02:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 41,
+      "scenarioName": "벌금 가능성이 중간 프리미엄을 고착",
+      "createdAt": "2026-05-12T06:02:30",
+      "updatedAt": "2026-05-12T06:02:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 42,
+      "scenarioName": "자산동결과 극단 프리미엄으로 LNG 방어 매수 확대",
+      "createdAt": "2026-05-12T06:02:30",
+      "updatedAt": "2026-05-12T06:02:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 43,
+      "scenarioName": "1~3개월 두 개 Train 차질, 부분 스팟 조달로 LNG 프리미엄 확대",
+      "createdAt": "2026-05-12T06:08:13",
+      "updatedAt": "2026-05-12T06:08:13",
       "baseCase": true,
       "indexImpacts": [
         {
@@ -19,52 +1153,52 @@
         },
         {
           "indexName": "HH",
-          "marketImpactLevel": "high",
-          "marketImpactLevelLabel": "높음"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         }
       ],
-      "probability": 0.325,
+      "probability": 0.4,
       "status": "new",
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 2,
-      "scenarioName": "EU 재충전 수요 급증 — 글로벌 LNG 카고 흡수",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 44,
+      "scenarioName": "2~4주 내 제한 차질, 오프테이커 재배분으로 급등은 억제",
+      "createdAt": "2026-05-12T06:08:13",
+      "updatedAt": "2026-05-12T06:08:13",
       "baseCase": false,
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "marketImpactLevel": "high",
-          "marketImpactLevelLabel": "높음"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "TTF",
-          "marketImpactLevel": "high",
-          "marketImpactLevelLabel": "높음"
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
         },
         {
           "indexName": "HH",
-          "marketImpactLevel": "medium",
-          "marketImpactLevelLabel": "중간"
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
         }
       ],
-      "probability": 0.45,
+      "probability": 0.3,
       "status": "new",
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 3,
-      "scenarioName": "재충전 수요 분산 — 아시아 영향 제한적",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 45,
+      "scenarioName": "단기 복구에도 6~15카고 지연, 취소 검토가 리스크 프리미엄 자극",
+      "createdAt": "2026-05-12T06:08:13",
+      "updatedAt": "2026-05-12T06:08:13",
       "baseCase": false,
       "indexImpacts": [
         {
           "indexName": "JKM",
-          "marketImpactLevel": "medium",
-          "marketImpactLevelLabel": "중간"
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "TTF",
@@ -82,10 +1216,145 @@
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 4,
-      "scenarioName": "EU 가스 절약 정책 재시행 — 수요 억제",
-      "createdAt": "2026-02-28T09:00:00",
-      "updatedAt": "2026-03-01T10:00:00",
+      "scenarioId": 46,
+      "scenarioName": "3~6개월 전면 차질, 스팟 조달 경쟁으로 유럽·아시아 동반 강세",
+      "createdAt": "2026-05-12T06:08:13",
+      "updatedAt": "2026-05-12T06:08:13",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 47,
+      "scenarioName": "단기 복구지만 16~30카고 재조정, 스팟 전면 조달로 강세 지속",
+      "createdAt": "2026-05-12T06:08:13",
+      "updatedAt": "2026-05-12T06:08:13",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 48,
+      "scenarioName": "6개월 이상 영구 손실, 대체 불능 공급 쇼크로 글로벌 LNG 급등",
+      "createdAt": "2026-05-12T06:08:13",
+      "updatedAt": "2026-05-12T06:08:13",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 49,
+      "scenarioName": "단기 조정에 그치는 균형 재배분",
+      "createdAt": "2026-05-12T06:09:27",
+      "updatedAt": "2026-05-12T06:09:27",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 50,
+      "scenarioName": "아시아 프리미엄 속 장기 물량 선점 경쟁",
+      "createdAt": "2026-05-12T06:09:27",
+      "updatedAt": "2026-05-12T06:09:27",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 51,
+      "scenarioName": "중간 강도의 유럽 조달 프리미엄 형성",
+      "createdAt": "2026-05-12T06:09:27",
+      "updatedAt": "2026-05-12T06:09:27",
       "baseCase": false,
       "indexImpacts": [
         {
@@ -104,16 +1373,259 @@
           "marketImpactLevelLabel": "낮음"
         }
       ],
-      "probability": 0.25,
-      "status": "updated",
-      "statusLabel": "갱신"
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
     },
     {
-      "scenarioId": 5,
-      "scenarioName": "커미셔닝 지연 — 공급 기대 실망감",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 52,
+      "scenarioName": "경쟁은 약하지만 장기 미세 조정 지속",
+      "createdAt": "2026-05-12T06:09:27",
+      "updatedAt": "2026-05-12T06:09:27",
       "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 53,
+      "scenarioName": "강한 아시아 스프레드가 유럽 물량 여지를 압박",
+      "createdAt": "2026-05-12T06:09:27",
+      "updatedAt": "2026-05-12T06:09:27",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 54,
+      "scenarioName": "지중해 LNG 확보전의 장기 구조화",
+      "createdAt": "2026-05-12T06:09:27",
+      "updatedAt": "2026-05-12T06:09:27",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 55,
+      "scenarioName": "단기 교전 후 통항 불안만 남는 제한적 리스크 프리미엄",
+      "createdAt": "2026-05-12T06:12:19",
+      "updatedAt": "2026-05-12T06:12:19",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 56,
+      "scenarioName": "부분 봉쇄 속 1~3개월 지역전 리스크가 LNG 조달비용을 끌어올림",
+      "createdAt": "2026-05-12T06:12:19",
+      "updatedAt": "2026-05-12T06:12:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 57,
+      "scenarioName": "단기 지역전 확산이 간헐적 통항 불안에도 높은 LNG 프리미엄을 유발",
+      "createdAt": "2026-05-12T06:12:19",
+      "updatedAt": "2026-05-12T06:12:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 58,
+      "scenarioName": "호르무즈 전면 봉쇄가 장기화되는 고강도 공급 쇼크",
+      "createdAt": "2026-05-12T06:12:19",
+      "updatedAt": "2026-05-12T06:12:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 59,
+      "scenarioName": "짧지만 부분 봉쇄와 원유 차질이 겹치는 급등형 단기 쇼크",
+      "createdAt": "2026-05-12T06:12:19",
+      "updatedAt": "2026-05-12T06:12:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 60,
+      "scenarioName": "1년 이상 장기 폐쇄로 글로벌 에너지 가격 체계가 재편되는 극단 시나리오",
+      "createdAt": "2026-05-12T06:12:19",
+      "updatedAt": "2026-05-12T06:12:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 61,
+      "scenarioName": "2~4주 내 제한적 차질 후 타 터미널 전환으로 정상화",
+      "createdAt": "2026-05-12T06:35:26",
+      "updatedAt": "2026-05-12T06:35:26",
+      "baseCase": true,
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -136,11 +1648,146 @@
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 6,
-      "scenarioName": "EU 카고 선회 — 아시아 도달 물량 제한",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 62,
+      "scenarioName": "1~3개월 중간 차질이나 offtaker 재배분으로 충격 완화",
+      "createdAt": "2026-05-12T06:35:26",
+      "updatedAt": "2026-05-12T06:35:26",
       "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 63,
+      "scenarioName": "2~4주 단기 복구에도 중간 규모 카고 지연과 취소 검토로 변동성 확대",
+      "createdAt": "2026-05-12T06:35:26",
+      "updatedAt": "2026-05-12T06:35:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 64,
+      "scenarioName": "2~4주 경미한 감산이나 계약 취소 검토로 단기 리스크 프리미엄 형성",
+      "createdAt": "2026-05-12T06:35:26",
+      "updatedAt": "2026-05-12T06:35:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 65,
+      "scenarioName": "3~6개월 장기 차질과 대체 불능으로 글로벌 LNG 공급 쇼크 확대",
+      "createdAt": "2026-05-12T06:35:26",
+      "updatedAt": "2026-05-12T06:35:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 66,
+      "scenarioName": "1~3개월 완전 중단과 대체 불능으로 공급 공백이 직접 가격에 반영",
+      "createdAt": "2026-05-12T06:35:26",
+      "updatedAt": "2026-05-12T06:35:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 67,
+      "scenarioName": "1~3개월 조정 국면에서 부분 스팟 커버가 프리미엄을 유지",
+      "createdAt": "2026-05-12T06:10:58",
+      "updatedAt": "2026-05-12T06:10:58",
+      "baseCase": true,
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -158,15 +1805,15 @@
           "marketImpactLevelLabel": "중간"
         }
       ],
-      "probability": 0.35,
+      "probability": 0.4,
       "status": "new",
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 7,
-      "scenarioName": "미국 LNG 수출 규제 재논의",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 68,
+      "scenarioName": "단기 물류 차질은 오프테이커 재배분으로 흡수",
+      "createdAt": "2026-05-12T06:10:58",
+      "updatedAt": "2026-05-12T06:10:58",
       "baseCase": false,
       "indexImpacts": [
         {
@@ -178,6 +1825,195 @@
           "indexName": "TTF",
           "marketImpactLevel": "medium",
           "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 69,
+      "scenarioName": "중기 공급 공백에 스팟 조달이 가격 상단을 시험",
+      "createdAt": "2026-05-12T06:10:58",
+      "updatedAt": "2026-05-12T06:10:58",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 70,
+      "scenarioName": "짧지만 대체 불가한 인도 차질이 즉시 가격을 자극",
+      "createdAt": "2026-05-12T06:10:58",
+      "updatedAt": "2026-05-12T06:10:58",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 71,
+      "scenarioName": "30건 이상 지연은 스팟 총동원에도 글로벌 LNG 프리미엄을 확대",
+      "createdAt": "2026-05-12T06:10:58",
+      "updatedAt": "2026-05-12T06:10:58",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 72,
+      "scenarioName": "소규모 카고 차질이 장기 계약 리스크로 잔존",
+      "createdAt": "2026-05-12T06:10:58",
+      "updatedAt": "2026-05-12T06:10:58",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 73,
+      "scenarioName": "1개월 내 국지 충돌 진정, LNG 프리미엄은 제한적 상승",
+      "createdAt": "2026-05-12T06:19:42",
+      "updatedAt": "2026-05-12T06:19:42",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 74,
+      "scenarioName": "1~3개월 지역전으로 확대, 부분 봉쇄가 중간 강도의 LNG 랠리 유발",
+      "createdAt": "2026-05-12T06:19:42",
+      "updatedAt": "2026-05-12T06:19:42",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 75,
+      "scenarioName": "6~12개월 고강도 충돌과 전면 봉쇄, 에너지 가격 전반 급등",
+      "createdAt": "2026-05-12T06:19:42",
+      "updatedAt": "2026-05-12T06:19:42",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
         },
         {
           "indexName": "HH",
@@ -190,11 +2026,92 @@
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 8,
-      "scenarioName": "Train 2-3 동시 조기 가동 — 오버서플라이",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 76,
+      "scenarioName": "단기 고강도 충돌에도 극단적 프리미엄, 즉각적인 가격 스파이크",
+      "createdAt": "2026-05-12T06:19:42",
+      "updatedAt": "2026-05-12T06:19:42",
       "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 77,
+      "scenarioName": "제한적 대리전에도 해협 장기 폐쇄, LNG·원유 공급 충격 심화",
+      "createdAt": "2026-05-12T06:19:42",
+      "updatedAt": "2026-05-12T06:19:42",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 78,
+      "scenarioName": "1년 이상 저강도 충돌 속 전면 봉쇄 고착, LNG 구조적 프리미엄 장기화",
+      "createdAt": "2026-05-12T06:19:42",
+      "updatedAt": "2026-05-12T06:19:42",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 79,
+      "scenarioName": "유럽 보충 경쟁 확산, 완화 조치에도 LNG 프리미엄 상승",
+      "createdAt": "2026-05-12T06:25:26",
+      "updatedAt": "2026-05-12T06:25:26",
+      "baseCase": true,
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -212,42 +2129,15 @@
           "marketImpactLevelLabel": "중간"
         }
       ],
-      "probability": 0.15,
+      "probability": 0.4,
       "status": "new",
       "statusLabel": "신규"
     },
     {
-      "scenarioId": 9,
-      "scenarioName": "KOGAS 스팟 매수 축소 — JKM 근월 약세",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
-      "baseCase": false,
-      "indexImpacts": [
-        {
-          "indexName": "JKM",
-          "marketImpactLevel": "medium",
-          "marketImpactLevelLabel": "중간"
-        },
-        {
-          "indexName": "TTF",
-          "marketImpactLevel": "low",
-          "marketImpactLevelLabel": "낮음"
-        },
-        {
-          "indexName": "HH",
-          "marketImpactLevel": "low",
-          "marketImpactLevelLabel": "낮음"
-        }
-      ],
-      "probability": 0.55,
-      "status": "new",
-      "statusLabel": "신규"
-    },
-    {
-      "scenarioId": 10,
-      "scenarioName": "노르웨이·알제리 파이프라인 증산 — EU 내부 해소",
-      "createdAt": "2026-03-01T09:00:00",
-      "updatedAt": "2026-03-01T09:00:00",
+      "scenarioId": 80,
+      "scenarioName": "재고 부족은 감시 국면에 머물며 완만한 보충 수요만 반영",
+      "createdAt": "2026-05-12T06:25:26",
+      "updatedAt": "2026-05-12T06:25:26",
       "baseCase": false,
       "indexImpacts": [
         {
@@ -267,6 +2157,4488 @@
         }
       ],
       "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 81,
+      "scenarioName": "심각한 재고 공백에 정책 논의만 지연되며 TTF 급등 위험 부각",
+      "createdAt": "2026-05-12T06:25:26",
+      "updatedAt": "2026-05-12T06:25:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 82,
+      "scenarioName": "작은 비축 Gap에도 타이트한 공급이 완만한 강세를 유지",
+      "createdAt": "2026-05-12T06:25:26",
+      "updatedAt": "2026-05-12T06:25:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 83,
+      "scenarioName": "패닉성 유럽 매수와 긴급 대응으로 글로벌 LNG 경쟁 격화",
+      "createdAt": "2026-05-12T06:25:26",
+      "updatedAt": "2026-05-12T06:25:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 84,
+      "scenarioName": "목표 Gap은 작지만 공급 부족이 가격 상방을 주도",
+      "createdAt": "2026-05-12T06:25:26",
+      "updatedAt": "2026-05-12T06:25:26",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 85,
+      "scenarioName": "부분 차질은 타 터미널 물량으로 흡수",
+      "createdAt": "2026-05-12T06:27:41",
+      "updatedAt": "2026-05-12T06:27:41",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 86,
+      "scenarioName": "두 개 Train 감산은 오프테이커 재배분으로 제한적 완충",
+      "createdAt": "2026-05-12T06:27:41",
+      "updatedAt": "2026-05-12T06:27:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 87,
+      "scenarioName": "부분 Train 차질과 20% feedgas 감소, 스팟 조달로 절반 완충",
+      "createdAt": "2026-05-12T06:27:41",
+      "updatedAt": "2026-05-12T06:27:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 88,
+      "scenarioName": "두 개 Train 운영 이슈에도 feedgas 유지로 공급 완화 지속",
+      "createdAt": "2026-05-12T06:27:41",
+      "updatedAt": "2026-05-12T06:27:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 89,
+      "scenarioName": "전면 중단과 대체 불능으로 공급 리스크 급부상",
+      "createdAt": "2026-05-12T06:27:41",
+      "updatedAt": "2026-05-12T06:27:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 90,
+      "scenarioName": "한 Train 일부 문제라도 feedgas 전면 중단이면 단기 공급 긴장",
+      "createdAt": "2026-05-12T06:27:41",
+      "updatedAt": "2026-05-12T06:27:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 91,
+      "scenarioName": "3개월 내 우회 물량으로 스팟 긴장 완화",
+      "createdAt": "2026-05-12T06:34:10",
+      "updatedAt": "2026-05-12T06:34:10",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 92,
+      "scenarioName": "1~2년 공급 제약으로 아시아 스팟 프리미엄 급등",
+      "createdAt": "2026-05-12T06:34:10",
+      "updatedAt": "2026-05-12T06:34:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 93,
+      "scenarioName": "6개월 조정 국면 속 제한적 공급 차질",
+      "createdAt": "2026-05-12T06:34:10",
+      "updatedAt": "2026-05-12T06:34:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 94,
+      "scenarioName": "단기 정책 신호에도 대체 조달 지연으로 프리미엄 유지",
+      "createdAt": "2026-05-12T06:34:10",
+      "updatedAt": "2026-05-12T06:34:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 95,
+      "scenarioName": "상시 내수 우선 체제로 아시아 LNG 구조적 재가격화",
+      "createdAt": "2026-05-12T06:34:10",
+      "updatedAt": "2026-05-12T06:34:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 96,
+      "scenarioName": "특정 업체 차질이 장기 대체공급 공백을 부각",
+      "createdAt": "2026-05-12T06:34:10",
+      "updatedAt": "2026-05-12T06:34:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 97,
+      "scenarioName": "재고 증가는 완충되지만 제한된 공급 여력이 초기 프리미엄 형성",
+      "createdAt": "2026-05-12T06:42:30",
+      "updatedAt": "2026-05-12T06:42:30",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 98,
+      "scenarioName": "재고는 늘지만 시장은 관망 유지",
+      "createdAt": "2026-05-12T06:42:30",
+      "updatedAt": "2026-05-12T06:42:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 99,
+      "scenarioName": "재고 감소와 타이트한 공급이 초기 경계심을 자극",
+      "createdAt": "2026-05-12T06:42:30",
+      "updatedAt": "2026-05-12T06:42:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 100,
+      "scenarioName": "재고 증가에도 공급 타이트 우려가 확산",
+      "createdAt": "2026-05-12T06:42:30",
+      "updatedAt": "2026-05-12T06:42:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 101,
+      "scenarioName": "재고 급감과 공급 제한으로 글로벌 가스 프리미엄 확대",
+      "createdAt": "2026-05-12T06:42:30",
+      "updatedAt": "2026-05-12T06:42:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 102,
+      "scenarioName": "공급은 정상이나 재고 감소 신호가 우려를 확산",
+      "createdAt": "2026-05-12T06:42:30",
+      "updatedAt": "2026-05-12T06:42:30",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 103,
+      "scenarioName": "낮은 재고와 큰 목표 Gap이 LNG 조달 경쟁을 확산",
+      "createdAt": "2026-05-12T06:28:56",
+      "updatedAt": "2026-05-12T06:28:56",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 104,
+      "scenarioName": "목표는 유지되지만 조달 프리미엄이 붙는 초기 강세",
+      "createdAt": "2026-05-12T06:28:56",
+      "updatedAt": "2026-05-12T06:28:56",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 105,
+      "scenarioName": "평년 이하 재고에도 심각한 목표 Gap 인식으로 패닉 프리미엄 확대",
+      "createdAt": "2026-05-12T06:28:56",
+      "updatedAt": "2026-05-12T06:28:56",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 106,
+      "scenarioName": "아직 초기 우려지만 구조적 부족이 뒤늦게 가격을 밀어올림",
+      "createdAt": "2026-05-12T06:28:56",
+      "updatedAt": "2026-05-12T06:28:56",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 107,
+      "scenarioName": "치명적 재고와 심각한 목표 Gap, 확산되는 겨울 리스크",
+      "createdAt": "2026-05-12T06:28:56",
+      "updatedAt": "2026-05-12T06:28:56",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 108,
+      "scenarioName": "공급 부족 속 패닉 매수, 단기 가격 급등",
+      "createdAt": "2026-05-12T06:28:56",
+      "updatedAt": "2026-05-12T06:28:56",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 109,
+      "scenarioName": "1주 내 정상화, 스팟 프리미엄은 제한적",
+      "createdAt": "2026-05-12T06:37:52",
+      "updatedAt": "2026-05-12T06:37:52",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 110,
+      "scenarioName": "한 Train 전면 정지, 2~4주 공급 공백 반영",
+      "createdAt": "2026-05-12T06:37:52",
+      "updatedAt": "2026-05-12T06:37:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 111,
+      "scenarioName": "복수 Train 경미 감산, 지연 카고가 심리적 타이트닝 유발",
+      "createdAt": "2026-05-12T06:37:52",
+      "updatedAt": "2026-05-12T06:37:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 112,
+      "scenarioName": "부분 Train 중기 차질, 여름 전 포트폴리오 재조달 압력",
+      "createdAt": "2026-05-12T06:37:52",
+      "updatedAt": "2026-05-12T06:37:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 113,
+      "scenarioName": "짧지만 강한 차질, 카고 일정 재배치 부담 확대",
+      "createdAt": "2026-05-12T06:37:52",
+      "updatedAt": "2026-05-12T06:37:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 114,
+      "scenarioName": "전면 장기 차질, 글로벌 LNG 스팟 급등 리스크",
+      "createdAt": "2026-05-12T06:37:52",
+      "updatedAt": "2026-05-12T06:37:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 115,
+      "scenarioName": "2~4주 내 선적 차질 흡수, 단기 프리미엄만 반영",
+      "createdAt": "2026-05-12T06:41:25",
+      "updatedAt": "2026-05-12T06:41:25",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 116,
+      "scenarioName": "1~3개월 부분 차질, 계약 재협상 속 현물 보강",
+      "createdAt": "2026-05-12T06:41:25",
+      "updatedAt": "2026-05-12T06:41:25",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 117,
+      "scenarioName": "1~3개월 운송 차질, 현물 조달로 물량은 보강하나 비용 상승",
+      "createdAt": "2026-05-12T06:41:25",
+      "updatedAt": "2026-05-12T06:41:25",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 118,
+      "scenarioName": "짧지만 대체 불가한 인도 중단, 유럽 프롬프트물 급등",
+      "createdAt": "2026-05-12T06:41:25",
+      "updatedAt": "2026-05-12T06:41:25",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 119,
+      "scenarioName": "3~6개월 재협상 장기화, 대체 물량 부재로 구조적 타이트",
+      "createdAt": "2026-05-12T06:41:25",
+      "updatedAt": "2026-05-12T06:41:25",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 120,
+      "scenarioName": "3~6개월 대규모 인도 불가, 글로벌 LNG 현물 쟁탈전",
+      "createdAt": "2026-05-12T06:41:25",
+      "updatedAt": "2026-05-12T06:41:25",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 121,
+      "scenarioName": "유예·면제로 2027년 수입 제한 우려가 빠르게 해소",
+      "createdAt": "2026-05-12T06:43:38",
+      "updatedAt": "2026-05-12T06:43:38",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 122,
+      "scenarioName": "개별 기업 점검에 그치며 6개월 내 조달 재배치",
+      "createdAt": "2026-05-12T06:43:38",
+      "updatedAt": "2026-05-12T06:43:38",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 123,
+      "scenarioName": "상징적 제재에도 느린 대체 조달이 리스크를 남김",
+      "createdAt": "2026-05-12T06:43:38",
+      "updatedAt": "2026-05-12T06:43:38",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 124,
+      "scenarioName": "부분 섹터 리스크는 유예와 6개월 대체 조달로 완충",
+      "createdAt": "2026-05-12T06:43:38",
+      "updatedAt": "2026-05-12T06:43:38",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 125,
+      "scenarioName": "강한 2차 제재와 자산동결로 공급 리스크 재부상",
+      "createdAt": "2026-05-12T06:43:38",
+      "updatedAt": "2026-05-12T06:43:38",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 126,
+      "scenarioName": "엄격한 개별 기업 제재를 즉각 대체 물량으로 흡수",
+      "createdAt": "2026-05-12T06:43:38",
+      "updatedAt": "2026-05-12T06:43:38",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 127,
+      "scenarioName": "1주 내 외교 봉합으로 리스크 프리미엄 소멸",
+      "createdAt": "2026-05-12T06:47:00",
+      "updatedAt": "2026-05-12T06:47:00",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 128,
+      "scenarioName": "대리전 잔존에도 항로 감시는 제한적 프리미엄만 유지",
+      "createdAt": "2026-05-12T06:47:00",
+      "updatedAt": "2026-05-12T06:47:00",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 129,
+      "scenarioName": "3~6개월 물리 충돌과 간헐 차질로 중간 프리미엄 고착",
+      "createdAt": "2026-05-12T06:47:00",
+      "updatedAt": "2026-05-12T06:47:00",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 130,
+      "scenarioName": "단기 직접위협은 헤드라인 급등 후 제한적 프리미엄",
+      "createdAt": "2026-05-12T06:47:00",
+      "updatedAt": "2026-05-12T06:47:00",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 131,
+      "scenarioName": "장기 군사위협과 항로 차질로 프리미엄 재폭발",
+      "createdAt": "2026-05-12T06:47:00",
+      "updatedAt": "2026-05-12T06:47:00",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 132,
+      "scenarioName": "단기 대리전에도 지속 항로 차질로 가스 프리미엄 급등",
+      "createdAt": "2026-05-12T06:47:00",
+      "updatedAt": "2026-05-12T06:47:00",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 133,
+      "scenarioName": "봄·가을 저풍속은 단기 TTF만 제한적으로 지지",
+      "createdAt": "2026-05-12T06:03:33",
+      "updatedAt": "2026-05-12T06:03:33",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 134,
+      "scenarioName": "초겨울·늦겨울 저풍속은 TTF 중심의 중간 강도 랠리",
+      "createdAt": "2026-05-12T06:03:33",
+      "updatedAt": "2026-05-12T06:03:33",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 135,
+      "scenarioName": "동절기라도 풍력 충격이 작으면 가스 백업 수요가 가격을 완만히 견인",
+      "createdAt": "2026-05-12T06:03:33",
+      "updatedAt": "2026-05-12T06:03:33",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 136,
+      "scenarioName": "겨울 저풍속에도 백업 수요가 작으면 단기 심리 강세에 그침",
+      "createdAt": "2026-05-12T06:03:33",
+      "updatedAt": "2026-05-12T06:03:33",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 137,
+      "scenarioName": "동절기 강한 저풍속은 유럽 가스 프리미엄을 빠르게 확대",
+      "createdAt": "2026-05-12T06:03:33",
+      "updatedAt": "2026-05-12T06:03:33",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 138,
+      "scenarioName": "부분 동절기 큰 백업 수요는 유럽 LNG 조달 긴장을 키움",
+      "createdAt": "2026-05-12T06:03:33",
+      "updatedAt": "2026-05-12T06:03:33",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 139,
+      "scenarioName": "점진적 전환으로 JKM 강세가 완만히 둔화",
+      "createdAt": "2026-05-12T06:06:59",
+      "updatedAt": "2026-05-12T06:06:59",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 140,
+      "scenarioName": "전환 신호는 있지만 물량 효과는 제한적",
+      "createdAt": "2026-05-12T06:06:59",
+      "updatedAt": "2026-05-12T06:06:59",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 141,
+      "scenarioName": "인프라는 준비됐지만 공급 정체가 전환 속도를 묶는 국면",
+      "createdAt": "2026-05-12T06:06:59",
+      "updatedAt": "2026-05-12T06:06:59",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 142,
+      "scenarioName": "높은 가격 격차와 준비된 인프라가 중국 LNG 회피를 구조화",
+      "createdAt": "2026-05-12T06:06:59",
+      "updatedAt": "2026-05-12T06:06:59",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 143,
+      "scenarioName": "중국 전환이 본격화되며 아시아 LNG 프리미엄이 빠르게 약화",
+      "createdAt": "2026-05-12T06:06:59",
+      "updatedAt": "2026-05-12T06:06:59",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 144,
+      "scenarioName": "경제성은 맞지만 수용 저조로 전환 효과가 부분적",
+      "createdAt": "2026-05-12T06:06:59",
+      "updatedAt": "2026-05-12T06:06:59",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 145,
+      "scenarioName": "2~4주 내 제한적 지연 후 오프테이커 간 재배분으로 흡수",
+      "createdAt": "2026-05-12T06:15:50",
+      "updatedAt": "2026-05-12T06:15:50",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 146,
+      "scenarioName": "1~3개월 계약 재협상과 부분 현물 보강이 만드는 중간 강도의 타이트닝",
+      "createdAt": "2026-05-12T06:15:50",
+      "updatedAt": "2026-05-12T06:15:50",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 147,
+      "scenarioName": "1~3개월 운송 차질을 현물 전면 조달로 메우는 비용 상승 국면",
+      "createdAt": "2026-05-12T06:15:50",
+      "updatedAt": "2026-05-12T06:15:50",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 148,
+      "scenarioName": "3~6개월 대규모 인도 중단으로 유럽 현물 조달 경쟁 급등",
+      "createdAt": "2026-05-12T06:15:50",
+      "updatedAt": "2026-05-12T06:15:50",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 149,
+      "scenarioName": "짧지만 대체 물량 부재와 중재 리스크가 프롬프트 유럽 가격을 압박",
+      "createdAt": "2026-05-12T06:15:50",
+      "updatedAt": "2026-05-12T06:15:50",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 150,
+      "scenarioName": "3~6개월 재협상 장기화와 대체 불능이 유럽 공급 프리미엄을 고착",
+      "createdAt": "2026-05-12T06:15:50",
+      "updatedAt": "2026-05-12T06:15:50",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 151,
+      "scenarioName": "러시아 증량 효과가 유지되며 유럽 가스는 완만히 완화",
+      "createdAt": "2026-05-12T06:17:07",
+      "updatedAt": "2026-05-12T06:17:07",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 152,
+      "scenarioName": "두 개 Train의 20% 감산은 완화 효과를 일부 되돌림",
+      "createdAt": "2026-05-12T06:17:07",
+      "updatedAt": "2026-05-12T06:17:07",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 153,
+      "scenarioName": "단일 Train 50% 감산은 스팟 전량 보전으로 가격 충격 제한",
+      "createdAt": "2026-05-12T06:17:07",
+      "updatedAt": "2026-05-12T06:17:07",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 154,
+      "scenarioName": "부분 Train 차질에도 대체 불가와 취소 검토가 불안 프리미엄을 확대",
+      "createdAt": "2026-05-12T06:17:07",
+      "updatedAt": "2026-05-12T06:17:07",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 155,
+      "scenarioName": "두 Train 50% 감산과 취소 검토로 유럽 완화 기대가 크게 후퇴",
+      "createdAt": "2026-05-12T06:17:07",
+      "updatedAt": "2026-05-12T06:17:07",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 156,
+      "scenarioName": "전면 중단 리스크가 러시아 증량 완화 효과를 압도",
+      "createdAt": "2026-05-12T06:17:07",
+      "updatedAt": "2026-05-12T06:17:07",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 157,
+      "scenarioName": "2~4주 내 국지 병목 완화",
+      "createdAt": "2026-05-12T06:18:24",
+      "updatedAt": "2026-05-12T06:18:24",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 158,
+      "scenarioName": "1~3개월 하류 수요자 압박 확대",
+      "createdAt": "2026-05-12T06:18:24",
+      "updatedAt": "2026-05-12T06:18:24",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 159,
+      "scenarioName": "3~6개월 네트워크 병목 장기화",
+      "createdAt": "2026-05-12T06:18:24",
+      "updatedAt": "2026-05-12T06:18:24",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 160,
+      "scenarioName": "단기지만 우회 불가한 지역 안보 이슈",
+      "createdAt": "2026-05-12T06:18:24",
+      "updatedAt": "2026-05-12T06:18:24",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 161,
+      "scenarioName": "2~4주 완전 차단의 급성 네트워크 충격",
+      "createdAt": "2026-05-12T06:18:24",
+      "updatedAt": "2026-05-12T06:18:24",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 162,
+      "scenarioName": "1~3개월 고강도 제약 속 부분 우회 방어",
+      "createdAt": "2026-05-12T06:18:24",
+      "updatedAt": "2026-05-12T06:18:24",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 163,
+      "scenarioName": "기록 수출 기조 유지, 아시아 현물에는 완만한 하방 압력",
+      "createdAt": "2026-05-12T06:26:41",
+      "updatedAt": "2026-05-12T06:26:41",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 164,
+      "scenarioName": "두 개 Train 반감, 오프테이커 재배치로 상승폭은 제한",
+      "createdAt": "2026-05-12T06:26:41",
+      "updatedAt": "2026-05-12T06:26:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 165,
+      "scenarioName": "부분 Train 차질과 일부 스팟 보완, JKM은 소폭 반등",
+      "createdAt": "2026-05-12T06:26:41",
+      "updatedAt": "2026-05-12T06:26:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 166,
+      "scenarioName": "두 Train 경미 영향, 스팟 보완으로 공급 완화 신호 유지",
+      "createdAt": "2026-05-12T06:26:41",
+      "updatedAt": "2026-05-12T06:26:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 167,
+      "scenarioName": "단일 Train 완전 정지, 재배치로 급등은 피하는 긴장 국면",
+      "createdAt": "2026-05-12T06:26:41",
+      "updatedAt": "2026-05-12T06:26:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 168,
+      "scenarioName": "전면 중단과 대체 불능, 아시아 LNG 프리미엄 급등",
+      "createdAt": "2026-05-12T06:26:41",
+      "updatedAt": "2026-05-12T06:26:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 169,
+      "scenarioName": "1주 내 정상화, 물량 공백은 타 터미널로 흡수",
+      "createdAt": "2026-05-12T06:30:10",
+      "updatedAt": "2026-05-12T06:30:10",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 170,
+      "scenarioName": "2~4주 단일 Train 정지, 오프테이커 재배분으로 충격 완화",
+      "createdAt": "2026-05-12T06:30:10",
+      "updatedAt": "2026-05-12T06:30:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 171,
+      "scenarioName": "단기 정비지만 피드가스 반감, 스팟 보완으로 제한적 강세",
+      "createdAt": "2026-05-12T06:30:10",
+      "updatedAt": "2026-05-12T06:30:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 172,
+      "scenarioName": "1~3개월 두 Train 차질, 스팟 조달 경쟁 본격화",
+      "createdAt": "2026-05-12T06:30:10",
+      "updatedAt": "2026-05-12T06:30:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 173,
+      "scenarioName": "초단기 고강도 차질, 오프테이커 재조정으로 급등은 억제",
+      "createdAt": "2026-05-12T06:30:10",
+      "updatedAt": "2026-05-12T06:30:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 174,
+      "scenarioName": "전면 장기 차질, 글로벌 LNG 공급 쇼크로 확산",
+      "createdAt": "2026-05-12T06:30:10",
+      "updatedAt": "2026-05-12T06:30:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 175,
+      "scenarioName": "부분 차질을 GTA 증산과 타 터미널 전환으로 흡수",
+      "createdAt": "2026-05-12T06:32:52",
+      "updatedAt": "2026-05-12T06:32:52",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 176,
+      "scenarioName": "단일 Train 부분 차질은 스팟 보완과 GTA 물량으로 완화",
+      "createdAt": "2026-05-12T06:32:52",
+      "updatedAt": "2026-05-12T06:32:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 177,
+      "scenarioName": "2개 Train 차질이나 오프테이커 재배분으로 상승 압력 제한",
+      "createdAt": "2026-05-12T06:32:52",
+      "updatedAt": "2026-05-12T06:32:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 178,
+      "scenarioName": "2개 Train 노출에도 Feedgas 정상권이라 GTA 증산이 우세",
+      "createdAt": "2026-05-12T06:32:52",
+      "updatedAt": "2026-05-12T06:32:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 179,
+      "scenarioName": "단일 Train 이슈라도 Feedgas 급감으로 유럽 공급 완화가 반감",
+      "createdAt": "2026-05-12T06:32:52",
+      "updatedAt": "2026-05-12T06:32:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 180,
+      "scenarioName": "구조적 손실과 대체 불가로 GTA 증산 효과를 압도",
+      "createdAt": "2026-05-12T06:32:52",
+      "updatedAt": "2026-05-12T06:32:52",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 181,
+      "scenarioName": "정상 보충 경로지만 TTF 하단은 지지",
+      "createdAt": "2026-05-12T06:05:39",
+      "updatedAt": "2026-05-12T06:05:39",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 182,
+      "scenarioName": "재고 부족과 제한된 공급이 유럽 LNG 조달 경쟁을 확대",
+      "createdAt": "2026-05-12T06:05:39",
+      "updatedAt": "2026-05-12T06:05:39",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 183,
+      "scenarioName": "공급 부족 속 큰 비축 갭이 유럽 현물 조달을 압박",
+      "createdAt": "2026-05-12T06:05:39",
+      "updatedAt": "2026-05-12T06:05:39",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 184,
+      "scenarioName": "심각한 비축 갭과 타이트한 공급이 여름 내내 TTF를 지지",
+      "createdAt": "2026-05-12T06:05:39",
+      "updatedAt": "2026-05-12T06:05:39",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 185,
+      "scenarioName": "재고는 취약하지만 목표 격차가 작아 단기 긴장에 집중",
+      "createdAt": "2026-05-12T06:05:39",
+      "updatedAt": "2026-05-12T06:05:39",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 186,
+      "scenarioName": "목표 격차는 작지만 공포성 매수로 TTF 프리미엄 확대",
+      "createdAt": "2026-05-12T06:05:39",
+      "updatedAt": "2026-05-12T06:05:39",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 187,
+      "scenarioName": "단기 교전 후 호송 강화로 프리미엄 제한",
+      "createdAt": "2026-05-12T06:22:10",
+      "updatedAt": "2026-05-12T06:22:10",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 188,
+      "scenarioName": "1~3개월 부분 봉쇄로 스팟 LNG 경쟁 심화",
+      "createdAt": "2026-05-12T06:22:10",
+      "updatedAt": "2026-05-12T06:22:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 189,
+      "scenarioName": "짧지만 격렬한 충격, 극단적 프리미엄 급등",
+      "createdAt": "2026-05-12T06:22:10",
+      "updatedAt": "2026-05-12T06:22:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 190,
+      "scenarioName": "제한 교전에도 장기 폐쇄가 만든 LNG 공급 경색",
+      "createdAt": "2026-05-12T06:22:10",
+      "updatedAt": "2026-05-12T06:22:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 191,
+      "scenarioName": "장기 전면 봉쇄로 글로벌 LNG·원유 동시 쇼크",
+      "createdAt": "2026-05-12T06:22:10",
+      "updatedAt": "2026-05-12T06:22:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 192,
+      "scenarioName": "대리전 장기화 속 전면 봉쇄로 LNG 프리미엄 극대화",
+      "createdAt": "2026-05-12T06:22:10",
+      "updatedAt": "2026-05-12T06:22:10",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 193,
+      "scenarioName": "간헐적 통항 차질 속 제한적 프리미엄 반영",
+      "createdAt": "2026-05-12T06:31:36",
+      "updatedAt": "2026-05-12T06:31:36",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 194,
+      "scenarioName": "역내 재래식 충돌과 부분 봉쇄로 수급 경계 강화",
+      "createdAt": "2026-05-12T06:31:36",
+      "updatedAt": "2026-05-12T06:31:36",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 195,
+      "scenarioName": "제한적 충돌에도 핵심 원유 인프라 타격 우려 부각",
+      "createdAt": "2026-05-12T06:31:36",
+      "updatedAt": "2026-05-12T06:31:36",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 196,
+      "scenarioName": "전면 봉쇄 공포가 LNG 현물 프리미엄을 극대화",
+      "createdAt": "2026-05-12T06:31:36",
+      "updatedAt": "2026-05-12T06:31:36",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 197,
+      "scenarioName": "장기 폐쇄 리스크가 원유를 밀어 올리고 LNG는 지속 강세",
+      "createdAt": "2026-05-12T06:31:36",
+      "updatedAt": "2026-05-12T06:31:36",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 198,
+      "scenarioName": "전면 봉쇄와 고강도 충돌로 에너지 가격 급등",
+      "createdAt": "2026-05-12T06:31:36",
+      "updatedAt": "2026-05-12T06:31:36",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 199,
+      "scenarioName": "순조로운 착공, 유럽 LNG 콜은 완만히 낮아진다",
+      "createdAt": "2026-05-12T06:36:41",
+      "updatedAt": "2026-05-12T06:36:41",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 200,
+      "scenarioName": "부분 우회로 공사는 지속되지만 TTF 변동성은 남는다",
+      "createdAt": "2026-05-12T06:36:41",
+      "updatedAt": "2026-05-12T06:36:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 201,
+      "scenarioName": "물량 감소는 작지만 하류 병목이 완화 효과를 희석한다",
+      "createdAt": "2026-05-12T06:36:41",
+      "updatedAt": "2026-05-12T06:36:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 202,
+      "scenarioName": "라인 단위 경미한 차질, 공급 확대 기대가 가격을 눌러둔다",
+      "createdAt": "2026-05-12T06:36:41",
+      "updatedAt": "2026-05-12T06:36:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 203,
+      "scenarioName": "흑해 보안 리스크가 공급 기대를 뒤집는다",
+      "createdAt": "2026-05-12T06:36:41",
+      "updatedAt": "2026-05-12T06:36:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 204,
+      "scenarioName": "완전 차단이 수요처 충격으로 번지며 유럽은 LNG 방어 매수에 나선다",
+      "createdAt": "2026-05-12T06:36:41",
+      "updatedAt": "2026-05-12T06:36:41",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 205,
+      "scenarioName": "소폭 차질은 즉시 우회로 흡수, TTF 프리미엄만 제한적 확대",
+      "createdAt": "2026-05-12T06:38:51",
+      "updatedAt": "2026-05-12T06:38:51",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 206,
+      "scenarioName": "중간 규모 감축은 일부 우회에도 하류 수요처 압박으로 연결",
+      "createdAt": "2026-05-12T06:38:51",
+      "updatedAt": "2026-05-12T06:38:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 207,
+      "scenarioName": "소폭 감축이지만 우회 제약 탓에 하류 조달 부담은 체감",
+      "createdAt": "2026-05-12T06:38:51",
+      "updatedAt": "2026-05-12T06:38:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 208,
+      "scenarioName": "중간 규모 감축과 제한적 우회, 라인 이슈에 그쳐도 TTF는 강세",
+      "createdAt": "2026-05-12T06:38:51",
+      "updatedAt": "2026-05-12T06:38:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 209,
+      "scenarioName": "대규모 차단과 우회 불능, 유럽 LNG 확보전이 급격히 강화",
+      "createdAt": "2026-05-12T06:38:51",
+      "updatedAt": "2026-05-12T06:38:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 210,
+      "scenarioName": "소폭 감축에도 안보 프리미엄이 붙어 유럽 가스 매수심리 강화",
+      "createdAt": "2026-05-12T06:38:51",
+      "updatedAt": "2026-05-12T06:38:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 211,
+      "scenarioName": "2~4주 내 제한적 차질 후 타 터미널로 흡수",
+      "createdAt": "2026-05-12T06:40:02",
+      "updatedAt": "2026-05-12T06:40:02",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 212,
+      "scenarioName": "1~3개월 중간 규모 차질을 오프테이커 재배분으로 완충",
+      "createdAt": "2026-05-12T06:40:02",
+      "updatedAt": "2026-05-12T06:40:02",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 213,
+      "scenarioName": "소폭 감산이 장기화되며 현물 보완 수요가 꾸준히 발생",
+      "createdAt": "2026-05-12T06:40:02",
+      "updatedAt": "2026-05-12T06:40:02",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 214,
+      "scenarioName": "감소 폭은 작지만 대체 불가로 1~3개월 납기 차질 누적",
+      "createdAt": "2026-05-12T06:40:02",
+      "updatedAt": "2026-05-12T06:40:02",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 215,
+      "scenarioName": "3~6개월 대형 공급 공백으로 글로벌 LNG 프리미엄 급등",
+      "createdAt": "2026-05-12T06:40:02",
+      "updatedAt": "2026-05-12T06:40:02",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 216,
+      "scenarioName": "6개월 이상 완전 중단에도 현물 일부 조달로 최악은 제한",
+      "createdAt": "2026-05-12T06:40:02",
+      "updatedAt": "2026-05-12T06:40:02",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 217,
+      "scenarioName": "2~4주 내 국지 병목 완화",
+      "createdAt": "2026-05-12T06:48:19",
+      "updatedAt": "2026-05-12T06:48:19",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 218,
+      "scenarioName": "1~3개월 하류 사용자 중심의 중간 차질",
+      "createdAt": "2026-05-12T06:48:19",
+      "updatedAt": "2026-05-12T06:48:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 219,
+      "scenarioName": "3~6개월 장기 네트워크 병목 심화",
+      "createdAt": "2026-05-12T06:48:19",
+      "updatedAt": "2026-05-12T06:48:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 220,
+      "scenarioName": "단기지만 우회 불가한 지역 안보형 충격",
+      "createdAt": "2026-05-12T06:48:19",
+      "updatedAt": "2026-05-12T06:48:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 221,
+      "scenarioName": "1~3개월 고강도 지역 공급안보 경계",
+      "createdAt": "2026-05-12T06:48:19",
+      "updatedAt": "2026-05-12T06:48:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 222,
+      "scenarioName": "2~4주 완전 차단의 네트워크 스트레스",
+      "createdAt": "2026-05-12T06:48:19",
+      "updatedAt": "2026-05-12T06:48:19",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 223,
+      "scenarioName": "단기 제한전 속 간헐 차질 프리미엄",
+      "createdAt": "2026-05-12T06:20:51",
+      "updatedAt": "2026-05-12T06:20:51",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 224,
+      "scenarioName": "부분 봉쇄가 3~6개월 가격 상단을 끌어올림",
+      "createdAt": "2026-05-12T06:20:51",
+      "updatedAt": "2026-05-12T06:20:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 225,
+      "scenarioName": "전면 봉쇄가 장기화되는 고강도 공급 쇼크",
+      "createdAt": "2026-05-12T06:20:51",
+      "updatedAt": "2026-05-12T06:20:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 226,
+      "scenarioName": "짧지만 전면 봉쇄로 급등하는 단기 패닉 장세",
+      "createdAt": "2026-05-12T06:20:51",
+      "updatedAt": "2026-05-12T06:20:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 227,
+      "scenarioName": "고강도 단기 충돌에도 중간 프리미엄으로 소화",
+      "createdAt": "2026-05-12T06:20:51",
+      "updatedAt": "2026-05-12T06:20:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 228,
+      "scenarioName": "존립 위기형 전쟁과 장기 폐쇄의 극단적 에너지 쇼크",
+      "createdAt": "2026-05-12T06:20:51",
+      "updatedAt": "2026-05-12T06:20:51",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 229,
+      "scenarioName": "단기 봉합 기대 속 낮은 교역 프리미엄 유지",
+      "createdAt": "2026-05-12T06:01:23",
+      "updatedAt": "2026-05-12T06:01:23",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 230,
+      "scenarioName": "부분 제재 장기화로 중간 강도의 공급 불안 지속",
+      "createdAt": "2026-05-12T06:01:23",
+      "updatedAt": "2026-05-12T06:01:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 231,
+      "scenarioName": "단기 세컨더리 제재로 우회 거래 비용 급상승",
+      "createdAt": "2026-05-12T06:01:23",
+      "updatedAt": "2026-05-12T06:01:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 232,
+      "scenarioName": "장기 전면 제재로 중동 에너지 교역 프리미엄 고착",
+      "createdAt": "2026-05-12T06:01:23",
+      "updatedAt": "2026-05-12T06:01:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 233,
+      "scenarioName": "단기 사안이나 자산동결 충격으로 LNG 프리미엄 급등",
+      "createdAt": "2026-05-12T06:01:23",
+      "updatedAt": "2026-05-12T06:01:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 234,
+      "scenarioName": "장기 금융 제재에도 낮은 프리미엄으로 관리되는 교착",
+      "createdAt": "2026-05-12T06:01:23",
+      "updatedAt": "2026-05-12T06:01:23",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 235,
+      "scenarioName": "1개월 내 긴장 완화, 리스크 프리미엄은 제한적",
+      "createdAt": "2026-05-12T06:14:34",
+      "updatedAt": "2026-05-12T06:14:34",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 236,
+      "scenarioName": "1~3개월 지역전 확산, 간헐적 통항 차질 반영",
+      "createdAt": "2026-05-12T06:14:34",
+      "updatedAt": "2026-05-12T06:14:34",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 237,
+      "scenarioName": "존립 위협형 충돌과 부분 봉쇄, 극단적 LNG 프리미엄",
+      "createdAt": "2026-05-12T06:14:34",
+      "updatedAt": "2026-05-12T06:14:34",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 238,
+      "scenarioName": "단기 지역전과 부분 봉쇄로 현물 LNG 급등 압력",
+      "createdAt": "2026-05-12T06:14:34",
+      "updatedAt": "2026-05-12T06:14:34",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 239,
+      "scenarioName": "짧지만 고강도 충돌, 간헐 차질에도 극단적 프리미엄",
+      "createdAt": "2026-05-12T06:14:34",
+      "updatedAt": "2026-05-12T06:14:34",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 240,
+      "scenarioName": "장기 고강도 충돌과 전면 봉쇄로 에너지 시장 쇼크",
+      "createdAt": "2026-05-12T06:14:34",
+      "updatedAt": "2026-05-12T06:14:34",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.1,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 241,
+      "scenarioName": "외교 교착 속 변동성은 남지만 물류 정상 유지",
+      "createdAt": "2026-05-12T06:23:14",
+      "updatedAt": "2026-05-12T06:23:14",
+      "baseCase": true,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "low",
+          "marketImpactLevelLabel": "낮음"
+        }
+      ],
+      "probability": 0.4,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 242,
+      "scenarioName": "대리세력 긴장과 부분 감시로 프리미엄 재확대",
+      "createdAt": "2026-05-12T06:23:14",
+      "updatedAt": "2026-05-12T06:23:14",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "medium",
+          "marketImpactLevelLabel": "중간"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 243,
+      "scenarioName": "외교 국면에도 간헐적 물류 차질이 프리미엄을 키움",
+      "createdAt": "2026-05-12T06:23:14",
+      "updatedAt": "2026-05-12T06:23:14",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 244,
+      "scenarioName": "직접 군사위협은 크지만 실물 공급 차질은 아직 미확인",
+      "createdAt": "2026-05-12T06:23:14",
+      "updatedAt": "2026-05-12T06:23:14",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.3,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 245,
+      "scenarioName": "직접 군사위협과 항로 전면 중단의 급등 시나리오",
+      "createdAt": "2026-05-12T06:23:14",
+      "updatedAt": "2026-05-12T06:23:14",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
+      "status": "new",
+      "statusLabel": "신규"
+    },
+    {
+      "scenarioId": 246,
+      "scenarioName": "항로는 정상이나 대리전발 공급 충격과 극단 프리미엄",
+      "createdAt": "2026-05-12T06:23:14",
+      "updatedAt": "2026-05-12T06:23:14",
+      "baseCase": false,
+      "indexImpacts": [
+        {
+          "indexName": "JKM",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "TTF",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        },
+        {
+          "indexName": "HH",
+          "marketImpactLevel": "high",
+          "marketImpactLevelLabel": "높음"
+        }
+      ],
+      "probability": 0.2,
       "status": "new",
       "statusLabel": "신규"
     }
