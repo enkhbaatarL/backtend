@@ -1078,8 +1078,8 @@
       "eventName": "온화한 날씨·태양광 증가로 유럽 가스 수요 일부 완화",
       "status": "updated",
       "statusLabel": "갱신",
-      "eventCategoryLv1": "energy_mix",
-      "eventCategoryLv1Label": "energy_mix",
+      "eventCategoryLv1": "energy_mix_transition",
+      "eventCategoryLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-05-06T08:20:39",
       "updatedAt": "2026-05-06T09:05:08",
       "indexImpacts": [

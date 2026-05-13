@@ -5560,10 +5560,10 @@
         }
       ],
       "analysisText": "유럽의 기온 상승과 태양광 발전 증가는 가스발전 및 난방 수요를 낮추는 하방 요인으로 언급됨. 다만 저장고 부족과 중동 공급 리스크가 더 큰 변수여서 가격 영향은 보조적 수준임.",
-      "eventCategoryLv1": "energy_mix",
-      "eventCategoryLv1Label": "energy_mix",
-      "eventCategoryLv2": "renewable_power_generation_change",
-      "eventCategoryLv2Label": "",
+      "eventCategoryLv1": "energy_mix_transition",
+      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventCategoryLv2": "renewable_power_expansion_reduction",
+      "eventCategoryLv2Label": "재생에너지 발전 확대 / 축소",
       "sources": [
         "Reuters"
       ]
@@ -5587,8 +5587,8 @@
         "eventName": "온화한 날씨·태양광 증가로 유럽 가스 수요 일부 완화",
         "createdAt": "2026-05-06T08:20:39",
         "updatedAt": "2026-05-06T09:05:08",
-        "eventCategoryLv1": "energy_mix",
-        "eventCategoryLv1Label": "energy_mix",
+        "eventCategoryLv1": "energy_mix_transition",
+        "eventCategoryLv1Label": "에너지 믹스 전환",
         "indexImpacts": [
           {
             "indexName": "JKM",
