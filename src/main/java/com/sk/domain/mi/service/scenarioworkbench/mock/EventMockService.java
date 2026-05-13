@@ -129,6 +129,14 @@ public class EventMockService {
 
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         List<EventRelatedRecordRes> records = eventRecordsMap.getOrDefault(eventId, Collections.emptyList());
+        records = records.stream()
+            .map(r->{
+                if(!r.title().contains("Platts LNG Daily")){
+                    return r;
+                }
+                return new EventRelatedRecordRes(r.publishedAt(), r.recordType(), r.title(), r.summary().replace("{\"news_summary\": {", ""), r.goodsNo(), r.fileName());
+            })
+            .toList();
         return paginate(records, page, size);
     }
 
