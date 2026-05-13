@@ -20,7 +20,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,13 +45,11 @@ public class DesignMockService {
     private static final String SCENARIO_TEMPLATE_KEY = "template";
 
     private final ObjectMapper objectMapper;
-
-    private List<DesignEventItemRes> eventList;
-    private Map<String, List<GeneratedScenarioRes>> generatedScenariosMap;
-
     private final AtomicLong requestIdSeq = new AtomicLong(200);
     private final ConcurrentHashMap<Long, MockGenRequest> requestStore = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private List<DesignEventItemRes> eventList;
+    private Map<String, List<GeneratedScenarioRes>> generatedScenariosMap;
 
     @PostConstruct
     void init() {
@@ -128,6 +125,7 @@ public class DesignMockService {
             .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
             .filter(e -> !request.hideCompleted() || e.scenarioGenStatus() != ScenarioGenStatus.COMPLETED)
+            .filter(e -> !request.hideNonRecommended() || Boolean.TRUE.equals(e.scenarioRecommended()))
             .sorted(comparator)
             .toList();
 
@@ -193,7 +191,7 @@ public class DesignMockService {
                 ? new DesignEventItemRes(
                     e.eventId(), e.eventName(), e.status(), e.statusLabel(),
                     e.eventCategoryLv1(), e.eventCategoryLv1Label(),
-                    e.createdAt(), e.updatedAt(), e.indexImpacts(),
+                    e.createdAt(), e.updatedAt(), e.scenarioRecommended(), e.recommendationReason(), e.indexImpacts(),
                     status, status.getLabel(), startedAt, requestId)
                 : e)
             .toList());

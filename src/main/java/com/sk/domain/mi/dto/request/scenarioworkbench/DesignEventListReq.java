@@ -33,6 +33,9 @@ public record DesignEventListReq(
     @Schema(description = "완료 항목 숨기기", defaultValue = "false")
     Boolean hideCompleted,
 
+    @Schema(description = "시나리오 생성 비추천 항목 숨기기", defaultValue = "false")
+    Boolean hideNonRecommended,
+
     @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다")
     @Schema(description = "페이지 번호", example = "1", defaultValue = "1")
     Integer page,
@@ -49,6 +52,7 @@ public record DesignEventListReq(
         sort = sort == null ? SortOrder.LATEST : sort;
         keyword = keyword == null ? "" : keyword;
         hideCompleted = hideCompleted != null && hideCompleted;
+        hideNonRecommended = hideNonRecommended != null && hideNonRecommended;
         page = page == null ? 1 : page;
         size = size == null ? 20 : size;
     }

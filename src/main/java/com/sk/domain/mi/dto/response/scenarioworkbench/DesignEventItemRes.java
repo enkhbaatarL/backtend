@@ -33,6 +33,12 @@ public record DesignEventItemRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
+    @Schema(description = "시나리오 생성 추천 여부", example = "true")
+    Boolean scenarioRecommended,
+
+    @Schema(description = "시나리오 생성 추천 또는 비추천 사유", example = "JKM·TTF 영향도가 높아 시나리오 검토 우선순위가 높다.")
+    String recommendationReason,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventImpactIndexRes> indexImpacts,
 

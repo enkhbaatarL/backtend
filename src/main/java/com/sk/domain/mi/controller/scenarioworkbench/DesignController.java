@@ -24,8 +24,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,6 +53,11 @@ public class DesignController {
             - `ready`: 시나리오 미생성 (생성 버튼 표시)
             - `processing`: 시나리오 생성 중 (생성중 표시)
             - `completed`: 시나리오 생성 완료 (완료 버튼 표시)
+
+            <br><br>
+            ### events.content 항목 추가 필드
+            - `scenarioRecommended`: 시나리오 생성 추천 여부
+            - `recommendationReason`: 시나리오 생성 추천 또는 비추천 사유
             """
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
@@ -65,6 +68,7 @@ public class DesignController {
     @Parameter(name = "sort", description = "정렬 기준. 기본값 LATEST")
     @Parameter(name = "keyword", description = "검색 키워드")
     @Parameter(name = "hideCompleted", description = "완료 항목 숨기기. 기본값 false")
+    @Parameter(name = "hideNonRecommended", description = "시나리오 생성 비추천 항목 숨기기. scenarioRecommended=false 항목 제외. 기본값 false")
     @Parameter(name = "page", description = "페이지 번호. 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")

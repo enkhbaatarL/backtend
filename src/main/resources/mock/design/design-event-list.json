@@ -9,6 +9,8 @@
       "eventCategoryLv1Label": "물류 / 해운",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T13:34:39",
+      "scenarioRecommended": true,
+      "recommendationReason": "호르무즈 통항 차질은 카타르 LNG 공급 안정성과 운임·보험료에 직접 영향을 주며 JKM·TTF 영향도가 높다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -46,6 +48,8 @@
       "eventCategoryLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-11T13:34:39",
       "updatedAt": "2026-05-11T16:48:51",
+      "scenarioRecommended": true,
+      "recommendationReason": "미국-이란 긴장 완화 기대가 약해지며 LNG 위험 프리미엄이 확대될 수 있고 JKM·TTF 영향도가 높다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -83,6 +87,8 @@
       "eventCategoryLv1Label": "수급 밸런스",
       "createdAt": "2026-05-11T13:34:39",
       "updatedAt": "2026-05-11T16:48:51",
+      "scenarioRecommended": true,
+      "recommendationReason": "아시아 냉방 시즌 전 조달 경쟁은 JKM 단기 지지 요인이고 수급 시나리오 전개 여지가 크다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -120,6 +126,8 @@
       "eventCategoryLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:26:16",
       "updatedAt": "2026-05-12T14:26:16",
+      "scenarioRecommended": true,
+      "recommendationReason": "액화설비 가동 혼조는 현물 공급 변동성을 키워 JKM·TTF 양쪽에 중간 수준의 상방 시나리오를 만든다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -157,6 +165,8 @@
       "eventCategoryLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T04:00:00",
+      "scenarioRecommended": true,
+      "recommendationReason": "미국 가스 생산 감소는 HH 영향도가 높고 LNG feedgas 비용 경로로 확산될 수 있어 추적 우선순위가 높다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -194,6 +204,8 @@
       "eventCategoryLv1Label": "수급 밸런스",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T16:00:00",
+      "scenarioRecommended": true,
+      "recommendationReason": "유럽 저장률 저하는 TTF 하방을 제한하고 공급 차질 발생 시 가격 민감도를 키우는 핵심 수급 변수다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -231,6 +243,8 @@
       "eventCategoryLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T05:03:38",
+      "scenarioRecommended": true,
+      "recommendationReason": "Troll 증산 승인은 유럽 LNG 수요 완화와 TTF 하락 압력을 만들 수 있어 하방 시나리오 검토 가치가 있다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -268,6 +282,8 @@
       "eventCategoryLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T15:18:12",
+      "scenarioRecommended": true,
+      "recommendationReason": "JKM 프리미엄 확대는 아시아향 카고 유인과 지역 간 차익거래 흐름을 판단하는 주요 시장 구조 신호다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -305,6 +321,8 @@
       "eventCategoryLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:26:16",
       "updatedAt": "2026-05-12T14:26:16",
+      "scenarioRecommended": false,
+      "recommendationReason": "퍼미안 Waha 병목은 미국 내 basis 왜곡 성격이 강하고 글로벌 LNG 지표 영향도가 낮아 목록 추천 우선순위는 낮다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
@@ -342,6 +360,8 @@
       "eventCategoryLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-11T01:27:05",
       "updatedAt": "2026-05-11T05:03:38",
+      "scenarioRecommended": false,
+      "recommendationReason": "이란 제재 쟁점은 간접 경로의 상방 리스크지만 현재 JKM·TTF 영향도가 낮아 단독 추천 대상으로 보기는 어렵다.",
       "indexImpacts": [
         {
           "indexName": "JKM",
