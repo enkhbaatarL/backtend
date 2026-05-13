@@ -1,413 +1,72 @@
 {
   "1": [
     {
-      "publishedAt": "2026-05-12T03:31:45",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[카타르 해상안보] 도하 인근 선박 피격 → LNG 공급 리스크 프리미엄 상승"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "Platts",
+      "outlookSummary": "Platts 계열 가격 지표로 JKM 6월물 $17.188/MMBtu, WIM $16.688/MMBtu, NWE $15.732/MMBtu, TTF $15.892/MMBtu, FOB GCM $14.640/MMBtu가 제시됨."
     }
   ],
   "2": [
     {
-      "publishedAt": "2026-05-12T03:31:45",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[미국-이란 전쟁] 이란 종전안 답변·호르무즈 통항 논의 → 리스크 프리미엄 완화"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "Goldman Sachs",
+      "outlookSummary": "[미국 가스 생산] 5월 생산 109.6bcfd 추정 → HH 강세·LNG feedgas 경쟁"
     }
   ],
   "3": [
     {
-      "publishedAt": "2026-05-12T03:31:20",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[미국-이란 전쟁] 걸프 드론·선박 충돌 지속 → 호르무즈 LNG 리스크 프리미엄 확대"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "IEA",
+      "outlookSummary": "[퍼미안 병목] Waha 66일 연속 마이너스 → HH-Waha 스프레드 확대"
     }
   ],
   "4": [
     {
-      "publishedAt": "2026-05-12T03:31:20",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[호르무즈 LNG 통항] 알 카라이티야트 통과 시도 → 카타르 물동량 차질 우려 일부 완화"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "Wood Mackenzie",
+      "outlookSummary": "[노르웨이 Troll] 신규 8개 유정·최대 70억㎥/년 → 유럽 LNG 수요 완화"
     }
   ],
   "5": [
     {
-      "publishedAt": "2026-05-12T03:31:20",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[미국-이란 협상] 이란 답변 거부·항행안전 미해결 → 가격 변동성 상방"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "Wood Mackenzie",
+      "outlookSummary": "[호르무즈 해협] 대부분 폐쇄·일부 LNG 통과 → JKM/TTF 운송 프리미엄 상승"
     }
   ],
   "6": [
     {
-      "publishedAt": "2026-05-12T03:31:20",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[이란 제재·통항] 제재 연계 선박 통과 경고 → LNG 운송·보험 리스크 상방"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "IEA",
+      "outlookSummary": "[아시아 수요] 한국·중국·남아시아 카고 확보 → JKM 단기 지지"
     }
   ],
   "7": [
     {
-      "publishedAt": "2026-05-12T03:30:06",
+      "publishedAt": "2026-05-12T14:26:16",
       "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[ASEAN 에너지안보] 연료공유 조기발효 논의 → 아시아 수요경쟁 완화 시도"
+      "outlookSummary": "[미국-이란 분쟁] 트럼프의 이란 답변 거부 → 걸프 LNG 공급 프리미엄 상승"
     }
   ],
   "8": [
     {
-      "publishedAt": "2026-05-12T03:30:06",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[호르무즈 통항] 선박 공격·재개방 외교전 → LNG 운임·보험료 상방"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "Platts",
+      "outlookSummary": "[유럽 저장] 저장률 약 35%·5년 평균 하회 → TTF/NBP 하방 제한"
     }
   ],
   "9": [
     {
-      "publishedAt": "2026-05-12T03:30:06",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[이란 제재] 통행료 경고·조달망 제재 → 해운·에너지 거래 경계심 상승"
+      "publishedAt": "2026-05-12T14:26:16",
+      "institutionName": "Wood Mackenzie",
+      "outlookSummary": "[액화설비] Golden Pass 수출 vs Hammerfest·Freeport 차질 → 단기 공급 변동성"
     }
   ],
   "10": [
     {
-      "publishedAt": "2026-05-12T03:30:06",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[카타르 LNG 차질] 수출능력 17% 타격·12카고 취소 → TTF/JKM 강세"
-    }
-  ],
-  "11": [
-    {
-      "publishedAt": "2026-05-12T03:30:06",
+      "publishedAt": "2026-05-12T14:26:16",
       "institutionName": "Goldman Sachs",
-      "outlookSummary": "[터키-알제리 LNG] 연 60~65억㎥ 확대 협상 → 유럽 수급 경쟁 재편"
-    }
-  ],
-  "12": [
-    {
-      "publishedAt": "2026-05-12T03:30:06",
-      "institutionName": "BP",
-      "outlookSummary": "TTF·NBP 등 유럽 가스 가격 상승 요인으로도 언급됨."
-    }
-  ],
-  "13": [
-    {
-      "publishedAt": "2026-05-12T03:30:06",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[Freeport LNG] 5월 비계획 정비·3카고 취소 → 글로벌 LNG 강세·HH 약세"
-    }
-  ],
-  "14": [
-    {
-      "publishedAt": "2026-05-12T03:30:06",
-      "institutionName": "IEA",
-      "outlookSummary": "[미국 가스 수급] 생산 108.1bcfd 추정·재고 초과 축소 → HH 지지"
-    }
-  ],
-  "15": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "IEA",
-      "outlookSummary": "[호르무즈 해협] 재개 협상 난항·기뢰 우려 → 중동 LNG 물류 차질 지속"
-    }
-  ],
-  "16": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[노르웨이 공급] Troll 정비 10일 연장 → TTF/NBP 단기 상승 압력"
-    }
-  ],
-  "17": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "IEA",
-      "outlookSummary": "IEA가 중동 분쟁으로 2026~2030년 전 세계 LNG 공급이 약 1,200억㎥ 감소한 것으로 추정했다는 보도임."
-    },
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "Edison",
-      "outlookSummary": "Edison은 카타르 LNG 공급 차질과 헤지 해소 영향으로 실적 압박을 언급함."
-    }
-  ],
-  "18": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[미국-이란 전쟁] 호르무즈 인근 보복 타격·드론 공격 → LNG 리스크 프리미엄 상승"
-    }
-  ],
-  "19": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[유럽 재고] 저장고 5년 평균 대비 30% 낮음 → LNG 보충 수요 강세"
-    }
-  ],
-  "20": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "Cheniere",
-      "outlookSummary": "Cheniere는 장기 IPM 계약 관련 파생상품 공정가치에서 48억 달러의 불리한 변화가 발생했다고 보고함."
-    }
-  ],
-  "21": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "IEA",
-      "outlookSummary": "[호주 LNG 정책] 생산가스 20% 내수 의무화 → 아시아 신규·스팟 공급 축소"
-    }
-  ],
-  "22": [
-    {
-      "publishedAt": "2026-05-12T03:28:39",
-      "institutionName": "EIA",
-      "outlookSummary": "EIA 재고 발표와 로이터 전망치, LSEG 생산·수요 전망이 시장 판단 근거로 제시됨."
-    }
-  ],
-  "23": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "Equinor",
-      "outlookSummary": "Record 767·768은 미국 가스 가격 상승과 유럽 가스 가격 하락이 Equinor 실적에 상반된 영향을 줬다고 언급함"
-    }
-  ],
-  "24": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[호르무즈 봉쇄] 선박 피격·통항 중단 → JKM/TTF 공급 프리미엄 상승"
-    }
-  ],
-  "25": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[유럽 재고] 저장률 30%·80% 목표 부담 → TTF/JKM 강세"
-    }
-  ],
-  "26": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[LNG 해운] 장기 용선 선호 확대 → 운임·선복 프리미엄 상승"
-    }
-  ],
-  "27": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "IEA",
-      "outlookSummary": "[미국 LNG 정비] 피드가스 감소 → HH 약세·JKM/TTF 공급 상방"
-    }
-  ],
-  "28": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[카타르 LNG 차질] 포스마쥬르 연장·카고 취소 → TTF/JKM 강세"
-    }
-  ],
-  "29": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[EU 메탄규정] 제재 유예 재량 검토 → 수입가스 공급 리스크 완화"
-    }
-  ],
-  "30": [
-    {
-      "publishedAt": "2026-05-12T03:27:28",
-      "institutionName": "IEA",
-      "outlookSummary": "[미국-이란 협상] 종전 MOU 접근 → TTF·LNG 리스크 프리미엄 완화"
-    }
-  ],
-  "31": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[영국 저풍속] 풍력 출력 감소 전망 → NBP/TTF 단기 상방"
-    }
-  ],
-  "32": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[중국 연료전환] LNG 대신 석탄·PNG 활용 → 아시아 구매 경쟁 완화"
-    }
-  ],
-  "33": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[카타르 LNG] Edison향 추가 취소·FM 연장 → 유럽 LNG 조달 경쟁 상승"
-    }
-  ],
-  "34": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[러시아 LNG] 1~4월 수출 8.6% 증가 → 유럽 공급 완화 압력"
-    }
-  ],
-  "35": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "IEA",
-      "outlookSummary": "[퍼미안 병목] Waha 62일 연속 마이너스 → 지역 가스 공급·가격 왜곡"
-    }
-  ],
-  "36": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[LNG Canada] 4월 수출 100만 톤 돌파 → JKM 공급 완화"
-    }
-  ],
-  "37": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "IEA",
-      "outlookSummary": "[미국 LNG] 봄철 정비로 피드가스 감소 → 수출 공급 축소·HH 약세 혼재"
-    }
-  ],
-  "38": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[GTA FLNG] 설계용량 상회 생산 → 유럽향 공급 완화"
-    }
-  ],
-  "39": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[호르무즈 해협] 미군 호위로 일부 통항 재개 → LNG 리스크 프리미엄 일부 완화"
-    }
-  ],
-  "40": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[노르웨이 Eirin] 신규 생산·유럽 수출 개시 → TTF/NBP 하방"
-    }
-  ],
-  "41": [
-    {
-      "publishedAt": "2026-05-12T03:25:58",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[우크라이나 가스] Naftogaz 생산시설 피격 → 유럽 공급 프리미엄 상승"
-    }
-  ],
-  "42": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Chevron",
-      "outlookSummary": "Chevron의 Mike Wirth는 호르무즈 폐쇄가 물리적 공급 부족과 아시아발 수요 조정을 유발할 수 있다고 언급함."
-    }
-  ],
-  "43": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[유럽 저장률] EU 재고 33.4%로 전년 하회 → LNG 보충수요 상방"
-    }
-  ],
-  "44": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "IEA",
-      "outlookSummary": "[우크라이나 가스] Naftogaz 시설 5곳 공격 → 유럽 가스 공급 리스크 상승"
-    }
-  ],
-  "45": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[미국-이란 충돌] 미군 호송·이란 보트 격파 → LNG 지정학 프리미엄 확대"
-    }
-  ],
-  "46": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[이란-UAE 충돌] 푸자이라·ADNOC 공격 보도 → 중동 LNG 항로 프리미엄 상승"
-    }
-  ],
-  "47": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Clarksons",
-      "outlookSummary": "[Neptun Deep] 160km 파이프라인 설치 개시 → 유럽 역내 공급 확대 기대"
-    }
-  ],
-  "48": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[러시아-유럽 가스] 4월 TurkStream 공급 감소 → 유럽 LNG 수입수요 상방"
-    }
-  ],
-  "49": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[미국 LNG] 5월 feedgas 17.4bcfd로 감소 → 글로벌 LNG 공급 축소 압력"
-    }
-  ],
-  "50": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[미국 가스 생산] 5월 109.0bcfd로 감소 → HH 상승·수출 원료가스 타이트"
-    }
-  ],
-  "51": [
-    {
-      "publishedAt": "2026-05-12T03:24:09",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[퍼미안 병목] Waha 61일 연속 마이너스 → HH-Waha 스프레드 확대"
-    }
-  ],
-  "52": [
-    {
-      "publishedAt": "2026-05-12T03:22:38",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[호르무즈 통항 차질] 선박 정체와 미국 작전 예고 → JKM/TTF 리스크 프리미엄 상방"
-    }
-  ],
-  "53": [
-    {
-      "publishedAt": "2026-05-12T03:22:38",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[연준 통화정책] 3.5~3.75% 동결·인상 가능성 언급 → LNG 수요 둔화 압력"
-    }
-  ],
-  "54": [
-    {
-      "publishedAt": "2026-05-12T03:22:38",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[미·이스라엘-이란 전쟁] 충돌 장기화 언급 → 중동 LNG 공급 프리미엄 상승"
-    }
-  ],
-  "55": [
-    {
-      "publishedAt": "2026-05-12T03:22:07",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[대이란 봉쇄·제재] 해제 조건 협상 교착 → 중동 에너지 교역 프리미엄 유지"
-    }
-  ],
-  "56": [
-    {
-      "publishedAt": "2026-05-12T03:22:07",
-      "institutionName": "Wood Mackenzie",
-      "outlookSummary": "[미국-이란 전쟁] 공습 재개 경고·레바논 긴장 → LNG 리스크 프리미엄 상승"
-    }
-  ],
-  "57": [
-    {
-      "publishedAt": "2026-05-12T03:22:07",
-      "institutionName": "Goldman Sachs",
-      "outlookSummary": "[미·이란 협상] 평화안 검토·거부 신호 병존 → 가격 변동성 확대"
-    }
-  ],
-  "58": [
-    {
-      "publishedAt": "2026-05-12T03:22:07",
-      "institutionName": "Federal Reserve",
-      "outlookSummary": "[호르무즈 해협] 미국 5/6 선박 안내작전 예고 → 중동 LNG 공급 프리미엄 상승"
+      "outlookSummary": "[대이란 제재] 제재 해제 요구·미국 거부 → LNG에는 간접 상방 리스크"
     }
   ]
 }
