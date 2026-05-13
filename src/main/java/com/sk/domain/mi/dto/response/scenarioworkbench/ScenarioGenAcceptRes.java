@@ -15,8 +15,8 @@ public record ScenarioGenAcceptRes(
     @Schema(description = "요청 상태 라벨", example = "생성중")
     String statusLabel,
 
-    @Schema(description = "요청 일시")
-    LocalDateTime requestedAt
+    @Schema(description = "시나리오 생성 시작 일시")
+    LocalDateTime scenarioGenStartedAt
 
 ) {
 }
