@@ -15,6 +15,24 @@ public class PermissionStrategyFactory {
 
     private final AuthorizationService authService;
 
+    /**
+     * [Rule 기반] 권한 체크
+     */
+    public PermissionStrategy getStrategy(PermissionRule[] rules) {
+
+        // 현재 발급된 토근의 role
+        Role role = authService.getCurrentRole();
+
+        return Arrays.stream(rules)
+            .filter(rule -> rule.role() == role)
+            .findFirst()
+            .map(rule -> resolveStrategy(role, rule))
+            .orElseGet(() -> resolveStrategy(role, PermissionCondition.NONE));
+    }
+
+    /**
+     * [Role + Condition 기반] 권한 체크, Legacy
+     */
     public PermissionStrategy getStrategy(PermissionCondition condition) {
 
         // 현재 발급된 토근의 role
