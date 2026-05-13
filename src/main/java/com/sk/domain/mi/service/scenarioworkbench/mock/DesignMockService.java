@@ -155,7 +155,7 @@ public class DesignMockService {
 
         for (Long eventId : request.eventIds()) {
             requestStore.put(requestId, new MockGenRequest(requestId, eventId, ScenarioGenStatus.PROCESSING, now));
-            updateEventStatus(eventId, ScenarioGenStatus.PROCESSING, requestId);
+            updateEventStatus(eventId, ScenarioGenStatus.PROCESSING, requestId, now);
         }
 
         scheduleAutoComplete(requestId);
@@ -164,7 +164,7 @@ public class DesignMockService {
             requestId,
             ScenarioGenStatus.PROCESSING,
             ScenarioGenStatus.PROCESSING.getLabel(),
-            now
+            now  // scenarioGenStartedAt
         );
     }
 
@@ -174,7 +174,7 @@ public class DesignMockService {
             if (req != null && req.status() == ScenarioGenStatus.PROCESSING) {
                 requestStore.put(requestId,
                     new MockGenRequest(req.requestId(), req.eventId(), ScenarioGenStatus.COMPLETED, req.requestedAt()));
-                updateEventStatus(req.eventId(), ScenarioGenStatus.COMPLETED, requestId);
+                updateEventStatus(req.eventId(), ScenarioGenStatus.COMPLETED, requestId, req.requestedAt());
 
                 List<GeneratedScenarioRes> template = generatedScenariosMap.getOrDefault(
                     SCENARIO_TEMPLATE_KEY, Collections.emptyList());
@@ -187,14 +187,14 @@ public class DesignMockService {
         }, AUTO_COMPLETE_DELAY_SECONDS, TimeUnit.SECONDS);
     }
 
-    private void updateEventStatus(Long eventId, ScenarioGenStatus status, Long requestId) {
+    private void updateEventStatus(Long eventId, ScenarioGenStatus status, Long requestId, LocalDateTime startedAt) {
         eventList = new ArrayList<>(eventList.stream()
             .map(e -> e.eventId().equals(eventId)
                 ? new DesignEventItemRes(
                     e.eventId(), e.eventName(), e.status(), e.statusLabel(),
                     e.eventCategoryLv1(), e.eventCategoryLv1Label(),
                     e.createdAt(), e.updatedAt(), e.indexImpacts(),
-                    status, status.getLabel(), requestId)
+                    status, status.getLabel(), startedAt, requestId)
                 : e)
             .toList());
     }
@@ -204,7 +204,7 @@ public class DesignMockService {
         if (req != null && req.status() == ScenarioGenStatus.PROCESSING) {
             requestStore.put(req.requestId(),
                 new MockGenRequest(req.requestId(), req.eventId(), ScenarioGenStatus.COMPLETED, req.requestedAt()));
-            updateEventStatus(req.eventId(), ScenarioGenStatus.COMPLETED, req.requestId());
+            updateEventStatus(req.eventId(), ScenarioGenStatus.COMPLETED, req.requestId(), req.requestedAt());
 
             List<GeneratedScenarioRes> template = generatedScenariosMap.getOrDefault(
                 SCENARIO_TEMPLATE_KEY, Collections.emptyList());
@@ -223,7 +223,7 @@ public class DesignMockService {
         return requestIds.stream()
             .map(requestStore::get)
             .filter(r -> r != null)
-            .map(r -> new ScenarioGenStatusRes(r.requestId(), r.eventId(), r.status(), r.status().getLabel()))
+            .map(r -> new ScenarioGenStatusRes(r.requestId(), r.eventId(), r.status(), r.status().getLabel(), r.requestedAt()))
             .toList();
     }
 

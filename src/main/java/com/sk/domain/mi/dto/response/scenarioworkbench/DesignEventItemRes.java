@@ -42,6 +42,9 @@ public record DesignEventItemRes(
     @Schema(description = "시나리오 생성 상태 라벨", example = "생성준비")
     String scenarioGenStatusLabel,
 
+    @Schema(description = "시나리오 생성 시작 일시 (processing/completed 상태일 때만 존재)", nullable = true)
+    LocalDateTime scenarioGenStartedAt,
+
     @Schema(description = "시나리오 생성 요청 ID (processing/completed 상태일 때만 존재)", example = "200", nullable = true)
     Long requestId
 
