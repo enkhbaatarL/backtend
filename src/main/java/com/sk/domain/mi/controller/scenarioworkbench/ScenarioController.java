@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
@@ -76,7 +77,7 @@ public class ScenarioController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -112,7 +113,7 @@ public class ScenarioController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{scenarioId}")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })

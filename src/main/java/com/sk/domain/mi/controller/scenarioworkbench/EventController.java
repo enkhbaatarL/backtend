@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -83,7 +84,7 @@ public class EventController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -117,7 +118,7 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -149,7 +150,7 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}/records")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -182,7 +183,7 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}/outlooks")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })

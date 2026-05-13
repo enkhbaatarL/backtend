@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 public @interface RequiredPermission {
 
     /**
-     * 필요한 역할, `legacy`
+     * 필요한 역할
      */
     Role[] roles() default {};
 
@@ -45,15 +45,8 @@ public @interface RequiredPermission {
     boolean requireDownloadPermission() default false;
 
     /**
-     * 부가 조건 지정, `legacy`
+     * 부가 조건 지정
      */
     PermissionCondition condition() default PermissionCondition.NONE;
-
-    /**
-     * 복합 권한 규칙
-     * - PermissionRule 간: OR 조건
-     * - PermissionRule 내부 roles + conditions: AND 조건
-     */
-    PermissionRule[] rules() default {};
 
 }

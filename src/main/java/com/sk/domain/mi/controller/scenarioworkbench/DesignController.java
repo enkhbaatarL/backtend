@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -68,7 +69,7 @@ public class DesignController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/events")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -93,7 +94,7 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "생성 요청 접수 성공")
     @PostMapping("/generate")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -114,7 +115,11 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
     @PostMapping("/callback")
-    @RequiredPermission(roles = {Role.SYSTEM})
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.SYSTEM),
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<Void> handleCallback(@Valid @RequestBody ScenarioGenCallbackReq request) {
         designService.handleCallback(request);
         return BaseResponseFactory.create(ResultCode.Success.OK);
@@ -131,7 +136,7 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/generate/{requestId}/scenarios")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -157,7 +162,7 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/generate/status")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -178,7 +183,7 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "초기화 성공")
     @PostMapping("/reset")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })

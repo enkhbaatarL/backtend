@@ -2,6 +2,7 @@ package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ModelExecutionCallbackReq;
@@ -45,7 +46,7 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/model-execution-parameters")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -64,7 +65,7 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
     @PostMapping("/model-executions")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -84,7 +85,7 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/model-executions/{executionId}")
-    @RequiredPermission(rules = {
+    @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -104,7 +105,11 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
     @PostMapping("/model-executions/{executionId}/callback")
-    @RequiredPermission(roles = {Role.SYSTEM})
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.SYSTEM),
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ModelExecutionStatusRes> callbackModelExecution(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId,
         @Parameter(description = "실행 리소스 ID", example = "exec_a1b2c3d4e5f6") @PathVariable String executionId,

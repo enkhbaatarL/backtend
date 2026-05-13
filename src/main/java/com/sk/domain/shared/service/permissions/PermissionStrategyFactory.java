@@ -45,12 +45,15 @@ public class PermissionStrategyFactory {
      * Rule 기반 전략 객체 조회
      */
     private PermissionStrategy resolveStrategy(Role role, PermissionRule rule) {
+
         if (role == Role.ADMIN && hasCondition(rule, PermissionCondition.THIRD_PARTY_ADMIN_ONLY)) {
             return new AdminWithThirdPartyAccessStrategy(authService);
         }
+
         if (role == Role.USER && hasCondition(rule, PermissionCondition.SKGAS_COMPANY_USER_ONLY)) {
             return new SKGasUserPermissionStrategy(authService);
         }
+
         return resolveStrategy(role, PermissionCondition.NONE);
     }
 
@@ -76,6 +79,10 @@ public class PermissionStrategyFactory {
 
         if (role == Role.API_PLUS_OPERATOR) {
             return new ApiPlusOperatorPermissionStrategy(authService);
+        }
+
+        if (role == Role.SYSTEM) {
+            return new SystemPermissionStrategy();
         }
 
         return new UserPermissionStrategy(authService);

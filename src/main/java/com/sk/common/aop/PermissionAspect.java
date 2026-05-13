@@ -2,6 +2,7 @@ package com.sk.common.aop;
 
 import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -38,21 +39,27 @@ public class PermissionAspect {
      */
     @Before("@annotation(requiredPermission)")
     public void checkPermission(JoinPoint joinPoint, RequiredPermission requiredPermission) {
-
-        PermissionStrategy strategy = hasRules(requiredPermission)
-            ? checkRulePermission(requiredPermission) // rule 기반 권한 체크
-            : checkLegacyPermission(requiredPermission); // role 기반 권한 체크(legacy)
-
-        checkGoodsPermission(joinPoint, strategy, requiredPermission);
-
+        // role 기반 권한 체크(legacy)
+        PermissionStrategy strategy = checkLegacyPermission(requiredPermission);
+        checkGoodsPermission(joinPoint, strategy, GoodsPermissionRequirement.from(requiredPermission));
     }
 
-    private boolean hasRules(RequiredPermission requiredPermission) {
-        return requiredPermission.rules().length > 0;
+
+    /**
+     * 주어진 @RequiredPermission 어노테이션을 기반으로 API 접근 권한을 검사합니다.
+     *
+     * @param joinPoint               호출된 메서드의 실행 시점 정보
+     * @param requiredPermissionRules 메서드에 요구되는 권한 정보
+     */
+    @Before("@annotation(requiredPermissionRules)")
+    public void checkPermissionRules(JoinPoint joinPoint, RequiredPermissionRules requiredPermissionRules) {
+        // rule 기반 권한 체크
+        PermissionStrategy strategy = checkRulePermission(requiredPermissionRules);
+        checkGoodsPermission(joinPoint, strategy, GoodsPermissionRequirement.from(requiredPermissionRules));
     }
 
-    private PermissionStrategy checkRulePermission(RequiredPermission requiredPermission) {
-        PermissionRule[] rules = requiredPermission.rules();
+    private PermissionStrategy checkRulePermission(RequiredPermissionRules requiredPermissionRules) {
+        PermissionRule[] rules = requiredPermissionRules.rules();
         PermissionStrategy strategy = strategyFactory.getStrategy(rules);
 
         // 1. API 접근 가능 여부 체크
@@ -78,27 +85,27 @@ public class PermissionAspect {
         return strategy;
     }
 
-    private void checkGoodsPermission(JoinPoint joinPoint, PermissionStrategy strategy, RequiredPermission requiredPermission) {
+    private void checkGoodsPermission(JoinPoint joinPoint, PermissionStrategy strategy, GoodsPermissionRequirement requirement) {
         // 2-1. 상품 권한이 필요한 경우 (상품 하위 엔티티 식별자를 통해 접근)
-        if (StringUtils.hasText(requiredPermission.goodsNestedParam())) {
+        if (StringUtils.hasText(requirement.goodsNestedParam())) {
 
-            Object goodsNestedValue = extractParameterValue(joinPoint, requiredPermission.goodsNestedParam());
-            Integer goodsNo = goodsNestedEntityResolver.resolve(requiredPermission.goodsNestedParam(), goodsNestedValue);
+            Object goodsNestedValue = extractParameterValue(joinPoint, requirement.goodsNestedParam());
+            Integer goodsNo = goodsNestedEntityResolver.resolve(requirement.goodsNestedParam(), goodsNestedValue);
 
             if (goodsNo != null) {
-                checkViewOrDownload(strategy, goodsNo, requiredPermission);
+                checkViewOrDownload(strategy, goodsNo, requirement);
             }
 
         }
 
         // 2-2. 상품 권한이 필요한 경우 (상품 엔티티 식별자를 통해 접근)
-        if (StringUtils.hasText(requiredPermission.goodsParam())) {
+        if (StringUtils.hasText(requirement.goodsParam())) {
 
-            Object goodsNoValue = extractParameterValue(joinPoint, requiredPermission.goodsParam());
+            Object goodsNoValue = extractParameterValue(joinPoint, requirement.goodsParam());
             Integer goodsNo = toInt(goodsNoValue);
 
             if (goodsNo != null) {
-                checkViewOrDownload(strategy, goodsNo, requiredPermission);
+                checkViewOrDownload(strategy, goodsNo, requirement);
             }
         }
     }
@@ -108,15 +115,15 @@ public class PermissionAspect {
      *
      * @param strategy 권한 확인에 사용할 PermissionStrategy 객체입니다.
      * @param goodsNo  확인할 상품의 식별자 번호입니다.
-     * @param rp       권한 확인 조건을 제공하는 RequiredPermission 객체입니다.
+     * @param requirement 권한 확인 조건입니다.
      */
-    private void checkViewOrDownload(PermissionStrategy strategy, Integer goodsNo, RequiredPermission rp) {
+    private void checkViewOrDownload(PermissionStrategy strategy, Integer goodsNo, GoodsPermissionRequirement requirement) {
         // [VIEW] 권한 체크
-        if (rp.requireViewPermission() && BooleanUtils.isFalse(strategy.canViewGoods(goodsNo))) {
+        if (requirement.requireViewPermission() && BooleanUtils.isFalse(strategy.canViewGoods(goodsNo))) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'VIEW' the goods(goodsNo: %s)".formatted(goodsNo));
         }
         // [DOWNLOAD] 권한 체크
-        if (rp.requireDownloadPermission() && BooleanUtils.isFalse(strategy.canDownloadGoods(goodsNo))) {
+        if (requirement.requireDownloadPermission() && BooleanUtils.isFalse(strategy.canDownloadGoods(goodsNo))) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "You do not have permission to 'DOWNLOAD' the goods(goodsNo: %s)".formatted(goodsNo));
         }
     }
@@ -156,6 +163,20 @@ public class PermissionAspect {
             return Integer.valueOf(stringValue);
         }
         return null;
+    }
+
+    private record GoodsPermissionRequirement(
+        String goodsNestedParam,
+        String goodsParam,
+        boolean requireViewPermission,
+        boolean requireDownloadPermission
+    ) {
+        private static GoodsPermissionRequirement from(RequiredPermission rp) {
+            return new GoodsPermissionRequirement(rp.goodsNestedParam(), rp.goodsParam(), rp.requireViewPermission(), rp.requireDownloadPermission());
+        }
+        private static GoodsPermissionRequirement from(RequiredPermissionRules rpr) {
+            return new GoodsPermissionRequirement(rpr.goodsNestedParam(), rpr.goodsParam(), rpr.requireViewPermission(), rpr.requireDownloadPermission());
+        }
     }
 
 }
