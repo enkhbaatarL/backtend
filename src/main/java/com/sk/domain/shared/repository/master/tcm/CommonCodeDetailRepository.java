@@ -16,7 +16,7 @@ public interface CommonCodeDetailRepository extends JpaRepository<CommonCodeDeta
             ccd.id.codeId,
             ccd.codeNm,
             ccd.codeExpn,
-            false
+            ccpm.isDefaultUnstructured
             )
             FROM CommonCodeDetail ccd
             JOIN Provider p ON CONCAT('A_', p.providerId) = ccd.id.codeId
