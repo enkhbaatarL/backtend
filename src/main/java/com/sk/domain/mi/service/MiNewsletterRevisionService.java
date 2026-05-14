@@ -262,10 +262,7 @@ public class MiNewsletterRevisionService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "REVISION_NOT_FOUND");
         }
 
-        ReplayContext replayContext = buildReplayContext(issueOriginal, revision);
-        JsonNode content = snapshotCanonicalizer.canonicalize(
-            applyDeltaHistories(deepCopy(replayContext.baseContent()), replayContext.histories())
-        );
+        JsonNode content = snapshotCanonicalizer.canonicalize(resolveDraftContent(issueOriginal, revision));
 
         return new RevisionDraftRes(
             revision.getRevisionNo().intValue(),
@@ -448,6 +445,38 @@ public class MiNewsletterRevisionService {
             requestType == RevisionSaveRequestType.DRAFT ? now : null,
             snapshotSaved ? Boolean.TRUE : null
         );
+    }
+
+    private JsonNode resolveDraftContent(NewsletterIssueOriginal issueOriginal, NewsletterUserRevision revision) {
+        JsonNode baseContent;
+        Long baseDeltaNo;
+
+        if (revision.getSnapshotBaseType() == RevisionSnapshotBaseType.REVISION_SNAPSHOT && revision.getSnapshotNo() != null) {
+            NewsletterUserRevisionSnapshotHistory snapshot = revisionSnapshotHistoryRepository
+                .findByNewsletterUserRevisionAndSnapshotNoAndIsDeletedFalse(revision, revision.getSnapshotNo())
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "REVISION_NOT_FOUND"));
+            baseContent = deepCopy(snapshot.getSnapshotJson());
+            baseDeltaNo = snapshot.getBaseDeltaNo();
+        } else {
+            baseContent = deepCopy(issueOriginal.getOriginalSnapshotJson());
+            baseDeltaNo = 0L;
+        }
+
+        List<NewsletterUserRevisionDeltaHistory> saveDeltaHistories =
+            revisionDeltaHistoryRepository.findByNewsletterUserRevisionAndRequestTypeAndDeltaNoGreaterThanAndIsDeletedFalseOrderByDeltaNoAsc(
+                revision, RevisionSaveRequestType.SAVE, baseDeltaNo
+            );
+        JsonNode currentSavedContent = applyDeltaHistories(baseContent, saveDeltaHistories);
+        Long lastSaveDeltaNo = saveDeltaHistories.isEmpty()
+            ? baseDeltaNo
+            : saveDeltaHistories.get(saveDeltaHistories.size() - 1).getDeltaNo();
+
+        return revisionDeltaHistoryRepository
+            .findFirstByNewsletterUserRevisionAndRequestTypeAndDeltaNoGreaterThanAndIsDeletedFalseOrderByDeltaNoDesc(
+                revision, RevisionSaveRequestType.DRAFT, lastSaveDeltaNo
+            )
+            .map(draftDelta -> applyDeltaHistories(currentSavedContent, List.of(draftDelta)))
+            .orElse(currentSavedContent);
     }
 
     private void validateSaveRequestPatchApplies(
