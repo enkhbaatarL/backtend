@@ -40,6 +40,7 @@ public class DataSourceProperties {
         private String connectionTestQuery;
         private Duration validationTimeout;
         private int minimumIdle;
+        private Duration keepaliveTime;
     }
 
 }

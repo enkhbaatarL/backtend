@@ -13,8 +13,9 @@ spring:
       hikari:
         connection-timeout: 7s
         maximum-pool-size: 20
-        idle-timeout: 10m
-        max-lifetime: 15m
+        idle-timeout: 5m
+        max-lifetime: 9m
+        keepalive-time: 4m
         connection-test-query: SELECT 1
         validation-timeout: 3000
         minimum-idle: 10
@@ -27,24 +28,25 @@ spring:
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 20
-          idle-timeout: 10m
-          max-lifetime: 15m
+          idle-timeout: 5m
+          max-lifetime: 9m
+          keepalive-time: 4m
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
-      - company-cd: midb-skens
-        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 20
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 10
+#      - company-cd: midb-skens
+#        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+#        driver-class-name: com.mysql.cj.jdbc.Driver
+#        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+#        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+#        hikari:
+#          connection-timeout: 7s
+#          maximum-pool-size: 20
+#          idle-timeout: 10m
+#          max-lifetime: 15m
+#          connection-test-query: SELECT 1
+#          validation-timeout: 3000
+#          minimum-idle: 10
       - company-cd: midb-ske
         jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-ske?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -53,24 +55,25 @@ spring:
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 20
-          idle-timeout: 10m
-          max-lifetime: 15m
+          idle-timeout: 5m
+          max-lifetime: 9m
+          keepalive-time: 4m
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
-      - company-cd: midb-skhy
-        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skhy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-        hikari:
-          connection-timeout: 7s
-          maximum-pool-size: 20
-          idle-timeout: 10m
-          max-lifetime: 15m
-          connection-test-query: SELECT 1
-          validation-timeout: 3000
-          minimum-idle: 10
+#      - company-cd: midb-skhy
+#        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skhy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+#        driver-class-name: com.mysql.cj.jdbc.Driver
+#        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+#        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+#        hikari:
+#          connection-timeout: 7s
+#          maximum-pool-size: 20
+#          idle-timeout: 10m
+#          max-lifetime: 15m
+#          connection-test-query: SELECT 1
+#          validation-timeout: 3000
+#          minimum-idle: 10
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
