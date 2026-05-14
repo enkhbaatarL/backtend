@@ -63,7 +63,7 @@ public class OverviewMockService {
     private void buildCrossReferences() {
         Map<Long, ScenarioDetailRes> detailMap = scenarioMockService.getAllScenarioDetails();
 
-        Map<Long, List<OverviewScenarioBriefRes>> eventScenarios = new HashMap<>();
+        Map<Long, Map<Long, OverviewScenarioBriefRes>> eventScenarios = new HashMap<>();
         Map<Long, OverviewEventBriefRes> scenarioEvent = new HashMap<>();
         Map<Long, List<String>> scenarioTags = new HashMap<>();
 
@@ -85,18 +85,27 @@ public class OverviewMockService {
                 event.indexImpacts()
             ));
 
-            if (!eventScenarios.containsKey(event.eventId()) && related.scenarios() != null) {
-                List<OverviewScenarioBriefRes> briefs = related.scenarios().stream()
-                    .map(s -> new OverviewScenarioBriefRes(
+            if (related.scenarios() != null) {
+                Map<Long, OverviewScenarioBriefRes> scenariosById =
+                    eventScenarios.computeIfAbsent(event.eventId(), ignored -> new LinkedHashMap<>());
+
+                related.scenarios().forEach(s -> scenariosById.putIfAbsent(
+                    s.scenarioId(),
+                    new OverviewScenarioBriefRes(
                         s.scenarioId(), s.scenarioName(), s.baseCase(),
                         s.indexImpacts(), s.probability()
-                    ))
-                    .toList();
-                eventScenarios.put(event.eventId(), briefs);
+                    )
+                ));
             }
         }
 
-        this.eventScenariosMap = eventScenarios;
+        this.eventScenariosMap = eventScenarios.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue().values().stream()
+                    .sorted(Comparator.comparing(OverviewScenarioBriefRes::scenarioId))
+                    .toList()
+            ));
         this.scenarioEventMap = scenarioEvent;
         this.scenarioTagsMap = scenarioTags;
     }
