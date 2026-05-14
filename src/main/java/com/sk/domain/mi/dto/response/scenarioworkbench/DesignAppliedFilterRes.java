@@ -29,7 +29,10 @@ public record DesignAppliedFilterRes(
     String keyword,
 
     @Schema(description = "완료 항목 숨기기")
-    Boolean hideCompleted
+    Boolean hideCompleted,
+
+    @Schema(description = "시나리오 생성 비추천 항목 숨기기")
+    Boolean hideNonRecommended
 
 ) {
 
@@ -41,7 +44,8 @@ public record DesignAppliedFilterRes(
             request.endDate(),
             request.sort(),
             request.keyword(),
-            request.hideCompleted()
+            request.hideCompleted(),
+            request.hideNonRecommended()
         );
     }
 

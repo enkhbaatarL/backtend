@@ -77,6 +77,9 @@ public class DataSourceFactory {
         if (dataSourceConfig.getHikari().getMinimumIdle() > 0) {
             hikariDataSource.setMinimumIdle(dataSourceConfig.getHikari().getMinimumIdle());
         }
+        if (dataSourceConfig.getHikari().getKeepaliveTime() != null) {
+            hikariDataSource.setKeepaliveTime(dataSourceConfig.getHikari().getKeepaliveTime().toMillis());
+        }
 
         return hikariDataSource;
     }

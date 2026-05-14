@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.DesignAppliedFilterRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.DesignEventItemRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.DesignEventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.GeneratedScenarioRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioDetailRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioGenAcceptRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioGenStatusRes;
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
@@ -20,7 +21,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,13 +46,14 @@ public class DesignMockService {
     private static final String SCENARIO_TEMPLATE_KEY = "template";
 
     private final ObjectMapper objectMapper;
-
-    private List<DesignEventItemRes> eventList;
-    private Map<String, List<GeneratedScenarioRes>> generatedScenariosMap;
-
     private final AtomicLong requestIdSeq = new AtomicLong(200);
     private final ConcurrentHashMap<Long, MockGenRequest> requestStore = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private List<DesignEventItemRes> eventList;
+    private Map<String, List<GeneratedScenarioRes>> generatedScenariosMap;
+    private Map<Long, GeneratedScenarioRes> scenarioMap;
+    private Map<Long, ScenarioDetailRes> scenarioDetailMap;
+    private Map<Long, List<GeneratedScenarioRes>> eventScenariosMap;
 
     @PostConstruct
     void init() {
@@ -68,6 +69,7 @@ public class DesignMockService {
         try {
             loadEventList();
             loadGeneratedScenarios();
+            loadScenarioDetails();
             requestStore.clear();
             requestIdSeq.set(200);
             initRequestStore();
@@ -105,6 +107,25 @@ public class DesignMockService {
             generatedScenariosMap = new ConcurrentHashMap<>(
                 objectMapper.readValue(is, new TypeReference<Map<String, List<GeneratedScenarioRes>>>() {}));
         }
+
+        scenarioMap = new ConcurrentHashMap<>();
+        generatedScenariosMap.values().forEach(scenarios -> scenarios.forEach(scenario -> {
+            scenarioMap.put(scenario.scenarioId(), scenario);
+        }));
+    }
+
+    private void loadScenarioDetails() throws IOException {
+        try (InputStream is = new ClassPathResource("mock/scenarios/scenario-detail.json").getInputStream()) {
+            scenarioDetailMap = objectMapper.readValue(is, new TypeReference<>() {});
+        }
+
+        eventScenariosMap = new ConcurrentHashMap<>();
+
+        for(ScenarioDetailRes scenario : scenarioDetailMap.values()) {
+            Long eventId = scenario.relatedEventScenario().event().eventId();
+            eventScenariosMap.computeIfAbsent(eventId, k -> new ArrayList<>()).add(scenarioMap.get(scenario.scenarioId()));
+        }
+
     }
 
     public void reset() {
@@ -128,6 +149,7 @@ public class DesignMockService {
             .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
             .filter(e -> !request.hideCompleted() || e.scenarioGenStatus() != ScenarioGenStatus.COMPLETED)
+            .filter(e -> !request.hideNonRecommended() || Boolean.TRUE.equals(e.scenarioRecommended()))
             .sorted(comparator)
             .toList();
 
@@ -176,11 +198,13 @@ public class DesignMockService {
                     new MockGenRequest(req.requestId(), req.eventId(), ScenarioGenStatus.COMPLETED, req.requestedAt()));
                 updateEventStatus(req.eventId(), ScenarioGenStatus.COMPLETED, requestId, req.requestedAt());
 
-                List<GeneratedScenarioRes> template = generatedScenariosMap.getOrDefault(
-                    SCENARIO_TEMPLATE_KEY, Collections.emptyList());
-                if (!template.isEmpty()) {
-                    generatedScenariosMap.put(String.valueOf(requestId), template);
-                }
+//                List<GeneratedScenarioRes> template = generatedScenariosMap.getOrDefault(
+//                    SCENARIO_TEMPLATE_KEY, Collections.emptyList());
+//                if (!template.isEmpty()) {
+//                    generatedScenariosMap.put(String.valueOf(requestId), template);
+//                }
+
+                generatedScenariosMap.put(String.valueOf(requestId), eventScenariosMap.getOrDefault(req.eventId(), Collections.emptyList()));
 
                 log.info("[Mock] Auto-completed scenario generation: requestId={}, eventId={}", requestId, req.eventId());
             }
@@ -193,7 +217,7 @@ public class DesignMockService {
                 ? new DesignEventItemRes(
                     e.eventId(), e.eventName(), e.status(), e.statusLabel(),
                     e.eventCategoryLv1(), e.eventCategoryLv1Label(),
-                    e.createdAt(), e.updatedAt(), e.indexImpacts(),
+                    e.createdAt(), e.updatedAt(), e.scenarioRecommended(), e.recommendationReason(), e.indexImpacts(),
                     status, status.getLabel(), startedAt, requestId)
                 : e)
             .toList());
