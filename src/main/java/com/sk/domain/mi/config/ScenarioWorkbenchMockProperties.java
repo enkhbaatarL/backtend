@@ -95,6 +95,7 @@ public class ScenarioWorkbenchMockProperties {
         public static class Workflow {
             private boolean dispatchSuccess = true;
             private long runningTimeoutMinutes = 10;
+            private long autoCompleteSeconds = 5;
         }
     }
 

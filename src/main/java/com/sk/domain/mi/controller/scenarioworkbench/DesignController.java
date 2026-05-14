@@ -123,6 +123,8 @@ public class DesignController {
     @PostMapping("/callback")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.SYSTEM),
+        @PermissionRule(role = Role.API_SUB_ADMIN),
+        @PermissionRule(role = Role.API_PLUS_OPERATOR),
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })

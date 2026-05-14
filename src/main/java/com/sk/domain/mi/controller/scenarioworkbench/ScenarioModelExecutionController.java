@@ -3,6 +3,7 @@ package com.sk.domain.mi.controller.scenarioworkbench;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.RequiredPermissionRules;
+import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ModelExecutionCallbackReq;
@@ -11,6 +12,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionStatusRes;
 import com.sk.domain.mi.service.scenarioworkbench.ScenarioModelExecutionService;
+import com.sk.domain.mi.service.scenarioworkbench.mock.ScenarioModelExecutionMockService;
 import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -38,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ScenarioModelExecutionController {
 
     private final ScenarioModelExecutionService scenarioModelExecutionService;
+    private final ScenarioModelExecutionMockService scenarioModelExecutionMockService;
 
     @ApiOrder(3)
     @Operation(
@@ -107,6 +110,8 @@ public class ScenarioModelExecutionController {
     @PostMapping("/model-executions/{executionId}/callback")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.SYSTEM),
+        @PermissionRule(role = Role.API_SUB_ADMIN),
+        @PermissionRule(role = Role.API_PLUS_OPERATOR),
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
@@ -118,5 +123,26 @@ public class ScenarioModelExecutionController {
         return BaseResponseFactory.create(
             scenarioModelExecutionService.updateModelExecutionFromCallback(scenarioId, executionId, request)
         );
+    }
+
+    @ApiOrder(7)
+    @Operation(
+        summary = "[mockapi 전용] 수급모델 실행 데이터 초기화 API",
+        description = """
+            Mock 수급모델 실행 데이터를 초기 상태로 리셋합니다. <br>
+            테스트/데모 반복 시 사용합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "초기화 성공")
+    @PostMapping("/model-executions/reset")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<Void> resetModelExecutions(
+        @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId
+    ) {
+        scenarioModelExecutionMockService.reset();
+        return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 }

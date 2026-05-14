@@ -82,6 +82,7 @@ mi:
         workflow:
           dispatch-success: true
           running-timeout-minutes: 10
+          auto-complete-seconds: 5
       overview:
         api:
           get-events: true
