@@ -7,35 +7,23 @@ import static com.sk.domain.shared.entity.master.tmd.QMiEventSourceMap.miEventSo
 import static com.sk.domain.shared.entity.master.tmd.QMiRecord.miRecord;
 import static com.sk.domain.shared.entity.master.tmd.QNewsSummary.newsSummary;
 import static com.sk.domain.shared.entity.master.tmd.QProvider.provider;
+import static com.sk.domain.shared.entity.master.tmm.QDriverTag.driverTag;
 import static com.sk.domain.shared.entity.master.tmm.QImpact.impact;
 import static com.sk.domain.shared.entity.master.tmm.QImpactResult.impactResult;
 import static com.sk.domain.shared.entity.master.tmm.QMiEvent.miEvent;
-import static com.sk.domain.shared.entity.master.tmm.QDriverTag.driverTag;
 import static com.sk.domain.shared.entity.master.tmm.QQualitativeImpact.qualitativeImpact;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.support.PageableExecutionUtils;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
 import com.sk.domain.shared.entity.master.tmm.MiEvent;
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
+import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
+import com.sk.domain.shared.enums.scenarioworkbench.EventSignalType;
 import com.sk.domain.shared.enums.scenarioworkbench.IndexName;
 import com.sk.domain.shared.enums.scenarioworkbench.TargetType;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
@@ -44,8 +32,19 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QDriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QEventIndexImpactRow;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 
 @RequiredArgsConstructor
 public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
@@ -113,10 +112,18 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     // todo: 변경 가능성 있음. https://skmihq.slack.com/archives/C0AR16F8QQG/p1777365927701349
     private void applyStatusFilter(BooleanBuilder where, ContentStatus status) {
         switch (status) {
-            case NEW -> where.and(miEvent.createDt.eq(miEvent.modifyDt));
-            case UPDATED -> where.and(miEvent.createDt.ne(miEvent.modifyDt));
+            case NEW -> where
+                .and(miEvent.createDt.eq(miEvent.modifyDt))
+                .and(isSignalEvent());
+            case UPDATED -> where
+                .and(miEvent.createDt.ne(miEvent.modifyDt))
+                .and(isSignalEvent());
             case ALL -> { /* no filter */ }
         }
+    }
+
+    private BooleanExpression isSignalEvent() {
+        return miEvent.statusCode.equalsIgnoreCase(EventSignalType.SIGNAL.getCode());
     }
 
     private void applyCategoryFilter(BooleanBuilder where, List<EventCategoryLv1> categories) {
