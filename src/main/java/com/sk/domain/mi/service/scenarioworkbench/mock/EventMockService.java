@@ -118,6 +118,10 @@ public class EventMockService {
         return new EventListRes(EventAppliedFilterRes.from(request), pagination);
     }
 
+    public List<EventListItemRes> getEventListItems() {
+        return eventList;
+    }
+
     public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRes detail = eventDetailMap.get(eventId);
         if (detail == null) {
