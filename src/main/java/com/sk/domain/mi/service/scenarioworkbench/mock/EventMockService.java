@@ -7,13 +7,18 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
-import com.sk.domain.mi.dto.response.scenarioworkbench.*;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventAppliedFilterRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventDetailRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventInstitutionOutlookRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventListItemRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventListRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventRelatedRecordRes;
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
+import com.sk.domain.shared.enums.scenarioworkbench.EventSignalType;
 import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
@@ -93,6 +98,7 @@ public class EventMockService {
 
         List<EventListItemRes> filtered = eventList.stream()
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.status() == request.eventStatus())
+            .filter(e -> request.eventStatus() == ContentStatus.ALL || e.signalType() == EventSignalType.SIGNAL)
             .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
             .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
             .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))

@@ -60,8 +60,8 @@ public class EventController {
             <br><br>
             ### 이벤트 상태 (eventStatus)
             - `ALL`: 전체 이벤트
-            - `NEW`: 신규 이벤트 (crt_dtm == mod_dtm, 생성 후 갱신 없음)
-            - `UPDATED`: 갱신 이벤트 (crt_dtm != mod_dtm, 1회 이상 갱신됨)
+            - `NEW`: 신규 이벤트 (crt_dtm == mod_dtm, 생성 후 갱신 없음, 소음 제외)
+            - `UPDATED`: 갱신 이벤트 (crt_dtm != mod_dtm, 1회 이상 갱신됨, 소음 제외)
 
             <br><br>
             ### events.content 항목 필드
