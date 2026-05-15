@@ -12,9 +12,12 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserAccessPageType;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
+import com.sk.domain.shared.dto.request.common.UserFeedbackReq;
+import com.sk.domain.shared.entity.master.tcm.UserFeedback;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeRepository;
 import com.sk.domain.shared.repository.master.tcm.UiComponentSettingRepository;
+import com.sk.domain.shared.repository.master.tcm.UserFeedbackRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,6 +40,7 @@ public class CommonService {
     private final String ALL_ALLOW_IP_ADDRESS = "0.0.0.0"; // 20250620 기준 DB에 '0.0.0.0' IP 등록시 모든 IP 허용
     private final CommonCodeRepository commonCodeRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
+    private final UserFeedbackRepository userFeedbackRepository;
     private final MipConfig mipConfig;
     @Value("${server.domain}")
     private String miDefaultDomain;
@@ -202,4 +206,18 @@ public class CommonService {
             .map(UiComponentSettingRes::from)
             .toList();
     }
+
+    /**
+     * 사용자 피드백 등록
+     *
+     * @param user 사용자 객체
+     * @param request 요청 객체
+     * @return 피드백 식별자
+     */
+    @Transactional
+    public Long createUserFeedback(User user, UserFeedbackReq request) {
+        UserFeedback saved = userFeedbackRepository.save(UserFeedback.of(request, user));
+        return saved.getUserFeedbackNo();
+    }
+
 }

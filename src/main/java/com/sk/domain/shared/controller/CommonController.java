@@ -5,6 +5,7 @@ import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
+import com.sk.domain.shared.dto.request.common.UserFeedbackReq;
 import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
 import com.sk.domain.shared.dto.response.common.UiComponentSettingRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -27,6 +29,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -102,4 +106,33 @@ public class CommonController {
             commonService.getUiComponentSettings(companyNo, screenCode, componentTypeCode,
                 componentCode));
     }
+
+    @ApiOrder(6)
+    @Operation(
+        summary = "사용자 피드백 등록 API",
+        description = """
+            사용자 피드백을 등록합니다. <br>
+            여러 페이지에서 공통으로 사용되는 피드백 수집 API입니다.
+
+            <br><br>
+            ### 요청 필드
+             - feedbackPageNm: 피드백 대상 페이지명 (선택) / example - "Scenario Workbench"
+             - feedbackSectionNm: 피드백 대상 섹션명 (선택) / example - "Overview", "Design"
+             - feedbackTypeCd: 피드백 유형 코드 (필수)
+             - feedbackContent: 피드백 내용 (선택, 최대 2000자)
+
+            <br><br>
+            ### 피드백 유형 코드 (feedbackTypeCd)
+            - `data_error`: 데이터 오류
+            - `ui_improvement`: UI 개선
+            - `feature_suggestion`: 기능 제안
+            - `etc`: 기타
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "등록 성공")
+    @PostMapping("/user-feedback")
+    public BaseResponse<Long> createUserFeedback(@UserResolve User user, @Valid @RequestBody UserFeedbackReq request) {
+        return BaseResponseFactory.create(commonService.createUserFeedback(user, request));
+    }
+
 }
