@@ -46,7 +46,7 @@ public class EventController {
         summary = "이벤트 유형 L1 목록 조회 API",
         description = """
             이벤트 유형 Level 1 마스터 목록을 조회합니다. <br>
-            이벤트 목록 필터의 `eventTypeL1Id` 파라미터에 사용할 ID값을 제공합니다!
+            이벤트 목록 필터의 `eventTypeL1Id` 파라미터에 사용할 ID값을 제공합니다.
 
             <br><br>
             ### 응답 필드
