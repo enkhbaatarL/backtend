@@ -70,7 +70,7 @@ public class DriverTag extends BaseEntity {
     private String directionHint;
 
     @Column(name = "direction", length = 20)
-    @Comment("실제 영향 ��향 bullish/bearish/negligible")
+    @Comment("실제 영향 방향 bullish/bearish/negligible")
     private String direction;
 
     @Column(name = "match_score", precision = 5, scale = 4)
@@ -82,7 +82,7 @@ public class DriverTag extends BaseEntity {
     private String driverMagnitude;
 
     @Column(name = "driver_reason", columnDefinition = "text")
-    @Comment("Driver 영향 발생 사���")
+    @Comment("Driver 영향 발생 사유")
     private String driverReason;
 
     @Column(name = "matched_keywords", columnDefinition = "json")
