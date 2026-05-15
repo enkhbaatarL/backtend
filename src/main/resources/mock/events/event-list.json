@@ -3,8 +3,8 @@
     {
       "eventId": 1,
       "eventName": "카타르 LNG 핵심 설비 공격, 공급 프리미엄 급등",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -33,13 +33,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 2,
       "eventName": "호르무즈 통항 차질, 유럽행 카고 아시아 전환",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -68,13 +69,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 3,
       "eventName": "남아시아·동남아 대체 조달, JKM 프리미엄 지지",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -103,13 +105,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 4,
       "eventName": "유럽 저장률 29% 안팎, 재주입 LNG 수요 확대",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -138,13 +141,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 5,
       "eventName": "JKM-TTF 스프레드 확대, 아시아향 유인 강화",
-      "eventCategoryLv1": "market_trading_structure",
-      "eventCategoryLv1Label": "시장 / 거래 구조",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -173,13 +177,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 8
     },
     {
       "eventId": 6,
       "eventName": "동북아 완충재고, JKM 근월 상승 일부 제한",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -208,13 +213,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 7,
       "eventName": "Plaquemines 수출한도 확대, 중기 공급 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -243,13 +249,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 8,
       "eventName": "CP2·Golden Pass 기대, 미국 LNG 중기 공급 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -278,13 +285,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 9,
       "eventName": "LNG Canada 비계획 정지, 북미 공급완화 지연",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:08:34",
       "updatedAt": "2026-05-12T15:08:34",
       "signalType": "signal",
@@ -313,13 +321,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 10,
       "eventName": "한국 석탄·원전 확대, 전력용 LNG 수요 축소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:06:57",
       "updatedAt": "2026-05-12T15:06:57",
       "signalType": "signal",
@@ -348,13 +357,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 11,
       "eventName": "러시아 제재 면제·미중 관세, 목적지 배분 불확실",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T15:06:43",
       "updatedAt": "2026-05-12T15:06:43",
       "signalType": "signal",
@@ -383,13 +393,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 12,
       "eventName": "LNG 용선료 하락, 장거리 조달 비용 완화",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T15:06:43",
       "updatedAt": "2026-05-12T15:06:43",
       "signalType": "signal",
@@ -418,13 +429,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 13,
       "eventName": "알래스카 LNG 오프테이크 부족, 공급 기대 조건부",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-14T15:17:22",
       "updatedAt": "2026-03-14T18:31:03",
       "signalType": "noise",
@@ -453,13 +465,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 14,
       "eventName": "우크라이나 에너지 인프라 공습, TTF 리스크 유지",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T15:06:43",
       "updatedAt": "2026-05-12T15:06:43",
       "signalType": "signal",
@@ -488,13 +501,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 15,
       "eventName": "모잠비크 Afungi 보안 리스크, 장기 공급 불확실",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-13T00:00:00",
       "updatedAt": "2026-03-13T15:04:59",
       "signalType": "noise",
@@ -523,13 +537,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 16,
       "eventName": "카타르 LNG 장기 중단, JKM·TTF 급등 압력",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-13T00:00:00",
       "updatedAt": "2026-03-13T15:04:59",
       "signalType": "signal",
@@ -558,13 +573,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 17,
       "eventName": "호르무즈 회피로 LNG 카고 흐름 교란",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-13T00:00:00",
       "updatedAt": "2026-03-13T15:39:10",
       "signalType": "signal",
@@ -593,13 +609,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 18,
       "eventName": "아시아·유럽 대체 LNG 확보 경쟁 심화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-13T13:36:33",
       "updatedAt": "2026-03-13T18:49:33",
       "signalType": "signal",
@@ -628,13 +645,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 19,
       "eventName": "카타르 North Field 확장 지연 우려 부각",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-13T00:00:00",
       "updatedAt": "2026-03-13T13:03:36",
       "signalType": "signal",
@@ -663,13 +681,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 20,
       "eventName": "LNG Canada 플레어링, 태평양 공급 신뢰성 저하",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-13T13:36:33",
       "updatedAt": "2026-03-13T18:49:33",
       "signalType": "signal",
@@ -698,13 +717,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 21,
       "eventName": "러시아 제재 LNG 중국 유입, 아시아 공급 완충",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-13T12:22:56",
       "updatedAt": "2026-03-13T13:03:36",
       "signalType": "signal",
@@ -733,13 +753,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 22,
       "eventName": "미국 한파 전망, HH 단기 강세 전환",
-      "eventCategoryLv1": "weather_climate",
-      "eventCategoryLv1Label": "기상 / 기후",
+      "eventTypeLv1": "weather_climate",
+      "eventTypeLv1Label": "기상 / 기후",
       "createdAt": "2026-03-13T00:00:00",
       "updatedAt": "2026-03-13T15:39:10",
       "signalType": "signal",
@@ -768,13 +789,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 2
     },
     {
       "eventId": 23,
       "eventName": "미국 온화한 3월 예보, HH 하방 압력",
-      "eventCategoryLv1": "weather_climate",
-      "eventCategoryLv1Label": "기상 / 기후",
+      "eventTypeLv1": "weather_climate",
+      "eventTypeLv1Label": "기상 / 기후",
       "createdAt": "2026-03-12T18:22:50",
       "updatedAt": "2026-03-12T18:22:50",
       "signalType": "signal",
@@ -803,13 +825,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 2
     },
     {
       "eventId": 24,
       "eventName": "미국 리그·생산 증가, HH 공급 부담 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-12T23:48:27",
       "updatedAt": "2026-03-12T23:48:27",
       "signalType": "signal",
@@ -838,13 +861,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 25,
       "eventName": "퍼미안 병목으로 Waha 마이너스 장기화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-12T14:14:52",
       "updatedAt": "2026-03-12T14:33:11",
       "signalType": "signal",
@@ -873,13 +897,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 26,
       "eventName": "미국 데이터센터 전력수요, 가스발전 확대 지지",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-12T14:14:52",
       "updatedAt": "2026-03-12T15:57:24",
       "signalType": "signal",
@@ -908,13 +933,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 27,
       "eventName": "Rio Grande 4·5호기 승인, 장기 공급 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-12T06:18:53",
       "updatedAt": "2026-03-12T20:50:41",
       "signalType": "signal",
@@ -943,13 +969,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 28,
       "eventName": "러시아 LNG선 표류, 지중해 운송 리스크 상승",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-12T19:13:41",
       "updatedAt": "2026-03-12T20:17:13",
       "signalType": "noise",
@@ -978,13 +1005,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 29,
       "eventName": "세네갈 가스 계약 재검토, 서아프리카 공급 지연 우려",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-12T00:00:00",
       "updatedAt": "2026-03-12T11:00:00",
       "signalType": "noise",
@@ -1013,13 +1041,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 30,
       "eventName": "미국 러시아 원유 제재 유예, 에너지 심리 완화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-12T00:00:00",
       "updatedAt": "2026-03-12T19:58:04",
       "signalType": "noise",
@@ -1048,13 +1077,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 31,
       "eventName": "중동 전쟁 확산으로 LNG 리스크 프리미엄 급등",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-12T00:00:00",
       "updatedAt": "2026-03-12T23:48:27",
       "signalType": "signal",
@@ -1083,13 +1113,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 32,
       "eventName": "호르무즈 사실상 폐쇄로 중동 LNG 병목 부각",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-12T00:00:00",
       "updatedAt": "2026-03-12T11:00:00",
       "signalType": "signal",
@@ -1118,13 +1149,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 33,
       "eventName": "카타르 LNG 생산 중단 재부각, 현물 공급 불안 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-12T00:00:00",
       "updatedAt": "2026-03-12T03:25:02",
       "signalType": "signal",
@@ -1153,13 +1185,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 34,
       "eventName": "대서양 LNG 아시아 전환과 운임 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-12T13:55:20",
       "updatedAt": "2026-03-12T17:03:47",
       "signalType": "signal",
@@ -1188,13 +1221,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 35,
       "eventName": "유럽 저장률 27~29% 저위, 여름 주입 수요 확대",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-12T00:00:00",
       "updatedAt": "2026-03-12T11:00:00",
       "signalType": "signal",
@@ -1223,13 +1257,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 36,
       "eventName": "방글라데시 4월 현물 3카고 고가 확보",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T15:03:04",
       "updatedAt": "2026-05-12T15:03:04",
       "signalType": "signal",
@@ -1258,13 +1293,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 37,
       "eventName": "EU 러시아 가스·LNG 퇴출 의무화 재확인",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-11T00:00:00",
       "updatedAt": "2026-03-11T12:19:09",
       "signalType": "signal",
@@ -1293,13 +1329,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 38,
       "eventName": "TurkStream 연계시설 공격 지속, 유럽 경로 리스크 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-11T00:00:00",
       "updatedAt": "2026-03-11T07:00:00",
       "signalType": "signal",
@@ -1328,13 +1365,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 39,
       "eventName": "Freeport LNG 전 트레인 재가동, 공급 완충",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-11T00:00:00",
       "updatedAt": "2026-03-11T07:00:00",
       "signalType": "signal",
@@ -1363,13 +1401,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 40,
       "eventName": "와하 허브 -$7.15, 퍼미안 병목 심화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-11T00:00:00",
       "updatedAt": "2026-03-11T12:57:51",
       "signalType": "signal",
@@ -1398,13 +1437,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 41,
       "eventName": "EU 원산지 규정 유연화, LNG 통관 리스크 완화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T15:03:04",
       "updatedAt": "2026-05-12T15:03:04",
       "signalType": "signal",
@@ -1433,13 +1473,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 42,
       "eventName": "EU 가스 보조·상한제 검토, 산업 수요 방어",
-      "eventCategoryLv1": "market_trading_structure",
-      "eventCategoryLv1Label": "시장 / 거래 구조",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-03-11T00:00:00",
       "updatedAt": "2026-03-11T14:52:03",
       "signalType": "noise",
@@ -1468,13 +1509,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 8
     },
     {
       "eventId": 43,
       "eventName": "Argent LNG 2,500만 톤 프로젝트 신청",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-11T00:00:00",
       "updatedAt": "2026-03-11T12:19:09",
       "signalType": "noise",
@@ -1503,13 +1545,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 44,
       "eventName": "유럽 온화한 기온·산업 부진, 재충전 수요 일부 상쇄",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-10T14:51:11",
       "updatedAt": "2026-03-10T17:29:15",
       "signalType": "noise",
@@ -1538,13 +1581,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 45,
       "eventName": "남아시아 가스 배급·대체연료 확대로 수요 억제",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:01:41",
       "updatedAt": "2026-05-12T15:01:41",
       "signalType": "noise",
@@ -1573,13 +1617,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 46,
       "eventName": "카타르 불가항력, LNG 공급 20% 리스크",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-10T00:00:00",
       "updatedAt": "2026-03-10T19:24:39",
       "signalType": "signal",
@@ -1608,13 +1653,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 47,
       "eventName": "호르무즈 통항 급감, 아시아향 카고 전환",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-10T14:51:11",
       "updatedAt": "2026-03-10T17:29:15",
       "signalType": "signal",
@@ -1643,13 +1689,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 48,
       "eventName": "JKM-NWE 스프레드 확대, 카고 동진 가속",
-      "eventCategoryLv1": "market_trading_structure",
-      "eventCategoryLv1Label": "시장 / 거래 구조",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-05-12T15:01:41",
       "updatedAt": "2026-05-12T15:01:41",
       "signalType": "signal",
@@ -1678,13 +1725,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 8
     },
     {
       "eventId": 49,
       "eventName": "EU·영국 저재고, 여름 LNG 주입 수요 강화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-10T19:02:49",
       "updatedAt": "2026-03-10T19:27:22",
       "signalType": "signal",
@@ -1713,13 +1761,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 50,
       "eventName": "Nyhamna 고장, 유럽 파이프 공급 축소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-10T00:00:00",
       "updatedAt": "2026-03-10T19:24:39",
       "signalType": "signal",
@@ -1748,13 +1797,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 51,
       "eventName": "아시아 현물 매수 확대, JKM 수요층 보강",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-10T00:00:00",
       "updatedAt": "2026-03-10T19:24:39",
       "signalType": "signal",
@@ -1783,13 +1833,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 52,
       "eventName": "우크라이나 가스시설 공격, TTF 리스크 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:00:24",
       "updatedAt": "2026-05-12T15:00:24",
       "signalType": "signal",
@@ -1818,13 +1869,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 53,
       "eventName": "Freeport 재가동, 미국 LNG 공급 불안 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-09T00:00:00",
       "updatedAt": "2026-03-09T11:00:45",
       "signalType": "signal",
@@ -1853,13 +1905,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 54,
       "eventName": "LNG Canada 최대가동, 아시아 공급 완충",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-09T00:00:00",
       "updatedAt": "2026-03-09T18:59:51",
       "signalType": "signal",
@@ -1888,13 +1941,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 55,
       "eventName": "미국 온화 예보·증산, HH 약세 심화",
-      "eventCategoryLv1": "weather_climate",
-      "eventCategoryLv1Label": "기상 / 기후",
+      "eventTypeLv1": "weather_climate",
+      "eventTypeLv1Label": "기상 / 기후",
       "createdAt": "2026-05-12T15:00:24",
       "updatedAt": "2026-05-12T15:00:24",
       "signalType": "signal",
@@ -1923,13 +1977,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 2
     },
     {
       "eventId": 56,
       "eventName": "EIA, 미국 2026 생산 최고 전망",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T15:00:24",
       "updatedAt": "2026-05-12T15:00:24",
       "signalType": "signal",
@@ -1958,13 +2013,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 57,
       "eventName": "일본 원전 재가동, LNG 수요 중기 약세",
-      "eventCategoryLv1": "energy_mix_transition",
-      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventTypeLv1": "energy_mix_transition",
+      "eventTypeLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-05-12T15:00:24",
       "updatedAt": "2026-05-12T15:00:24",
       "signalType": "signal",
@@ -1993,13 +2049,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 6
     },
     {
       "eventId": 58,
       "eventName": "EU 메탄 규제, 2027년 수입장벽 리스크",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-09T00:00:00",
       "updatedAt": "2026-03-09T18:16:53",
       "signalType": "signal",
@@ -2028,13 +2085,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 59,
       "eventName": "스페인 가스 수입 증가, 유럽 LNG 경쟁 지속",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T15:00:24",
       "updatedAt": "2026-05-12T15:00:24",
       "signalType": "signal",
@@ -2063,13 +2121,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 60,
       "eventName": "태평양 운임 급등, JKM 착지비 상승",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T14:58:49",
       "updatedAt": "2026-05-12T14:58:49",
       "signalType": "signal",
@@ -2098,13 +2157,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 61,
       "eventName": "카타르 LNG 불가항력, 글로벌 공급 쇼크 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-07T07:15:34",
       "updatedAt": "2026-03-07T07:15:34",
       "signalType": "signal",
@@ -2133,13 +2193,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 62,
       "eventName": "Ras Laffan·Mesaieed 공격, 카타르 시설 리스크 부각",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-06T00:00:00",
       "updatedAt": "2026-03-06T17:35:10",
       "signalType": "signal",
@@ -2168,13 +2229,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 63,
       "eventName": "호르무즈 리스크, LNG 운임·보험료 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-06T14:17:37",
       "updatedAt": "2026-03-06T17:35:10",
       "signalType": "signal",
@@ -2203,13 +2265,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 64,
       "eventName": "카타르발 유럽향 LNG 지연, TTF 프리미엄 확대",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-06T00:00:00",
       "updatedAt": "2026-03-06T16:11:35",
       "signalType": "signal",
@@ -2238,13 +2301,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 65,
       "eventName": "유럽 저재고·전략비축 제안, 여름 주입수요 강화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-06T19:39:45",
       "updatedAt": "2026-03-06T19:39:45",
       "signalType": "signal",
@@ -2273,13 +2337,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 66,
       "eventName": "EU 러시아 LNG 퇴출, 비러시아 대체수요 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T14:58:18",
       "updatedAt": "2026-05-12T14:58:18",
       "signalType": "signal",
@@ -2308,13 +2373,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 67,
       "eventName": "방글라데시 고가 현물 LNG 매수, JKM 경쟁 심화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-06T00:00:00",
       "updatedAt": "2026-03-06T01:55:48",
       "signalType": "signal",
@@ -2343,13 +2409,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 68,
       "eventName": "미국 2주 가스수요 상향, HH 선물 급등",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-06T05:00:00",
       "updatedAt": "2026-03-06T10:40:31",
       "signalType": "signal",
@@ -2378,13 +2445,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 69,
       "eventName": "페루 TGP 가스관 파열, 남미 LNG 대체수요 부상",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-06T00:00:00",
       "updatedAt": "2026-03-06T16:12:27",
       "signalType": "signal",
@@ -2413,13 +2481,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 70,
       "eventName": "러시아 우크라이나 공습, 유럽 에너지 리스크 재부각",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-05T17:03:10",
       "updatedAt": "2026-03-05T17:03:12",
       "signalType": "signal",
@@ -2448,13 +2517,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 71,
       "eventName": "대서양 LNG선 고운임, 아시아 차익거래 제약",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T14:56:43",
       "updatedAt": "2026-05-12T14:56:43",
       "signalType": "signal",
@@ -2483,13 +2553,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 72,
       "eventName": "Arctic LNG 2 선박 우회, 러시아 LNG 도착 지연",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-03-05T00:00:00",
       "updatedAt": "2026-03-05T07:48:15",
       "signalType": "noise",
@@ -2518,13 +2589,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 73,
       "eventName": "독일·프랑스 풍력 감소, 유럽 가스발전 수요 지지",
-      "eventCategoryLv1": "energy_mix_transition",
-      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventTypeLv1": "energy_mix_transition",
+      "eventTypeLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-03-05T00:00:00",
       "updatedAt": "2026-03-05T11:08:23",
       "signalType": "noise",
@@ -2553,13 +2625,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 6
     },
     {
       "eventId": 74,
       "eventName": "CP2 LNG 비용 40억달러 증가, 장기 공급확충 부담",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-05T00:00:00",
       "updatedAt": "2026-03-05T15:31:33",
       "signalType": "noise",
@@ -2588,13 +2661,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 75,
       "eventName": "Uniper 캐나다 LNG 협의, 유럽 조달 다변화 강화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-05T09:10:59",
       "updatedAt": "2026-03-05T09:54:26",
       "signalType": "noise",
@@ -2623,13 +2697,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 76,
       "eventName": "카타르 LNG 생산중단으로 JKM·TTF 공급 프리미엄 급등",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-05T13:45:00",
       "updatedAt": "2026-03-05T15:39:48",
       "signalType": "signal",
@@ -2658,13 +2733,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 77,
       "eventName": "미국·이스라엘-이란 확전으로 중동 LNG 전쟁 프리미엄 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-05T00:00:00",
       "updatedAt": "2026-03-05T20:56:07",
       "signalType": "signal",
@@ -2693,13 +2769,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 78,
       "eventName": "호르무즈 통항 차질로 걸프 LNG 도착 리스크 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T14:56:43",
       "updatedAt": "2026-05-12T14:56:43",
       "signalType": "signal",
@@ -2728,13 +2805,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 79,
       "eventName": "LNG 운임·보험료 급등으로 실물 차익거래 봉쇄",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-05T17:58:02",
       "updatedAt": "2026-03-05T17:58:02",
       "signalType": "signal",
@@ -2763,13 +2841,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 80,
       "eventName": "JKM-NWE 스프레드 급확대로 LNG 가격 괴리 심화",
-      "eventCategoryLv1": "market_trading_structure",
-      "eventCategoryLv1Label": "시장 / 거래 구조",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-03-05T03:56:44",
       "updatedAt": "2026-03-05T23:01:49",
       "signalType": "signal",
@@ -2798,13 +2877,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 8
     },
     {
       "eventId": 81,
       "eventName": "EU 저장률 29.9%로 봄철 재고주입 수요 부각",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-04T00:00:00",
       "updatedAt": "2026-03-04T18:39:43",
       "signalType": "signal",
@@ -2833,13 +2913,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 82,
       "eventName": "미국 한파 예보로 Henry Hub·FOB LNG 원가 상승",
-      "eventCategoryLv1": "weather_climate",
-      "eventCategoryLv1Label": "기상 / 기후",
+      "eventTypeLv1": "weather_climate",
+      "eventTypeLv1Label": "기상 / 기후",
       "createdAt": "2026-05-12T14:55:07",
       "updatedAt": "2026-05-12T14:55:07",
       "signalType": "signal",
@@ -2868,13 +2949,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 2
     },
     {
       "eventId": 83,
       "eventName": "미국 주간 가스재고 132 Bcf 인출로 HH 단기 지지",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-04T00:00:00",
       "updatedAt": "2026-03-04T18:39:43",
       "signalType": "signal",
@@ -2903,13 +2985,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 84,
       "eventName": "페루 TGP 가스관 파열로 남미 LNG 공급 가용성 축소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-04T08:34:21",
       "updatedAt": "2026-03-04T15:45:29",
       "signalType": "noise",
@@ -2938,13 +3021,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 85,
       "eventName": "일본 LNG 재고 219만 톤으로 JKM 현물 수요 완충",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-03-04T00:00:00",
       "updatedAt": "2026-03-04T06:24:54",
       "signalType": "signal",
@@ -2973,13 +3057,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 86,
       "eventName": "남아시아 현물 재개·수요조절로 JKM 변동성 확대",
-      "eventCategoryLv1": "energy_mix_transition",
-      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventTypeLv1": "energy_mix_transition",
+      "eventTypeLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-05-12T14:55:07",
       "updatedAt": "2026-05-12T14:55:07",
       "signalType": "noise",
@@ -3008,13 +3093,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 6
     },
     {
       "eventId": 87,
       "eventName": "Arctic Metagaz 침몰로 지중해 LNG 운송 리스크 상승",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T14:55:07",
       "updatedAt": "2026-05-12T14:55:07",
       "signalType": "noise",
@@ -3043,13 +3129,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 88,
       "eventName": "Cameron LNG 재가동으로 미국 수출 공급 일부 회복",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:55:07",
       "updatedAt": "2026-05-12T14:55:07",
       "signalType": "noise",
@@ -3078,13 +3165,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 89,
       "eventName": "일본 원전 재가동 확대가 발전용 LNG 수요 압박",
-      "eventCategoryLv1": "energy_mix_transition",
-      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventTypeLv1": "energy_mix_transition",
+      "eventTypeLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "signal",
@@ -3113,13 +3201,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 6
     },
     {
       "eventId": 90,
       "eventName": "Dragon 가스전 협정으로 트리니다드 LNG feedgas 기대 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "noise",
@@ -3148,13 +3237,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 91,
       "eventName": "카타르 LNG 생산중단, 글로벌 공급 쇼크 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "signal",
@@ -3183,13 +3273,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 92,
       "eventName": "호르무즈 LNG 통항 차질, 중동 물동량 프리미엄 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "signal",
@@ -3218,13 +3309,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 93,
       "eventName": "아시아·유럽 대체 조달 경쟁, 현물 LNG 긴장 확대",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "signal",
@@ -3253,13 +3345,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 94,
       "eventName": "LNG선 운임·전쟁보험료 급등, DES 비용 상승",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "signal",
@@ -3288,13 +3381,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 95,
       "eventName": "EU 저장률 30% 안팎, 재주입 LNG 수요 강화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T14:53:43",
       "updatedAt": "2026-05-12T14:53:43",
       "signalType": "signal",
@@ -3323,13 +3417,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 96,
       "eventName": "EU 러시아 가스 금수 승인, 대체 LNG 경쟁 심화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T14:52:34",
       "updatedAt": "2026-05-12T14:52:34",
       "signalType": "signal",
@@ -3358,13 +3453,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 97,
       "eventName": "이스라엘 가스 차질, 이집트 LNG 구매 수요 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-03-02T00:00:00",
       "updatedAt": "2026-03-02T11:26:33",
       "signalType": "signal",
@@ -3393,13 +3489,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 98,
       "eventName": "Cameron LNG 피드가스 급감, 미국 대체공급 변동성",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:52:34",
       "updatedAt": "2026-05-12T14:52:34",
       "signalType": "signal",
@@ -3428,13 +3525,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 99,
       "eventName": "미국 2월 LNG 수출 급증, 유럽 공급 완충",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:52:34",
       "updatedAt": "2026-05-12T14:52:34",
       "signalType": "signal",
@@ -3463,13 +3561,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 100,
       "eventName": "걸프코스트 LNG 증설 기대, 중기 공급 하방 압력",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:52:34",
       "updatedAt": "2026-05-12T14:52:34",
       "signalType": "signal",
@@ -3498,13 +3597,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 101,
       "eventName": "인도 3~5월 폭염 전망, 냉방용 LNG 수요 지지",
-      "eventCategoryLv1": "weather_climate",
-      "eventCategoryLv1Label": "기상 / 기후",
+      "eventTypeLv1": "weather_climate",
+      "eventTypeLv1Label": "기상 / 기후",
       "createdAt": "2026-05-12T14:52:34",
       "updatedAt": "2026-05-12T14:52:34",
       "signalType": "signal",
@@ -3533,13 +3633,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 2
     },
     {
       "eventId": 102,
       "eventName": "TurkStream 공급 감소, 유럽 LNG 대체수요 지지",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:52:34",
       "updatedAt": "2026-05-12T14:52:34",
       "signalType": "signal",
@@ -3568,13 +3669,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 103,
       "eventName": "우크라이나 가스시설 피격, 유럽 공급 리스크 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-03-02T11:55:10",
       "updatedAt": "2026-03-02T22:49:22",
       "signalType": "signal",
@@ -3603,13 +3705,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 104,
       "eventName": "인도 산업 수요파괴, 고가 LNG 상승폭 제한",
-      "eventCategoryLv1": "weather_climate",
-      "eventCategoryLv1Label": "기상 / 기후",
+      "eventTypeLv1": "weather_climate",
+      "eventTypeLv1Label": "기상 / 기후",
       "createdAt": "2026-05-12T14:51:05",
       "updatedAt": "2026-05-12T14:51:05",
       "signalType": "signal",
@@ -3638,13 +3741,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 2
     },
     {
       "eventId": 105,
       "eventName": "Platts MOC 증분 규칙 변경, JKM 헤징 환경 조정",
-      "eventCategoryLv1": "market_trading_structure",
-      "eventCategoryLv1Label": "시장 / 거래 구조",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-05-12T14:51:05",
       "updatedAt": "2026-05-12T14:51:05",
       "signalType": "noise",
@@ -3673,13 +3777,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 8
     },
     {
       "eventId": 106,
       "eventName": "카타르 LNG 설비 타격·이탈리아 12카고 취소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T03:31:45",
       "updatedAt": "2026-05-12T03:31:45",
       "signalType": "signal",
@@ -3708,13 +3813,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 107,
       "eventName": "호르무즈 사실상 폐쇄 우려로 중동 LNG 물류 병목",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T03:31:45",
       "updatedAt": "2026-05-12T03:31:45",
       "signalType": "signal",
@@ -3743,13 +3849,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 108,
       "eventName": "미·이란 호르무즈 교전 재점화로 리스크 프리미엄 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-09T05:00:00",
       "updatedAt": "2026-05-09T06:54:58",
       "signalType": "signal",
@@ -3778,13 +3885,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 109,
       "eventName": "미국-이란 충돌 지속으로 호르무즈 공급 불안 장기화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-09T06:54:58",
       "updatedAt": "2026-05-09T06:54:58",
       "signalType": "signal",
@@ -3813,13 +3921,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 110,
       "eventName": "호르무즈 선박 공격·유조선 나포로 운임·보험료 상승",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-09T06:54:58",
       "updatedAt": "2026-05-09T06:54:58",
       "signalType": "signal",
@@ -3848,13 +3957,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 111,
       "eventName": "카타르 해역 화물선 피격으로 중동 해상안보 경계",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-09T06:54:58",
       "updatedAt": "2026-05-09T06:54:58",
       "signalType": "signal",
@@ -3883,13 +3993,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 112,
       "eventName": "Freeport LNG 비계획 정비로 미국 수출 3카고 취소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-08T03:39:06",
       "updatedAt": "2026-05-08T03:39:06",
       "signalType": "signal",
@@ -3918,13 +4029,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 113,
       "eventName": "이란 제재 확대·통항 경고로 호르무즈 운송 리스크 상승",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-08T03:34:59",
       "updatedAt": "2026-05-08T04:28:58",
       "signalType": "signal",
@@ -3953,13 +4065,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 114,
       "eventName": "호르무즈 통행료 제재 경고로 해운 결제 리스크 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-08T05:41:19",
       "updatedAt": "2026-05-08T22:31:08",
       "signalType": "noise",
@@ -3988,13 +4101,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 115,
       "eventName": "카타르 LNG선 호르무즈 통과 시도로 차질 우려 완화",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-08T14:03:05",
       "updatedAt": "2026-05-08T14:03:05",
       "signalType": "signal",
@@ -4023,13 +4137,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 116,
       "eventName": "이란 종전안 답변·호르무즈 통항 논의로 프리미엄 완화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T03:30:06",
       "updatedAt": "2026-05-12T03:30:06",
       "signalType": "signal",
@@ -4058,13 +4173,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 117,
       "eventName": "미국-이란 평화협상 난항으로 항행안전 불확실",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-08T03:34:59",
       "updatedAt": "2026-05-08T04:55:01",
       "signalType": "signal",
@@ -4093,13 +4209,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 118,
       "eventName": "미국 생산 감소·재고 초과 축소로 HH 지지",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-08T18:10:54",
       "updatedAt": "2026-05-08T19:11:07",
       "signalType": "signal",
@@ -4128,13 +4245,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 119,
       "eventName": "터키, 알제리 LNG 장기계약 확대 협상",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-08T13:09:13",
       "updatedAt": "2026-05-08T19:11:07",
       "signalType": "noise",
@@ -4163,13 +4281,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 120,
       "eventName": "ASEAN 연료공유 논의로 아시아 조달 불안 완화 모색",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-07T02:00:36",
       "updatedAt": "2026-05-07T05:49:05",
       "signalType": "noise",
@@ -4198,13 +4317,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 121,
       "eventName": "호르무즈 통항 중단으로 중동 LNG 물류 프리미엄 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T03:28:39",
       "updatedAt": "2026-05-12T03:28:39",
       "signalType": "signal",
@@ -4233,13 +4353,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 122,
       "eventName": "카타르에너지 불가항력·Edison 카고 취소로 공급 타이트",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-07T05:58:16",
       "updatedAt": "2026-05-07T06:11:08",
       "signalType": "signal",
@@ -4268,13 +4389,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 123,
       "eventName": "미·이란 군사충돌 재격화로 LNG 리스크 프리미엄 상승",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-07T05:49:05",
       "updatedAt": "2026-05-07T18:52:23",
       "signalType": "signal",
@@ -4303,13 +4425,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 124,
       "eventName": "미·이란 종전 MOU 접근으로 중동 프리미엄 급락",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-07T08:12:02",
       "updatedAt": "2026-05-07T11:34:44",
       "signalType": "signal",
@@ -4338,13 +4461,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 125,
       "eventName": "EU 저장 부족·러시아 가스 퇴출로 LNG 조달 경쟁 심화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T03:28:39",
       "updatedAt": "2026-05-12T03:28:39",
       "signalType": "signal",
@@ -4373,13 +4497,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 126,
       "eventName": "카타르 설비 피해·IEA 공급 하향으로 중기 LNG 타이트",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-07T03:12:32",
       "updatedAt": "2026-05-07T03:12:32",
       "signalType": "signal",
@@ -4408,13 +4533,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 127,
       "eventName": "Cheniere 최대 수출·Train 6 임박으로 공급 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-07T12:45:00",
       "updatedAt": "2026-05-07T14:31:08",
       "signalType": "signal",
@@ -4443,13 +4569,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 128,
       "eventName": "호주 동부 LNG 내수 의무화로 아시아 스팟 축소 우려",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-06T04:45:00",
       "updatedAt": "2026-05-06T04:50:08",
       "signalType": "signal",
@@ -4478,13 +4605,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 129,
       "eventName": "Troll 정비 연장으로 유럽 파이프라인 공급 감소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-06T07:46:36",
       "updatedAt": "2026-05-06T08:37:04",
       "signalType": "signal",
@@ -4513,13 +4641,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 130,
       "eventName": "미국 LNG 봄철 정비로 피드가스 감소, 공급 혼재",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T03:27:28",
       "updatedAt": "2026-05-12T03:27:28",
       "signalType": "signal",
@@ -4548,13 +4677,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 131,
       "eventName": "미국 재고 주입 예상 하회·생산 축소로 HH 강세",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T03:27:28",
       "updatedAt": "2026-05-12T03:27:28",
       "signalType": "signal",
@@ -4583,13 +4713,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 132,
       "eventName": "중동 리스크로 LNG 장기 용선 선호 확대",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-06T13:19:35",
       "updatedAt": "2026-05-06T18:59:07",
       "signalType": "signal",
@@ -4618,13 +4749,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 133,
       "eventName": "Equinor 1분기 최대 생산으로 유럽 공급 완충",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-06T04:00:00",
       "updatedAt": "2026-05-06T11:07:37",
       "signalType": "signal",
@@ -4653,13 +4785,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 134,
       "eventName": "EU 메탄 규정 유예 검토로 수입 제한 리스크 완화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T03:27:28",
       "updatedAt": "2026-05-12T03:27:28",
       "signalType": "noise",
@@ -4688,13 +4821,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 135,
       "eventName": "유럽 온화한 날씨·태양광 증가로 가스 수요 완화",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-06T08:20:39",
       "updatedAt": "2026-05-06T09:05:08",
       "signalType": "noise",
@@ -4723,13 +4857,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 136,
       "eventName": "호르무즈 통항 차질로 중동 LNG 프리미엄 지속",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T03:25:58",
       "updatedAt": "2026-05-12T03:25:58",
       "signalType": "signal",
@@ -4758,13 +4893,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 137,
       "eventName": "카타르 Edison향 LNG 취소·FM 연장, 유럽 타이트",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-05T04:34:40",
       "updatedAt": "2026-05-05T12:00:00",
       "signalType": "signal",
@@ -4793,13 +4929,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 138,
       "eventName": "미군-이란 해상 충돌로 LNG 지정학 프리미엄 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-05T15:28:11",
       "updatedAt": "2026-05-05T16:35:48",
       "signalType": "signal",
@@ -4828,13 +4965,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 139,
       "eventName": "EU 저장률 저하로 여름 LNG 보충수요 지지",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-12T03:25:58",
       "updatedAt": "2026-05-12T03:25:58",
       "signalType": "signal",
@@ -4863,13 +5001,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 140,
       "eventName": "미국 LNG 정비로 피드가스 감소, 해외 공급 축소",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-05T13:31:05",
       "updatedAt": "2026-05-05T18:53:07",
       "signalType": "signal",
@@ -4898,13 +5037,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 141,
       "eventName": "중국 LNG 수입 축소, JKM 상승폭 제한",
-      "eventCategoryLv1": "energy_mix_transition",
-      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventTypeLv1": "energy_mix_transition",
+      "eventTypeLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-05-12T03:25:58",
       "updatedAt": "2026-05-12T03:25:58",
       "signalType": "signal",
@@ -4933,13 +5073,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 6
     },
     {
       "eventId": 142,
       "eventName": "러시아 LNG 수출 증가, 유럽 공급 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-05T13:31:05",
       "updatedAt": "2026-05-05T18:53:07",
       "signalType": "signal",
@@ -4968,13 +5109,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 143,
       "eventName": "Naftogaz 생산시설 피격, 유럽 가스 리스크 상승",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T03:25:58",
       "updatedAt": "2026-05-12T03:25:58",
       "signalType": "signal",
@@ -5003,13 +5145,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 144,
       "eventName": "LNG Canada 월간 100만 톤 돌파, JKM 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-05T00:33:19",
       "updatedAt": "2026-05-05T04:43:59",
       "signalType": "signal",
@@ -5038,13 +5181,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 145,
       "eventName": "노르웨이 Eirin 생산 개시, TTF 하방",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-05T07:13:59",
       "updatedAt": "2026-05-05T07:33:47",
       "signalType": "signal",
@@ -5073,13 +5217,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 146,
       "eventName": "Lower 48 생산 감소·감산, HH 하방 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-05T06:02:47",
       "updatedAt": "2026-05-05T16:28:30",
       "signalType": "signal",
@@ -5108,13 +5253,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 147,
       "eventName": "퍼미안 병목으로 Waha 62일 연속 마이너스",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-04T01:04:14",
       "updatedAt": "2026-05-04T04:50:18",
       "signalType": "noise",
@@ -5143,13 +5289,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 148,
       "eventName": "영국 저풍속으로 가스발전 수요 증가",
-      "eventCategoryLv1": "energy_mix_transition",
-      "eventCategoryLv1Label": "에너지 믹스 전환",
+      "eventTypeLv1": "energy_mix_transition",
+      "eventTypeLv1Label": "에너지 믹스 전환",
       "createdAt": "2026-05-04T08:19:02",
       "updatedAt": "2026-05-04T09:03:50",
       "signalType": "signal",
@@ -5178,13 +5325,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 6
     },
     {
       "eventId": 149,
       "eventName": "GTA FLNG 초과 생산, 대서양권 공급 완충",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T03:24:09",
       "updatedAt": "2026-05-12T03:24:09",
       "signalType": "noise",
@@ -5213,13 +5361,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 150,
       "eventName": "미국 단기 가스 수요 전망 하향, HH 약세",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-04T01:04:14",
       "updatedAt": "2026-05-04T04:50:18",
       "signalType": "signal",
@@ -5248,13 +5397,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 151,
       "eventName": "호르무즈 통항 제한 장기화로 중동 LNG 프리미엄 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-04T04:50:18",
       "updatedAt": "2026-05-04T11:39:11",
       "signalType": "signal",
@@ -5283,13 +5433,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 152,
       "eventName": "호르무즈 선박 정체로 LNG 물동량 지연 리스크 확대",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-12T03:24:09",
       "updatedAt": "2026-05-12T03:24:09",
       "signalType": "signal",
@@ -5318,13 +5469,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 153,
       "eventName": "푸자이라·ADNOC 공격 보도로 걸프 항만 리스크 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T03:24:09",
       "updatedAt": "2026-05-12T03:24:09",
       "signalType": "signal",
@@ -5353,13 +5505,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 154,
       "eventName": "미·이스라엘-이란 전쟁 장기화로 중동 공급 프리미엄 상승",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-04T13:40:03",
       "updatedAt": "2026-05-04T19:15:04",
       "signalType": "signal",
@@ -5388,13 +5541,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 155,
       "eventName": "TurkStream 유럽향 공급 급감으로 LNG 대체수요 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-04T13:40:03",
       "updatedAt": "2026-05-04T19:15:04",
       "signalType": "signal",
@@ -5423,13 +5577,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 156,
       "eventName": "미국 LNG feedgas 감소로 수출 공급 여력 약화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-04T13:40:03",
       "updatedAt": "2026-05-04T19:15:04",
       "signalType": "signal",
@@ -5458,13 +5613,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 157,
       "eventName": "미국 Lower 48 생산 감소로 HH 원료가스 타이트닝",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-03T17:45:31",
       "updatedAt": "2026-05-03T21:04:43",
       "signalType": "signal",
@@ -5493,13 +5649,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 158,
       "eventName": "대이란 봉쇄·제재 교착으로 걸프 에너지 교역 리스크 지속",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-12T03:22:38",
       "updatedAt": "2026-05-12T03:22:38",
       "signalType": "signal",
@@ -5528,13 +5685,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 159,
       "eventName": "대이란 공습 재개 경고로 중동 운송 변동성 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-03T17:45:31",
       "updatedAt": "2026-05-03T21:04:43",
       "signalType": "signal",
@@ -5563,13 +5721,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 160,
       "eventName": "퍼미안 Waha 마이너스 지속으로 미국 가스 병목 심화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-02T01:53:15",
       "updatedAt": "2026-05-02T23:15:16",
       "signalType": "noise",
@@ -5598,13 +5757,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 161,
       "eventName": "미·이란 핵·평화안 교착으로 리스크 완화 제한",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-02T01:53:15",
       "updatedAt": "2026-05-02T23:15:16",
       "signalType": "noise",
@@ -5633,13 +5793,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 162,
       "eventName": "연준 매파 기조로 LNG 수요 기대 둔화",
-      "eventCategoryLv1": "macroeconomy_policy",
-      "eventCategoryLv1Label": "거시경제 / 정책",
+      "eventTypeLv1": "macroeconomy_policy",
+      "eventTypeLv1Label": "거시경제 / 정책",
       "createdAt": "2026-05-02T05:00:00",
       "updatedAt": "2026-05-02T23:15:16",
       "signalType": "noise",
@@ -5668,13 +5829,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 7
     },
     {
       "eventId": 163,
       "eventName": "Neptun Deep 파이프라인 착수로 유럽 LNG 수요 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-02T01:53:15",
       "updatedAt": "2026-05-02T23:15:16",
       "signalType": "noise",
@@ -5703,13 +5865,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 164,
       "eventName": "호르무즈 통항 급감, 카타르 LNG 리스크 급등",
-      "eventCategoryLv1": "logistics_shipping",
-      "eventCategoryLv1Label": "물류 / 해운",
+      "eventTypeLv1": "logistics_shipping",
+      "eventTypeLv1Label": "물류 / 해운",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T13:34:39",
       "signalType": "signal",
@@ -5738,13 +5901,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 5
     },
     {
       "eventId": 165,
       "eventName": "미국-이란 휴전 기대 약화, LNG 위험 프리미엄 확대",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-11T13:34:39",
       "updatedAt": "2026-05-11T16:48:51",
       "signalType": "signal",
@@ -5773,13 +5937,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     },
     {
       "eventId": 166,
       "eventName": "아시아 여름 전 조달 경쟁, JKM 지지 강화",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-11T13:34:39",
       "updatedAt": "2026-05-11T16:48:51",
       "signalType": "signal",
@@ -5808,13 +5973,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 167,
       "eventName": "글로벌 액화설비 가동 혼조, 현물 공급 변동성 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:26:16",
       "updatedAt": "2026-05-12T14:26:16",
       "signalType": "signal",
@@ -5843,13 +6009,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 168,
       "eventName": "미국 가스 생산 감소, HH 상방 압력 확대",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T04:00:00",
       "signalType": "signal",
@@ -5878,13 +6045,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 169,
       "eventName": "유럽 저장률 35%대, TTF 하방 제한",
-      "eventCategoryLv1": "supply_demand_balance",
-      "eventCategoryLv1Label": "수급 밸런스",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T16:00:00",
       "signalType": "signal",
@@ -5913,13 +6081,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 4
     },
     {
       "eventId": 170,
       "eventName": "Troll 신규 생산 승인, 유럽 LNG 수요 완화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T05:03:38",
       "signalType": "signal",
@@ -5948,13 +6117,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 171,
       "eventName": "JKM 프리미엄 확대, 아시아향 카고 유인 유지",
-      "eventCategoryLv1": "market_trading_structure",
-      "eventCategoryLv1Label": "시장 / 거래 구조",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
       "createdAt": "2026-05-11T00:00:00",
       "updatedAt": "2026-05-11T15:18:12",
       "signalType": "signal",
@@ -5983,13 +6153,14 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 8
     },
     {
       "eventId": 172,
       "eventName": "퍼미안 Waha 병목 지속, 미국 basis 왜곡 심화",
-      "eventCategoryLv1": "infrastructure_facility",
-      "eventCategoryLv1Label": "인프라 / 설비",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
       "createdAt": "2026-05-12T14:26:16",
       "updatedAt": "2026-05-12T14:26:16",
       "signalType": "noise",
@@ -6018,13 +6189,14 @@
         }
       ],
       "status": "new",
-      "statusLabel": "신규"
+      "statusLabel": "신규",
+      "eventTypeL1Id": 3
     },
     {
       "eventId": 173,
       "eventName": "대이란 제재 쟁점 지속, 해운·유가 경로 상방 리스크",
-      "eventCategoryLv1": "geopolitical_risk",
-      "eventCategoryLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
       "createdAt": "2026-05-11T01:27:05",
       "updatedAt": "2026-05-11T05:03:38",
       "signalType": "noise",
@@ -6053,7 +6225,8 @@
         }
       ],
       "status": "updated",
-      "statusLabel": "갱신"
+      "statusLabel": "갱신",
+      "eventTypeL1Id": 1
     }
   ]
 }

@@ -1,7 +1,6 @@
 package com.sk.domain.mi.dto.request.scenarioworkbench;
 
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,8 +14,8 @@ public record EventListReq(
     @Schema(description = "이벤트 상태", implementation = ContentStatus.class, defaultValue = "ALL")
     ContentStatus eventStatus,
 
-    @ArraySchema(schema = @Schema(description = "이벤트 유형 Lv1", implementation = EventCategoryLv1.class))
-    List<EventCategoryLv1> eventCategoryLv1,
+    @ArraySchema(schema = @Schema(description = "이벤트 유형 Lv1 ID", example = "1"))
+    List<Long> eventTypeL1Id,
 
     @Schema(description = "조회 시작일", example = "2025-09-01")
     LocalDate startDate,
@@ -42,7 +41,7 @@ public record EventListReq(
 
     public EventListReq {
         eventStatus = eventStatus == null ? ContentStatus.ALL : eventStatus;
-        eventCategoryLv1 = defaultList(eventCategoryLv1);
+        eventTypeL1Id = defaultList(eventTypeL1Id);
         sort = sort == null ? SortOrder.LATEST : sort;
         keyword = keyword == null ? "" : keyword;
         page = page == null ? 1 : page;

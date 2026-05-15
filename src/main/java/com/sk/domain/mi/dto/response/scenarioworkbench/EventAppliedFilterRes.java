@@ -2,7 +2,6 @@ package com.sk.domain.mi.dto.response.scenarioworkbench;
 
 import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import com.sk.domain.shared.enums.scenarioworkbench.SortOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
@@ -13,8 +12,8 @@ public record EventAppliedFilterRes(
     @Schema(description = "이벤트 상태")
     ContentStatus eventStatus,
 
-    @Schema(description = "이벤트 유형 Lv1")
-    List<EventCategoryLv1> eventCategoryLv1,
+    @Schema(description = "이벤트 유형 Lv1 ID")
+    List<Long> eventTypeL1Id,
 
     @Schema(description = "조회 시작일")
     LocalDate startDate,
@@ -33,7 +32,7 @@ public record EventAppliedFilterRes(
     public static EventAppliedFilterRes from(EventListReq request) {
         return new EventAppliedFilterRes(
             request.eventStatus(),
-            request.eventCategoryLv1(),
+            request.eventTypeL1Id(),
             request.startDate(),
             request.endDate(),
             request.sort(),

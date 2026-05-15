@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.EventDetailRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventRelatedRecordRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventTypeL1Res;
 import com.sk.domain.mi.service.scenarioworkbench.EventService;
 import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -24,6 +25,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +43,30 @@ public class EventController {
 
     @ApiOrder(1)
     @Operation(
+        summary = "이벤트 유형 L1 목록 조회 API",
+        description = """
+            이벤트 유형 Level 1 마스터 목록을 조회합니다. <br>
+            이벤트 목록 필터의 `eventTypeL1Id` 파라미터에 사용할 ID값을 제공합니다.
+
+            <br><br>
+            ### 응답 필드
+            - `eventTypeL1Id`: 이벤트 유형 L1 PK  (필터 파라미터에 사용)
+            - `code`: 이벤트 유형 L1 코드
+            - `label`: 이벤트 유형 L1 한글명
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/event-types/lv1")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<List<EventTypeL1Res>> getEventTypesL1() {
+        return BaseResponseFactory.create(eventService.getEventTypesL1());
+    }
+
+    @ApiOrder(2)
+    @Operation(
         summary = "Event 목록 조회 API (with pagination)",
         description = """
             Scenario Workbench의 Event 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
@@ -49,7 +75,7 @@ public class EventController {
             ### 사용 가능한 파라미터
              - eventStatus: 이벤트 상태 / 기본값 ALL / example - eventStatus=NEW, eventStatus=UPDATED
              - sort: 정렬 기준 / 기본값 LATEST(최신순) / example - sort=LATEST, sort=OLDEST
-             - eventCategoryLv1: 이벤트 유형 필터 (복수 가능) / example - eventCategoryLv1=GEOPOLITICAL_RISK&eventCategoryLv1=WEATHER_CLIMATE
+             - eventTypeL1Id: 이벤트 유형 Lv1 ID 필터 (복수 가능) / example - eventTypeL1Id=1&eventTypeL1Id=2
              - period: 조회 기간 / 기본값 SIX_MONTHS / example - period=THREE_MONTHS, period=CUSTOM
              - startDate: 커스텀 조회 시작일 (period=CUSTOM 시 필수) / example - startDate=2025-09-01
              - endDate: 커스텀 조회 종료일 (period=CUSTOM 시 필수) / example - endDate=2026-02-28
@@ -67,14 +93,14 @@ public class EventController {
             ### events.content 항목 필드
             - `eventId`: 이벤트 고유 식별자
             - `eventName`: 이벤트명
-            - `eventCategoryLv1`: 이벤트 유형 Lv1
+            - `eventTypeLv1`: 이벤트 유형 Lv1
             - `createdAt`: 생성일시 (crt_dtm)
             - `updatedAt`: 수정일시 (mod_dtm)
             - `indexImpacts`: 인덱스별 영향도
             """
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
-    @Parameter(name = "eventCategoryLv1", description = "이벤트 유형 Lv1. 복수 선택 가능")
+    @Parameter(name = "eventTypeL1Id", description = "이벤트 유형 Lv1 ID. 복수 선택 가능")
     @Parameter(name = "period", description = "조회 기간. 기본값 SIX_MONTHS")
     @Parameter(name = "startDate", description = "커스텀 조회 시작일. period=CUSTOM 시 사용")
     @Parameter(name = "endDate", description = "커스텀 조회 종료일. period=CUSTOM 시 사용")
@@ -92,7 +118,7 @@ public class EventController {
         return BaseResponseFactory.create(eventService.getEvents(request));
     }
 
-    @ApiOrder(2)
+    @ApiOrder(3)
     @Operation(
         summary = "Event 상세 조회 API",
         description = """
@@ -106,7 +132,7 @@ public class EventController {
             이벤트가 LNG 시장 주요 인덱스(JKM, TTF, Henry Hub)에 미치는 영향을 분석한 결과입니다.
             - `indexImpacts`: 인덱스별 영향도 요약 (indexName, marketImpactLevel, direction)
             - `analysisText`: AI가 생성한 영향도 분석 본문
-            - `categoryLv1` / `categoryLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
+            - `eventTypeLv1` / `eventTypeLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
             - `sources`: 분석에 사용된 출처(provider) 목록 (이벤트의 record들이 인용하는 NEWS/REPORT publisher명)
 
             <br><br>
@@ -123,12 +149,12 @@ public class EventController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public BaseResponse<EventDetailRes> getEventDetail(
-        @Parameter(description = "이���트 ID", example = "1") @PathVariable Long eventId
+        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId
     ) {
         return BaseResponseFactory.create(eventService.getEventDetail(eventId));
     }
 
-    @ApiOrder(3)
+    @ApiOrder(4)
     @Operation(
         summary = "Event Records 조회 API (with pagination)",
         description = """
@@ -162,7 +188,7 @@ public class EventController {
         return BaseResponseFactory.create(eventService.getEventRecords(eventId, page, size));
     }
 
-    @ApiOrder(4)
+    @ApiOrder(5)
     @Operation(
         summary = "Event 기관 전망 조회 API (with pagination)",
         description = """

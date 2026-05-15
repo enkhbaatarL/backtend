@@ -1,6 +1,5 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,11 +18,11 @@ public record OverviewEventBriefRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
-    @Schema(description = "카테고리 Lv1", example = "geopolitical_risk")
-    EventCategoryLv1 eventCategoryLv1,
+    @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
+    String eventTypeLv1,
 
-    @Schema(description = "카테고리 Lv1 라벨", example = "지정학적 리스크")
-    String eventCategoryLv1Label,
+    @Schema(description = "이벤트 유형 Lv1 라벨", example = "지정학적 리스크")
+    String eventTypeLv1Label,
 
     @Schema(description = "인덱스별 영향도 (impactLevel + direction)")
     List<EventImpactIndexRes> indexImpacts

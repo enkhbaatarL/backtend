@@ -10,7 +10,10 @@ import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,18 +36,20 @@ public class Impact extends BaseEntity {
     @Comment("Impact ID")
     private String impactId;
 
-    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mi_event_id", nullable = false)
     @Comment("MI Event ID FK")
-    private Long miEventId;
+    private MiEvent miEvent;
 
     @Column(name = "updated_at")
     @Comment("업데이트 일시")
     private LocalDateTime updatedAt;
 
     @Builder
-    public Impact(String impactId, Long miEventId, LocalDateTime updatedAt) {
+    public Impact(String impactId, MiEvent miEvent, LocalDateTime updatedAt) {
         this.impactId = impactId;
-        this.miEventId = miEventId;
+        this.miEvent = miEvent;
         this.updatedAt = updatedAt;
     }
+
 }

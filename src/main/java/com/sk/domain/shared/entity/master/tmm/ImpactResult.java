@@ -13,7 +13,10 @@ import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -36,9 +39,10 @@ public class ImpactResult extends BaseEntity {
     @Comment("Impact Result ID")
     private String impactResultId;
 
-    @Column(name = "impact_id", length = 64, nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "impact_id", nullable = false)
     @Comment("Impact ID FK")
-    private String impactId;
+    private Impact impact;
 
     @Column(name = "target_type", length = 20, nullable = false)
     @Comment("대상 유형 price|spread")
@@ -70,11 +74,11 @@ public class ImpactResult extends BaseEntity {
     private LocalDateTime analysisTime;
 
     @Builder
-    public ImpactResult(String impactResultId, String impactId, String targetType, String targetId,
+    public ImpactResult(String impactResultId, Impact impact, String targetType, String targetId,
             String direction, BigDecimal confidence, String impactAssessmentReason,
             Boolean completed, LocalDateTime analysisTime) {
         this.impactResultId = impactResultId;
-        this.impactId = impactId;
+        this.impact = impact;
         this.targetType = targetType;
         this.targetId = targetId;
         this.direction = direction;
@@ -83,4 +87,5 @@ public class ImpactResult extends BaseEntity {
         this.completed = completed;
         this.analysisTime = analysisTime;
     }
+
 }

@@ -1,13 +1,18 @@
 package com.sk.common.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.Collections;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JsonUtil {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -50,6 +55,26 @@ public class JsonUtil {
             return objectMapper.readTree(json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T fromJson(String json, TypeReference<T> typeRef) {
+        try {
+            return objectMapper.readValue(json, typeRef);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static List<String> parseJsonStringList(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            log.warn("JSON string list 파싱 실패: {}", e.getMessage());
+            return Collections.emptyList();
         }
     }
 

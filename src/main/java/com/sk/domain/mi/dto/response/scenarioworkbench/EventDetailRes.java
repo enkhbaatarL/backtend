@@ -53,27 +53,28 @@ public record EventDetailRes(
 
     public static EventDetailRes from(EventDetailRow row) {
         ContentStatus status = row.createDt().equals(row.modifyDt()) ? ContentStatus.NEW : ContentStatus.UPDATED;
+        EventSignalType signalType = Boolean.TRUE.equals(row.signalYn()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
 
         RelatedEventRes selfEvent = new RelatedEventRes(
             row.miEventId(),
-            row.eventTitleKo(),
+            row.eventTitle(),
             row.createDt(),
             row.modifyDt(),
-            impactAnalysis.eventCategoryLv1(),
-            impactAnalysis.eventCategoryLv1Label(),
+            impactAnalysis.eventTypeLv1(),
+            impactAnalysis.eventTypeLv1Label(),
             impactAnalysis.indexImpacts()
         );
 
         return new EventDetailRes(
             row.miEventId(),
-            row.eventTitleKo(),
+            row.eventTitle(),
             status,
             status.getLabel(),
             row.createDt(),
             row.modifyDt(),
-            null,
-            null,
+            signalType,
+            signalType.getLabel(),
             impactAnalysis,
             EventAiInsightsRes.from(row),
             null,

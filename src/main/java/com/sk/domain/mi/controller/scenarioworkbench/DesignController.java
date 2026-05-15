@@ -63,7 +63,7 @@ public class DesignController {
             """
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
-    @Parameter(name = "eventCategoryLv1", description = "이벤트 유형 Lv1. 복수 선택 가능")
+    @Parameter(name = "eventTypeL1Id", description = "이벤트 유형 Lv1 ID. 복수 선택 가능")
     @Parameter(name = "period", description = "조회 기간. 기본값 SIX_MONTHS")
     @Parameter(name = "startDate", description = "커스텀 조회 시작일. period=CUSTOM 시 사용")
     @Parameter(name = "endDate", description = "커스텀 조회 종료일. period=CUSTOM 시 사용")

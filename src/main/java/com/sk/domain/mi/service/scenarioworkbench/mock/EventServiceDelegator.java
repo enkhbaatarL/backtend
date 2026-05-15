@@ -10,8 +10,11 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.EventDetailRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventRelatedRecordRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventTypeL1Res;
 import com.sk.domain.mi.service.scenarioworkbench.EventService;
 import com.sk.domain.mi.service.scenarioworkbench.EventServiceImpl;
+
+import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +26,11 @@ public class EventServiceDelegator implements EventService {
     private final EventServiceImpl realService;
     private final EventMockService mockService;
     private final ScenarioWorkbenchMockProperties mockProps;
+
+    @Override
+    public List<EventTypeL1Res> getEventTypesL1() {
+        return realService.getEventTypesL1();
+    }
 
     @Override
     public EventListRes getEvents(EventListReq request) {

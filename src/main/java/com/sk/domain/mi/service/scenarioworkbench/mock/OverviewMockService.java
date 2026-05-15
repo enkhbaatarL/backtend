@@ -81,7 +81,7 @@ public class OverviewMockService {
             scenarioEvent.put(detail.scenarioId(), new OverviewEventBriefRes(
                 event.eventId(), event.eventName(),
                 event.createdAt(), event.updatedAt(),
-                event.eventCategoryLv1(), event.eventCategoryLv1Label(),
+                event.eventTypeLv1(), event.eventTypeLv1Label(),
                 event.indexImpacts()
             ));
 
@@ -116,7 +116,7 @@ public class OverviewMockService {
         List<OverviewEventItemRes> overviewEvents = allEvents.stream()
             .map(e -> new OverviewEventItemRes(
                 e.eventId(), e.eventName(), e.createdAt(), e.updatedAt(),
-                e.eventCategoryLv1(), e.eventCategoryLv1Label(),
+                e.eventTypeLv1(), e.eventTypeLv1Label(),
                 e.signalType(), e.signalTypeLabel(), e.indexImpacts(),
                 eventScenariosMap.getOrDefault(e.eventId(), Collections.emptyList())
             ))

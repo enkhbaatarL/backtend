@@ -10,7 +10,10 @@ import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,9 +36,10 @@ public class DriverTag extends BaseEntity {
     @Comment("Driver Tag ID")
     private String driverId;
 
-    @Column(name = "impact_result_id", length = 64, nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "impact_result_id", nullable = false)
     @Comment("Impact Result ID FK")
-    private String impactResultId;
+    private ImpactResult impactResult;
 
     @Column(name = "lv1_id", length = 50, nullable = false)
     @Comment("Driver Tree 1단계 코드")
@@ -66,7 +70,7 @@ public class DriverTag extends BaseEntity {
     private String directionHint;
 
     @Column(name = "direction", length = 20)
-    @Comment("실제 영향 방향 bullish/bearish/negligible")
+    @Comment("실제 영향 ��향 bullish/bearish/negligible")
     private String direction;
 
     @Column(name = "match_score", precision = 5, scale = 4)
@@ -78,7 +82,7 @@ public class DriverTag extends BaseEntity {
     private String driverMagnitude;
 
     @Column(name = "driver_reason", columnDefinition = "text")
-    @Comment("Driver 영향 발생 사유")
+    @Comment("Driver 영향 발생 사���")
     private String driverReason;
 
     @Column(name = "matched_keywords", columnDefinition = "json")
@@ -86,13 +90,13 @@ public class DriverTag extends BaseEntity {
     private String matchedKeywords;
 
     @Builder
-    public DriverTag(String driverId, String impactResultId,
+    public DriverTag(String driverId, ImpactResult impactResult,
             String lv1Id, String lv1Label, String lv2Id, String lv2Label,
             String lv3Id, String lv3Label, String directionHint, String direction,
             BigDecimal matchScore, String driverMagnitude, String driverReason,
             String matchedKeywords) {
         this.driverId = driverId;
-        this.impactResultId = impactResultId;
+        this.impactResult = impactResult;
         this.lv1Id = lv1Id;
         this.lv1Label = lv1Label;
         this.lv2Id = lv2Id;
@@ -106,4 +110,5 @@ public class DriverTag extends BaseEntity {
         this.driverReason = driverReason;
         this.matchedKeywords = matchedKeywords;
     }
+
 }

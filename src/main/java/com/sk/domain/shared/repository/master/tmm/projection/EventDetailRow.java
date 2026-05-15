@@ -6,12 +6,15 @@ import java.util.List;
 // note: 이벤트 상세 화면 — 영향도 분석 + AI Insights 영역에 필요한 모든 데이터를 Repository에서 조립
 public record EventDetailRow(
     Long miEventId,
-    String eventTitleKo,
+    String eventTitle,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     String level1Code,
+    String level1Label,
     String level2Code,
-    String detailAnalysis,
+    String level2Label,
+    Boolean signalYn,
+    String eventSummary,
     String impactAnalysisText,
     List<EventIndexImpactRow> indexImpacts,
     List<String> keyBullets,

@@ -34,6 +34,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EventMockService {
 
+    private static final Map<String, Long> EVENT_TYPE_CODE_TO_ID = Map.of(
+        "geopolitical_risk", 1L,
+        "weather_climate", 2L,
+        "infrastructure_facility", 3L,
+        "supply_demand_balance", 4L,
+        "logistics_shipping", 5L,
+        "energy_mix_transition", 6L,
+        "macroeconomy_policy", 7L,
+        "market_trading_structure", 8L
+    );
+
     private final ObjectMapper objectMapper;
 
     private List<EventListItemRes> eventList;
@@ -99,7 +110,7 @@ public class EventMockService {
         List<EventListItemRes> filtered = eventList.stream()
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.status() == request.eventStatus())
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.signalType() == EventSignalType.SIGNAL)
-            .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
+            .filter(e -> matchesEventTypeFilter(e.eventTypeLv1(), request.eventTypeL1Id()))
             .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
             .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
@@ -153,6 +164,14 @@ public class EventMockService {
     public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
         List<EventInstitutionOutlookRes> outlooks = eventOutlooksMap.getOrDefault(eventId, Collections.emptyList());
         return paginate(outlooks, page, size);
+    }
+
+    private boolean matchesEventTypeFilter(String eventTypeCode, List<Long> filterIds) {
+        if (filterIds == null || filterIds.isEmpty()) {
+            return true;
+        }
+        Long id = EVENT_TYPE_CODE_TO_ID.get(eventTypeCode);
+        return id != null && filterIds.contains(id);
     }
 
     private <T> PaginationRes<T> paginate(List<T> items, int page, int size) {

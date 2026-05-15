@@ -55,7 +55,7 @@ public class OverviewController {
 
             <br><br>
             ### Events 목록 API와 차이
-            - 상태 필터(eventStatus), 카테고리 필터(eventCategoryLv1), 검색(keyword) 없음
+            - 상태 필터(eventStatus), 이벤트 유형 필터(eventTypeL1Id), 검색(keyword) 없음
             - 이벤트 행마다 하위 시나리오 목록(`scenarios`) 포함 (accordion 펼침 용도)
             - 기본 페이지 사이즈 10건 (Events 목록은 20건)
 
@@ -65,7 +65,7 @@ public class OverviewController {
             - `eventName`: 이벤트명
             - `createdAt`: 생성일시 (crt_dtm)
             - `updatedAt`: 수정일시 (mod_dtm)
-            - `eventCategoryLv1`: 카테고리 Lv1
+            - `eventTypeLv1`: 이벤트 유형 Lv1
             - `indexImpacts`: 인덱스별 영향도 (marketImpactLevel + direction)
             - `scenarios`: 하위 시나리오 목록 (scenarioId, scenarioName, baseCase, indexImpacts, probability)
             """
@@ -117,7 +117,7 @@ public class OverviewController {
             - `tags`: 태그 배지
             - `indexImpacts`: 인덱스별 영향도 (marketImpactLevel only, direction 없음)
             - `probability`: 발생 가능성 (0.00 ~ 1.00)
-            - `events`: 관련 이벤트 목록 (eventId, eventName, eventCategoryLv1, indexImpacts)
+            - `events`: 관련 이벤트 목록 (eventId, eventName, eventTypeLv1, indexImpacts)
             """
     )
     @Parameter(name = "period", description = "조회 기간. 기본값 SIX_MONTHS")

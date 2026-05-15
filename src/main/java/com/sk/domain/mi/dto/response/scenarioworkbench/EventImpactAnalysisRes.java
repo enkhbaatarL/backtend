@@ -1,12 +1,9 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv2;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
-import java.util.Optional;
 
 public record EventImpactAnalysisRes(
 
@@ -17,16 +14,16 @@ public record EventImpactAnalysisRes(
     String analysisText,
 
     @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
-    EventCategoryLv1 eventCategoryLv1,
+    String eventTypeLv1,
 
     @Schema(description = "이벤트 유형 Lv1 라벨", example = "지정학적 리스크")
-    String eventCategoryLv1Label,
+    String eventTypeLv1Label,
 
     @Schema(description = "이벤트 유형 Lv2", example = "war_military_conflict")
-    EventCategoryLv2 eventCategoryLv2,
+    String eventTypeLv2,
 
     @Schema(description = "이벤트 유형 Lv2 라벨", example = "전쟁 / 군사 분쟁")
-    String eventCategoryLv2Label,
+    String eventTypeLv2Label,
 
     @ArraySchema(schema = @Schema(description = "출처", example = "Reuters"))
     List<String> sources
@@ -34,16 +31,13 @@ public record EventImpactAnalysisRes(
 ) {
 
     public static EventImpactAnalysisRes from(EventDetailRow row) {
-        EventCategoryLv1 lv1 = EventCategoryLv1.fromCode(row.level1Code());
-        EventCategoryLv2 lv2 = EventCategoryLv2.fromCode(row.level2Code());
-
         return new EventImpactAnalysisRes(
             row.indexImpacts().stream().map(EventImpactIndexRes::from).toList(),
             row.impactAnalysisText(),
-            lv1,
-            Optional.ofNullable(lv1).map(EventCategoryLv1::getLabel).orElse(null),
-            lv2,
-            Optional.ofNullable(lv2).map(EventCategoryLv2::getLabel).orElse(null),
+            row.level1Code(),
+            row.level1Label(),
+            row.level2Code(),
+            row.level2Label(),
             row.sources()
         );
     }
