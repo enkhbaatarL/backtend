@@ -1,8 +1,19 @@
 package com.sk.common.handler;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED;
+import static org.springframework.http.HttpStatus.NOT_ACCEPTABLE;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.exception.SystemErrorException;
@@ -11,6 +22,10 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.MDCUtil;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import java.net.SocketTimeoutException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,13 +64,6 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-
-import java.net.SocketTimeoutException;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.*;
 
 @Slf4j
 @RestControllerAdvice
@@ -409,6 +417,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AppErrorException.class)
     private ResponseEntity<Object> handleAppError(AppErrorException ex) {
         return createAndLogResponse("Client Error", ex, BAD_REQUEST, ex.getErrorCode(), ex.getAdditionalMessage());
+    }
+
+    @ExceptionHandler(AppHttpStatusException.class)
+    private ResponseEntity<Object> handleAppHttpStatusError(AppHttpStatusException ex) {
+        return createAndLogResponse("Client Error", ex, ex.getHttpStatus(), ex.getErrorCode(), ex.getAdditionalMessage());
     }
 
     @ExceptionHandler(SystemErrorException.class)

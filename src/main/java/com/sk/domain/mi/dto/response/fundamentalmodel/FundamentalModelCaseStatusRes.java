@@ -1,0 +1,28 @@
+package com.sk.domain.mi.dto.response.fundamentalmodel;
+
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+
+public record FundamentalModelCaseStatusRes(
+
+    @Schema(description = "case ID", example = "101")
+    Long caseId,
+
+    @Schema(description = "case 제목", example = "JKM price upside case")
+    String title,
+
+    @Schema(description = "case 최신 상태", implementation = FundamentalModelCaseStatus.class, example = "RUNNING")
+    FundamentalModelCaseStatus status,
+
+    @Schema(description = "최신 실행 정보. PENDING이면 null입니다.", implementation = FundamentalModelRunStatusRes.class)
+    FundamentalModelRunStatusRes latestRun,
+
+    @Schema(description = "case 생성 시각")
+    LocalDateTime createdAt,
+
+    @Schema(description = "case 최종 변경 시각")
+    LocalDateTime updatedAt
+
+) {
+}
