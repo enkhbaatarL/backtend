@@ -1,11 +1,18 @@
 package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
-import io.swagger.v3.oas.models.*;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityScheme.Type;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
@@ -46,7 +53,7 @@ public class SwaggerConfig {
             .group("MI API")
             .displayName("MI 서비스 API")
             .pathsToMatch("/api/v1/mi/**")
-            .pathsToExclude("/api/v1/mi/scenario-workbench/**")
+            .pathsToExclude("/api/v1/mi/scenario-workbench/**", "/api/v1/mi/fundamental-model/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
@@ -82,7 +89,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
             .group("SK Gas API")
             .displayName("SK Gas API")
-            .pathsToMatch("/api/v1/mi/scenario-workbench/**")
+            .pathsToMatch("/api/v1/mi/scenario-workbench/**", "/api/v1/mi/fundamental-model/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();

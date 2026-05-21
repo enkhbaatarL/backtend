@@ -2,9 +2,11 @@ package com.sk.domain.mi.service.fundamentalmodel.mock;
 
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
@@ -42,6 +44,29 @@ public class FundamentalModelCaseServiceDelegator implements FundamentalModelCas
         return mockProps.getFundamentalModelCases().getApi().isCreateCase()
             ? mockService.createCase(title, description, files)
             : realService.createCase(title, description, files);
+    }
+
+    @Override
+    public FundamentalModelCaseDetailRes getCaseDetail(Long caseId) {
+        return mockProps.getFundamentalModelCases().getApi().isGetDetail()
+            ? mockService.getCaseDetail(caseId)
+            : realService.getCaseDetail(caseId);
+    }
+
+    @Override
+    public FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request) {
+        return mockProps.getFundamentalModelCases().getApi().isUpdate()
+            ? mockService.updateCase(caseId, request)
+            : realService.updateCase(caseId, request);
+    }
+
+    @Override
+    public void deleteCase(Long caseId) {
+        if (mockProps.getFundamentalModelCases().getApi().isDelete()) {
+            mockService.deleteCase(caseId);
+        } else {
+            realService.deleteCase(caseId);
+        }
     }
 
     @Override

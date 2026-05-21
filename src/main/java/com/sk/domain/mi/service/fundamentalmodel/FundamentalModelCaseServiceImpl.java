@@ -1,9 +1,11 @@
 package com.sk.domain.mi.service.fundamentalmodel;
 
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
@@ -27,6 +29,21 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         List<MultipartFile> files
     ) {
         throw new UnsupportedOperationException("Fundamental model case create DB implementation is not ready.");
+    }
+
+    @Override
+    public FundamentalModelCaseDetailRes getCaseDetail(Long caseId) {
+        throw new UnsupportedOperationException("Fundamental model case detail DB implementation is not ready.");
+    }
+
+    @Override
+    public FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request) {
+        throw new UnsupportedOperationException("Fundamental model case update DB implementation is not ready.");
+    }
+
+    @Override
+    public void deleteCase(Long caseId) {
+        throw new UnsupportedOperationException("Fundamental model case delete DB implementation is not ready.");
     }
 
     @Override

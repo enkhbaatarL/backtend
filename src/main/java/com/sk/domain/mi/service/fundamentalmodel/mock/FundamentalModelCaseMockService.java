@@ -1,12 +1,16 @@
 package com.sk.domain.mi.service.fundamentalmodel.mock;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFileRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
@@ -17,8 +21,12 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunStatusR
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
+import jakarta.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,18 +45,37 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class FundamentalModelCaseMockService {
 
+    private static final String MOCK_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-cases.json";
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
     private static final String MOCK_ASSIGNEE_NAME = "홍길동";
+    private static final String DELETE_YN_Y = "Y";
+    private static final String DELETE_YN_N = "N";
 
+    private final ObjectMapper objectMapper;
     private final AtomicLong caseIdSequence = new AtomicLong(100);
     private final ConcurrentMap<Long, FundamentalModelCaseMockRecord> caseStore = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, FundamentalModelRunMockRecord> runStore = new ConcurrentHashMap<>();
 
+    public FundamentalModelCaseMockService() {
+        this(new ObjectMapper().findAndRegisterModules());
+    }
+
+    @Autowired
+    public FundamentalModelCaseMockService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @PostConstruct
+    void init() {
+        reloadSeedData();
+    }
+
     public synchronized FundamentalModelCaseListRes listCases(FundamentalModelCaseListReq request) {
-        validateSearchPair(request);
+        validateSearchCriteria(request);
 
         List<FundamentalModelCaseListItemRes> cases = caseStore.values().stream()
+            .filter(this::isActive)
             .filter(record -> matchesSearch(record, request))
             .sorted(Comparator.comparing(FundamentalModelCaseMockRecord::createdAt).reversed())
             .map(this::toListItemResponse)
@@ -74,6 +103,7 @@ public class FundamentalModelCaseMockService {
             MOCK_ASSIGNEE_NAME,
             fileRecords,
             null,
+            DELETE_YN_N,
             now,
             now
         );
@@ -88,6 +118,29 @@ public class FundamentalModelCaseMockService {
             record.createdAt(),
             buildStatusEndpoint(record.caseId())
         );
+    }
+
+    public synchronized FundamentalModelCaseDetailRes getCaseDetail(Long caseId) {
+        FundamentalModelCaseMockRecord caseRecord = getCaseRecord(caseId);
+        return toDetailResponse(caseRecord);
+    }
+
+    public synchronized FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request) {
+        FundamentalModelCaseMockRecord currentCase = getCaseRecord(caseId);
+        String normalizedTitle = validateAndNormalizeTitle(request == null ? null : request.title());
+        String description = request == null ? null : request.description();
+        FundamentalModelCaseMockRecord updatedCase = currentCase.withMetadata(
+            normalizedTitle,
+            description,
+            LocalDateTime.now()
+        );
+        caseStore.put(caseId, updatedCase);
+        return toDetailResponse(updatedCase);
+    }
+
+    public synchronized void deleteCase(Long caseId) {
+        FundamentalModelCaseMockRecord currentCase = getCaseRecord(caseId);
+        caseStore.put(caseId, currentCase.withDeleted(LocalDateTime.now()));
     }
 
     public synchronized FundamentalModelRunAcceptRes runCase(Long caseId, FundamentalModelRunReq request) {
@@ -176,35 +229,154 @@ public class FundamentalModelCaseMockService {
     public synchronized void reset() {
         int removedCases = caseStore.size();
         int removedRuns = runStore.size();
-        caseStore.clear();
-        runStore.clear();
+        reloadSeedData();
 
-        log.info("[Mock] Fundamental model case mock data reset: removedCases={}, removedRuns={}",
-            removedCases, removedRuns);
+        log.info("[Mock] Fundamental model case mock data reset: removedCases={}, removedRuns={}, loadedCases={}, loadedRuns={}",
+            removedCases, removedRuns, caseStore.size(), runStore.size());
     }
 
-    private void validateSearchPair(FundamentalModelCaseListReq request) {
-        if ((request.searchType() == null) != (request.keyword() == null)) {
+    private void reloadSeedData() {
+        try {
+            loadSeedData();
+            log.info("[Mock] Fundamental model mock data loaded: cases={}, runs={}",
+                caseStore.size(), runStore.size());
+        } catch (IOException e) {
+            log.error("[Mock] Failed to load fundamental model mock data", e);
+            caseStore.clear();
+            runStore.clear();
+            caseIdSequence.set(100);
+        }
+    }
+
+    private void loadSeedData() throws IOException {
+        ClassPathResource resource = new ClassPathResource(MOCK_DATA_RESOURCE);
+        if (!resource.exists()) {
+            caseStore.clear();
+            runStore.clear();
+            caseIdSequence.set(100);
+            return;
+        }
+
+        try (InputStream is = resource.getInputStream()) {
+            JsonNode root = objectMapper.readTree(is);
+            List<FundamentalModelCaseMockRecord> cases = readCases(root.path("cases"));
+            List<FundamentalModelRunMockRecord> runs = readRuns(root.path("runs"));
+
+            caseStore.clear();
+            runStore.clear();
+            cases.forEach(record -> caseStore.put(record.caseId(), record));
+            runs.forEach(record -> runStore.put(record.runId(), record));
+
+            long maxCaseId = cases.stream()
+                .map(FundamentalModelCaseMockRecord::caseId)
+                .filter(Objects::nonNull)
+                .max(Long::compareTo)
+                .orElse(100L);
+            caseIdSequence.set(Math.max(100L, maxCaseId));
+        }
+    }
+
+    private List<FundamentalModelCaseMockRecord> readCases(JsonNode casesNode) {
+        if (!casesNode.isArray()) {
+            return Collections.emptyList();
+        }
+
+        List<FundamentalModelCaseMockRecord> records = new ArrayList<>();
+        for (JsonNode caseNode : casesNode) {
+            records.add(new FundamentalModelCaseMockRecord(
+                caseNode.path("caseId").asLong(),
+                caseNode.path("title").asText(null),
+                caseNode.path("description").asText(null),
+                FundamentalModelCaseStatus.from(caseNode.path("status").asText()),
+                caseNode.path("assigneeName").asText(MOCK_ASSIGNEE_NAME),
+                readFiles(caseNode.path("files")),
+                caseNode.path("latestRunId").isMissingNode() || caseNode.path("latestRunId").isNull()
+                    ? null
+                    : caseNode.path("latestRunId").asText(),
+                caseNode.path("delYn").asText(DELETE_YN_N),
+                LocalDateTime.parse(caseNode.path("createdAt").asText()),
+                LocalDateTime.parse(caseNode.path("updatedAt").asText())
+            ));
+        }
+        return List.copyOf(records);
+    }
+
+    private List<FundamentalModelFileMockRecord> readFiles(JsonNode filesNode) {
+        if (!filesNode.isArray()) {
+            return Collections.emptyList();
+        }
+
+        List<FundamentalModelFileMockRecord> records = new ArrayList<>();
+        for (JsonNode fileNode : filesNode) {
+            records.add(new FundamentalModelFileMockRecord(
+                fileNode.path("mockFileId").asText(),
+                fileNode.path("fileIndex").asInt(),
+                fileNode.path("originalFileName").asText(null),
+                fileNode.path("contentType").asText(null),
+                fileNode.path("size").asLong()
+            ));
+        }
+        return List.copyOf(records);
+    }
+
+    private List<FundamentalModelRunMockRecord> readRuns(JsonNode runsNode) {
+        if (!runsNode.isArray()) {
+            return Collections.emptyList();
+        }
+
+        List<FundamentalModelRunMockRecord> records = new ArrayList<>();
+        for (JsonNode runNode : runsNode) {
+            records.add(new FundamentalModelRunMockRecord(
+                runNode.path("runId").asText(),
+                runNode.path("caseId").asLong(),
+                FundamentalModelRunStatus.from(runNode.path("status").asText()),
+                LocalDateTime.parse(runNode.path("requestedAt").asText()),
+                LocalDateTime.parse(runNode.path("startedAt").asText()),
+                readNullableDateTime(runNode.path("finishedAt")),
+                runNode.path("failureReason").asText(null),
+                runNode.path("errorMessage").asText(null)
+            ));
+        }
+        return List.copyOf(records);
+    }
+
+    private LocalDateTime readNullableDateTime(JsonNode node) {
+        if (node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        return LocalDateTime.parse(node.asText());
+    }
+
+    private void validateSearchCriteria(FundamentalModelCaseListReq request) {
+        if (normalizeSearchKeyword(request.keyword()) != null && request.searchType() == null) {
             throw AppErrorException.of(
                 ResultCode.Error.REQ_INVALID_PARAMETER,
-                "searchType과 keyword는 함께 입력해야 합니다."
+                "keyword가 입력된 경우 searchType은 필수입니다."
             );
         }
     }
 
     private boolean matchesSearch(FundamentalModelCaseMockRecord record, FundamentalModelCaseListReq request) {
-        if (request.searchType() == null || request.keyword() == null || request.keyword().trim().isEmpty()) {
+        String keyword = normalizeSearchKeyword(request.keyword());
+        if (keyword == null || request.searchType() == null) {
             return true;
         }
 
-        String keyword = request.keyword().trim().toLowerCase();
+        String lowercaseKeyword = keyword.toLowerCase();
         if (request.searchType() == FundamentalModelCaseSearchType.TITLE) {
-            return record.title().toLowerCase().contains(keyword);
+            return record.title().toLowerCase().contains(lowercaseKeyword);
         }
         if (request.searchType() == FundamentalModelCaseSearchType.ASSIGNEE_NAME) {
-            return record.assigneeName().toLowerCase().contains(keyword);
+            return record.assigneeName().toLowerCase().contains(lowercaseKeyword);
         }
         return false;
+    }
+
+    private String normalizeSearchKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return null;
+        }
+        return keyword.trim();
     }
 
     private String validateAndNormalizeTitle(String title) {
@@ -284,7 +456,7 @@ public class FundamentalModelCaseMockService {
 
     private FundamentalModelCaseMockRecord getCaseRecord(Long caseId) {
         FundamentalModelCaseMockRecord record = caseStore.get(caseId);
-        if (record == null) {
+        if (record == null || !isActive(record)) {
             throw AppHttpStatusException.of(
                 HttpStatus.NOT_FOUND,
                 ResultCode.Error.RSC_NOT_FOUND,
@@ -292,6 +464,10 @@ public class FundamentalModelCaseMockService {
             );
         }
         return record;
+    }
+
+    private boolean isActive(FundamentalModelCaseMockRecord record) {
+        return record != null && !DELETE_YN_Y.equalsIgnoreCase(record.delYn());
     }
 
     private FundamentalModelCaseMockRecord getCaseRecordByRun(FundamentalModelRunMockRecord runRecord) {
@@ -348,6 +524,24 @@ public class FundamentalModelCaseMockService {
         );
     }
 
+    private FundamentalModelCaseDetailRes toDetailResponse(FundamentalModelCaseMockRecord record) {
+        FundamentalModelRunStatusRes latestRun = record.latestRunId() == null
+            ? null
+            : toRunStatusResponse(runStore.get(record.latestRunId()));
+
+        return new FundamentalModelCaseDetailRes(
+            record.caseId(),
+            record.title(),
+            record.description(),
+            record.status(),
+            record.assigneeName(),
+            record.files().stream().map(this::toFileResponse).toList(),
+            latestRun,
+            record.createdAt(),
+            record.updatedAt()
+        );
+    }
+
     private FundamentalModelRunStatusRes toRunStatusResponse(FundamentalModelRunMockRecord run) {
         if (run == null) {
             return null;
@@ -394,9 +588,40 @@ public class FundamentalModelCaseMockService {
         String assigneeName,
         List<FundamentalModelFileMockRecord> files,
         String latestRunId,
+        String delYn,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
     ) {
+
+        private FundamentalModelCaseMockRecord withMetadata(String title, String description, LocalDateTime updatedAt) {
+            return new FundamentalModelCaseMockRecord(
+                caseId,
+                title,
+                description,
+                status,
+                assigneeName,
+                files,
+                latestRunId,
+                delYn,
+                createdAt,
+                updatedAt
+            );
+        }
+
+        private FundamentalModelCaseMockRecord withDeleted(LocalDateTime updatedAt) {
+            return new FundamentalModelCaseMockRecord(
+                caseId,
+                title,
+                description,
+                status,
+                assigneeName,
+                files,
+                latestRunId,
+                DELETE_YN_Y,
+                createdAt,
+                updatedAt
+            );
+        }
 
         private FundamentalModelCaseMockRecord withRunStarted(String runId, LocalDateTime updatedAt) {
             return new FundamentalModelCaseMockRecord(
@@ -407,6 +632,7 @@ public class FundamentalModelCaseMockService {
                 assigneeName,
                 files,
                 runId,
+                delYn,
                 createdAt,
                 updatedAt
             );
@@ -421,6 +647,7 @@ public class FundamentalModelCaseMockService {
                 assigneeName,
                 files,
                 latestRunId,
+                delYn,
                 createdAt,
                 updatedAt
             );

@@ -1,8 +1,7 @@
 package com.sk.domain.mi.controller.fundamentalmodel;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.PermissionRule;
-import com.sk.common.annotation.RequiredPermissionRules;
+import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
@@ -38,11 +37,7 @@ public class FundamentalModelRunController {
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
     @PostMapping("/{runId}/callback")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.SYSTEM),
-        @PermissionRule(role = Role.API_SUB_ADMIN),
-        @PermissionRule(role = Role.API_PLUS_OPERATOR)
-    })
+    @RequiredPermission(roles = {Role.ADMIN, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN})
     public BaseResponse<FundamentalModelRunCallbackRes> callback(
         @Parameter(description = "실행 추적 ID", example = "3f7e44c4-2bb5-4b09-b577-920f83ad2a6d") @PathVariable String runId,
         @Valid @RequestBody FundamentalModelRunCallbackReq request

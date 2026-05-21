@@ -24,6 +24,9 @@ public class FundamentalModelMockProperties {
         public static class Api {
             private boolean listCases = true;
             private boolean createCase = true;
+            private boolean getDetail = true;
+            private boolean update = true;
+            private boolean delete = true;
             private boolean run = true;
             private boolean getStatus = true;
             private boolean reset = true;
