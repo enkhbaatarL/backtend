@@ -265,6 +265,10 @@ public class SwaggerConfig {
             .build();
     }
 
+    private String label(boolean isMock) {
+        return isMock ? "🟡 Mock" : "🟢 DB";
+    }
+
     @Bean
     public GroupedOpenApi etcApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                  @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
