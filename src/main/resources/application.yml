@@ -95,3 +95,18 @@ mi:
           post-callback: true
           get-generated-scenarios: true
           get-statuses: true
+  fundamental-model:
+    mock:
+      fundamental-model-cases:
+        api:
+          list-cases: true
+          create-case: true
+          get-detail: true
+          update: true
+          delete: true
+          run: true
+          get-status: true
+          reset: true
+      fundamental-model-runs:
+        api:
+          callback: true
