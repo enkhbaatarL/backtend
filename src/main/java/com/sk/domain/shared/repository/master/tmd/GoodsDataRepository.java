@@ -28,7 +28,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 cc.customerCompanyNm,
                 gd.goodsDataNo,
                 gd.goodsDataNm,
-                gd.goodsDataExpn
+                gd.goodsDataExpn,
+                gd.publishedDate
             )
             FROM GoodsData gd
                 LEFT JOIN gd.customerCompany cc
@@ -37,7 +38,6 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.goodsNo = :goodsNo
                 AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
-            ORDER BY gd.goodsDataNm ASC
             """, countQuery = """
             SELECT COUNT(DISTINCT gd.goodsDataNo)
             FROM GoodsData gd
