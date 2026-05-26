@@ -3,13 +3,15 @@ package com.sk.domain.mi.service.fundamentalmodel;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,13 +49,23 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
-    public FundamentalModelRunAcceptRes runCase(Long caseId, FundamentalModelRunReq request) {
+    public FundamentalModelRunAcceptRes runCase(Long caseId) {
         throw new UnsupportedOperationException("Fundamental model case run DB implementation is not ready.");
     }
 
     @Override
     public FundamentalModelCaseStatusRes getCaseStatus(Long caseId) {
         throw new UnsupportedOperationException("Fundamental model case status DB implementation is not ready.");
+    }
+
+    @Override
+    public FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request) {
+        throw new UnsupportedOperationException("Fundamental model volumes DB implementation is not ready.");
+    }
+
+    @Override
+    public FundamentalModelPriceRes getPrice(Long caseId) {
+        throw new UnsupportedOperationException("Fundamental model price DB implementation is not ready.");
     }
 
     @Override

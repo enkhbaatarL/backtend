@@ -44,7 +44,8 @@ public class ResourceServerConfig {
                 "/api/v1/common/health-check",
                 "/api/v1/admin/provider-management/goods-datas/upload-temp/structured-data/**", // TODO 인증 넣어야 함.
                 "/api/v1/mi/internal/newsletter/publish",
-                "/api/v1/mi/internal/newsletter/render-data"  // chart-capture JWT로 자체 인증
+                "/api/v1/mi/internal/newsletter/render-data",  // chart-capture JWT로 자체 인증
+                "/api/v1/mi/fundamental-model/runs/*/callback"  // k8s Job pod 내부 호출 — 네트워크 격리로 보호, ingress 차단 필요
             )
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())

@@ -140,6 +140,7 @@ dependencies {
     // Playwright (헤드리스 차트 캡처)
     implementation 'com.microsoft.playwright:playwright:1.58.0'
 
+    implementation 'io.fabric8:kubernetes-client:6.13.4'
 }
 
 sourceSets {

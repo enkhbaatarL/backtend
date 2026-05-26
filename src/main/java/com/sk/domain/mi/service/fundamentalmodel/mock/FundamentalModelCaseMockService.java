@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.fundamentalmodel.mock;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
@@ -7,28 +8,42 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelJobArgs;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFileRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
+import com.sk.domain.mi.service.fundamentalmodel.KubernetesJobService;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +51,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -46,29 +62,40 @@ import org.springframework.web.multipart.MultipartFile;
 public class FundamentalModelCaseMockService {
 
     private static final String MOCK_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-cases.json";
+    private static final String VOLUMES_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-volumes-data.json";
+    private static final String PRICE_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-price-data.json";
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
+    private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final String MOCK_ASSIGNEE_NAME = "홍길동";
     private static final String DELETE_YN_Y = "Y";
     private static final String DELETE_YN_N = "N";
-
+    private static final String CALLBACK_PATH_TEMPLATE = "/api/v1/mi/fundamental-model/runs/%s/callback";
     private final ObjectMapper objectMapper;
     private final AtomicLong caseIdSequence = new AtomicLong(100);
+    private final AtomicLong runSeqSequence = new AtomicLong(0);
     private final ConcurrentMap<Long, FundamentalModelCaseMockRecord> caseStore = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, FundamentalModelRunMockRecord> runStore = new ConcurrentHashMap<>();
+    private final KubernetesJobService kubernetesJobService;
+    @Value("${server.domain:http://localhost:8080}")
+    private String serverDomain = "http://localhost:8080";
+    private Map<FundamentalModelSegment, FundamentalModelVolumesSeed> volumesSeedStore = emptyVolumesSeedStore();
+    private FundamentalModelPriceSeed priceSeed = emptyPriceSeed();
 
     public FundamentalModelCaseMockService() {
-        this(new ObjectMapper().findAndRegisterModules());
+        this(new ObjectMapper().findAndRegisterModules(), null);
     }
 
     @Autowired
-    public FundamentalModelCaseMockService(ObjectMapper objectMapper) {
+    public FundamentalModelCaseMockService(ObjectMapper objectMapper, KubernetesJobService kubernetesJobService) {
         this.objectMapper = objectMapper;
+        this.kubernetesJobService = kubernetesJobService;
     }
 
     @PostConstruct
     void init() {
         reloadSeedData();
+        loadResultSeedData();
     }
 
     public synchronized FundamentalModelCaseListRes listCases(FundamentalModelCaseListReq request) {
@@ -143,7 +170,7 @@ public class FundamentalModelCaseMockService {
         caseStore.put(caseId, currentCase.withDeleted(LocalDateTime.now()));
     }
 
-    public synchronized FundamentalModelRunAcceptRes runCase(Long caseId, FundamentalModelRunReq request) {
+    public synchronized FundamentalModelRunAcceptRes runCase(Long caseId) {
         FundamentalModelCaseMockRecord currentCase = getCaseRecord(caseId);
         if (currentCase.status() == FundamentalModelCaseStatus.RUNNING) {
             throw AppHttpStatusException.of(
@@ -154,7 +181,7 @@ public class FundamentalModelCaseMockService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        String runId = UUID.randomUUID().toString();
+        String runId = generateRunId(now);
         FundamentalModelRunMockRecord runRecord = new FundamentalModelRunMockRecord(
             runId,
             caseId,
@@ -169,6 +196,15 @@ public class FundamentalModelCaseMockService {
 
         runStore.put(runId, runRecord);
         caseStore.put(caseId, updatedCase);
+
+        if (kubernetesJobService != null) {
+            try {
+                long runSeq = runSeqSequence.incrementAndGet();
+                kubernetesJobService.createFundamentalModelJob(buildJobArgs(currentCase, runId, runSeq));
+            } catch (Exception e) {
+                log.warn("[Mock] Kubernetes job creation failed: runId={}, caseId={}", runId, caseId, e);
+            }
+        }
 
         return new FundamentalModelRunAcceptRes(
             updatedCase.caseId(),
@@ -185,8 +221,51 @@ public class FundamentalModelCaseMockService {
         return toStatusResponse(caseRecord);
     }
 
+    public synchronized FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request) {
+        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
+        FundamentalModelSegment segment = validateSegment(request);
+        FundamentalModelGranularity granularity = request == null || request.granularity() == null
+            ? FundamentalModelGranularity.MONTHLY
+            : request.granularity();
+        List<FundamentalModelDataType> appliedTypes = normalizeTypes(request == null ? null : request.types());
+        List<FundamentalModelRegion> appliedRegions = normalizeRegions(request == null ? null : request.regions());
+
+        FundamentalModelVolumesSeed seed = volumesSeedStore.getOrDefault(segment, emptyVolumesSeed());
+        boolean allRegionsApplied = appliedRegions.size() == FundamentalModelRegion.values().length;
+        List<FundamentalModelVolumesRes.VolumesRow> filteredRows = seed.rows().stream()
+            .filter(row -> matchesVolumesFilters(row, appliedTypes, appliedRegions, allRegionsApplied))
+            .toList();
+
+        List<FundamentalModelVolumesRes.VolumesColumn> columns = seed.columns();
+        List<FundamentalModelVolumesRes.VolumesRow> rows = filteredRows;
+        if (granularity == FundamentalModelGranularity.YEARLY) {
+            YearlyVolumes yearlyVolumes = aggregateYearly(columns, filteredRows);
+            columns = yearlyVolumes.columns();
+            rows = yearlyVolumes.rows();
+        }
+
+        return new FundamentalModelVolumesRes(
+            caseRecord.caseId(),
+            segment,
+            granularity,
+            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
+            columns,
+            rows
+        );
+    }
+
+    public synchronized FundamentalModelPriceRes getPrice(Long caseId) {
+        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
+        return new FundamentalModelPriceRes(
+            caseRecord.caseId(),
+            priceSeed.chart(),
+            priceSeed.annualTable(),
+            priceSeed.monthlyTable()
+        );
+    }
+
     public synchronized FundamentalModelRunCallbackRes handleCallback(String runId, FundamentalModelRunCallbackReq request) {
-        validateCallbackRequest(runId, request);
+        validateCallbackRequest(request);
 
         FundamentalModelRunMockRecord currentRun = runStore.get(runId);
         if (currentRun == null) {
@@ -219,10 +298,8 @@ public class FundamentalModelCaseMockService {
 
         return new FundamentalModelRunCallbackRes(
             updatedRun.runId(),
-            latestCase.caseId(),
             updatedRun.status(),
-            processedAt,
-            false
+            processedAt
         );
     }
 
@@ -274,6 +351,106 @@ public class FundamentalModelCaseMockService {
                 .orElse(100L);
             caseIdSequence.set(Math.max(100L, maxCaseId));
         }
+    }
+
+    private void loadResultSeedData() {
+        volumesSeedStore = loadVolumesSeedData();
+        priceSeed = loadPriceSeedData();
+        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, priceSeries={}",
+            volumesSeedStore.size(), priceSeed.chart().series().size());
+    }
+
+    private Map<FundamentalModelSegment, FundamentalModelVolumesSeed> loadVolumesSeedData() {
+        ClassPathResource resource = new ClassPathResource(VOLUMES_DATA_RESOURCE);
+        if (!resource.exists()) {
+            return emptyVolumesSeedStore();
+        }
+
+        try (InputStream is = resource.getInputStream()) {
+            JsonNode root = objectMapper.readTree(is);
+            Map<FundamentalModelSegment, FundamentalModelVolumesSeed> seeds = emptyVolumesSeedStore();
+            for (FundamentalModelSegment segment : FundamentalModelSegment.values()) {
+                JsonNode segmentNode = root.path(segment.getCode());
+                if (!segmentNode.isMissingNode() && !segmentNode.isNull()) {
+                    seeds.put(segment, readVolumesSeed(segmentNode));
+                }
+            }
+            return seeds;
+        } catch (IOException | IllegalArgumentException e) {
+            log.error("[Mock] Failed to load fundamental model volumes data", e);
+            return emptyVolumesSeedStore();
+        }
+    }
+
+    private FundamentalModelVolumesSeed readVolumesSeed(JsonNode segmentNode) {
+        List<FundamentalModelVolumesRes.VolumesColumn> columns = objectMapper.convertValue(
+            segmentNode.path("columns"),
+            new TypeReference<>() {
+            }
+        );
+        List<FundamentalModelVolumesRes.VolumesRow> rows = objectMapper.convertValue(
+            segmentNode.path("rows"),
+            new TypeReference<>() {
+            }
+        );
+        return new FundamentalModelVolumesSeed(
+            columns == null ? Collections.emptyList() : List.copyOf(columns),
+            rows == null ? Collections.emptyList() : List.copyOf(rows)
+        );
+    }
+
+    private FundamentalModelPriceSeed loadPriceSeedData() {
+        ClassPathResource resource = new ClassPathResource(PRICE_DATA_RESOURCE);
+        if (!resource.exists()) {
+            return emptyPriceSeed();
+        }
+
+        try (InputStream is = resource.getInputStream()) {
+            JsonNode root = objectMapper.readTree(is);
+            FundamentalModelPriceRes.PriceChart chart = objectMapper.treeToValue(
+                root.path("chart"),
+                FundamentalModelPriceRes.PriceChart.class
+            );
+            FundamentalModelPriceRes.PriceTable annualTable = objectMapper.treeToValue(
+                root.path("annualTable"),
+                FundamentalModelPriceRes.PriceTable.class
+            );
+            FundamentalModelPriceRes.PriceTable monthlyTable = objectMapper.treeToValue(
+                root.path("monthlyTable"),
+                FundamentalModelPriceRes.PriceTable.class
+            );
+            return new FundamentalModelPriceSeed(
+                chart == null ? new FundamentalModelPriceRes.PriceChart(Collections.emptyList()) : chart,
+                annualTable == null ? emptyPriceTable() : annualTable,
+                monthlyTable == null ? emptyPriceTable() : monthlyTable
+            );
+        } catch (IOException | IllegalArgumentException e) {
+            log.error("[Mock] Failed to load fundamental model price data", e);
+            return emptyPriceSeed();
+        }
+    }
+
+    private Map<FundamentalModelSegment, FundamentalModelVolumesSeed> emptyVolumesSeedStore() {
+        Map<FundamentalModelSegment, FundamentalModelVolumesSeed> seeds = new EnumMap<>(FundamentalModelSegment.class);
+        Arrays.stream(FundamentalModelSegment.values())
+            .forEach(segment -> seeds.put(segment, emptyVolumesSeed()));
+        return seeds;
+    }
+
+    private FundamentalModelVolumesSeed emptyVolumesSeed() {
+        return new FundamentalModelVolumesSeed(Collections.emptyList(), Collections.emptyList());
+    }
+
+    private FundamentalModelPriceSeed emptyPriceSeed() {
+        return new FundamentalModelPriceSeed(
+            new FundamentalModelPriceRes.PriceChart(Collections.emptyList()),
+            emptyPriceTable(),
+            emptyPriceTable()
+        );
+    }
+
+    private FundamentalModelPriceRes.PriceTable emptyPriceTable() {
+        return new FundamentalModelPriceRes.PriceTable(Collections.emptyList(), Collections.emptyList());
     }
 
     private List<FundamentalModelCaseMockRecord> readCases(JsonNode casesNode) {
@@ -403,13 +580,94 @@ public class FundamentalModelCaseMockService {
         }
     }
 
-    private void validateCallbackRequest(String pathRunId, FundamentalModelRunCallbackReq request) {
-        if (!pathRunId.equals(request.runId())) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "path runId와 body runId가 일치해야 합니다.");
-        }
+    private void validateCallbackRequest(FundamentalModelRunCallbackReq request) {
         if (!request.status().isTerminal()) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "callback status는 COMPLETED 또는 FAILED 여야 합니다.");
         }
+    }
+
+    private FundamentalModelSegment validateSegment(FundamentalModelVolumesReq request) {
+        if (request == null || request.segment() == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "segment는 필수입니다.");
+        }
+        return request.segment();
+    }
+
+    private List<FundamentalModelDataType> normalizeTypes(List<FundamentalModelDataType> types) {
+        if (types == null || types.isEmpty()) {
+            return List.of(FundamentalModelDataType.values());
+        }
+        return List.copyOf(types);
+    }
+
+    private List<FundamentalModelRegion> normalizeRegions(List<FundamentalModelRegion> regions) {
+        if (regions == null || regions.isEmpty()) {
+            return List.of(FundamentalModelRegion.values());
+        }
+        return List.copyOf(regions);
+    }
+
+    private boolean matchesVolumesFilters(
+        FundamentalModelVolumesRes.VolumesRow row,
+        List<FundamentalModelDataType> appliedTypes,
+        List<FundamentalModelRegion> appliedRegions,
+        boolean allRegionsApplied
+    ) {
+        if (row.type() != null && !appliedTypes.contains(row.type())) {
+            return false;
+        }
+        if (row.type() == null && appliedTypes.size() != FundamentalModelDataType.values().length) {
+            return false;
+        }
+        if (row.region() == null) {
+            return allRegionsApplied;
+        }
+        return appliedRegions.contains(row.region());
+    }
+
+    private YearlyVolumes aggregateYearly(
+        List<FundamentalModelVolumesRes.VolumesColumn> monthlyColumns,
+        List<FundamentalModelVolumesRes.VolumesRow> monthlyRows
+    ) {
+        Map<Integer, List<Integer>> indexesByYear = new LinkedHashMap<>();
+        for (int index = 0; index < monthlyColumns.size(); index++) {
+            Integer year = monthlyColumns.get(index).year();
+            if (year != null) {
+                indexesByYear.computeIfAbsent(year, ignored -> new ArrayList<>()).add(index);
+            }
+        }
+
+        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns = indexesByYear.keySet().stream()
+            .map(year -> new FundamentalModelVolumesRes.VolumesColumn(year, null, String.valueOf(year)))
+            .toList();
+        List<FundamentalModelVolumesRes.VolumesRow> yearlyRows = monthlyRows.stream()
+            .map(row -> new FundamentalModelVolumesRes.VolumesRow(
+                row.type(),
+                row.region(),
+                row.country(),
+                row.rowKind(),
+                aggregateValuesByYear(row.values(), indexesByYear)
+            ))
+            .toList();
+
+        return new YearlyVolumes(yearlyColumns, yearlyRows);
+    }
+
+    private List<Double> aggregateValuesByYear(List<Double> values, Map<Integer, List<Integer>> indexesByYear) {
+        return indexesByYear.values().stream()
+            .map(indexes -> indexes.stream()
+                .map(index -> valueAt(values, index))
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .sum())
+            .toList();
+    }
+
+    private Double valueAt(List<Double> values, int index) {
+        if (values == null || index >= values.size()) {
+            return null;
+        }
+        return values.get(index);
     }
 
     private FundamentalModelRunCallbackRes handleTerminalCallbackReplay(
@@ -421,10 +679,8 @@ public class FundamentalModelCaseMockService {
         if (isSameTerminalPayload(currentRun, request)) {
             return new FundamentalModelRunCallbackRes(
                 currentRun.runId(),
-                currentCase.caseId(),
                 currentRun.status(),
-                processedAt,
-                true
+                processedAt
             );
         }
 
@@ -434,10 +690,8 @@ public class FundamentalModelCaseMockService {
                 currentRun.runId(), currentRun.caseId());
             return new FundamentalModelRunCallbackRes(
                 currentRun.runId(),
-                currentCase.caseId(),
                 currentRun.status(),
-                processedAt,
-                false
+                processedAt
             );
         }
 
@@ -461,6 +715,26 @@ public class FundamentalModelCaseMockService {
                 HttpStatus.NOT_FOUND,
                 ResultCode.Error.RSC_NOT_FOUND,
                 "Fundamental model case를 찾을 수 없습니다."
+            );
+        }
+        return record;
+    }
+
+    private FundamentalModelCaseMockRecord getResultReadyCaseRecord(Long caseId) {
+        FundamentalModelCaseMockRecord record = getCaseRecord(caseId);
+        if (record.status() == FundamentalModelCaseStatus.PENDING
+            || record.status() == FundamentalModelCaseStatus.RUNNING) {
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "Fundamental model result is not ready."
+            );
+        }
+        if (record.status() == FundamentalModelCaseStatus.FAILED) {
+            throw AppHttpStatusException.of(
+                HttpStatus.NOT_FOUND,
+                ResultCode.Error.RSC_NOT_FOUND,
+                "Fundamental model result를 찾을 수 없습니다."
             );
         }
         return record;
@@ -575,9 +849,55 @@ public class FundamentalModelCaseMockService {
         };
     }
 
+    private FundamentalModelJobArgs buildJobArgs(FundamentalModelCaseMockRecord caseRecord, String runId, long runSeq) {
+        String callbackUrl = serverDomain + CALLBACK_PATH_TEMPLATE.formatted(runId);
+        return FundamentalModelJobArgs.builder()
+            .runId(runId)
+            .runSeq(runSeq)
+            .demandExcelPath(findFileMockPath(caseRecord.files(), "DEMAND"))
+            .supplyExcelPath(findFileMockPath(caseRecord.files(), "SUPPLY"))
+            .tradeExcelPath(findFileMockPath(caseRecord.files(), "TRADE"))
+            .callbackUrl(callbackUrl)
+            .build();
+    }
+
+    private String findFileMockPath(List<FundamentalModelFileMockRecord> files, String keyword) {
+        return files.stream()
+            .filter(f -> f.originalFileName() != null
+                && f.originalFileName().toUpperCase(Locale.ROOT).contains(keyword))
+            .findFirst()
+            .map(f -> "mock-storage://" + f.mockFileId())
+            .orElse(null);
+    }
+
     private String buildStatusEndpoint(Long caseId) {
         return "/api/v1/mi/fundamental-model/cases/%d/status"
             .formatted(caseId);
+    }
+
+    private String generateRunId(LocalDateTime requestedAt) {
+        String uuid = UUID.randomUUID().toString();
+        String suffix = uuid.substring(uuid.length() - 4).toUpperCase(Locale.ROOT);
+        return "%s_%s".formatted(RUN_ID_TIMESTAMP_FORMATTER.format(requestedAt), suffix);
+    }
+
+    private record FundamentalModelVolumesSeed(
+        List<FundamentalModelVolumesRes.VolumesColumn> columns,
+        List<FundamentalModelVolumesRes.VolumesRow> rows
+    ) {
+    }
+
+    private record FundamentalModelPriceSeed(
+        FundamentalModelPriceRes.PriceChart chart,
+        FundamentalModelPriceRes.PriceTable annualTable,
+        FundamentalModelPriceRes.PriceTable monthlyTable
+    ) {
+    }
+
+    private record YearlyVolumes(
+        List<FundamentalModelVolumesRes.VolumesColumn> columns,
+        List<FundamentalModelVolumesRes.VolumesRow> rows
+    ) {
     }
 
     private record FundamentalModelCaseMockRecord(

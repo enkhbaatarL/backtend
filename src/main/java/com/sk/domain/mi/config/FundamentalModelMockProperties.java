@@ -29,6 +29,8 @@ public class FundamentalModelMockProperties {
             private boolean delete = true;
             private boolean run = true;
             private boolean getStatus = true;
+            private boolean getVolumes = true;
+            private boolean getPrice = true;
             private boolean reset = true;
         }
     }
