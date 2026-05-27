@@ -356,8 +356,8 @@ public class FundamentalModelCaseMockService {
     private void loadResultSeedData() {
         volumesSeedStore = loadVolumesSeedData();
         priceSeed = loadPriceSeedData();
-        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, priceSeries={}",
-            volumesSeedStore.size(), priceSeed.chart().series().size());
+        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, priceSeriesSets={}",
+            volumesSeedStore.size(), priceSeed.chart().seriesSets().size());
     }
 
     private Map<FundamentalModelSegment, FundamentalModelVolumesSeed> loadVolumesSeedData() {

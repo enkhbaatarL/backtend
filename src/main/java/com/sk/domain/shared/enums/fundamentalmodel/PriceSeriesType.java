@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 public enum PriceSeriesType {
 
     BASE_CASE("BASE_CASE", "Base case price"),
-    LAST_ADJUSTED("LAST_ADJUSTED", "Last adjusted price");
+    USER_ADJUSTED("USER_ADJUSTED", "User adjusted price");
 
     @JsonValue
     private final String code;
