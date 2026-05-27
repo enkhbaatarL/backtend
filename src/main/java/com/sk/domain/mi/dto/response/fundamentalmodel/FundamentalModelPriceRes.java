@@ -23,6 +23,17 @@ public record FundamentalModelPriceRes(
 
     public record PriceChart(
 
+        @ArraySchema(schema = @Schema(implementation = PriceChartSeriesSet.class))
+        List<PriceChartSeriesSet> seriesSets
+
+    ) {
+    }
+
+    public record PriceChartSeriesSet(
+
+        @Schema(description = "가격 지역 구분", example = "East Asia Spot")
+        String priceRegion,
+
         @ArraySchema(schema = @Schema(implementation = PriceChartSeries.class))
         List<PriceChartSeries> series
 
@@ -70,25 +81,31 @@ public record FundamentalModelPriceRes(
 
     public record PriceColumn(
 
-        @Schema(description = "연도", example = "2026")
-        Integer year,
+        @Schema(description = "컬럼 키", example = "year")
+        String key,
 
-        @Schema(description = "월. annualTable에서는 null입니다.", example = "1")
-        Integer month,
-
-        @Schema(description = "표시 라벨. annualTable에서는 null입니다.", example = "2026-1")
-        String periodLabel
+        @Schema(description = "컬럼 표시 이름", example = "Year")
+        String label
 
     ) {
     }
 
     public record PriceRow(
 
-        @Schema(description = "행 이름", example = "JKM Spot")
-        String label,
+        @Schema(description = "연도", example = "2023")
+        Integer year,
 
-        @ArraySchema(schema = @Schema(description = "columns 순서와 1:1 대응하는 수치", example = "8.51"))
-        List<Double> values
+        @Schema(description = "월. annualTable에서는 null입니다.", example = "10")
+        Integer month,
+
+        @Schema(description = "가격 지역", example = "East Asia Spot")
+        String priceRegion,
+
+        @Schema(description = "기준 가격 (US$/mmbtu)", example = "15.71")
+        Double baseCasePrice,
+
+        @Schema(description = "사용자 조정 가격 (US$/mmbtu)", example = "15.71")
+        Double userAdjustedPrice
 
     ) {
     }
