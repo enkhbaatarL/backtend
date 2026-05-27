@@ -18,9 +18,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sk.common.enums.ResultCode;
@@ -110,11 +113,18 @@ public class AdminGoodsDataService {
     * @param goodsNo 상품 번호
     * @return PaginationRes<GoodsDataRes>
     */
-    public PaginationRes<GoodsDataRes> getAllGoodsData(int companyNo, Role role, int page, int size, String keyword, int providerNo, int goodsNo) {
+    public PaginationRes<GoodsDataRes> getAllGoodsData(int companyNo, Role role, int page, int size, String keyword,
+        String sortDirection, String sortProperty, int providerNo, int goodsNo) {
 
-        Pageable pageable = PageRequest.of(page - 1, size);
-
-        return PaginationRes.toRes(goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(providerNo, goodsNo, keyword, pageable));
+        Pageable pageable = null;
+        if (StringUtils.hasText(sortDirection) && StringUtils.hasText(sortProperty)) {
+            pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.fromString(sortDirection), "gd."+sortProperty));
+        }else{
+            pageable = PageRequest.of(page - 1, size, Sort.by(Direction.ASC, "gd.goodsDataNm"));
+        }
+      return PaginationRes.toRes(
+          goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(
+              providerNo, goodsNo, keyword, pageable));
     }
 
     /**

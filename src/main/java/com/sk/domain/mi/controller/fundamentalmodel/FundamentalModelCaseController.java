@@ -8,16 +8,22 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -85,9 +91,9 @@ public class FundamentalModelCaseController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public ResponseEntity<BaseResponse<FundamentalModelCaseCreateRes>> createCase(
-        @Parameter(description = "Scenario Case 제목", example = "JKM price upside case") @RequestPart("title") String title,
+        @Parameter(description = "Scenario Case 제목", example = "JKM price upside case") @RequestParam("title") String title,
         @Parameter(description = "Scenario Case 설명", example = "May demand shock scenario case")
-        @RequestPart(value = "description", required = false) String description,
+        @RequestParam(value = "description", required = false) String description,
         @Parameter(description = "모델 실행 입력 파일 3개") @RequestPart("files") List<MultipartFile> files
     ) {
         FundamentalModelCaseCreateRes response = fundamentalModelCaseService.createCase(
@@ -163,10 +169,9 @@ public class FundamentalModelCaseController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
     )
     public ResponseEntity<BaseResponse<FundamentalModelRunAcceptRes>> runCase(
-        @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId,
-        @Valid @RequestBody(required = false) FundamentalModelRunReq request
+        @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId
     ) {
-        FundamentalModelRunAcceptRes response = fundamentalModelCaseService.runCase(caseId, request);
+        FundamentalModelRunAcceptRes response = fundamentalModelCaseService.runCase(caseId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(BaseResponseFactory.create(response));
     }
 
@@ -188,6 +193,50 @@ public class FundamentalModelCaseController {
     }
 
     @ApiOrder(8)
+    @Operation(
+        summary = "MI Fundamental Model Volumes 데이터 조회 API",
+        description = "COMPLETED 상태의 case에 대해 segment/type/region/granularity 필터가 적용된 Volumes mock 데이터를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{caseId}/volumes")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<FundamentalModelVolumesRes> getVolumes(
+        @Parameter(description = "Scenario Case ID", example = "106") @PathVariable Long caseId,
+        @Parameter(description = "조회 segment", required = true, example = "GLOBAL") @RequestParam FundamentalModelSegment segment,
+        @Parameter(description = "데이터 타입 필터. 미전달 시 전체입니다.", example = "DEMAND,PRODUCTION")
+        @RequestParam(required = false) List<FundamentalModelDataType> types,
+        @Parameter(description = "지역 필터. 미전달 시 전체입니다.", example = "ASIA,EUROPE")
+        @RequestParam(required = false) List<FundamentalModelRegion> regions,
+        @Parameter(description = "시간 단위. 미전달 시 MONTHLY입니다.", example = "MONTHLY")
+        @RequestParam(required = false) FundamentalModelGranularity granularity
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumes(
+            caseId,
+            new FundamentalModelVolumesReq(segment, types, regions, granularity)
+        ));
+    }
+
+    @ApiOrder(9)
+    @Operation(
+        summary = "MI Fundamental Model Price 데이터 조회 API",
+        description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable mock 데이터를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{caseId}/price")
+    @RequiredPermission(
+        roles = {Role.ADMIN, Role.USER},
+        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
+    )
+    public BaseResponse<FundamentalModelPriceRes> getPrice(
+        @Parameter(description = "Scenario Case ID", example = "106") @PathVariable Long caseId
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getPrice(caseId));
+    }
+
+    @ApiOrder(10)
     @Operation(
         summary = "[mockapi 전용] MI Fundamental Model Scenario Case 데이터 초기화 API",
         description = "설정 flag가 활성화된 경우 mock case/run 데이터를 초기화합니다."

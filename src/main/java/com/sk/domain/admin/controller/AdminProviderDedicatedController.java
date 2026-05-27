@@ -58,7 +58,7 @@ public class AdminProviderDedicatedController {
 
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList(
             "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
-            "xltx", "pptx", "eml");
+            "xltx", "pptx", "eml", "md");
 
 
     @ApiOrder(14)
@@ -66,6 +66,8 @@ public class AdminProviderDedicatedController {
         @Parameter(name = "page", description = "페이지 번호 (기본값: 1)"),
         @Parameter(name = "size", description = "페이지당 항목 수 (기본값: 20)"),
         @Parameter(name = "keyword", description = "데이타명 또는 데이타설명 검색"),
+        @Parameter(name = "sortDirection", description = "데이터 정렬 방향"),
+        @Parameter(name = "sortProperty", description = "데이타 정렬 조건"),
         @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
         @Parameter(name = "goodsNo", description = "상품번호")
     })
@@ -77,13 +79,16 @@ public class AdminProviderDedicatedController {
         @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
         @RequestParam(value = "size", required = false, defaultValue = "20") @Min(value = 1) int size,
         @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+        @RequestParam(value = "sortDirection", required = false) String sortDirection,
+        @RequestParam(value = "sortProperty", required = false) String sortProperty,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
         @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
 
-        return BaseResponseFactory.create(goodsDataService.getAllGoodsData(companyNo, role, page, size, keyword, providerNo, goodsNo));
+        return BaseResponseFactory.create(goodsDataService.getAllGoodsData(companyNo, role, page, size,
+            keyword, sortDirection, sortProperty, providerNo, goodsNo));
     }
 
 

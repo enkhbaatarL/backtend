@@ -1,0 +1,45 @@
+{
+  "chart": {
+    "series": [
+      {
+        "seriesType": "BASE_CASE",
+        "label": "Base case price",
+        "points": [
+          { "year": 2026, "month": 1, "value": 8.51 },
+          { "year": 2026, "month": 2, "value": 8.63 },
+          { "year": 2027, "month": 1, "value": 8.72 }
+        ]
+      },
+      {
+        "seriesType": "LAST_ADJUSTED",
+        "label": "Last adjusted price",
+        "points": [
+          { "year": 2026, "month": 1, "value": 9.02 },
+          { "year": 2026, "month": 2, "value": 9.11 },
+          { "year": 2027, "month": 1, "value": 9.20 }
+        ]
+      }
+    ]
+  },
+  "annualTable": {
+    "columns": [
+      { "year": 2026, "month": null, "periodLabel": null },
+      { "year": 2027, "month": null, "periodLabel": null }
+    ],
+    "rows": [
+      { "label": "JKM Spot", "values": [8.57, 8.72] },
+      { "label": "Last Adjusted JKM", "values": [9.07, 9.20] }
+    ]
+  },
+  "monthlyTable": {
+    "columns": [
+      { "year": 2026, "month": 1, "periodLabel": "2026-1" },
+      { "year": 2026, "month": 2, "periodLabel": "2026-2" },
+      { "year": 2027, "month": 1, "periodLabel": "2027-1" }
+    ],
+    "rows": [
+      { "label": "JKM Spot", "values": [8.51, 8.63, 8.72] },
+      { "label": "Last Adjusted JKM", "values": [9.02, 9.11, 9.20] }
+    ]
+  }
+}
