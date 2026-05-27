@@ -1,6 +1,7 @@
 package com.sk.domain.admin.dto.response.provider;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
 
 // @formatter:off
 public record GoodsDataRes(
@@ -15,7 +16,8 @@ public record GoodsDataRes(
 
         @Schema(description = "상품데이터설명", example = "")
         String goodsDataExpn,
+
         @Schema(description = "상품데이터 발행날짜", example = "")
-        String publishedDate) {
+        LocalDate publishedDate) {
 }
 // @formatter:on
