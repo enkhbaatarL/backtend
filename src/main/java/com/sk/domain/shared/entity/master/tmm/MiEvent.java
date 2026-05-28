@@ -40,17 +40,17 @@ public class MiEvent extends BaseEntity {
     @Comment("이벤트 제목")
     private String eventTitle;
 
-    @Column(name = "one_line_summary", length = 300)
+    @Column(name = "one_line_summary", length = 300, nullable = false)
     @Comment("한줄 요약")
     private String oneLineSummary;
 
-    @Column(name = "key_bullets_json", columnDefinition = "json")
+    @Column(name = "key_bullets_json", columnDefinition = "json", nullable = false)
     @Comment("핵심 bullet 목록 JSON")
     private String keyBulletsJson;
 
-    @Column(name = "event_summary", columnDefinition = "longtext", nullable = false)
+    @Column(name = "detail_analysis", columnDefinition = "longtext", nullable = false)
     @Comment("이벤트 상세 분석 본문")
-    private String eventSummary;
+    private String detailAnalysis;
 
     @Column(name = "market_and_institution_view", columnDefinition = "longtext")
     @Comment("시장 반응 및 기관 전망")
@@ -65,10 +65,6 @@ public class MiEvent extends BaseEntity {
     @Comment("이벤트 유형 L2 FK")
     private MiEventTypeL2 eventTypeL2;
 
-    @Column(name = "mi_event_status_code", length = 50)
-    @Comment("이벤트 상태 코드 (rumored, expected, announced, in_progress, occurred, confirmed, resolved, cancelled)")
-    private String miEventStatusCode;
-
     @Column(name = "estimated_impact_id", length = 100)
     @Comment("Impact ID")
     private String estimatedImpactId;
@@ -77,48 +73,56 @@ public class MiEvent extends BaseEntity {
     @Comment("이벤트 실제 발생 일시")
     private LocalDateTime occurredAt;
 
-    @Column(name = "probability", precision = 5, scale = 4, nullable = false)
-    @Comment("이벤트 발생 확률 0.0000 ~ 1.0000")
-    private BigDecimal probability;
-
-    @Column(name = "dedup_state", length = 20, nullable = false)
-    @Comment("중복처리 상태 (canonical, duplicate, merged)")
-    private String dedupState;
-
     @Column(name = "signal_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("신호 여부")
     @Convert(converter = BooleanToYNAttributeConverter.class)
-    private Boolean signalYn;
+    private Boolean isSignal;
 
-    @Column(name = "signal_confidence", precision = 5, scale = 4, nullable = false)
+    @Column(name = "signal_confidence", precision = 5, scale = 4)
     @Comment("신호 신뢰도 0~1")
-    private BigDecimal signalConfidence;
+    private java.math.BigDecimal signalConfidence;
 
-    @Column(name = "signal_reason", length = 500)
+    @Column(name = "signal_reason", length = 100)
     @Comment("신호 판정 근거")
     private String signalReason;
 
+    @Column(name = "scenario_suggest_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("시나리오화 추천 여부")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isScenarioSuggested;
+
+    @Column(name = "scenario_suggest_reason", length = 100)
+    @Comment("시나리오화 추천 근거")
+    private String scenarioSuggestReason;
+
+    @Column(name = "new_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("신규생성 여부 (true: 신규생성, false: 갱신)")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isNew;
+
     @Builder
     public MiEvent(Long miEventId, String eventTitle, String oneLineSummary, String keyBulletsJson,
-            String eventSummary, String marketAndInstitutionView, String tagsJson,
-            MiEventTypeL2 eventTypeL2, String miEventStatusCode, String estimatedImpactId,
-            LocalDateTime occurredAt, BigDecimal probability, String dedupState,
-            Boolean signalYn, BigDecimal signalConfidence, String signalReason) {
+                   String detailAnalysis, String marketAndInstitutionView, String tagsJson,
+                   MiEventTypeL2 eventTypeL2, String estimatedImpactId,
+                   LocalDateTime occurredAt,
+                   Boolean isSignal, BigDecimal signalConfidence, String signalReason,
+                   Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew) {
         this.miEventId = miEventId;
         this.eventTitle = eventTitle;
         this.oneLineSummary = oneLineSummary;
         this.keyBulletsJson = keyBulletsJson;
-        this.eventSummary = eventSummary;
+        this.detailAnalysis = detailAnalysis;
         this.marketAndInstitutionView = marketAndInstitutionView;
         this.tagsJson = tagsJson;
         this.eventTypeL2 = eventTypeL2;
-        this.miEventStatusCode = miEventStatusCode;
         this.estimatedImpactId = estimatedImpactId;
         this.occurredAt = occurredAt;
-        this.probability = probability;
-        this.dedupState = dedupState;
-        this.signalYn = signalYn;
+        this.isSignal = isSignal;
         this.signalConfidence = signalConfidence;
         this.signalReason = signalReason;
+        this.isScenarioSuggested = isScenarioSuggested;
+        this.scenarioSuggestReason = scenarioSuggestReason;
+        this.isNew = isNew;
     }
+
 }

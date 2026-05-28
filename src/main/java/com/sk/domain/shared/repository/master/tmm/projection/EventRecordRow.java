@@ -9,4 +9,5 @@ public interface EventRecordRow {
     String getSummary();
     Integer getGoodsNo();
     String getFileName();
+    Long getSummarySourceId();
 }

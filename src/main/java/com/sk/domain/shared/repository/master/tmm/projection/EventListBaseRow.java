@@ -8,7 +8,10 @@ public record EventListBaseRow(
     String eventTitle,
     String level1Code,
     String level1Label,
-    Boolean signalYn,
+    Boolean isSignal,
+    Boolean isNew,
+    Boolean isScenarioSuggested,
+    String scenarioSuggestReason,
     LocalDateTime createDt,
     LocalDateTime modifyDt
 ) {

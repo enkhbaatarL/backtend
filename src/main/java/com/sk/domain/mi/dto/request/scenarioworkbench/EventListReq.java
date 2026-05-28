@@ -11,7 +11,7 @@ import java.util.List;
 
 public record EventListReq(
 
-    @Schema(description = "이벤트 상태", implementation = ContentStatus.class, defaultValue = "ALL")
+    @Schema(description = "이벤트 상태 (`all` / `new` / `updated`)", implementation = ContentStatus.class, defaultValue = "all")
     ContentStatus eventStatus,
 
     @ArraySchema(schema = @Schema(description = "이벤트 유형 Lv1 ID", example = "1"))
@@ -23,11 +23,14 @@ public record EventListReq(
     @Schema(description = "조회 종료일", example = "2026-02-28")
     LocalDate endDate,
 
-    @Schema(description = "정렬 기준", implementation = SortOrder.class, defaultValue = "LATEST")
+    @Schema(description = "정렬 기준 (`latest` / `oldest`)", implementation = SortOrder.class, defaultValue = "latest")
     SortOrder sort,
 
     @Schema(description = "검색 키워드", example = "호르무즈")
     String keyword,
+
+    @Schema(description = "추천 항목만 보기 (시나리오화 추천 = scenario_suggest_yn=Y)", example = "false", defaultValue = "false")
+    Boolean suggestedOnly,
 
     @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다")
     @Schema(description = "페이지 번호", example = "1", defaultValue = "1")
@@ -44,6 +47,7 @@ public record EventListReq(
         eventTypeL1Id = defaultList(eventTypeL1Id);
         sort = sort == null ? SortOrder.LATEST : sort;
         keyword = keyword == null ? "" : keyword;
+        suggestedOnly = suggestedOnly != null && suggestedOnly;
         page = page == null ? 1 : page;
         size = size == null ? 20 : size;
     }

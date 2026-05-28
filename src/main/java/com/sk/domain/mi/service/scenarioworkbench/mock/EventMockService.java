@@ -110,6 +110,7 @@ public class EventMockService {
         List<EventListItemRes> filtered = eventList.stream()
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.status() == request.eventStatus())
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.signalType() == EventSignalType.SIGNAL)
+            .filter(e -> !request.suggestedOnly() || Boolean.TRUE.equals(e.isScenarioSuggested()))
             .filter(e -> matchesEventTypeFilter(e.eventTypeLv1(), request.eventTypeL1Id()))
             .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
             .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
@@ -150,14 +151,6 @@ public class EventMockService {
 
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         List<EventRelatedRecordRes> records = eventRecordsMap.getOrDefault(eventId, Collections.emptyList());
-        records = records.stream()
-            .map(r->{
-                if(!r.title().contains("Platts LNG Daily")){
-                    return r;
-                }
-                return new EventRelatedRecordRes(r.publishedAt(), r.recordType(), r.title(), r.summary().replace("{\"news_summary\": {", ""), r.goodsNo(), r.fileName());
-            })
-            .toList();
         return paginate(records, page, size);
     }
 

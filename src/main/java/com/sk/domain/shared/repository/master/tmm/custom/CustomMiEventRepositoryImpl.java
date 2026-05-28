@@ -15,9 +15,9 @@ import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL2.miEventTypeL
 import static com.sk.domain.shared.entity.master.tmm.QQualitativeImpact.qualitativeImpact;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.utils.JsonUtil;
@@ -29,6 +29,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,9 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .select(new QEventListBaseRow(
                 miEvent.miEventId, miEvent.eventTitle,
                 miEventTypeL1.level1Code, miEventTypeL1.level1Label,
-                miEvent.signalYn, miEvent.createDt, miEvent.modifyDt
+                miEvent.isSignal, miEvent.isNew,
+                miEvent.isScenarioSuggested, miEvent.scenarioSuggestReason,
+                miEvent.createDt, miEvent.modifyDt
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -95,7 +98,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.eventTitle(),
                 base.level1Code(),
                 base.level1Label(),
-                base.signalYn(),
+                base.isSignal(),
+                base.isNew(),
+                base.isScenarioSuggested(),
+                base.scenarioSuggestReason(),
                 base.createDt(),
                 base.modifyDt(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
@@ -110,6 +116,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         where.and(miEvent.isDeleted.isFalse());
 
         applyStatusFilter(where, request.eventStatus());
+        applySuggestedFilter(where, request.suggestedOnly());
         applyTypeFilter(where, request.eventTypeL1Id());
         applyPeriodFilter(where, request);
         applyKeywordFilter(where, request.keyword());
@@ -117,21 +124,27 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         return where;
     }
 
-    // todo: 변경 가능성 있음. https://skmihq.slack.com/archives/C0AR16F8QQG/p1777365927701349
+    // signal_yn=true 강제 (소음 제외).
     private void applyStatusFilter(BooleanBuilder where, ContentStatus status) {
         switch (status) {
             case NEW -> where
-                .and(miEvent.createDt.eq(miEvent.modifyDt))
+                .and(miEvent.isNew.isTrue())
                 .and(isSignalEvent());
             case UPDATED -> where
-                .and(miEvent.createDt.ne(miEvent.modifyDt))
+                .and(miEvent.isNew.isFalse())
                 .and(isSignalEvent());
             case ALL -> { /* no filter */ }
         }
     }
 
+    private void applySuggestedFilter(BooleanBuilder where, Boolean suggestedOnly) {
+        if (Boolean.TRUE.equals(suggestedOnly)) {
+            where.and(miEvent.isScenarioSuggested.isTrue());
+        }
+    }
+
     private BooleanExpression isSignalEvent() {
-        return miEvent.signalYn.isTrue();
+        return miEvent.isSignal.isTrue();
     }
 
     private void applyTypeFilter(BooleanBuilder where, List<Long> eventTypeL1Ids) {
@@ -170,7 +183,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.createDt, miEvent.modifyDt,
                 miEventTypeL1.level1Code, miEventTypeL1.level1Label,
                 miEventTypeL2.level2Code, miEventTypeL2.level2Label,
-                miEvent.signalYn, miEvent.eventSummary, miEvent.keyBulletsJson
+                miEvent.isSignal, miEvent.isNew, miEvent.detailAnalysis, miEvent.keyBulletsJson
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -189,13 +202,13 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         // 핵심요약 조회 (JSON 컬럼에서 파싱)
         List<String> keyBullets = JsonUtil.parseJsonStringList(base.keyBulletsJson());
 
-        // 영향도 분석 조회 (JKM + TTF + HH 합산)
-        String impactAnalysisText = fetchImpactAnalysisText(base.miEventId());
+        // 영향도 분석 조회 (인덱스별 본문 Map)
+        Map<String, String> indexAnalysisTexts = fetchIndexAnalysisTexts(base.miEventId());
 
         // 출처 조회
         List<String> sources = fetchEventProviderNames(base.miEventId());
 
-        // Driver Tree Scoreboard 조회
+        // Driver Tree Scoreboard 조회 (인덱스 target_id 포함)
         List<DriverTagScoreboardRow> driverTags = fetchDriverTags(base.miEventId());
 
         // todo 연관 시나리오
@@ -209,9 +222,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             base.level1Label(),
             base.level2Code(),
             base.level2Label(),
-            base.signalYn(),
-            base.eventSummary(),
-            impactAnalysisText,
+            base.isSignal(),
+            base.isNew(),
+            base.detailAnalysis(),
+            indexAnalysisTexts,
             indexImpacts,
             keyBullets,
             sources,
@@ -219,18 +233,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         ));
     }
 
-    // note: tmm_impactresultm.impact_assessment_reason을 인덱스별(JKM -> TTF -> HH)로 조회하여 합산.
-    private String fetchImpactAnalysisText(Long eventId) {
-
-        OrderSpecifier<Integer> indexOrder = new CaseBuilder()
-            .when(impactResult.targetId.eq(IndexName.JKM.getCode())).then(1)
-            .when(impactResult.targetId.eq(IndexName.TTF.getCode())).then(2)
-            .when(impactResult.targetId.eq(IndexName.HH.getCode())).then(3)
-            .otherwise(4)
-            .asc();
-
-        List<String> reasons = queryFactory
-            .select(impactResult.impactAssessmentReason)
+    // todo: 스키마 최신버전 오면 수정필요함.
+    private Map<String, String> fetchIndexAnalysisTexts(Long eventId) {
+        List<Tuple> tuples = queryFactory
+            .select(impactResult.targetId, impactResult.impactAssessmentReason)
             .from(impact)
             .innerJoin(impactResult).on(impactResult.impact.eq(impact)
                 .and(impactResult.isDeleted.isFalse()))
@@ -241,10 +247,13 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 impactResult.targetId.in(SUPPORTED_INDEX_CODES),
                 impactResult.impactAssessmentReason.isNotNull()
             )
-            .orderBy(indexOrder)
             .fetch();
 
-        return reasons.isEmpty() ? null : String.join(" ", reasons);
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Tuple t : tuples) {
+            result.put(t.get(impactResult.targetId), t.get(impactResult.impactAssessmentReason));
+        }
+        return result;
     }
 
     // note: 이벤트의 출처(provider name) - record_type 분기 따라 두 경로
@@ -306,6 +315,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     private List<DriverTagScoreboardRow> fetchDriverTags(Long eventId) {
         return queryFactory
             .select(new QDriverTagScoreboardRow(
+                impactResult.targetId,
                 driverTag.lv1Id,
                 driverTag.lv1Label,
                 driverTag.lv2Id,
@@ -321,7 +331,9 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .innerJoin(impactResult.impact, impact).on(impact.isDeleted.isFalse())
             .where(
                 driverTag.isDeleted.isFalse(),
-                impact.miEvent.miEventId.eq(eventId)
+                impact.miEvent.miEventId.eq(eventId),
+                impactResult.targetType.eq(TargetType.PRICE.getCode()),
+                impactResult.targetId.in(SUPPORTED_INDEX_CODES)
             )
             .fetch();
     }

@@ -17,7 +17,7 @@ public record EventAiInsightsRes(
     public static EventAiInsightsRes from(EventDetailRow row) {
         return new EventAiInsightsRes(
             row.keyBullets(),
-            row.eventSummary()
+            row.detailAnalysis()
         );
     }
 

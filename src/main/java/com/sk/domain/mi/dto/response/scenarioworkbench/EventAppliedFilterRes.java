@@ -25,7 +25,10 @@ public record EventAppliedFilterRes(
     SortOrder sort,
 
     @Schema(description = "검색 키워드", example = "호르무즈")
-    String keyword
+    String keyword,
+
+    @Schema(description = "추천 항목만 보기 적용 여부", example = "false")
+    Boolean suggestedOnly
 
 ) {
 
@@ -36,7 +39,8 @@ public record EventAppliedFilterRes(
             request.startDate(),
             request.endDate(),
             request.sort(),
-            request.keyword()
+            request.keyword(),
+            request.suggestedOnly()
         );
     }
 

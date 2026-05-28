@@ -1,7 +1,6 @@
 package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -73,40 +72,45 @@ public class EventController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - eventStatus: 이벤트 상태 / 기본값 ALL / example - eventStatus=NEW, eventStatus=UPDATED
-             - sort: 정렬 기준 / 기본값 LATEST(최신순) / example - sort=LATEST, sort=OLDEST
+             - eventStatus: 이벤트 상태 / 기본값 all / example - eventStatus=new, eventStatus=updated
+             - sort: 정렬 기준 / 기본값 latest(최신순) / example - sort=latest, sort=oldest
              - eventTypeL1Id: 이벤트 유형 Lv1 ID 필터 (복수 가능) / example - eventTypeL1Id=1&eventTypeL1Id=2
-             - period: 조회 기간 / 기본값 SIX_MONTHS / example - period=THREE_MONTHS, period=CUSTOM
-             - startDate: 커스텀 조회 시작일 (period=CUSTOM 시 필수) / example - startDate=2025-09-01
-             - endDate: 커스텀 조회 종료일 (period=CUSTOM 시 필수) / example - endDate=2026-02-28
+             - startDate: 커스텀 조회 시작일 / example - startDate=2025-09-01
+             - endDate: 커스텀 조회 종료일 / example - endDate=2026-02-28
              - keyword: 이벤트 제목 검색 키워드 / example - keyword=호르무즈
              - page: 기본값 1 / 1-based
              - size: 기본값 20
 
             <br><br>
             ### 이벤트 상태 (eventStatus)
-            - `ALL`: 전체 이벤트
-            - `NEW`: 신규 이벤트 (crt_dtm == mod_dtm, 생성 후 갱신 없음, 소음 제외)
-            - `UPDATED`: 갱신 이벤트 (crt_dtm != mod_dtm, 1회 이상 갱신됨, 소음 제외)
+            - `all`: 전체 이벤트
+            - `new`: 신규 이벤트
+            - `updated`: 갱신 이벤트
 
             <br><br>
-            ### events.content 항목 필드
+            ### events.detail 항목 필드
             - `eventId`: 이벤트 고유 식별자
             - `eventName`: 이벤트명
-            - `eventTypeLv1`: 이벤트 유형 Lv1
-            - `createdAt`: 생성일시 (crt_dtm)
-            - `updatedAt`: 수정일시 (mod_dtm)
-            - `indexImpacts`: 인덱스별 영향도
+            - `eventTypeLv1` / `eventTypeLv1Label`: 이벤트 유형 Lv1 코드/라벨
+            - `createdAt`: 생성일시
+            - `updatedAt`: 수정일시
+            - `status` / `statusLabel`: 신규(`new`) / 갱신(`updated`)
+            - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
+            - `isScenarioSuggested`: 시나리오화 추천 여부
+            - `scenarioSuggestReason`: 시나리오화 추천 근거
+            - `indexImpacts`: 인덱스별 영향도 (JKM, TTF, HH)
+              - `indexName` / `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` / `impactTerm` / `impactTermLabel`
+              - `impactTerm`: `short` 단기 / `mid_long` 중장기
             """
     )
-    @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
+    @Parameter(name = "eventStatus", description = "이벤트 상태 (`all` / `new` / `updated`, 대소문자 무관). 기본값 `all`")
     @Parameter(name = "eventTypeL1Id", description = "이벤트 유형 Lv1 ID. 복수 선택 가능")
-    @Parameter(name = "period", description = "조회 기간. 기본값 SIX_MONTHS")
-    @Parameter(name = "startDate", description = "커스텀 조회 시작일. period=CUSTOM 시 사용")
-    @Parameter(name = "endDate", description = "커스텀 조회 종료일. period=CUSTOM 시 사용")
-    @Parameter(name = "sort", description = "정렬 기준. 기본값 LATEST")
-    @Parameter(name = "keyword", description = "검색 키워드")
-    @Parameter(name = "page", description = "페이지 번호. 기본값 1")
+    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd)")
+    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd)")
+    @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
+    @Parameter(name = "keyword", description = "이벤트 제목 검색 키워드")
+    @Parameter(name = "suggestedOnly", description = "추천 항목만 보기. 기본값 false")
+    @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
@@ -123,23 +127,40 @@ public class EventController {
         summary = "Event 상세 조회 API",
         description = """
             Event 상세 페이지의 핵심 데이터를 조회합니다. <br>
-            `영향도 분석`, `AI Insights` 정보가 포함됩니다. <br>
-            (Records와 기관 전망은 별도 페이징 API를 사용함.) <br>
-            (Fundamental Deep-dive는 관련 테이블 미준비 상태로 현재 `null` 반환)
+
+            <br><br>
+            ### 상위(top-level) 필드
+            - `eventId`, `eventName`
+            - `status` / `statusLabel`: 신규(`new`) / 갱신(`updated`)
+            - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
+            - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
+            - `createdAt`, `updatedAt`
 
             <br><br>
             ### impactAnalysis 필드
             이벤트가 LNG 시장 주요 인덱스(JKM, TTF, Henry Hub)에 미치는 영향을 분석한 결과입니다.
-            - `indexImpacts`: 인덱스별 영향도 요약 (indexName, marketImpactLevel, direction)
-            - `analysisText`: AI가 생성한 영향도 분석 본문
+            - `indexImpacts`: 인덱스별 영향도 (`indexName`, `shortTerm`, `midLongTerm`, `analysisText`)
+              - `shortTerm` / `midLongTerm`: `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` 묶음.
+              - `analysisText`: 해당 인덱스에 대한 영향 분석 본문 (`tmm_impactresultm.impact_assessment_reason`)
+            - `analysisText`: 전체 인덱스 종합 분석
             - `eventTypeLv1` / `eventTypeLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
-            - `sources`: 분석에 사용된 출처(provider) 목록 (이벤트의 record들이 인용하는 NEWS/REPORT publisher명)
+            - `sources`: 분석에 사용된 출처(provider) 목록
 
             <br><br>
             ### aiInsights 필드
             AI 에이전트가 생성한 이벤트 핵심 요약 및 상세 분석입니다.
-            - `keySummaries`: 핵심 요약 포인트
+            - `keySummaries`: 핵심 요약 포인트 목록
             - `detailedAnalysis`: 상세 분석 본문
+
+            <br><br>
+            ### driverTreeScoreboard 필드
+            인덱스(JKM/TTF/HH)별로 driver 묶음을 분리해 표시합니다.
+            - 각 항목: `indexName`, `drivers[]`
+            - `drivers[]`: `lv1Id/lv1Label`, `lv2Id/lv2Label`, `lv3Id/lv3Label`, `shortTerm`, `midLongTerm`, `reason`
+
+            <br><br>
+            ### relatedEventScenario 필드
+            관련 테이블 미준비 상태로 현재 `null` 반환.
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -169,9 +190,10 @@ public class EventController {
             <br><br>
             ### content 항목 필드
             - `publishedAt`: Record 발행 일시
+            - `recordType`: Record 종류 (NEWS, REPORT 등)
             - `title`: Record 제목
             - `summary`: Record 요약 (1~2줄)
-            - `source`: 출처 (Reuters, Platts, Bloomberg 등)
+            - `summarySourceId`: 요약 원문 식별자 PK
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

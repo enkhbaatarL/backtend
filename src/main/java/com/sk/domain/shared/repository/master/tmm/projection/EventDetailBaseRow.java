@@ -12,8 +12,9 @@ public record EventDetailBaseRow(
     String level1Label,
     String level2Code,
     String level2Label,
-    Boolean signalYn,
-    String eventSummary,
+    Boolean isSignal,
+    Boolean isNew,
+    String detailAnalysis,
     String keyBulletsJson
 ) {
 

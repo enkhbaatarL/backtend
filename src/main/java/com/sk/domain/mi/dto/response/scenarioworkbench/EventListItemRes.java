@@ -15,7 +15,7 @@ public record EventListItemRes(
     @Schema(description = "이벤트명", example = "호르무즈 해협 긴장 재확대")
     String eventName,
 
-    @Schema(description = "상태 (NEW / UPDATED)", example = "NEW")
+    @Schema(description = "상태 (new / updated)", example = "new")
     ContentStatus status,
 
     @Schema(description = "상태 라벨", example = "신규")
@@ -39,14 +39,20 @@ public record EventListItemRes(
     @Schema(description = "신호/소음 라벨", example = "신호")
     String signalTypeLabel,
 
+    @Schema(description = "시나리오화 추천 여부", example = "true")
+    Boolean isScenarioSuggested,
+
+    @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
+    String scenarioSuggestReason,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventImpactIndexRes> indexImpacts
 
 ) {
 
     public static EventListItemRes from(EventListRow row) {
-        ContentStatus status = row.createDt().equals(row.modifyDt()) ? ContentStatus.NEW : ContentStatus.UPDATED;
-        EventSignalType signalType = Boolean.TRUE.equals(row.signalYn()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
+        ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
+        EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
 
         return new EventListItemRes(
             row.miEventId(),
@@ -59,6 +65,8 @@ public record EventListItemRes(
             row.modifyDt(),
             signalType,
             signalType.getLabel(),
+            Boolean.TRUE.equals(row.isScenarioSuggested()),
+            row.scenarioSuggestReason(),
             row.indexImpacts().stream().map(EventImpactIndexRes::from).toList()
         );
     }
