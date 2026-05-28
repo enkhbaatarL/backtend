@@ -82,7 +82,7 @@ public class SwaggerConfig {
     }
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v0.5.1";
+    private static final String SW_VERSION_BASE = "v1.0.0";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -149,6 +149,24 @@ public class SwaggerConfig {
   ## 수정사항
 
   <details open>
+  <summary><strong>v1.0.0 (2026-05-28)</strong></summary>
+
+  - [이벤트 목록]
+    - 조회 파라미터 `suggestedOnly` 추가 (시나리오화 추천 항목만 보기 토글)
+    - `isScenarioSuggested` 필드 추가 (시나리오화 추천 여부)
+    - `scenarioSuggestReason` 필드 추가 (시나리오화 추천 근거. 추천 아님일 때 null)
+    - `indexImpacts[]`에 `impactTerm` / `impactTermLabel` 추가 (영향 시점: 단기 `short` / 중장기 `mid_long`)
+  - [이벤트 상세]
+    - `impactAnalysis.indexImpacts[]` 구조 변경: 인덱스별 `shortTerm` / `midLongTerm` (단기·중장기) 슬롯 + `analysisText` (인덱스별 분석 본문)
+    - `driverTreeScoreboard` 구조 변경: 인덱스(JKM/TTF/HH)별 그룹(`indexName` + `drivers[]`)으로 묶고, 각 driver에 `shortTerm` / `midLongTerm` 슬롯 포함
+    - `fundamentalDeepdive` 필드 제거
+    - `relatedEventScenario` 현재 항상 null 반환 (관련 테이블 미준비)
+  - [이벤트 관련 레코드]
+    - `summarySourceId` 필드 추가 (요약 원문 식별자 PK)
+
+  </details>
+
+  <details>
   <summary><strong>v0.5.10 (2026-05-22)</strong></summary>
 
   - [Fundamental Model]

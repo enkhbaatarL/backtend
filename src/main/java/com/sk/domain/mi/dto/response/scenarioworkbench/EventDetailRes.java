@@ -26,18 +26,6 @@ public record EventDetailRes(
     @Schema(description = "상태 라벨", example = "신규")
     String statusLabel,
 
-    @Schema(description = "이벤트 유형 Lv1 코드 (헤더용)", example = "geopolitical_risk")
-    String eventTypeLv1,
-
-    @Schema(description = "이벤트 유형 Lv1 라벨 (헤더용)", example = "지정학적 리스크")
-    String eventTypeLv1Label,
-
-    @Schema(description = "이벤트 유형 Lv2 코드 (헤더용)", example = "war_military_conflict")
-    String eventTypeLv2,
-
-    @Schema(description = "이벤트 유형 Lv2 라벨 (헤더용)", example = "전쟁 / 군사 분쟁")
-    String eventTypeLv2Label,
-
     @Schema(description = "생성일시")
     LocalDateTime createdAt,
 
@@ -74,10 +62,6 @@ public record EventDetailRes(
             row.eventTitle(),
             status,
             status.getLabel(),
-            row.level1Code(),
-            row.level1Label(),
-            row.level2Code(),
-            row.level2Label(),
             row.createDt(),
             row.modifyDt(),
             signalType,

@@ -178,10 +178,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "geopolitical_risk",
-              "eventTypeLv1Label":  "지정학적 리스크",
-              "eventTypeLv2":  "war_military_conflict",
-              "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
               "relatedEventScenario":  null
           },
     "2":  {
@@ -364,10 +360,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "logistics_shipping",
-              "eventTypeLv1Label":  "물류 / 해운",
-              "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-              "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
               "relatedEventScenario":  null
           },
     "3":  {
@@ -529,10 +521,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "supply_demand_balance",
-              "eventTypeLv1Label":  "수급 밸런스",
-              "eventTypeLv2":  "regional_demand_competition",
-              "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
               "relatedEventScenario":  null
           },
     "4":  {
@@ -694,10 +682,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "supply_demand_balance",
-              "eventTypeLv1Label":  "수급 밸런스",
-              "eventTypeLv2":  "inventory_storage_level",
-              "eventTypeLv2Label":  "재고 / 저장 수준",
               "relatedEventScenario":  null
           },
     "5":  {
@@ -859,10 +843,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "market_trading_structure",
-              "eventTypeLv1Label":  "시장 / 거래 구조",
-              "eventTypeLv2":  "inter_index_spread_gap",
-              "eventTypeLv2Label":  "인덱스별 스프레드 Gap",
               "relatedEventScenario":  null
           },
     "6":  {
@@ -1024,10 +1004,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "supply_demand_balance",
-              "eventTypeLv1Label":  "수급 밸런스",
-              "eventTypeLv2":  "inventory_storage_level",
-              "eventTypeLv2Label":  "재고 / 저장 수준",
               "relatedEventScenario":  null
           },
     "7":  {
@@ -1210,10 +1186,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "infrastructure_facility",
-              "eventTypeLv1Label":  "인프라 / 설비",
-              "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-              "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
               "relatedEventScenario":  null
           },
     "8":  {
@@ -1396,10 +1368,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "infrastructure_facility",
-              "eventTypeLv1Label":  "인프라 / 설비",
-              "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-              "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
               "relatedEventScenario":  null
           },
     "9":  {
@@ -1535,10 +1503,6 @@
                                        ],
               "status":  "new",
               "statusLabel":  "신규",
-              "eventTypeLv1":  "infrastructure_facility",
-              "eventTypeLv1Label":  "인프라 / 설비",
-              "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-              "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
               "relatedEventScenario":  null
           },
     "10":  {
@@ -1674,10 +1638,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "power_plant_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "발전소 (원전, 화력) 설비 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "11":  {
@@ -1813,10 +1773,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "12":  {
@@ -1926,10 +1882,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "ocean_freight_charter_rate_change",
-               "eventTypeLv2Label":  "해상 운임 / 용선료 변동",
                "relatedEventScenario":  null
            },
     "13":  {
@@ -2039,10 +1991,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "14":  {
@@ -2152,10 +2100,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "war_military_conflict",
-               "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                "relatedEventScenario":  null
            },
     "15":  {
@@ -2265,10 +2209,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "war_military_conflict",
-               "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                "relatedEventScenario":  null
            },
     "16":  {
@@ -2429,10 +2369,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "17":  {
@@ -2614,10 +2550,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "18":  {
@@ -2799,10 +2731,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "19":  {
@@ -2963,10 +2891,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "20":  {
@@ -3102,10 +3026,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "21":  {
@@ -3266,10 +3186,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "22":  {
@@ -3353,10 +3269,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "weather_climate",
-               "eventTypeLv1Label":  "기상 / 기후",
-               "eventTypeLv2":  "winter_cold_wave",
-               "eventTypeLv2Label":  "겨울 한파",
                "relatedEventScenario":  null
            },
     "23":  {
@@ -3440,10 +3352,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "weather_climate",
-               "eventTypeLv1Label":  "기상 / 기후",
-               "eventTypeLv2":  "winter_cold_wave",
-               "eventTypeLv2Label":  "겨울 한파",
                "relatedEventScenario":  null
            },
     "24":  {
@@ -3528,10 +3436,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "25":  {
@@ -3667,10 +3571,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "26":  {
@@ -3805,10 +3705,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "27":  {
@@ -3943,10 +3839,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "28":  {
@@ -4081,10 +3973,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "29":  {
@@ -4219,10 +4107,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "30":  {
@@ -4357,10 +4241,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "31":  {
@@ -4542,10 +4422,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "war_military_conflict",
-               "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                "relatedEventScenario":  null
            },
     "32":  {
@@ -4769,10 +4645,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "33":  {
@@ -4933,10 +4805,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "34":  {
@@ -5118,10 +4986,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "35":  {
@@ -5256,10 +5120,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "36":  {
@@ -5420,10 +5280,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "37":  {
@@ -5558,10 +5414,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "38":  {
@@ -5696,10 +5548,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "39":  {
@@ -5860,10 +5708,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "40":  {
@@ -5998,10 +5842,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "41":  {
@@ -6136,10 +5976,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "42":  {
@@ -6274,10 +6110,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "market_trading_structure",
-               "eventTypeLv1Label":  "시장 / 거래 구조",
-               "eventTypeLv2":  "transaction_hedging_cost_change",
-               "eventTypeLv2Label":  "거래 / 헷징 비용 변동",
                "relatedEventScenario":  null
            },
     "43":  {
@@ -6438,10 +6270,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "44":  {
@@ -6623,10 +6451,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "45":  {
@@ -6808,10 +6632,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "46":  {
@@ -7014,10 +6834,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "47":  {
@@ -7220,10 +7036,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "48":  {
@@ -7405,10 +7217,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "market_trading_structure",
-               "eventTypeLv1Label":  "시장 / 거래 구조",
-               "eventTypeLv2":  "inter_index_spread_gap",
-               "eventTypeLv2Label":  "인덱스별 스프레드 Gap",
                "relatedEventScenario":  null
            },
     "49":  {
@@ -7543,10 +7351,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "50":  {
@@ -7681,10 +7485,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "51":  {
@@ -7845,10 +7645,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "52":  {
@@ -7957,10 +7753,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "53":  {
@@ -8095,10 +7887,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "54":  {
@@ -8233,10 +8021,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "55":  {
@@ -8320,10 +8104,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "weather_climate",
-               "eventTypeLv1Label":  "기상 / 기후",
-               "eventTypeLv2":  "winter_cold_wave",
-               "eventTypeLv2Label":  "겨울 한파",
                "relatedEventScenario":  null
            },
     "56":  {
@@ -8432,10 +8212,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "57":  {
@@ -8570,10 +8346,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "energy_mix_transition",
-               "eventTypeLv1Label":  "에너지 믹스 전환",
-               "eventTypeLv2":  "nuclear_power_expansion_reduction",
-               "eventTypeLv2Label":  "원자력 발전 확대 / 축소",
                "relatedEventScenario":  null
            },
     "58":  {
@@ -8708,10 +8480,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "59":  {
@@ -8872,10 +8640,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "60":  {
@@ -9036,10 +8800,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "61":  {
@@ -9221,10 +8981,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "62":  {
@@ -9406,10 +9162,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "war_military_conflict",
-               "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                "relatedEventScenario":  null
            },
     "63":  {
@@ -9591,10 +9343,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "ocean_freight_charter_rate_change",
-               "eventTypeLv2Label":  "해상 운임 / 용선료 변동",
                "relatedEventScenario":  null
            },
     "64":  {
@@ -9755,10 +9503,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "65":  {
@@ -9893,10 +9637,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "66":  {
@@ -10031,10 +9771,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "67":  {
@@ -10169,10 +9905,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "68":  {
@@ -10256,10 +9988,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "69":  {
@@ -10394,10 +10122,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "70":  {
@@ -10506,10 +10230,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "war_military_conflict",
-               "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                "relatedEventScenario":  null
            },
     "71":  {
@@ -10644,10 +10364,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "ocean_freight_charter_rate_change",
-               "eventTypeLv2Label":  "해상 운임 / 용선료 변동",
                "relatedEventScenario":  null
            },
     "72":  {
@@ -10808,10 +10524,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "73":  {
@@ -10895,10 +10607,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "energy_mix_transition",
-               "eventTypeLv1Label":  "에너지 믹스 전환",
-               "eventTypeLv2":  "renewable_power_expansion_reduction",
-               "eventTypeLv2Label":  "재생에너지 발전 확대 / 축소",
                "relatedEventScenario":  null
            },
     "74":  {
@@ -11033,10 +10741,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "75":  {
@@ -11171,10 +10875,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "76":  {
@@ -11357,10 +11057,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "77":  {
@@ -11543,10 +11239,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "war_military_conflict",
-               "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                "relatedEventScenario":  null
            },
     "78":  {
@@ -11750,10 +11442,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "79":  {
@@ -11936,10 +11624,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "80":  {
@@ -12122,10 +11806,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "market_trading_structure",
-               "eventTypeLv1Label":  "시장 / 거래 구조",
-               "eventTypeLv2":  "inter_index_spread_gap",
-               "eventTypeLv2Label":  "인덱스별 스프레드 Gap",
                "relatedEventScenario":  null
            },
     "81":  {
@@ -12287,10 +11967,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "82":  {
@@ -12426,10 +12102,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "weather_climate",
-               "eventTypeLv1Label":  "기상 / 기후",
-               "eventTypeLv2":  "winter_cold_wave",
-               "eventTypeLv2Label":  "겨울 한파",
                "relatedEventScenario":  null
            },
     "83":  {
@@ -12539,10 +12211,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "84":  {
@@ -12678,10 +12346,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "85":  {
@@ -12843,10 +12507,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "86":  {
@@ -13008,10 +12668,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "energy_mix_transition",
-               "eventTypeLv1Label":  "에너지 믹스 전환",
-               "eventTypeLv2":  "nuclear_power_expansion_reduction",
-               "eventTypeLv2Label":  "원자력 발전 확대 / 축소",
                "relatedEventScenario":  null
            },
     "87":  {
@@ -13121,10 +12777,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "88":  {
@@ -13260,10 +12912,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "89":  {
@@ -13399,10 +13047,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "energy_mix_transition",
-               "eventTypeLv1Label":  "에너지 믹스 전환",
-               "eventTypeLv2":  "nuclear_power_expansion_reduction",
-               "eventTypeLv2Label":  "원자력 발전 확대 / 축소",
                "relatedEventScenario":  null
            },
     "90":  {
@@ -13564,10 +13208,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "91":  {
@@ -13749,10 +13389,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "92":  {
@@ -13956,10 +13592,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-               "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                "relatedEventScenario":  null
            },
     "93":  {
@@ -14141,10 +13773,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "regional_demand_competition",
-               "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                "relatedEventScenario":  null
            },
     "94":  {
@@ -14305,10 +13933,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "logistics_shipping",
-               "eventTypeLv1Label":  "물류 / 해운",
-               "eventTypeLv2":  "ocean_freight_charter_rate_change",
-               "eventTypeLv2Label":  "해상 운임 / 용선료 변동",
                "relatedEventScenario":  null
            },
     "95":  {
@@ -14469,10 +14093,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "supply_demand_balance",
-               "eventTypeLv1Label":  "수급 밸런스",
-               "eventTypeLv2":  "inventory_storage_level",
-               "eventTypeLv2Label":  "재고 / 저장 수준",
                "relatedEventScenario":  null
            },
     "96":  {
@@ -14633,10 +14253,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "geopolitical_risk",
-               "eventTypeLv1Label":  "지정학적 리스크",
-               "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-               "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                "relatedEventScenario":  null
            },
     "97":  {
@@ -14797,10 +14413,6 @@
                                         ],
                "status":  "updated",
                "statusLabel":  "갱신",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-               "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "98":  {
@@ -14935,10 +14547,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "99":  {
@@ -15099,10 +14707,6 @@
                                         ],
                "status":  "new",
                "statusLabel":  "신규",
-               "eventTypeLv1":  "infrastructure_facility",
-               "eventTypeLv1Label":  "인프라 / 설비",
-               "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-               "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                "relatedEventScenario":  null
            },
     "100":  {
@@ -15263,10 +14867,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "101":  {
@@ -15427,10 +15027,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "weather_climate",
-                "eventTypeLv1Label":  "기상 / 기후",
-                "eventTypeLv2":  "summer_heat_wave",
-                "eventTypeLv2Label":  "여름 고온",
                 "relatedEventScenario":  null
             },
     "102":  {
@@ -15565,10 +15161,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-                "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "103":  {
@@ -15703,10 +15295,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "104":  {
@@ -15867,10 +15455,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "weather_climate",
-                "eventTypeLv1Label":  "기상 / 기후",
-                "eventTypeLv2":  "summer_heat_wave",
-                "eventTypeLv2Label":  "여름 고온",
                 "relatedEventScenario":  null
             },
     "105":  {
@@ -16005,10 +15589,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "market_trading_structure",
-                "eventTypeLv1Label":  "시장 / 거래 구조",
-                "eventTypeLv2":  "transaction_hedging_cost_change",
-                "eventTypeLv2Label":  "거래 / 헷징 비용 변동",
                 "relatedEventScenario":  null
             },
     "106":  {
@@ -16191,10 +15771,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "107":  {
@@ -16397,10 +15973,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "108":  {
@@ -16582,10 +16154,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "109":  {
@@ -16767,10 +16335,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "110":  {
@@ -16952,10 +16516,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "111":  {
@@ -17116,10 +16676,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "geopolitical_tension_instability",
-                "eventTypeLv2Label":  "지정학적 긴장 / 불안정",
                 "relatedEventScenario":  null
             },
     "112":  {
@@ -17301,10 +16857,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "113":  {
@@ -17486,10 +17038,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-                "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                 "relatedEventScenario":  null
             },
     "114":  {
@@ -17671,10 +17219,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-                "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                 "relatedEventScenario":  null
             },
     "115":  {
@@ -17835,10 +17379,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "116":  {
@@ -17999,10 +17539,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "117":  {
@@ -18163,10 +17699,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "geopolitical_tension_instability",
-                "eventTypeLv2Label":  "지정학적 긴장 / 불안정",
                 "relatedEventScenario":  null
             },
     "118":  {
@@ -18370,10 +17902,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "119":  {
@@ -18508,10 +18036,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "regional_demand_competition",
-                "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                 "relatedEventScenario":  null
             },
     "120":  {
@@ -18672,10 +18196,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "regional_demand_competition",
-                "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                 "relatedEventScenario":  null
             },
     "121":  {
@@ -18899,10 +18419,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "122":  {
@@ -19084,10 +18600,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "123":  {
@@ -19269,10 +18781,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "124":  {
@@ -19454,10 +18962,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "geopolitical_tension_instability",
-                "eventTypeLv2Label":  "지정학적 긴장 / 불안정",
                 "relatedEventScenario":  null
             },
     "125":  {
@@ -19640,10 +19144,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "inventory_storage_level",
-                "eventTypeLv2Label":  "재고 / 저장 수준",
                 "relatedEventScenario":  null
             },
     "126":  {
@@ -19847,10 +19347,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "127":  {
@@ -20033,10 +19529,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "128":  {
@@ -20197,10 +19689,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-                "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                 "relatedEventScenario":  null
             },
     "129":  {
@@ -20382,10 +19870,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "130":  {
@@ -20568,10 +20052,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "131":  {
@@ -20753,10 +20233,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "inventory_storage_level",
-                "eventTypeLv2Label":  "재고 / 저장 수준",
                 "relatedEventScenario":  null
             },
     "132":  {
@@ -20938,10 +20414,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "ocean_freight_charter_rate_change",
-                "eventTypeLv2Label":  "해상 운임 / 용선료 변동",
                 "relatedEventScenario":  null
             },
     "133":  {
@@ -21102,10 +20574,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "134":  {
@@ -21266,10 +20734,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-                "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                 "relatedEventScenario":  null
             },
     "135":  {
@@ -21430,10 +20894,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "geopolitical_tension_instability",
-                "eventTypeLv2Label":  "지정학적 긴장 / 불안정",
                 "relatedEventScenario":  null
             },
     "136":  {
@@ -21657,10 +21117,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "137":  {
@@ -21884,10 +21340,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "138":  {
@@ -22090,10 +21542,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "139":  {
@@ -22275,10 +21723,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "inventory_storage_level",
-                "eventTypeLv2Label":  "재고 / 저장 수준",
                 "relatedEventScenario":  null
             },
     "140":  {
@@ -22460,10 +21904,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "141":  {
@@ -22645,10 +22085,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "energy_mix_transition",
-                "eventTypeLv1Label":  "에너지 믹스 전환",
-                "eventTypeLv2":  "alternative_fuel_availability",
-                "eventTypeLv2Label":  "대체 연료 가용성",
                 "relatedEventScenario":  null
             },
     "142":  {
@@ -22809,10 +22245,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "143":  {
@@ -22994,10 +22426,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "144":  {
@@ -23158,10 +22586,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "145":  {
@@ -23322,10 +22746,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "146":  {
@@ -23460,10 +22880,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "147":  {
@@ -23598,10 +23014,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-                "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "148":  {
@@ -23736,10 +23148,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "energy_mix_transition",
-                "eventTypeLv1Label":  "에너지 믹스 전환",
-                "eventTypeLv2":  "renewable_power_expansion_reduction",
-                "eventTypeLv2Label":  "재생에너지 발전 확대 / 축소",
                 "relatedEventScenario":  null
             },
     "149":  {
@@ -23900,10 +23308,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "150":  {
@@ -24064,10 +23468,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "151":  {
@@ -24271,10 +23671,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "152":  {
@@ -24478,10 +23874,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "153":  {
@@ -24664,10 +24056,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "154":  {
@@ -24850,10 +24238,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "155":  {
@@ -25036,10 +24420,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-                "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "156":  {
@@ -25201,10 +24581,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "157":  {
@@ -25340,10 +24716,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "158":  {
@@ -25526,10 +24898,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-                "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                 "relatedEventScenario":  null
             },
     "159":  {
@@ -25712,10 +25080,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "160":  {
@@ -25877,10 +25241,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-                "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "161":  {
@@ -26042,10 +25402,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "geopolitical_tension_instability",
-                "eventTypeLv2Label":  "지정학적 긴장 / 불안정",
                 "relatedEventScenario":  null
             },
     "162":  {
@@ -26228,10 +25584,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "macroeconomy_policy",
-                "eventTypeLv1Label":  "거시경제 / 정책",
-                "eventTypeLv2":  "interest_rate_fx_policy_change",
-                "eventTypeLv2Label":  "금리 / 통화정책 변화",
                 "relatedEventScenario":  null
             },
     "163":  {
@@ -26435,10 +25787,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-                "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "164":  {
@@ -26621,10 +25969,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "logistics_shipping",
-                "eventTypeLv1Label":  "물류 / 해운",
-                "eventTypeLv2":  "cargo_flow_change_port_canal_disruption",
-                "eventTypeLv2Label":  "화물 흐름 변화 / 항만·운하 차질",
                 "relatedEventScenario":  null
             },
     "165":  {
@@ -26807,10 +26151,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "war_military_conflict",
-                "eventTypeLv2Label":  "전쟁 / 군사 분쟁",
                 "relatedEventScenario":  null
             },
     "166":  {
@@ -26993,10 +26333,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "regional_demand_competition",
-                "eventTypeLv2Label":  "지역간 수요 경쟁 (유럽 vs. 아시아)",
                 "relatedEventScenario":  null
             },
     "167":  {
@@ -27158,10 +26494,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "liquefaction_terminal_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "액화 / 터미널 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "168":  {
@@ -27297,10 +26629,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "169":  {
@@ -27436,10 +26764,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "supply_demand_balance",
-                "eventTypeLv1Label":  "수급 밸런스",
-                "eventTypeLv2":  "inventory_storage_level",
-                "eventTypeLv2Label":  "재고 / 저장 수준",
                 "relatedEventScenario":  null
             },
     "170":  {
@@ -27575,10 +26899,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "upstream_production_facility_capacity_utilization_change",
-                "eventTypeLv2Label":  "상류 생산 시설 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "171":  {
@@ -27740,10 +27060,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "market_trading_structure",
-                "eventTypeLv1Label":  "시장 / 거래 구조",
-                "eventTypeLv2":  "inter_index_spread_gap",
-                "eventTypeLv2Label":  "인덱스별 스프레드 Gap",
                 "relatedEventScenario":  null
             },
     "172":  {
@@ -27853,10 +27169,6 @@
                                          ],
                 "status":  "new",
                 "statusLabel":  "신규",
-                "eventTypeLv1":  "infrastructure_facility",
-                "eventTypeLv1Label":  "인프라 / 설비",
-                "eventTypeLv2":  "pipeline_transport_infrastructure_capacity_utilization_change",
-                "eventTypeLv2Label":  "파이프라인/수송 인프라 Capa/가동률 변화",
                 "relatedEventScenario":  null
             },
     "173":  {
@@ -27992,10 +27304,6 @@
                                          ],
                 "status":  "updated",
                 "statusLabel":  "갱신",
-                "eventTypeLv1":  "geopolitical_risk",
-                "eventTypeLv1Label":  "지정학적 리스크",
-                "eventTypeLv2":  "economic_sanctions_trade_restrictions",
-                "eventTypeLv2Label":  "경제 제재 / 무역 제한",
                 "relatedEventScenario":  null
             }
 }
