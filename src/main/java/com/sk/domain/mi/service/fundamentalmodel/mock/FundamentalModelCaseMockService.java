@@ -197,16 +197,17 @@ public class FundamentalModelCaseMockService {
         runStore.put(runId, runRecord);
         caseStore.put(caseId, updatedCase);
 
-        if (kubernetesJobService != null) {
-            long runSeq = runSeqSequence.incrementAndGet();
-            kubernetesJobService.createFundamentalModelJob(buildJobArgs(currentCase, runId, runSeq))
-                .whenComplete((ignored, ex) -> {
-                    if (ex != null) {
-                        log.warn("[Mock] Kubernetes job creation failed: runId={}, caseId={}", runId, caseId, ex);
-                        markRunFailed(runId, caseId, ex.getMessage());
-                    }
-                });
-        }
+        // TODO: k8s 클러스터 연결 환경 준비 후 주석 해제
+        // if (kubernetesJobService != null) {
+        //     long runSeq = runSeqSequence.incrementAndGet();
+        //     kubernetesJobService.createFundamentalModelJob(buildJobArgs(currentCase, runId, runSeq))
+        //         .whenComplete((ignored, ex) -> {
+        //             if (ex != null) {
+        //                 log.warn("[Mock] Kubernetes job creation failed: runId={}, caseId={}", runId, caseId, ex);
+        //                 markRunFailed(runId, caseId, ex.getMessage());
+        //             }
+        //         });
+        // }
 
         return new FundamentalModelRunAcceptRes(
             updatedCase.caseId(),
