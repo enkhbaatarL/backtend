@@ -195,7 +195,7 @@ public class EventController {
             - `recordType`: Record 종류 (NEWS, REPORT 등)
             - `title`: Record 제목
             - `summary`: Record 요약 (1~2줄)
-            - `summarySourceId`: 요약 원문 식별자 PK
+            - `sourceObjId`: 원본 소스 ID (source_obj_id)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

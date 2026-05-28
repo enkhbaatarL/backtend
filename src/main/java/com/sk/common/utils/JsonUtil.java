@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -66,14 +67,21 @@ public class JsonUtil {
         }
     }
 
-    public static List<String> parseJsonStringList(String json) {
+    // 단일 키로 문자열 배열을 감싼 JSON에서 해당 배열을 추출
+    public static List<String> parseWrappedStringList(String json, String fieldName) {
         if (json == null || json.isBlank()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
+            JsonNode node = objectMapper.readTree(json).get(fieldName);
+            if (node == null || !node.isArray()) {
+                return Collections.emptyList();
+            }
+            List<String> result = new ArrayList<>(node.size());
+            node.forEach(item -> result.add(item.asText()));
+            return result;
         } catch (Exception e) {
-            log.warn("JSON string list 파싱 실패: {}", e.getMessage());
+            log.warn("JSON wrapped string list 파싱 실패 (field={}): {}", fieldName, e.getMessage());
             return Collections.emptyList();
         }
     }
