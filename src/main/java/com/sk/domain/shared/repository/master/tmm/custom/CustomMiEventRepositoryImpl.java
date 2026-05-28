@@ -2,6 +2,7 @@ package com.sk.domain.shared.repository.master.tmm.custom;
 
 import static com.sk.domain.shared.entity.master.tmd.QGoods.goods;
 import static com.sk.domain.shared.entity.master.tmd.QGoodsData.goodsData;
+import static com.sk.domain.shared.entity.master.tmd.QGoodsDataFileSummary.goodsDataFileSummary;
 import static com.sk.domain.shared.entity.master.tmd.QMiRecord.miRecord;
 import static com.sk.domain.shared.entity.master.tmd.QNewsSummary.newsSummary;
 import static com.sk.domain.shared.entity.master.tmd.QProvider.provider;
@@ -63,11 +64,16 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
 
         List<EventListBaseRow> baseRows = queryFactory
             .select(new QEventListBaseRow(
-                miEvent.miEventId, miEvent.eventTitle,
-                miEventTypeL1.level1Code, miEventTypeL1.level1Label,
-                miEvent.isSignal, miEvent.isNew,
-                miEvent.isScenarioSuggested, miEvent.scenarioSuggestReason,
-                miEvent.createDt, miEvent.modifyDt
+                miEvent.miEventId,
+                miEvent.eventTitle,
+                miEventTypeL1.level1Code,
+                miEventTypeL1.level1Label,
+                miEvent.isSignal,
+                miEvent.isNew,
+                miEvent.isScenarioSuggested,
+                miEvent.scenarioSuggestReason,
+                miEvent.createDt,
+                miEvent.modifyDt
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -199,8 +205,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         List<EventIndexImpactRow> indexImpacts = fetchIndexImpactsGroupedByEventId(List.of(base.miEventId()))
             .getOrDefault(base.miEventId(), List.of());
 
-        // 핵심요약 조회 (JSON 컬럼에서 파싱)
-        List<String> keyBullets = JsonUtil.parseJsonStringList(base.keyBulletsJson());
+        // 핵심요약 조회 (JSON 컬럼 {"bullets":[...]} 에서 파싱)
+        List<String> keyBullets = JsonUtil.parseWrappedStringList(base.keyBulletsJson(), "bullets");
 
         // 영향도 분석 조회 (인덱스별 본문 Map)
         Map<String, String> indexAnalysisTexts = fetchIndexAnalysisTexts(base.miEventId());
@@ -258,7 +264,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
 
     // note: 이벤트의 출처(provider name) - record_type 분기 따라 두 경로
     //  - NEWS: tmd_mi_record -> tmd_nws_smry -> tmd_gdsm (gds_id) -> tmd_prvdm
-    //  - 그 외: tmd_mi_record -> tmd_gdsdatam -> tmd_gdsm -> tmd_prvdm
+    //  - 그 외: tmd_mi_record -> tmd_gdsdatam_file_smry (source_obj_id=gds_data_smry_no) -> tmd_gdsdatam -> tmd_gdsm (gds_no) -> tmd_prvdm
+    //    (Record 파일별 분리 모델: 비-NEWS source_obj_id는 파일요약 PK를 가리킴)
     private List<String> fetchEventProviderNames(Long eventId) {
         Set<String> names = new LinkedHashSet<>();
         names.addAll(fetchNewsProviderNames(eventId));
@@ -296,9 +303,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .innerJoin(miEventRecordMap.miRecord, miRecord).on(
                 miRecord.recordType.ne("NEWS")
                     .and(miRecord.isDeleted.isFalse()))
-            .innerJoin(goodsData)
-                .on(goodsData.goodsDataNo.castToNum(Long.class).eq(miRecord.sourceObjId)
-                    .and(goodsData.isDeleted.isFalse()))
+            .innerJoin(goodsDataFileSummary)
+                .on(goodsDataFileSummary.goodsDataSummaryNo.castToNum(Long.class).eq(miRecord.sourceObjId)
+                    .and(goodsDataFileSummary.isDeleted.isFalse()))
+            .innerJoin(goodsDataFileSummary.goodsData, goodsData).on(goodsData.isDeleted.isFalse())
             .innerJoin(goods).on(goods.eq(goodsData.goods)
                     .and(goods.isDeleted.isFalse()))
             .innerJoin(provider).on(provider.eq(goods.provider)

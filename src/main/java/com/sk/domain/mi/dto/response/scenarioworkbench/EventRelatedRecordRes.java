@@ -18,8 +18,8 @@ public record EventRelatedRecordRes(
     @Schema(description = "요약")
     String summary,
 
-    @Schema(description = "요약 원문 식별자", example = "12345")
-    Long summarySourceId
+    @Schema(description = "원본 소스 ID (source_obj_id)", example = "12345")
+    Long sourceObjId
 
 ) {
 
@@ -29,7 +29,7 @@ public record EventRelatedRecordRes(
             row.getRecordType(),
             row.getTitle(),
             row.getSummary(),
-            row.getSummarySourceId()
+            row.getSourceObjId()
         );
     }
 }
