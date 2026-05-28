@@ -1,6 +1,5 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
-import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -23,14 +22,6 @@ public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
     }
 
     @Override
-    public boolean canAccessApi(PermissionRule[] rules) {
-        return Arrays.stream(rules)
-            .filter(rule -> rule.role() == Role.ADMIN)
-            .filter(rule -> hasCondition(rule, PermissionCondition.THIRD_PARTY_ADMIN_ONLY))
-            .anyMatch(rule -> authorizationService.isThirdPartyAccessAllowed());
-    }
-
-    @Override
     public boolean canViewGoods(Integer goodsNo) {
         PermissionRes permissions = authorizationService.getPermissions();
         return permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
@@ -40,10 +31,6 @@ public class AdminWithThirdPartyAccessStrategy implements PermissionStrategy {
     public boolean canDownloadGoods(Integer goodsNo) {
         PermissionRes permissions = authorizationService.getPermissions();
         return permissions.getGoodsDownloadableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
-    }
-
-    private boolean hasCondition(PermissionRule rule, PermissionCondition condition) {
-        return Arrays.asList(rule.conditions()).contains(condition);
     }
 
 }
