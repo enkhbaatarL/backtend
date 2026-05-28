@@ -198,12 +198,14 @@ public class FundamentalModelCaseMockService {
         caseStore.put(caseId, updatedCase);
 
         if (kubernetesJobService != null) {
-            try {
-                long runSeq = runSeqSequence.incrementAndGet();
-                kubernetesJobService.createFundamentalModelJob(buildJobArgs(currentCase, runId, runSeq));
-            } catch (Exception e) {
-                log.warn("[Mock] Kubernetes job creation failed: runId={}, caseId={}", runId, caseId, e);
-            }
+            long runSeq = runSeqSequence.incrementAndGet();
+            kubernetesJobService.createFundamentalModelJob(buildJobArgs(currentCase, runId, runSeq))
+                .whenComplete((ignored, ex) -> {
+                    if (ex != null) {
+                        log.warn("[Mock] Kubernetes job creation failed: runId={}, caseId={}", runId, caseId, ex);
+                        markRunFailed(runId, caseId, ex.getMessage());
+                    }
+                });
         }
 
         return new FundamentalModelRunAcceptRes(
@@ -706,6 +708,24 @@ public class FundamentalModelCaseMockService {
         return currentRun.status() == request.status()
             && Objects.equals(currentRun.failureReason(), request.failureReason())
             && Objects.equals(currentRun.errorMessage(), request.errorMessage());
+    }
+
+    private synchronized void markRunFailed(String runId, Long caseId, String errorMessage) {
+        FundamentalModelRunMockRecord currentRun = runStore.get(runId);
+        if (currentRun == null || currentRun.status() != FundamentalModelRunStatus.RUNNING) {
+            return;
+        }
+        runStore.put(runId, currentRun.withTerminal(
+            FundamentalModelRunStatus.FAILED,
+            LocalDateTime.now(),
+            "JOB_SUBMIT_FAILED",
+            errorMessage
+        ));
+
+        FundamentalModelCaseMockRecord currentCase = caseStore.get(caseId);
+        if (currentCase != null && runId.equals(currentCase.latestRunId())) {
+            caseStore.put(caseId, currentCase.withTerminal(FundamentalModelCaseStatus.FAILED, LocalDateTime.now()));
+        }
     }
 
     private FundamentalModelCaseMockRecord getCaseRecord(Long caseId) {

@@ -9,8 +9,10 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -51,7 +53,8 @@ public class KubernetesJobService {
     @Value("${kubernetes.command:}")
     private String commandConfig;
 
-    public void createFundamentalModelJob(FundamentalModelJobArgs args) {
+    @Async
+    public CompletableFuture<Void> createFundamentalModelJob(FundamentalModelJobArgs args) {
         Job job = new JobBuilder()
             .withNewMetadata()
                 .withName("fundamental-model-" + args.getRunId().replace('_', '-').toLowerCase())
@@ -72,6 +75,8 @@ public class KubernetesJobService {
             .inNamespace(namespace)
             .resource(job)
             .create();
+
+        return CompletableFuture.completedFuture(null);
     }
 
     private Container buildContainer(FundamentalModelJobArgs args) {
