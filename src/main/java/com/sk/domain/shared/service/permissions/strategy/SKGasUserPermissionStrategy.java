@@ -1,6 +1,5 @@
 package com.sk.domain.shared.service.permissions.strategy;
 
-import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -26,14 +25,6 @@ public class SKGasUserPermissionStrategy implements PermissionStrategy {
     }
 
     @Override
-    public boolean canAccessApi(PermissionRule[] rules) {
-        return Arrays.stream(rules)
-            .filter(rule -> rule.role() == Role.USER)
-            .filter(rule -> hasCondition(rule, PermissionCondition.SKGAS_COMPANY_USER_ONLY))
-            .anyMatch(rule -> PermissionCondition.AllowedCompany.SKGAS.getCode().equals(authorizationService.getCompanyCd()));
-    }
-
-    @Override
     public boolean canViewGoods(Integer goodsNo) {
         PermissionRes permissions = authorizationService.getPermissions();
         return permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
@@ -43,10 +34,6 @@ public class SKGasUserPermissionStrategy implements PermissionStrategy {
     public boolean canDownloadGoods(Integer goodsNo) {
         PermissionRes permissions = authorizationService.getPermissions();
         return permissions.getGoodsDownloadableMap(authorizationService.getCompanyNoWithPriority()).getOrDefault(goodsNo, Boolean.FALSE);
-    }
-
-    private boolean hasCondition(PermissionRule rule, PermissionCondition condition) {
-        return Arrays.asList(rule.conditions()).contains(condition);
     }
 
 }

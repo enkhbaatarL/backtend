@@ -41,6 +41,22 @@ public class PermissionStrategyFactory {
         return resolveStrategy(role, condition);
     }
 
+
+    /**
+     * [Rule 기반] API 접근 가능 여부 체크
+     * - PermissionRule 간: OR 조건
+     * - PermissionRule 내부 role + conditions: AND 조건
+     */
+    public boolean canAccessApi(PermissionRule[] rules) {
+
+        // 현재 발급된 토근의 role
+        Role role = authService.getCurrentRole();
+
+        return Arrays.stream(rules)
+            .filter(rule -> rule.role() == role)
+            .anyMatch(rule -> Arrays.stream(rule.conditions()).allMatch(condition -> isConditionSatisfied(role, condition)));
+    }
+
     /**
      * Rule 기반 전략 객체 조회
      */
@@ -73,6 +89,10 @@ public class PermissionStrategyFactory {
             return new OperatorPermissionStrategy(authService);
         }
 
+        if (role == Role.USER && condition == PermissionCondition.SKGAS_COMPANY_USER_ONLY) {
+            return new SKGasUserPermissionStrategy(authService);
+        }
+
         if (role == Role.API_SUB_ADMIN) {
             return new ApiSubAdminPermissionStrategy();
         }
@@ -90,6 +110,14 @@ public class PermissionStrategyFactory {
 
     private boolean hasCondition(PermissionRule rule, PermissionCondition condition) {
         return Arrays.asList(rule.conditions()).contains(condition);
+    }
+
+    private boolean isConditionSatisfied(Role role, PermissionCondition condition) {
+        return switch (condition) {
+            case NONE -> true;
+            case THIRD_PARTY_ADMIN_ONLY -> role == Role.ADMIN && authService.isThirdPartyAccessAllowed();
+            case SKGAS_COMPANY_USER_ONLY -> role == Role.USER && PermissionCondition.AllowedCompany.SKGAS.getCode().equals(authService.getCompanyCd());
+        };
     }
 
 }

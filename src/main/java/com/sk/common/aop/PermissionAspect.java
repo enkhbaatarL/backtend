@@ -63,7 +63,7 @@ public class PermissionAspect {
         PermissionStrategy strategy = strategyFactory.getStrategy(rules);
 
         // 1. API 접근 가능 여부 체크
-        if (BooleanUtils.isFalse(strategy.canAccessApi(rules))) {
+        if (BooleanUtils.isFalse(strategyFactory.canAccessApi(rules))) {
             throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, permissionMessageFormatter.allowedOnlyFor(rules));
         }
 
