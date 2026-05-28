@@ -28,14 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/mi/fundamental-model/runs")
 @RequiredArgsConstructor
 @Validated
-public class FundamentalModelRunController {
+public class FundamentalModelRunDedicatedController {
 
     private final FundamentalModelCaseService fundamentalModelCaseService;
 
     @ApiOrder(1)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 실행 완료 Callback API",
-        description = "외부 모델 API가 실행 완료 또는 실패 시 호출하여 run/case 상태를 terminal 상태로 갱신합니다."
+        description = "모델이 실행 완료 또는 실패 시 호출하여 run/case 상태를 terminal 상태로 갱신합니다."
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
     @PostMapping("/{runId}/callback")

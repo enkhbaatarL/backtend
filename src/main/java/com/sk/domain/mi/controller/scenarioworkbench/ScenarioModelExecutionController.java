@@ -1,7 +1,7 @@
 package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
@@ -13,7 +13,6 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionParameterRe
 import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionStatusRes;
 import com.sk.domain.mi.service.scenarioworkbench.ScenarioModelExecutionService;
 import com.sk.domain.mi.service.scenarioworkbench.mock.ScenarioModelExecutionMockService;
-import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!dedicated")
 @Tag(name = "2-1. Scenario Workbench Model Execution API", description = "Scenario Workbench MI 수급모델 실행 API입니다.")
 @Slf4j
 @RestController

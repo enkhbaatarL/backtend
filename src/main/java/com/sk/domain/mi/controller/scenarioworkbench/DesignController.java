@@ -1,7 +1,7 @@
 package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
@@ -14,7 +14,6 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.GeneratedScenarioRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioGenAcceptRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioGenStatusRes;
 import com.sk.domain.mi.service.scenarioworkbench.DesignService;
-import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +25,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!dedicated")
 @Tag(name = "5. Scenario Workbench Design API", description = "Scenario Workbench Design API입니다.")
 @Slf4j
 @RestController
