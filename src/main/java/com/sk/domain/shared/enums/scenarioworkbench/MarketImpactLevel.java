@@ -10,8 +10,7 @@ public enum MarketImpactLevel {
 
     LOW("low", "낮음"),
     MEDIUM("medium", "중간"),
-    HIGH("high", "높음"),
-    EXTREME("extreme", "매우 높음");
+    HIGH("high", "높음");
 
     @JsonValue
     private final String code;

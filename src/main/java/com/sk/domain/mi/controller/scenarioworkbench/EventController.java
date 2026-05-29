@@ -100,9 +100,11 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거
-            - `indexImpacts`: 인덱스별 영향도 (JKM, TTF, HH)
+            - `indexImpacts`: 인덱스별 영향도 — 단기/중장기 중 영향 강도가 더 큰 시점 1개만 표기 (강도가 같으면 단기).
               - `indexName` / `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` / `impactTerm` / `impactTermLabel`
               - `impactTerm`: `short` 단기 / `mid_long` 중장기
+              - `marketImpactLevel`: `high` / `medium` / `low` (영향없음이면 null)
+              - `direction`: `bullish` 상승 / `bearish` 하락 / `negligible` 보합(영향없음)
             """
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (`all` / `new` / `updated`, 대소문자 무관). 기본값 `all`")
@@ -141,10 +143,11 @@ public class EventController {
             <br><br>
             ### impactAnalysis 필드
             이벤트가 LNG 시장 주요 인덱스(JKM, TTF, Henry Hub)에 미치는 영향을 분석한 결과입니다.
-            - `indexImpacts`: 인덱스별 영향도 (`indexName`, `shortTerm`, `midLongTerm`, `analysisText`)
-              - `shortTerm` / `midLongTerm`: `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` 묶음.
-              - `analysisText`: 해당 인덱스에 대한 영향 분석 본문 (`tmm_impactresultm.impact_assessment_reason`)
-            - `analysisText`: 전체 인덱스 종합 분석
+            - `indexImpacts`: 인덱스별 영향도. 각 항목 `indexName`, `shortTerm`, `midLongTerm`
+              - `shortTerm` / `midLongTerm`: `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel`
+              - `midLongTerm`: 중기·장기 영향도 평균(절대값 반올림·부호 유지). 둘 다 없으면 null
+              - `marketImpactLevel`: `high`/`medium`/`low` (영향없음이면 null) · `direction`: `bullish`/`bearish`/`negligible`(보합)
+            - `analysisText`: 전체 영향도 종합 요약 (`tmm_mi_impact_m.impact_summary`)
             - `eventTypeLv1` / `eventTypeLv2`: 이벤트 유형 분류 (Lv1: 8종, Lv2: 22종)
             - `sources`: 분석에 사용된 출처(provider) 목록
 
